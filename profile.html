@@ -7,11 +7,108 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Corrected Path -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Your content from profile.html goes here -->
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="games.html">Games</a></li>
+            <li><a href="apps.html">Apps</a></li>
+            <li><a href="mod-upload.html">Upload</a></li>
+            <li><a href="profile.html">My Profile</a></li>
+        </ul>
+    </nav>
     
+    <main>
+        <div class="page-header">
+            <div class="container">
+                <h1>Edit <span>Your Profile</span></h1>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="edit-profile-layout">
+                <!-- Profile Details Form -->
+                <section class="form-section">
+                    <h2>Profile Details</h2>
+                    <form id="profile-details-form">
+                        <div class="form-group avatar-upload-group">
+                            <div class="avatar-preview-wrapper">
+                                <img src="https://via.placeholder.com/150" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
+                                <label for="avatar-input" class="avatar-edit-button">✏️</label>
+                                <input type="file" id="avatar-input" accept="image/png, image/jpeg">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" value="YourCurrentUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" value="user@example.com" required>
+                        </div>
+                        <button type="submit" class="submit-button">Save Changes</button>
+                    </form>
+                </section>
+
+                <!-- Change Password Form -->
+                <section class="form-section">
+                    <h2>Change Password</h2>
+                    <form id="password-change-form">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" name="current-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" name="new-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm New Password</label>
+                            <input type="password" id="confirm-password" name="confirm-password" required>
+                        </div>
+                        <button type="submit" class="submit-button secondary-button">Update Password</button>
+                    </form>
+                </section>
+
+                <!-- Danger Zone for Deleting Account -->
+                <section class="form-section danger-zone">
+                    <h2>Danger Zone</h2>
+                    <p>Deleting your account is a permanent action. All of your uploaded mods, comments, and personal data will be removed forever. This action cannot be undone.</p>
+                    <button class="submit-button delete-button" id="delete-account-btn">Delete My Account</button>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="about.html">About Us</a>
+                <a href="faq.html">FAQ</a>
+                <a href="dmca.html">DMCA</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Corrected Path -->
     <script src="js/script.js"></script>
 </body>
 </html>

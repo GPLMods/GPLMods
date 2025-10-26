@@ -7,11 +7,104 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Corrected Path -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Your content from login-signup.html goes here -->
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="account.html">Account</a></li>
+        </ul>
+    </nav>
     
+    <main>
+        <div class="container">
+            <div class="auth-container">
+
+                <!-- Login Section (Visible by default) -->
+                <section id="login-section" class="form-container">
+                    <h2>Welcome Back</h2>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="loginUsername">Username</label>
+                            <input type="text" id="loginUsername" name="loginUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" name="loginPassword" required>
+                        </div>
+                        <button type="submit" class="submit-button">Login</button>
+                    </form>
+                    <p class="form-switch">Need an account? <a href="#" id="show-signup-link">Sign Up</a></p>
+                </section>
+
+                <!-- Sign-up Section (Hidden by default) -->
+                <section id="signup-section" class="form-container" style="display: none;">
+                    <h2>Create Account</h2>
+                    <form id="signup-form">
+                        <div class="form-group">
+                            <label for="signupUsername">Username</label>
+                            <input type="text" id="signupUsername" name="signupUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="signupEmail">Email</label>
+                            <input type="email" id="signupEmail" name="signupEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="signupPassword">Password</label>
+                            <input type="password" id="signupPassword" name="signupPassword" required>
+                        </div>
+                        <button type="submit" class="submit-button">Sign Up</button>
+                    </form>
+                    <p class="form-switch">Already have an account? <a href="#" id="show-login-link">Login</a></p>
+                </section>
+                
+                <!-- Account Area (Hidden by default) -->
+                <section id="account-section" class="account-area" style="display: none;">
+                    <div class="welcome-message">
+                        <h2>Welcome, <span id="username-span">User</span>!</h2>
+                    </div>
+                    <ul class="user-details">
+                        <li>Email: <strong>user@example.com</strong></li>
+                        <li>Member Since: <strong>Oct 2025</strong></li>
+                        <li>Mods Uploaded: <strong>5</strong></li>
+                    </ul>
+                    <div class="account-actions">
+                        <a href="uploads.html" class="action-button">My Uploads</a>
+                        <a href="profile.html" class="action-button">Edit Profile</a>
+                        <a href="#" class="action-button logout-button" id="logout-button">Logout</a>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="about.html">About Us</a>
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Corrected Path -->
     <script src="js/script.js"></script>
 </body>
 </html>

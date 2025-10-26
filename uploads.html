@@ -7,11 +7,115 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Corrected Path -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Your content from uploads.html goes here -->
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="login-signup.html">Account</a></li>
+            <li><a href="uploads.html">My Uploads</a></li>
+            <li><a href="mod-upload.html">Upload New Mod</a></li>
+        </ul>
+    </nav>
     
+    <main>
+        <div class="page-header">
+            <div class="container">
+                <h1>Manage <span>Your Uploads</span></h1>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="page-actions">
+                <a href="mod-upload.html" class="upload-cta-button">Upload a New Mod</a>
+            </div>
+
+            <div class="uploads-list">
+                <!-- Item 1: Live -->
+                <div class="upload-item">
+                    <div class="item-icon">
+                        <img src="https://via.placeholder.com/50/8B008B/FFFFFF?text=GI" alt="Game Icon">
+                    </div>
+                    <div class="item-details">
+                        <h3>Galaxy Invaders [Mod Menu]</h3>
+                        <span>Version: 3.2.5 | 1.2M Downloads</span>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge status-live">Live</span>
+                    </div>
+                    <div class="item-actions">
+                        <a href="mod2.html">View</a>
+                        <a href="#">Edit</a>
+                        <a href="#" class="delete-btn">Delete</a>
+                    </div>
+                </div>
+
+                <!-- Item 2: Pending Review -->
+                <div class="upload-item">
+                    <div class="item-icon">
+                        <img src="https://via.placeholder.com/50/FF4500/FFFFFF?text=AR" alt="Game Icon">
+                    </div>
+                    <div class="item-details">
+                        <h3>Asphalt Racers [Unlocked]</h3>
+                        <span>Version: 1.5.0 | Awaiting Review</span>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge status-pending">Pending Review</span>
+                    </div>
+                    <div class="item-actions">
+                        <a href="#">Edit</a>
+                        <a href="#" class="delete-btn">Delete</a>
+                    </div>
+                </div>
+
+                <!-- Item 3: Rejected -->
+                <div class="upload-item">
+                    <div class="item-icon">
+                        <img src="https://via.placeholder.com/50/00CED1/FFFFFF?text=PE" alt="App Icon">
+                    </div>
+                    <div class="item-details">
+                        <h3>Pixel Editor Pro</h3>
+                        <span>Version: 4.1.0 | Reason: Incomplete Description</span>
+                    </div>
+                    <div class="item-status">
+                        <span class="status-badge status-rejected">Rejected</span>
+                    </div>
+                    <div class="item-actions">
+                        <a href="#">Edit & Resubmit</a>
+                        <a href="#" class="delete-btn">Delete</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="about.html">About Us</a>
+                <a href="terms.html">Terms</a>
+                <a href="privacy.html">Privacy</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Corrected Path -->
     <script src="js/script.js"></script>
 </body>
 </html>

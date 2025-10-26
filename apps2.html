@@ -7,11 +7,155 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Corrected Path -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Your content from apps2.html goes here -->
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar">
+                <input type="search" id="animated-search" placeholder="">
+            </div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="games.html">Games</a></li>
+            <li><a href="apps.html">Apps</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="dmca.html">DMCA</a></li>
+        </ul>
+    </nav>
     
+    <main>
+        <section class="page-header">
+            <div class="container">
+                <h1>All <span>App</span> Mods</h1>
+                <p>Discover powerful modded apps for productivity, entertainment, and more.</p>
+            </div>
+        </section>
+
+        <div class="container">
+            <section class="filter-section">
+                <div class="filter-controls">
+                    <label for="category">Filter by Category:</label>
+                    <select id="category" name="category">
+                        <option value="all">All Categories</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="productivity">Productivity</option>
+                        <option value="tools">Tools</option>
+                        <option value="social">Social</option>
+                        <option value="photography">Photography</option>
+                    </select>
+                </div>
+                <div class="filter-controls">
+                    <label for="sort">Sort by:</label>
+                    <select id="sort" name="sort">
+                        <option value="popularity">Popularity</option>
+                        <option value="latest">Latest</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                </div>
+                 <div class="results-count">
+                    <span>Showing 4-6 of 64 results</span>
+                </div>
+            </section>
+
+            <section class="mod-grid">
+                <!-- Mod Card 4 -->
+                <a href="mods/secure-vpn.html" class="mod-card-link">
+                    <div class="mod-card">
+                        <div class="mod-type-tag">VIP</div>
+                        <img src="https://via.placeholder.com/280x150/4169E1/FFFFFF?text=VPN" alt="Secure VPN" class="mod-card-image">
+                        <div class="mod-card-content">
+                            <h3>Secure VPN</h3>
+                            <p>All Servers Unlocked, No Logs</p>
+                            <div class="rating">
+                                <div class="stars-outer"><div class="stars-inner" style="width: 90%;"></div></div>
+                                <span class="rating-text">4.5</span>
+                            </div>
+                        </div>
+                         <div class="download-overlay">
+                            <a href="app-market.html" class="overlay-button overlay-btn-primary">Fast Download with App</a>
+                            <a href="mods/secure-vpn.html" class="overlay-button overlay-btn-secondary">Download .APK</a>
+                        </div>
+                    </div>
+                </a>
+                <!-- Mod Card 5 -->
+                <a href="mods/taskmaster-pro.html" class="mod-card-link">
+                    <div class="mod-card">
+                        <div class="mod-type-tag">Subscribed</div>
+                        <img src="https://via.placeholder.com/280x150/32CD32/FFFFFF?text=Productivity" alt="TaskMaster Pro" class="mod-card-image">
+                        <div class="mod-card-content">
+                            <h3>TaskMaster Pro</h3>
+                            <p>Premium Features, Cloud Sync</p>
+                            <div class="rating">
+                                <div class="stars-outer"><div class="stars-inner" style="width: 98%;"></div></div>
+                                <span class="rating-text">4.9</span>
+                            </div>
+                        </div>
+                         <div class="download-overlay">
+                            <a href="app-market.html" class="overlay-button overlay-btn-primary">Fast Download with App</a>
+                            <a href="mods/taskmaster-pro.html" class="overlay-button overlay-btn-secondary">Download .APK</a>
+                        </div>
+                    </div>
+                </a>
+                <!-- Mod Card 6 -->
+                <a href="mods/connect-messenger.html" class="mod-card-link">
+                    <div class="mod-card">
+                        <div class="mod-type-tag">Lite</div>
+                        <img src="https://via.placeholder.com/280x150/8A2BE2/FFFFFF?text=Social" alt="Connect Messenger" class="mod-card-image">
+                        <div class="mod-card-content">
+                            <h3>Connect Messenger</h3>
+                            <p>Ad-Free, Minimal & Fast</p>
+                            <div class="rating">
+                                <div class="stars-outer"><div class="stars-inner" style="width: 94%;"></div></div>
+                                <span class="rating-text">4.7</span>
+                            </div>
+                        </div>
+                         <div class="download-overlay">
+                            <a href="app-market.html" class="overlay-button overlay-btn-primary">Fast Download with App</a>
+                            <a href="mods/connect-messenger.html" class="overlay-button overlay-btn-secondary">Download .APK</a>
+                        </div>
+                    </div>
+                </a>
+            </section>
+
+            <nav class="pagination">
+                <a href="apps.html">&laquo; Prev</a>
+                <a href="apps.html">1</a>
+                <a href="#" class="active">2</a>
+                <a href="#">3</a>
+                <a href="#">...</a>
+                <a href="#">8</a>
+                <a href="#">Next &raquo;</a>
+            </nav>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="about.html">About Us</a>
+                <a href="faq.html">FAQ</a>
+                <a href="dmca.html">DMCA</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Corrected Path -->
     <script src="js/script.js"></script>
+
 </body>
 </html>

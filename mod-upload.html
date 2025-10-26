@@ -7,11 +7,122 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Corrected Path -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Your content from mod upload.html goes here -->
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="games.html">Games</a></li>
+            <li><a href="apps.html">Apps</a></li>
+            <li><a href="mod-upload.html">Upload</a></li>
+        </ul>
+    </nav>
     
+    <main>
+        <div class="page-header">
+            <div class="container">
+                <h1>Upload <span>Your Mod</span></h1>
+                <p>Contribute to the GPL community by sharing your creation. All submissions are reviewed by our team before going live.</p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="upload-layout">
+                <!-- Upload Form -->
+                <form class="upload-form" id="modForm">
+                    <div class="form-group">
+                        <label for="modName">Mod Name</label>
+                        <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modPlatform">Platform</label>
+                        <select id="modPlatform" name="modPlatform" required>
+                            <option value="" disabled selected>Select a platform...</option>
+                            <option value="android">Android</option>
+                            <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                            <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                            <option value="windows">Windows</option>
+                            <option value="wordpress">WordPress</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modCategory">Category</label>
+                        <select id="modCategory" name="modCategory" required disabled>
+                            <option value="" disabled selected>Select a platform first...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modVersion">Mod Version</label>
+                        <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modFeatures">Mod Features</label>
+                        <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications in detail. Use bullet points for clarity.&#10;- Unlimited Coins&#10;- God Mode&#10;- No Ads" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="tags">Tags (Optional)</label>
+                        <input type="text" id="tags" name="tags" placeholder="e.g., strategy, multiplayer, offline">
+                        <p class="description">Enter comma-separated tags. The mod name, platform, and category will be added as tags automatically for search purposes.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Mod File</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="modFile" name="modFile" accept=".apk,.xapk,.ipa,.deb,.zip,.exe,.msi" required>
+                            <label for="modFile" class="file-input-label">Choose Mod File</label>
+                            <span class="file-name" id="modFileName">No file selected</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon or Screenshot (Optional)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="imageFile" name="imageFile" accept="image/png, image/jpeg">
+                            <label for="imageFile" class="file-input-label">Choose Image</label>
+                            <span class="file-name" id="imageFileName">No file selected</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Submit Mod for Review</button>
+                </form>
+                
+                <!-- Submission Guidelines -->
+                <aside class="guidelines">
+                    <h3>Submission Guidelines</h3>
+                    <ul>
+                        <li><b>Be Accurate:</b> The mod name, version, and features must be accurate. Misleading information will lead to rejection.</li>
+                        <li><b>Safety First:</b> Mods containing malware, viruses, or any harmful code are strictly forbidden and will result in a permanent ban.</li>
+                        <li><b>Must Be Functional:</b> Please test your mod to ensure it works as described before uploading.</li>
+                        <li><b>English Only:</b> All descriptions and feature lists must be in English for our review team.</li>
+                    </ul>
+                </aside>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="about.html">About Us</a>
+                <a href="faq.html">FAQ</a>
+                <a href="dmca.html">DMCA</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+    
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Corrected Path -->
     <script src="js/script.js"></script>
 </body>
 </html>
