@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Of Clans - GPL Mods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --glow-silver: rgba(192, 192, 192, 0.5);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); line-height: 1.6; }
+        .container { width: 90%; max-width: 1200px; margin: auto; padding: 20px 0; }
+        
+        /* Header (Consistent with Homepage) */
+        .main-header { padding: 15px 0; border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; background-color: var(--black); z-index: 1000; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; }
+        .logo span { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
+        .search-bar { flex-grow: 1; order: 3; width: 100%; }
+        .search-bar input { width: 100%; padding: 12px 15px; border-radius: 25px; border: 1px solid var(--dark-gray); background-color: var(--dark-gray); color: var(--white); font-size: 1em; transition: all 0.3s ease; --placeholder-color: var(--gold); }
+        .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+        .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
+        .hamburger-menu { display: block; cursor: pointer; font-size: 2em; color: var(--silver); order: 2; }
+        .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
+        .mobile-nav ul { list-style: none; padding-top: 50px; }
+        .mobile-nav li { margin-bottom: 25px; }
+        .mobile-nav a { color: var(--silver); text-decoration: none; font-size: 1.2em; transition: color 0.3s ease; }
+        .mobile-nav a:hover { color: var(--gold); }
+
+        /* Main Download Page Layout */
+        .download-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
+
+        /* Left Panel - Info & Download */
+        .info-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; text-align: center; align-self: flex-start; }
+        .app-icon { 
+            width: 120px; 
+            height: 120px; 
+            border-radius: 25px; 
+            margin: 0 auto 20px auto; 
+            background-color: #333; /* Fallback color */
+            object-fit: cover; /* Ensures image scales nicely */
+            display: block;
+        }
+        .info-panel h1 { font-size: 2em; line-height: 1.2; margin-bottom: 10px; }
+        .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
+        .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
+        .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
+        .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
+        .stars-inner::before { content: "★★★★★"; color: var(--gold); }
+        .rating-text { color: var(--silver); font-size: 1em; font-weight: 600; }
+
+        .safety-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .safety-badge .badge-icon { color: var(--gold); font-size: 1.4em; }
+        .safety-badge .badge-text { color: var(--silver); font-weight: 600; font-size: 1em; }
+        
+        .download-button { display: block; background: var(--gold); color: var(--black); padding: 18px 20px; border-radius: 10px; text-decoration: none; font-size: 1.3em; font-weight: 700; margin-bottom: 15px; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
+        .download-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .action-buttons a {
+            flex-grow: 1;
+            text-align: center;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+            color: var(--silver);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .action-buttons a:hover { background-color: #333; color: var(--gold); }
+
+        .meta-info { list-style: none; text-align: left; color: var(--silver); }
+        .meta-info li { 
+            padding: 8px 0; 
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .meta-info li:last-child { border-bottom: none; }
+        .meta-info span { 
+            color: var(--white); 
+            font-weight: 600;
+            text-align: right;
+            flex-basis: 60%;
+        }
+
+        /* Right Panel - Details & Tabs */
+        .details-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; }
+        .tabs-nav { display: flex; border-bottom: 2px solid #2a2a2a; margin-bottom: 25px; }
+        .tabs-nav button { background: none; border: none; color: var(--silver); font-size: 1.1em; padding: 15px 25px; cursor: pointer; position: relative; transition: color 0.3s ease; }
+        .tabs-nav button:hover { color: var(--white); }
+        .tabs-nav button.active { color: var(--gold); font-weight: 600; }
+        .tabs-nav button.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-content h2 { font-size: 1.8em; color: var(--white); margin-bottom: 15px; }
+        .tab-content p, .tab-content ul { color: var(--silver); margin-bottom: 15px; }
+        .tab-content ul { padding-left: 20px; }
+
+        .app-description-content h3 {
+            color: var(--white);
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        .app-description-content ul {
+            list-style-type: disc;
+            padding-left: 25px;
+        }
+        
+        .screenshot-gallery { column-count: 3; column-gap: 15px; }
+        .screenshot-gallery img { width: 100%; height: auto; border-radius: 10px; cursor: pointer; margin-bottom: 15px; break-inside: avoid; }
+
+        .info-box {
+            background: #111;
+            border-left: 3px solid var(--gold);
+            padding: 20px 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+        }
+        .info-box h2 { color: var(--gold); font-size: 1.6em; margin-bottom: 15px; }
+        .info-box p { margin-bottom: 15px; color: var(--silver); }
+        .info-box ul { list-style: none; padding-left: 0; }
+        .info-box ul li {
+            padding-left: 25px;
+            position: relative;
+            margin-bottom: 10px;
+            color: var(--silver);
+        }
+        .info-box ul li::before { content: '✔'; color: var(--gold); position: absolute; left: 0; font-weight: bold; }
+        .info-box ul li b { color: var(--white); }
+
+        .versions-table { width: 100%; border-collapse: collapse; }
+        .versions-table th, .versions-table td { padding: 12px; text-align: left; border-bottom: 1px solid #2a2a2a; }
+        .versions-table th { color: var(--gold); }
+        .versions-table td a { color: var(--gold); text-decoration: none; font-weight: 600; }
+
+        /* Footer */
+        .main-footer { background-color: var(--dark-gray); padding: 40px 20px; text-align: center; color: var(--silver); margin-top: 60px; }
+        .footer-links { margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 20px; }
+        .footer-links a { color: var(--silver); text-decoration: none; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--gold); }
+
+        /* Back to Top Button */
+        #backToTop { position: fixed; right: 30px; bottom: 30px; background: var(--gold); color: var(--black); width: 50px; height: 50px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 1.5em; cursor: pointer; z-index: 999; opacity: 0.8; transition: opacity 0.3s, bottom 0.4s ease-in-out; }
+        #backToTop:hover { opacity: 1; }
+        
+        /* Media Queries */
+        @media (max-width: 992px) {
+            .download-layout { grid-template-columns: 1fr; }
+            .screenshot-gallery { column-count: 2; }
+        }
+        @media (max-width: 768px) {
+            .search-bar { order: 2; width: auto; max-width: 400px; flex-grow: 1; }
+            .hamburger-menu { order: 3; }
+            .logo { order: 1; }
+            .info-panel, .details-panel { padding: 20px; }
+            .info-panel h1 { font-size: 1.6em; }
+            .tab-content h2 { font-size: 1.5em; }
+            .tabs-nav { flex-wrap: wrap; justify-content: center; }
+            .tabs-nav button { padding: 10px 12px; font-size: 0.9em; }
+            .screenshot-gallery { column-count: 2; }
+            .versions-table thead { display: none; }
+            .versions-table tr { display: block; margin-bottom: 15px; border: 1px solid #2a2a2a; border-radius: 10px; padding: 10px; }
+            .versions-table td { display: block; text-align: right; padding: 8px 5px; border-bottom: none; }
+            .versions-table td:last-child { padding-bottom: 0; }
+            .versions-table td::before { content: attr(data-label); float: left; font-weight: bold; color: var(--silver); }
+        }
+         @media (max-width: 480px) {
+             .screenshot-gallery { column-count: 1; }
+        }
+        @media (min-width: 1024px) {
+            .hamburger-menu { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="dmca.html">DMCA</a></li>
+        </ul>
+    </nav>
+    
+    <main>
+        <div class="container">
+            <div class="download-layout">
+                <aside class="info-panel">
+                    <img src="icon.png" alt="Clash Of Clans Icon" class="app-icon">
+                    <h1>Clash Of Clans [Private Server]</h1>
+                    <div class="rating">
+                        <div class="stars-outer">
+                            <div class="stars-inner" style="width: 92%;"></div>
+                        </div>
+                        <span class="rating-text">4.6</span>
+                    </div>
+                    <div class="safety-badge">
+                        <span class="badge-icon">🛡️</span>
+                        <span class="badge-text">100% Safe & Tested By Community</span>
+                    </div>
+                    <a href="clash-of-clans-mod.apk" class="download-button">Download APK (350 MB)</a>
+                    <div class="action-buttons">
+                        <a href="#" class="wishlist-btn">❤ Wishlist</a>
+                        <a href="#" class="report-btn">⚑ Report</a>
+                    </div>
+                    <ul class="meta-info">
+                        <li>Version: <span>16.253.5</span></li>
+                        <li>Category: <span>Strategy</span></li>
+                        <li>Developer: <span>Supercell</span></li>
+                        <li>Downloads: <span>10.5 Million</span></li>
+                        <li>Updated: <span>Oct 15, 2025</span></li>
+                    </ul>
+                </aside>
+
+                <section class="details-panel">
+                    <div class="tabs-nav">
+                        <button class="tab-button active" data-tab="description">Description</button>
+                        <button class="tab-button" data-tab="screenshots">Screenshots</button>
+                        <button class="tab-button" data-tab="versions">Versions</button>
+                        <button class="tab-button" data-tab="comments">Comments</button>
+                    </div>
+
+                    <div id="description" class="tab-content active">
+                        <div class="info-box">
+                            <h2>Mod Information</h2>
+                            <p>This modded version connects you to a private server with incredible benefits:</p>
+                            <ul>
+                                <li><b>Private Server:</b> Play on a separate server, which does not affect your original game.</li>
+                                <li><b>Unlimited Resources:</b> Get unlimited Gems, Gold, Elixir, and Dark Elixir to build and upgrade instantly.</li>
+                                <li><b>Everything Unlocked:</b> All troops, heroes, and buildings are available for you to use and experiment with.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="app-description-content">
+                            <h2>About This Game</h2>
+                            <p>Join millions of players worldwide as you build your village, raise a clan, and compete in epic Clan Wars!</p>
+                            <p>Mustachioed Barbarians, fire wielding Wizards, and other unique troops are waiting for you! Enter the world of Clash!</p>
+                            
+                            <h3>Classic Features:</h3>
+                            <ul>
+                                <li>Join a Clan of fellow players or start your own and invite friends.</li>
+                                <li>Fight in Clan Wars as a team against millions of active players across the globe.</li>
+                                <li>Test your skills in the competitive Clan War Leagues and prove you’re the best.</li>
+                                <li>Plan your unique battle strategy with countless combinations of Spells, Troops, and Heroes!</li>
+                                <li>Compete with the best players from around the world and rise to the top of the Leaderboard in Legend League.</li>
+                                <li>Defend against enemy attacks with a multitude of Towers, Cannons, Bombs, Traps, Mortars, and Walls.</li>
+                                <li>Unlock epic Heroes like the Barbarian King, Archer Queen, Grand Warden, and Royal Champion.</li>
+                                <li>Journey to the Builder Base and discover new buildings and characters in a mysterious world.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="screenshots" class="tab-content">
+                        <h2>Screenshots</h2>
+                         <div class="screenshot-gallery">
+                            <img src="screenshot-1.png" alt="Screenshot 1">
+                            <img src="screenshot-2.png" alt="Screenshot 2">
+                            <img src="screenshot-3.png" alt="Screenshot 3">
+                        </div>
+                    </div>
+                    
+                    <div id="versions" class="tab-content">
+                        <h2>Version History</h2>
+                        <table class="versions-table">
+                            <thead>
+                                <tr>
+                                    <th>Version</th>
+                                    <th>Date</th>
+                                    <th>Download</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-label="Version">16.253.5 (Mod)</td>
+                                    <td data-label="Date">Oct 15, 2025</td>
+                                    <td data-label="Link"><a href="clash-of-clans-mod.apk">Download</a></td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Version">16.253.5 (Original)</td>
+                                    <td data-label="Date">Oct 15, 2025</td>
+                                    <td data-label="Link"><a href="clash-of-clans-original.apk">Download</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="comments" class="tab-content">
+                        <h2>Community Comments</h2>
+                        <p>Coming soon! A section for user reviews and discussions will be available here.</p>
+                    </div>
+
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="/about.html">About Us</a>
+                <a href="/faq.html">FAQ</a>
+                <a href="/dmca.html">DMCA</a>
+                <a href="/privacy.html">Privacy Policy</a>
+                <a href="/terms.html">Terms of Service</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile Menu Toggle
+            const hamburger = document.getElementById('hamburger');
+            const mobileNav = document.getElementById('mobileNav');
+            hamburger.addEventListener('click', () => {
+                mobileNav.style.display = mobileNav.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Tab Functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTabId = button.getAttribute('data-tab');
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    button.classList.add('active');
+                    document.getElementById(targetTabId).classList.add('active');
+                });
+            });
+
+            // Animated Search Bar
+            const searchInput = document.getElementById('animated-search');
+            if (searchInput) {
+                const searchTerms = ["Clash Of Clans...", "Asphalt Racers...", "Pixel Editor...", "Roblox..."];
+                const themeColors = ["var(--gold)", "var(--silver)"];
+                let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false, typingTimeout;
+                function typeAnimation() {
+                    const fullTerm = searchTerms[termIndex];
+                    if (isDeleting) {
+                        currentTerm = fullTerm.substring(0, letterIndex - 1); letterIndex--;
+                    } else {
+                        currentTerm = fullTerm.substring(0, letterIndex + 1); letterIndex++;
+                    }
+                    searchInput.placeholder = currentTerm;
+                    let typeSpeed = isDeleting ? 60 : 120;
+                    if (!isDeleting && letterIndex === fullTerm.length) {
+                        isDeleting = true; typeSpeed = 1500;
+                    } else if (isDeleting && letterIndex === 0) {
+                        isDeleting = false; termIndex = (termIndex + 1) % searchTerms.length;
+                        searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
+                        typeSpeed = 300;
+                    }
+                    typingTimeout = setTimeout(typeAnimation, typeSpeed);
+                }
+                typeAnimation();
+                searchInput.addEventListener('focus', () => { clearTimeout(typingTimeout); searchInput.placeholder = "Search for mods..."; });
+                searchInput.addEventListener('blur', () => { if (searchInput.value === '') { searchInput.placeholder = ""; letterIndex = 0; isDeleting = false; typeAnimation(); }});
+            }
+
+            // Back to Top Button
+            const backToTopButton = document.getElementById('backToTop');
+            window.onscroll = function() {
+                if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                    backToTopButton.style.display = "flex";
+                } else {
+                    backToTopButton.style.display = "none";
+                }
+            };
+            backToTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        });
+    </script>
+
+</body>
+</html>

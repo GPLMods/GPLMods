@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - GPL Mods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MASTER STYLESHEET -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="/index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="header-actions">
+                <a href="#" class="btn btn-login" id="loginBtnHeader">Login</a>
+                <a href="#" class="btn btn-signup" id="signupBtnHeader">Sign Up</a>
+            </div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="/index.html">Home</a></li>
+            <li class="has-submenu">
+                <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
+                <ul class="sub-menu">
+                    <li><a href="/pages/android/all-android-mods.html">Android</a></li>
+                    <li><a href="/pages/ios/ipa/all-ipa-mods.html">iOS - Jailed (IPA)</a></li>
+                    <li><a href="/pages/ios/deb/all-ios-deb.html">iOS - Jailbroken (DEB)</a></li>
+                    <li><a href="/pages/wordpress/all-wordpress-mods.html">WordPress</a></li>
+                    <li><a href="/pages/windows/all-windows-mod.html">Windows</a></li>
+                </ul>
+            </li>
+            <li><a href="/pages/faq.html">FAQ</a></li>
+            <li><a href="/pages/dmca.html">DMCA</a></li>
+            <hr style="border-color: #333; margin: 20px 0;">
+            <li><a href="#" id="loginBtnMobile">Login</a></li>
+            <li><a href="#" id="signupBtnMobile">Sign Up</a></li>
+        </ul>
+    </nav>
+    
+    <main>
+        <div class="container">
+            <header class="profile-header">
+                <img src="https://via.placeholder.com/150/333/FFD700?text=U" alt="User Avatar" class="profile-avatar">
+                <h1>GPL_Uploader</h1>
+                <p class="user-role">Community Member</p>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Mods Uploaded</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">1.2M</div>
+                        <div class="stat-label">Total Downloads</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">Oct '25</div>
+                        <div class="stat-label">Member Since</div>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <a href="/accounts/profile-settings-layout.html" class="profile-button btn-primary">Edit Profile</a>
+                    <a href="/accounts/user-uploads-layout.html" class="profile-button btn-secondary">My Uploads</a>
+                </div>
+            </header>
+
+            <section class="profile-content">
+                <div class="tabs-nav">
+                    <button class="tab-button active" data-tab="overview">Overview</button>
+                    <button class="tab-button" data-tab="uploads">Uploads</button>
+                    <button class="tab-button" data-tab="comments">Comments</button>
+                </div>
+
+                <div id="overview" class="tab-content active">
+                    <h2>About Me</h2>
+                    <p>This user hasn't written a bio yet. They are a valued member of the GPL Mods community, contributing mods and helping others.</p>
+                </div>
+
+                <div id="uploads" class="tab-content">
+                    <h2>Uploaded Mods</h2>
+                    <div class="mod-grid">
+                        <!-- Uploaded Mod 1 -->
+                        <a href="/mods/android/roblox/roblox.html" class="mod-card-link">
+                            <div class="mod-card">
+                                <img src="https://via.placeholder.com/280x150/8B008B/FFFFFF?text=Galaxy+Invaders" alt="Galaxy Invaders" class="mod-card-image">
+                                <div class="mod-card-content">
+                                    <h3>Roblox [Mod Menu]</h3>
+                                    <p>Version: 3.2.5</p>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Uploaded Mod 2 -->
+                         <a href="/mods/android/kinemaster/kinemaster.html" class="mod-card-link">
+                            <div class="mod-card">
+                                <img src="https://via.placeholder.com/280x150/FF4500/FFFFFF?text=Asphalt+Racers" alt="Asphalt Racers" class="mod-card-image">
+                                <div class="mod-card-content">
+                                    <h3>Kinemaster [Unlocked]</h3>
+                                    <p>Version: 1.5.0</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div id="comments" class="tab-content">
+                    <h2>Recent Comments</h2>
+                    <p>This user has not made any public comments yet.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="/pages/about.html">About Us</a>
+                <a href="/pages/faq.html">FAQ</a>
+                <a href="/pages/dmca.html">DMCA</a>
+                <a href="/pages/privacy.html">Privacy Policy</a>
+                <a href="/pages/terms.html">Terms of Service</a>
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- MASTER JAVASCRIPT -->
+    <script src="/js/script.js"></script>
+</body>
+</html>
