@@ -3,17 +3,19 @@
    ===================================================================
    1.  Global DOMContentLoaded Wrapper
    2.  Mobile Menu & Sidebar Accordion
-   3.  Animated Search Bar Placeholder (COLOR CYCLE FIXED)
+   3.  Animated Search Bar Placeholder
    4.  Back to Top Button & Conditional Banner
    5.  Advanced Tab Navigation (Homepage & Mod Pages)
    6.  Login/Sign-Up Modal Logic
-   7.  FORM SIMULATIONS & HELPERS
-       - Form Submissions (Login, Signup, Profile, etc.)
+   7.  FORM FUNCTIONALITY & HELPERS
+       - Form Submissions (Simulations for Login, Profile, etc.)
+       - **NEW:** Real Mod Upload Form Logic (Async/Fetch)
        - Live Avatar Preview
        - Upload Page Dynamic Categories & File Name Display
        - Delete Item Confirmation
        - Download Button Tab Link
    8.  FAQ Accordion
+   9.  Special Page Scripts (Countdown Timer)
    =================================================================== */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -36,20 +38,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 3. Animated Search Bar Placeholder (DEFINITIVE FIX) ---
+    // --- 3. Animated Search Bar Placeholder ---
     const searchInput = document.getElementById('animated-search');
     if (searchInput) {
         const searchTerms = ["Kinemaster...", "Roblox...", "Minecraft...", "Spotify...", "Elementor..."];
-        const themeColors = ["var(--gold)", "var(--silver)"]; // Gold and Silver colors
-        let termIndex = 0;
-        let letterIndex = 0;
-        let currentTerm = '';
-        let isDeleting = false;
-        let typingTimeout;
-
+        const themeColors = ["var(--gold)", "var(--silver)"];
+        let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false, typingTimeout;
+        
         function typeAnimation() {
             const fullTerm = searchTerms[termIndex];
-            
             if (isDeleting) {
                 currentTerm = fullTerm.substring(0, letterIndex - 1);
                 letterIndex--;
@@ -57,45 +54,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentTerm = fullTerm.substring(0, letterIndex + 1);
                 letterIndex++;
             }
-            
             searchInput.placeholder = currentTerm;
             
             let typeSpeed = isDeleting ? 60 : 120;
             
             if (!isDeleting && letterIndex === fullTerm.length) {
-                isDeleting = true;
-                typeSpeed = 1500;
+                isDeleting = true; typeSpeed = 1500;
             } else if (isDeleting && letterIndex === 0) {
                 isDeleting = false;
                 termIndex = (termIndex + 1) % searchTerms.length;
-                // THIS LINE FIXES THE COLOR CYCLING
                 searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
                 typeSpeed = 300;
             }
-            
             typingTimeout = setTimeout(typeAnimation, typeSpeed);
         }
-
         typeAnimation();
 
-        searchInput.addEventListener('focus', () => {
-            clearTimeout(typingTimeout);
-            searchInput.placeholder = "Search for mods...";
-        });
-
-        searchInput.addEventListener('blur', () => {
-            if (searchInput.value === '') {
-                searchInput.placeholder = ""; // Clear it before restarting
-                clearTimeout(typingTimeout); // Ensure no old timer is running
-                letterIndex = 0;
-                isDeleting = false;
-                termIndex = 0; // Reset index to start from the beginning
-                 searchInput.style.setProperty('--placeholder-color', themeColors[0]);
-                typeAnimation();
-            }
-        });
+        searchInput.addEventListener('focus', () => { clearTimeout(typingTimeout); searchInput.placeholder = "Search for mods..."; });
+        searchInput.addEventListener('blur', () => { if (searchInput.value === '') { searchInput.placeholder = ""; letterIndex = 0; isDeleting = false; typeAnimation(); } });
     }
-
 
     // --- 4. Back to Top Button & Conditional Banner ---
     const backToTopButton = document.getElementById('backToTop');
@@ -118,131 +95,136 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- 5. Advanced Tab Navigation (Homepage & Mod Pages) ---
-    function initializeTabs(navElement, highlightElement, isMainTabs) {
+    function initializeTabs(navElement, highlightElement) {
         if (!navElement || !highlightElement) return;
-
         const tabButtons = navElement.querySelectorAll('.tab-button');
-        
-        function moveHighlight(targetTab) {
+        const moveHighlight = (targetTab) => {
             if (!targetTab) return;
             const navRect = navElement.getBoundingClientRect();
             const targetRect = targetTab.getBoundingClientRect();
-            
-            requestAnimationFrame(() => {
-                highlightElement.style.width = `${targetRect.width}px`;
-                highlightElement.style.transform = `translateX(${targetRect.left - navRect.left + navElement.scrollLeft}px)`;
-            });
-        }
-
-        const initialActiveTab = navElement.querySelector('.tab-button.active');
-        if (initialActiveTab) {
-            setTimeout(() => moveHighlight(initialActiveTab), 150);
-        }
-
+            highlightElement.style.width = `${targetRect.width}px`;
+            highlightElement.style.transform = `translateX(${targetRect.left - navRect.left + navElement.scrollLeft}px)`;
+        };
         tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
+            button.addEventListener('click', () => moveHighlight(button));
+        });
+        window.addEventListener('resize', () => moveHighlight(navElement.querySelector('.tab-button.active')));
+        const activeTab = navElement.querySelector('.tab-button.active');
+        if (activeTab) setTimeout(() => moveHighlight(activeTab), 150);
+    }
+    const mainTabNav = document.getElementById('main-tabs-nav');
+    const mainTabHighlight = document.getElementById('main-tab-highlight');
+    if (mainTabNav) {
+        initializeTabs(mainTabNav, mainTabHighlight);
+        mainTabNav.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 const targetTabId = button.dataset.tab;
-                
-                button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                moveHighlight(button);
-                
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-                if (isMainTabs) {
-                    const iosSubTabsContainer = document.getElementById('ios-sub-tabs-container');
-                    if (targetTabId === 'ios') {
-                        if(iosSubTabsContainer) iosSubTabsContainer.style.display = 'block';
-                        const firstSubTabButton = document.querySelector('#ios-tabs-nav .tab-button');
-                        if (firstSubTabButton) firstSubTabButton.click();
-                        else document.getElementById('ios-jailed-mods')?.classList.add('active');
-                    } else {
-                       if(iosSubTabsContainer) iosSubTabsContainer.style.display = 'none';
-                       document.getElementById(targetTabId + '-mods')?.classList.add('active');
+                const iosSubTabs = document.getElementById('ios-sub-tabs-container');
+                if (targetTabId === 'ios') {
+                    if (iosSubTabs) {
+                        iosSubTabs.style.display = 'block';
+                        document.querySelector('#ios-tabs-nav .tab-button')?.click();
                     }
                 } else {
-                     document.getElementById(targetTabId + '-mods')?.classList.add('active');
-                    if (targetTabId.startsWith('ios-')) {
-                        const mainIosTab = document.querySelector('#main-tabs-nav .tab-button[data-tab="ios"]');
-                        if (mainIosTab && !mainIosTab.classList.contains('active')) {
-                             document.querySelectorAll('#main-tabs-nav .tab-button').forEach(btn => btn.classList.remove('active'));
-                             mainIosTab.classList.add('active');
-                             moveHighlight(mainIosTab);
-                        }
-                    }
+                    if (iosSubTabs) iosSubTabs.style.display = 'none';
+                    document.getElementById(targetTabId + '-mods')?.classList.add('active');
                 }
             });
         });
-        window.addEventListener('resize', () => {
-            const activeTab = navElement.querySelector('.tab-button.active');
-            if (activeTab) moveHighlight(activeTab);
+    }
+    const iosTabNav = document.getElementById('ios-tabs-nav');
+    const iosTabHighlight = document.getElementById('ios-tab-highlight');
+    if (iosTabNav) {
+        initializeTabs(iosTabNav, iosTabHighlight);
+        iosTabNav.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(button.dataset.tab + '-mods')?.classList.add('active');
+            });
         });
     }
-
-    initializeTabs(document.getElementById('main-tabs-nav'), document.getElementById('main-tab-highlight'), true);
-    initializeTabs(document.getElementById('ios-tabs-nav'), document.getElementById('ios-tab-highlight'), false);
     
     // For mod detail pages
     const detailTabsNav = document.querySelector('.details-panel .tabs-nav');
     if (detailTabsNav) {
-        const detailTabButtons = detailTabsNav.querySelectorAll('.tab-button');
-        detailTabButtons.forEach(button => {
+        detailTabsNav.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
-                const targetTabId = button.getAttribute('data-tab');
-                detailTabButtons.forEach(btn => btn.classList.remove('active'));
+                detailTabsNav.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.details-panel .tab-content').forEach(content => content.classList.remove('active'));
                 button.classList.add('active');
-                document.getElementById(targetTabId).classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
             });
         });
     }
 
-
     // --- 6. Login/Sign-Up Modal Logic ---
     const loginModal = document.getElementById('loginModal');
     const signupModal = document.getElementById('signupModal');
-    const showModal = (modal) => modal && modal.classList.add('visible');
-    const hideModal = (modal) => modal && modal.classList.remove('visible');
+    const showModal = (modal) => modal?.classList.add('visible');
+    const hideModal = (modal) => modal?.classList.remove('visible');
     document.querySelectorAll('#loginBtnHeader, #loginBtnMobile').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); showModal(loginModal); }));
     document.querySelectorAll('#signupBtnHeader, #signupBtnMobile').forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); showModal(signupModal); }));
     document.querySelectorAll('#loginModalClose, #signupModalClose').forEach(btn => btn.addEventListener('click', () => { hideModal(loginModal); hideModal(signupModal); }));
-    [loginModal, signupModal].forEach(modal => { if(modal) modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(modal); }); });
-    const switchToSignup = document.getElementById('switchToSignup');
-    const switchToLogin = document.getElementById('switchToLogin');
-    if (switchToSignup) switchToSignup.addEventListener('click', (e) => { e.preventDefault(); hideModal(loginModal); showModal(signupModal); });
-    if (switchToLogin) switchToLogin.addEventListener('click', (e) => { e.preventDefault(); hideModal(signupModal); showModal(loginModal); });
+    [loginModal, signupModal].forEach(modal => modal?.addEventListener('click', (e) => { if (e.target === modal) hideModal(modal); }));
+    document.getElementById('switchToSignup')?.addEventListener('click', (e) => { e.preventDefault(); hideModal(loginModal); showModal(signupModal); });
+    document.getElementById('switchToLogin')?.addEventListener('click', (e) => { e.preventDefault(); hideModal(signupModal); showModal(loginModal); });
 
-    // --- 7. FORM SIMULATIONS & HELPERS ---
+    // --- 7. FORM FUNCTIONALITY & HELPERS ---
     const loginForm = document.getElementById('login-form') || document.getElementById('loginForm');
-    if(loginForm) loginForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Login successful! (Simulation)'); if(loginModal) {hideModal(loginModal); loginForm.reset();} else { window.location.href = 'index.html'; }});
-    const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
-    if(signupForm) signupForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Account created! (Simulation)'); if(signupModal) {hideModal(signupModal); signupForm.reset();} else { window.location.href = 'login.html'; }});
-    const profileDetailsForm = document.getElementById('profile-details-form');
-    if(profileDetailsForm) profileDetailsForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Profile details updated successfully!'); });
-    const passwordChangeForm = document.getElementById('password-change-form');
-    if(passwordChangeForm) passwordChangeForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Password changed successfully!'); e.target.reset(); });
-    const deleteAccountBtn = document.getElementById('delete-account-btn');
-    if(deleteAccountBtn) deleteAccountBtn.addEventListener('click', () => { if (confirm('Are you absolutely sure you want to delete your account? This is permanent.')) { if(confirm('FINAL WARNING: All data will be erased.')) { alert('Account deleted.'); } } });
+    if (loginForm) loginForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Login successful! (Simulation)'); if(loginModal) {hideModal(loginModal); loginForm.reset();} else { window.location.href = 'index.html'; } });
     
+    const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
+    if (signupForm) signupForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Account created successfully!'); if(signupModal) {hideModal(signupModal); signupForm.reset();} else { window.location.href = 'login.html'; } });
+    
+    document.getElementById('profile-details-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Profile details updated successfully!'); });
+    document.getElementById('password-change-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Password changed successfully!'); e.target.reset(); });
+    document.getElementById('delete-account-btn')?.addEventListener('click', () => { if (confirm('Are you sure you want to permanently delete your account?')) alert('Account deleted.'); });
+    
+    // --- **NEW** Mod Upload Page Form Logic ---
     const modForm = document.getElementById('modForm');
     if (modForm) {
-        modForm.addEventListener('submit', function(event) {
+        modForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            alert('Thank you! Your mod has been submitted for review.');
-            modForm.reset();
-            document.getElementById('modFileName').textContent = 'No file selected';
-            document.getElementById('imageFileName').textContent = 'No file selected';
-            document.getElementById('modCategory').innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
-            document.getElementById('modCategory').disabled = true;
+            const fileInput = document.getElementById('modFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            alert('Uploading and scanning file... This may take a moment.');
+            const formData = new FormData();
+            formData.append('modFile', file);
+            // Example of adding other form data:
+            // formData.append('modName', document.getElementById('modName').value);
+            try {
+                // IMPORTANT: '/scan-file' is a placeholder. You need a real server endpoint here.
+                const response = await fetch('/scan-file', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (!response.ok) {
+                    alert(`Error: ${result.message}`);
+                } else {
+                    alert(`Success: ${result.message}`);
+                    modForm.reset();
+                    // Reset UI elements after successful upload
+                    document.getElementById('modFileName').textContent = 'No file selected';
+                    document.getElementById('imageFileName').textContent = 'No file selected';
+                    const categorySelect = document.getElementById('modCategory');
+                    if (categorySelect) {
+                       categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
+                       categorySelect.disabled = true;
+                    }
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('File upload failed. This is a frontend demonstration. Please check the console for details.');
+            }
         });
     }
 
     const avatarInput = document.getElementById('avatar-input');
     const avatarPreview = document.getElementById('avatar-preview');
-    if(avatarInput && avatarPreview) {
+    if (avatarInput) {
         avatarInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
@@ -251,11 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     const platformSelect = document.getElementById('modPlatform');
     const categorySelect = document.getElementById('modCategory');
-    if(platformSelect && categorySelect) {
-        const categoriesByPlatform = { android: ['Game - Action', 'Game - Adventure', 'App - Productivity', 'App - Tools'], 'ios-jailed': ['Game', 'App', 'Social', 'Other'], 'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget'], windows: ['Game', 'Software', 'Utility'], wordpress: ['Plugin', 'Theme'] };
+    if (platformSelect && categorySelect) {
+        const categoriesByPlatform = { android: ['Game', 'App', 'Tools'], 'ios-jailed': ['Game', 'App'], 'ios-jailbroken': ['Tweak', 'Theme', 'Utility'], windows: ['Game', 'Software'], wordpress: ['Plugin', 'Theme'] };
         platformSelect.addEventListener('change', function() {
             const categories = categoriesByPlatform[this.value] || [];
             categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
@@ -263,42 +245,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (categories.length > 0) {
                 categorySelect.disabled = false;
                 categorySelect.innerHTML = '<option value="" disabled selected>Select a category...</option>';
-                categories.forEach(cat => categorySelect.add(new Option(cat, cat.toLowerCase().replace(/ /g, '-'))));
+                categories.forEach(cat => categorySelect.add(new Option(cat, cat.toLowerCase())));
             }
         });
     }
     
-    function setupFileInput(inputId, displayId) { const input = document.getElementById(inputId); const display = document.getElementById(displayId); if (input && display) input.addEventListener('change', function() { display.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected'; }); }
+    function setupFileInput(inputId, displayId) {
+        const input = document.getElementById(inputId);
+        const display = document.getElementById(displayId);
+        if (input && display) {
+            input.addEventListener('change', function() { display.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected'; });
+        }
+    }
     setupFileInput('modFile', 'modFileName');
     setupFileInput('imageFile', 'imageFileName');
 
     const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => { button.addEventListener('click', function(event) { event.preventDefault(); if (confirm('Are you sure you want to delete this mod?')) { const item = this.closest('.upload-item'); item.style.opacity = '0'; setTimeout(() => item.remove(), 500); } }); });
-
-    const downloadButtonTab = document.querySelector('.download-button[href="#versions"]');
-    if (downloadButtonTab) {
-        downloadButtonTab.addEventListener('click', function(e) {
-            e.preventDefault();
-            const versionsTabButton = document.querySelector('.tab-button[data-tab="versions"]');
-            if (versionsTabButton) versionsTabButton.click();
-            document.querySelector('.details-panel')?.scrollIntoView({ behavior: 'smooth' });
-        });
-    }
+    deleteButtons.forEach(button => { button.addEventListener('click', function(event) { event.preventDefault(); if (confirm('Are you sure you want to delete this?')) { this.closest('.upload-item')?.remove(); alert('Item deleted.'); } }); });
+    
+    document.querySelector('.download-button[href="#versions"]')?.addEventListener('click', (e) => { e.preventDefault(); document.querySelector('.tab-button[data-tab="versions"]')?.click(); document.querySelector('.details-panel')?.scrollIntoView({ behavior: 'smooth' }); });
 
     // --- 8. FAQ Accordion ---
     const faqItems = document.querySelectorAll('.faq-item');
-    faqItems.forEach(item => {
-        const question = item.querySelector('.faq-question');
-        if (question) {
-            question.addEventListener('click', () => {
-                const isAlreadyActive = item.classList.contains('active');
-                faqItems.forEach(i => i.classList.remove('active'));
-                if (!isAlreadyActive) item.classList.add('active');
-            });
-        }
-    });
-
-    // Countdown timer for coming-soon.html
+    faqItems.forEach(item => { item.querySelector('.faq-question')?.addEventListener('click', () => { const active = item.classList.contains('active'); faqItems.forEach(i => i.classList.remove('active')); if (!active) item.classList.add('active'); }); });
+    
+    // --- 9. Special Page Scripts (Countdown) ---
     const daysEl = document.getElementById('days');
     if (daysEl) {
         const countDownDate = new Date();
@@ -312,12 +283,5 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('seconds').textContent = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
         }, 1000);
     }
-    const notifyForm = document.getElementById('notify-form');
-    if (notifyForm) {
-        notifyForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert('Thank you! You will be notified on launch.');
-            notifyForm.reset();
-        });
-    }
+    document.getElementById('notify-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Thank you! You will be notified on launch.'); e.target.reset(); });
 });
