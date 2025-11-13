@@ -6,16 +6,15 @@
    3.  Animated Search Bar Placeholder
    4.  Back to Top Button & Conditional Banner
    5.  Advanced Tab Navigation (Homepage & Mod Pages)
-   6.  Login/Sign-Up Modal Logic
-   7.  FORM FUNCTIONALITY & HELPERS
+   6.  DYNAMIC MOD LOADING (API Integration)
+   7.  Login/Sign-Up Modal Logic
+   8.  FORM FUNCTIONALITY & HELPERS
        - Form Submissions (Simulations for Login, Profile, etc.)
-       - **NEW:** Real Mod Upload Form Logic (Async/Fetch)
+       - Real Mod Upload Form Logic (Async/Fetch)
        - Live Avatar Preview
-       - Upload Page Dynamic Categories & File Name Display
-       - Delete Item Confirmation
-       - Download Button Tab Link
-   8.  FAQ Accordion
-   9.  Special Page Scripts (Countdown Timer)
+       - Upload Page Helpers
+   9.  FAQ Accordion
+   10. Special Page Scripts (Countdown Timer)
    =================================================================== */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -94,57 +93,52 @@ document.addEventListener('DOMContentLoaded', function() {
         backToTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
 
-    // --- 5. Advanced Tab Navigation (Homepage & Mod Pages) ---
+    // --- 5. Advanced Tab Navigation ---
     function initializeTabs(navElement, highlightElement) {
         if (!navElement || !highlightElement) return;
         const tabButtons = navElement.querySelectorAll('.tab-button');
         const moveHighlight = (targetTab) => {
             if (!targetTab) return;
-            const navRect = navElement.getBoundingClientRect();
-            const targetRect = targetTab.getBoundingClientRect();
-            highlightElement.style.width = `${targetRect.width}px`;
-            highlightElement.style.transform = `translateX(${targetRect.left - navRect.left + navElement.scrollLeft}px)`;
+            requestAnimationFrame(() => {
+                const navRect = navElement.getBoundingClientRect();
+                const targetRect = targetTab.getBoundingClientRect();
+                highlightElement.style.width = `${targetRect.width}px`;
+                highlightElement.style.transform = `translateX(${targetRect.left - navRect.left + navElement.scrollLeft}px)`;
+            });
         };
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => moveHighlight(button));
-        });
+        tabButtons.forEach(button => button.addEventListener('click', () => moveHighlight(button)));
         window.addEventListener('resize', () => moveHighlight(navElement.querySelector('.tab-button.active')));
         const activeTab = navElement.querySelector('.tab-button.active');
         if (activeTab) setTimeout(() => moveHighlight(activeTab), 150);
     }
-    const mainTabNav = document.getElementById('main-tabs-nav');
-    const mainTabHighlight = document.getElementById('main-tab-highlight');
-    if (mainTabNav) {
-        initializeTabs(mainTabNav, mainTabHighlight);
-        mainTabNav.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                const targetTabId = button.dataset.tab;
-                const iosSubTabs = document.getElementById('ios-sub-tabs-container');
-                if (targetTabId === 'ios') {
-                    if (iosSubTabs) {
-                        iosSubTabs.style.display = 'block';
-                        document.querySelector('#ios-tabs-nav .tab-button')?.click();
-                    }
-                } else {
-                    if (iosSubTabs) iosSubTabs.style.display = 'none';
-                    document.getElementById(targetTabId + '-mods')?.classList.add('active');
-                }
-            });
-        });
-    }
-    const iosTabNav = document.getElementById('ios-tabs-nav');
-    const iosTabHighlight = document.getElementById('ios-tab-highlight');
-    if (iosTabNav) {
-        initializeTabs(iosTabNav, iosTabHighlight);
-        iosTabNav.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                document.getElementById(button.dataset.tab + '-mods')?.classList.add('active');
-            });
-        });
-    }
     
+    const mainTabNav = document.getElementById('main-tabs-nav');
+    const iosTabNav = document.getElementById('ios-tabs-nav');
+    
+    if (mainTabNav) initializeTabs(mainTabNav, document.getElementById('main-tab-highlight'));
+    if (iosTabNav) initializeTabs(iosTabNav, document.getElementById('ios-tab-highlight'));
+
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const scope = button.closest('.tabs-nav').id.includes('main') ? '#main-tabs-nav' : '#ios-tabs-nav';
+            document.querySelectorAll(`${scope} .tab-button`).forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const targetId = button.dataset.tab + '-mods';
+            const targetContent = document.getElementById(targetId);
+
+            if (targetContent) {
+                targetContent.classList.add('active');
+            } else if (button.dataset.tab === 'ios') {
+                const iosSubTabs = document.getElementById('ios-sub-tabs-container');
+                if (iosSubTabs) iosSubTabs.style.display = 'block';
+                document.querySelector('#ios-tabs-nav .tab-button')?.click(); // Trigger click on first iOS sub-tab
+            }
+        });
+    });
+
     // For mod detail pages
     const detailTabsNav = document.querySelector('.details-panel .tabs-nav');
     if (detailTabsNav) {
@@ -158,7 +152,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 6. Login/Sign-Up Modal Logic ---
+    // --- 6. DYNAMIC MOD LOADING (API Integration) ---
+    async function loadModsForPlatform(platform, containerSelector) {
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+        container.innerHTML = '<p style="color: var(--silver); padding-left: 15px;">Loading mods...</p>';
+        try {
+            // NOTE: This will fail unless you have a server running at this endpoint.
+            const response = await fetch(`/api/mods/${platform}`);
+            if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+            const mods = await response.json();
+
+            container.innerHTML = '';
+            if (!mods || mods.length === 0) {
+                container.innerHTML = '<p style="color: var(--silver); padding-left: 15px;">No mods found for this category yet.</p>';
+                return;
+            }
+            mods.forEach(mod => {
+                const modCardHTML = `
+                    <a href="/mods/${mod.platform || platform.split('-')[0]}/${mod.slug || mod._id}.html" class="mod-card-link">
+                        <div class="mod-card">
+                            <img src="/${mod.iconPath}" alt="${mod.name}" class="mod-card-image">
+                            <div class="mod-card-content">
+                                <h3>${mod.name}</h3>
+                                <p>${mod.shortDescription || 'No description available.'}</p>
+                            </div>
+                        </div>
+                    </a>
+                `;
+                container.insertAdjacentHTML('beforeend', modCardHTML);
+            });
+        } catch (error) {
+            console.error(`Failed to load mods for ${platform}:`, error);
+            container.innerHTML = `<p style="color: var(--silver); padding-left: 15px;">Could not load mods at this time.</p>`;
+        }
+    }
+
+    if (mainTabNav) {
+        mainTabNav.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const platform = button.dataset.tab;
+                if (platform !== 'ios') {
+                    loadModsForPlatform(platform, `#${platform}-mods .mod-carousel`);
+                }
+            });
+        });
+    }
+    if (iosTabNav) {
+        iosTabNav.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const platform = button.dataset.tab;
+                loadModsForPlatform(platform, `#${platform}-mods .mod-carousel`);
+            });
+        });
+    }
+    
+    if (mainTabNav) {
+        const initialActiveTab = document.querySelector('#main-tabs-nav .tab-button.active');
+        if (initialActiveTab) {
+            const initialPlatform = initialActiveTab.dataset.tab;
+            if(initialPlatform !== 'ios') {
+                loadModsForPlatform(initialPlatform, `#${initialPlatform}-mods .mod-carousel`);
+            } else {
+                loadModsForPlatform('ios-jailed', '#ios-jailed-mods .mod-carousel');
+            }
+        }
+    }
+
+    // --- 7. Login/Sign-Up Modal Logic ---
     const loginModal = document.getElementById('loginModal');
     const signupModal = document.getElementById('signupModal');
     const showModal = (modal) => modal?.classList.add('visible');
@@ -170,18 +231,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('switchToSignup')?.addEventListener('click', (e) => { e.preventDefault(); hideModal(loginModal); showModal(signupModal); });
     document.getElementById('switchToLogin')?.addEventListener('click', (e) => { e.preventDefault(); hideModal(signupModal); showModal(loginModal); });
 
-    // --- 7. FORM FUNCTIONALITY & HELPERS ---
+    // --- 8. FORM FUNCTIONALITY & HELPERS ---
     const loginForm = document.getElementById('login-form') || document.getElementById('loginForm');
     if (loginForm) loginForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Login successful! (Simulation)'); if(loginModal) {hideModal(loginModal); loginForm.reset();} else { window.location.href = 'index.html'; } });
-    
     const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
     if (signupForm) signupForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Account created successfully!'); if(signupModal) {hideModal(signupModal); signupForm.reset();} else { window.location.href = 'login.html'; } });
     
-    document.getElementById('profile-details-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Profile details updated successfully!'); });
-    document.getElementById('password-change-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Password changed successfully!'); e.target.reset(); });
-    document.getElementById('delete-account-btn')?.addEventListener('click', () => { if (confirm('Are you sure you want to permanently delete your account?')) alert('Account deleted.'); });
+    document.getElementById('profile-details-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Profile details updated!'); });
+    document.getElementById('password-change-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Password changed!'); e.target.reset(); });
+    document.getElementById('delete-account-btn')?.addEventListener('click', () => { if (confirm('Are you absolutely sure you want to delete your account?')) { if(confirm('FINAL WARNING: All data will be erased.')) alert('Account deleted.'); } });
     
-    // --- **NEW** Mod Upload Page Form Logic ---
     const modForm = document.getElementById('modForm');
     if (modForm) {
         modForm.addEventListener('submit', async function(event) {
@@ -195,10 +254,8 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Uploading and scanning file... This may take a moment.');
             const formData = new FormData();
             formData.append('modFile', file);
-            // Example of adding other form data:
-            // formData.append('modName', document.getElementById('modName').value);
+            formData.append('modName', document.getElementById('modName').value);
             try {
-                // IMPORTANT: '/scan-file' is a placeholder. You need a real server endpoint here.
                 const response = await fetch('/scan-file', { method: 'POST', body: formData });
                 const result = await response.json();
                 if (!response.ok) {
@@ -206,18 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     alert(`Success: ${result.message}`);
                     modForm.reset();
-                    // Reset UI elements after successful upload
                     document.getElementById('modFileName').textContent = 'No file selected';
                     document.getElementById('imageFileName').textContent = 'No file selected';
                     const categorySelect = document.getElementById('modCategory');
-                    if (categorySelect) {
-                       categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
-                       categorySelect.disabled = true;
+                    if(categorySelect) {
+                        categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
+                        categorySelect.disabled = true;
                     }
                 }
             } catch (error) {
                 console.error('Upload failed:', error);
-                alert('File upload failed. This is a frontend demonstration. Please check the console for details.');
+                alert('File upload failed. This is a frontend demonstration. A backend server is required.');
             }
         });
     }
@@ -233,11 +289,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
     const platformSelect = document.getElementById('modPlatform');
     const categorySelect = document.getElementById('modCategory');
     if (platformSelect && categorySelect) {
-        const categoriesByPlatform = { android: ['Game', 'App', 'Tools'], 'ios-jailed': ['Game', 'App'], 'ios-jailbroken': ['Tweak', 'Theme', 'Utility'], windows: ['Game', 'Software'], wordpress: ['Plugin', 'Theme'] };
+        const categoriesByPlatform = { android: ['Game', 'App', 'Tools'], 'ios-jailed': ['Game', 'App'], 'ios-jailbroken': ['Tweak', 'Theme'], windows: ['Game', 'Software'], wordpress: ['Plugin', 'Theme'] };
         platformSelect.addEventListener('change', function() {
             const categories = categoriesByPlatform[this.value] || [];
             categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
@@ -249,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
     function setupFileInput(inputId, displayId) {
         const input = document.getElementById(inputId);
         const display = document.getElementById(displayId);
@@ -260,16 +314,14 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileInput('modFile', 'modFileName');
     setupFileInput('imageFile', 'imageFileName');
 
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => { button.addEventListener('click', function(event) { event.preventDefault(); if (confirm('Are you sure you want to delete this?')) { this.closest('.upload-item')?.remove(); alert('Item deleted.'); } }); });
-    
+    document.querySelectorAll('.delete-btn').forEach(button => { button.addEventListener('click', function(event) { event.preventDefault(); if (confirm('Are you sure you want to delete this?')) { this.closest('.upload-item')?.remove(); alert('Item deleted.'); } }); });
     document.querySelector('.download-button[href="#versions"]')?.addEventListener('click', (e) => { e.preventDefault(); document.querySelector('.tab-button[data-tab="versions"]')?.click(); document.querySelector('.details-panel')?.scrollIntoView({ behavior: 'smooth' }); });
 
-    // --- 8. FAQ Accordion ---
+    // --- 9. FAQ Accordion ---
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => { item.querySelector('.faq-question')?.addEventListener('click', () => { const active = item.classList.contains('active'); faqItems.forEach(i => i.classList.remove('active')); if (!active) item.classList.add('active'); }); });
-    
-    // --- 9. Special Page Scripts (Countdown) ---
+
+    // --- 10. Special Page Scripts (Countdown) ---
     const daysEl = document.getElementById('days');
     if (daysEl) {
         const countDownDate = new Date();
