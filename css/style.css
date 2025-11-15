@@ -8,13 +8,13 @@
        - Generic Page Header & Hero Section
        - Tabs, Carousels & Mod Grids
        - Featured Section (Category pages)
-       - **CORRECTED:** Simple Filter Bar (e.g., all-android-mods.html)
-       - **CORRECTED:** Advanced Filter Box (e.g., all-mods.html)
-       - **CORRECTED:** Upload Page Layout (2-column grid)
+       - Simple Filter Bar (e.g., all-android-mods.html)
+       - ADVANCED FILTER BOX (e.g., all-mods.html)
+       - UPLOAD PAGE LAYOUT (2-column grid)
        - Download Page Layout (2-Column Mod pages)
        - Static Content Layout (About, FAQ, etc.)
        - User Account & Form Layouts (Profile, Settings, Login)
-       - **CORRECTED:** Special Page Layouts (Error, Coming Soon)
+       - SPECIAL PAGE LAYOUTS (Error, Coming Soon)
    5.  Utility Classes (Back to Top, Banner, etc.)
    6.  Responsive Design (All Media Queries)
    =================================================================== */
@@ -29,9 +29,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); line-height: 1.6; }
+body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 .container { width: 90%; max-width: 1200px; margin: 0 auto; }
 main { padding-bottom: 90px; }
-body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* 2. Header, Navigation & Footer */
 .main-header { padding: 15px 0; border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; background-color: var(--black); z-index: 1000; }
@@ -60,7 +60,7 @@ body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 .footer-links a:hover { color: var(--gold); }
 
 /* 3. Reusable Components */
-.btn-primary, .modal-submit, .download-button, .upload-cta-button, .submit-button, .featured-button.btn-primary, .home-button, .app-banner-button, .filter-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); text-align: center; }
+.btn-primary, .modal-submit, .download-button, .upload-cta-button, .submit-button, .filter-button, .featured-button.btn-primary, .home-button, .app-banner-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); text-align: center; }
 .btn-primary:hover, .modal-submit:hover, .download-button:hover, .upload-cta-button:hover, .submit-button:hover, .filter-button:hover, .featured-button.btn-primary:hover, .home-button:hover, .app-banner-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
 .btn-secondary, .upload-button, .featured-button.btn-secondary { display: inline-block; padding: 10px 28px; border: 2px solid var(--gold); color: var(--gold); background: transparent; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; text-align: center; }
 .btn-secondary:hover, .upload-button:hover, .featured-button.btn-secondary:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
@@ -145,12 +145,13 @@ body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 .featured-content p { color: var(--silver); margin: 10px 0 20px 0; }
 .featured-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
 .simple-filter-section { display: flex; justify-content: space-between; align-items: center; padding: 30px 0; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
-.simple-filter-section .filter-controls select { padding: 10px 15px; border-radius: 20px; font-size: 1em; }
 .filter-controls { display: flex; gap: 15px; flex-wrap: wrap; }
+.filter-controls label { margin-right: 10px; color: var(--silver); }
+.simple-filter-section .filter-controls select { padding: 10px 15px; border-radius: 20px; background-color: var(--dark-gray); color: var(--white); border: 1px solid #333; font-size: 1em; cursor: pointer;}
 .advanced-filter-section { background-color: var(--dark-gray); padding: 25px; border-radius: 15px; margin-bottom: 40px; display: grid; grid-template-columns: 1fr; gap: 20px; }
 .filter-group label { color: var(--silver); font-size: 0.9em; margin-bottom: 8px; }
-.filter-group input, .filter-group select { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; }
-.filter-button { width: 100%; margin-top: 10px; }
+.filter-group input, .advanced-filter-section .filter-group select { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; }
+.filter-button { width: 100%; margin-top: 10px; border-radius: 8px;}
 .results-summary, .results-count { text-align: center; color: var(--silver); margin: -20px 0 30px 0; }
 .pagination { display: flex; justify-content: center; align-items: center; margin-top: 50px; gap: 5px; flex-wrap: wrap; }
 .pagination a { color: var(--silver); text-decoration: none; padding: 12px 18px; border: 1px solid var(--dark-gray); border-radius: 10px; }
@@ -160,8 +161,8 @@ body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 .no-results p { color: var(--silver); }
 .download-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
 .info-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; text-align: center; align-self: flex-start; }
-.app-icon { width: auto; max-width: 120px; height: auto; max-height: 120px; border-radius: 25px; margin: 0 auto 20px auto; object-fit: cover; display: block; }
-.info-panel.wide-icon .app-icon { max-width: 200px; height: auto; border-radius: 15px;}
+.app-icon { width: 120px; height: 120px; border-radius: 25px; margin: 0 auto 20px auto; object-fit: cover; display: block; }
+.info-panel.wide-icon .app-icon { width: 200px; height: auto; max-height: 112px; border-radius: 15px;}
 .info-panel h1 { font-size: 2em; line-height: 1.2; margin-bottom: 10px; }
 .safety-badge { display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #2a2a2a; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
 .safety-badge .badge-icon { color: var(--gold); font-size: 1.4em; }
@@ -242,7 +243,6 @@ body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
 .app-banner.visible { transform: translateY(0); opacity: 1; }
 .app-banner-icon { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; }
 .app-banner-text { font-size: 0.9em; text-align: left; flex-grow: 1; }
-.app-banner-button { padding: 8px 15px; border-radius: 20px; }
 
 /* 6. Responsive Design */
 @media (min-width: 1024px) {
@@ -262,8 +262,8 @@ body.full-height { display: flex; flex-direction: column; min-height: 100vh; }
     .hamburger-menu { order: 3; }
     .hero h1 { font-size: 3.5em; }
     .section-title { font-size: 2em; }
-    .advanced-filter-section { grid-template-columns: 2fr 1fr 1fr 1fr auto; }
-    .advanced-filter-section .filter-button { align-self: end; height: 48px; }
+    .advanced-filter-section { grid-template-columns: 2fr 1fr 1fr 1fr auto; align-items: end; }
+    .advanced-filter-section .filter-button { height: 48px; }
 }
 @media (max-width: 992px) {
     .download-layout, .edit-profile-layout, .upload-layout { grid-template-columns: 1fr; }

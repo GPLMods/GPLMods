@@ -6,10 +6,10 @@
    3.  Animated Search Bar Placeholder
    4.  Back to Top Button & Conditional Banner
    5.  Advanced Tab Navigation (Homepage & Mod Pages)
-   6.  DYNAMIC MOD LOADING (API Integration)
+   6.  DYNAMIC CONTENT LOADING (for all Homepage Carousels)
    7.  Login/Sign-Up Modal Logic
    8.  FORM FUNCTIONALITY & HELPERS
-       - Form Submissions (Simulations for Login, Profile, etc.)
+       - Form Submissions (Login, Profile, etc.)
        - Real Mod Upload Form Logic (Async/Fetch)
        - Live Avatar Preview
        - Upload Page Helpers
@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
             mobileNav.style.display = isVisible ? 'none' : 'block';
         });
     }
-
     const collapsibleTrigger = document.querySelector('.mobile-nav .collapsible-trigger');
     if (collapsibleTrigger) {
         collapsibleTrigger.addEventListener('click', function(e) {
@@ -46,20 +45,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function typeAnimation() {
             const fullTerm = searchTerms[termIndex];
-            if (isDeleting) {
-                currentTerm = fullTerm.substring(0, letterIndex - 1);
-                letterIndex--;
-            } else {
-                currentTerm = fullTerm.substring(0, letterIndex + 1);
-                letterIndex++;
-            }
+            if (isDeleting) { currentTerm = fullTerm.substring(0, letterIndex - 1); letterIndex--; }
+            else { currentTerm = fullTerm.substring(0, letterIndex + 1); letterIndex++; }
             searchInput.placeholder = currentTerm;
             
             let typeSpeed = isDeleting ? 60 : 120;
             
-            if (!isDeleting && letterIndex === fullTerm.length) {
-                isDeleting = true; typeSpeed = 1500;
-            } else if (isDeleting && letterIndex === 0) {
+            if (!isDeleting && letterIndex === fullTerm.length) { isDeleting = true; typeSpeed = 1500; }
+            else if (isDeleting && letterIndex === 0) {
                 isDeleting = false;
                 termIndex = (termIndex + 1) % searchTerms.length;
                 searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
@@ -68,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
             typingTimeout = setTimeout(typeAnimation, typeSpeed);
         }
         typeAnimation();
-
         searchInput.addEventListener('focus', () => { clearTimeout(typingTimeout); searchInput.placeholder = "Search for mods..."; });
         searchInput.addEventListener('blur', () => { if (searchInput.value === '') { searchInput.placeholder = ""; letterIndex = 0; isDeleting = false; typeAnimation(); } });
     }
@@ -81,18 +73,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const scrollPosition = document.body.scrollTop || document.documentElement.scrollTop;
             backToTopButton.style.display = (scrollPosition > 100) ? "flex" : "none";
             if (appBanner) {
-                if (scrollPosition > 200) {
-                    appBanner.classList.add('visible');
-                    if (window.innerWidth < 1024) backToTopButton.classList.add('raised');
-                } else {
-                    appBanner.classList.remove('visible');
-                    backToTopButton.classList.remove('raised');
-                }
+                if (scrollPosition > 200) { appBanner.classList.add('visible'); if (window.innerWidth < 1024) backToTopButton.classList.add('raised'); }
+                else { appBanner.classList.remove('visible'); backToTopButton.classList.remove('raised'); }
             }
         };
         backToTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
-
+    
     // --- 5. Advanced Tab Navigation ---
     function initializeTabs(navElement, highlightElement) {
         if (!navElement || !highlightElement) return;
@@ -111,35 +98,46 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeTab = navElement.querySelector('.tab-button.active');
         if (activeTab) setTimeout(() => moveHighlight(activeTab), 150);
     }
-    
     const mainTabNav = document.getElementById('main-tabs-nav');
     const iosTabNav = document.getElementById('ios-tabs-nav');
-    
     if (mainTabNav) initializeTabs(mainTabNav, document.getElementById('main-tab-highlight'));
     if (iosTabNav) initializeTabs(iosTabNav, document.getElementById('ios-tab-highlight'));
 
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            const scope = button.closest('.tabs-nav').id.includes('main') ? '#main-tabs-nav' : '#ios-tabs-nav';
-            document.querySelectorAll(`${scope} .tab-button`).forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#main-tabs-nav .tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('#main-tabs-nav .tab-button').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            const targetId = button.dataset.tab + '-mods';
-            const targetContent = document.getElementById(targetId);
-
-            if (targetContent) {
-                targetContent.classList.add('active');
-            } else if (button.dataset.tab === 'ios') {
-                const iosSubTabs = document.getElementById('ios-sub-tabs-container');
-                if (iosSubTabs) iosSubTabs.style.display = 'block';
-                document.querySelector('#ios-tabs-nav .tab-button')?.click(); // Trigger click on first iOS sub-tab
+            const targetId = button.dataset.tab;
+            const targetContent = document.getElementById(targetId + '-mods');
+            const iosSubTabs = document.getElementById('ios-sub-tabs-container');
+            if (targetId === 'ios' && iosSubTabs) {
+                iosSubTabs.style.display = 'block';
+                document.querySelector('#ios-tabs-nav .tab-button[data-tab="ios-jailed"]')?.classList.add('active');
+                document.getElementById('ios-jailed-mods')?.classList.add('active');
+            } else {
+                if (iosSubTabs) iosSubTabs.style.display = 'none';
+                if (targetContent) targetContent.classList.add('active');
             }
         });
     });
 
-    // For mod detail pages
+    if (iosTabNav) {
+        iosTabNav.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('#ios-tabs-nav .tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                const targetId = button.dataset.tab + '-mods';
+                const targetContent = document.getElementById(targetId);
+                if (targetContent) {
+                    const mainIosTab = document.querySelector('#main-tabs-nav .tab-button[data-tab="ios"]');
+                    mainIosTab?.classList.add('active');
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+    }
     const detailTabsNav = document.querySelector('.details-panel .tabs-nav');
     if (detailTabsNav) {
         detailTabsNav.querySelectorAll('.tab-button').forEach(button => {
@@ -152,71 +150,62 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- 6. DYNAMIC MOD LOADING (API Integration) ---
-    async function loadModsForPlatform(platform, containerSelector) {
-        const container = document.querySelector(containerSelector);
-        if (!container) return;
-        container.innerHTML = '<p style="color: var(--silver); padding-left: 15px;">Loading mods...</p>';
-        try {
-            // NOTE: This will fail unless you have a server running at this endpoint.
-            const response = await fetch(`/api/mods/${platform}`);
-            if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-            const mods = await response.json();
+    // --- 6. DYNAMIC CONTENT LOADING ---
+    async function loadModsForCarousel(platform, carouselId, sortBy = 'latest') {
+        const carousel = document.getElementById(carouselId);
+        if (!carousel) return;
 
-            container.innerHTML = '';
-            if (!mods || mods.length === 0) {
-                container.innerHTML = '<p style="color: var(--silver); padding-left: 15px;">No mods found for this category yet.</p>';
+        try {
+            const response = await fetch(`/api/mods/${platform}?sort=${sortBy}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const mods = await response.json();
+            carousel.innerHTML = '';
+
+            if (mods.length === 0) {
+                carousel.innerHTML = '<p style="color: var(--silver); padding-left: 15px;">No mods found yet.</p>';
                 return;
             }
             mods.forEach(mod => {
                 const modCardHTML = `
-                    <a href="/mods/${mod.platform || platform.split('-')[0]}/${mod.slug || mod._id}.html" class="mod-card-link">
+                    <a href="/mods/${platform.split('-')[0]}/${mod.slug || mod._id}.html" class="mod-card-link">
                         <div class="mod-card">
                             <img src="/${mod.iconPath}" alt="${mod.name}" class="mod-card-image">
                             <div class="mod-card-content">
                                 <h3>${mod.name}</h3>
-                                <p>${mod.shortDescription || 'No description available.'}</p>
+                                <p>${mod.description}</p>
                             </div>
                         </div>
                     </a>
                 `;
-                container.insertAdjacentHTML('beforeend', modCardHTML);
+                carousel.innerHTML += modCardHTML;
             });
         } catch (error) {
-            console.error(`Failed to load mods for ${platform}:`, error);
-            container.innerHTML = `<p style="color: var(--silver); padding-left: 15px;">Could not load mods at this time.</p>`;
+            console.error(`Failed to load mods for carousel #${carouselId}:`, error);
+            carousel.innerHTML = '<p style="color: var(--red); padding-left: 15px;">Error loading mods.</p>';
         }
     }
 
-    if (mainTabNav) {
-        mainTabNav.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const platform = button.dataset.tab;
-                if (platform !== 'ios') {
-                    loadModsForPlatform(platform, `#${platform}-mods .mod-carousel`);
-                }
-            });
-        });
-    }
-    if (iosTabNav) {
-        iosTabNav.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const platform = button.dataset.tab;
-                loadModsForPlatform(platform, `#${platform}-mods .mod-carousel`);
-            });
-        });
-    }
-    
-    if (mainTabNav) {
-        const initialActiveTab = document.querySelector('#main-tabs-nav .tab-button.active');
-        if (initialActiveTab) {
-            const initialPlatform = initialActiveTab.dataset.tab;
-            if(initialPlatform !== 'ios') {
-                loadModsForPlatform(initialPlatform, `#${initialPlatform}-mods .mod-carousel`);
-            } else {
-                loadModsForPlatform('ios-jailed', '#ios-jailed-mods .mod-carousel');
-            }
-        }
+    if(document.getElementById('mods-container')){ // Only run this if on the homepage
+        // Android
+        loadModsForCarousel('android', 'android-working-carousel', 'working');
+        loadModsForCarousel('android', 'android-popular-carousel', 'popular');
+        loadModsForCarousel('android', 'android-new-carousel', 'new');
+        // iOS Jailed (IPA)
+        loadModsForCarousel('ios-jailed', 'ipa-working-carousel', 'working');
+        loadModsForCarousel('ios-jailed', 'ipa-popular-carousel', 'popular');
+        loadModsForCarousel('ios-jailed', 'ipa-new-carousel', 'new');
+        // iOS Jailbroken (DEB)
+        loadModsForCarousel('ios-jailbroken', 'deb-working-carousel', 'working');
+        loadModsForCarousel('ios-jailbroken', 'deb-popular-carousel', 'popular');
+        loadModsForCarousel('ios-jailbroken', 'deb-new-carousel', 'new');
+        // WordPress
+        loadModsForCarousel('wordpress', 'wordpress-working-carousel', 'working');
+        loadModsForCarousel('wordpress', 'wordpress-popular-carousel', 'popular');
+        loadModsForCarousel('wordpress', 'wordpress-new-carousel', 'new');
+        // Windows
+        loadModsForCarousel('windows', 'windows-working-carousel', 'working');
+        loadModsForCarousel('windows', 'windows-popular-carousel', 'popular');
+        loadModsForCarousel('windows', 'windows-new-carousel', 'new');
     }
 
     // --- 7. Login/Sign-Up Modal Logic ---
@@ -247,10 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             const fileInput = document.getElementById('modFile');
             const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a file to upload.');
-                return;
-            }
+            if (!file) { alert('Please select a file to upload.'); return; }
             alert('Uploading and scanning file... This may take a moment.');
             const formData = new FormData();
             formData.append('modFile', file);
@@ -258,17 +244,16 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const response = await fetch('/scan-file', { method: 'POST', body: formData });
                 const result = await response.json();
-                if (!response.ok) {
-                    alert(`Error: ${result.message}`);
-                } else {
+                if (!response.ok) { alert(`Error: ${result.message}`); }
+                else {
                     alert(`Success: ${result.message}`);
                     modForm.reset();
                     document.getElementById('modFileName').textContent = 'No file selected';
                     document.getElementById('imageFileName').textContent = 'No file selected';
                     const categorySelect = document.getElementById('modCategory');
                     if(categorySelect) {
-                        categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
-                        categorySelect.disabled = true;
+                       categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
+                       categorySelect.disabled = true;
                     }
                 }
             } catch (error) {
@@ -292,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const platformSelect = document.getElementById('modPlatform');
     const categorySelect = document.getElementById('modCategory');
     if (platformSelect && categorySelect) {
-        const categoriesByPlatform = { android: ['Game', 'App', 'Tools'], 'ios-jailed': ['Game', 'App'], 'ios-jailbroken': ['Tweak', 'Theme'], windows: ['Game', 'Software'], wordpress: ['Plugin', 'Theme'] };
+        const categoriesByPlatform = { android: ['Game', 'App', 'Tools'], 'ios-jailed': ['Game', 'App'], 'ios-jailbroken': ['Tweak', 'Theme', 'Utility'], windows: ['Game', 'Software'], wordpress: ['Plugin', 'Theme'] };
         platformSelect.addEventListener('change', function() {
             const categories = categoriesByPlatform[this.value] || [];
             categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
@@ -321,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => { item.querySelector('.faq-question')?.addEventListener('click', () => { const active = item.classList.contains('active'); faqItems.forEach(i => i.classList.remove('active')); if (!active) item.classList.add('active'); }); });
 
-    // --- 10. Special Page Scripts (Countdown) ---
+    // --- 10. Special Page Scripts (Countdown Timer) ---
     const daysEl = document.getElementById('days');
     if (daysEl) {
         const countDownDate = new Date();
