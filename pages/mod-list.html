@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Title will be set by JavaScript -->
+    <title>GPL Mods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to your single master stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- HEADER (This will be the same across all pages) -->
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="/index.html" class="logo">GPL <span>Mods</span></a>
+            <div class="search-bar"><input type="search" id="animated-search" placeholder=""></div>
+            <div class="hamburger-menu" id="hamburger">&#9776;</div>
+        </div>
+    </header>
+
+    <!-- MOBILE NAVIGATION (Same across all pages) -->
+    <nav class="mobile-nav" id="mobileNav">
+        <!-- Your mobile navigation links go here -->
+    </nav>
+    
+    <main>
+        <!-- SECTION 1: DYNAMIC PAGE HEADER -->
+        <section class="page-header">
+            <div class="container">
+                <h1 id="page-title">Loading...</h1>
+                <p id="page-description">Please wait while we fetch the best mods for you.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 2: DYNAMIC FEATURED SECTION (HIDDEN BY DEFAULT) -->
+        <section class="featured-section" id="special-featured-section" style="display: none;">
+            <!-- JavaScript will create and inject the "Editor's Choice" card here if needed -->
+        </section>
+
+        <div class="container">
+            <!-- SECTION 3: FILTER & SORTING -->
+            <section class="filter-section">
+                 <div class="filter-controls">
+                    <select id="sort" name="sort">
+                        <option value="popularity">Sort by Popularity</option>
+                        <option value="latest">Sort by Latest</option>
+                        <option value="rating">Sort by Rating</option>
+                    </select>
+                     <select id="category" name="category">
+                        <option value="all">All Categories</option>
+                        <!-- Categories can also be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="results-count" id="results-count">
+                    <!-- JS will update this text -->
+                </div>
+            </section>
+
+            <!-- SECTION 4: DYNAMIC MOD GRID -->
+            <section class="mod-grid" id="mod-grid-container">
+                <!-- JavaScript will create and inject all the mod cards here -->
+                <p style="color: var(--silver); text-align: center;">Loading mods...</p>
+            </section>
+
+            <!-- SECTION 5: DYNAMIC PAGINATION -->
+            <nav class="pagination" id="pagination-container">
+                <!-- JavaScript will create and inject the page number links here -->
+            </nav>
+        </div>
+    </main>
+    
+    <!-- FOOTER (Same across all pages) -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="/pages/about.html">About Us</a> <a href="/pages/faq.html">FAQ</a> <!-- etc. -->
+            </div>
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="backToTop">&#x2191;</div>
+
+    <!-- Link to your single master JavaScript file -->
+    <script src="/js/script.js"></script>
+</body>
+</html>
