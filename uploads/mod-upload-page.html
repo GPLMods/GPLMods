@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Mod - Aurum Mods</title>
+    <title>Upload Mod - GPL Mods</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -83,6 +83,22 @@
                         <label for="modVersion">Mod Version</label>
                         <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
                     </div>
+                    
+                    <!-- NEW FIELDS ADDED HERE -->
+                    <div class="form-group">
+                        <label for="modFileType">File Type (e.g., APK, XAPK)</label>
+                        <input type="text" id="modFileType" name="fileType" placeholder="apk" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modType">Mod Type (e.g., Premium, Mod Menu)</label>
+                        <input type="text" id="modType" name="modType" placeholder="Premium" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modRating">Star Rating (1.0 - 5.0)</label>
+                        <input type="number" id="modRating" name="ratingValue" step="0.1" min="1" max="5" placeholder="4.8" required>
+                    </div>
+                    <!-- END OF NEW FIELDS -->
+
                     <div class="form-group">
                         <label for="modFeatures">Mod Features</label>
                         <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications in detail. Use bullet points for clarity.&#10;- Unlimited Coins&#10;- God Mode&#10;- No Ads" required></textarea>

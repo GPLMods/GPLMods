@@ -7,7 +7,7 @@
    4.  Back to Top Button & Conditional Banner
    5.  Advanced Tab Navigation (Homepage & Mod Pages)
    6.  DYNAMIC CONTENT LOADING
-       - Homepage Carousel Loader
+       - **UPDATED:** Homepage Carousel Loader (with detailed cards)
        - Dynamic Mod List Page Loader
    7.  Login/Sign-Up Modal Logic
    8.  FORM FUNCTIONALITY & HELPERS
@@ -45,15 +45,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchTerms = ["Kinemaster...", "Roblox...", "Minecraft...", "Spotify...", "Elementor..."];
         const themeColors = ["var(--gold)", "var(--silver)"];
         let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false, typingTimeout;
-        
+
         function typeAnimation() {
             const fullTerm = searchTerms[termIndex];
             if (isDeleting) { currentTerm = fullTerm.substring(0, letterIndex - 1); letterIndex--; }
             else { currentTerm = fullTerm.substring(0, letterIndex + 1); letterIndex++; }
             searchInput.placeholder = currentTerm;
-            
+
             let typeSpeed = isDeleting ? 60 : 120;
-            
+
             if (!isDeleting && letterIndex === fullTerm.length) { isDeleting = true; typeSpeed = 1500; }
             else if (isDeleting && letterIndex === 0) {
                 isDeleting = false;
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         backToTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
-    
+
     // --- 5. Advanced Tab Navigation ---
     function initializeTabs(navElement, highlightElement) {
         if (!navElement || !highlightElement) return;
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeTab = navElement.querySelector('.tab-button.active');
         if (activeTab) setTimeout(() => moveHighlight(activeTab), 150);
     }
-    
+
     const mainTabNav = document.getElementById('main-tabs-nav');
     const iosTabNav = document.getElementById('ios-tabs-nav');
     if (mainTabNav) initializeTabs(mainTabNav, document.getElementById('main-tab-highlight'));
@@ -159,7 +159,6 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadModsForCarousel(platform, carouselId, sortBy = 'new') {
         const carousel = document.getElementById(carouselId);
         if (!carousel) return;
-
         try {
             const response = await fetch(`/api/mods/homepage/${platform}?sort=${sortBy}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -170,16 +169,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             mods.forEach(mod => {
+                const starPercentage = (mod.ratingValue / 5) * 100;
                 const modCardHTML = `
                     <a href="/mod.html?id=${mod._id}" class="mod-card-link">
                         <div class="mod-card">
+                            <div class="app-feature-tag">${mod.fileType.toUpperCase()}</div>
+                            <div class="mod-type-tag">${mod.modType}</div>
                             <img src="/${mod.iconPath}" alt="${mod.name}" class="mod-card-image">
                             <div class="mod-card-content">
                                 <h3>${mod.name}</h3>
                                 <p>${mod.description}</p>
+                                <div class="rating">
+                                    <div class="stars-outer">
+                                        <div class="stars-inner" style="width: ${starPercentage}%;"></div>
+                                    </div>
+                                    <span class="rating-text">${mod.ratingValue.toFixed(1)}</span>
+                                </div>
+                            </div>
+                            <div class="download-overlay">
+                                <a href="/apps/gpl-mart/gpl-mart.html" class="overlay-button overlay-btn-primary">⚡ Fast Download With GPL Mart</a>
+                                <a href="/mod.html?id=${mod._id}" class="overlay-button overlay-btn-secondary">Download .${mod.fileType}</a>
                             </div>
                         </div>
-                    </a>`;
+                    </a>
+                `;
                 carousel.innerHTML += modCardHTML;
             });
         } catch (error) {
@@ -187,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
             carousel.innerHTML = '<p style="color: var(--red); padding-left: 15px;">Error loading mods.</p>';
         }
     }
-    
+
     const modListContainer = document.getElementById('mod-grid-container');
     if (modListContainer) { 
         async function loadModListPage() {
@@ -256,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                      modListContainer.innerHTML = '<p style="color: var(--silver); text-align: center;">No mods found for this category yet.</p>';
                 }
-                
+
                 const resultsCountEl = document.getElementById('results-count');
                 if(resultsCountEl) resultsCountEl.textContent = `Showing results ${data.startItem}-${data.endItem} of ${data.totalMods}`;
 
@@ -278,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadModListPage();
     }
     
+    // Trigger loading for all carousels on the homepage
     if(document.getElementById('mods-container')){
         loadModsForCarousel('android', 'android-working-carousel', 'working');
         loadModsForCarousel('android', 'android-popular-carousel', 'popular');
@@ -297,8 +311,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // --- 7. Login/Sign-Up Modal Logic, 8. Form Funcionality, 9. FAQ Accordion, 10. Special Scripts ---
-    // (All remaining code from the previous final version is included below this point)
-    
     const loginModal = document.getElementById('loginModal');
     const signupModal = document.getElementById('signupModal');
     const showModal = (modal) => modal?.classList.add('visible');
@@ -314,11 +326,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginForm) loginForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Login successful! (Simulation)'); if(loginModal) {hideModal(loginModal); loginForm.reset();} else { window.location.href = 'index.html'; } });
     const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
     if (signupForm) signupForm.addEventListener('submit', (e) => { e.preventDefault(); alert('Account created successfully!'); if(signupModal) {hideModal(signupModal); signupForm.reset();} else { window.location.href = 'login.html'; } });
-    
+
     document.getElementById('profile-details-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Profile details updated!'); });
     document.getElementById('password-change-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Password changed!'); e.target.reset(); });
     document.getElementById('delete-account-btn')?.addEventListener('click', () => { if (confirm('Are you absolutely sure you want to delete your account?')) { if(confirm('FINAL WARNING: All data will be erased.')) alert('Account deleted.'); } });
-    
+
     const modForm = document.getElementById('modForm');
     if (modForm) {
         modForm.addEventListener('submit', async function(event) {
