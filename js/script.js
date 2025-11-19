@@ -131,9 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mainTabNav) initializeTabs(mainTabNav, document.getElementById('main-tab-highlight'));
     if (iosTabNav) initializeTabs(iosTabNav, document.getElementById('ios-tab-highlight'));
 
-    // --- CORRECTED & SIMPLIFIED Tab Switching Logic ---
     const allTabContents = document.querySelectorAll('.tab-content');
-    if (mainTabNav) { // Only run this logic if we are on the homepage
+    if (mainTabNav) { 
         const iosSubTabsContainer = document.getElementById('ios-sub-tabs-container');
 
         mainTabNav.querySelectorAll('.tab-button').forEach(button => {
@@ -178,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    // --- End of Corrected Tab Logic ---
 
     // --- 6. DYNAMIC CONTENT LOADING ---
     async function loadModsForCarousel(platform, carouselId, sortBy = 'new') {
@@ -364,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('changelog-content').innerHTML = mod.changelog;
 
                 const versionsContainer = document.getElementById('versions-list');
-                versionsContainer.innerHTML = ''; 
+                versionsContainer.innerHTML = '';
                 mod.versions.forEach(v => {
                     const versionHTML = `
                         <div class="version-item">
@@ -388,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 7. Login/Sign-Up Modal Logic (for index.html) ---
     const loginModal = document.getElementById('loginModal');
-    if (loginModal) { 
+    if (loginModal) {
         const signupModal = document.getElementById('signupModal');
         const showModal = (modal) => modal?.classList.add('visible');
         const hideModal = (modal) => modal?.classList.remove('visible');
@@ -461,46 +459,65 @@ document.addEventListener('DOMContentLoaded', function() {
     const modForm = document.getElementById('modForm');
     if (modForm) {
         modForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById('modFile');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a file to upload.');
-                return;
-            }
-            alert('Uploading and scanning file... This may take a moment.');
-            const formData = new FormData();
-            formData.append('modFile', file);
-            formData.append('modName', document.getElementById('modName').value);
+            event.preventDefault(); // Stop the default browser submission
+
+            // Use the form element itself to build the FormData object.
+            // This automatically includes ALL fields and their values.
+            const formData = new FormData(modForm);
+
+            // You can add a loading state here (e.g., disable the button)
+            const submitButton = modForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Uploading...';
+
             try {
-                const response = await fetch('/scan-file', {
+                // Send ALL the form data to the /upload-mod endpoint
+                const response = await fetch('/upload-mod', {
                     method: 'POST',
-                    body: formData
+                    body: formData // The FormData object contains everything
                 });
+
                 const result = await response.json();
+
                 if (!response.ok) {
-                    alert(`Error: ${result.message}`);
-                } else {
-                    alert(`Success: ${result.message}`);
-                    modForm.reset();
-                    document.getElementById('modFileName').textContent = 'No file selected';
-                    document.getElementById('imageFileName').textContent = 'No file selected';
-                    const categorySelect = document.getElementById('modCategory');
-                    if (categorySelect) {
-                        categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
-                        categorySelect.disabled = true;
-                    }
+                    // If the server responded with an error (like 400 or 500)
+                    throw new Error(result.message || 'Server responded with an error.');
                 }
+
+                // Handle success
+                alert(`Success: ${result.message}`);
+                modForm.reset();
+                // Manually reset file name displays
+                document.getElementById('modFileName').textContent = 'No file selected';
+                document.getElementById('imageFileName').textContent = 'No file selected';
+                document.getElementById('screenshotsFileName').textContent = 'No files selected';
+
             } catch (error) {
-                console.error('Full upload error details:', error);
-                alert(`Upload failed! There was a network or server error. Please check the browser console for more details (Press F12 > Console).`);
+                // This will now show a more specific error message from the server if available
+                console.error('Upload failed:', error);
+                alert(`Upload failed: ${error.message}`);
+            } finally {
+                // Re-enable the button whether it succeeded or failed
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Mod for Review';
             }
         });
+
+        // --- Keep your file input handlers ---
+        function handleFileInput(inputId, spanId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(spanId);
+            if (input && display) {
+                input.addEventListener('change', function() {
+                    display.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
+                });
+            }
+        }
 
         function handleMultiFileInput(inputId, spanId) {
             const fileInput = document.getElementById(inputId);
             const fileNameSpan = document.getElementById(spanId);
-            if(fileInput && fileNameSpan) {
+            if (fileInput && fileNameSpan) {
                 fileInput.addEventListener('change', function() {
                     if (this.files.length > 1) {
                         fileNameSpan.textContent = `${this.files.length} files selected`;
@@ -512,7 +529,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
+        handleFileInput('modFile', 'modFileName');
+        handleFileInput('imageFile', 'imageFileName');
         handleMultiFileInput('screenshots', 'screenshotsFileName');
+
+        const platformSelect = document.getElementById('modPlatform');
+        const categorySelect = document.getElementById('modCategory');
+        if (platformSelect && categorySelect) {
+            const categoriesByPlatform = {
+                android: ['Game', 'App', 'Tools'],
+                'ios-jailed': ['Game', 'App'],
+                'ios-jailbroken': ['Tweak', 'Theme', 'Utility'],
+                windows: ['Game', 'Software'],
+                wordpress: ['Plugin', 'Theme']
+            };
+            platformSelect.addEventListener('change', function() {
+                const categories = categoriesByPlatform[this.value] || [];
+                categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
+                categorySelect.disabled = true;
+                if (categories.length > 0) {
+                    categorySelect.disabled = false;
+                    categorySelect.innerHTML = '<option value="" disabled selected>Select a category...</option>';
+                    categories.forEach(cat => categorySelect.add(new Option(cat, cat.toLowerCase())));
+                }
+            });
+        }
     }
 
     const avatarInput = document.getElementById('avatar-input');
@@ -528,40 +569,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    const platformSelect = document.getElementById('modPlatform');
-    const categorySelect = document.getElementById('modCategory');
-    if (platformSelect && categorySelect) {
-        const categoriesByPlatform = {
-            android: ['Game', 'App', 'Tools'],
-            'ios-jailed': ['Game', 'App'],
-            'ios-jailbroken': ['Tweak', 'Theme', 'Utility'],
-            windows: ['Game', 'Software'],
-            wordpress: ['Plugin', 'Theme']
-        };
-        platformSelect.addEventListener('change', function() {
-            const categories = categoriesByPlatform[this.value] || [];
-            categorySelect.innerHTML = '<option value="" disabled selected>Select a platform first...</option>';
-            categorySelect.disabled = true;
-            if (categories.length > 0) {
-                categorySelect.disabled = false;
-                categorySelect.innerHTML = '<option value="" disabled selected>Select a category...</option>';
-                categories.forEach(cat => categorySelect.add(new Option(cat, cat.toLowerCase())));
-            }
-        });
-    }
-
-    function setupFileInput(inputId, displayId) {
-        const input = document.getElementById(inputId);
-        const display = document.getElementById(displayId);
-        if (input && display) {
-            input.addEventListener('change', function() {
-                display.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
-            });
-        }
-    }
-    setupFileInput('modFile', 'modFileName');
-    setupFileInput('imageFile', 'imageFileName');
 
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', function(event) {
@@ -583,7 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 9. FAQ Accordion ---
     const faqItems = document.querySelectorAll('.faq-item');
-    if(faqItems.length > 0) {
+    if (faqItems.length > 0) {
         faqItems.forEach(item => {
             item.querySelector('.faq-question')?.addEventListener('click', () => {
                 const active = item.classList.contains('active');
@@ -610,6 +617,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('minutes').textContent = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
             document.getElementById('seconds').textContent = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
         }, 1000);
-         document.getElementById('notify-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert('Thank you! You will be notified on launch.'); e.target.reset(); });
+        document.getElementById('notify-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Thank you! You will be notified on launch.');
+            e.target.reset();
+        });
     }
 });
