@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
     if (IN_MAINTENANCE_MODE && req.path.indexOf('.html') === -1 && req.path !== '/') {
-        // Allow assets like CSS/JS to load on the coming soon page
+        // Allow assets like CSS/JS to load
     } else if (IN_MAINTENANCE_MODE && req.path !== '/errors-pages/coming-soon.html') {
         return res.status(503).sendFile(path.join(__dirname, 'errors-pages', 'coming-soon.html'));
     }
@@ -39,10 +39,12 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
     .catch(err => console.error('ERROR: Could not connect to MongoDB Atlas.', err));
 
 // --- 4. DATABASE SCHEMA (UPGRADED) ---
+// UPDATED SCHEMA: Added appDescription and screenshotPaths
 const ModSchema = new mongoose.Schema({
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String, required: true },
+    appDescription: { type: String, required: true }, // <-- NEW
     platform: { type: String, required: true },
     category: { type: String, required: true },
     version: { type: String, required: true },
@@ -50,6 +52,7 @@ const ModSchema = new mongoose.Schema({
     modType: { type: String, default: 'Mod' },
     modFilePath: { type: String, required: true },
     iconPath: { type: String, required: true },
+    screenshotPaths: [{ type: String }], // <-- NEW (An array of strings)
     isFeatured: { type: Boolean, default: false },
     uploader: { type: String, default: 'Community' },
     downloads: { type: Number, default: 0 },
@@ -61,16 +64,22 @@ const Mod = mongoose.model('Mod', ModSchema);
 // --- 5. FILE STORAGE ENGINE ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const slug = (req.body.name || 'unknown').replace(/\s+/g, '-').toLowerCase();
+        if (!req.body.name || !req.body.platform) {
+            return cb(new Error("Mod Name and Platform are required to create a directory."));
+        }
+        const slug = req.body.name.replace(/\s+/g, '-').toLowerCase();
         const dir = path.join(__dirname, 'uploads', req.body.platform, slug);
         fs.mkdirSync(dir, { recursive: true });
         cb(null, dir);
     },
     filename: (req, file, cb) => {
-        const slug = (req.body.name || 'unknown').replace(/\s+/g, '-').toLowerCase();
-        const version = req.body.version || '1.0';
+        if (!req.body.name || !req.body.version) {
+            return cb(new Error("Mod Name and Version are required for filename."));
+        }
+        const slug = req.body.name.replace(/\s+/g, '-').toLowerCase();
+        const version = req.body.version;
         const extension = path.extname(file.originalname);
-        cb(null, `${slug}-v${version}-${file.fieldname}${extension}`); // Added fieldname for uniqueness
+        cb(null, `${slug}-v${version}-${file.fieldname}${extension}`);
     }
 });
 const upload = multer({ storage: storage });
@@ -82,66 +91,129 @@ const upload = multer({ storage: storage });
  * @route   POST /upload-mod
  * @desc    Handle the full mod upload process with all details
  */
-app.post('/upload-mod', upload.fields([{ name: 'modFile', maxCount: 1 }, { name: 'imageFile', maxCount: 1 }]), async (req, res) => {
-    // NOTE: Integrate VirusTotal scan logic here
+// UPDATED ROUTE: Handles new fields 'appDescription' and multiple 'screenshots'
+app.post('/upload-mod', upload.fields([
+    { name: 'modFile', maxCount: 1 }, 
+    { name: 'imageFile', maxCount: 1 },
+    { name: 'screenshots', maxCount: 4 } // Allow up to 4 screenshots
+]), async (req, res) => {
+    
     try {
+        if (!req.files || !req.files.modFile || !req.files.imageFile) {
+            return res.status(400).json({ message: "Mod file and icon file are required." });
+        }
+        
+        // Map the array of screenshot files to an array of their web-accessible paths
+        const screenshotPaths = req.files.screenshots 
+            ? req.files.screenshots.map(file => file.path.replace(/\\/g, "/").replace(__dirname, ""))
+            : [];
+
         const slug = req.body.name.replace(/\s+/g, '-').toLowerCase();
         const newMod = new Mod({
             name: req.body.name,
             slug: slug,
             description: req.body.description,
+            appDescription: req.body.appDescription, // <-- SAVE NEW FIELD
             platform: req.body.platform,
             category: req.body.category,
             version: req.body.version,
             fileType: req.body.fileType,
             modType: req.body.modType,
             ratingValue: parseFloat(req.body.ratingValue),
-            modFilePath: req.files.modFile[0].path.replace(/\\/g, "/"),
-            iconPath: req.files.imageFile[0].path.replace(/\\/g, "/"),
+            modFilePath: req.files.modFile[0].path.replace(/\\/g, "/").replace(__dirname, ""),
+            iconPath: req.files.imageFile[0].path.replace(/\\/g, "/").replace(__dirname, ""),
+            screenshotPaths: screenshotPaths // <-- SAVE NEW FIELD
         });
+
         const savedMod = await newMod.save();
         res.status(201).json({ message: "Mod uploaded successfully!", mod: savedMod });
+
     } catch (error) {
         console.error("ERROR saving mod:", error);
         res.status(500).json({ message: "Error saving mod. The mod name might already exist." });
     }
 });
 
-app.get('/api/mods/homepage/:platform', async (req, res) => { /* ... (same as before) ... */ });
-app.get('/api/mods/featured/:platform', async (req, res) => { /* ... (same as before) ... */ });
-app.get('/api/mods', async (req, res) => { /* ... (same as before) ... */ });
-app.get('/api/mod/:id', async (req, res) => { /* ... (same as before) ... */ });
-app.get('/api/download/:id', async (req, res) => { /* ... (same as before) ... */ });
+app.get('/api/mods/homepage/:platform', async (req, res) => {
+    try {
+        const { platform } = req.params;
+        const { sort } = req.query;
+        let sortQuery = sort === 'popular' ? { downloads: -1 } : { createdAt: -1 };
+        const mods = await Mod.find({ platform }).sort(sortQuery).limit(10);
+        res.status(200).json(mods);
+    } catch (error) {
+        res.status(500).json({ message: "Server error fetching homepage mods." });
+    }
+});
 
+app.get('/api/mods/featured/:platform', async (req, res) => {
+    try {
+        const { platform } = req.params;
+        const featuredMod = await Mod.findOne({ platform, isFeatured: true });
+        res.status(200).json(featuredMod);
+    } catch (error) {
+        res.status(500).json({ message: "Server error fetching featured mod." });
+    }
+});
 
-// --- 7. CATCH-ALL ROUTE FOR SERVING FILES AND 404s ---
+app.get('/api/mods', async (req, res) => {
+    try {
+        const { platform, sort, page = 1, category } = req.query;
+        if (!platform) return res.status(400).json({ message: "Platform is required." });
+        const limit = 12;
+        const skip = (page - 1) * limit;
+        let sortQuery = sort === 'popular' ? { downloads: -1 } : { createdAt: -1 };
+        let findQuery = { platform };
+        if (category && category !== 'all') findQuery.category = category;
+
+        const mods = await Mod.find(findQuery).sort(sortQuery).skip(skip).limit(limit);
+        const totalMods = await Mod.countDocuments(findQuery);
+        const startItem = skip + 1;
+        const endItem = Math.min(skip + limit, totalMods);
+        
+        res.status(200).json({ mods, currentPage: parseInt(page), totalPages: Math.ceil(totalMods / limit), totalMods, startItem, endItem });
+    } catch (error) {
+        res.status(500).json({ message: "Server error fetching paginated mods." });
+    }
+});
+
+app.get('/api/mod/:id', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid Mod ID." });
+        }
+        const mod = await Mod.findById(req.params.id);
+        if (!mod) return res.status(404).json({ message: "Mod not found." });
+        res.status(200).json(mod);
+    } catch (error) {
+        res.status(500).json({ message: "Server error." });
+    }
+});
+
+app.get('/api/download/:id', async (req, res) => {
+    try {
+       if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "Invalid Mod ID." });
+        }
+       const mod = await Mod.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } }, { new: true });
+       if (!mod) return res.status(404).json({ message: "Mod not found." });
+       res.status(200).json({ filePath: mod.modFilePath });
+   } catch (error) {
+       res.status(500).json({ message: "Server error." });
+   }
+});
+
+// --- 7. CATCH-ALL & 8. ERROR HANDLING ---
 app.use((req, res, next) => {
-    const safePath = path.normalize(req.path).replace(/^(\.\.[\/\\])+/, '');
-    const filePath = path.join(__dirname, safePath);
-    
-    if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
-        return res.sendFile(filePath);
-    }
-    
-    const htmlFilePath = filePath.endsWith('/') ? path.join(filePath, 'index.html') : filePath + '.html';
-    if (fs.existsSync(htmlFilePath)) {
-        return res.sendFile(htmlFilePath);
-    }
-
     res.status(404).sendFile(path.join(__dirname, 'errors-pages', 'error-404.html'));
 });
 
-
-// --- 8. FINAL ERROR HANDLER (for 500 Server Errors) ---
 app.use((err, req, res, next) => {
-    console.error('--- UNHANDLED SERVER ERROR ---');
-    console.error(err.stack);
-    console.error('-----------------------------');
+    console.error('--- UNHANDLED SERVER ERROR ---', err.stack);
     if (!res.headersSent) {
         res.status(500).sendFile(path.join(__dirname, 'errors-pages', 'error-500.html'));
     }
 });
-
 
 // --- 9. SERVER INITIALIZATION ---
 app.listen(PORT, () => {
