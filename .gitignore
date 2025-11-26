@@ -1,8 +1,8 @@
-# Node.js dependencies
+# Node.js dependencies - NEVER upload this folder
 node_modules
 
-# Temporary upload folder from our server.js
+# Temporary upload folder created by the server
 uploads/
 
-# Environment variables file (contains secret API keys)
+# Local environment variables file (contains secret keys)
 .env
