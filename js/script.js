@@ -10,11 +10,11 @@
        - Homepage Carousel Loader
        - Dynamic Mod List Page Loader (`mod-list.html`)
        - Dynamic Mod Detail Page Loader (`mod.html`)
-   7.  Login/Sign-Up Modal Logic (for index.html)
+   7.  Login/Sign-Up Modal & Page Logic
    8.  FORM FUNCTIONALITY & HELPERS
    9.  FAQ Accordion
    10. Special Page Scripts (Countdown Timer)
-   11. AUTHENTICATION & USER PROFILE
+   11. AUTHENTICATION & GLOBAL USER STATE
    =================================================================== */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -410,10 +410,75 @@ document.addEventListener('DOMContentLoaded', function() {
         loadModDetails();
     }
 
-    // --- 7. Login/Sign-Up Modal Logic (for index.html) ---
+    // --- 7. Login/Sign-Up Modal & Page Logic ---
+
+    // This function handles the actual API call for registration
+    async function handleRegistration(form) {
+        const username = form.querySelector('input[type="text"]').value;
+        const email = form.querySelector('input[type="email"]').value;
+        const password = form.querySelector('input[type="password"]').value;
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            alert(data.message); // "Registration successful! Please check your email..."
+            return true; // Indicate success
+        } catch (err) {
+            alert(`Registration failed: ${err.message}`);
+            return false; // Indicate failure
+        }
+    }
+
+    // This function handles the actual API call for login
+    async function handleLogin(form) {
+        const email = form.querySelector('input[type="email"]').value;
+        const password = form.querySelector('input[type="password"]').value;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email,
+                    password
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            // CRITICAL: Save the token (the "passport") to the browser's local storage
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+
+            alert('Login successful!');
+            window.location.href = '/accounts/profile-layout.html'; // Redirect to the user's profile
+        } catch (err) {
+            alert(`Login failed: ${err.message}`);
+        }
+    }
+
+    // --- Logic for the Modals on index.html ---
     const loginModal = document.getElementById('loginModal');
-    const signupModal = document.getElementById('signupModal');
     if (loginModal) {
+        const signupModal = document.getElementById('signupModal');
+        const loginFormModal = document.getElementById('loginForm');
+        const signupFormModal = document.getElementById('signupForm');
+
+        // Show/hide modals (same as before)
         const showModal = (modal) => modal?.classList.add('visible');
         const hideModal = (modal) => modal?.classList.remove('visible');
         document.querySelectorAll('#loginBtnHeader, #loginBtnMobile').forEach(btn => btn.addEventListener('click', (e) => {
@@ -428,9 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
             hideModal(loginModal);
             hideModal(signupModal);
         }));
-        [loginModal, signupModal].forEach(modal => modal?.addEventListener('click', (e) => {
-            if (e.target === modal) hideModal(modal);
-        }));
         document.getElementById('switchToSignup')?.addEventListener('click', (e) => {
             e.preventDefault();
             hideModal(loginModal);
@@ -441,78 +503,56 @@ document.addEventListener('DOMContentLoaded', function() {
             hideModal(signupModal);
             showModal(loginModal);
         });
+
+        // Handle form submissions from the modals
+        loginFormModal.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleLogin(loginFormModal);
+        });
+
+        signupFormModal.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const success = await handleRegistration(signupFormModal);
+            if (success) {
+                hideModal(signupModal); // Close modal on success
+                signupFormModal.reset();
+            }
+        });
     }
+
+    // --- Logic for the dedicated login-signup.html page ---
+    const loginPageForm = document.querySelector('#login-section form'); // Be more specific
+    if (loginPageForm && !loginModal) { // Make sure we are on the dedicated page, not the index page
+        const signupPageForm = document.querySelector('#signup-section form');
+
+        loginPageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleLogin(loginPageForm);
+        });
+
+        signupPageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const success = await handleRegistration(signupPageForm);
+            if (success) {
+                // Switch to login form on success
+                document.getElementById('signup-section').style.display = 'none';
+                document.getElementById('login-section').style.display = 'block';
+                signupPageForm.reset();
+            }
+        });
+
+        // Handle the "?message=" from the URL after email verification
+        const urlParams = new URLSearchParams(window.location.search);
+        const message = urlParams.get('message');
+        if (message) {
+            alert(message); // Show the success message
+            // Clean the URL so the message doesn't pop up again on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
 
     // --- 8. FORM FUNCTIONALITY & HELPERS ---
-    // NEW: Real Login Logic
-    const loginForm = document.getElementById('login-form') || document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            // Use specific IDs which should be on your email/password inputs
-            const email = loginForm.querySelector('#loginEmail').value;
-            const password = loginForm.querySelector('#loginPassword').value;
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password
-                    })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-
-                localStorage.setItem('token', data.token);
-                alert('Login successful!');
-                window.location.href = '/accounts/profile-layout.html'; // Redirect to profile page
-            } catch (err) {
-                alert(`Login failed: ${err.message}`);
-            }
-        });
-    }
-
-    // NEW: Real Signup Logic
-    const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = signupForm.querySelector('#signupUsername').value;
-            const email = signupForm.querySelector('#signupEmail').value;
-            const password = signupForm.querySelector('#signupPassword').value;
-            try {
-                const res = await fetch('/api/auth/register', { // Assuming a register endpoint
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        email,
-                        password
-                    })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message);
-
-                alert('Account created successfully! Please log in.');
-                // Hide signup modal and show login modal
-                if (signupModal && loginModal) {
-                    signupModal.classList.remove('visible');
-                    loginModal.classList.add('visible');
-                    signupForm.reset();
-                } else {
-                    window.location.href = 'login.html'; // Or redirect to login page
-                }
-            } catch (err) {
-                alert(`Signup failed: ${err.message}`);
-            }
-        });
-    }
-
     document.getElementById('profile-details-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         alert('Profile details updated!');
