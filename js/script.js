@@ -14,9 +14,35 @@
    8.  FORM FUNCTIONALITY & HELPERS
    9.  FAQ Accordion
    10. Special Page Scripts (Countdown Timer)
+   11. AUTHENTICATION & USER PROFILE
    =================================================================== */
 
 document.addEventListener('DOMContentLoaded', function() {
+
+    // --- 11. AUTHENTICATION & GLOBAL USER STATE ---
+    // This part runs on every page to check the user's login status
+    const token = localStorage.getItem('token');
+    const loggedInNav = document.getElementById('logged-in-nav');
+    const loggedOutNav = document.getElementById('logged-out-nav');
+
+    if (token) {
+        // User is considered logged in
+        if (loggedInNav) loggedInNav.style.display = 'flex';
+        if (loggedOutNav) loggedOutNav.style.display = 'none';
+        console.log("User is logged in.");
+    } else {
+        // User is considered logged out
+        if (loggedInNav) loggedInNav.style.display = 'none';
+        if (loggedOutNav) loggedOutNav.style.display = 'flex';
+        console.log("User is logged out.");
+    }
+
+    // Dynamic Profile Page Logic (for profile-layout.html)
+    if (document.querySelector('.profile-header')) {
+        // The dynamic profile loading logic would go here.
+        // This could involve fetching user data using the token and populating the fields.
+        console.log("Profile page detected. Ready to load user data.");
+    }
 
     // --- 2. Mobile Menu & Sidebar Accordion ---
     const hamburger = document.getElementById('hamburger');
@@ -132,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (iosTabNav) initializeTabs(iosTabNav, document.getElementById('ios-tab-highlight'));
 
     const allTabContents = document.querySelectorAll('.tab-content');
-    if (mainTabNav) { 
+    if (mainTabNav) {
         const iosSubTabsContainer = document.getElementById('ios-sub-tabs-container');
 
         mainTabNav.querySelectorAll('.tab-button').forEach(button => {
@@ -158,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.addEventListener('click', () => {
                     document.querySelectorAll('#ios-tabs-nav .tab-button').forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
-                    
+
                     allTabContents.forEach(c => c.classList.remove('active'));
                     const targetContent = document.getElementById(button.dataset.tab + '-mods');
                     if (targetContent) targetContent.classList.add('active');
@@ -353,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('mod-file-size').textContent = `Size: ${mod.fileSize}`;
                 document.getElementById('mod-platform').textContent = `Platform: ${mod.platform.replace(/\b\w/g, l => l.toUpperCase())}`;
                 document.getElementById('mod-upload-date').textContent = `Uploaded: ${new Date(mod.uploadDate).toLocaleDateString()}`;
-                
+
                 const starPercentage = (mod.ratingValue / 5) * 100;
                 document.querySelector('.stars-inner').style.width = `${starPercentage}%`;
                 document.querySelector('.rating-text').textContent = `${mod.ratingValue.toFixed(1)} (${mod.ratingCount} reviews)`;
@@ -386,8 +412,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 7. Login/Sign-Up Modal Logic (for index.html) ---
     const loginModal = document.getElementById('loginModal');
+    const signupModal = document.getElementById('signupModal');
     if (loginModal) {
-        const signupModal = document.getElementById('signupModal');
         const showModal = (modal) => modal?.classList.add('visible');
         const hideModal = (modal) => modal?.classList.remove('visible');
         document.querySelectorAll('#loginBtnHeader, #loginBtnMobile').forEach(btn => btn.addEventListener('click', (e) => {
@@ -418,28 +444,74 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- 8. FORM FUNCTIONALITY & HELPERS ---
+    // NEW: Real Login Logic
     const loginForm = document.getElementById('login-form') || document.getElementById('loginForm');
-    if (loginForm) loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        alert('Login successful! (Simulation)');
-        if (loginModal) {
-            hideModal(loginModal);
-            loginForm.reset();
-        } else {
-            window.location.href = 'index.html';
-        }
-    });
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Use specific IDs which should be on your email/password inputs
+            const email = loginForm.querySelector('#loginEmail').value;
+            const password = loginForm.querySelector('#loginPassword').value;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+
+                localStorage.setItem('token', data.token);
+                alert('Login successful!');
+                window.location.href = '/accounts/profile-layout.html'; // Redirect to profile page
+            } catch (err) {
+                alert(`Login failed: ${err.message}`);
+            }
+        });
+    }
+
+    // NEW: Real Signup Logic
     const signupForm = document.getElementById('signup-form') || document.getElementById('signupForm');
-    if (signupForm) signupForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        alert('Account created successfully!');
-        if (signupModal) {
-            hideModal(signupModal);
-            signupForm.reset();
-        } else {
-            window.location.href = 'login.html';
-        }
-    });
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = signupForm.querySelector('#signupUsername').value;
+            const email = signupForm.querySelector('#signupEmail').value;
+            const password = signupForm.querySelector('#signupPassword').value;
+            try {
+                const res = await fetch('/api/auth/register', { // Assuming a register endpoint
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+
+                alert('Account created successfully! Please log in.');
+                // Hide signup modal and show login modal
+                if (signupModal && loginModal) {
+                    signupModal.classList.remove('visible');
+                    loginModal.classList.add('visible');
+                    signupForm.reset();
+                } else {
+                    window.location.href = 'login.html'; // Or redirect to login page
+                }
+            } catch (err) {
+                alert(`Signup failed: ${err.message}`);
+            }
+        });
+    }
 
     document.getElementById('profile-details-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -459,51 +531,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const modForm = document.getElementById('modForm');
     if (modForm) {
         modForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); // Stop the default browser submission
+            event.preventDefault();
 
-            // Use the form element itself to build the FormData object.
-            // This automatically includes ALL fields and their values.
             const formData = new FormData(modForm);
-
-            // You can add a loading state here (e.g., disable the button)
             const submitButton = modForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Uploading...';
 
             try {
-                // Send ALL the form data to the /upload-mod endpoint
                 const response = await fetch('/upload-mod', {
                     method: 'POST',
-                    body: formData // The FormData object contains everything
+                    body: formData
                 });
 
                 const result = await response.json();
 
                 if (!response.ok) {
-                    // If the server responded with an error (like 400 or 500)
                     throw new Error(result.message || 'Server responded with an error.');
                 }
 
-                // Handle success
                 alert(`Success: ${result.message}`);
                 modForm.reset();
-                // Manually reset file name displays
                 document.getElementById('modFileName').textContent = 'No file selected';
                 document.getElementById('imageFileName').textContent = 'No file selected';
                 document.getElementById('screenshotsFileName').textContent = 'No files selected';
 
             } catch (error) {
-                // This will now show a more specific error message from the server if available
                 console.error('Upload failed:', error);
                 alert(`Upload failed: ${error.message}`);
             } finally {
-                // Re-enable the button whether it succeeded or failed
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Mod for Review';
             }
         });
 
-        // --- Keep your file input handlers ---
         function handleFileInput(inputId, spanId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(spanId);
