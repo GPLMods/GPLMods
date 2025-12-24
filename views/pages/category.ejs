@@ -1,0 +1,55 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+
+    <!-- Page Title: Will display "Windows", "Android", etc. dynamically -->
+    <h1><%= title %> Mods</h1>
+    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--silver);">
+        Browse the latest uploads for <%= title %>
+    </p>
+
+
+    <!-- Main Category Navigation Bar (Same as homepage) -->
+    <!-- We can add a simple active state here -->
+    <nav class="category-nav" style="padding: 1rem 0; margin-bottom: 2rem; border-top: 1px solid var(--light-grey); border-bottom: 1px solid var(--light-grey); display: flex; gap: 1.5rem; justify-content: center;">
+        <a href="/category?cat=windows" class="btn <%= currentCategory === 'windows' ? 'btn-primary' : 'btn-secondary' %>">Windows</a>
+        <a href="/category?cat=android" class="btn <%= currentCategory === 'android' ? 'btn-primary' : 'btn-secondary' %>">Android</a>
+        <a href="/category?cat=ios" class="btn <%= currentCategory === 'ios' ? 'btn-primary' : 'btn-secondary' %>">iOS</a>
+        <a href="/category?cat=wordpress" class="btn <%= currentCategory === 'wordpress' ? 'btn-primary' : 'btn-secondary' %>">WordPress</a>
+    </nav>
+    
+    
+    <!-- Results Grid -->
+    <section class="results-grid">
+         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+        
+            <!-- Check if there are any files to display -->
+            <% if (files && files.length > 0) { %>
+                <!-- Loop through each file passed from the server -->
+                <% files.forEach(file => { %>
+    
+                    <!-- This is the EXACT SAME item card component from the homepage, making our code reusable -->
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title"><%= file.name %></h3>
+                            <p class="card-platform"><%= file.version %></p>
+                            <div class="star-rating" data-rating="<%= file.ratings %>">
+                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                            </div>
+                        </div>
+                    </a>
+    
+                <% }) %>
+            <% } else { %>
+                <!-- This message shows if a category has no mods yet -->
+                <p style="grid-column: 1 / -1; text-align: center; padding: 2rem;">No mods have been uploaded to the <%= title %> category yet.</p>
+            <% } %>
+    
+        </div>
+    </section>
+
+</div>
+
+<%- include('../partials/footer') %>

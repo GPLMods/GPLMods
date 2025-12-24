@@ -1,0 +1,303 @@
+/**
+ * ==================================================================================
+ * GPL MODS GLOBAL STYLESHEET
+ * ==================================================================================
+ * This file contains the core styles for the entire GPL Mods website, defining the 
+ * overall theme, layout, and appearance of common elements.
+ *
+ * Table of Contents:
+ * 1. Root Variables & CSS Reset
+ * 2. Global Typography & Body Styles
+ * 3. Reusable Components (Buttons, Containers)
+ * 4. Header & Navigation
+ * 5. Animated Search Bar
+ * 6. Search Suggestions & History
+ * 7. Star Rating System
+ * 8. Item Card (For Apps, Games, etc.)
+ * 9. Basic Responsive Design
+ * ==================================================================================
+ */
+
+/* 1. Root Variables & CSS Reset
+-------------------------------------------------- */
+:root {
+    --black: #0a0a0a;
+    --dark-grey: #1a1a1a;
+    --light-grey: #333333;
+    --white: #f5f5f5;
+    --gold: #FFD700;
+    --silver: #c0c0c0;
+    --glow-gold: rgba(255, 215, 0, 0.5);
+
+    --font-primary: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+    --transition-speed: 0.3s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 2. Global Typography & Body Styles
+-------------------------------------------------- */
+body {
+    background-color: var(--black);
+    color: var(--white);
+    font-family: var(--font-primary);
+    line-height: 1.6;
+    overflow-x: hidden; /* Prevents horizontal scroll */
+}
+
+a {
+    color: var(--gold);
+    text-decoration: none;
+    transition: color var(--transition-speed) ease;
+}
+
+a:hover {
+    color: var(--white);
+}
+
+h1, h2, h3, h4 {
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+h1 { font-size: 2.5rem; color: var(--gold); }
+h2 { font-size: 2rem; color: var(--silver); }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.2rem; }
+
+
+/* 3. Reusable Components (Buttons, Containers)
+-------------------------------------------------- */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+    padding: 2rem 0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all var(--transition-speed) ease;
+    text-transform: uppercase;
+}
+
+.btn-primary {
+    background-color: var(--gold);
+    color: var(--black);
+    border: 1px solid var(--gold);
+}
+
+.btn-primary:hover {
+    background-color: var(--black);
+    color: var(--gold);
+    box-shadow: 0 0 15px var(--glow-gold);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--silver);
+    border: 1px solid var(--silver);
+}
+
+.btn-secondary:hover {
+    background-color: var(--silver);
+    color: var(--black);
+}
+
+/* 4. Header & Navigation
+-------------------------------------------------- */
+.main-header {
+    background-color: var(--dark-grey);
+    padding: 1rem 0;
+    border-bottom: 2px solid var(--light-grey);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* 5. Animated Search Bar
+-------------------------------------------------- */
+.search-bar-container {
+    position: relative;
+    width: 300px;
+    transition: width var(--transition-speed) ease-in-out;
+}
+
+.search-bar-container.active {
+    width: 500px; /* Expands on focus */
+}
+
+.search-bar-container .search-form {
+    display: flex;
+    align-items: center;
+    background-color: var(--dark-grey);
+    border: 1px solid var(--light-grey);
+    border-radius: 50px;
+    overflow: hidden;
+    padding: 5px;
+    transition: border-color var(--transition-speed) ease;
+}
+
+.search-bar-container.active .search-form {
+    border-color: var(--gold); /* Gold border on focus */
+}
+
+.search-bar-container .search-icon {
+    padding: 0 10px;
+    color: var(--silver);
+}
+
+.search-bar-container #searchInput {
+    flex-grow: 1;
+    border: none;
+    background: none;
+    outline: none;
+    color: var(--white);
+    font-size: 1rem;
+    padding: 5px;
+}
+
+/* 6. Search Suggestions & History
+-------------------------------------------------- */
+.search-suggestions, .search-history {
+    display: none; /* Hidden by default, shown by JS */
+    position: absolute;
+    top: 110%;
+    left: 0;
+    right: 0;
+    background-color: var(--dark-grey);
+    border: 1px solid var(--light-grey);
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 999;
+}
+
+.search-suggestions ul, .search-history ul {
+    list-style: none;
+}
+
+.search-suggestions a, .search-history a {
+    display: block;
+    padding: 12px 20px;
+    color: var(--white);
+}
+
+.search-suggestions a:hover, .search-history a:hover {
+    background-color: var(--light-grey);
+    color: var(--gold);
+}
+
+.search-history h4 {
+    padding: 12px 20px 5px;
+    color: var(--silver);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+/* 7. Star Rating System
+-------------------------------------------------- */
+.star-rating {
+    display: flex;
+    align-items: center;
+}
+
+.star {
+    font-size: 1.2rem;
+    color: var(--light-grey); /* The color of an empty star */
+    position: relative;
+    display: inline-block;
+    --fill-percentage: 0%; /* Custom property for partial stars */
+}
+
+.star.filled {
+    color: var(--gold);
+}
+
+/* The magic for partial stars */
+.star.partial::before {
+    content: '\2605'; /* This is a star character ★ */
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: var(--gold);
+    overflow: hidden;
+    /* Create a gradient that is gold up to the percentage, then transparent */
+    background: linear-gradient(90deg, var(--gold) var(--fill-percentage), transparent var(--fill-percentage));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+/* 8. Item Card (For Apps, Games, etc.)
+-------------------------------------------------- */
+.item-card {
+    background-color: var(--dark-grey);
+    border: 1px solid var(--light-grey);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+    cursor: pointer;
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px var(--glow-gold);
+    border-color: var(--gold);
+}
+
+.item-card .card-image {
+    width: 100%;
+    height: 180px; /* Example height for PC games (rectangle) */
+    background-color: var(--light-grey);
+    /* Square for mobile */
+}
+
+.item-card.square-image .card-image {
+    height: auto; /* reset height */
+    aspect-ratio: 1 / 1; /* Makes it a perfect square */
+}
+
+.item-card .card-body {
+    padding: 15px;
+}
+
+.item-card .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--white);
+}
+
+.item-card .card-platform {
+    font-size: 0.8rem;
+    color: var(--silver);
+    margin-bottom: 0.5rem;
+}
+
+/* 9. Basic Responsive Design
+-------------------------------------------------- */
+@media (max-width: 768px) {
+    .search-bar-container,
+    .search-bar-container.active {
+        width: 100%;
+    }
+    
+    .container {
+        width: 95%;
+    }
+    
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.6rem; }
+}

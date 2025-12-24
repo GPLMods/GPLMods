@@ -1,0 +1,108 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+
+    <!-- Category Navigation -->
+    <nav class="category-nav" style="padding: 1rem 0; margin-bottom: 2rem; border-top: 1px solid var(--light-grey); border-bottom: 1px solid var(--light-grey); display: flex; gap: 1.5rem; justify-content: center;">
+        <a href="/category?cat=windows" class="btn btn-secondary">Windows</a>
+        <a href="/category?cat=android" class="btn btn-secondary">Android</a>
+        <a href="/category?cat=ios" class="btn btn-secondary">iOS</a>
+        <a href="/category?cat=wordpress" class="btn btn-secondary">WordPress</a>
+    </nav>
+
+    <!-- Latest Uploads Section (formerly Editor's Choice) -->
+    <section class="editor-choice">
+        <h2>Latest Uploads</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Check if there are any files to display -->
+            <% if (files && files.length > 0) { %>
+                <!-- Loop through each file passed from the server -->
+                <% files.forEach(file => { %>
+    
+                    <!-- The link now points to the mod's specific page -->
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
+                            <!-- The image is now a background for better scaling -->
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title"><%= file.name %></h3>
+                            <p class="card-platform"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></p>
+                            <div class="star-rating" data-rating="<%= file.ratings %>"> <!-- Use file.ratings later -->
+                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                            </div>
+                        </div>
+                    </a>
+    
+                <% }) %>
+            <% } else { %>
+                <p>No mods have been uploaded yet. Be the first!</p>
+            <% } %>
+    
+        </div>
+    </section>
+
+    <!-- Sub-Category Tabs -->
+     <nav style="padding: 1rem 0; margin: 2rem 0; display: flex; gap: 1rem; justify-content: center;">
+        <a href="/trending" class="btn btn-primary">Trending</a>
+        <a href="/new-updates" class="btn btn-secondary">New Updates</a>
+        <a href="/popular" class="btn btn-secondary">Most Popular</a>
+    </nav>
+    
+
+    <!-- Trending on Windows Section -->
+    <section class="trending-windows" style="margin-top: 3rem;">
+        <h2>Trending on Windows</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Dummy Item -->
+            <a href="#" class="item-card">
+                <div class="card-image" style="background-color: #5a3a3a;"></div>
+                <div class="card-body">
+                    <h3 class="card-title">Advanced System Utility</h3>
+                    <p class="card-platform">Windows</p>
+                    <div class="star-rating" data-rating="4.2">
+                         <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                    </div>
+                </div>
+            </a>
+
+             <!-- Dummy Item -->
+            <a href="#" class="item-card">
+                <div class="card-image" style="background-color: #3a5a4a;"></div>
+                <div class="card-body">
+                    <h3 class="card-title">Photo Editor Extreme</h3>
+                    <p class="card-platform">Windows</p>
+                    <div class="star-rating" data-rating="3.8">
+                         <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+    </section>
+    
+    <!-- Popular in Android Section -->
+    <section class="popular-android" style="margin-top: 3rem;">
+        <h2>Popular on Android</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+
+            <!-- Dummy Item (Square Image) -->
+            <a href="#" class="item-card square-image">
+                <div class="card-image" style="background-color: #3a3a5a;"></div>
+                <div class="card-body">
+                    <h3 class="card-title">Galaxy Runner Mod</h3>
+                    <p class="card-platform">Android</p>
+                    <div class="star-rating" data-rating="4.5">
+                        <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Add more dummy items here as needed -->
+        </div>
+    </section>
+
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPL Mods - Modded Games and Software</title>
+    
+    <!-- Link to our Global CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons (example) -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- Replace with your own kit or SVG icons later -->
+</head>
+<body>
+
+    <header class="main-header">
+        <nav class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="/" class="logo">
+                    <h1>GPL Mods</h1>
+                </a>
+    
+                <!-- Animated Search Bar HTML Structure -->
+                <div id="animatedSearchBar" class="search-bar-container">
+                    <form action="/search" method="GET" class="search-form">
+                        <span class="search-icon">&#128269;</span> <!-- Simple search emoji icon -->
+                        <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
+                    </form>
+                    <!-- These divs will be filled by our main.js -->
+                    <div id="searchSuggestions" class="search-suggestions"></div>
+                    <div id="searchHistory" class="search-history"></div>
+                </div>
+
+                 <div>
+                    <a href="/login" class="btn btn-secondary">Login</a>
+                    <a href="/register" class="btn btn-primary">Sign Up</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
