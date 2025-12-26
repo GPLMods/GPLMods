@@ -5,6 +5,11 @@ const path = require('path');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const File = require('./models/file'); // Import our File model
+const User = require('./models/user'); // Import the new User model
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const MongoStore = require('connect-mongo');
 const { Types } = mongoose; // Import 'Types' to validate ObjectID
 
 // TODO: In a later step, we'll move B2 and VirusTotal logic to separate files.
@@ -26,6 +31,73 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(express.urlencoded({ extended: true }));
 
+// --- SESSION CONFIGURATION ---
+app.use(session({
+    secret: 'a-secret-key-to-sign-the-cookie', // Replace with a real secret in a .env file
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'sessions' // Optional: name of the collection to store sessions
+    }),
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 7 // Cookie expires in 7 days
+    }
+}));
+
+// --- PASSPORT.JS CONFIGURATION ---
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Tell Passport how to authenticate users using a local strategy (email/password)
+passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+    try {
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return done(null, false, { message: 'Incorrect email.' });
+        }
+
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return done(null, false, { message: 'Incorrect password.' });
+        }
+
+        return done(null, user);
+    } catch (error) {
+        return done(error);
+    }
+}));
+
+// Tell Passport how to save the user to the session (serialize)
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+// Tell Passport how to get the user from the session (deserialize)
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error);
+    }
+});
+
+// Middleware to pass user object to all templates
+app.use((req, res, next) => {
+    res.locals.user = req.user || null;
+    next();
+});
+
+// --- MIDDLEWARE TO CHECK AUTHENTICATION ---
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    // If not authenticated, redirect to the login page
+    res.redirect('/login');
+}
+
 
 // 3. CONFIGURE FILE UPLOAD (MULTER)
 // We use memoryStorage to hold the file as a buffer before uploading to the cloud
@@ -43,6 +115,68 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // 5. DEFINE ROUTES
+
+// ===================================
+// AUTHENTICATION ROUTES
+// ===================================
+
+// GET route for the registration page
+app.get('/register', (req, res) => {
+    res.render('pages/register');
+});
+
+// POST route to handle registration
+app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    // Simple validation
+    if (!username || !email || !password) {
+        return res.status(400).send("All fields are required.");
+    }
+    try {
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            return res.status(400).send("User with this email or username already exists.");
+        }
+
+        const newUser = new User({ username, email, password });
+        await newUser.save();
+
+        // Log the user in directly after registration
+        req.login(newUser, (err) => {
+            if (err) { return next(err); }
+            return res.redirect('/');
+        });
+
+    } catch (error) {
+        res.status(500).send("Server error during registration.");
+    }
+});
+
+// GET route for the login page
+app.get('/login', (req, res) => {
+    res.render('pages/login');
+});
+
+// POST route to handle login
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login',
+    // failureFlash: true // You can add flash messages for errors later
+}));
+
+// GET route for logout
+app.get('/logout', (req, res, next) => {
+    req.logout(function(err) {
+        if (err) { return next(err); }
+        res.redirect('/');
+    });
+});
+
+
+// ===================================
+// FILE & MOD ROUTES
+// ===================================
+
 /**
  * GET Route for the Homepage - Updated to show recent files
  */
@@ -64,15 +198,14 @@ app.get('/', async (req, res) => {
 /**
  * GET Route for the Upload Page
  */
-app.get('/upload', (req, res) => {
-    // For now, any user can see the upload page. You'll add authentication middleware later.
+app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
 
 /**
  * POST Route to handle the actual file upload
  */
-app.post('/upload', upload.fields([
+app.post('/upload', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 },
     { name: 'modFile', maxCount: 1 }
@@ -158,6 +291,7 @@ app.post('/upload', upload.fields([
             category,
             platforms: Array.isArray(platforms) ? platforms : [platforms], // Ensure platforms is an array
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+            uploader: req.user.username, // <-- ASSIGN THE LOGGED-IN USERNAME
             fileSize: modFile[0].size,
             virusTotalAnalysisId: analysisId
         });
@@ -218,21 +352,21 @@ app.get('/category', async (req, res) => {
             // If no category is specified, maybe redirect to the homepage or an error page
             return res.redirect('/');
         }
-        
+
         // --- Build a dynamic query object for MongoDB ---
         const queryFilter = {
             category: cat // Filter where the 'category' field matches the 'cat' parameter
         };
-        
+
         // Find all files that match the filter, sorted by newest first
         const filteredFiles = await File.find(queryFilter).sort({ createdAt: -1 });
 
         // Capitalize the category name for display on the page
         const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
-        
+
         // Render the 'category' page, passing it the title and the filtered list of files
-        res.render('pages/category', { 
-            files: filteredFiles, 
+        res.render('pages/category', {
+            files: filteredFiles,
             title: pageTitle,
             currentCategory: cat
         });

@@ -37,8 +37,16 @@
                 </div>
 
                  <div>
-                    <a href="/login" class="btn btn-secondary">Login</a>
-                    <a href="/register" class="btn btn-primary">Sign Up</a>
+                    <% if (user) { %>
+                        <!-- User is logged in -->
+                        <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
+                        <a href="/upload" class="btn btn-primary">Upload Mod</a>
+                        <a href="/logout" class="btn btn-secondary">Logout</a>
+                    <% } else { %>
+                        <!-- User is not logged in -->
+                        <a href="/login" class="btn btn-secondary">Login</a>
+                        <a href="/register" class="btn btn-primary">Sign Up</a>
+                    <% } %>
                 </div>
             </div>
         </nav>

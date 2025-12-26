@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+<style>
+    .auth-form-container {
+        max-width: 450px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: var(--dark-grey);
+        border: 1px solid var(--light-grey);
+        border-radius: 8px;
+    }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: .5rem; font-weight: bold; }
+    .form-group input { width: 100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); border-radius: 4px; color: var(--white); font-size: 1rem; }
+    .form-footer { margin-top: 1.5rem; text-align: center; color: var(--silver); }
+</style>
+
+<div class="auth-form-container">
+    <h2 style="text-align: center; margin-bottom: 2rem;">Create a New Account</h2>
+    <form action="/register" method="POST">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+    </form>
+    <div class="form-footer">
+        <p>Already have an account? <a href="/login">Log In</a></p>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
