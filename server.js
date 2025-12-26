@@ -36,14 +36,15 @@ app.use(session({
     secret: 'a-secret-key-to-sign-the-cookie', // Replace with a real secret in a .env file
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
+    store: MongoStore({ // <--- CORRECTED: Removed .create()
         mongoUrl: process.env.MONGO_URI,
-        collectionName: 'sessions' // Optional: name of the collection to store sessions
+        collectionName: 'sessions'
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7 // Cookie expires in 7 days
     }
 }));
+
 
 // --- PASSPORT.JS CONFIGURATION ---
 app.use(passport.initialize());
