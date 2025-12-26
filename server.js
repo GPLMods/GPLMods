@@ -33,10 +33,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- SESSION CONFIGURATION ---
 app.use(session({
-    secret: 'a-secret-key-to-sign-the-cookie', // Replace with a real secret in a .env file
+    secret: process.env.SESSION_SECRET, // Using environment variable for the secret
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ // <--- FIX APPLIED
+    store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions'
     }),
