@@ -36,7 +36,7 @@ app.use(session({
     secret: 'a-secret-key-to-sign-the-cookie', // Replace with a real secret in a .env file
     resave: false,
     saveUninitialized: false,
-    store: MongoStore({ // <--- CORRECTED: Removed .create()
+    store: MongoStore.create({ // <--- FIX APPLIED
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions'
     }),
