@@ -1,5 +1,4 @@
 // 1. IMPORT DEPENDENCIES
-require('dotenv').config(); // Loads .env file contents into process.env
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -36,7 +35,8 @@ app.use(session({
     secret: process.env.SESSION_SECRET, // Using environment variable for the secret
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
+    // -- FIX -- Change MongoStore.create to new MongoStore
+    store: new MongoStore({
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions'
     }),
