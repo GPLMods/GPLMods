@@ -16,6 +16,20 @@ const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/clien
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const axios = require('axios');
 
+// ===============================
+// AWS S3 CLIENT CONFIGURATION
+// ===============================
+// This single client will be used for all B2 operations.
+const s3Client = new S3Client({
+    endpoint: `https://${process.env.B2_ENDPOINT}`, // Note: We add https:// here
+    region: process.env.B2_REGION,
+    credentials: {
+        accessKeyId: process.env.B2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
+    },
+    forcePathStyle: true // This is crucial for Backblaze B2 and often fixes signature errors
+});
+
 
 // 2. INITIALIZE APP & MIDDLEWARE
 const app = express();
@@ -109,20 +123,16 @@ const upload = multer({
 });
 
 
-// 4. DATABASE & S3 CLIENT CONNECTION
+// 4. DATABASE CONNECTION
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Successfully connected to MongoDB Atlas!'))
     .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
 
-// Initialize the S3 Client once for better performance
-const s3Client = new S3Client({
-    endpoint: process.env.B2_ENDPOINT,
-    region: process.env.B2_REGION,
-    credentials: {
-        accessKeyId: process.env.B2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
-    },
-});
+
+// Helper function to remove special characters from filenames
+const sanitizeFilename = (filename) => {
+  return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
+};
 
 
 // 5. DEFINE ROUTES
@@ -243,30 +253,30 @@ app.post('/upload', ensureAuthenticated, upload.fields([
 
     try {
         // --- Helper function for uploading (UPDATED) ---
-        const uploadToB2 = async (file, folder, s3Client) => {
-            // The fileName IS the key
-            const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+        const uploadToB2 = async (file, folder) => {
+            const sanitizedFilename = sanitizeFilename(file.originalname);
+            const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
             const params = {
                 Bucket: process.env.B2_BUCKET_NAME,
-                Key: fileName, // The Key is the file path in the bucket
+                Key: fileName,
                 Body: file.buffer,
                 ContentType: file.mimetype,
             };
+            // The s3Client is now defined globally, so we don't need to pass it in
             await s3Client.send(new PutObjectCommand(params));
-            // Return the key instead of the full URL
             return fileName;
         };
 
         // --- 1. UPLOAD FILES TO B2 ---
-        const iconKey = await uploadToB2(softwareIcon[0], 'icons', s3Client);
+        const iconKey = await uploadToB2(softwareIcon[0], 'icons');
 
         const screenshotKeys = [];
         for (const screenshot of screenshots) {
-            const key = await uploadToB2(screenshot, 'screenshots', s3Client);
+            const key = await uploadToB2(screenshot, 'screenshots');
             screenshotKeys.push(key);
         }
 
-        const fileKey = await uploadToB2(modFile[0], 'mods', s3Client);
+        const fileKey = await uploadToB2(modFile[0], 'mods');
 
         // --- 2. (OPTIONAL) SUBMIT FILE TO VIRUSTOTAL ---
         let analysisId = null;
