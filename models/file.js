@@ -6,11 +6,12 @@ const FileSchema = new mongoose.Schema({
     modDescription: { type: String, required: true },
     officialDescription: { type: String },
     
-    // URLs pointing to the files in Backblaze B2
-    iconUrl: { type: String, required: true },
-    screenshotUrls: { type: [String], required: true },
-    videoUrl: { type: String },
-    fileUrl: { type: String, required: true },
+    // --- FIELD NAME UPDATES ---
+    // Change 'Url' to 'Key' to better represent the data stored
+    iconKey: { type: String, required: true },
+    screenshotKeys: { type: [String], required: true },
+    videoUrl: { type: String }, // YouTube/Vimeo URLs are already public
+    fileKey: { type: String, required: true },
 
     category: { type: String, required: true, enum: ['windows', 'android', 'ios', 'wordpress'] },
     platforms: { type: [String], required: true },

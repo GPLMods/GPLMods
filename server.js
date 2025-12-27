@@ -1,5 +1,4 @@
 // 1. IMPORT DEPENDENCIES
-require('dotenv').config(); // Loads .env file contents into process.env
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -13,7 +12,8 @@ const MongoStore = require('connect-mongo');
 const { Types } = mongoose; // Import 'Types' to validate ObjectID
 
 // TODO: In a later step, we'll move B2 and VirusTotal logic to separate files.
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const axios = require('axios');
 
 
@@ -109,10 +109,20 @@ const upload = multer({
 });
 
 
-// 4. DATABASE CONNECTION
+// 4. DATABASE & S3 CLIENT CONNECTION
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Successfully connected to MongoDB Atlas!'))
     .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
+
+// Initialize the S3 Client once for better performance
+const s3Client = new S3Client({
+    endpoint: process.env.B2_ENDPOINT,
+    region: process.env.B2_REGION,
+    credentials: {
+        accessKeyId: process.env.B2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
+    },
+});
 
 
 // 5. DEFINE ROUTES
@@ -179,15 +189,22 @@ app.get('/logout', (req, res, next) => {
 // ===================================
 
 /**
- * GET Route for the Homepage - Updated to show recent files
+ * GET Route for the Homepage - Updated to show recent files with presigned icon URLs
  */
 app.get('/', async (req, res) => {
     try {
-        // Fetch all files from the database, sorted by the newest first
         const recentFiles = await File.find().sort({ createdAt: -1 }).limit(12);
 
-        // Render the index page and pass the 'files' variable to it
-        res.render('pages/index', { files: recentFiles });
+        // Generate presigned URLs for each icon
+        const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
+            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            return {
+                ...file.toObject(),
+                iconUrl: iconUrl
+            };
+        }));
+        
+        res.render('pages/index', { files: filesWithUrls });
 
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
@@ -225,44 +242,31 @@ app.post('/upload', ensureAuthenticated, upload.fields([
     }
 
     try {
-        // --- BACKBLAZE B2 CLIENT SETUP ---
-        const s3Client = new S3Client({
-            endpoint: process.env.B2_ENDPOINT,
-            region: process.env.B2_REGION,
-            credentials: {
-                accessKeyId: process.env.B2_ACCESS_KEY_ID,
-                secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
-            },
-        });
-
-        // --- Helper function for uploading ---
-        const uploadToB2 = async (file, folder) => {
+        // --- Helper function for uploading (UPDATED) ---
+        const uploadToB2 = async (file, folder, s3Client) => {
+            // The fileName IS the key
             const fileName = `${folder}/${Date.now()}-${file.originalname}`;
             const params = {
                 Bucket: process.env.B2_BUCKET_NAME,
-                Key: fileName,
+                Key: fileName, // The Key is the file path in the bucket
                 Body: file.buffer,
                 ContentType: file.mimetype,
             };
             await s3Client.send(new PutObjectCommand(params));
-            // Construct the public URL
-            // NOTE: You must make your bucket public in Backblaze B2 settings for this URL structure to work.
-            const friendlyBucketName = process.env.B2_BUCKET_NAME;
-            const b2HostName = process.env.B2_ENDPOINT.split('//')[1];
-            return `https://${friendlyBucketName}.${b2HostName}/${fileName}`;
+            // Return the key instead of the full URL
+            return fileName;
         };
 
         // --- 1. UPLOAD FILES TO B2 ---
-        const iconUrl = await uploadToB2(softwareIcon[0], 'icons');
+        const iconKey = await uploadToB2(softwareIcon[0], 'icons', s3Client);
 
-        const screenshotUrls = [];
+        const screenshotKeys = [];
         for (const screenshot of screenshots) {
-            const url = await uploadToB2(screenshot, 'screenshots');
-            screenshotUrls.push(url);
+            const key = await uploadToB2(screenshot, 'screenshots', s3Client);
+            screenshotKeys.push(key);
         }
 
-        const fileUrl = await uploadToB2(modFile[0], 'mods');
-
+        const fileKey = await uploadToB2(modFile[0], 'mods', s3Client);
 
         // --- 2. (OPTIONAL) SUBMIT FILE TO VIRUSTOTAL ---
         let analysisId = null;
@@ -279,20 +283,22 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             // Decide if you want to stop the upload or continue without a scan ID
         }
 
-        // --- 3. SAVE FILE METADATA TO MONGODB ---
+        // --- 3. SAVE FILE METADATA TO MONGODB (UPDATED) ---
         const newFile = new File({
             name: softwareName,
             version: softwareVersion,
             modDescription,
             officialDescription,
-            iconUrl,
-            screenshotUrls,
-            videoUrl,
-            fileUrl,
+            // --- Use the new field names and save the keys ---
+            iconKey: iconKey,
+            screenshotKeys: screenshotKeys,
+            videoUrl, // Stays the same
+            fileKey: fileKey,
+            // --- rest of the fields ---
             category,
-            platforms: Array.isArray(platforms) ? platforms : [platforms], // Ensure platforms is an array
+            platforms: Array.isArray(platforms) ? platforms : [platforms],
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-            uploader: req.user.username, // <-- ASSIGN THE LOGGED-IN USERNAME
+            uploader: req.user.username,
             fileSize: modFile[0].size,
             virusTotalAnalysisId: analysisId
         });
@@ -312,27 +318,37 @@ app.post('/upload', ensureAuthenticated, upload.fields([
 
 /**
  * GET Route for a specific mod download page.
- * Uses a route parameter ':id' to dynamically catch the file ID from the URL.
+ * Updated to generate presigned URLs for all media on the page.
  */
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
-
-        // --- Basic validation for MongoDB ObjectID ---
-        if (!Types.ObjectId.isValid(fileId)) {
-            return res.status(404).send("File not found (Invalid ID format).");
-        }
-
-        // Find the file in the database by its unique ID
+        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found..."); }
+        
         const file = await File.findById(fileId);
+        if (!file) { return res.status(404).send("File not found."); }
 
-        if (!file) {
-            // If no file is found with that ID, send a 404 error
-            return res.status(404).send("File not found.");
-        }
+        // --- GENERATE PRESIGNED URLS FOR ALL MEDIA ON THE PAGE ---
+        const getIconUrl = getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+        
+        const getScreenshotUrls = Promise.all(
+            file.screenshotKeys.map(key => 
+                getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })
+            )
+        );
 
-        // If the file is found, render the 'download' page and pass the file object to it
-        res.render('pages/download', { file: file });
+        // Await all promises
+        const [iconUrl, screenshotUrls] = await Promise.all([getIconUrl, getScreenshotUrls]);
+
+        // Create a new object to pass to the view with the temporary URLs
+        const fileDataForView = {
+            ...file.toObject(), // Convert Mongoose document to plain object
+            iconUrl: iconUrl, // Overwrite with presigned URL
+            screenshotUrls: screenshotUrls // Overwrite with presigned URLs
+        };
+
+        // Render the page with the data containing the temporary URLs
+        res.render('pages/download', { file: fileDataForView });
 
     } catch (error) {
         console.error("Error fetching file for download page:", error);
@@ -342,8 +358,7 @@ app.get('/mods/:id', async (req, res) => {
 
 /**
  * GET Route for the category page.
- * Uses URL query parameters to filter the results.
- * e.g., /category?cat=windows  or /category?cat=android
+ * Updated to use presigned URLs for icons.
  */
 app.get('/category', async (req, res) => {
     try {
@@ -353,21 +368,22 @@ app.get('/category', async (req, res) => {
             // If no category is specified, maybe redirect to the homepage or an error page
             return res.redirect('/');
         }
-
-        // --- Build a dynamic query object for MongoDB ---
-        const queryFilter = {
-            category: cat // Filter where the 'category' field matches the 'cat' parameter
-        };
-
-        // Find all files that match the filter, sorted by newest first
-        const filteredFiles = await File.find(queryFilter).sort({ createdAt: -1 });
-
-        // Capitalize the category name for display on the page
+        
+        const filteredFiles = await File.find({ category: cat }).sort({ createdAt: -1 });
         const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
-
+        
+        // Generate presigned URLs for each icon
+        const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
+            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            return {
+                ...file.toObject(),
+                iconUrl: iconUrl
+            };
+        }));
+        
         // Render the 'category' page, passing it the title and the filtered list of files
-        res.render('pages/category', {
-            files: filteredFiles,
+        res.render('pages/category', { 
+            files: filesWithUrls, 
             title: pageTitle,
             currentCategory: cat
         });
@@ -381,29 +397,28 @@ app.get('/category', async (req, res) => {
 
 /**
  * GET Route to handle the actual file download action.
- * This will increment the download count and redirect to the B2 URL.
+ * Updated to generate a presigned URL for the download.
  */
 app.get('/download-file/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
+        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
 
-        if (!Types.ObjectId.isValid(fileId)) {
-            return res.status(404).send("File not found.");
-        }
+        const file = await File.findByIdAndUpdate(fileId, { $inc: { downloads: 1 } });
+        if (!file) { return res.status(404).send("File not found."); }
 
-        // Use findByIdAndUpdate to increment the download count and retrieve the document in one go
-        const file = await File.findByIdAndUpdate(
-            fileId,
-            { $inc: { downloads: 1 } }, // The '$inc' operator atomically increments a field
-            { new: true } // 'new: true' returns the modified document
-        );
+        // --- PRESIGNED URL LOGIC ---
+        // Create the command to get an object
+        const command = new GetObjectCommand({
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: file.fileKey,
+        });
 
-        if (!file) {
-            return res.status(404).send("File not found.");
-        }
+        // Generate the presigned URL, valid for 5 minutes (300 seconds)
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
 
-        // Redirect the user's browser to the actual file URL on Backblaze B2
-        res.redirect(file.fileUrl);
+        // Redirect the user to the temporary URL
+        res.redirect(presignedUrl);
 
     } catch (error) {
         console.error("Error processing file download:", error);
