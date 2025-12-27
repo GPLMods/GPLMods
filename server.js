@@ -299,12 +299,14 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             version: softwareVersion,
             modDescription,
             officialDescription,
-            // --- Use the new field names and save the keys ---
             iconKey: iconKey,
             screenshotKeys: screenshotKeys,
-            videoUrl, // Stays the same
+            videoUrl,
             fileKey: fileKey,
-            // --- rest of the fields ---
+            
+            // ADD THIS LINE
+            originalFilename: modFile[0].originalname,
+
             category,
             platforms: Array.isArray(platforms) ? platforms : [platforms],
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -417,15 +419,16 @@ app.get('/download-file/:id', async (req, res) => {
         const file = await File.findByIdAndUpdate(fileId, { $inc: { downloads: 1 } });
         if (!file) { return res.status(404).send("File not found."); }
 
-        // --- PRESIGNED URL LOGIC ---
-        // Create the command to get an object
+        // --- UPDATED PRESIGNED URL LOGIC ---
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
             Key: file.fileKey,
+            // THIS IS THE CRUCIAL PART THAT FORCES THE DOWNLOAD
+            ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
         });
 
-        // Generate the presigned URL, valid for 5 minutes (300 seconds)
-        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+        // Generate the presigned URL, which now includes the download instruction
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); // Valid for 5 minutes
 
         // Redirect the user to the temporary URL
         res.redirect(presignedUrl);
@@ -440,4 +443,4 @@ app.get('/download-file/:id', async (req, res) => {
 // 6. START THE SERVER
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-});
+});```

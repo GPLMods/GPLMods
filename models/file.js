@@ -18,6 +18,10 @@ const FileSchema = new mongoose.Schema({
     tags: { type: [String] },
 
     fileSize: { type: Number, required: true },
+    
+    // ADD THIS NEW FIELD
+    originalFilename: { type: String, required: true },
+
     uploader: { type: String, default: "Anonymous" }, // Will later be a mongoose.Schema.Types.ObjectId
     
     // Tracking & Stats
