@@ -1,53 +1,71 @@
-// 1. IMPORT DEPENDENCIES
+// ===============================
+// 1. IMPORTS
+// ===============================
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const multer = require('multer');
-const File = require('./models/file'); // Import our File model
-const User = require('./models/user'); // Import the new User model
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const MongoStore = require('connect-mongo');
-const { Types } = mongoose; // Import 'Types' to validate ObjectID
+const axios = require('axios');
+const bcrypt = require('bcryptjs');
 
-// TODO: In a later step, we'll move B2 and VirusTotal logic to separate files.
+// AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const axios = require('axios');
+
+// Mongoose Models
+const File = require('./models/file');
+const User = require('./models/user');
 
 // ===============================
-// AWS S3 CLIENT CONFIGURATION
+// 2. INITIALIZATION & CONFIGURATION
+// ===============================
+const app = express();
+const PORT = process.env.PORT || 3000;
+const { Types } = mongoose;
+
+// Set View Engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Middleware
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+
+// ===============================
+// 3. AWS S3 CLIENT & HELPERS
 // ===============================
 // This single client will be used for all B2 operations.
 const s3Client = new S3Client({
-    endpoint: `https://${process.env.B2_ENDPOINT}`, // Note: We add https:// here
+    endpoint: `https://${process.env.B2_ENDPOINT}`,
     region: process.env.B2_REGION,
     credentials: {
         accessKeyId: process.env.B2_ACCESS_KEY_ID,
         secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
     },
-    forcePathStyle: true // This is crucial for Backblaze B2 and often fixes signature errors
+    forcePathStyle: true // Crucial for Backblaze B2
 });
 
+// Helper function to remove special characters from filenames
+const sanitizeFilename = (filename) => {
+  return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
+};
 
-// 2. INITIALIZE APP & MIDDLEWARE
-const app = express();
-const PORT = process.env.PORT || 3000;
+// ===============================
+// 4. DATABASE CONNECTION
+// ===============================
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Successfully connected to MongoDB Atlas!'))
+    .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
 
-// Set the view engine to EJS
-app.set('view engine', 'ejs');
-// Let Express know where our view files are
-app.set('views', path.join(__dirname, 'views'));
-
-// Serve static files (CSS, client-side JS, images) from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-// Parse URL-encoded bodies (as sent by HTML forms)
-app.use(express.urlencoded({ extended: true }));
-
-// --- SESSION CONFIGURATION ---
+// ===============================
+// 5. SESSION & PASSPORT CONFIG
+// ===============================
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Using environment variable for the secret
+    secret: process.env.SESSION_SECRET || 'a-very-secret-key-to-sign-the-cookie',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
@@ -55,40 +73,27 @@ app.use(session({
         collectionName: 'sessions'
     }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7 // Cookie expires in 7 days
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     }
 }));
 
-
-// --- PASSPORT.JS CONFIGURATION ---
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Tell Passport how to authenticate users using a local strategy (email/password)
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) {
-            return done(null, false, { message: 'Incorrect email.' });
-        }
-
+        if (!user) { return done(null, false, { message: 'Incorrect email.' }); }
         const isMatch = await user.comparePassword(password);
-        if (!isMatch) {
-            return done(null, false, { message: 'Incorrect password.' });
-        }
-
+        if (!isMatch) { return done(null, false, { message: 'Incorrect password.' }); }
         return done(null, user);
     } catch (error) {
         return done(error);
     }
 }));
 
-// Tell Passport how to save the user to the session (serialize)
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
+passport.serializeUser((user, done) => { done(null, user.id); });
 
-// Tell Passport how to get the user from the session (deserialize)
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
@@ -104,88 +109,97 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- MIDDLEWARE TO CHECK AUTHENTICATION ---
+// Middleware to check if user is authenticated
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    // If not authenticated, redirect to the login page
+    if (req.isAuthenticated()) { return next(); }
     res.redirect('/login');
 }
 
+// ===============================
+// 6. ROUTES
+// ===============================
 
-// 3. CONFIGURE FILE UPLOAD (MULTER)
-// We use memoryStorage to hold the file as a buffer before uploading to the cloud
-const storage = multer.memoryStorage();
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 100 * 1024 * 1024 } // 100 MB file size limit
-});
+// --- PAGE & VIEW ROUTES ---
 
-
-// 4. DATABASE CONNECTION
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Successfully connected to MongoDB Atlas!'))
-    .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
-
-
-// Helper function to remove special characters from filenames
-const sanitizeFilename = (filename) => {
-  return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
-};
-
-
-// 5. DEFINE ROUTES
-
-// ===================================
-// AUTHENTICATION ROUTES
-// ===================================
-
-// GET route for the registration page
-app.get('/register', (req, res) => {
-    res.render('pages/register');
-});
-
-// POST route to handle registration
-app.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
-    // Simple validation
-    if (!username || !email || !password) {
-        return res.status(400).send("All fields are required.");
+app.get('/', async (req, res) => {
+    try {
+        const recentFiles = await File.find().sort({ createdAt: -1 }).limit(12);
+        const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
+            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            return { ...file.toObject(), iconUrl };
+        }));
+        res.render('pages/index', { files: filesWithUrls });
+    } catch (error) {
+        console.error("Error fetching files for homepage:", error);
+        res.status(500).send("Server error.");
     }
+});
+
+app.get('/category', async (req, res) => {
+    try {
+        const { cat } = req.query;
+        if (!cat) { return res.redirect('/'); }
+        const filteredFiles = await File.find({ category: cat }).sort({ createdAt: -1 });
+        const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
+        const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
+            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            return { ...file.toObject(), iconUrl };
+        }));
+        res.render('pages/category', { files: filesWithUrls, title: pageTitle, currentCategory: cat });
+    } catch (error) {
+        console.error("Error fetching files for category page:", error);
+        res.status(500).send("Server error.");
+    }
+});
+
+app.get('/mods/:id', async (req, res) => {
+    try {
+        const fileId = req.params.id;
+        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
+        const file = await File.findById(fileId);
+        if (!file) { return res.status(404).send("File not found."); }
+        const getIconUrl = getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+        const getScreenshotUrls = Promise.all(
+            file.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }))
+        );
+        const [iconUrl, screenshotUrls] = await Promise.all([getIconUrl, getScreenshotUrls]);
+        const fileDataForView = { ...file.toObject(), iconUrl, screenshotUrls };
+        res.render('pages/download', { file: fileDataForView });
+    } catch (error) {
+        console.error("Error fetching file for download page:", error);
+        res.status(500).send("Server error.");
+    }
+});
+
+// --- AUTHENTICATION ROUTES ---
+
+app.get('/register', (req, res) => res.render('pages/register'));
+
+app.post('/register', async (req, res, next) => {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) { return res.status(400).send("All fields are required."); }
     try {
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
-            return res.status(400).send("User with this email or username already exists.");
-        }
-
+        if (existingUser) { return res.status(400).send("User with this email or username already exists."); }
         const newUser = new User({ username, email, password });
         await newUser.save();
-
-        // Log the user in directly after registration
         req.login(newUser, (err) => {
             if (err) { return next(err); }
             return res.redirect('/');
         });
-
     } catch (error) {
+        console.error("Registration error:", error);
         res.status(500).send("Server error during registration.");
     }
 });
 
-// GET route for the login page
-app.get('/login', (req, res) => {
-    res.render('pages/login');
-});
+app.get('/login', (req, res) => res.render('pages/login'));
 
-// POST route to handle login
 app.post('/login', passport.authenticate('local', {
     successRedirect: '/',
-    failureRedirect: '/login',
-    // failureFlash: true // You can add flash messages for errors later
+    failureRedirect: '/login'
 }));
 
-// GET route for logout
 app.get('/logout', (req, res, next) => {
     req.logout(function(err) {
         if (err) { return next(err); }
@@ -194,133 +208,62 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-// ===================================
-// FILE & MOD ROUTES
-// ===================================
+// --- FILE MANAGEMENT ROUTES ---
 
-/**
- * GET Route for the Homepage - Updated to show recent files with presigned icon URLs
- */
-app.get('/', async (req, res) => {
-    try {
-        const recentFiles = await File.find().sort({ createdAt: -1 }).limit(12);
-
-        // Generate presigned URLs for each icon
-        const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
-            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
-            return {
-                ...file.toObject(),
-                iconUrl: iconUrl
-            };
-        }));
-        
-        res.render('pages/index', { files: filesWithUrls });
-
-    } catch (error) {
-        console.error("Error fetching files for homepage:", error);
-        res.status(500).send("Server error.");
-    }
-});
-
-
-/**
- * GET Route for the Upload Page
- */
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
 
-/**
- * POST Route to handle the actual file upload
- */
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+
 app.post('/upload', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 },
     { name: 'modFile', maxCount: 1 }
 ]), async (req, res) => {
-
-    // Log for debugging
-    console.log('Received files:', req.files);
-    console.log('Received body:', req.body);
-
     const { softwareIcon, screenshots, modFile } = req.files;
     const { softwareName, softwareVersion, modDescription, officialDescription, category, platforms, tags, videoUrl } = req.body;
 
-    // --- Basic Backend Validation ---
     if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) {
         return res.status(400).send("A required field or file is missing.");
     }
 
+    const uploadToB2 = async (file, folder) => {
+        const sanitizedFilename = sanitizeFilename(file.originalname);
+        const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
+        const params = { Bucket: process.env.B2_BUCKET_NAME, Key: fileName, Body: file.buffer, ContentType: file.mimetype };
+        await s3Client.send(new PutObjectCommand(params));
+        return fileName;
+    };
+
     try {
-        // --- Helper function for uploading (UPDATED) ---
-        const uploadToB2 = async (file, folder) => {
-            const sanitizedFilename = sanitizeFilename(file.originalname);
-            const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
-            const params = {
-                Bucket: process.env.B2_BUCKET_NAME,
-                Key: fileName,
-                Body: file.buffer,
-                ContentType: file.mimetype,
-            };
-            // The s3Client is now defined globally, so we don't need to pass it in
-            await s3Client.send(new PutObjectCommand(params));
-            return fileName;
-        };
-
-        // --- 1. UPLOAD FILES TO B2 ---
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
-
-        const screenshotKeys = [];
-        for (const screenshot of screenshots) {
-            const key = await uploadToB2(screenshot, 'screenshots');
-            screenshotKeys.push(key);
-        }
-
+        const screenshotKeys = await Promise.all(screenshots.map(file => uploadToB2(file, 'screenshots')));
         const fileKey = await uploadToB2(modFile[0], 'mods');
 
-        // --- 2. (OPTIONAL) SUBMIT FILE TO VIRUSTOTAL ---
+        // VirusTotal Scan (Optional but recommended)
         let analysisId = null;
         try {
             const formData = new FormData();
             formData.append('file', new Blob([modFile[0].buffer]), modFile[0].originalname);
-            const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', formData, {
-                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
-            });
+            const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', formData, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }});
             analysisId = vtResponse.data.data.id;
-            console.log('VirusTotal Analysis ID:', analysisId);
         } catch (vtError) {
-            console.error("Error submitting to VirusTotal:", vtError.response?.data);
-            // Decide if you want to stop the upload or continue without a scan ID
+            console.error("VirusTotal submission failed:", vtError.response?.data);
         }
 
-        // --- 3. SAVE FILE METADATA TO MONGODB (UPDATED) ---
         const newFile = new File({
-            name: softwareName,
-            version: softwareVersion,
-            modDescription,
-            officialDescription,
-            iconKey: iconKey,
-            screenshotKeys: screenshotKeys,
-            videoUrl,
-            fileKey: fileKey,
-            
-            // ADD THIS LINE
-            originalFilename: modFile[0].originalname,
-
-            category,
-            platforms: Array.isArray(platforms) ? platforms : [platforms],
+            name: softwareName, version: softwareVersion, modDescription, officialDescription,
+            iconKey, screenshotKeys, videoUrl, fileKey, originalFilename: modFile[0].originalname,
+            category, platforms: Array.isArray(platforms) ? platforms : [platforms],
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
             uploader: req.user.username,
             fileSize: modFile[0].size,
             virusTotalAnalysisId: analysisId
         });
-
         await newFile.save();
-
-        // --- 4. RESPOND TO USER ---
-        // You could redirect them to the new file's download page later
-        res.status(201).send(`<h1>File uploaded successfully!</h1><p>Thank you for your contribution.</p><a href="/">Go to Homepage</a>`);
-
+        res.redirect(`/mods/${newFile._id}`);
     } catch (error) {
         console.error("Upload process failed:", error);
         res.status(500).send("An error occurred during the upload process.");
@@ -328,111 +271,19 @@ app.post('/upload', ensureAuthenticated, upload.fields([
 });
 
 
-/**
- * GET Route for a specific mod download page.
- * Updated to generate presigned URLs for all media on the page.
- */
-app.get('/mods/:id', async (req, res) => {
-    try {
-        const fileId = req.params.id;
-        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found..."); }
-        
-        const file = await File.findById(fileId);
-        if (!file) { return res.status(404).send("File not found."); }
-
-        // --- GENERATE PRESIGNED URLS FOR ALL MEDIA ON THE PAGE ---
-        const getIconUrl = getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
-        
-        const getScreenshotUrls = Promise.all(
-            file.screenshotKeys.map(key => 
-                getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })
-            )
-        );
-
-        // Await all promises
-        const [iconUrl, screenshotUrls] = await Promise.all([getIconUrl, getScreenshotUrls]);
-
-        // Create a new object to pass to the view with the temporary URLs
-        const fileDataForView = {
-            ...file.toObject(), // Convert Mongoose document to plain object
-            iconUrl: iconUrl, // Overwrite with presigned URL
-            screenshotUrls: screenshotUrls // Overwrite with presigned URLs
-        };
-
-        // Render the page with the data containing the temporary URLs
-        res.render('pages/download', { file: fileDataForView });
-
-    } catch (error) {
-        console.error("Error fetching file for download page:", error);
-        res.status(500).send("Server error.");
-    }
-});
-
-/**
- * GET Route for the category page.
- * Updated to use presigned URLs for icons.
- */
-app.get('/category', async (req, res) => {
-    try {
-        const { cat } = req.query; // Destructure to get 'cat' from the query string
-
-        if (!cat) {
-            // If no category is specified, maybe redirect to the homepage or an error page
-            return res.redirect('/');
-        }
-        
-        const filteredFiles = await File.find({ category: cat }).sort({ createdAt: -1 });
-        const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
-        
-        // Generate presigned URLs for each icon
-        const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
-            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
-            return {
-                ...file.toObject(),
-                iconUrl: iconUrl
-            };
-        }));
-        
-        // Render the 'category' page, passing it the title and the filtered list of files
-        res.render('pages/category', { 
-            files: filesWithUrls, 
-            title: pageTitle,
-            currentCategory: cat
-        });
-
-    } catch (error) {
-        console.error("Error fetching files for category page:", error);
-        res.status(500).send("Server error.");
-    }
-});
-
-
-/**
- * GET Route to handle the actual file download action.
- * Updated to generate a presigned URL for the download.
- */
 app.get('/download-file/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
-
         const file = await File.findByIdAndUpdate(fileId, { $inc: { downloads: 1 } });
         if (!file) { return res.status(404).send("File not found."); }
-
-        // --- UPDATED PRESIGNED URL LOGIC ---
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
             Key: file.fileKey,
-            // THIS IS THE CRUCIAL PART THAT FORCES THE DOWNLOAD
             ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
         });
-
-        // Generate the presigned URL, which now includes the download instruction
-        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); // Valid for 5 minutes
-
-        // Redirect the user to the temporary URL
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
         res.redirect(presignedUrl);
-
     } catch (error) {
         console.error("Error processing file download:", error);
         res.status(500).send("Server error.");
@@ -440,7 +291,9 @@ app.get('/download-file/:id', async (req, res) => {
 });
 
 
-// 6. START THE SERVER
+// ===============================
+// 7. START SERVER
+// ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-});```
+});
