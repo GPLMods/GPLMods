@@ -1,3 +1,5 @@
+--- START OF FILE server.js ---
+
 // ===============================
 // 1. IMPORTS
 // ===============================
@@ -36,17 +38,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 
 // ===============================
-// 3. AWS S3 CLIENT & HELPERS
+// 3. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
-// Updated configuration for Backblaze B2/S3
+// This is the definitive final configuration for Backblaze B2
 const s3Client = new S3Client({
-    endpoint: `https://${process.env.B2_ENDPOINT}`, // Protocol included
+    endpoint: `https://${process.env.B2_ENDPOINT}`, // Note: https:// is added HERE
     region: process.env.B2_REGION,
     credentials: {
         accessKeyId: process.env.B2_ACCESS_KEY_ID,
         secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
     }
-    // forcePathStyle: true has been REMOVED
 });
 
 // Helper function to remove special characters from filenames
