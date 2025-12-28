@@ -1,6 +1,10 @@
 // ===============================
 // 1. IMPORTS
 // ===============================
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -19,6 +23,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 // Mongoose Models
 const File = require('./models/file');
 const User = require('./models/user');
+const Review = require('./models/review');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -34,13 +39,13 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // ===============================
 // 3. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
-// This is the definitive final configuration for Backblaze B2
 const s3Client = new S3Client({
-    endpoint: `https://${process.env.B2_ENDPOINT}`, // Note: https:// is added HERE
+    endpoint: `https://${process.env.B2_ENDPOINT}`,
     region: process.env.B2_REGION,
     credentials: {
         accessKeyId: process.env.B2_ACCESS_KEY_ID,
@@ -48,9 +53,8 @@ const s3Client = new S3Client({
     }
 });
 
-// Helper function to remove special characters from filenames
 const sanitizeFilename = (filename) => {
-  return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
+    return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
 };
 
 // ===============================
@@ -102,13 +106,11 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// Middleware to pass user object to all templates
 app.use((req, res, next) => {
     res.locals.user = req.user || null;
     next();
 });
 
-// Middleware to check if user is authenticated
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next(); }
     res.redirect('/login');
@@ -118,13 +120,13 @@ function ensureAuthenticated(req, res, next) {
 // 6. ROUTES
 // ===============================
 
-// --- PAGE & VIEW ROUTES ---
-
+// --- INDEX PAGE ---
 app.get('/', async (req, res) => {
     try {
         const recentFiles = await File.find().sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
-            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            const getIconUrlCommand = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey });
+            const iconUrl = await getSignedUrl(s3Client, getIconUrlCommand, { expiresIn: 3600 });
             return { ...file.toObject(), iconUrl };
         }));
         res.render('pages/index', { files: filesWithUrls });
@@ -134,6 +136,7 @@ app.get('/', async (req, res) => {
     }
 });
 
+// --- CATEGORY PAGE ---
 app.get('/category', async (req, res) => {
     try {
         const { cat } = req.query;
@@ -141,7 +144,8 @@ app.get('/category', async (req, res) => {
         const filteredFiles = await File.find({ category: cat }).sort({ createdAt: -1 });
         const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
         const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
-            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+            const getIconUrlCommand = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey });
+            const iconUrl = await getSignedUrl(s3Client, getIconUrlCommand, { expiresIn: 3600 });
             return { ...file.toObject(), iconUrl };
         }));
         res.render('pages/category', { files: filesWithUrls, title: pageTitle, currentCategory: cat });
@@ -151,29 +155,56 @@ app.get('/category', async (req, res) => {
     }
 });
 
+// --- INDIVIDUAL MOD/DOWNLOAD PAGE --- (Refined with Update 1 Logic)
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
-        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
-        const file = await File.findById(fileId);
-        if (!file) { return res.status(404).send("File not found."); }
-        const getIconUrl = getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
-        const getScreenshotUrls = Promise.all(
-            file.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }))
+
+        // Validation (from Update 1)
+        if (!Types.ObjectId.isValid(fileId)) {
+            return res.status(404).send("File not found (Invalid ID format).");
+        }
+
+        // Parallel fetch for File data and Reviews (from Update 1)
+        const [file, reviews] = await Promise.all([
+            File.findById(fileId),
+            Review.find({ file: fileId }).sort({ createdAt: -1 })
+        ]);
+
+        if (!file) {
+            return res.status(404).send("File not found.");
+        }
+
+        // Generate Presigned URLs for View
+        const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ 
+            Bucket: process.env.B2_BUCKET_NAME, 
+            Key: file.iconKey 
+        }), { expiresIn: 3600 });
+
+        const screenshotUrls = await Promise.all(
+            file.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ 
+                Bucket: process.env.B2_BUCKET_NAME, 
+                Key: key 
+            }), { expiresIn: 3600 }))
         );
-        const [iconUrl, screenshotUrls] = await Promise.all([getIconUrl, getScreenshotUrls]);
+        
         const fileDataForView = { ...file.toObject(), iconUrl, screenshotUrls };
-        res.render('pages/download', { file: fileDataForView });
+        
+        // Render passing BOTH file and reviews (Merged logic)
+        res.render('pages/download', { 
+            file: fileDataForView, 
+            reviews: reviews 
+        });
+
     } catch (error) {
         console.error("Error fetching file for download page:", error);
         res.status(500).send("Server error.");
     }
 });
 
+
 // --- AUTHENTICATION ROUTES ---
-
 app.get('/register', (req, res) => res.render('pages/register'));
-
 app.post('/register', async (req, res, next) => {
     const { username, email, password } = req.body;
     if (!username || !email || !password) { return res.status(400).send("All fields are required."); }
@@ -193,7 +224,6 @@ app.post('/register', async (req, res, next) => {
 });
 
 app.get('/login', (req, res) => res.render('pages/login'));
-
 app.post('/login', passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login'
@@ -207,8 +237,7 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-// --- FILE MANAGEMENT ROUTES ---
-
+// --- FILE MANAGEMENT ---
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
@@ -223,9 +252,9 @@ app.post('/upload', ensureAuthenticated, upload.fields([
 ]), async (req, res) => {
     const { softwareIcon, screenshots, modFile } = req.files;
     const { softwareName, softwareVersion, modDescription, officialDescription, category, platforms, tags, videoUrl } = req.body;
-
-    if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) {
-        return res.status(400).send("A required field or file is missing.");
+    
+    if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) { 
+        return res.status(400).send("A required field or file is missing."); 
     }
 
     const uploadToB2 = async (file, folder) => {
@@ -240,13 +269,14 @@ app.post('/upload', ensureAuthenticated, upload.fields([
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
         const screenshotKeys = await Promise.all(screenshots.map(file => uploadToB2(file, 'screenshots')));
         const fileKey = await uploadToB2(modFile[0], 'mods');
-
-        // VirusTotal Scan (Optional but recommended)
+        
         let analysisId = null;
         try {
             const formData = new FormData();
             formData.append('file', new Blob([modFile[0].buffer]), modFile[0].originalname);
-            const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', formData, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }});
+            const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', formData, { 
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
             analysisId = vtResponse.data.data.id;
         } catch (vtError) {
             console.error("VirusTotal submission failed:", vtError.response?.data);
@@ -261,6 +291,7 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             fileSize: modFile[0].size,
             virusTotalAnalysisId: analysisId
         });
+
         await newFile.save();
         res.redirect(`/mods/${newFile._id}`);
     } catch (error) {
@@ -269,22 +300,82 @@ app.post('/upload', ensureAuthenticated, upload.fields([
     }
 });
 
-
 app.get('/download-file/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
         const file = await File.findByIdAndUpdate(fileId, { $inc: { downloads: 1 } });
         if (!file) { return res.status(404).send("File not found."); }
+        
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
             Key: file.fileKey,
             ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
         });
-        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+        
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); 
         res.redirect(presignedUrl);
     } catch (error) {
         console.error("Error processing file download:", error);
         res.status(500).send("Server error.");
     }
+});
+
+// --- REVIEW SYSTEM --- (Update 2 Full Logic)
+app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const { rating, comment } = req.body;
+
+        if (!rating || !comment) {
+            return res.status(400).send("Rating and comment are required.");
+        }
+
+        // Prevent duplicate reviews from the same user on the same file
+        const existingReview = await Review.findOne({ file: fileId, user: req.user._id });
+        if (existingReview) {
+            return res.redirect(`/mods/${fileId}`);
+        }
+
+        // 1. Create and save new review
+        const newReview = new Review({
+            file: fileId,
+            user: req.user._id,
+            username: req.user.username,
+            rating: parseInt(rating),
+            comment: comment
+        });
+        await newReview.save();
+
+        // 2. Aggregate and Update File Rating stats
+        const stats = await Review.aggregate([
+            { $match: { file: new Types.ObjectId(fileId) } },
+            { 
+                $group: { 
+                    _id: '$file', 
+                    avgRating: { $avg: '$rating' }, 
+                    count: { $sum: 1 } 
+                } 
+            }
+        ]);
+        
+        if (stats.length > 0) {
+            await File.findByIdAndUpdate(fileId, {
+                averageRating: stats[0].avgRating.toFixed(1),
+                ratingCount: stats[0].count
+            });
+        }
+        
+        res.redirect(`/mods/${fileId}`);
+    } catch (error) {
+        console.error("Error submitting review:", error);
+        res.status(500).send("Server error.");
+    }
+});
+
+// ===============================
+// 7. START SERVER
+// ===============================
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });

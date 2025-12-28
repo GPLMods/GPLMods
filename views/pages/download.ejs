@@ -67,16 +67,32 @@
     .tab-content.active {
         display: block;
     }
+
+    /* Form Styles */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
 </style>
 
 <div class="container">
 
-    <!-- Mod Header: Icon, Title, and Meta Info -->
+    <!-- Mod Header: Icon, Title, Rating, and Meta Info -->
     <section class="mod-header">
         <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="mod-icon">
         <div class="mod-title">
             <h1><%= file.name %></h1>
-            <p class="mod-meta-info">
+            <!-- Added Rating display from update 2 -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="star-rating" data-rating="<%= file.averageRating %>">
+                    <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                </div>
+                <span style="color: var(--silver);">(<%= file.ratingCount %> Reviews)</span>
+            </div>
+            <p class="mod-meta-info" style="margin-top: 0.5rem;">
                 Version: <%= file.version %> | 
                 Downloads: <%= file.downloads.toLocaleString() %> | 
                 By: <%= file.uploader %>
@@ -86,7 +102,6 @@
 
     <!-- Download & Action Buttons -->
     <section class="mod-actions">
-        <!-- The download button links to our new /download-file/:id route -->
         <a href="/download-file/<%= file._id %>" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2rem;">Download Now</a>
         <a href="#" class="btn btn-secondary">Add to Wishlist</a>
         <a href="#" class="btn btn-secondary">Report File</a>
@@ -113,26 +128,98 @@
         </div>
     </section>
 
-</div>
+    <!-- Write a Review Section (from update 1) -->
+    <% if (user) { %> 
+    <section class="write-review-section" style="margin-top: 3rem;">
+        <h3>Write a Review</h3>
+        <form action="/reviews/add/<%= file._id %>" method="POST" class="review-form">
+             <div class="form-group">
+                <label for="rating">Your Rating (1-5)*</label>
+                <select name="rating" id="rating" required style="width:100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;">
+                    <option value="" disabled selected>Select a rating</option>
+                    <option value="5">5 Stars (Excellent)</option>
+                    <option value="4">4 Stars (Good)</option>
+                    <option value="3">3 Stars (Average)</option>
+                    <option value="2">2 Stars (Poor)</option>
+                    <option value="1">1 Star (Awful)</option>
+                </select>
+             </div>
+             <div class="form-group">
+                <label for="comment">Your Comment*</label>
+                <textarea name="comment" id="comment" required style="width: 100%; min-height: 100px; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;"></textarea>
+             </div>
+             <button type="submit" class="btn btn-primary">Submit Review</button>
+        </form>
+    </section>
+    <% } %>
+
+    <!-- Existing Reviews Section (from update 1) -->
+    <section class="reviews-list" style="margin-top: 3rem; margin-bottom: 3rem;">
+        <h2>User Reviews (<%= file.ratingCount %>)</h2>
+        <% if (reviews && reviews.length > 0) { %>
+            <% reviews.forEach(review => { %>
+                <div class="review-card" style="background-color: var(--dark-grey); border: 1px solid var(--light-grey); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="star-rating" data-rating="<%= review.rating %>">
+                             <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                        </div>
+                        <span style="color: var(--silver); font-size: 0.9rem;">
+                            by <%= review.username %> on <%= review.createdAt.toLocaleDateString() %>
+                        </span>
+                    </div>
+                    <p style="margin-top: 1rem;"><%- review.comment.replace(/\n/g, '<br>') %></p>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No reviews have been written for this mod yet. Be the first!</p>
+        <% } %>
+    </section>
+
+</div> <!-- End of container -->
 
 <script>
-    // Page-specific JavaScript for tab functionality
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Tab Functionality ---
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
 
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Remove 'active' from all buttons and content
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 tabContents.forEach(content => content.classList.remove('active'));
 
-                // Add 'active' to the clicked button and its corresponding content
                 button.classList.add('active');
-                document.getElementById(button.dataset.tab).classList.add('active');
+                const target = button.getAttribute('data-tab');
+                document.getElementById(target).classList.add('active');
             });
         });
+
+        // --- Initialize Star Ratings ---
+        initializeStarRatings();
     });
+
+    function initializeStarRatings() {
+        document.querySelectorAll('.star-rating').forEach(container => {
+            const rating = parseFloat(container.dataset.rating);
+            if(isNaN(rating)) return;
+            
+            const stars = container.querySelectorAll('.star');
+            const fullStars = Math.floor(rating);
+            const partialStar = (rating % 1);
+
+            stars.forEach((star, i) => {
+                if (i < fullStars) {
+                    star.classList.add('filled');
+                } else if (i === fullStars && partialStar > 0) {
+                    star.style.setProperty('--fill-percentage', `${partialStar * 100}%`);
+                    star.classList.add('partial');
+                } else {
+                    star.classList.remove('filled', 'partial');
+                    star.style.removeProperty('--fill-percentage');
+                }
+            });
+        });
+    }
 </script>
 
 <%- include('../partials/footer') %>
