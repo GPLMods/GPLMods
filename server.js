@@ -1,5 +1,3 @@
---- START OF FILE server.js ---
-
 // ===============================
 // 1. IMPORTS
 // ===============================
@@ -289,12 +287,4 @@ app.get('/download-file/:id', async (req, res) => {
         console.error("Error processing file download:", error);
         res.status(500).send("Server error.");
     }
-});
-
-
-// ===============================
-// 7. START SERVER
-// ===============================
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
 });
