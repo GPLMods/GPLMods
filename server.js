@@ -38,15 +38,15 @@ app.use(express.urlencoded({ extended: true }));
 // ===============================
 // 3. AWS S3 CLIENT & HELPERS
 // ===============================
-// This single client will be used for all B2 operations.
+// Updated configuration for Backblaze B2/S3
 const s3Client = new S3Client({
-    endpoint: `https://${process.env.B2_ENDPOINT}`,
+    endpoint: `https://${process.env.B2_ENDPOINT}`, // Protocol included
     region: process.env.B2_REGION,
     credentials: {
         accessKeyId: process.env.B2_ACCESS_KEY_ID,
         secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
-    },
-    forcePathStyle: true // Crucial for Backblaze B2
+    }
+    // forcePathStyle: true has been REMOVED
 });
 
 // Helper function to remove special characters from filenames
