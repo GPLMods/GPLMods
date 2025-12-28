@@ -13,8 +13,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome for Icons (example) -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- Replace with your own kit or SVG icons later -->
+    <!-- Font Awesome for Icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -40,6 +40,10 @@
                     <% if (user) { %>
                         <!-- User is logged in -->
                         <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
+                        
+                        <!-- Added Profile Link -->
+                        <a href="/profile" class="btn btn-secondary">My Profile</a> 
+                        
                         <a href="/upload" class="btn btn-primary">Upload Mod</a>
                         <a href="/logout" class="btn btn-secondary">Logout</a>
                     <% } else { %>

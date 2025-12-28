@@ -1,0 +1,115 @@
+<%- include('../partials/header') %>
+
+<style>
+    /* Page-specific styles for the profile page */
+    .profile-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--light-grey);
+    }
+
+    .profile-header h1 {
+        color: var(--gold);
+    }
+    .profile-header p {
+        color: var(--silver);
+        font-size: 1.1rem;
+    }
+    
+    .uploads-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1.5rem;
+    }
+    
+    .uploads-table th, .uploads-table td {
+        padding: 12px 15px;
+        border: 1px solid var(--light-grey);
+        text-align: left;
+    }
+    
+    .uploads-table thead {
+        background-color: var(--dark-grey);
+    }
+    
+    .uploads-table tbody tr:nth-child(even) {
+        background-color: var(--dark-grey);
+    }
+    
+    .uploads-table tbody tr:hover {
+        background-color: var(--light-grey);
+    }
+    
+    .no-uploads {
+        text-align: center;
+        padding: 2rem;
+        font-size: 1.2rem;
+    }
+    
+    .danger-zone {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        border: 1px solid #a04040; /* Reddish border */
+        border-radius: 8px;
+        background-color: #2b1a1a; /* Dark red background */
+    }
+    .danger-zone h3 {
+        color: #ff8080; /* Light red text */
+    }
+
+</style>
+
+<div class="container">
+    <div class="profile-header">
+        <h1>Welcome, <%= user.username %>!</h1>
+        <p>This is your personal dashboard. Here you can manage your account and view your uploads.</p>
+    </div>
+    
+    <!-- Upload History Section -->
+    <section class="upload-history">
+        <h2>Your Upload History</h2>
+        
+        <% if(uploads && uploads.length > 0) { %>
+            <table class="uploads-table">
+                <thead>
+                    <tr>
+                        <th>Mod Name</th>
+                        <th>Category</th>
+                        <th>Downloads</th>
+                        <th>Avg. Rating</th>
+                        <th>Date Uploaded</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% uploads.forEach(file => { %>
+                        <tr>
+                            <td><a href="/mods/<%= file._id %>"><%= file.name %></a></td>
+                            <td><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></td>
+                            <td><%= file.downloads.toLocaleString() %></td>
+                            <td><%= file.averageRating %> ★</td>
+                            <td><%= file.createdAt.toLocaleDateString() %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <div class="no-uploads">
+                <p>You haven't uploaded any mods yet.</p>
+                <a href="/upload" class="btn btn-primary" style="margin-top: 1rem;">Upload Your First Mod</a>
+            </div>
+        <% } %>
+    </section>
+    
+    <!-- Account Management Section -->
+    <section class="danger-zone">
+        <h3>Account Management</h3>
+        <p>Be careful, these actions are permanent.</p>
+        <form action="/account/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This will also remove all your uploads and cannot be undone.');">
+            <button type="submit" class="btn btn-secondary" style="background-color:#a04040; border-color:#a04040; color:white; margin-top: 1rem;">Delete My Account</button>
+        </form>
+    </section>
+
+</div>
+
+<%- include('../partials/footer') %>

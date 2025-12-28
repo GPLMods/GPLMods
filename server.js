@@ -155,17 +155,15 @@ app.get('/category', async (req, res) => {
     }
 });
 
-// --- INDIVIDUAL MOD/DOWNLOAD PAGE --- (Refined with Update 1 Logic)
+// --- INDIVIDUAL MOD/DOWNLOAD PAGE ---
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
 
-        // Validation (from Update 1)
         if (!Types.ObjectId.isValid(fileId)) {
             return res.status(404).send("File not found (Invalid ID format).");
         }
 
-        // Parallel fetch for File data and Reviews (from Update 1)
         const [file, reviews] = await Promise.all([
             File.findById(fileId),
             Review.find({ file: fileId }).sort({ createdAt: -1 })
@@ -175,7 +173,6 @@ app.get('/mods/:id', async (req, res) => {
             return res.status(404).send("File not found.");
         }
 
-        // Generate Presigned URLs for View
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ 
             Bucket: process.env.B2_BUCKET_NAME, 
             Key: file.iconKey 
@@ -190,7 +187,6 @@ app.get('/mods/:id', async (req, res) => {
         
         const fileDataForView = { ...file.toObject(), iconUrl, screenshotUrls };
         
-        // Render passing BOTH file and reviews (Merged logic)
         res.render('pages/download', { 
             file: fileDataForView, 
             reviews: reviews 
@@ -234,6 +230,59 @@ app.get('/logout', (req, res, next) => {
         if (err) { return next(err); }
         res.redirect('/');
     });
+});
+
+// ===================================
+// USER PROFILE & ACCOUNT MANAGEMENT
+// ===================================
+
+/**
+ * GET Route for the User Profile/Dashboard page.
+ */
+app.get('/profile', ensureAuthenticated, async (req, res) => {
+    try {
+        // Find all files where the 'uploader' field matches the current user's username.
+        const userUploads = await File.find({ uploader: req.user.username })
+                                      .sort({ createdAt: -1 });
+
+        res.render('pages/profile', {
+            user: req.user,
+            uploads: userUploads
+        });
+    } catch (error) {
+        console.error('Error fetching user profile data:', error);
+        res.status(500).send('Server Error');
+    }
+});
+
+/**
+ * POST Route to handle account deletion.
+ */
+app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const username = req.user.username;
+
+        // 1. Delete all files uploaded by this user
+        // (B2 cleanup logic can be added here if needed)
+        await File.deleteMany({ uploader: username });
+
+        // 2. Delete all reviews written by this user
+        await Review.deleteMany({ user: userId });
+
+        // 3. Delete the user account
+        await User.findByIdAndDelete(userId);
+
+        // 4. Log the user out
+        req.logout(function(err) {
+            if (err) { return next(err); }
+            res.redirect('/');
+        });
+
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).send('Could not delete account.');
+    }
 });
 
 
@@ -321,7 +370,7 @@ app.get('/download-file/:id', async (req, res) => {
     }
 });
 
-// --- REVIEW SYSTEM --- (Update 2 Full Logic)
+// --- REVIEW SYSTEM ---
 app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
@@ -331,13 +380,11 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
             return res.status(400).send("Rating and comment are required.");
         }
 
-        // Prevent duplicate reviews from the same user on the same file
         const existingReview = await Review.findOne({ file: fileId, user: req.user._id });
         if (existingReview) {
             return res.redirect(`/mods/${fileId}`);
         }
 
-        // 1. Create and save new review
         const newReview = new Review({
             file: fileId,
             user: req.user._id,
@@ -347,7 +394,6 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         });
         await newReview.save();
 
-        // 2. Aggregate and Update File Rating stats
         const stats = await Review.aggregate([
             { $match: { file: new Types.ObjectId(fileId) } },
             { 
