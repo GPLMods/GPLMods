@@ -233,6 +233,41 @@ app.get('/logout', (req, res, next) => {
 });
 
 // ===================================
+// SEARCH ROUTE
+// ===================================
+
+app.get('/search', async (req, res) => {
+    try {
+        const query = req.query.q; // Get the search term from the query parameter 'q'
+
+        if (!query) {
+            // If the search is empty, just redirect to the homepage.
+            return res.redirect('/');
+        }
+        
+        // --- Perform a case-insensitive search on multiple fields ---
+        // We will search the 'name', 'modDescription', and 'tags' fields for the query string.
+        const searchResults = await File.find({
+            $or: [
+                { name: { $regex: query, $options: 'i' } }, // 'i' for case-insensitivity
+                { modDescription: { $regex: query, $options: 'i' } },
+                { tags: { $regex: query, $options: 'i' } }
+            ]
+        }).sort({ createdAt: -1 }); // Sort by newest first
+
+        // Render a new 'search' page, passing the original query and the results
+        res.render('pages/search', {
+            results: searchResults,
+            query: query
+        });
+
+    } catch (error) {
+        console.error("Error during search:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// ===================================
 // USER PROFILE & ACCOUNT MANAGEMENT
 // ===================================
 

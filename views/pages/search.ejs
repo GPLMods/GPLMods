@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+
+    <!-- Page Title: Will display what the user searched for -->
+    <h1 style="margin-bottom: 2rem; border-bottom: 1px solid var(--light-grey); padding-bottom: 1rem;">
+        Search Results for: <span style="color: var(--gold);"><%= query %></span>
+    </h1>
+
+    <!-- Results Grid -->
+    <section class="results-grid">
+         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+        
+            <!-- Check if any results were found -->
+            <% if (results && results.length > 0) { %>
+                <!-- Loop through each file in the results -->
+                <% results.forEach(file => { %>
+    
+                    <!-- This is the EXACT SAME item card component from the homepage, making our code reusable -->
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
+                        </div>
+                        <div class.card-body">
+                            <h3 class="card-title"><%= file.name %></h3>
+                            <p class="card-platform"><%= file.version %></p>
+                            <div class="star-rating" data-rating="<%= file.averageRating %>">
+                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                            </div>
+                        </div>
+                    </a>
+    
+                <% }) %>
+            <% } else { %>
+                <!-- This message shows if the search returned no results -->
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <h2>No mods found matching your search.</h2>
+                    <p style="color: var(--silver);">Try searching for a different keyword.</p>
+                </div>
+            <% } %>
+    
+        </div>
+    </section>
+
+</div>
+
+<%- include('../partials/footer') %>
