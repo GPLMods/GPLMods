@@ -15,6 +15,8 @@ const LocalStrategy = require('passport-local').Strategy;
 const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // Added for verification
+const nodemailer = require('nodemailer'); // Added for emails
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -42,7 +44,33 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // ===============================
-// 3. AWS S3 CLIENT (BACKBLAZE B2)
+// 3. EMAIL CONFIGURATION (Nodemailer)
+// ===============================
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // Or your preferred email provider
+    auth: {
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+const sendVerificationEmail = async (user) => {
+    const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${user.verificationToken}`;
+    
+    const mailOptions = {
+        from: `"Mod Site Support" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'Please Verify Your Email',
+        html: `<h1>Welcome to our site!</h1>
+               <p>Please click the link below to verify your account:</p>
+               <a href="${verificationUrl}">${verificationUrl}</a>`
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+// ===============================
+// 4. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
 const s3Client = new S3Client({
     endpoint: `https://${process.env.B2_ENDPOINT}`,
@@ -58,14 +86,14 @@ const sanitizeFilename = (filename) => {
 };
 
 // ===============================
-// 4. DATABASE CONNECTION
+// 5. DATABASE CONNECTION
 // ===============================
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('Successfully connected to MongoDB Atlas!'))
     .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
 
 // ===============================
-// 5. SESSION & PASSPORT CONFIG
+// 6. SESSION & PASSPORT CONFIG
 // ===============================
 app.use(session({
     secret: process.env.SESSION_SECRET || 'a-very-secret-key-to-sign-the-cookie',
@@ -87,8 +115,15 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
         if (!user) { return done(null, false, { message: 'Incorrect email.' }); }
+        
         const isMatch = await user.comparePassword(password);
         if (!isMatch) { return done(null, false, { message: 'Incorrect password.' }); }
+
+        // --- Check if user is verified ---
+        if (!user.isVerified) {
+            return done(null, false, { message: 'Please verify your email before logging in.' });
+        }
+
         return done(null, user);
     } catch (error) {
         return done(error);
@@ -117,7 +152,7 @@ function ensureAuthenticated(req, res, next) {
 }
 
 // ===============================
-// 6. ROUTES
+// 7. ROUTES
 // ===============================
 
 // --- INDEX PAGE ---
@@ -159,63 +194,86 @@ app.get('/category', async (req, res) => {
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
-
-        if (!Types.ObjectId.isValid(fileId)) {
-            return res.status(404).send("File not found (Invalid ID format).");
-        }
+        if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
 
         const [file, reviews] = await Promise.all([
             File.findById(fileId),
             Review.find({ file: fileId }).sort({ createdAt: -1 })
         ]);
 
-        if (!file) {
-            return res.status(404).send("File not found.");
-        }
+        if (!file) { return res.status(404).send("File not found."); }
 
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ 
-            Bucket: process.env.B2_BUCKET_NAME, 
-            Key: file.iconKey 
+            Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey 
         }), { expiresIn: 3600 });
 
         const screenshotUrls = await Promise.all(
             file.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ 
-                Bucket: process.env.B2_BUCKET_NAME, 
-                Key: key 
+                Bucket: process.env.B2_BUCKET_NAME, Key: key 
             }), { expiresIn: 3600 }))
         );
         
-        const fileDataForView = { ...file.toObject(), iconUrl, screenshotUrls };
-        
-        res.render('pages/download', { 
-            file: fileDataForView, 
-            reviews: reviews 
-        });
-
+        res.render('pages/download', { file: { ...file.toObject(), iconUrl, screenshotUrls }, reviews });
     } catch (error) {
         console.error("Error fetching file for download page:", error);
         res.status(500).send("Server error.");
     }
 });
 
-
 // --- AUTHENTICATION ROUTES ---
 app.get('/register', (req, res) => res.render('pages/register'));
+
 app.post('/register', async (req, res, next) => {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) { return res.status(400).send("All fields are required."); }
     try {
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) { return res.status(400).send("User with this email or username already exists."); }
-        const newUser = new User({ username, email, password });
+        const { username, email, password } = req.body;
+        if (!username || !email || !password) { return res.status(400).send("All fields required."); }
+
+        const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+        if (existingUser) { return res.status(400).send("User already exists."); }
+
+        const newUser = new User({ username, email: email.toLowerCase(), password });
+        
+        // Create verification token
+        const verificationToken = jwt.sign(
+            { userId: newUser._id }, 
+            process.env.JWT_SECRET || 'fallback_secret', 
+            { expiresIn: '1d' }
+        );
+
+        newUser.verificationToken = verificationToken;
         await newUser.save();
-        req.login(newUser, (err) => {
+        
+        // Send email
+        await sendVerificationEmail(newUser);
+        
+        res.render('pages/please-verify');
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).send("Server error during registration.");
+    }
+});
+
+app.get('/verify-email', async (req, res, next) => {
+    try {
+        const { token } = req.query;
+        if (!token) { return res.status(400).send('Verification token is missing.'); }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        const user = await User.findOne({ _id: decoded.userId, verificationToken: token });
+
+        if (!user) { return res.status(400).send('Invalid or expired verification link.'); }
+        
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        await user.save();
+        
+        req.login(user, (err) => {
             if (err) { return next(err); }
-            return res.redirect('/');
+            return res.redirect('/profile'); 
         });
     } catch (error) {
-        console.error("Registration error:", error);
-        res.status(500).send("Server error during registration.");
+        console.error("Verification error:", error);
+        res.status(400).send('Invalid or expired token.');
     }
 });
 
@@ -232,90 +290,49 @@ app.get('/logout', (req, res, next) => {
     });
 });
 
-// ===================================
-// SEARCH ROUTE
-// ===================================
-
+// --- SEARCH ROUTE ---
 app.get('/search', async (req, res) => {
     try {
-        const query = req.query.q; // Get the search term from the query parameter 'q'
-
-        if (!query) {
-            // If the search is empty, just redirect to the homepage.
-            return res.redirect('/');
-        }
+        const query = req.query.q;
+        if (!query) { return res.redirect('/'); }
         
-        // --- Perform a case-insensitive search on multiple fields ---
-        // We will search the 'name', 'modDescription', and 'tags' fields for the query string.
         const searchResults = await File.find({
             $or: [
-                { name: { $regex: query, $options: 'i' } }, // 'i' for case-insensitivity
+                { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
                 { tags: { $regex: query, $options: 'i' } }
             ]
-        }).sort({ createdAt: -1 }); // Sort by newest first
+        }).sort({ createdAt: -1 });
 
-        // Render a new 'search' page, passing the original query and the results
-        res.render('pages/search', {
-            results: searchResults,
-            query: query
-        });
-
+        res.render('pages/search', { results: searchResults, query: query });
     } catch (error) {
         console.error("Error during search:", error);
         res.status(500).send("Server Error");
     }
 });
 
-// ===================================
-// USER PROFILE & ACCOUNT MANAGEMENT
-// ===================================
-
-/**
- * GET Route for the User Profile/Dashboard page.
- */
+// --- USER PROFILE & ACCOUNT MANAGEMENT ---
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        // Find all files where the 'uploader' field matches the current user's username.
-        const userUploads = await File.find({ uploader: req.user.username })
-                                      .sort({ createdAt: -1 });
-
-        res.render('pages/profile', {
-            user: req.user,
-            uploads: userUploads
-        });
+        const userUploads = await File.find({ uploader: req.user.username }).sort({ createdAt: -1 });
+        res.render('pages/profile', { user: req.user, uploads: userUploads });
     } catch (error) {
-        console.error('Error fetching user profile data:', error);
         res.status(500).send('Server Error');
     }
 });
 
-/**
- * POST Route to handle account deletion.
- */
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     try {
         const userId = req.user._id;
         const username = req.user.username;
-
-        // 1. Delete all files uploaded by this user
-        // (B2 cleanup logic can be added here if needed)
         await File.deleteMany({ uploader: username });
-
-        // 2. Delete all reviews written by this user
         await Review.deleteMany({ user: userId });
-
-        // 3. Delete the user account
         await User.findByIdAndDelete(userId);
-
-        // 4. Log the user out
-        req.logout(function(err) {
-            if (err) { return next(err); }
+        req.logout(err => {
+            if (err) return next(err);
             res.redirect('/');
         });
-
     } catch (error) {
-        console.error('Error deleting account:', error);
         res.status(500).send('Could not delete account.');
     }
 });
@@ -363,7 +380,7 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             });
             analysisId = vtResponse.data.data.id;
         } catch (vtError) {
-            console.error("VirusTotal submission failed:", vtError.response?.data);
+            console.error("VirusTotal submission failed.");
         }
 
         const newFile = new File({
@@ -400,7 +417,6 @@ app.get('/download-file/:id', async (req, res) => {
         const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); 
         res.redirect(presignedUrl);
     } catch (error) {
-        console.error("Error processing file download:", error);
         res.status(500).send("Server error.");
     }
 });
@@ -411,33 +427,20 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         const fileId = req.params.fileId;
         const { rating, comment } = req.body;
 
-        if (!rating || !comment) {
-            return res.status(400).send("Rating and comment are required.");
-        }
+        if (!rating || !comment) { return res.status(400).send("Fields missing."); }
 
         const existingReview = await Review.findOne({ file: fileId, user: req.user._id });
-        if (existingReview) {
-            return res.redirect(`/mods/${fileId}`);
-        }
+        if (existingReview) { return res.redirect(`/mods/${fileId}`); }
 
         const newReview = new Review({
-            file: fileId,
-            user: req.user._id,
-            username: req.user.username,
-            rating: parseInt(rating),
-            comment: comment
+            file: fileId, user: req.user._id, username: req.user.username,
+            rating: parseInt(rating), comment: comment
         });
         await newReview.save();
 
         const stats = await Review.aggregate([
             { $match: { file: new Types.ObjectId(fileId) } },
-            { 
-                $group: { 
-                    _id: '$file', 
-                    avgRating: { $avg: '$rating' }, 
-                    count: { $sum: 1 } 
-                } 
-            }
+            { $group: { _id: '$file', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
         ]);
         
         if (stats.length > 0) {
@@ -446,16 +449,14 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
                 ratingCount: stats[0].count
             });
         }
-        
         res.redirect(`/mods/${fileId}`);
     } catch (error) {
-        console.error("Error submitting review:", error);
         res.status(500).send("Server error.");
     }
 });
 
 // ===============================
-// 7. START SERVER
+// 8. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
