@@ -1,62 +1,43 @@
-const nodemailer = require('nodemailer');
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
 
-// This function creates a test account on Ethereal for us.
-// In a real application, you'd have these credentials in your .env file from a service like SendGrid.
-async function getTestAccountInfo() {
-    let testAccount = await nodemailer.createTestAccount();
-    console.log("=========================================");
-    console.log("ETHEREAL EMAIL TEST ACCOUNT - USE FOR .ENV");
-    console.log("USER:", testAccount.user);
-    console.log("PASS:", testAccount.pass);
-    console.log("=========================================");
-    process.env.EMAIL_USER = testAccount.user;
-    process.env.EMAIL_PASS = testAccount.pass;
-}
-
-// Initialize the mailer setup when the application starts
-getTestAccountInfo();
-
-const transporter = () => nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT),
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
+// 1. Initialize MailerSend with the API key from your .env file
+const mailersend = new MailerSend({
+    apiKey: process.env.MAILERSEND_API_KEY,
 });
 
+// 2. Define the "from" address using a Sender object
+// The email address MUST be from a domain you have verified in MailerSend.
+const sentFrom = new Sender(process.env.EMAIL_FROM, "GPL Mods Team");
+
+// 3. The main function to send the verification email
 exports.sendVerificationEmail = async (user) => {
-    const verificationUrl = `http://localhost:${process.env.PORT}/verify-email?token=${user.verificationToken}`;
+    try {
+        const verificationUrl = `http://localhost:${process.env.PORT || 3000}/verify-email?token=${user.verificationToken}`;
 
-    const mailOptions = {
-        from: process.env.EMAIL_FROM,
-        to: user.email,
-        subject: 'Please Verify Your Email for GPL Mods',
-        html: `
-            <h2>Welcome to GPL Mods!</h2>
-            <p>Thank you for registering. Please click the link below to verify your email address:</p>
-            <a href="${verificationUrl}" style="padding: 10px 15px; background-color: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 5px;">Verify My Email</a>
-            <p>If you did not register for an account, please ignore this email.</p>
-        `,
-    };
-    
-    let emailTransporter = transporter();
-    let info = await emailTransporter.sendMail(mailOptions);
-    
-    console.log('Verification email sent: %s', info.messageId);
-    // Preview only available when sending through an Ethereal account
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-};```
+        // Create the recipient object
+        const recipients = [
+            new Recipient(user.email, user.username)
+        ];
 
----
+        // Create the email parameters
+        const emailParams = new EmailParams()
+            .setFrom(sentFrom)
+            .setTo(recipients)
+            .setSubject("Please Verify Your Email for GPL Mods")
+            .setHtml(`
+                <h2>Welcome to GPL Mods!</h2>
+                <p>Thank you for registering. Please click the link below to verify your email address:</p>
+                <a href="${verificationUrl}" style="padding: 10px 15px; background-color: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 5px;">Verify My Email</a>
+                <p>If you did not register for an account, please ignore this email.</p>
+            `);
+        
+        // Use the MailerSend SDK to send the email
+        const { body, statusCode } = await mailersend.email.send(emailParams);
 
-### **Step 5: Integrate Email Logic into `server.js`**
+        console.log(`Email sent successfully via MailerSend! Status Code: ${statusCode}`);
+        console.log('Response Body:', body);
 
-Now, we will modify the registration and login routes to use our new verification system.
-
-**1. Add New Imports at the Top of `server.js`:**
-```javascript
-// ... after other imports
-const jwt = require('jsonwebtoken');
-const { sendVerificationEmail } = require('./utils/mailer');
+    } catch (error) {
+        console.error("Error sending email via MailerSend:", error.body);
+    }
+};
