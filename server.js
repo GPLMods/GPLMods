@@ -226,27 +226,55 @@ app.get('/register', (req, res) => res.render('pages/register'));
 app.post('/register', async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
-        if (!username || !email || !password) { return res.status(400).send("All fields required."); }
+        if (!username || !email || !password) {
+            return res.status(400).send("All fields are required.");
+        }
 
-        const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
-        if (existingUser) { return res.status(400).send("User already exists."); }
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
 
+        // --- NEW IMPROVED LOGIC ---
+        if (existingUser) {
+            if (existingUser.isVerified) {
+                // User exists and is verified, so it's a definite "already exists" error.
+                return res.status(400).send("A user with this email address already exists and is verified.");
+            } else {
+                // User exists but is NOT verified. Let's re-send their email.
+                // Re-create their verification token to be safe and give it a new expiry.
+                const verificationToken = jwt.sign(
+                    { userId: existingUser._id },
+                    process.env.JWT_SECRET || 'fallback_secret', 
+                    { expiresIn: '1d' }
+                );
+
+                existingUser.verificationToken = verificationToken;
+                // Optional: Update their password if they re-registered with a new one
+                // existingUser.password = password; 
+                await existingUser.save(); 
+
+                await sendVerificationEmail(existingUser);
+
+                // Render the same page, but the user gets a new link.
+                return res.render('pages/please-verify');
+            }
+        }
+        // --- END OF NEW LOGIC ---
+        
+        // --- Logic for a brand-new user ---
         const newUser = new User({ username, email: email.toLowerCase(), password });
         
-        // Create verification token
         const verificationToken = jwt.sign(
-            { userId: newUser._id }, 
-            process.env.JWT_SECRET || 'fallback_secret', 
+            { userId: newUser._id },
+            process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1d' }
         );
 
         newUser.verificationToken = verificationToken;
         await newUser.save();
         
-        // Send email
         await sendVerificationEmail(newUser);
-        
+
         res.render('pages/please-verify');
+
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).send("Server error during registration.");
