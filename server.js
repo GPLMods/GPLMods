@@ -16,7 +16,7 @@ const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
-const nodemailer = require('nodemailer'); 
+const mailersend = require('mailersend'); 
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
