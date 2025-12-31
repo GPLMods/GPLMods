@@ -44,33 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // ===============================
-// 3. EMAIL CONFIGURATION (Nodemailer)
-// ===============================
-const transporter = nodemailer.createTransport({
-    service: 'gmail', 
-    auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS
-    }
-});
-
-const sendVerificationEmail = async (user) => {
-    const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${user.verificationToken}`;
-    
-    const mailOptions = {
-        from: `"Mod Site Support" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: 'Please Verify Your Email',
-        html: `<h1>Welcome to our site!</h1>
-               <p>Please click the link below to verify your account:</p>
-               <a href="${verificationUrl}">${verificationUrl}</a>`
-    };
-
-    await transporter.sendMail(mailOptions);
-};
-
-// ===============================
-// 4. AWS S3 CLIENT (BACKBLAZE B2)
+// 3. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
 const s3Client = new S3Client({
     endpoint: `https://${process.env.B2_ENDPOINT}`,
@@ -86,14 +60,14 @@ const sanitizeFilename = (filename) => {
 };
 
 // ===============================
-// 5. DATABASE CONNECTION
+// 4. DATABASE CONNECTION
 // ===============================
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('Successfully connected to MongoDB Atlas!'))
     .catch(error => console.error('Error connecting to MongoDB Atlas:', error));
 
 // ===============================
-// 6. SESSION & PASSPORT CONFIG
+// 5. SESSION & PASSPORT CONFIG
 // ===============================
 app.use(session({
     secret: process.env.SESSION_SECRET || 'a-very-secret-key-to-sign-the-cookie',
@@ -161,7 +135,7 @@ function ensureAdmin(req, res, next) {
 }
 
 // ===============================
-// 7. ROUTES
+// 6. ROUTES
 // ===============================
 
 // --- INDEX PAGE ---
@@ -509,7 +483,7 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
 });
 
 // ===================================
-// 8. FILE REPORTING ROUTES
+// 7. FILE REPORTING ROUTES
 // ===================================
 app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     try {
@@ -553,7 +527,7 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
 });
 
 // ===================================
-// 9. ADMIN ROUTES
+// 8. ADMIN ROUTES
 // ===================================
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
@@ -574,7 +548,7 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
 });
 
 // ===============================
-// 10. START SERVER
+// 9. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
