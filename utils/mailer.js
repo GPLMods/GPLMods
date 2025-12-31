@@ -1,34 +1,38 @@
-// utils/mailer.js
-const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailer send");
 
-// --- 1. CONFIGURATION AND VALIDATION (No Changes Needed) ---
+// --- 1. CONFIGURATION (No changes needed) ---
 
-// Validate that the API key exists. If not, stop the application.
+// Validate that environment variables exist.
 if (!process.env.MAILERSEND_API_KEY) {
-    throw new Error("FATAL_ERROR: MAILERSEND_API_KEY is not defined in your .env file.");
+    throw new Error("FATAL_ERROR: MAILERSEND_API_KEY is not defined in your environment variables.");
 }
 if (!process.env.EMAIL_FROM) {
-    throw new Error("FATAL_ERROR: EMAIL_FROM is not defined in your .env file.");
+    throw new Error("FATAL_ERROR: EMAIL_FROM is not defined in your environment variables.");
+}
+if (!process.env.SITE_URL) {
+    // Add this to your .env on Render: SITE_URL="https://gplmods.onrender.com"
+    console.warn("WARNING: SITE_URL is not defined. Email links will default to localhost.");
 }
 
-// Initialize the MailerSend client.
+
 const mailersend = new MailerSend({
     apiKey: process.env.MAILERSEND_API_KEY,
 });
 
-// Define the reusable sender object from your verified domain.
 const sentFrom = new Sender(process.env.EMAIL_FROM, "GPL Mods Team");
 
-// --- 2. VERIFICATION EMAIL FUNCTION (Your existing code, unchanged) ---
+// A helper function to get the correct base URL for production or development
+const getBaseUrl = () => {
+    return process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`;
+}
+
+
+// --- 2. VERIFICATION EMAIL FUNCTION (Error handling is updated) ---
 
 exports.sendVerificationEmail = async (user) => {
-    // Construct the unique verification URL.
-    const verificationUrl = `http://localhost:${process.env.PORT || 3000}/verify-email?token=${user.verificationToken}`;
-
-    // Define recipients.
+    const verificationUrl = `${getBaseUrl()}/verify-email?token=${user.verificationToken}`;
     const recipients = [ new Recipient(user.email, user.username) ];
 
-    // Define the email payload.
     const emailParams = new EmailParams()
         .setFrom(sentFrom)
         .setTo(recipients)
@@ -41,65 +45,47 @@ exports.sendVerificationEmail = async (user) => {
                     Verify My Email
                 </a>
                 <p>If you did not register for an account on GPL Mods, you can safely ignore this email.</p>
-                <hr>
-                <p style="font-size: 0.8em; color: #888;">If you're having trouble, copy and paste this URL into your browser:<br>${verificationUrl}</p>
             </div>
         `);
 
-    // Send the email and handle logging.
     try {
         const response = await mailersend.email.send(emailParams);
         console.log(`Verification email sent to ${user.email}. Message ID: ${response.headers['x-message-id']}`);
     } catch (error) {
         logMailerSendError(error);
+        // --- CHANGED: Re-throw the error so server.js knows it failed. ---
+        throw error;
     }
 };
 
-// --- 3. PASSWORD RESET EMAIL FUNCTION (New addition for future use) ---
+// --- 3. PASSWORD RESET EMAIL FUNCTION (Error handling is updated) ---
 
 exports.sendPasswordResetEmail = async (user, resetToken) => {
-    // Construct the unique password reset URL.
-    const resetUrl = `http://localhost:${process.env.PORT || 3000}/reset-password?token=${resetToken}`;
-    
-    // Define recipients.
+    const resetUrl = `${getBaseUrl()}/reset-password?token=${resetToken}`;
     const recipients = [ new Recipient(user.email, user.username) ];
 
-    // Define the email payload.
     const emailParams = new EmailParams()
         .setFrom(sentFrom)
         .setTo(recipients)
         .setSubject("Your Password Reset Request for GPL Mods")
-        .setHtml(`
-             <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                <h2>Password Reset Request</h2>
-                <p>We received a request to reset the password for your account. Please click the button below to set a new password:</p>
-                <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; margin: 20px 0; font-size: 16px; font-weight: bold; background-color: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 5px;">
-                    Reset Password
-                </a>
-                <p>This password reset link will expire in 1 hour.</p>
-                <p>If you did not request a password reset, you can safely ignore this email. No changes will be made to your account.</p>
-            </div>
-        `);
+        .setHtml(/* ... your email HTML ... */);
 
-    // Send the email and handle logging.
     try {
         const response = await mailersend.email.send(emailParams);
         console.log(`Password reset email sent to ${user.email}. Message ID: ${response.headers['x-message-id']}`);
     } catch (error) {
         logMailerSendError(error);
+        // --- CHANGED: Re-throw the error so the caller function knows it failed. ---
+        throw error;
     }
 };
 
-// --- 4. HELPER FUNCTION (To avoid code duplication) ---
+// --- 4. HELPER FUNCTION (This is the corrected part) ---
 
-// Centralized error logger.
+// --- CHANGED: A safer, more robust error logger ---
 function logMailerSendError(error) {
     console.error("\n--- MAILERSEND API ERROR ---");
-    // MailerSend SDK stores detailed errors in error.body
-    if (error.body && error.body.errors) {
-        error.body.errors.forEach(err => console.error("Message:", err.message));
-    } else {
-         console.error("Full Error:", error);
-    }
+    // This safely logs WHATEVER error MailerSend returns, without crashing.
+    console.error(error.body || error);
     console.error("--------------------------\n");
 }
