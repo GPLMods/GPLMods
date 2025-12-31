@@ -1,4 +1,4 @@
-const { MailerSend, EmailParams, Sender, Recipient } = require("mailer send");
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
 
 // --- 1. CONFIGURATION (No changes needed) ---
 
