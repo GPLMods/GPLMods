@@ -19,6 +19,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // --- NEW FIELD ADDED HERE ---
+    role: {
+        type: String,
+        enum: ['member', 'admin'],
+        default: 'member'
+    },
+    // ---------------------------
     isVerified: {
         type: Boolean,
         default: false

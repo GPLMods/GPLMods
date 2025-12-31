@@ -33,7 +33,13 @@ const ReviewSchema = new Schema({
     isHelpfulCount: {
         type: Number,
         default: 0
-    }
+    },
+    // An array that stores the user IDs of everyone who voted on this review
+    // to prevent duplicate voting
+    votedBy: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Review', ReviewSchema);

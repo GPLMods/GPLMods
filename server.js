@@ -15,8 +15,8 @@ const LocalStrategy = require('passport-local').Strategy;
 const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // Added for verification
-const nodemailer = require('nodemailer'); // Added for emails
+const jwt = require('jsonwebtoken'); 
+const nodemailer = require('nodemailer'); 
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -26,6 +26,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const File = require('./models/file');
 const User = require('./models/user');
 const Review = require('./models/review');
+const Report = require('./models/report'); // Added Report model
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -47,7 +48,7 @@ app.use(express.json());
 // 3. EMAIL CONFIGURATION (Nodemailer)
 // ===============================
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Or your preferred email provider
+    service: 'gmail', 
     auth: {
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS
@@ -119,7 +120,6 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
         const isMatch = await user.comparePassword(password);
         if (!isMatch) { return done(null, false, { message: 'Incorrect password.' }); }
 
-        // --- Check if user is verified ---
         if (!user.isVerified) {
             return done(null, false, { message: 'Please verify your email before logging in.' });
         }
@@ -149,6 +149,16 @@ app.use((req, res, next) => {
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next(); }
     res.redirect('/login');
+}
+
+// --- NEW MIDDLEWARE TO CHECK FOR ADMIN ROLE ---
+function ensureAdmin(req, res, next) {
+    // We assume the user is already authenticated at this point
+    if (req.user && req.user.role === 'admin') {
+        return next(); // If user is an admin, proceed
+    }
+    // If not an admin, send an error or redirect
+    res.status(403).send("Forbidden: You do not have permission to access this page.");
 }
 
 // ===============================
@@ -232,14 +242,10 @@ app.post('/register', async (req, res, next) => {
 
         const existingUser = await User.findOne({ email: email.toLowerCase() });
 
-        // --- NEW IMPROVED LOGIC ---
         if (existingUser) {
             if (existingUser.isVerified) {
-                // User exists and is verified, so it's a definite "already exists" error.
                 return res.status(400).send("A user with this email address already exists and is verified.");
             } else {
-                // User exists but is NOT verified. Let's re-send their email.
-                // Re-create their verification token to be safe and give it a new expiry.
                 const verificationToken = jwt.sign(
                     { userId: existingUser._id },
                     process.env.JWT_SECRET || 'fallback_secret', 
@@ -247,19 +253,13 @@ app.post('/register', async (req, res, next) => {
                 );
 
                 existingUser.verificationToken = verificationToken;
-                // Optional: Update their password if they re-registered with a new one
-                // existingUser.password = password; 
                 await existingUser.save(); 
 
                 await sendVerificationEmail(existingUser);
-
-                // Render the same page, but the user gets a new link.
                 return res.render('pages/please-verify');
             }
         }
-        // --- END OF NEW LOGIC ---
         
-        // --- Logic for a brand-new user ---
         const newUser = new User({ username, email: email.toLowerCase(), password });
         
         const verificationToken = jwt.sign(
@@ -272,7 +272,6 @@ app.post('/register', async (req, res, next) => {
         await newUser.save();
         
         await sendVerificationEmail(newUser);
-
         res.render('pages/please-verify');
 
     } catch (error) {
@@ -483,8 +482,100 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// --- REVIEW VOTING ROUTE ---
+app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
+    try {
+        const reviewId = req.params.reviewId;
+        const userId = req.user._id;
+
+        const review = await Review.findById(reviewId);
+        if (!review) {
+            return res.status(404).send("Review not found.");
+        }
+
+        if (review.votedBy.includes(userId)) {
+            return res.redirect(`/mods/${review.file}`);
+        }
+
+        review.votedBy.push(userId);
+        review.isHelpfulCount += 1;
+        await review.save();
+
+        res.redirect(`/mods/${review.file}`);
+
+    } catch (error) {
+        console.error('Error processing review vote:', error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// ===================================
+// 8. FILE REPORTING ROUTES
+// ===================================
+app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const { reason, additionalComments } = req.body;
+
+        if (!reason) {
+            return res.status(400).send("A reason is required to submit a report.");
+        }
+        
+        const fileToReport = await File.findById(fileId);
+        if (!fileToReport) {
+            return res.status(404).send("File not found.");
+        }
+
+        // Check if this user has already reported this specific file
+        const existingReport = await Report.findOne({ file: fileId, reportingUser: req.user._id });
+        if (existingReport) {
+            console.log("User has already reported this file.");
+            return res.redirect(`/mods/${fileId}`);
+        }
+
+        const newReport = new Report({
+            file: fileId,
+            reportingUser: req.user._id,
+            reportedFileName: fileToReport.name,
+            reportingUsername: req.user.username,
+            reason: reason,
+            additionalComments: additionalComments
+        });
+
+        await newReport.save();
+
+        // Redirect back to the mod page with a success message
+        res.redirect(`/mods/${fileId}?reported=true`);
+
+    } catch (error) {
+        console.error("Error submitting report:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// ===================================
+// 9. ADMIN ROUTES
+// ===================================
+app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        // Find all reports and sort by newest first (open reports first)
+        const reports = await Report.find()
+                                    .sort({ status: 1, createdAt: -1 })
+                                    .populate('file') // Optional: pulls in the full File object
+                                    .populate('reportingUser'); // Optional: pulls in the User object
+
+        res.render('pages/admin/reports', {
+            reports: reports
+        });
+
+    } catch (error) {
+        console.error("Error fetching reports for admin page:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
 // ===============================
-// 8. START SERVER
+// 10. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

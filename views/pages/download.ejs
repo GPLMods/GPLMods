@@ -85,7 +85,7 @@
         <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="mod-icon">
         <div class="mod-title">
             <h1><%= file.name %></h1>
-            <!-- Added Rating display from update 2 -->
+            <!-- Rating display -->
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <div class="star-rating" data-rating="<%= file.averageRating %>">
                     <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
@@ -104,7 +104,8 @@
     <section class="mod-actions">
         <a href="/download-file/<%= file._id %>" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2rem;">Download Now</a>
         <a href="#" class="btn btn-secondary">Add to Wishlist</a>
-        <a href="#" class="btn btn-secondary">Report File</a>
+        <!-- UPDATE 1: Link converted to Button -->
+        <button type="button" class="btn btn-secondary" id="reportModalBtn">Report File</button>
     </section>
 
     <!-- Screenshots and Video Gallery -->
@@ -128,7 +129,7 @@
         </div>
     </section>
 
-    <!-- Write a Review Section (from update 1) -->
+    <!-- Write a Review Section -->
     <% if (user) { %> 
     <section class="write-review-section" style="margin-top: 3rem;">
         <h3>Write a Review</h3>
@@ -153,7 +154,7 @@
     </section>
     <% } %>
 
-    <!-- Existing Reviews Section (from update 1) -->
+    <!-- Existing Reviews Section -->
     <section class="reviews-list" style="margin-top: 3rem; margin-bottom: 3rem;">
         <h2>User Reviews (<%= file.ratingCount %>)</h2>
         <% if (reviews && reviews.length > 0) { %>
@@ -168,12 +169,55 @@
                         </span>
                     </div>
                     <p style="margin-top: 1rem;"><%- review.comment.replace(/\n/g, '<br>') %></p>
+
+                    <!-- ======== NEW REVIEW ACTIONS SECTION ======== -->
+                    <div class="review-actions" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--light-grey); display: flex; align-items: center; gap: 1rem;">
+                        
+                        <!-- The form submits to our new route -->
+                        <form action="/reviews/<%= review._id %>/vote" method="POST">
+                            <button type="submit" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.9rem;">
+                                Helpful
+                            </button>
+                        </form>
+                        
+                        <% if (review.isHelpfulCount > 0) { %>
+                            <span style="color: var(--silver);"><%= review.isHelpfulCount %> people found this helpful</span>
+                        <% } %>
+                    </div>
+                    <!-- ======== END OF NEW SECTION ======== -->
+
                 </div>
             <% }) %>
         <% } else { %>
             <p>No reviews have been written for this mod yet. Be the first!</p>
         <% } %>
     </section>
+
+    <!-- UPDATE 2: REPORT FILE MODAL -->
+    <div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+        <div class="modal-content" style="background-color: var(--dark-grey); margin: 15% auto; padding: 2rem; border: 1px solid var(--light-grey); width: 80%; max-width: 500px; border-radius: 8px; position: relative;">
+            <span class="close-modal" style="color: var(--silver); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            <h3>Report "<%= file.name %>"</h3>
+            <form action="/files/<%= file._id %>/report" method="POST">
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="reason">Reason for reporting*</label>
+                    <select name="reason" id="reason" required style="width:100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;">
+                        <option value="" disabled selected>Select a reason...</option>
+                        <option value="malware">Contains malware/virus</option>
+                        <option value="broken-file">File is broken or does not work</option>
+                        <option value="incorrect-info">Description or screenshots are incorrect</option>
+                        <option value="copyright">Copyright infringement</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="additionalComments">Additional Comments (Optional)</label>
+                    <textarea name="additionalComments" id="additionalComments" style="width: 100%; min-height: 80px; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Submit Report</button>
+            </form>
+        </div>
+    </div>
 
 </div> <!-- End of container -->
 
@@ -196,6 +240,33 @@
 
         // --- Initialize Star Ratings ---
         initializeStarRatings();
+
+        // --- UPDATE 3: NEW MODAL LOGIC ---
+        const modal = document.getElementById('reportModal');
+        const btn = document.getElementById('reportModalBtn');
+        const span = document.getElementsByClassName('close-modal')[0];
+
+        if (btn) {
+            btn.onclick = function() {
+                modal.style.display = 'block';
+            }
+        }
+        if (span) {
+            span.onclick = function() {
+                modal.style.display = 'none';
+            }
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // --- Optional: Show a "Thank you" message after reporting ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('reported') && urlParams.get('reported') === 'true') {
+            alert('Thank you for your report. An administrator will review it shortly.');
+        }
     });
 
     function initializeStarRatings() {
