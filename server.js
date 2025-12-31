@@ -16,6 +16,7 @@ const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
+const { sendVerificationEmail } = require('./utils/mailer'); // Added this line
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -25,7 +26,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const File = require('./models/file');
 const User = require('./models/user');
 const Review = require('./models/review');
-const Report = require('./models/report'); // Added Report model
+const Report = require('./models/report');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -124,13 +125,10 @@ function ensureAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
-// --- NEW MIDDLEWARE TO CHECK FOR ADMIN ROLE ---
 function ensureAdmin(req, res, next) {
-    // We assume the user is already authenticated at this point
     if (req.user && req.user.role === 'admin') {
-        return next(); // If user is an admin, proceed
+        return next();
     }
-    // If not an admin, send an error or redirect
     res.status(403).send("Forbidden: You do not have permission to access this page.");
 }
 
@@ -499,7 +497,6 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
             return res.status(404).send("File not found.");
         }
 
-        // Check if this user has already reported this specific file
         const existingReport = await Report.findOne({ file: fileId, reportingUser: req.user._id });
         if (existingReport) {
             console.log("User has already reported this file.");
@@ -516,8 +513,6 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
         });
 
         await newReport.save();
-
-        // Redirect back to the mod page with a success message
         res.redirect(`/mods/${fileId}?reported=true`);
 
     } catch (error) {
@@ -531,11 +526,10 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
 // ===================================
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
-        // Find all reports and sort by newest first (open reports first)
         const reports = await Report.find()
                                     .sort({ status: 1, createdAt: -1 })
-                                    .populate('file') // Optional: pulls in the full File object
-                                    .populate('reportingUser'); // Optional: pulls in the User object
+                                    .populate('file') 
+                                    .populate('reportingUser'); 
 
         res.render('pages/admin/reports', {
             reports: reports
