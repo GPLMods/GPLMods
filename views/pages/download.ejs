@@ -21,6 +21,7 @@
     .mod-actions {
         margin: 2rem 0;
         display: flex;
+        align-items: center;
         gap: 1rem;
     }
 
@@ -103,8 +104,18 @@
     <!-- Download & Action Buttons -->
     <section class="mod-actions">
         <a href="/download-file/<%= file._id %>" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2rem;">Download Now</a>
-        <a href="#" class="btn btn-secondary">Add to Wishlist</a>
-        <!-- UPDATE 1: Link converted to Button -->
+        
+        <!-- INTEGRATED UPDATE: Whitelist/Wishlist Toggle Logic -->
+        <% if (user) { %>
+            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0;">
+                <% if (userHasWhitelisted) { %>
+                    <button type="submit" class="btn btn-primary">Remove from Whitelist</button>
+                <% } else { %>
+                    <button type="submit" class="btn btn-secondary">Add to Whitelist</button>
+                <% } %>
+            </form>
+        <% } %>
+
         <button type="button" class="btn btn-secondary" id="reportModalBtn">Report File</button>
     </section>
 

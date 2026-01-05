@@ -16,7 +16,7 @@ const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
-const { sendVerificationEmail } = require('./utils/mailer'); // Added this line
+const { sendVerificationEmail } = require('./utils/mailer');
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -193,8 +193,18 @@ app.get('/mods/:id', async (req, res) => {
                 Bucket: process.env.B2_BUCKET_NAME, Key: key 
             }), { expiresIn: 3600 }))
         );
+
+        // --- UPDATE 2 LOGIC ---
+        let userHasWhitelisted = false;
+        if (req.user) {
+            userHasWhitelisted = req.user.whitelist.includes(fileId);
+        }
         
-        res.render('pages/download', { file: { ...file.toObject(), iconUrl, screenshotUrls }, reviews });
+        res.render('pages/download', { 
+            file: { ...file.toObject(), iconUrl, screenshotUrls }, 
+            reviews,
+            userHasWhitelisted: userHasWhitelisted 
+        });
     } catch (error) {
         console.error("Error fetching file for download page:", error);
         res.status(500).send("Server error.");
@@ -309,12 +319,21 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// --- USER PROFILE & ACCOUNT MANAGEMENT ---
+// --- USER PROFILE & ACCOUNT MANAGEMENT (UPDATE 3 INTEGRATED) ---
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        const userUploads = await File.find({ uploader: req.user.username }).sort({ createdAt: -1 });
-        res.render('pages/profile', { user: req.user, uploads: userUploads });
+        // Find the user AND populate their whitelist to get full file details
+        const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
+
+        const userUploads = await File.find({ uploader: req.user.username })
+                                      .sort({ createdAt: -1 });
+
+        res.render('pages/profile', {
+            user: userWithWhitelist, 
+            uploads: userUploads
+        });
     } catch (error) {
+        console.error("Error fetching profile:", error);
         res.status(500).send('Server Error');
     }
 });
@@ -416,6 +435,36 @@ app.get('/download-file/:id', async (req, res) => {
         res.redirect(presignedUrl);
     } catch (error) {
         res.status(500).send("Server error.");
+    }
+});
+
+// --- WHITELIST / FAVORITES ROUTE (UPDATE 1 INTEGRATED) ---
+app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const user = req.user; 
+
+        const isWhitelisted = user.whitelist.includes(fileId);
+        
+        let updateQuery;
+        let fileUpdateQuery;
+
+        if (isWhitelisted) {
+            updateQuery = { $pull: { whitelist: fileId } };
+            fileUpdateQuery = { $inc: { whitelistCount: -1 } };
+        } else {
+            updateQuery = { $push: { whitelist: fileId } };
+            fileUpdateQuery = { $inc: { whitelistCount: 1 } };
+        }
+
+        await User.findByIdAndUpdate(user._id, updateQuery);
+        await File.findByIdAndUpdate(fileId, fileUpdateQuery);
+        
+        res.redirect(`/mods/${fileId}`);
+
+    } catch (error) {
+        console.error("Error toggling whitelist status:", error);
+        res.status(500).send("Server Error");
     }
 });
 

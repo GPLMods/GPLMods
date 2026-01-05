@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const Schema = mongoose.Schema;
 
-const UserSchema = new mongoose.Schema({
+const UserSchema = new Schema({
     username: {
         type: String,
         required: true,
@@ -19,13 +20,17 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    // --- NEW FIELD ADDED HERE ---
     role: {
         type: String,
         enum: ['member', 'admin'],
         default: 'member'
     },
-    // ---------------------------
+    // --- NEW FIELD ADDED ---
+    whitelist: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
+    // -----------------------
     isVerified: {
         type: Boolean,
         default: false
@@ -52,7 +57,7 @@ UserSchema.pre('save', async function(next) {
 
 // Method to compare candidate password with the stored hashed password
 UserSchema.methods.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', UserSchema);

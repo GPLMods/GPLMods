@@ -38,6 +38,12 @@ const FileSchema = new mongoose.Schema({
         type: Number, 
         default: 0 
     },
+
+    // --- NEW FIELD ---
+    whitelistCount: {
+        type: Number,
+        default: 0
+    },
     
     virusTotalAnalysisId: { type: String },
 

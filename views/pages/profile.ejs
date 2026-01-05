@@ -100,6 +100,33 @@
             </div>
         <% } %>
     </section>
+
+    <!-- Whitelist Section -->
+    <section class="whitelist-history" style="margin-top: 3rem;">
+        <h2>Your Whitelist</h2>
+        
+        <% if(user.whitelist && user.whitelist.length > 0) { %>
+            <!-- Using the same item card grid for a consistent look -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                <% user.whitelist.forEach(file => { %>
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;"></div>
+                        <div class="card-body">
+                            <h3 class="card-title"><%= file.name %></h3>
+                            <p class="card-platform"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></p>
+                            <div class="star-rating" data-rating="<%= file.averageRating %>">
+                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                            </div>
+                        </div>
+                    </a>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <div class="no-uploads">
+                <p>You haven't whitelisted any mods yet.</p>
+            </div>
+        <% } %>
+    </section>
     
     <!-- Account Management Section -->
     <section class="danger-zone">
