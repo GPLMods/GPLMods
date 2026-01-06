@@ -56,8 +56,28 @@ const s3Client = new S3Client({
     }
 });
 
+/**
+ * HELPER: Sanitize filenames for S3
+ */
 const sanitizeFilename = (filename) => {
     return filename.replace(/[^a-zA-Z0-9.-_]/g, '');
+};
+
+/**
+ * HELPER: Upload buffer to Backblaze B2
+ * Moved to global scope so both /upload and /add-version can use it.
+ */
+const uploadToB2 = async (file, folder) => {
+    const sanitizedFilename = sanitizeFilename(file.originalname);
+    const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
+    const params = { 
+        Bucket: process.env.B2_BUCKET_NAME, 
+        Key: fileName, 
+        Body: file.buffer, 
+        ContentType: file.mimetype 
+    };
+    await s3Client.send(new PutObjectCommand(params));
+    return fileName;
 };
 
 // ===============================
@@ -136,10 +156,11 @@ function ensureAdmin(req, res, next) {
 // 6. ROUTES
 // ===============================
 
-// --- INDEX PAGE ---
+// --- INDEX PAGE (Integrated Update 3) ---
 app.get('/', async (req, res) => {
     try {
-        const recentFiles = await File.find().sort({ createdAt: -1 }).limit(12);
+        // Only fetch files that are the latest version to prevent duplicates on home
+        const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
             const getIconUrlCommand = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey });
             const iconUrl = await getSignedUrl(s3Client, getIconUrlCommand, { expiresIn: 3600 });
@@ -157,7 +178,8 @@ app.get('/category', async (req, res) => {
     try {
         const { cat } = req.query;
         if (!cat) { return res.redirect('/'); }
-        const filteredFiles = await File.find({ category: cat }).sort({ createdAt: -1 });
+        // Only fetch latest versions for categories
+        const filteredFiles = await File.find({ category: cat, isLatestVersion: true }).sort({ createdAt: -1 });
         const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
         const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
             const getIconUrlCommand = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey });
@@ -171,37 +193,49 @@ app.get('/category', async (req, res) => {
     }
 });
 
-// --- INDIVIDUAL MOD/DOWNLOAD PAGE ---
+// --- INDIVIDUAL MOD/DOWNLOAD PAGE (Integrated Update 4) ---
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         if (!Types.ObjectId.isValid(fileId)) { return res.status(404).send("File not found."); }
 
-        const [file, reviews] = await Promise.all([
-            File.findById(fileId),
-            Review.find({ file: fileId }).sort({ createdAt: -1 })
-        ]);
+        let currentFile = await File.findById(fileId);
+        if (!currentFile) { return res.status(404).send("File not found."); }
 
-        if (!file) { return res.status(404).send("File not found."); }
+        // --- FETCH VERSION HISTORY ---
+        let versionHistory = [];
+        if (currentFile.parentFile) {
+            // If this file has a parent, it's an older version. Find the "head" (latest version).
+            let headFile = await File.findById(currentFile.parentFile).populate('olderVersions');
+            versionHistory = [headFile, ...headFile.olderVersions.slice().reverse()]; 
+            currentFile = headFile; // Display the main UI for the latest version
+        } else {
+            // If this file has no parent, it is the head (latest version).
+            await currentFile.populate('olderVersions');
+            versionHistory = [currentFile, ...currentFile.olderVersions.slice().reverse()];
+        }
 
+        // Generate Signed URLs for the current (head) file
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ 
-            Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey 
+            Bucket: process.env.B2_BUCKET_NAME, Key: currentFile.iconKey 
         }), { expiresIn: 3600 });
 
         const screenshotUrls = await Promise.all(
-            file.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ 
+            currentFile.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ 
                 Bucket: process.env.B2_BUCKET_NAME, Key: key 
             }), { expiresIn: 3600 }))
         );
 
-        // --- UPDATE 2 LOGIC ---
+        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 });
+
         let userHasWhitelisted = false;
         if (req.user) {
-            userHasWhitelisted = req.user.whitelist.includes(fileId);
+            userHasWhitelisted = req.user.whitelist.includes(currentFile._id);
         }
         
         res.render('pages/download', { 
-            file: { ...file.toObject(), iconUrl, screenshotUrls }, 
+            file: { ...currentFile.toObject(), iconUrl, screenshotUrls }, 
+            versionHistory,
             reviews,
             userHasWhitelisted: userHasWhitelisted 
         });
@@ -305,6 +339,7 @@ app.get('/search', async (req, res) => {
         if (!query) { return res.redirect('/'); }
         
         const searchResults = await File.find({
+            isLatestVersion: true, // Only search latest versions
             $or: [
                 { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
@@ -319,13 +354,11 @@ app.get('/search', async (req, res) => {
     }
 });
 
-// --- USER PROFILE & ACCOUNT MANAGEMENT (UPDATE 3 INTEGRATED) ---
+// --- USER PROFILE & ACCOUNT MANAGEMENT ---
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        // Find the user AND populate their whitelist to get full file details
         const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
-
-        const userUploads = await File.find({ uploader: req.user.username })
+        const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true })
                                       .sort({ createdAt: -1 });
 
         res.render('pages/profile', {
@@ -354,8 +387,10 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     }
 });
 
+// ===============================
+// 7. FILE MANAGEMENT & VERSIONING
+// ===============================
 
-// --- FILE MANAGEMENT ---
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
@@ -374,14 +409,6 @@ app.post('/upload', ensureAuthenticated, upload.fields([
     if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) { 
         return res.status(400).send("A required field or file is missing."); 
     }
-
-    const uploadToB2 = async (file, folder) => {
-        const sanitizedFilename = sanitizeFilename(file.originalname);
-        const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
-        const params = { Bucket: process.env.B2_BUCKET_NAME, Key: fileName, Body: file.buffer, ContentType: file.mimetype };
-        await s3Client.send(new PutObjectCommand(params));
-        return fileName;
-    };
 
     try {
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
@@ -407,7 +434,8 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
             uploader: req.user.username,
             fileSize: modFile[0].size,
-            virusTotalAnalysisId: analysisId
+            virusTotalAnalysisId: analysisId,
+            isLatestVersion: true // New uploads are the latest by default
         });
 
         await newFile.save();
@@ -415,6 +443,70 @@ app.post('/upload', ensureAuthenticated, upload.fields([
     } catch (error) {
         console.error("Upload process failed:", error);
         res.status(500).send("An error occurred during the upload process.");
+    }
+});
+
+// --- ADD VERSION ROUTES (Integrated Updates 1 & 2) ---
+
+app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
+    try {
+        const parentFile = await File.findById(req.params.id);
+        if (!parentFile) return res.status(404).send("File not found.");
+
+        if (req.user.username !== parentFile.uploader) {
+            return res.status(403).send("Forbidden: You can only add versions to your own uploads.");
+        }
+
+        res.render('pages/add-version', { parentFile });
+    } catch (error) {
+        console.error('Error loading add-version page:', error);
+        res.status(500).send('Server Error');
+    }
+});
+
+app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    try {
+        const parentFileId = req.params.id;
+        const headFile = await File.findById(parentFileId);
+
+        if (!headFile) return res.status(404).send("Original file not found.");
+        if (req.user.username !== headFile.uploader) {
+            return res.status(403).send("Forbidden.");
+        }
+        
+        const fileKey = await uploadToB2(req.file, 'mods');
+        
+        // Create the new version document
+        const newVersion = new File({
+            name: headFile.name,
+            iconKey: headFile.iconKey,
+            screenshotKeys: headFile.screenshotKeys,
+            modDescription: headFile.modDescription,
+            officialDescription: headFile.officialDescription,
+            category: headFile.category,
+            platforms: headFile.platforms,
+            tags: headFile.tags,
+            uploader: headFile.uploader,
+            version: req.body.softwareVersion,
+            fileKey: fileKey,
+            originalFilename: req.file.originalname,
+            fileSize: req.file.size,
+            isLatestVersion: false, // Older versions are not the "head"
+            parentFile: headFile._id
+        });
+        
+        await newVersion.save();
+        
+        // Update the Head file to include this version in its history
+        await File.findByIdAndUpdate(parentFileId, {
+            $push: { olderVersions: newVersion._id }
+        });
+        
+        res.redirect(`/mods/${headFile._id}`); // Redirect back to the main mod page
+        
+    } catch (error) {
+        console.error("Error adding new version:", error);
+        res.status(500).send("Server Error");
     }
 });
 
@@ -438,7 +530,7 @@ app.get('/download-file/:id', async (req, res) => {
     }
 });
 
-// --- WHITELIST / FAVORITES ROUTE (UPDATE 1 INTEGRATED) ---
+// --- WHITELIST / FAVORITES ROUTE ---
 app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
@@ -509,9 +601,7 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
         const userId = req.user._id;
 
         const review = await Review.findById(reviewId);
-        if (!review) {
-            return res.status(404).send("Review not found.");
-        }
+        if (!review) { return res.status(404).send("Review not found."); }
 
         if (review.votedBy.includes(userId)) {
             return res.redirect(`/mods/${review.file}`);
@@ -522,7 +612,6 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
         await review.save();
 
         res.redirect(`/mods/${review.file}`);
-
     } catch (error) {
         console.error('Error processing review vote:', error);
         res.status(500).send("Server Error");
@@ -530,25 +619,20 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
 });
 
 // ===================================
-// 7. FILE REPORTING ROUTES
+// 8. FILE REPORTING ROUTES
 // ===================================
 app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
         const { reason, additionalComments } = req.body;
 
-        if (!reason) {
-            return res.status(400).send("A reason is required to submit a report.");
-        }
+        if (!reason) { return res.status(400).send("A reason is required to submit a report."); }
         
         const fileToReport = await File.findById(fileId);
-        if (!fileToReport) {
-            return res.status(404).send("File not found.");
-        }
+        if (!fileToReport) { return res.status(404).send("File not found."); }
 
         const existingReport = await Report.findOne({ file: fileId, reportingUser: req.user._id });
         if (existingReport) {
-            console.log("User has already reported this file.");
             return res.redirect(`/mods/${fileId}`);
         }
 
@@ -571,7 +655,7 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
 });
 
 // ===================================
-// 8. ADMIN ROUTES
+// 9. ADMIN ROUTES
 // ===================================
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
@@ -580,10 +664,7 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
                                     .populate('file') 
                                     .populate('reportingUser'); 
 
-        res.render('pages/admin/reports', {
-            reports: reports
-        });
-
+        res.render('pages/admin/reports', { reports });
     } catch (error) {
         console.error("Error fetching reports for admin page:", error);
         res.status(500).send("Server Error");
@@ -591,7 +672,7 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
 });
 
 // ===============================
-// 9. START SERVER
+// 10. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

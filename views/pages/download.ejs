@@ -22,6 +22,7 @@
         margin: 2rem 0;
         display: flex;
         align-items: center;
+        flex-wrap: wrap; /* Added for responsiveness */
         gap: 1rem;
     }
 
@@ -69,6 +70,24 @@
         display: block;
     }
 
+    /* Table Styles for Version History */
+    .uploads-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        background-color: var(--dark-grey);
+        border: 1px solid var(--light-grey);
+    }
+    .uploads-table th, .uploads-table td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid var(--light-grey);
+    }
+    .uploads-table th {
+        background-color: var(--black);
+        color: var(--gold);
+    }
+
     /* Form Styles */
     .form-group {
         margin-bottom: 1rem;
@@ -105,7 +124,7 @@
     <section class="mod-actions">
         <a href="/download-file/<%= file._id %>" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2rem;">Download Now</a>
         
-        <!-- INTEGRATED UPDATE: Whitelist/Wishlist Toggle Logic -->
+        <!-- Whitelist/Wishlist Toggle Logic -->
         <% if (user) { %>
             <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0;">
                 <% if (userHasWhitelisted) { %>
@@ -117,6 +136,11 @@
         <% } %>
 
         <button type="button" class="btn btn-secondary" id="reportModalBtn">Report File</button>
+
+        <!-- ADDED: Uploader Add Version Button -->
+        <% if (user && user.username === file.uploader) { %>
+            <a href="/mods/<%= file._id %>/add-version" class="btn btn-secondary">Add New Version</a>
+        <% } %>
     </section>
 
     <!-- Screenshots and Video Gallery -->
@@ -138,6 +162,34 @@
         <div id="original-desc" class="tab-content">
             <%- file.officialDescription ? file.officialDescription.replace(/\n/g, '<br>') : 'No official description was provided.' %>
         </div>
+    </section>
+
+    <!-- ADDED: Version History Section -->
+    <section class="version-history" style="margin-top: 3rem;">
+        <h2>Version History</h2>
+        <table class="uploads-table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>File Size</th>
+                    <th>Upload Date</th>
+                    <th>Download</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% versionHistory.forEach(version => { %>
+                    <tr style="<%= version._id.equals(file._id) ? 'background-color: rgba(255, 215, 0, 0.1);' : '' %>">
+                        <td>
+                            <%= version.version %>
+                            <% if(version._id.equals(file._id)) { %> <strong>(Current)</strong> <% } %>
+                        </td>
+                        <td><%= (version.fileSize / 1024 / 1024).toFixed(2) %> MB</td>
+                        <td><%= version.createdAt.toLocaleDateString() %></td>
+                        <td><a href="/download-file/<%= version._id %>" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">Download</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
     </section>
 
     <!-- Write a Review Section -->
@@ -181,22 +233,17 @@
                     </div>
                     <p style="margin-top: 1rem;"><%- review.comment.replace(/\n/g, '<br>') %></p>
 
-                    <!-- ======== NEW REVIEW ACTIONS SECTION ======== -->
+                    <!-- REVIEW ACTIONS SECTION -->
                     <div class="review-actions" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--light-grey); display: flex; align-items: center; gap: 1rem;">
-                        
-                        <!-- The form submits to our new route -->
                         <form action="/reviews/<%= review._id %>/vote" method="POST">
                             <button type="submit" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.9rem;">
                                 Helpful
                             </button>
                         </form>
-                        
                         <% if (review.isHelpfulCount > 0) { %>
                             <span style="color: var(--silver);"><%= review.isHelpfulCount %> people found this helpful</span>
                         <% } %>
                     </div>
-                    <!-- ======== END OF NEW SECTION ======== -->
-
                 </div>
             <% }) %>
         <% } else { %>
@@ -204,7 +251,7 @@
         <% } %>
     </section>
 
-    <!-- UPDATE 2: REPORT FILE MODAL -->
+    <!-- REPORT FILE MODAL -->
     <div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
         <div class="modal-content" style="background-color: var(--dark-grey); margin: 15% auto; padding: 2rem; border: 1px solid var(--light-grey); width: 80%; max-width: 500px; border-radius: 8px; position: relative;">
             <span class="close-modal" style="color: var(--silver); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
@@ -252,7 +299,7 @@
         // --- Initialize Star Ratings ---
         initializeStarRatings();
 
-        // --- UPDATE 3: NEW MODAL LOGIC ---
+        // --- MODAL LOGIC ---
         const modal = document.getElementById('reportModal');
         const btn = document.getElementById('reportModalBtn');
         const span = document.getElementsByClassName('close-modal')[0];
@@ -273,7 +320,7 @@
             }
         }
 
-        // --- Optional: Show a "Thank you" message after reporting ---
+        // Show a "Thank you" message after reporting
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('reported') && urlParams.get('reported') === 'true') {
             alert('Thank you for your report. An administrator will review it shortly.');

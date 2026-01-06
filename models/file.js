@@ -1,18 +1,19 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose; // Destructured Schema for easier access
 
-const FileSchema = new mongoose.Schema({
+const FileSchema = new Schema({
     name: { type: String, required: true },
     version: { type: String, required: true },
     modDescription: { type: String, required: true },
     officialDescription: { type: String },
     
-    // --- FIELD NAME UPDATES ---
-    // Using 'Key' to represent S3/Cloud storage keys instead of public URLs
+    // --- STORAGE KEYS (S3/Cloud) ---
     iconKey: { type: String, required: true },
     screenshotKeys: { type: [String], required: true },
-    videoUrl: { type: String }, // YouTube/Vimeo URLs are already public
+    videoUrl: { type: String }, 
     fileKey: { type: String, required: true },
 
+    // --- CATEGORIZATION ---
     category: { 
         type: String, 
         required: true, 
@@ -21,15 +22,30 @@ const FileSchema = new mongoose.Schema({
     platforms: { type: [String], required: true },
     tags: { type: [String] },
 
+    // --- FILE INFO ---
     fileSize: { type: Number, required: true },
     originalFilename: { type: String, required: true },
+    uploader: { type: String, default: "Anonymous" },
 
-    uploader: { type: String, default: "Anonymous" }, // Will later be a mongoose.Schema.Types.ObjectId
+    // --- VERSION CONTROL SYSTEM ---
+    isLatestVersion: {
+        type: Boolean,
+        default: true
+    },
+    // Links a new version to its original "parent" entry
+    parentFile: {
+        type: Schema.Types.ObjectId,
+        ref: 'File',
+        default: null
+    },
+    // Array on the parent file linking to all its child versions
+    olderVersions: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
     
-    // Tracking & Stats
+    // --- TRACKING, STATS & RATINGS ---
     downloads: { type: Number, default: 0 },
-    
-    // --- UPDATED RATING SYSTEM ---
     averageRating: { 
         type: Number, 
         default: 0 
@@ -38,15 +54,12 @@ const FileSchema = new mongoose.Schema({
         type: Number, 
         default: 0 
     },
-
-    // --- NEW FIELD ---
     whitelistCount: {
         type: Number,
         default: 0
     },
-    
     virusTotalAnalysisId: { type: String },
 
-}, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
+}, { timestamps: true }); // Adds createdAt and updatedAt automatically
 
 module.exports = mongoose.model('File', FileSchema);
