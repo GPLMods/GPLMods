@@ -58,6 +58,22 @@ const FileSchema = new Schema({
         type: Number,
         default: 0
     },
+
+    // --- WORKING STATUS VOTES ---
+    workingVoteCount: {
+        type: Number,
+        default: 0
+    },
+    notWorkingVoteCount: {
+        type: Number,
+        default: 0
+    },
+    // Array to store the IDs of users who have voted on this file's status
+    votedOnStatusBy: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+
     virusTotalAnalysisId: { type: String },
 
 }, { timestamps: true }); // Adds createdAt and updatedAt automatically

@@ -271,12 +271,19 @@ app.get('/mods/:id', async (req, res) => {
         if (req.user) {
             userHasWhitelisted = req.user.whitelist.includes(currentFile._id);
         }
+
+        // --- CHECK IF USER VOTED ON STATUS ---
+        let userHasVotedOnStatus = false;
+        if (req.user && currentFile.votedOnStatusBy) {
+            userHasVotedOnStatus = currentFile.votedOnStatusBy.includes(req.user._id);
+        }
         
         res.render('pages/download', { 
             file: { ...currentFile.toObject(), iconUrl, screenshotUrls }, 
             versionHistory,
             reviews,
-            userHasWhitelisted: userHasWhitelisted 
+            userHasWhitelisted: userHasWhitelisted,
+            userHasVotedOnStatus: userHasVotedOnStatus // Added variable
         });
     } catch (error) {
         console.error("Error fetching file for download page:", error);
@@ -599,6 +606,46 @@ app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
         
         res.redirect(`/mods/${fileId}`);
     } catch (error) {
+        res.status(500).send("Server Error");
+    }
+});
+
+// --- FILE STATUS VOTING ---
+app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const userId = req.user._id;
+        const { voteType } = req.body; // 'working' or 'not-working'
+        
+        if (!['working', 'not-working'].includes(voteType)) {
+            return res.status(400).send("Invalid vote type.");
+        }
+        
+        const file = await File.findById(fileId);
+        if (!file) {
+            return res.status(404).send("File not found.");
+        }
+        
+        // Prevent voting more than once
+        if (file.votedOnStatusBy.includes(userId)) {
+            return res.redirect(`/mods/${fileId}`);
+        }
+        
+        const updateQuery = {
+            $push: { votedOnStatusBy: userId }
+        };
+        
+        if (voteType === 'working') {
+            updateQuery.$inc = { workingVoteCount: 1 };
+        } else {
+            updateQuery.$inc = { notWorkingVoteCount: 1 };
+        }
+
+        await File.findByIdAndUpdate(fileId, updateQuery);
+        res.redirect(`/mods/${fileId}`);
+        
+    } catch (error) {
+        console.error("Error processing file status vote:", error);
         res.status(500).send("Server Error");
     }
 });

@@ -26,6 +26,10 @@
         gap: 1rem;
     }
 
+    /* Voting Bar Styles */
+    .vote-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #602d2d; width: 150px; }
+    .vote-bar-working { background-color: #5db05d; }
+
     .mod-media-gallery {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -137,10 +141,39 @@
 
         <button type="button" class="btn btn-secondary" id="reportModalBtn">Report File</button>
 
-        <!-- ADDED: Uploader Add Version Button -->
+        <!-- Uploader Add Version Button -->
         <% if (user && user.username === file.uploader) { %>
             <a href="/mods/<%= file._id %>/add-version" class="btn btn-secondary">Add New Version</a>
         <% } %>
+
+        <!-- Voting UI -->
+        <div class="status-voting-container" style="margin-left: auto; text-align: right;">
+            <p style="margin-bottom: 0.5rem; color: var(--silver); font-size: 0.9rem;">Does this mod work?</p>
+            
+            <% const totalVotes = (file.workingVoteCount || 0) + (file.notWorkingVoteCount || 0); %>
+            <% const workingPercentage = totalVotes > 0 ? (file.workingVoteCount / totalVotes) * 100 : 0; %>
+            
+            <div style="display: flex; justify-content: flex-end;">
+                <div class="vote-bar" title="<%= file.workingVoteCount %> Working / <%= file.notWorkingVoteCount %> Not Working">
+                    <div class="vote-bar-working" style="width: <%= workingPercentage %>%;"></div>
+                </div>
+            </div>
+            
+            <div class="vote-buttons" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+            <% if (user && !userHasVotedOnStatus) { %>
+                <form action="/files/<%= file._id %>/vote-status" method="POST">
+                    <input type="hidden" name="voteType" value="working">
+                    <button type="submit" class="btn btn-secondary" style="padding: 2px 10px;" title="Yes, it works!">✔</button>
+                </form>
+                <form action="/files/<%= file._id %>/vote-status" method="POST">
+                    <input type="hidden" name="voteType" value="not-working">
+                    <button type="submit" class="btn btn-secondary" style="padding: 2px 10px;" title="No, it's broken.">✖</button>
+                </form>
+            <% } else if (user && userHasVotedOnStatus) { %>
+                <p style="font-size: 0.8rem; color: var(--silver);"><em>Thanks for voting!</em></p>
+            <% } %>
+            </div>
+        </div>
     </section>
 
     <!-- Screenshots and Video Gallery -->
@@ -164,7 +197,7 @@
         </div>
     </section>
 
-    <!-- ADDED: Version History Section -->
+    <!-- Version History Section -->
     <section class="version-history" style="margin-top: 3rem;">
         <h2>Version History</h2>
         <table class="uploads-table">
