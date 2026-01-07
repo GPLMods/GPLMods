@@ -9,10 +9,30 @@
     .form-group label { display: block; margin-bottom: .5rem; font-weight: bold; }
     .form-group input { width: 100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); border-radius: 4px; color: var(--white); font-size: 1rem; }
     .form-footer { margin-top: 1.5rem; text-align: center; color: var(--silver); }
+    
+    /* Style for the Google Button to ensure it looks consistent */
+    .btn-secondary {
+        background-color: #ffffff;
+        color: #000000;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.2s;
+    }
+    .btn-secondary:hover {
+        background-color: #e6e6e6;
+    }
 </style>
 
 <div class="auth-form-container">
     <h2 style="text-align: center; margin-bottom: 2rem;">Login to GPL Mods</h2>
+
+    <!-- Google Login Button -->
+    <a href="/auth/google" class="btn btn-secondary" style="width:100%; display:block; text-align:center; margin-bottom:1.5rem; padding: 10px; border-radius: 4px;">
+        Continue with Google
+    </a>
+
+    <p style="text-align:center; color: var(--silver); margin-bottom:1.5rem;">- OR -</p>
+    
     <form action="/login" method="POST">
         <div class="form-group">
             <label for="email">Email</label>
@@ -30,7 +50,8 @@
         
         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
     </form>
-     <div class="form-footer">
+
+    <div class="form-footer">
         <p>Don't have an account? <a href="/register">Sign Up</a></p>
     </div>
 </div>

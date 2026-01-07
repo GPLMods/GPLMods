@@ -12,6 +12,7 @@ const multer = require('multer');
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
@@ -105,6 +106,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// --- PASSPORT.JS LOCAL STRATEGY ---
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
@@ -120,6 +122,38 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
         return done(null, user);
     } catch (error) {
         return done(error);
+    }
+}));
+
+// --- PASSPORT.JS GOOGLE OAUTH STRATEGY ---
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/auth/google/callback" 
+},
+async (accessToken, refreshToken, profile, done) => {
+    const newUser = {
+        googleId: profile.id,
+        username: profile.displayName,
+        email: profile.emails[0].value,
+        isVerified: true // Accounts from Google are pre-verified
+    };
+
+    try {
+        let user = await User.findOne({ email: profile.emails[0].value });
+
+        if (user) {
+            done(null, user);
+        } else {
+            const existingUsername = await User.findOne({ username: newUser.username });
+            if (existingUsername) {
+                newUser.username = `${newUser.username}${Math.floor(Math.random() * 1000)}`;
+            }
+            user = await User.create(newUser);
+            done(null, user);
+        }
+    } catch (err) {
+        done(err, null);
     }
 }));
 
@@ -272,7 +306,6 @@ app.get('/mods/:id', async (req, res) => {
             userHasWhitelisted = req.user.whitelist.includes(currentFile._id);
         }
 
-        // --- CHECK IF USER VOTED ON STATUS ---
         let userHasVotedOnStatus = false;
         if (req.user && currentFile.votedOnStatusBy) {
             userHasVotedOnStatus = currentFile.votedOnStatusBy.includes(req.user._id);
@@ -283,7 +316,7 @@ app.get('/mods/:id', async (req, res) => {
             versionHistory,
             reviews,
             userHasWhitelisted: userHasWhitelisted,
-            userHasVotedOnStatus: userHasVotedOnStatus // Added variable
+            userHasVotedOnStatus: userHasVotedOnStatus
         });
     } catch (error) {
         console.error("Error fetching file for download page:", error);
@@ -317,6 +350,17 @@ app.get('/search', async (req, res) => {
 // 8. AUTHENTICATION ROUTES
 // ===============================
 
+// --- GOOGLE OAUTH ROUTES ---
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        res.redirect('/profile'); 
+    });
+
+// --- LOCAL AUTH ROUTES ---
 app.get('/register', (req, res) => {
     res.render('pages/register', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY
@@ -615,7 +659,7 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
     try {
         const fileId = req.params.fileId;
         const userId = req.user._id;
-        const { voteType } = req.body; // 'working' or 'not-working'
+        const { voteType } = req.body; 
         
         if (!['working', 'not-working'].includes(voteType)) {
             return res.status(400).send("Invalid vote type.");
@@ -626,7 +670,6 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
             return res.status(404).send("File not found.");
         }
         
-        // Prevent voting more than once
         if (file.votedOnStatusBy.includes(userId)) {
             return res.redirect(`/mods/${fileId}`);
         }
@@ -759,25 +802,20 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
 
 app.get('/api/search/suggestions', async (req, res) => {
     try {
-        const query = req.query.q; // Get the search term from the query parameter 'q'
+        const query = req.query.q; 
 
         if (!query || query.length < 2) {
-            // Don't search for very short strings
             return res.json([]);
         }
         
-        // Find up to 10 files where the name matches the start of the query
-        // Using a case-insensitive regex (^ means 'starts with')
-        // We only select the 'name' field to keep the response lightweight
         const suggestions = await File.find(
             {
                 name: { $regex: `^${query}`, $options: 'i' },
-                isLatestVersion: true // Only suggest the latest versions of mods
+                isLatestVersion: true 
             },
-            { name: 1, _id: 0 } // Projection: only return the 'name' field
+            { name: 1, _id: 0 }
         ).limit(10);
         
-        // Extract just the name strings from the result objects
         const suggestionNames = suggestions.map(file => file.name);
         
         res.json(suggestionNames);
