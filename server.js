@@ -152,6 +152,31 @@ function ensureAdmin(req, res, next) {
     res.status(403).send("Forbidden: You do not have permission to access this page.");
 }
 
+// --- MIDDLEWARE TO VERIFY reCAPTCHA ---
+async function verifyRecaptcha(req, res, next) {
+    const token = req.body['g-recaptcha-response'];
+
+    if (!token) {
+        return res.status(400).send("Please complete the CAPTCHA verification.");
+    }
+    
+    const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`;
+
+    try {
+        const response = await axios.post(verificationUrl);
+        const { success } = response.data;
+        
+        if (success) {
+            return next();
+        } else {
+            return res.status(400).send("Failed CAPTCHA verification. Please try again.");
+        }
+    } catch (error) {
+        console.error("reCAPTCHA verification error:", error);
+        return res.status(500).send("Server error during CAPTCHA verification.");
+    }
+}
+
 // ===================================
 // 6. STATIC & INFORMATIONAL PAGES
 // ===================================
@@ -285,9 +310,13 @@ app.get('/search', async (req, res) => {
 // 8. AUTHENTICATION ROUTES
 // ===============================
 
-app.get('/register', (req, res) => res.render('pages/register'));
+app.get('/register', (req, res) => {
+    res.render('pages/register', {
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY
+    });
+});
 
-app.post('/register', async (req, res, next) => {
+app.post('/register', verifyRecaptcha, async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
         if (!username || !email || !password) {
@@ -358,9 +387,13 @@ app.get('/verify-email', async (req, res, next) => {
     }
 });
 
-app.get('/login', (req, res) => res.render('pages/login'));
+app.get('/login', (req, res) => {
+    res.render('pages/login', {
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY
+    });
+});
 
-app.post('/login', passport.authenticate('local', {
+app.post('/login', verifyRecaptcha, passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login'
 }));

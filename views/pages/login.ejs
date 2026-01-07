@@ -1,4 +1,8 @@
 <%- include('../partials/header') %>
+
+<!-- Google reCAPTCHA Script -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
 <style> /* Reusing the same styles from register.ejs */
     .auth-form-container { max-width: 450px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-grey); border: 1px solid var(--light-grey); border-radius: 8px; }
     .form-group { margin-bottom: 1.5rem; }
@@ -18,6 +22,12 @@
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required>
         </div>
+
+        <!-- Google reCAPTCHA Widget -->
+        <div class="form-group">
+            <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
+        </div>
+        
         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
     </form>
      <div class="form-footer">
