@@ -753,8 +753,43 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
     }
 });
 
+// ===================================
+// 14. API ROUTES (for front-end fetching)
+// ===================================
+
+app.get('/api/search/suggestions', async (req, res) => {
+    try {
+        const query = req.query.q; // Get the search term from the query parameter 'q'
+
+        if (!query || query.length < 2) {
+            // Don't search for very short strings
+            return res.json([]);
+        }
+        
+        // Find up to 10 files where the name matches the start of the query
+        // Using a case-insensitive regex (^ means 'starts with')
+        // We only select the 'name' field to keep the response lightweight
+        const suggestions = await File.find(
+            {
+                name: { $regex: `^${query}`, $options: 'i' },
+                isLatestVersion: true // Only suggest the latest versions of mods
+            },
+            { name: 1, _id: 0 } // Projection: only return the 'name' field
+        ).limit(10);
+        
+        // Extract just the name strings from the result objects
+        const suggestionNames = suggestions.map(file => file.name);
+        
+        res.json(suggestionNames);
+
+    } catch (error) {
+        console.error("API Suggestion Error:", error);
+        res.status(500).json({ error: 'Server error while fetching suggestions.' });
+    }
+});
+
 // ===============================
-// 14. START SERVER
+// 15. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -9,7 +9,7 @@
  * 2. Star Rating System
  * 3. Search Bar Animation & Functionality
  * 4. Search History Management (for all users)
- * 5. Search Suggestions Fetcher
+ * 5. Search Suggestions FETCHER (Updated with Live API)
  * ==================================================================================
  */
 
@@ -196,41 +196,41 @@ async function fetchAndDisplaySuggestions(query) {
     const suggestionsBox = document.getElementById('searchSuggestions');
     if (!suggestionsBox) return;
 
+    // --- Make a live API call to our backend ---
     try {
-        // --- BACKEND-DEPENDENT ---
-        // This is a placeholder for your future API endpoint.
-        // const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
-        // if (!response.ok) throw new Error('Network response was not ok');
-        // const suggestions = await response.json();
+        // Use encodeURIComponent to safely handle special characters in the query
+        const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
         
-        // --- USING DUMMY DATA FOR NOW ---
-        const dummySuggestions = [
-            `Amazing Editor Pro`, 
-            `${query} game`, 
-            `Super ${query} plugin`, 
-            `Ultimate Mod for ${query}`
-        ].filter(s => s.toLowerCase().includes(query.toLowerCase()));
+        if (!response.ok) {
+            // If the server response is not OK (e.g., 500 error), throw an error
+            throw new Error('Network response was not ok');
+        }
         
-        const suggestions = dummySuggestions; // Replace with real data later
-
+        const suggestions = await response.json(); // Parse the JSON array of strings
+        
         suggestionsBox.innerHTML = ''; // Clear old suggestions
+
         if (suggestions.length > 0) {
             const list = document.createElement('ul');
             suggestions.forEach(suggestion => {
                 const listItem = document.createElement('li');
-                 // Bold the matching part of the suggestion
-                const boldedSuggestion = suggestion.replace(new RegExp(query, 'gi'), (match) => `<b>${match}</b>`);
+                // Create a case-insensitive regex to find the matching part
+                const regex = new RegExp(query, 'gi');
+                // Bold the part of the suggestion that matches the user's query
+                const boldedSuggestion = suggestion.replace(regex, (match) => `<b>${match}</b>`);
+
                 listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(suggestion)}">${boldedSuggestion}</a>`;
                 list.appendChild(listItem);
             });
             suggestionsBox.appendChild(list);
             suggestionsBox.style.display = 'block';
         } else {
+            // If no suggestions are found, hide the box
             suggestionsBox.style.display = 'none';
         }
 
     } catch (error) {
         console.error('Error fetching search suggestions:', error);
-        suggestionsBox.style.display = 'none'; // Hide on error
+        suggestionsBox.style.display = 'none'; // Hide on any error
     }
 }
