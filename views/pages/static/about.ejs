@@ -1,0 +1,40 @@
+<%- include('../../../partials/header') %>
+
+<style>
+    .static-page-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: var(--dark-grey);
+        border: 1px solid var(--light-grey);
+        border-radius: 8px;
+    }
+    .static-page-container h1 { color: var(--gold); }
+    .static-page-container p, .static-page-container li { margin-bottom: 1rem; line-height: 1.7; color: var(--silver); }
+</style>
+
+<div class="static-page-container">
+    <h1>About GPL Mods</h1>
+    <p>
+        <strong>Welcome to GPL Mods!</strong> This project was created for fun and as a demonstration of building a complex, feature-rich web application from the ground up. 
+    </p>
+    <p>
+        Our mission is to provide a platform for users to share and download modifications for PC apps, games, WordPress themes, mobile apps, and more, all under the spirit of the GNU General Public License (GPL).
+    </p>
+    <p>
+        This site is a portfolio project and is not intended for widespread public use without careful consideration of legal and copyright implications of the content being shared.
+    </p>
+
+    <h2>Our Technology Stack</h2>
+    <ul>
+        <li><strong>Backend:</strong> Node.js with Express.js</li>
+        <li><strong>Database:</strong> MongoDB with Mongoose</li>
+        <li><strong>Frontend:</strong> EJS (Embedded JavaScript Templates)</li>
+        <li><strong>Authentication:</strong> Passport.js</li>
+        <li><strong>File Storage:</strong> Backblaze B2 Cloud Storage</li>
+        <li><strong>Hosting:</strong> Render</li>
+        <!-- Add any others you want to mention -->
+    </ul>
+</div>
+
+<%- include('../../../partials/footer') %>

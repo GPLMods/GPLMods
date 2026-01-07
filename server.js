@@ -65,7 +65,6 @@ const sanitizeFilename = (filename) => {
 
 /**
  * HELPER: Upload buffer to Backblaze B2
- * Moved to global scope so both /upload and /add-version can use it.
  */
 const uploadToB2 = async (file, folder) => {
     const sanitizedFilename = sanitizeFilename(file.originalname);
@@ -140,6 +139,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// Middleware Helpers
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next(); }
     res.redirect('/login');
@@ -152,14 +152,33 @@ function ensureAdmin(req, res, next) {
     res.status(403).send("Forbidden: You do not have permission to access this page.");
 }
 
+// ===================================
+// 6. STATIC & INFORMATIONAL PAGES
+// ===================================
+
+app.get('/about', (req, res) => {
+    res.render('pages/static/about');
+});
+
+app.get('/faq', (req, res) => {
+    res.render('pages/static/faq');
+});
+
+app.get('/tos', (req, res) => {
+    res.render('pages/static/tos');
+});
+
+app.get('/dmca', (req, res) => {
+    res.render('pages/static/dmca');
+});
+
 // ===============================
-// 6. ROUTES
+// 7. CORE APP ROUTES
 // ===============================
 
-// --- INDEX PAGE (Integrated Update 3) ---
+// --- INDEX PAGE ---
 app.get('/', async (req, res) => {
     try {
-        // Only fetch files that are the latest version to prevent duplicates on home
         const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
             const getIconUrlCommand = new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey });
@@ -178,7 +197,6 @@ app.get('/category', async (req, res) => {
     try {
         const { cat } = req.query;
         if (!cat) { return res.redirect('/'); }
-        // Only fetch latest versions for categories
         const filteredFiles = await File.find({ category: cat, isLatestVersion: true }).sort({ createdAt: -1 });
         const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
         const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
@@ -193,7 +211,7 @@ app.get('/category', async (req, res) => {
     }
 });
 
-// --- INDIVIDUAL MOD/DOWNLOAD PAGE (Integrated Update 4) ---
+// --- INDIVIDUAL MOD/DOWNLOAD PAGE ---
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
@@ -202,20 +220,16 @@ app.get('/mods/:id', async (req, res) => {
         let currentFile = await File.findById(fileId);
         if (!currentFile) { return res.status(404).send("File not found."); }
 
-        // --- FETCH VERSION HISTORY ---
         let versionHistory = [];
         if (currentFile.parentFile) {
-            // If this file has a parent, it's an older version. Find the "head" (latest version).
             let headFile = await File.findById(currentFile.parentFile).populate('olderVersions');
             versionHistory = [headFile, ...headFile.olderVersions.slice().reverse()]; 
-            currentFile = headFile; // Display the main UI for the latest version
+            currentFile = headFile;
         } else {
-            // If this file has no parent, it is the head (latest version).
             await currentFile.populate('olderVersions');
             versionHistory = [currentFile, ...currentFile.olderVersions.slice().reverse()];
         }
 
-        // Generate Signed URLs for the current (head) file
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ 
             Bucket: process.env.B2_BUCKET_NAME, Key: currentFile.iconKey 
         }), { expiresIn: 3600 });
@@ -245,7 +259,32 @@ app.get('/mods/:id', async (req, res) => {
     }
 });
 
-// --- AUTHENTICATION ROUTES ---
+// --- SEARCH ROUTE ---
+app.get('/search', async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query) { return res.redirect('/'); }
+        
+        const searchResults = await File.find({
+            isLatestVersion: true,
+            $or: [
+                { name: { $regex: query, $options: 'i' } },
+                { modDescription: { $regex: query, $options: 'i' } },
+                { tags: { $regex: query, $options: 'i' } }
+            ]
+        }).sort({ createdAt: -1 });
+
+        res.render('pages/search', { results: searchResults, query: query });
+    } catch (error) {
+        console.error("Error during search:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// ===============================
+// 8. AUTHENTICATION ROUTES
+// ===============================
+
 app.get('/register', (req, res) => res.render('pages/register'));
 
 app.post('/register', async (req, res, next) => {
@@ -320,6 +359,7 @@ app.get('/verify-email', async (req, res, next) => {
 });
 
 app.get('/login', (req, res) => res.render('pages/login'));
+
 app.post('/login', passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login'
@@ -332,29 +372,10 @@ app.get('/logout', (req, res, next) => {
     });
 });
 
-// --- SEARCH ROUTE ---
-app.get('/search', async (req, res) => {
-    try {
-        const query = req.query.q;
-        if (!query) { return res.redirect('/'); }
-        
-        const searchResults = await File.find({
-            isLatestVersion: true, // Only search latest versions
-            $or: [
-                { name: { $regex: query, $options: 'i' } },
-                { modDescription: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } }
-            ]
-        }).sort({ createdAt: -1 });
+// ===============================
+// 9. USER PROFILE & MANAGEMENT
+// ===============================
 
-        res.render('pages/search', { results: searchResults, query: query });
-    } catch (error) {
-        console.error("Error during search:", error);
-        res.status(500).send("Server Error");
-    }
-});
-
-// --- USER PROFILE & ACCOUNT MANAGEMENT ---
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
         const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
@@ -388,15 +409,15 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 });
 
 // ===============================
-// 7. FILE MANAGEMENT & VERSIONING
+// 10. FILE MANAGEMENT & VERSIONING
 // ===============================
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 app.post('/upload', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
@@ -435,7 +456,7 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             uploader: req.user.username,
             fileSize: modFile[0].size,
             virusTotalAnalysisId: analysisId,
-            isLatestVersion: true // New uploads are the latest by default
+            isLatestVersion: true
         });
 
         await newFile.save();
@@ -445,8 +466,6 @@ app.post('/upload', ensureAuthenticated, upload.fields([
         res.status(500).send("An error occurred during the upload process.");
     }
 });
-
-// --- ADD VERSION ROUTES (Integrated Updates 1 & 2) ---
 
 app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
     try {
@@ -476,7 +495,6 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         
         const fileKey = await uploadToB2(req.file, 'mods');
         
-        // Create the new version document
         const newVersion = new File({
             name: headFile.name,
             iconKey: headFile.iconKey,
@@ -491,18 +509,17 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             fileKey: fileKey,
             originalFilename: req.file.originalname,
             fileSize: req.file.size,
-            isLatestVersion: false, // Older versions are not the "head"
+            isLatestVersion: false, 
             parentFile: headFile._id
         });
         
         await newVersion.save();
         
-        // Update the Head file to include this version in its history
         await File.findByIdAndUpdate(parentFileId, {
             $push: { olderVersions: newVersion._id }
         });
         
-        res.redirect(`/mods/${headFile._id}`); // Redirect back to the main mod page
+        res.redirect(`/mods/${headFile._id}`);
         
     } catch (error) {
         console.error("Error adding new version:", error);
@@ -530,32 +547,25 @@ app.get('/download-file/:id', async (req, res) => {
     }
 });
 
-// --- WHITELIST / FAVORITES ROUTE ---
+// ===============================
+// 11. SOCIAL & INTERACTION
+// ===============================
+
+// --- WHITELIST / FAVORITES ---
 app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
         const user = req.user; 
-
         const isWhitelisted = user.whitelist.includes(fileId);
         
-        let updateQuery;
-        let fileUpdateQuery;
-
-        if (isWhitelisted) {
-            updateQuery = { $pull: { whitelist: fileId } };
-            fileUpdateQuery = { $inc: { whitelistCount: -1 } };
-        } else {
-            updateQuery = { $push: { whitelist: fileId } };
-            fileUpdateQuery = { $inc: { whitelistCount: 1 } };
-        }
+        let updateQuery = isWhitelisted ? { $pull: { whitelist: fileId } } : { $push: { whitelist: fileId } };
+        let fileUpdateQuery = isWhitelisted ? { $inc: { whitelistCount: -1 } } : { $inc: { whitelistCount: 1 } };
 
         await User.findByIdAndUpdate(user._id, updateQuery);
         await File.findByIdAndUpdate(fileId, fileUpdateQuery);
         
         res.redirect(`/mods/${fileId}`);
-
     } catch (error) {
-        console.error("Error toggling whitelist status:", error);
         res.status(500).send("Server Error");
     }
 });
@@ -594,32 +604,28 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- REVIEW VOTING ROUTE ---
 app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
     try {
         const reviewId = req.params.reviewId;
-        const userId = req.user._id;
-
         const review = await Review.findById(reviewId);
         if (!review) { return res.status(404).send("Review not found."); }
 
-        if (review.votedBy.includes(userId)) {
+        if (review.votedBy.includes(req.user._id)) {
             return res.redirect(`/mods/${review.file}`);
         }
 
-        review.votedBy.push(userId);
+        review.votedBy.push(req.user._id);
         review.isHelpfulCount += 1;
         await review.save();
 
         res.redirect(`/mods/${review.file}`);
     } catch (error) {
-        console.error('Error processing review vote:', error);
         res.status(500).send("Server Error");
     }
 });
 
 // ===================================
-// 8. FILE REPORTING ROUTES
+// 12. FILE REPORTING ROUTES
 // ===================================
 app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     try {
@@ -632,9 +638,7 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
         if (!fileToReport) { return res.status(404).send("File not found."); }
 
         const existingReport = await Report.findOne({ file: fileId, reportingUser: req.user._id });
-        if (existingReport) {
-            return res.redirect(`/mods/${fileId}`);
-        }
+        if (existingReport) { return res.redirect(`/mods/${fileId}`); }
 
         const newReport = new Report({
             file: fileId,
@@ -649,13 +653,12 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
         res.redirect(`/mods/${fileId}?reported=true`);
 
     } catch (error) {
-        console.error("Error submitting report:", error);
         res.status(500).send("Server Error");
     }
 });
 
 // ===================================
-// 9. ADMIN ROUTES
+// 13. ADMIN ROUTES
 // ===================================
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
@@ -666,13 +669,12 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
 
         res.render('pages/admin/reports', { reports });
     } catch (error) {
-        console.error("Error fetching reports for admin page:", error);
         res.status(500).send("Server Error");
     }
 });
 
 // ===============================
-// 10. START SERVER
+// 14. START SERVER
 // ===============================
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
