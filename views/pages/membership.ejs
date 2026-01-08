@@ -1,0 +1,90 @@
+<%- include('../partials/header') %>
+<style>
+    .membership-container { 
+        text-align: center; 
+        max-width: 600px; 
+        margin: 2rem auto; 
+        padding: 2rem; 
+        background-color: var(--dark-grey); 
+        border-radius: 8px; 
+    }
+    #payment-form { margin-top: 2rem; }
+    /* Updated error styling to match your theme */
+    #error-message { color: #ffadad; padding: 10px 0; min-height: 20px; }
+    .membership-info { color: var(--silver); margin-bottom: 20px; }
+</style>
+
+<div class="membership-container">
+    <h1>Go Premium!</h1>
+    <p class="membership-info">Unlock an ad-free experience, faster uploads & downloads, and support the site.</p>
+    
+    <div id="payment-form">
+        <!-- Cashfree does not require a local card-element div as it uses a hosted checkout or overlay -->
+        
+        <!-- Placeholder for error messages -->
+        <div id="error-message" role="alert"></div>
+
+        <button id="submit-button" class="btn btn-primary" style="width: 100%; font-size: 1.2rem;">
+            Purchase Premium Membership ($10.00 USD)
+        </button>
+    </div>
+</div>
+
+<!-- 1. Include Cashfree SDK -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+<!-- 2. Updated Client-side logic for Cashfree -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize Cashfree
+        const cashfree = new Cashfree();
+        
+        const submitButton = document.getElementById('submit-button');
+        const errorMessage = document.getElementById('error-message');
+
+        submitButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Disable button to prevent double clicks
+            this.disabled = true;
+            const originalText = this.textContent;
+            this.textContent = 'Processing...';
+            errorMessage.textContent = ''; // Clear previous errors
+
+            // 1. Call your backend to create a membership order
+            fetch('/create-membership-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.payment_session_id) {
+                    // 2. Redirect to Cashfree checkout using the session ID from your server
+                    const checkoutOptions = {
+                        payment_session_id: data.payment_session_id,
+                        redirectTarget: "_self" // Opens in the same tab
+                    };
+                    cashfree.checkout(checkoutOptions);
+                } else {
+                    throw new Error(data.error || 'Could not create membership order.');
+                }
+            })
+            .catch(err => {
+                console.error('Membership checkout error:', err);
+                if (errorMessage) {
+                    errorMessage.textContent = err.message || 'An error occurred. Please try again.';
+                }
+                // Reset button state on error
+                this.disabled = false;
+                this.textContent = originalText;
+            });
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

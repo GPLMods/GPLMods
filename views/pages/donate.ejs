@@ -1,0 +1,83 @@
+<%- include('../../../partials/header') %>
+
+<style>
+    /* Reusing some styles */
+    .static-page-container { text-align: center; max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-grey); border-radius: 8px; }
+    .donation-options { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; flex-wrap: wrap; }
+    .donation-btn { width: 150px; font-size: 1.2rem !important; }
+</style>
+
+<div class="static-page-container">
+    <h1>Support GPL Mods</h1>
+    <p style="color: var(--silver); line-height: 1.7;">
+        If you find this site useful, please consider making a small donation. Your support helps cover server costs, maintenance, and allows us to continue building new features. Every contribution is greatly appreciated!
+    </p>
+
+    <div id="donation-form" class="donation-options">
+        <!-- Amount in cents (e.g., 500 = $5.00) -->
+        <button class="btn btn-primary donation-btn" data-amount="500">$5</button>
+        <button class="btn btn-primary donation-btn" data-amount="1000">$10</button>
+        <button class="btn btn-primary donation-btn" data-amount="2000">$20</button>
+    </div>
+    <p id="error-message" style="color: #ffadad; margin-top: 1rem;"></p>
+</div>
+
+<!-- 1. Include Cashfree SDK (v3) -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+<!-- 2. Client-side logic -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize the Cashfree SDK
+        // Note: Change 'sandbox' to 'production' when you go live
+        const cashfree = Cashfree({
+            mode: "sandbox" 
+        });
+
+        const donationButtons = document.querySelectorAll('.donation-btn');
+        const errorMessage = document.getElementById('error-message');
+
+        donationButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const amount = this.dataset.amount;
+                const originalText = this.textContent;
+
+                errorMessage.textContent = ""; // Clear old errors
+
+                // Disable the button to prevent multiple clicks
+                this.disabled = true;
+                this.textContent = "Processing...";
+
+                // 1. Call your backend to create a payment order
+                fetch('/create-cashfree-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amount })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.payment_session_id) {
+                        // 2. Start the payment process using the session ID
+                        const checkoutOptions = {
+                            paymentSessionId: data.payment_session_id,
+                            redirectTarget: "_self" // Redirect in the same tab
+                        };
+                        cashfree.checkout(checkoutOptions);
+                    } else {
+                        throw new Error(data.error || 'Could not create payment order.');
+                    }
+                })
+                .catch(err => {
+                    errorMessage.textContent = 'An error occurred. Please try again later.';
+                    console.error('Donation error:', err);
+                    
+                    // Re-enable the button on failure
+                    this.disabled = false;
+                    this.textContent = originalText;
+                });
+            });
+        });
+    });
+</script>
+
+<%- include('../../../partials/footer') %>
