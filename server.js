@@ -20,8 +20,8 @@ const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const { sendVerificationEmail } = require('./utils/mailer');
 
-// AdminJS Setup Import
-const setupAdmin = require('./config/admin');
+// AdminJS Setup Import (Updated per Update 2)
+const adminRouter = require('./config/admin');
 
 // AWS SDK v3 Imports
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -149,10 +149,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- SETUP ADMINJS ---
-// Attached after session/passport but before general routes
-setupAdmin(app);
-
 // Auth Helpers
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) return next();
@@ -173,6 +169,11 @@ async function verifyRecaptcha(req, res, next) {
         res.status(400).send("CAPTCHA verification failed.");
     } catch (e) { res.status(500).send("reCAPTCHA Error."); }
 }
+
+// --- SETUP ADMINJS --- (Updated per Update 1)
+// Attached after session/passport but before general routes
+// This creates a protected route group for the admin panel.
+app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 // ===============================
 // 7. CORE APP ROUTES
