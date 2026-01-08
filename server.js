@@ -19,7 +19,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
 const bodyParser = require('body-parser');
 const { sendVerificationEmail } = require('./utils/mailer');
-const { Cashfree } = require('cashfree-pg'); // Cashfree Integration
 
 // AdminJS Setup Import
 const setupAdmin = require('./config/admin');
@@ -40,17 +39,6 @@ const Report = require('./models/report');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const { Types } = mongoose;
-
-// Cashfree Configuration
-Cashfree.XClientId = process.env.CASHFREE_APP_ID;
-Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY;
-Cashfree.XEnvironment = process.env.CASHFREE_ENVIRONMENT === 'sandbox' ? Cashfree.Environment.SANDBOX : Cashfree.Environment.PRODUCTION;
-
-const cashfreeClient = new Cashfree({
-    mode: process.env.CASHFREE_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
-    api_key: process.env.CASHFREE_APP_ID,
-    api_secret: process.env.CASHFREE_SECRET_KEY,
-});
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -535,91 +523,7 @@ app.get('/api/search/suggestions', async (req, res) => {
 });
 
 // ===============================
-// 13. CASHFREE PAYMENTS
-// ===============================
-
-app.post('/create-cashfree-order', async (req, res) => {
-    try {
-        const { amount } = req.body;
-        if (![500, 1000, 2000].includes(parseInt(amount))) {
-            return res.status(400).json({ error: "Invalid donation amount." });
-        }
-        
-        const orderId = `GPL-DONATE-${Date.now()}`;
-
-        const request = {
-            order_amount: (parseInt(amount) / 100).toFixed(2), 
-            order_currency: "INR",
-            order_id: orderId,
-            customer_details: {
-                customer_id: req.user ? req.user._id.toString() : `guest-${Date.now()}`,
-                customer_email: req.user ? req.user.email : "guest@gplmods.com",
-                customer_phone: "9999999999", 
-            },
-            order_meta: {
-                return_url: `http://localhost:${PORT}/cashfree-redirect?order_id={order_id}`
-            }
-        };
-
-        const response = await cashfreeClient.orders.create(request);
-        res.json({ payment_session_id: response.payment_session_id });
-        
-    } catch (error) {
-        console.error("Cashfree order creation error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Could not create payment session" });
-    }
-});
-
-app.post('/create-membership-order', ensureAuthenticated, async (req, res) => {
-    try {
-        const orderId = `GPL-MEMBERSHIP-${req.user._id}-${Date.now()}`;
-        const membershipAmount = 10.00;
-
-        const request = {
-            order_amount: membershipAmount.toFixed(2),
-            order_currency: "USD",
-            order_id: orderId,
-            customer_details: {
-                customer_id: req.user._id.toString(),
-                customer_email: req.user.email,
-                customer_phone: "9999999999",
-            },
-            order_meta: {
-                return_url: `http://localhost:${PORT}/profile?order_id={order_id}`
-            },
-            order_note: "GPL Mods Premium Membership Activation"
-        };
-
-        const response = await cashfreeClient.orders.create(request);
-        res.json({ payment_session_id: response.payment_session_id });
-        
-    } catch (error) {
-        console.error("Cashfree membership order error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Could not create payment session" });
-    }
-});
-
-app.get('/cashfree-redirect', async (req, res) => {
-    try {
-        const { order_id } = req.query;
-        if (!order_id) return res.status(400).send("Order ID is missing.");
-        
-        const statusResponse = await cashfreeClient.orders.get(order_id);
-        
-        if (statusResponse?.order_status === 'PAID') {
-            res.send("<h1>Payment Successful!</h1><p>Thank you for your generous donation!</p>");
-        } else {
-            res.status(400).send(`<h1>Payment Failed</h1><p>Status: ${statusResponse?.order_status}</p>`);
-        }
-
-    } catch (error) {
-        console.error("Cashfree redirect verification error:", error.response?.data || error.message);
-        res.status(500).send("Error verifying your payment.");
-    }
-});
-
-// ===============================
-// 14. STATIC PAGES & START
+// 13. STATIC PAGES & START
 // ===============================
 app.get('/about', (req, res) => res.render('pages/static/about'));
 app.get('/faq', (req, res) => res.render('pages/static/faq'));
