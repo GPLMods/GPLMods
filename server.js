@@ -99,8 +99,12 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
     .catch(error => console.error('MongoDB Connection Error:', error));
 
 // ===============================
-// 6. PASSPORT STRATEGIES
+// 6. PASSPORT STRATEGIES & UPLOAD CONFIG
 // ===============================
+
+// -- Multer Config (Moved up so it's available for Profile routes) --
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
@@ -331,6 +335,32 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
 });
 
 /**
+ * POST Route to update profile image
+ */
+app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).redirect('/profile?error=No image file was uploaded.');
+        }
+
+        // Upload the new image to Backblaze B2 (avatars folder)
+        const imageUrl = await uploadToB2(req.file, 'avatars');
+
+        // Update the user's record with the new image URL
+        // Note: Ensure your User model has a 'profileImageUrl' field
+        await User.findByIdAndUpdate(req.user.id, {
+            profileImageUrl: imageUrl
+        });
+
+        res.redirect('/profile?success=Profile image updated successfully.');
+
+    } catch (error) {
+        console.error("Error updating profile image:", error);
+        res.status(500).redirect('/profile?error=An error occurred while updating the image.');
+    }
+});
+
+/**
  * POST Route to change password from profile
  */
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
@@ -376,8 +406,7 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 // 10. FILE MGMT & VERSIONING
 // ===============================
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+// Note: Multer config (upload) was moved to Section 6 so it can be used by Profile routes
 
 app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
 app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', maxCount: 1 }, { name: 'screenshots', maxCount: 4 }, { name: 'modFile', maxCount: 1 }]), async (req, res) => {

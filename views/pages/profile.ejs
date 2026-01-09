@@ -91,6 +91,18 @@
 
 <div class="container">
     <div class="profile-header">
+    
+        <!-- New Avatar and Upload Form section -->
+        <div class="avatar-section" style="margin-bottom: 2rem;">
+            <img src="<%= user.profileImageUrl || '/images/default-avatar.png' %>" alt="Profile Avatar" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--dark-grey);">
+            
+            <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
+                <label for="profileImage" style="display:block; margin-bottom:0.5rem;">Update Your Avatar</label>
+                <input type="file" id="profileImage" name="profileImage" accept="image/png, image/jpeg" required>
+                <button type="submit" class="btn btn-secondary" style="margin-left: 1rem;">Upload</button>
+            </form>
+        </div>
+
         <h1>Welcome, <%= user.username %>!</h1>
         <p>This is your personal dashboard. Here you can manage your account and view your uploads.</p>
     </div>

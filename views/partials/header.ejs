@@ -45,11 +45,14 @@
                  <div>
                     <% if (user) { %>
                         <!-- User is logged in -->
+                
+                        <!-- New avatar display -->
+                        <% if (user.profileImageUrl) { %>
+                            <img src="<%= user.profileImageUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 1rem;">
+                        <% } %>
+                
                         <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
-                        
-                        <!-- Added Profile Link -->
-                        <a href="/profile" class="btn btn-secondary">My Profile</a> 
-                        
+                        <a href="/profile" class="btn btn-secondary">My Profile</a>
                         <a href="/upload" class="btn btn-primary">Upload Mod</a>
                         <a href="/logout" class="btn btn-secondary">Logout</a>
                     <% } else { %>

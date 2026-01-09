@@ -25,6 +25,15 @@ const UserSchema = new Schema({
         enum: ['member', 'admin'],
         default: 'member'
     },
+    membership: {
+        type: String,
+        enum: ['free', 'premium'],
+        default: 'free'
+    },
+    profileImageUrl: {
+        type: String,
+        default: '' // Default to an empty string (or a URL to a default avatar)
+    },
     // --- NEW FIELD ADDED ---
     whitelist: [{
         type: Schema.Types.ObjectId,
