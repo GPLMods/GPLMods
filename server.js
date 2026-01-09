@@ -20,7 +20,7 @@ const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const { sendVerificationEmail } = require('./utils/mailer');
 
-// AdminJS Setup Import (Updated per Update 2)
+// AdminJS Setup Import
 const adminRouter = require('./config/admin');
 
 // AWS SDK v3 Imports
@@ -170,9 +170,7 @@ async function verifyRecaptcha(req, res, next) {
     } catch (e) { res.status(500).send("reCAPTCHA Error."); }
 }
 
-// --- SETUP ADMINJS --- (Updated per Update 1)
-// Attached after session/passport but before general routes
-// This creates a protected route group for the admin panel.
+// Attach AdminJS protected route
 app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 // ===============================
@@ -330,6 +328,39 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
         res.render('pages/profile', { user: userWithWhitelist, uploads: userUploads });
     } catch (e) { res.status(500).send('Profile fetch error.'); }
+});
+
+/**
+ * POST Route to change password from profile
+ */
+app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).redirect('/profile?error=All fields are required.');
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).redirect('/profile?error=New passwords do not match.');
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).redirect('/profile?error=Password must be at least 6 characters.');
+        }
+
+        const user = await User.findById(req.user.id);
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).redirect('/profile?error=Current password is incorrect.');
+        }
+        
+        user.password = newPassword;
+        await user.save();
+        
+        res.redirect('/profile?success=Password changed successfully.');
+    } catch (error) {
+        console.error("Error changing password:", error);
+        res.status(500).redirect('/profile?error=An unknown error occurred.');
+    }
 });
 
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
@@ -507,11 +538,62 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send("Reporting error."); }
 });
 
+/**
+ * GET Admin reports page
+ */
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
         const reports = await Report.find().populate('file').populate('reportingUser').sort({ status: 1, createdAt: -1 });
         res.render('pages/admin/reports', { reports });
     } catch (e) { res.status(500).send("Admin access error."); }
+});
+
+/**
+ * POST Route for an admin to update a report's status.
+ */
+app.post('/admin/reports/:reportId/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { status } = req.body; // 'resolved' or 'ignored'
+        if (!['resolved', 'ignored'].includes(status)) {
+            return res.status(400).send("Invalid status.");
+        }
+
+        await Report.findByIdAndUpdate(req.params.reportId, { status: status });
+        res.redirect('/admin/reports');
+
+    } catch (error) {
+        console.error("Error updating report status:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
+/**
+ * POST Route for an admin to delete a reported file.
+ */
+app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const fileToDelete = await File.findById(fileId);
+
+        if (!fileToDelete) {
+            return res.status(404).send("File not found.");
+        }
+        
+        // 1. Delete the file record
+        await File.findByIdAndDelete(fileId);
+
+        // 2. Delete all reviews associated with that file
+        await Review.deleteMany({ file: fileId });
+
+        // 3. Mark all reports for this file as "resolved"
+        await Report.updateMany({ file: fileId }, { status: 'resolved' });
+
+        res.redirect('/admin/reports');
+        
+    } catch (error) {
+        console.error("Error deleting file from admin report:", error);
+        res.status(500).send("Server Error");
+    }
 });
 
 app.get('/api/search/suggestions', async (req, res) => {
@@ -526,9 +608,9 @@ app.get('/api/search/suggestions', async (req, res) => {
 // ===============================
 // 13. STATIC PAGES & START
 // ===============================
-app.get('/about', (req, res) => res.render('pages/static/about'));
-app.get('/faq', (req, res) => res.render('pages/static/faq'));
-app.get('/tos', (req, res) => res.render('pages/static/tos'));
-app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
+app.get('/about', (req, res) => res.render('pages/static/about.ejs'));
+app.get('/faq', (req, res) => res.render('pages/static/faq.ejs'));
+app.get('/tos', (req, res) => res.render('pages/static/tos.ejs'));
+app.get('/dmca', (req, res) => res.render('pages/static/dmca.ejs'));
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

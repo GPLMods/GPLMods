@@ -1,7 +1,7 @@
 <%- include('../../partials/header') %>
 
 <style>
-    /* Using some existing table styles and adding new ones */
+    /* Using existing table styles and adding layout for actions */
     .report-table {
         width: 100%;
         border-collapse: collapse;
@@ -15,8 +15,19 @@
     }
     .report-table thead { background-color: #3d2f0b; } /* Darker gold for admin header */
     .report-table tbody tr:hover { background-color: var(--light-grey); }
+    
+    /* Status colors */
     .status-open { color: #ffadad; /* light red */ }
     .status-resolved { color: #b0ffb0; /* light green */ }
+    .status-ignored { color: var(--silver); }
+
+    /* Action button container */
+    .actions-cell {
+        text-align: right; 
+        display: flex; 
+        gap: 0.5rem; 
+        justify-content: flex-end;
+    }
 </style>
 
 <div class="container">
@@ -33,27 +44,53 @@
                     <tr>
                         <th>Status</th>
                         <th>Reported File</th>
-                        <th>Reason</th>
-                        <th>Comments</th>
+                        <th>Reason & Comments</th>
                         <th>Reported By</th>
                         <th>Date</th>
+                        <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% reports.forEach(report => { %>
                         <tr>
-                            <td class="status-<%= report.status %>"><%= report.status.toUpperCase() %></td>
-                            <td>
-                                <!-- Using the populated file data -->
-                                <a href="/mods/<%= report.file._id %>" target="_blank"><%= report.reportedFileName %></a>
+                            <td class="status-<%= report.status %>">
+                                <strong><%= report.status.toUpperCase() %></strong>
                             </td>
-                            <td><%= report.reason %></td>
-                            <td><%= report.additionalComments || 'N/A' %></td>
                             <td>
-                                <!-- Using the populated user data -->
-                                <%= report.reportingUsername %>
+                                <% if (report.file) { %>
+                                    <a href="/mods/<%= report.file._id %>" target="_blank"><%= report.reportedFileName %></a>
+                                <% } else { %>
+                                    <span style="color: #a04040;">[File Deleted]</span>
+                                <% } %>
                             </td>
+                            <td>
+                                <strong><%= report.reason %>:</strong>
+                                <em style="color:var(--silver);"><%= report.additionalComments || 'N/A' %></em>
+                            </td>
+                            <td><%= report.reportingUsername %></td>
                             <td><%= report.createdAt.toLocaleString() %></td>
+                            
+                            <td class="actions-cell">
+                                <% if (report.status === 'open') { %>
+                                    <!-- Form to mark as resolved -->
+                                    <form action="/admin/reports/<%= report._id %>/status" method="POST" style="margin:0;">
+                                        <input type="hidden" name="status" value="resolved">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background-color:#5db05d; border-color:#5db05d;">Resolve</button>
+                                    </form>
+                                    <!-- Form to mark as ignored -->
+                                    <form action="/admin/reports/<%= report._id %>/status" method="POST" style="margin:0;">
+                                        <input type="hidden" name="status" value="ignored">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;">Ignore</button>
+                                    </form>
+                                <% } %>
+
+                                <!-- Form to delete the file -->
+                                <% if (report.file) { %>
+                                    <form action="/admin/reports/delete-file/<%= report.file._id %>" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this file? This cannot be undone.');" style="margin:0;">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background-color:#a04040; border-color:#a04040;">Delete File</button>
+                                    </form>
+                                <% } %>
+                            </td>
                         </tr>
                     <% }) %>
                 </tbody>

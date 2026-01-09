@@ -46,9 +46,39 @@
         padding: 2rem;
         font-size: 1.2rem;
     }
+
+    /* Account Management Styling */
+    .account-management {
+        margin-top: 3rem;
+    }
+    
+    .password-form {
+        margin-top: 1.5rem; 
+        padding: 1.5rem; 
+        background-color: var(--dark-grey); 
+        border-radius: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .form-group input {
+        width: 100%; 
+        padding: 8px; 
+        background-color: var(--black); 
+        border: 1px solid var(--light-grey); 
+        color: var(--white);
+        border-radius: 4px;
+    }
     
     .danger-zone {
-        margin-top: 3rem;
+        margin-top: 2rem;
         padding: 1.5rem;
         border: 1px solid #a04040; /* Reddish border */
         border-radius: 8px;
@@ -57,7 +87,6 @@
     .danger-zone h3 {
         color: #ff8080; /* Light red text */
     }
-
 </style>
 
 <div class="container">
@@ -106,7 +135,6 @@
         <h2>Your Whitelist</h2>
         
         <% if(user.whitelist && user.whitelist.length > 0) { %>
-            <!-- Using the same item card grid for a consistent look -->
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
                 <% user.whitelist.forEach(file => { %>
                     <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
@@ -129,14 +157,53 @@
     </section>
     
     <!-- Account Management Section -->
-    <section class="danger-zone">
-        <h3>Account Management</h3>
-        <p>Be careful, these actions are permanent.</p>
-        <form action="/account/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This will also remove all your uploads and cannot be undone.');">
-            <button type="submit" class="btn btn-secondary" style="background-color:#a04040; border-color:#a04040; color:white; margin-top: 1rem;">Delete My Account</button>
+    <section class="account-management">
+        <h2>Account Management</h2>
+
+        <!-- Change Password Form -->
+        <form action="/account/change-password" method="POST" class="password-form">
+            <h4>Change Password</h4>
+            <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" name="currentPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
         </form>
+        
+        <!-- Danger Zone -->
+        <div class="danger-zone">
+            <h3>Danger Zone</h3>
+            <p>Be careful, these actions are permanent. This will also remove all your uploads and cannot be undone.</p>
+            <form action="/account/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This will also remove all your uploads and cannot be undone.');">
+                <button type="submit" class="btn btn-secondary" style="background-color:#a04040; border-color:#a04040; color:white; margin-top: 1rem;">Delete My Account</button>
+            </form>
+        </div>
     </section>
 
 </div>
+
+<!-- Script to display success/error messages from URL parameters -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const success = urlParams.get('success');
+
+        if(error) {
+            alert('Error: ' + error);
+        }
+        if(success) {
+            alert('Success: ' + success);
+        }
+    });
+</script>
 
 <%- include('../partials/footer') %>
