@@ -14,8 +14,9 @@
  * 6. Search Suggestions & History
  * 7. Star Rating System
  * 8. Item Card (For Apps, Games, etc.)
- * 9. Basic Responsive Design
- * 10. RESPONSIVE HEADER & NAVIGATION
+ * 9. Sub-Category Navigation Bar
+ * 10. Basic Responsive Design
+ * 11. RESPONSIVE HEADER & NAVIGATION
  * ==================================================================================
  */
 
@@ -287,7 +288,19 @@ h4 { font-size: 1.2rem; }
     margin-bottom: 0.5rem;
 }
 
-/* 9. Basic Responsive Design
+/* 9. Sub-Category Navigation Bar
+-------------------------------------------------- */
+.subcategory-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    margin: 2rem 0;
+    border-top: 1px solid var(--light-grey);
+    border-bottom: 1px solid var(--light-grey);
+}
+
+/* 10. Basic Responsive Design
 -------------------------------------------------- */
 @media (max-width: 768px) {
     .search-bar-container,
@@ -303,7 +316,7 @@ h4 { font-size: 1.2rem; }
     h2 { font-size: 1.6rem; }
 }
 
-/* 10. RESPONSIVE HEADER & NAVIGATION
+/* 11. RESPONSIVE HEADER & NAVIGATION
 -------------------------------------------------- */
 
 /* --- Hamburger Button Styling --- */
@@ -425,5 +438,36 @@ h4 { font-size: 1.2rem; }
     }
     .item-card .card-title {
         font-size: 1rem; /* Slightly smaller font for smaller cards */
+    }
+
+    /* --- SUBCATEGORY NAV on mobile --- */
+    .subcategory-nav {
+        /* Make it scrollable just like the main category nav */
+        overflow-x: auto;
+        justify-content: flex-start; /* Align to the start instead of center */
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 15px !important;
+        margin-top: 0 !important; /* Reduce top margin for better flow */
+        white-space: nowrap;
+    }
+    .subcategory-nav::-webkit-scrollbar {
+        display: none;
+    }
+    .subcategory-nav a.btn {
+        flex: 0 0 auto;
+        /* Make the sub-category buttons smaller than main category buttons */
+        padding: 6px 14px;
+        font-size: 0.9rem;
+    }
+
+    /* --- GENERAL BUTTON TWEAKS FOR MOBILE --- */
+    /* Adjust padding on ALL category buttons on mobile to make them fit better */
+    .category-nav a.btn {
+        padding: 8px 16px; /* Slightly reduce padding on main category buttons */
+    }
+
+    /* Target the Windows button specifically if it's still an issue */
+    .category-nav a[href*="windows"] {
+         /* If you want to shorten text, that's better done with JS or responsive text, but simple padding adjustments are best first. */
     }
 }
