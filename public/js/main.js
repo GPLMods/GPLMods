@@ -10,6 +10,7 @@
  * 3. Search Bar Animation & Functionality
  * 4. Search History Management (for all users)
  * 5. Search Suggestions FETCHER (Updated with Live API)
+ * 6. Mobile Menu Toggle
  * ==================================================================================
  */
 
@@ -23,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the interactive search bar
     initializeSearchBar();
+
+    // Initialize the mobile menu toggle
+    initializeMobileMenu(); // <-- THIS LINE WAS ADDED
 
 });
 
@@ -232,5 +236,26 @@ async function fetchAndDisplaySuggestions(query) {
     } catch (error) {
         console.error('Error fetching search suggestions:', error);
         suggestionsBox.style.display = 'none'; // Hide on any error
+    }
+}
+
+/**
+ * ----------------------------------------------------------------------------------
+ * 6. MOBILE MENU TOGGLE
+ * Handles the opening and closing of the mobile navigation menu.
+ * ----------------------------------------------------------------------------------
+ */
+function initializeMobileMenu() {
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const mobileNavMenu = document.getElementById('mobile-nav-menu');
+
+    // Make sure both elements exist before adding a listener
+    if (hamburgerBtn && mobileNavMenu) {
+        hamburgerBtn.addEventListener('click', () => {
+            // Toggle the 'active' class on both the button (for the X animation)
+            // and the menu (to show/hide it).
+            hamburgerBtn.classList.toggle('active');
+            mobileNavMenu.classList.toggle('active');
+        });
     }
 }

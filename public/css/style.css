@@ -15,6 +15,7 @@
  * 7. Star Rating System
  * 8. Item Card (For Apps, Games, etc.)
  * 9. Basic Responsive Design
+ * 10. RESPONSIVE HEADER & NAVIGATION
  * ==================================================================================
  */
 
@@ -300,4 +301,89 @@ h4 { font-size: 1.2rem; }
     
     h1 { font-size: 2rem; }
     h2 { font-size: 1.6rem; }
+}
+
+/* 10. RESPONSIVE HEADER & NAVIGATION
+-------------------------------------------------- */
+
+/* --- Hamburger Button Styling --- */
+#hamburger-btn {
+    display: none; /* Hidden by default on desktop */
+    flex-direction: column;
+    justify-content: space-around;
+    width: 2.25rem;
+    height: 2.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1002; /* Must be above the mobile menu */
+}
+.hamburger-bar {
+    width: 2.25rem;
+    height: 0.25rem;
+    background-color: var(--white);
+    border-radius: 10px;
+    transition: all 0.3s linear;
+}
+
+/* --- Mobile Menu Styling --- */
+#mobile-nav-menu {
+    display: none; /* Initially hidden */
+    position: absolute;
+    top: 100%; /* Position right below the header */
+    left: 0;
+    width: 100%;
+    background-color: var(--dark-grey);
+    border-top: 1px solid var(--light-grey);
+    padding: 1rem 0;
+    z-index: 1001;
+}
+#mobile-nav-menu a {
+    display: block;
+    color: var(--white);
+    text-align: center;
+    padding: 1rem 0;
+    font-size: 1.2rem;
+}
+#mobile-nav-menu a:hover {
+    background-color: var(--light-grey);
+    color: var(--gold);
+}
+#mobile-nav-menu hr {
+    border-color: var(--light-grey);
+}
+
+
+/* --- THE MEDIA QUERY FOR MOBILE DEVICES --- */
+/* On screens 992px or less, these styles will apply */
+@media screen and (max-width: 992px) {
+    .desktop-nav {
+        display: none !important; /* Force hide the desktop navigation */
+    }
+
+    #hamburger-btn {
+        display: flex; /* Show the hamburger button */
+    }
+    
+    #mobile-nav-menu.active {
+        display: block; /* Show the mobile menu when it has the 'active' class */
+    }
+
+    /* Animation for hamburger turning into an 'X' */
+    #hamburger-btn.active .hamburger-bar:nth-child(1) {
+        transform: rotate(45deg) translate(0.5rem, 0.5rem);
+    }
+    #hamburger-btn.active .hamburger-bar:nth-child(2) {
+        opacity: 0;
+    }
+    #hamburger-btn.active .hamburger-bar:nth-child(3) {
+        transform: rotate(-45deg) translate(0.5rem, -0.5rem);
+    }
+    
+    /* Reposition search bar to be visible and usable on mobile */
+    .search-bar-container, .search-bar-container.active {
+        display: none; /* Hide the search bar from the header by default */
+    }
+    .logo h1 { font-size: 1.8rem; }
 }

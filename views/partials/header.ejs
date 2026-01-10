@@ -25,42 +25,66 @@
 <body>
 
     <header class="main-header">
-        <nav class="container">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <a href="/" class="logo">
-                    <h1>GPL Mods</h1>
-                </a>
-    
-                <!-- Animated Search Bar HTML Structure -->
-                <div id="animatedSearchBar" class="search-bar-container">
-                    <form action="/search" method="GET" class="search-form">
-                        <span class="search-icon">&#128269;</span> <!-- Simple search emoji icon -->
-                        <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
-                    </form>
-                    <!-- These divs will be filled by our main.js -->
-                    <div id="searchSuggestions" class="search-suggestions"></div>
-                    <div id="searchHistory" class="search-history"></div>
-                </div>
-
-                 <div>
-                    <% if (user) { %>
-                        <!-- User is logged in -->
-                
-                        <!-- New avatar display -->
-                        <% if (user.profileImageUrl) { %>
-                            <img src="<%= user.profileImageUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 1rem;">
+        <nav class="container" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <a href="/" class="logo">
+                <h1>GPL Mods</h1>
+            </a>
+        
+            <!-- A container for all the navigation elements -->
+            <div class="navigation-wrapper">
+        
+                <!-- ===== 1. DESKTOP NAVIGATION ===== -->
+                <!-- This div wraps the nav elements we want to hide on mobile -->
+                <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
+                    <!-- Animated Search Bar -->
+                    <div id="animatedSearchBar" class="search-bar-container">
+                        <form action="/search" method="GET" class="search-form">
+                            <span class="search-icon">&#128269;</span>
+                            <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
+                        </form>
+                        <div id="searchSuggestions" class="search-suggestions"></div>
+                        <div id="searchHistory" class="search-history"></div>
+                    </div>
+        
+                    <!-- Login/User Buttons -->
+                    <div class="user-actions">
+                        <% if (user) { %>
+                            <% if (user.profileImageUrl) { %>
+                                <img src="<%= user.profileImageUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 1rem; vertical-align: middle;">
+                            <% } %>
+                            <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
+                            <a href="/profile" class="btn btn-secondary">My Profile</a>
+                            <a href="/upload" class="btn btn-primary">Upload Mod</a>
+                            <a href="/logout" class="btn btn-secondary">Logout</a>
+                        <% } else { %>
+                            <a href="/login" class="btn btn-secondary">Login</a>
+                            <a href="/register" class="btn btn-primary">Sign Up</a>
                         <% } %>
-                
-                        <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
-                        <a href="/profile" class="btn btn-secondary">My Profile</a>
-                        <a href="/upload" class="btn btn-primary">Upload Mod</a>
-                        <a href="/logout" class="btn btn-secondary">Logout</a>
-                    <% } else { %>
-                        <!-- User is not logged in -->
-                        <a href="/login" class="btn btn-secondary">Login</a>
-                        <a href="/register" class="btn btn-primary">Sign Up</a>
-                    <% } %>
+                    </div>
                 </div>
+                
+                <!-- ===== 2. HAMBURGER BUTTON (MOBILE ONLY) ===== -->
+                <!-- This button will be hidden on desktop and shown on mobile -->
+                <button id="hamburger-btn" aria-label="Open menu">
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                    <span class="hamburger-bar"></span>
+                </button>
+            </div>
+        
+            <!-- ===== 3. MOBILE NAVIGATION MENU (HIDDEN BY DEFAULT) ===== -->
+            <!-- This menu will appear when the hamburger is clicked -->
+            <div id="mobile-nav-menu">
+                <a href="/profile">My Profile</a>
+                <a href="/upload">Upload Mod</a>
+                <a href="/community-chat">Community Chat</a>
+                <hr>
+                <% if (user) { %>
+                    <a href="/logout">Logout</a>
+                <% } else { %>
+                    <a href="/login">Login</a>
+                    <a href="/register">Sign Up</a>
+                <% } %>
             </div>
         </nav>
     </header>
