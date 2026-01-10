@@ -117,6 +117,12 @@ h4 { font-size: 1.2rem; }
     color: var(--black);
 }
 
+/* --- Responsive Text for Buttons --- */
+/* By default, hide the short text */
+.btn .text-short {
+    display: none;
+}
+
 /* 4. Header & Navigation
 -------------------------------------------------- */
 .main-header {
@@ -469,5 +475,15 @@ h4 { font-size: 1.2rem; }
     /* Target the Windows button specifically if it's still an issue */
     .category-nav a[href*="windows"] {
          /* If you want to shorten text, that's better done with JS or responsive text, but simple padding adjustments are best first. */
+    }
+
+    /* --- RESPONSIVE BUTTON TEXT --- */
+    /* On mobile, hide the full text... */
+    .btn .text-full {
+        display: none;
+    }
+    /* ...and show the short text instead. */
+    .btn .text-short {
+        display: inline; /* 'inline' is the default for a span */
     }
 }
