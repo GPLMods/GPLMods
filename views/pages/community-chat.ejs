@@ -1,0 +1,87 @@
+<%- include('../partials/header') %>
+<style>
+    body { display: flex; flex-direction: column; height: 100vh; margin:0; }
+    main { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 70px; /* Space for form */ }
+    #messages { list-style-type: none; margin: 0; padding: 20px; overflow-y: auto; flex-grow: 1; }
+    #messages li { padding: 10px; display: flex; align-items: flex-start; gap: 10px; }
+    #messages li:nth-child(odd) { background-color: var(--dark-grey); }
+    #messages .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    #messages .message-content { display: flex; flex-direction: column; }
+    #messages .username { font-weight: bold; color: var(--gold); }
+    #chat-form { position: fixed; bottom: 0; left: 0; right: 0; display: flex; padding: 10px; background-color: var(--dark-grey); border-top: 1px solid var(--light-grey); }
+    #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin-right: 10px; background: var(--black); color:var(--white); }
+</style>
+
+<!-- This EJS file does NOT include the footer, as its layout is unique -->
+
+<main class="container">
+    <h2 style="margin-top: 1rem; text-align:center;">Community Chat</h2>
+    <ul id="messages"></ul>
+</main>
+
+<form id="chat-form" action="">
+    <input id="input" autocomplete="off" placeholder="Type a message..." /><button class="btn btn-primary">Send</button>
+</form>
+
+<!-- Include the Socket.IO client-side library -->
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+    // The client-side logic to connect to the server and handle events
+    const socket = io();
+
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+
+    // These variables are available because the user is logged in
+    const currentUser = {
+        username: '<%= user.username %>',
+        avatar: '<%= user.profileImageUrl || "/images/default-avatar.png" %>'
+    };
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (input.value) {
+            // Send a 'chat message' event to the server with the message and user info
+            socket.emit('chat message', {
+                username: currentUser.username,
+                avatar: currentUser.avatar,
+                text: input.value
+            });
+            input.value = '';
+        }
+    });
+    
+    // When the client receives a 'chat message' event FROM the server
+    socket.on('chat message', function(msg) {
+        const item = document.createElement('li');
+        
+        const avatarImg = document.createElement('img');
+        avatarImg.src = msg.avatar;
+        avatarImg.className = 'avatar';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        const usernameSpan = document.createElement('span');
+        usernameSpan.className = 'username';
+        usernameSpan.textContent = msg.username;
+        
+        const textNode = document.createElement('span');
+        textNode.textContent = msg.text;
+
+        contentDiv.appendChild(usernameSpan);
+        contentDiv.appendChild(textNode);
+        
+        item.appendChild(avatarImg);
+        item.appendChild(contentDiv);
+
+        messages.appendChild(item);
+        // Auto-scroll to the bottom
+        messages.scrollTop = messages.scrollHeight;
+    });
+</script>
+
+</body>
+</html>

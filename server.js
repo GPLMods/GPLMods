@@ -16,9 +16,11 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const MongoStore = require('connect-mongo');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const { sendVerificationEmail } = require('./utils/mailer');
+const http = require('http');
+const { Server } = require("socket.io");
 
 // AdminJS Setup Import
 const adminRouter = require('./config/admin');
@@ -98,11 +100,11 @@ const sanitizeFilename = (filename) => filename.replace(/[^a-zA-Z0-9.-_]/g, '');
 const uploadToB2 = async (file, folder) => {
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
-    const params = { 
-        Bucket: process.env.B2_BUCKET_NAME, 
-        Key: fileName, 
-        Body: file.buffer, 
-        ContentType: file.mimetype 
+    const params = {
+        Bucket: process.env.B2_BUCKET_NAME,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype
     };
     await s3Client.send(new PutObjectCommand(params));
     return fileName;
@@ -127,12 +129,12 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
         if (!user) return done(null, false, { message: 'Incorrect email.' });
-        
+
         const isMatch = await user.comparePassword(password);
         if (!isMatch) return done(null, false, { message: 'Incorrect password.' });
-        
+
         if (!user.isVerified) return done(null, false, { message: 'Please verify your email before logging in.' });
-        
+
         return done(null, user);
     } catch (e) { return done(e); }
 }));
@@ -140,21 +142,21 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback" 
+    callbackURL: "/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ email: profile.emails[0].value });
         if (user) return done(null, user);
-        
+
         const username = profile.displayName;
         const existingUsername = await User.findOne({ username });
         const finalUsername = existingUsername ? `${username}${Math.floor(Math.random() * 1000)}` : username;
-        
+
         user = await User.create({
-            googleId: profile.id, 
+            googleId: profile.id,
             username: finalUsername,
-            email: profile.emails[0].value, 
-            isVerified: true 
+            email: profile.emails[0].value,
+            isVerified: true
         });
         done(null, user);
     } catch (err) { done(err, null); }
@@ -206,9 +208,9 @@ app.get('/', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
         res.render('pages/index', { files: filesWithUrls });
-    } catch (e) { 
+    } catch (e) {
         console.error("Homepage Error:", e);
-        res.status(500).send("Server error."); 
+        res.status(500).send("Server error.");
     }
 });
 
@@ -223,9 +225,9 @@ app.get('/category', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
         res.render('pages/category', { files: filesWithUrls, title: pageTitle, currentCategory: cat });
-    } catch (e) { 
+    } catch (e) {
         console.error("Category Error:", e);
-        res.status(500).send("Category error."); 
+        res.status(500).send("Category error.");
     }
 });
 
@@ -242,9 +244,9 @@ app.get('/search', async (req, res) => {
             ]
         }).sort({ createdAt: -1 });
         res.render('pages/search', { results, query });
-    } catch (e) { 
+    } catch (e) {
         console.error("Search Error:", e);
-        res.status(500).send("Search Error"); 
+        res.status(500).send("Search Error");
     }
 });
 
@@ -259,7 +261,7 @@ app.get('/mods/:id', async (req, res) => {
         let versionHistory = [];
         if (currentFile.parentFile) {
             let headFile = await File.findById(currentFile.parentFile).populate('olderVersions');
-            versionHistory = [headFile, ...headFile.olderVersions.slice().reverse()]; 
+            versionHistory = [headFile, ...headFile.olderVersions.slice().reverse()];
             currentFile = headFile;
         } else {
             await currentFile.populate('olderVersions');
@@ -272,14 +274,14 @@ app.get('/mods/:id', async (req, res) => {
         const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 });
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(currentFile._id) : false;
         const userHasVotedOnStatus = req.user ? currentFile.votedOnStatusBy.includes(req.user._id) : false;
-        
-        res.render('pages/download', { 
-            file: { ...currentFile.toObject(), iconUrl, screenshotUrls }, 
-            versionHistory, reviews, userHasWhitelisted, userHasVotedOnStatus 
+
+        res.render('pages/download', {
+            file: { ...currentFile.toObject(), iconUrl, screenshotUrls },
+            versionHistory, reviews, userHasWhitelisted, userHasVotedOnStatus
         });
-    } catch (e) { 
+    } catch (e) {
         console.error("Download Page Error:", e);
-        res.status(500).send("Server error."); 
+        res.status(500).send("Server error.");
     }
 });
 
@@ -304,7 +306,7 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             if (existingUser.isVerified) return res.status(400).send("A verified user with this email already exists.");
-            
+
             const token = jwt.sign({ userId: existingUser._id }, process.env.JWT_SECRET || 'fallback', { expiresIn: '1d' });
             existingUser.verificationToken = token;
             await existingUser.save();
@@ -318,9 +320,9 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         await newUser.save();
         await sendVerificationEmail(newUser);
         res.render('pages/please-verify');
-    } catch (e) { 
+    } catch (e) {
         console.error("Registration Error:", e);
-        res.status(500).send("Registration error."); 
+        res.status(500).send("Registration error.");
     }
 });
 
@@ -329,7 +331,7 @@ app.get('/verify-email', async (req, res) => {
         const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET || 'fallback');
         const user = await User.findOne({ _id: decoded.userId, verificationToken: req.query.token });
         if (!user) return res.status(400).send('Invalid or expired token.');
-        
+
         user.isVerified = true;
         user.verificationToken = undefined;
         await user.save();
@@ -365,13 +367,13 @@ app.get('/users/:username', async (req, res) => {
             // Later we will make this a custom 404 page
             return res.status(404).send("User not found.");
         }
-        
+
         // Find all LATEST versions of files uploaded by this user
-        const uploads = await File.find({ 
+        const uploads = await File.find({
             uploader: username,
-            isLatestVersion: true 
+            isLatestVersion: true
         }).sort({ createdAt: -1 });
-    
+
         res.render('pages/public-profile', {
             profileUser: user, // Naming it 'profileUser' to avoid conflicts with 'user' in header
             uploads: uploads
@@ -415,12 +417,12 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
             // --- Send a new verification email ---
             const verificationToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
             user.verificationToken = verificationToken;
-            
+
             // You already have this mailer function from the registration step!
-            await sendVerificationEmail(user); 
-            
+            await sendVerificationEmail(user);
+
             // Log the user out for security, forcing them to verify the new email
-            req.logout(function(err) {
+            req.logout(function (err) {
                 if (err) { return next(err); }
                 return res.redirect('/login?message=Please check your new email address to re-verify your account.');
             });
@@ -428,12 +430,12 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
         }
 
         await user.save();
-        
+
         // If it was just a username change, redirect normally
         if (username && !email) {
             res.redirect('/profile?success=Username updated successfully!');
         } else if (!username && !email) {
-             res.redirect('/profile'); // Nothing was changed
+            res.redirect('/profile'); // Nothing was changed
         }
 
     } catch (error) {
@@ -490,10 +492,10 @@ app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
         if (!isMatch) {
             return res.status(400).redirect('/profile?error=Current password is incorrect.');
         }
-        
+
         user.password = newPassword;
         await user.save();
-        
+
         res.redirect('/profile?success=Password changed successfully.');
     } catch (error) {
         console.error("Error changing password:", error);
@@ -522,8 +524,8 @@ app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', 
         const { softwareName, softwareVersion, modDescription, officialDescription, category, platforms, tags, videoUrl } = req.body;
         const { softwareIcon, screenshots, modFile } = req.files;
 
-        if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) { 
-            return res.status(400).send("A required field or file is missing."); 
+        if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) {
+            return res.status(400).send("A required field or file is missing.");
         }
 
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
@@ -548,9 +550,9 @@ app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', 
         });
         await newFile.save();
         res.redirect(`/mods/${newFile._id}`);
-    } catch (e) { 
+    } catch (e) {
         console.error("Upload Error:", e);
-        res.status(500).send("Upload failed."); 
+        res.status(500).send("Upload failed.");
     }
 });
 
@@ -566,17 +568,17 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         const headFile = await File.findById(req.params.id);
         if (!headFile) return res.status(404).send("Original file not found.");
         if (req.user.username !== headFile.uploader) return res.status(403).send("Forbidden.");
-        
+
         const fileKey = await uploadToB2(req.file, 'mods');
         const newVersion = new File({
-            ...headFile.toObject(), 
+            ...headFile.toObject(),
             _id: new Types.ObjectId(),
-            version: req.body.softwareVersion, 
-            fileKey, 
+            version: req.body.softwareVersion,
+            fileKey,
             originalFilename: req.file.originalname,
-            fileSize: req.file.size, 
-            isLatestVersion: false, 
-            parentFile: headFile._id, 
+            fileSize: req.file.size,
+            isLatestVersion: false,
+            parentFile: headFile._id,
             olderVersions: []
         });
         await newVersion.save();
@@ -590,11 +592,11 @@ app.get('/download-file/:id', async (req, res) => {
         const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
         if (!file) return res.status(404).send("File not found.");
 
-        const url = await getSignedUrl(s3Client, new GetObjectCommand({ 
-            Bucket: process.env.B2_BUCKET_NAME, 
-            Key: file.fileKey, 
-            ResponseContentDisposition: `attachment; filename="${file.originalFilename}"` 
-        }), { expiresIn: 300 }); 
+        const url = await getSignedUrl(s3Client, new GetObjectCommand({
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: file.fileKey,
+            ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
+        }), { expiresIn: 300 });
         res.redirect(url);
     } catch (e) { res.status(500).send("Download generation error."); }
 });
@@ -618,7 +620,7 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const { rating, comment } = req.body;
         if (!rating || !comment) return res.status(400).send("Missing review fields.");
-        
+
         const existing = await Review.findOne({ file: req.params.fileId, user: req.user._id });
         if (existing) return res.redirect(`/mods/${req.params.fileId}`);
 
@@ -647,7 +649,7 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
     try {
         const { voteType } = req.body;
         if (!['working', 'not-working'].includes(voteType)) return res.status(400).send("Invalid vote type.");
-        
+
         const file = await File.findById(req.params.fileId);
         if (file && !file.votedOnStatusBy.includes(req.user._id)) {
             const update = voteType === 'working' ? { $inc: { workingVoteCount: 1 } } : { $inc: { notWorkingVoteCount: 1 } };
@@ -655,6 +657,11 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         }
         res.redirect(`/mods/${req.params.fileId}`);
     } catch (e) { res.status(500).send("Voting error."); }
+});
+
+// A protected route for logged-in members only
+app.get('/community-chat', ensureAuthenticated, (req, res) => {
+    res.render('pages/community-chat');
 });
 
 // ===============================
@@ -665,7 +672,7 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     try {
         const { reason, additionalComments } = req.body;
         if (!reason) return res.status(400).send("Reason required.");
-        
+
         const file = await File.findById(req.params.fileId);
         const existing = await Report.findOne({ file: req.params.fileId, reportingUser: req.user._id });
         if (!existing && file) {
@@ -715,7 +722,7 @@ app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin,
         if (!fileToDelete) {
             return res.status(404).send("File not found.");
         }
-        
+
         // 1. Delete the file record
         await File.findByIdAndDelete(fileId);
 
@@ -726,7 +733,7 @@ app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin,
         await Report.updateMany({ file: fileId }, { status: 'resolved' });
 
         res.redirect('/admin/reports');
-        
+
     } catch (error) {
         console.error("Error deleting file from admin report:", error);
         res.status(500).send("Server Error");
@@ -766,7 +773,7 @@ app.post('/dmca-request', async (req, res) => {
         console.log("From:", fullName, `<${email}>`);
         console.log("Infringing URL:", infringingUrl);
         console.log("----------------------------");
-        
+
         res.redirect('/dmca?success=Your DMCA request has been submitted. We will review it shortly.');
 
     } catch (error) {
@@ -790,7 +797,31 @@ app.use((err, req, res, next) => {
 });
 
 
-// --- SERVER START ---
-app.listen(PORT, () => {
+// ===============================
+// 14. SERVER & SOCKET.IO START
+// ===============================
+const server = http.createServer(app);
+const io = new Server(server);
+
+io.on('connection', (socket) => {
+    console.log('A user connected via WebSocket');
+
+    // When a user sends a 'chat message' event
+    socket.on('chat message', (msg) => {
+        // We broadcast the message to everyone INCLUDING the sender
+        // We can include user info along with the message
+        io.emit('chat message', {
+            username: msg.username,
+            avatar: msg.avatar,
+            text: msg.text
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
