@@ -26,6 +26,12 @@
 <div class="auth-form-container">
     <h2 style="text-align: center; margin-bottom: 2rem;">Login to GPL Mods</h2>
 
+    <% if (message) { %>
+        <p style="padding: 10px; background-color: #2b1a1a; border: 1px solid var(--gold); text-align: center; margin-bottom: 1rem;">
+            <%= message %>
+        </p>
+    <% } %>
+
     <!-- Google Login Button -->
     <a href="/auth/google" class="btn btn-secondary" style="width:100%; display:block; text-align:center; margin-bottom:1.5rem; padding: 10px; border-radius: 4px;">
         Continue with Google

@@ -270,7 +270,12 @@ app.get('/mods/:id', async (req, res) => {
 // 8. AUTHENTICATION ROUTES
 // ===============================
 
-app.get('/login', (req, res) => res.render('pages/login', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY }));
+app.get('/login', (req, res) => {
+    res.render('pages/login', {
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
+        message: req.query.message || null // Pass the message from the query
+    });
+});
 app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }));
 
 app.get('/register', (req, res) => res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY }));
@@ -332,6 +337,92 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
         res.render('pages/profile', { user: userWithWhitelist, uploads: userUploads });
     } catch (e) { res.status(500).send('Profile fetch error.'); }
+});
+
+// A public route that anyone can view
+app.get('/users/:username', async (req, res) => {
+    try {
+        const username = req.params.username;
+        const user = await User.findOne({ username: username });
+        if (!user) {
+            // Later we will make this a custom 404 page
+            return res.status(404).send("User not found.");
+        }
+        
+        // Find all LATEST versions of files uploaded by this user
+        const uploads = await File.find({ 
+            uploader: username,
+            isLatestVersion: true 
+        }).sort({ createdAt: -1 });
+    
+        res.render('pages/public-profile', {
+            profileUser: user, // Naming it 'profileUser' to avoid conflicts with 'user' in header
+            uploads: uploads
+        });
+    } catch (error) {
+        console.error("Error fetching public profile:", error);
+        res.status(500).send("Server Error");
+    }
+});
+
+app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
+    try {
+        const { username, email } = req.body;
+        const user = await User.findById(req.user.id);
+
+        // --- Handle Username Change ---
+        if (username && username !== user.username) {
+            // Check if the new username is already taken
+            const existingUser = await User.findOne({ username: username });
+            if (existingUser) {
+                return res.redirect('/profile?error=Username is already taken.');
+            }
+            // IMPORTANT: If you change the username, you must also update the 'uploader' field in all their files!
+            await File.updateMany({ uploader: user.username }, { uploader: username });
+
+            user.username = username;
+        }
+
+        // --- Handle Email Change ---
+        if (email && email !== user.email) {
+            // Check if the new email is already in use
+            const existingEmail = await User.findOne({ email: email });
+            if (existingEmail) {
+                return res.redirect('/profile?error=Email is already in use.');
+            }
+
+            // The user's account is now unverified until they confirm the new email
+            user.email = email;
+            user.isVerified = false;
+
+            // --- Send a new verification email ---
+            const verificationToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            user.verificationToken = verificationToken;
+            
+            // You already have this mailer function from the registration step!
+            await sendVerificationEmail(user); 
+            
+            // Log the user out for security, forcing them to verify the new email
+            req.logout(function(err) {
+                if (err) { return next(err); }
+                return res.redirect('/login?message=Please check your new email address to re-verify your account.');
+            });
+            // We save inside the logout callback if possible, or just before
+        }
+
+        await user.save();
+        
+        // If it was just a username change, redirect normally
+        if (username && !email) {
+            res.redirect('/profile?success=Username updated successfully!');
+        } else if (!username && !email) {
+             res.redirect('/profile'); // Nothing was changed
+        }
+
+    } catch (error) {
+        console.error("Error updating account details:", error);
+        res.status(500).redirect('/profile?error=An unknown error occurred.');
+    }
 });
 
 /**

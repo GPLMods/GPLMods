@@ -105,6 +105,12 @@
 
         <h1>Welcome, <%= user.username %>!</h1>
         <p>This is your personal dashboard. Here you can manage your account and view your uploads.</p>
+        
+        <!-- Inside the profile-header div -->
+        <p>
+            Your public profile is available at: 
+            <a href="/users/<%= user.username %>" target="_blank">/users/<%= user.username %></a>
+        </p>
     </div>
     
     <!-- Upload History Section -->
@@ -171,6 +177,25 @@
     <!-- Account Management Section -->
     <section class="account-management">
         <h2>Account Management</h2>
+
+        <!-- Inside the <section class="account-management"> -->
+        <form action="/account/update-details" method="POST" style="margin-top: 1.5rem; padding: 1.5rem; background-color: var(--dark-grey); border-radius: 8px;">
+            <h4>Update Your Details</h4>
+            <p style="font-size: 0.9rem; color: var(--silver);">Only fill in the fields you wish to change.</p>
+        
+            <div class="form-group" style="margin-bottom: 1rem; margin-top: 1rem;">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="<%= user.username %>" required style="width: 100%; ...">
+            </div>
+        
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" value="<%= user.email %>" required style="width: 100%; ...">
+                <p style="font-size: 0.8rem; color: #ffd700;">Note: Changing your email will require re-verification and you will be logged out.</p>
+            </div>
+        
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
 
         <!-- Change Password Form -->
         <form action="/account/change-password" method="POST" class="password-form">
