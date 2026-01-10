@@ -5,19 +5,73 @@
     .static-page-container h1 { color: var(--gold); }
     .static-page-container h2 { color: var(--silver); margin-top: 2rem; }
     .static-page-container p, .static-page-container ul { margin-bottom: 1rem; line-height: 1.7; }
+    .dmca-form { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--light-grey); }
+    .form-group { margin-bottom: 1rem; text-align: left; }
+    /* ... other styles from previous static pages ... */
 </style>
 <div class="static-page-container">
-    <!-- For dmca.ejs -->
-    <h1>DMCA & Copyright Policy</h1> 
-    <!-- For tos.ejs -->
-    <!-- <h1>Terms of Service</h1> -->
+    <h1>DMCA & Copyright Policy</h1>
 
     <h2>1. Introduction</h2>
-    <p>[PLEASE REPLACE THIS with generated content from a TOS/DMCA generator.]</p>
+    <p>This website respects the intellectual property rights of others and expects its users to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond expeditiously to notices of alleged copyright infringement that are reported to our Designated Copyright Agent, identified in the sample notice below.</p>
     
-    <h2>2. User Responsibilities</h2>
-    <p>[You are responsible for the content you upload...]</p>
+    <h2>2. Infringement Notification</h2>
+    <p>If you are a copyright owner, or are authorized to act on behalf of one, or authorized to act under any exclusive right under copyright, please report alleged copyright infringements taking place on or through the site by completing the following DMCA Notice of Alleged Infringement and delivering it to our Designated Copyright Agent.</p>
+    <p>Upon receipt of the Notice as described below, we will take whatever action, in our sole discretion, we deem appropriate, including removal of the challenged material from the site.</p>
+    
+    <h2>3. DMCA Notice of Alleged Infringement</h2>
+    <p>
+        To file a notice of infringement with us, you must provide a written communication (by email or postal mail) that sets forth the items specified below. Please note that you will be liable for damages (including costs and attorneys' fees) if you materially misrepresent that a product or activity is infringing your copyrights.
+    </p>
+    <ul>
+        <li>A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
+        <li>Identification of the copyrighted work claimed to have been infringed, or, if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site.</li>
+        <li>Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit us to locate the material.</li>
+        <li>Information reasonably sufficient to permit us to contact the complaining party, such as an address, telephone number, and, if available, an electronic mail address at which the complaining party may be contacted.</li>
+        <li>A statement that the complaining party has a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law.</li>
+        <li>A statement that the information in the notification is accurate, and under penalty of perjury, that the complaining party is authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
+    </ul>
 
-    <!-- Fill the rest of the page with your policy -->
+    <h2>4. User Responsibilities</h2>
+    <p>You are responsible for the content you upload to this site. You agree not to upload any content that infringes upon the copyright or other intellectual property rights of any third party. We reserve the right to remove any content that we believe may be infringing, and to terminate the accounts of repeat infringers.</p>
+
+    <div class="dmca-form">
+        <h2>Submit a Takedown Request</h2>
+        <form action="/dmca-request" method="POST">
+            <div class="form-group">
+                <label>Your Full Name*</label>
+                <input type="text" name="fullName" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+             <div class="form-group">
+                <label>Your Contact Email*</label>
+                <input type="email" name="email" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+             <div class="form-group">
+                <label>Name of Copyright Holder you represent*</label>
+                <input type="text" name="copyrightHolder" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="form-group">
+                <label>URL to the original copyrighted work*</label>
+                <input type="url" name="originalWorkUrl" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="form-group">
+                <label>URL(s) on GPL Mods you claim are infringing*</label>
+                <input type="url" name="infringingUrl" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="form-group">
+                <label>Electronic Signature (type your full name again)*</label>
+                <input type="text" name="signature" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+        </form>
+    </div>
 </div>
+
+<script> // Add this script to show submission status
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) { alert('Error: ' + urlParams.get('error')); }
+        if (urlParams.has('success')) { alert('Success: ' + urlParams.get('success')); }
+    });
+</script>
 <%- include('../../../partials/footer') %>

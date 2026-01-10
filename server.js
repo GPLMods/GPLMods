@@ -50,6 +50,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// --- MAINTENANCE MODE MIDDLEWARE ---
+// This must be one of the very first middleware functions
+app.use((req, res, next) => {
+    // Check for the maintenance mode variable.
+    // Set 'MAINTENANCE_MODE=on' in your .env file to activate.
+    if (process.env.MAINTENANCE_MODE === 'on') {
+        // Allow access to the admin panel even during maintenance
+        if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
+            return next();
+        }
+        // For all other users, show the maintenance page.
+        return res.status(503).render('pages/maintenance');
+    }
+    // If not in maintenance mode, proceed as normal.
+    next();
+});
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'a-very-secret-key-to-sign-the-cookie',
     resave: false,
@@ -161,7 +178,7 @@ function ensureAuthenticated(req, res, next) {
 
 function ensureAdmin(req, res, next) {
     if (req.user && req.user.role === 'admin') return next();
-    res.status(403).send("Forbidden: Admins only.");
+    res.status(403).render('pages/403');
 }
 
 async function verifyRecaptcha(req, res, next) {
@@ -733,4 +750,47 @@ app.get('/faq', (req, res) => res.render('pages/static/faq.ejs'));
 app.get('/tos', (req, res) => res.render('pages/static/tos.ejs'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca.ejs'));
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.post('/dmca-request', async (req, res) => {
+    try {
+        const { fullName, email, copyrightHolder, originalWorkUrl, infringingUrl, signature } = req.body;
+        // --- Basic Validation ---
+        if (!fullName || !email || !infringingUrl || !signature) {
+            return res.redirect('/dmca?error=Please fill out all required fields.');
+        }
+
+        // --- Send the email notification to the site admin ---
+        // TODO: Create a 'sendDmcaNoticeEmail' function in your mailer utility
+        // This function would send an email to your admin email address
+        // containing all the details from req.body.
+        console.log("--- DMCA NOTICE RECEIVED ---");
+        console.log("From:", fullName, `<${email}>`);
+        console.log("Infringing URL:", infringingUrl);
+        console.log("----------------------------");
+        
+        res.redirect('/dmca?success=Your DMCA request has been submitted. We will review it shortly.');
+
+    } catch (error) {
+        console.error("DMCA Form Error:", error);
+        res.redirect('/dmca?error=An error occurred while submitting your request.');
+    }
+});
+
+
+// --- ERROR HANDLING MIDDLEWARE ---
+
+// 404 Handler - This catches all requests that haven't been handled by a route above
+app.use((req, res, next) => {
+    res.status(404).render('pages/404');
+});
+
+// 500 Handler - This catches any errors that are passed with next(error)
+app.use((err, req, res, next) => {
+    console.error(err.stack); // Log the error for debugging
+    res.status(500).render('pages/500');
+});
+
+
+// --- SERVER START ---
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
