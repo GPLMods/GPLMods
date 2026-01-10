@@ -2,7 +2,7 @@
  * ==================================================================================
  * GPL MODS GLOBAL STYLESHEET
  * ==================================================================================
- * This file contains the core styles for the entire GPL Mods website, defining the 
+ * This file contains the core styles for the entire GPL Mods website, defining the
  * overall theme, layout, and appearance of common elements.
  *
  * Table of Contents:
@@ -358,8 +358,9 @@ h4 { font-size: 1.2rem; }
 /* --- THE MEDIA QUERY FOR MOBILE DEVICES --- */
 /* On screens 992px or less, these styles will apply */
 @media screen and (max-width: 992px) {
+    /* --- HEADER & NAVIGATION --- */
     .desktop-nav {
-        display: none !important; /* Force hide the desktop navigation */
+        display: none !important; /* Hide the original desktop navigation */
     }
 
     #hamburger-btn {
@@ -367,23 +368,62 @@ h4 { font-size: 1.2rem; }
     }
     
     #mobile-nav-menu.active {
-        display: block; /* Show the mobile menu when it has the 'active' class */
+        display: block; /* Show the mobile menu when active */
     }
 
     /* Animation for hamburger turning into an 'X' */
-    #hamburger-btn.active .hamburger-bar:nth-child(1) {
-        transform: rotate(45deg) translate(0.5rem, 0.5rem);
+    #hamburger-btn.active .hamburger-bar:nth-child(1) { transform: rotate(45deg) translate(0.5rem, 0.5rem); }
+    #hamburger-btn.active .hamburger-bar:nth-child(2) { opacity: 0; }
+    #hamburger-btn.active .hamburger-bar:nth-child(3) { transform: rotate(-45deg) translate(0.5rem, -0.5rem); }
+
+    .logo h1 { font-size: 1.8rem; }
+    
+    /* --- MOBILE SEARCH BAR (INSIDE DROPDOWN) --- */
+    #mobile-nav-menu .search-bar-container, 
+    #mobile-nav-menu .search-bar-container.active {
+        display: block; /* Ensure the search container is visible */
+        width: auto;
+        padding: 1rem;
+        border-bottom: 1px solid var(--light-grey);
     }
-    #hamburger-btn.active .hamburger-bar:nth-child(2) {
-        opacity: 0;
+    #mobile-nav-menu .search-form {
+        border-color: var(--light-grey); /* Keep border color static */
     }
-    #hamburger-btn.active .hamburger-bar:nth-child(3) {
-        transform: rotate(-45deg) translate(0.5rem, -0.5rem);
+    #mobile-nav-menu #searchInput {
+        font-size: 1rem;
+    }
+    /* Position the suggestions box correctly within the mobile menu */
+    #mobile-nav-menu .search-suggestions {
+        position: static;
+        border: none;
+    }
+
+    /* --- CATEGORY TABS (Make them scrollable) --- */
+    .category-nav {
+        display: flex;
+        overflow-x: auto; /* This enables horizontal scrolling */
+        white-space: nowrap; /* Prevents the buttons from wrapping to the next line */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        padding-bottom: 15px !important; /* Add padding to make space for scrollbar */
+        margin-bottom: 1rem !important;
+    }
+    .category-nav a.btn {
+        flex: 0 0 auto; /* Allow buttons to shrink but not grow, and set their basis to auto */
+    }
+    /* Hide the ugly scrollbar on browsers that support it */
+    .category-nav::-webkit-scrollbar {
+        display: none;
     }
     
-    /* Reposition search bar to be visible and usable on mobile */
-    .search-bar-container, .search-bar-container.active {
-        display: none; /* Hide the search bar from the header by default */
+    /* --- ITEM CARD GRID (For Homepage, Category pages, etc.) --- */
+    /* Let's give our grid a class instead of using inline styles */
+    .item-grid {
+        display: grid;
+        gap: 1rem; /* A slightly smaller gap on mobile */
+        /* Make columns responsive, allowing for 2 columns on most mobile screens */
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
     }
-    .logo h1 { font-size: 1.8rem; }
+    .item-card .card-title {
+        font-size: 1rem; /* Slightly smaller font for smaller cards */
+    }
 }

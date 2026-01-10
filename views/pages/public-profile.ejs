@@ -7,7 +7,7 @@
 
     <section class="upload-history" style="margin-top: 2rem;">
         <% if(uploads && uploads.length > 0) { %>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div class="item-grid">
                 <% uploads.forEach(file => { %>
                     <!-- Reusing our standard item card -->
                     <a href="/mods/<%= file._id %>" class="item-card">

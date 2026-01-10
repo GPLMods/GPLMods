@@ -36,15 +36,7 @@
                 <!-- ===== 1. DESKTOP NAVIGATION ===== -->
                 <!-- This div wraps the nav elements we want to hide on mobile -->
                 <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
-                    <!-- Animated Search Bar -->
-                    <div id="animatedSearchBar" class="search-bar-container">
-                        <form action="/search" method="GET" class="search-form">
-                            <span class="search-icon">&#128269;</span>
-                            <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
-                        </form>
-                        <div id="searchSuggestions" class="search-suggestions"></div>
-                        <div id="searchHistory" class="search-history"></div>
-                    </div>
+                    <!-- The animatedSearchBar has been moved to the mobile menu -->
         
                     <!-- Login/User Buttons -->
                     <div class="user-actions">
@@ -75,6 +67,16 @@
             <!-- ===== 3. MOBILE NAVIGATION MENU (HIDDEN BY DEFAULT) ===== -->
             <!-- This menu will appear when the hamburger is clicked -->
             <div id="mobile-nav-menu">
+                <!-- Animated Search Bar is now here for mobile view -->
+                <div id="animatedSearchBar" class="search-bar-container">
+                    <form action="/search" method="GET" class="search-form">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
+                    </form>
+                    <div id="searchSuggestions" class="search-suggestions"></div>
+                    <div id="searchHistory" class="search-history"></div>
+                </div>
+
                 <a href="/profile">My Profile</a>
                 <a href="/upload">Upload Mod</a>
                 <a href="/community-chat">Community Chat</a>
