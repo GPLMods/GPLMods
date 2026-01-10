@@ -12,10 +12,18 @@
     <!-- Main Category Navigation Bar (Same as homepage) -->
     <!-- We can add a simple active state here -->
     <nav class="category-nav" style="padding: 1rem 0; margin-bottom: 2rem; border-top: 1px solid var(--light-grey); border-bottom: 1px solid var(--light-grey); display: flex; gap: 1.5rem; justify-content: center;">
-        <a href="/category?cat=windows" class="btn <%= currentCategory === 'windows' ? 'btn-primary' : 'btn-secondary' %>">Windows</a>
-        <a href="/category?cat=android" class="btn <%= currentCategory === 'android' ? 'btn-primary' : 'btn-secondary' %>">Android</a>
-        <a href="/category?cat=ios" class="btn <%= currentCategory === 'ios' ? 'btn-primary' : 'btn-secondary' %>">iOS</a>
-        <a href="/category?cat=wordpress" class="btn <%= currentCategory === 'wordpress' ? 'btn-primary' : 'btn-secondary' %>">WordPress</a>
+        <a href="/category?cat=windows" class="btn <%= currentCategory === 'windows' ? 'btn-primary' : 'btn-secondary' %>">
+            <span class="text-full">Windows</span><span class="text-short">PC</span>
+        </a>
+        <a href="/category?cat=android" class="btn <%= currentCategory === 'android' ? 'btn-primary' : 'btn-secondary' %>">
+             <span class="text-full">Android</span><span class="text-short">Android</span>
+        </a>
+        <a href="/category?cat=ios" class="btn <%= currentCategory === 'ios' ? 'btn-primary' : 'btn-secondary' %>">
+             <span class="text-full">iOS</span><span class="text-short">iOS</span>
+        </a>
+        <a href="/category?cat=wordpress" class="btn <%= currentCategory === 'wordpress' ? 'btn-primary' : 'btn-secondary' %>">
+             <span class="text-full">WordPress</span><span class="text-short">WP</span>
+        </a>
     </nav>
     
     
