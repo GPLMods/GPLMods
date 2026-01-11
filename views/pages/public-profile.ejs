@@ -10,13 +10,13 @@
             <div class="item-grid">
                 <% uploads.forEach(file => { %>
                     <!-- Reusing our standard item card -->
-                    <a href="/mods/<%= file._id %>" class="item-card">
-                         <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); ..."></div>
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                         <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;"></div>
                          <div class="card-body">
                             <h3 class="card-title"><%= file.name %></h3>
                             <p class="card-platform"><%= file.version %></p>
                             <div class="star-rating" data-rating="<%= file.averageRating %>">
-                                <!-- stars here -->
+                                <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
                             </div>
                         </div>
                     </a>

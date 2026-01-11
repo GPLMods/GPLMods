@@ -10,6 +10,7 @@
  * 2. Global Typography & Body Styles
  * 3. Reusable Components (Buttons, Containers)
  * 4. Header & Navigation
+ * 4b. Music Controls in Header
  * 5. Animated Search Bar
  * 6. Search Suggestions & History
  * 7. Star Rating System
@@ -132,6 +133,32 @@ h4 { font-size: 1.2rem; }
     position: sticky;
     top: 0;
     z-index: 1000;
+}
+
+/* 4b. Music Controls in Header
+-------------------------------------------------- */
+#music-controls button {
+    background: none;
+    border: 1px solid var(--light-grey);
+    color: var(--silver);
+    border-radius: 50%; /* Makes the buttons circular */
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-speed) ease;
+}
+#music-controls button:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 10px var(--glow-gold);
+}
+/* We will control which button is shown using 'display: none' from JS, just like before */
+#play-music-btn {
+    display: none; /* Initially hide the play button */
 }
 
 /* 5. Animated Search Bar

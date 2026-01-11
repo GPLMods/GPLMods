@@ -292,12 +292,12 @@ function initializeMusicPlayer() {
             await audioPlayer.play();
             // If successful, update UI and state
             playBtn.style.display = 'none';
-            pauseBtn.style.display = 'flex';
+            pauseBtn.style.display = 'block'; // Changed from 'flex'
             localStorage.setItem('musicState', 'playing');
         } catch (error) {
             console.warn("Autoplay was prevented by the browser. User must click 'Play' manually.");
             // If autoplay fails, update UI to show the Play button
-            playBtn.style.display = 'flex';
+            playBtn.style.display = 'block'; // Changed from 'flex'
             pauseBtn.style.display = 'none';
             localStorage.setItem('musicState', 'paused'); // Mark as paused since it couldn't start
         }
@@ -311,7 +311,7 @@ function initializeMusicPlayer() {
     } else {
         // If they last chose 'paused' (or it's their first visit), show the 'Play' button.
         audioPlayer.pause();
-        playBtn.style.display = 'flex';
+        playBtn.style.display = 'block'; // Changed from 'flex'
         pauseBtn.style.display = 'none';
         localStorage.setItem('musicState', 'paused'); // Set default state
     }
@@ -320,13 +320,13 @@ function initializeMusicPlayer() {
     playBtn.addEventListener('click', () => {
         audioPlayer.play();
         playBtn.style.display = 'none';
-        pauseBtn.style.display = 'flex';
+        pauseBtn.style.display = 'block'; // Changed from 'flex'
         localStorage.setItem('musicState', 'playing'); // Remember this choice
     });
 
     pauseBtn.addEventListener('click', () => {
         audioPlayer.pause();
-        playBtn.style.display = 'flex';
+        playBtn.style.display = 'block'; // Changed from 'flex'
         pauseBtn.style.display = 'none';
         localStorage.setItem('musicState', 'paused'); // Remember this choice
     });

@@ -26,18 +26,23 @@
 
     <header class="main-header">
         <nav class="container" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
-            <a href="/" class="logo">
-                <h1>GPL Mods</h1>
-            </a>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <a href="/" class="logo">
+                    <h1>GPL Mods</h1>
+                </a>
+                
+                <!-- Music Controls for Desktop View -->
+                <div id="music-controls" class="desktop-only">
+                    <button id="play-music-btn" title="Play Music">▶️</button>
+                    <button id="pause-music-btn" title="Pause Music">⏸️</button>
+                </div>
+            </div>
         
             <!-- A container for all the navigation elements -->
             <div class="navigation-wrapper">
         
                 <!-- ===== 1. DESKTOP NAVIGATION ===== -->
-                <!-- This div wraps the nav elements we want to hide on mobile -->
                 <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
-                    <!-- The animatedSearchBar has been moved to the mobile menu -->
-        
                     <!-- Login/User Buttons -->
                     <div class="user-actions">
                         <% if (user) { %>
@@ -56,7 +61,6 @@
                 </div>
                 
                 <!-- ===== 2. HAMBURGER BUTTON (MOBILE ONLY) ===== -->
-                <!-- This button will be hidden on desktop and shown on mobile -->
                 <button id="hamburger-btn" aria-label="Open menu">
                     <span class="hamburger-bar"></span>
                     <span class="hamburger-bar"></span>
@@ -65,7 +69,6 @@
             </div>
         
             <!-- ===== 3. MOBILE NAVIGATION MENU (HIDDEN BY DEFAULT) ===== -->
-            <!-- This menu will appear when the hamburger is clicked -->
             <div id="mobile-nav-menu">
                 <!-- Animated Search Bar is now here for mobile view -->
                 <div id="animatedSearchBar" class="search-bar-container">
@@ -75,6 +78,13 @@
                     </form>
                     <div id="searchSuggestions" class="search-suggestions"></div>
                     <div id="searchHistory" class="search-history"></div>
+                </div>
+
+                <!-- Music Controls for Mobile View -->
+                <div id="music-controls-mobile" style="display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 10px 0;">
+                    <span>Music:</span>
+                    <button id="play-music-btn-mobile" title="Play Music">▶️</button>
+                    <button id="pause-music-btn-mobile" title="Pause Music">⏸️</button>
                 </div>
 
                 <a href="/profile">My Profile</a>
