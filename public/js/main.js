@@ -11,6 +11,7 @@
  * 4. Search History Management (for all users)
  * 5. Search Suggestions FETCHER (Updated with Live API)
  * 6. Mobile Menu Toggle
+ * 7. Background Music Player Controls
  * ==================================================================================
  */
 
@@ -26,7 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSearchBar();
 
     // Initialize the mobile menu toggle
-    initializeMobileMenu(); // <-- THIS LINE WAS ADDED
+    initializeMobileMenu(); 
+    
+    // Initialize the music player
+    initializeMusicPlayer(); // <-- THIS LINE WAS ADDED
 
 });
 
@@ -258,4 +262,72 @@ function initializeMobileMenu() {
             mobileNavMenu.classList.toggle('active');
         });
     }
+}
+
+/**
+ * ==================================================================================
+ * 7. BACKGROUND MUSIC PLAYER CONTROLS
+ * Handles the logic for playing, pausing, and remembering user's music preference.
+ * ==================================================================================
+ */
+function initializeMusicPlayer() {
+    const audioPlayer = document.getElementById('background-audio');
+    const playBtn = document.getElementById('play-music-btn');
+    const pauseBtn = document.getElementById('pause-music-btn');
+    
+    // Check if the necessary elements exist on the page
+    if (!audioPlayer || !playBtn || !pauseBtn) {
+        return;
+    }
+
+    // --- The key part: check localStorage for the user's preference ---
+    // The key is 'musicState' and its value can be 'playing' or 'paused'.
+    const musicPreference = localStorage.getItem('musicState');
+
+    // Autoplay logic: browsers often block autoplay until the user interacts with the page.
+    // This is a safety feature. We'll try to play and handle the browser's decision gracefully.
+    const startPlayback = async () => {
+        try {
+            // Attempt to play the audio
+            await audioPlayer.play();
+            // If successful, update UI and state
+            playBtn.style.display = 'none';
+            pauseBtn.style.display = 'flex';
+            localStorage.setItem('musicState', 'playing');
+        } catch (error) {
+            console.warn("Autoplay was prevented by the browser. User must click 'Play' manually.");
+            // If autoplay fails, update UI to show the Play button
+            playBtn.style.display = 'flex';
+            pauseBtn.style.display = 'none';
+            localStorage.setItem('musicState', 'paused'); // Mark as paused since it couldn't start
+        }
+    };
+
+
+    // --- Decide initial state on page load ---
+    if (musicPreference === 'playing') {
+        // If the user's last state was 'playing', try to start the music.
+        startPlayback();
+    } else {
+        // If they last chose 'paused' (or it's their first visit), show the 'Play' button.
+        audioPlayer.pause();
+        playBtn.style.display = 'flex';
+        pauseBtn.style.display = 'none';
+        localStorage.setItem('musicState', 'paused'); // Set default state
+    }
+
+    // --- Event Listeners for Buttons ---
+    playBtn.addEventListener('click', () => {
+        audioPlayer.play();
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'flex';
+        localStorage.setItem('musicState', 'playing'); // Remember this choice
+    });
+
+    pauseBtn.addEventListener('click', () => {
+        audioPlayer.pause();
+        playBtn.style.display = 'flex';
+        pauseBtn.style.display = 'none';
+        localStorage.setItem('musicState', 'paused'); // Remember this choice
+    });
 }

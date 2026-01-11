@@ -5,18 +5,30 @@
             <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
             <p>This site is for educational purposes and fun.</p>
             <div class="footer-links" style="margin-top: 1rem;">
-                <a href="/dmca">DMCA</a> | 
-                <a href="/about">About</a> | 
-                <a href="/faq">FAQ</a> | 
+                <a href="/dmca">DMCA</a> |
+                <a href="/about">About</a> |
+                <a href="/faq">FAQ</a> |
                 <a href="/tos">Terms of Service</a>
             </div>
         </div>
     </footer>
 
+    <!-- ======== BACKGROUND MUSIC PLAYER & CONTROLS ======== -->
+
+    <!-- The hidden HTML5 audio element. 'loop' makes it repeat. -->
+    <audio id="background-audio" src="/audio/background-theme.mp3" loop></audio>
+
+    <div id="music-controls" style="position: fixed; bottom: 15px; right: 15px; z-index: 1002; display: flex; gap: 10px;">
+        <button id="play-music-btn" class="btn btn-secondary" style="padding: 8px 12px; display: none;">▶️ Play Music</button>
+        <button id="pause-music-btn" class="btn btn-secondary" style="padding: 8px 12px;">⏸️ Pause Music</button>
+    </div>
+
+    <!-- ======== END OF MUSIC PLAYER & CONTROLS ======== -->
+
     <!-- Link to our Global JavaScript File -->
     <!-- Placed at the end to ensure the HTML is loaded before the script runs -->
     <script src="/js/main.js"></script>
     <script src="//code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async></script>
-    
+
 </body>
 </html>
