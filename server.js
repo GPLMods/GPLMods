@@ -231,11 +231,13 @@ app.get('/category', async (req, res) => {
     }
 });
 
+// This is the NEW (fixed) route
 app.get('/search', async (req, res) => {
     try {
         const query = req.query.q;
         if (!query) return res.redirect('/');
-        const results = await File.find({
+        
+        const searchResults = await File.find({
             isLatestVersion: true,
             $or: [
                 { name: { $regex: query, $options: 'i' } },
@@ -243,7 +245,15 @@ app.get('/search', async (req, res) => {
                 { tags: { $regex: query, $options: 'i' } }
             ]
         }).sort({ createdAt: -1 });
-        res.render('pages/search', { results, query });
+        
+        // --- FIX: GENERATE PRESIGNED URLS FOR EACH RESULT ---
+        const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
+            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        // Pass the new array with the URLs to the template
+        res.render('pages/search', { results: resultsWithUrls, query }); 
     } catch (e) {
         console.error("Search Error:", e);
         res.status(500).send("Search Error");
@@ -358,29 +368,33 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send('Profile fetch error.'); }
 });
 
-// A public route that anyone can view
+// This is the NEW (fixed) route
 app.get('/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
         const user = await User.findOne({ username: username });
         if (!user) {
-            // Later we will make this a custom 404 page
-            return res.status(404).send("User not found.");
+            return res.status(404).render('pages/404');
         }
 
-        // Find all LATEST versions of files uploaded by this user
         const uploads = await File.find({
             uploader: username,
             isLatestVersion: true
         }).sort({ createdAt: -1 });
 
+        // --- FIX: GENERATE PRESIGNED URLS FOR EACH UPLOAD ---
+        const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
+            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
+            return { ...file.toObject(), iconUrl };
+        }));
+
         res.render('pages/public-profile', {
-            profileUser: user, // Naming it 'profileUser' to avoid conflicts with 'user' in header
-            uploads: uploads
+            profileUser: user,
+            uploads: uploadsWithUrls // Pass the new array with the URLs
         });
     } catch (error) {
         console.error("Error fetching public profile:", error);
-        res.status(500).send("Server Error");
+        res.status(500).render('pages/500');
     }
 });
 
