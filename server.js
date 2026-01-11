@@ -800,10 +800,10 @@ app.get('/api/search/suggestions', async (req, res) => {
 // ===============================
 // 13. STATIC PAGES & START
 // ===============================
-app.get('/about', (req, res) => res.render('pages/static/about.ejs'));
-app.get('/faq', (req, res) => res.render('pages/static/faq.ejs'));
-app.get('/tos', (req, res) => res.render('pages/static/tos.ejs'));
-app.get('/dmca', (req, res) => res.render('pages/static/dmca.ejs'));
+app.get('/about', (req, res) => res.render('pages/static/about'));
+app.get('/faq', (req, res) => res.render('pages/static/faq'));
+app.get('/tos', (req, res) => res.render('pages/static/tos'));
+app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 
 app.post('/dmca-request', async (req, res) => {
     try {
