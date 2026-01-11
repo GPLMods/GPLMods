@@ -100,6 +100,19 @@
         display: block;
         margin-bottom: 0.5rem;
     }
+
+    /* Badge Styling */
+    .certification-badge {
+        padding: 5px 12px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        border-radius: 20px;
+        color: var(--black);
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    .badge-certified { background-color: var(--gold); }
+    .badge-community-tested { background-color: var(--silver); }
 </style>
 
 <div class="container">
@@ -109,6 +122,14 @@
         <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="mod-icon">
         <div class="mod-title">
             <h1><%= file.name %></h1>
+            
+            <!-- Certification Badge Logic -->
+            <% if (file.certification === 'certified') { %>
+                <span class="certification-badge badge-certified">✔ Certified by Admin</span>
+            <% } else if (file.certification === 'community-tested') { %>
+                <span class="certification-badge badge-community-tested">Community Tested</span>
+            <% } %>
+
             <!-- Rating display -->
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <div class="star-rating" data-rating="<%= file.averageRating %>">
@@ -182,6 +203,23 @@
             <img src="<%= url %>" alt="Screenshot of <%= file.name %>">
         <% }) %>
     </section>
+
+    <!-- VirusTotal Scan Section -->
+    <% if (file.virusTotalAnalysisId) { %>
+    <section class="virustotal-results" style="margin-top: 3rem; padding: 1.5rem; background-color:var(--dark-grey); border-radius:8px;">
+        <h3>VirusTotal Scan Report</h3>
+        <% if (file.virusTotalScanDate) { %>
+            <p>Scanned on: <%= file.virusTotalScanDate.toLocaleDateString() %></p>
+            <p style="font-size: 1.5rem; color: <%= file.virusTotalPositiveCount > 0 ? '#ffadad' : '#b0ffb0' %>; font-weight: bold;">
+                <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %> detections
+            </p>
+            <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="btn btn-secondary" style="margin-top:1rem;">View Full Report</a>
+        <% } else { %>
+            <p style="color: var(--silver);">The file has been submitted for analysis. The report is pending.</p>
+             <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="btn btn-secondary" style="margin-top:1rem;">Check Scan Status</a>
+        <% } %>
+    </section>
+    <% } %>
 
     <!-- Mod/Official Description Tabs -->
     <section class="mod-description-tabs">

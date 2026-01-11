@@ -532,22 +532,66 @@ app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', 
         const screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
         const fileKey = await uploadToB2(modFile[0], 'mods');
 
+        // --- SUBMIT FILE TO VIRUSTOTAL & GET RESULTS ---
         let analysisId = null;
+        let scanDate, positiveCount, totalScans = null;
+
         try {
+            console.log("Submitting file to VirusTotal for analysis...");
             const formData = new FormData();
             formData.append('file', new Blob([modFile[0].buffer]), modFile[0].originalname);
-            const vt = await axios.post('https://www.virustotal.com/api/v3/files', formData, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
-            analysisId = vt.data.data.id;
-        } catch (vtE) { console.error("VirusTotal API check failed."); }
 
+            const vtSubmissionResponse = await axios.post('https://www.virustotal.com/api/v3/files', formData, {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
+            analysisId = vtSubmissionResponse.data.data.id;
+            console.log(`File submitted. VirusTotal Analysis ID: ${analysisId}`);
+
+            // Now, try to get the finished report
+            // In a real high-traffic app, this would be a separate background job
+            console.log("Attempting to fetch analysis report from VirusTotal...");
+            const vtReportResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
+            
+            // If the report is ready, process the stats
+            if (vtReportResponse.data.data.attributes.status === 'completed') {
+                console.log("Analysis report complete. Processing stats...");
+                const stats = vtReportResponse.data.data.attributes.stats;
+                scanDate = new Date();
+                positiveCount = stats.malicious + stats.suspicious;
+                totalScans = stats.harmless + stats.malicious + stats.suspicious + stats.undetected;
+            } else {
+                 console.log("VirusTotal scan is queued. Results will not be stored yet.");
+            }
+
+        } catch (vtError) {
+            console.error("Error during VirusTotal processing:", vtError.response?.data || vtError.message);
+        }
+
+        // --- SAVE FILE METADATA TO MONGODB ---
         const newFile = new File({
-            name: softwareName, version: softwareVersion, modDescription, officialDescription,
-            iconKey, screenshotKeys, videoUrl, fileKey, originalFilename: modFile[0].originalname,
-            category, platforms: Array.isArray(platforms) ? platforms : [platforms],
+            name: softwareName,
+            version: softwareVersion,
+            modDescription,
+            officialDescription,
+            iconKey,
+            screenshotKeys,
+            videoUrl,
+            fileKey,
+            originalFilename: modFile[0].originalname,
+            category,
+            platforms: Array.isArray(platforms) ? platforms : [platforms],
             tags: tags ? tags.split(',').map(t => t.trim()) : [],
-            uploader: req.user.username, fileSize: modFile[0].size,
-            virusTotalAnalysisId: analysisId, isLatestVersion: true
+            uploader: req.user.username,
+            fileSize: modFile[0].size,
+            isLatestVersion: true,
+            virusTotalAnalysisId: analysisId,
+            virusTotalScanDate: scanDate,
+            virusTotalPositiveCount: positiveCount,
+            virusTotalTotalScans: totalScans
         });
+
         await newFile.save();
         res.redirect(`/mods/${newFile._id}`);
     } catch (e) {
@@ -690,6 +734,10 @@ app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => 
         const reports = await Report.find().populate('file').populate('reportingUser').sort({ status: 1, createdAt: -1 });
         res.render('pages/admin/reports', { reports });
     } catch (e) { res.status(500).send("Admin access error."); }
+});
+
+app.get('/admin/link-helper', ensureAuthenticated, ensureAdmin, (req, res) => {
+    res.render('pages/admin/link-helper');
 });
 
 /**

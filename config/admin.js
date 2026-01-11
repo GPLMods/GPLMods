@@ -61,7 +61,47 @@ const adminJsOptions = {
         // Configure other models
         {
             resource: File,
-            options: { sort: { direction: 'desc', sortBy: 'createdAt' } }
+            options: {
+                // --- ADDED OPTIONS ---
+                editProperties: ['name', 'version', 'modDescription', 'category', 'platforms', 'certification', 'externalUrl', 'fileSize'],
+                listProperties: ['name', 'version', 'uploader', 'certification', 'isExternalLink'],
+                properties: {
+                    // A "virtual" property that doesn't exist in the DB, just for the form.
+                    externalUrl: {
+                        type: 'string',
+                        // This property will only show up on the form for creating a new file
+                        isVisible: { list: false, show: true, edit: true, filter: false },
+                    }
+                },
+                actions: {
+                    new: {
+                        // The 'before' hook runs before the new record is saved.
+                        before: async (request) => {
+                            const { externalUrl, ...payload } = request.payload;
+
+                            if (externalUrl) {
+                                // --- Logic for EXTERNAL LINK ---
+                                payload.isExternalLink = true;
+                                payload.fileUrl = externalUrl; // The external URL becomes the fileUrl
+
+                                // We will skip B2 upload and VT file scan for external links
+                                // A URL scan could be added here later for more security
+                            }
+
+                            request.payload = payload;
+                            return request;
+                        },
+                        // The 'after' hook runs if the regular upload happens.
+                        after: async (response, request, context) => {
+                            // This block only runs for direct file uploads, not external links
+                            // It's a better place for your B2/VT logic
+                            // This part requires a more advanced refactor not covered here for simplicity
+                            return response;
+                        }
+                    }
+                },
+                sort: { direction: 'desc', sortBy: 'createdAt' }
+            }
         },
         {
             resource: Review,

@@ -74,6 +74,24 @@ const FileSchema = new Schema({
         ref: 'User'
     }],
 
+    certification: {
+        type: String,
+        enum: ['none', 'certified', 'community-tested'],
+        default: 'none'
+    },
+
+    virusTotalScanDate: {
+        type: Date
+    },
+    virusTotalPositiveCount: {
+        type: Number,
+        default: 0
+    },
+    virusTotalTotalScans: {
+        type: Number,
+        default: 0
+    },
+
     virusTotalAnalysisId: { type: String },
 
 }, { timestamps: true }); // Adds createdAt and updatedAt automatically
