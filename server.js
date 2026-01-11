@@ -461,28 +461,40 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
 /**
  * POST Route to update profile image
  */
-app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res) => {
+app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => { // Add 'next' to the parameters
     try {
         if (!req.file) {
             return res.status(400).redirect('/profile?error=No image file was uploaded.');
         }
 
-        // Upload the new image to Backblaze B2 (avatars folder)
         const imageUrl = await uploadToB2(req.file, 'avatars');
 
-        // Update the user's record with the new image URL
-        // Note: Ensure your User model has a 'profileImageUrl' field
-        await User.findByIdAndUpdate(req.user.id, {
-            profileImageUrl: imageUrl
-        });
+        // --- THE FIX ---
+        // Step 1: Update the user in the database AND get the updated document back.
+        // We use { new: true } to tell findByIdAndUpdate to return the NEW version of the user object.
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { profileImageUrl: imageUrl },
+            { new: true }
+        );
 
-        res.redirect('/profile?success=Profile image updated successfully.');
+        // Step 2: Manually log the user in again with their updated data.
+        // This will update the req.user object stored in the session.
+        req.login(updatedUser, function(err) {
+            if (err) {
+                // If there's an error during the re-login, pass it to the error handler.
+                return next(err);
+            }
+            // If successful, redirect.
+            res.redirect('/profile?success=Profile image updated successfully.');
+        });
 
     } catch (error) {
         console.error("Error updating profile image:", error);
-        res.status(500).redirect('/profile?error=An error occurred while updating the image.');
+        return next(error); // Pass errors to the main error handler
     }
 });
+
 
 /**
  * POST Route to change password from profile

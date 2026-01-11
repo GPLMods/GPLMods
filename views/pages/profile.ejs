@@ -87,6 +87,50 @@
     .danger-zone h3 {
         color: #ff8080; /* Light red text */
     }
+
+    /* Responsive styles for mobile screens */
+    @media (max-width: 768px) {
+        
+        /* 1. Hide the table header completely on mobile */
+        .uploads-table thead {
+            display: none;
+        }
+
+        /* 2. Make the table, body, rows, and cells behave like blocks */
+        .uploads-table, .uploads-table tbody, .uploads-table tr, .uploads-table td {
+            display: block;
+            width: 100%;
+        }
+
+        /* 3. Style each row to look like a separate card */
+        .uploads-table tr {
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--light-grey);
+            border-radius: 8px;
+            overflow: hidden; /* Ensures the corners are rounded */
+        }
+
+        /* 4. Style each cell and add a data label */
+        .uploads-table td {
+            text-align: right; /* Align the cell content to the right */
+            position: relative;
+            padding-left: 50%; /* Make space for the label on the left */
+            border: none; /* Remove individual cell borders */
+            border-bottom: 1px solid var(--dark-grey); /* Add separator lines inside the card */
+        }
+
+        /* 5. The magic part: Use a pseudo-element to add the data labels */
+        .uploads-table td::before {
+            content: attr(data-label); /* Read the label from the data-label attribute */
+            position: absolute;
+            left: 10px;
+            width: calc(50% - 20px); /* Position the label on the left */
+            text-align: left;
+            font-weight: bold;
+            color: var(--silver); /* Give the label a distinct color */
+        }
+        
+    }
 </style>
 
 <div class="container">
@@ -131,11 +175,11 @@
                 <tbody>
                     <% uploads.forEach(file => { %>
                         <tr>
-                            <td><a href="/mods/<%= file._id %>"><%= file.name %></a></td>
-                            <td><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></td>
-                            <td><%= file.downloads.toLocaleString() %></td>
-                            <td><%= file.averageRating %> ★</td>
-                            <td><%= file.createdAt.toLocaleDateString() %></td>
+                            <td data-label="Mod Name"><a href="/mods/<%= file._id %>"><%= file.name %></a></td>
+                            <td data-label="Category"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></td>
+                            <td data-label="Downloads"><%= file.downloads.toLocaleString() %></td>
+                            <td data-label="Avg. Rating"><%= file.averageRating %> ★</td>
+                            <td data-label="Date Uploaded"><%= file.createdAt.toLocaleDateString() %></td>
                         </tr>
                     <% }) %>
                 </tbody>
