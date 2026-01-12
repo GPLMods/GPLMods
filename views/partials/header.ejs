@@ -31,6 +31,13 @@
                     <h1>GPL Mods</h1>
                 </a>
                 
+                <% if (user) { %>
+                    <!-- New avatar display using the signed URL -->
+                    <% if (user.signedAvatarUrl) { %>
+                        <img src="<%= user.signedAvatarUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                    <% } %>
+                <% } %>
+            </div>
         
             <!-- A container for all the navigation elements -->
             <div class="navigation-wrapper">
@@ -40,9 +47,6 @@
                     <!-- Login/User Buttons -->
                     <div class="user-actions">
                         <% if (user) { %>
-                            <% if (user.profileImageUrl) { %>
-                                <img src="<%= user.profileImageUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 1rem; vertical-align: middle;">
-                            <% } %>
                             <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
                             <a href="/profile" class="btn btn-secondary">My Profile</a>
                             <a href="/upload" class="btn btn-primary">Upload Mod</a>

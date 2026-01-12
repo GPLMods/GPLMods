@@ -95,7 +95,14 @@ const s3Client = new S3Client({
     }
 });
 
-const sanitizeFilename = (filename) => filename.replace(/[^a-zA-Z0-9.-_]/g, '');
+const sanitizeFilename = (filename) => {
+    // Step 1: Replace all spaces (and other whitespace characters) with a single dash
+    const withDashes = filename.replace(/\s+/g, '-');
+    
+    // Step 2: Remove any remaining characters that are not web-safe for a filename
+    // (Keeps letters, numbers, periods, dashes, and underscores)
+    return withDashes.replace(/[^a-zA-Z0-9.-_]/g, '');
+};
 
 const uploadToB2 = async (file, folder) => {
     const sanitizedFilename = sanitizeFilename(file.originalname);
@@ -165,6 +172,28 @@ passport.use(new GoogleStrategy({
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
     try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
+});
+
+// --- NEW MIDDLEWARE: Attach Signed Avatar URL to User Session ---
+app.use(async (req, res, next) => {
+    if (req.isAuthenticated() && req.user && req.user.profileImageKey) {
+        try {
+            // Generate a short-lived URL for the avatar
+            const avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                Bucket: process.env.B2_BUCKET_NAME,
+                Key: req.user.profileImageKey
+            }), { expiresIn: 3600 }); // Expires in 1 hour
+
+            // Attach the temporary URL to the user object for the duration of this request
+            req.user.signedAvatarUrl = avatarUrl;
+
+        } catch (error) {
+            console.error("Error generating signed avatar URL for user:", req.user.id, error);
+            // If it fails, we can set a default so the page doesn't break
+            req.user.signedAvatarUrl = '/images/default-avatar.png';
+        }
+    }
+    next(); // Proceed to the next route
 });
 
 app.use((req, res, next) => {
@@ -368,7 +397,7 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send('Profile fetch error.'); }
 });
 
-// This is the NEW (fixed) route
+// This is the NEW (fixed and updated) route
 app.get('/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
@@ -377,20 +406,27 @@ app.get('/users/:username', async (req, res) => {
             return res.status(404).render('pages/404');
         }
 
+        // --- ADDED: SIGNED URL LOGIC FOR THE PUBLIC USER ---
+        if (user.profileImageKey) {
+            user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
+            }), { expiresIn: 3600 });
+        }
+
         const uploads = await File.find({
             uploader: username,
             isLatestVersion: true
         }).sort({ createdAt: -1 });
 
-        // --- FIX: GENERATE PRESIGNED URLS FOR EACH UPLOAD ---
+        // --- GENERATE PRESIGNED URLS FOR EACH UPLOAD ---
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
 
         res.render('pages/public-profile', {
-            profileUser: user,
-            uploads: uploadsWithUrls // Pass the new array with the URLs
+            profileUser: user, // user object now has the signedAvatarUrl property
+            uploads: uploadsWithUrls
         });
     } catch (error) {
         console.error("Error fetching public profile:", error);
@@ -459,33 +495,27 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
 });
 
 /**
- * POST Route to update profile image
+ * POST Route to update profile image - UPDATED
  */
-app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => { // Add 'next' to the parameters
+app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => {
     try {
         if (!req.file) {
             return res.status(400).redirect('/profile?error=No image file was uploaded.');
         }
 
-        const imageUrl = await uploadToB2(req.file, 'avatars');
+        // uploadToB2 already returns the key (e.g., "avatars/12345-my-avatar.png")
+        const imageKey = await uploadToB2(req.file, 'avatars');
 
-        // --- THE FIX ---
-        // Step 1: Update the user in the database AND get the updated document back.
-        // We use { new: true } to tell findByIdAndUpdate to return the NEW version of the user object.
+        // Update the user in the database, setting the new profileImageKey
         const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { profileImageUrl: imageUrl },
+            req.user.id, 
+            { profileImageKey: imageKey }, // Changed from profileImageUrl to profileImageKey
             { new: true }
         );
 
-        // Step 2: Manually log the user in again with their updated data.
-        // This will update the req.user object stored in the session.
+        // Your req.login() logic here is correct and essential.
         req.login(updatedUser, function(err) {
-            if (err) {
-                // If there's an error during the re-login, pass it to the error handler.
-                return next(err);
-            }
-            // If successful, redirect.
+            if (err) { return next(err); }
             res.redirect('/profile?success=Profile image updated successfully.');
         });
 
