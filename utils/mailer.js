@@ -34,9 +34,13 @@ exports.sendVerificationEmail = async (user) => {
     const verificationUrl = `${getBaseUrl()}/verify-email?token=${user.verificationToken}`;
     const recipients = [new Recipient(user.email, user.username)];
 
+    // The plain text content for email clients that don't render HTML
+    const textContent = `Welcome to GPL Mods! Thank you for registering. Please copy and paste this link into your browser to verify your email address: ${verificationUrl}`;
+
     const emailParams = new EmailParams()
         .setFrom(sentFrom)
         .setTo(recipients)
+        .setReplyTo(sentFrom) // Added Reply-To for better email deliverability
         .setSubject("Please Verify Your Email for GPL Mods")
         .setHtml(`
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -51,7 +55,8 @@ exports.sendVerificationEmail = async (user) => {
                 <p style="font-size: 12px; color: #666;">${verificationUrl}</p>
                 <p>If you did not register for an account, you can safely ignore this email.</p>
             </div>
-        `);
+        `)
+        .setText(textContent); // Added plain text version for compatibility
 
     try {
         const response = await mailersend.email.send(emailParams);
@@ -70,9 +75,13 @@ exports.sendPasswordResetEmail = async (user, resetToken) => {
     const resetUrl = `${getBaseUrl()}/reset-password?token=${resetToken}`;
     const recipients = [new Recipient(user.email, user.username)];
 
+    // The plain text content for the email
+    const textContent = `Password Reset Request for GPL Mods. Please copy and paste this link into your browser to choose a new password: ${resetUrl}`;
+
     const emailParams = new EmailParams()
         .setFrom(sentFrom)
         .setTo(recipients)
+        .setReplyTo(sentFrom) // Added Reply-To for better email deliverability
         .setSubject("Your Password Reset Request for GPL Mods")
         .setHtml(`
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -87,7 +96,8 @@ exports.sendPasswordResetEmail = async (user, resetToken) => {
                 <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
                 <p style="font-size: 12px; color: #666;">Link: ${resetUrl}</p>
             </div>
-        `);
+        `)
+        .setText(textContent); // Added plain text version for compatibility
 
     try {
         const response = await mailersend.email.send(emailParams);
