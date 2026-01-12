@@ -31,7 +31,7 @@
                     <h1>GPL Mods</h1>
                 </a>
                 
-                <% if (user) { %>
+                <% if (typeof user !== 'undefined' && user) { %>
                     <!-- New avatar display using the signed URL -->
                     <% if (user.signedAvatarUrl) { %>
                         <img src="<%= user.signedAvatarUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -46,7 +46,7 @@
                 <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
                     <!-- Login/User Buttons -->
                     <div class="user-actions">
-                        <% if (user) { %>
+                        <% if (typeof user !== 'undefined' && user) { %>
                             <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
                             <a href="/profile" class="btn btn-secondary">My Profile</a>
                             <a href="/upload" class="btn btn-primary">Upload Mod</a>
@@ -89,7 +89,7 @@
                 <a href="/upload">Upload Mod</a>
                 <a href="/community-chat">Community Chat</a>
                 <hr>
-                <% if (user) { %>
+                <% if (typeof user !== 'undefined' && user) { %>
                     <a href="/logout">Logout</a>
                 <% } else { %>
                     <a href="/login">Login</a>
