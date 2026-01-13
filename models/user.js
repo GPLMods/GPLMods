@@ -18,7 +18,10 @@ const UserSchema = new Schema({
     },
     password: {
         type: String,
-        required: true
+        required: false
+    },
+    googleId: {
+        type: String
     },
     role: {
         type: String,
@@ -33,6 +36,11 @@ const UserSchema = new Schema({
     profileImageUrl: {
         type: String,
         default: '' // Default to an empty string (or a URL to a default avatar)
+    },
+    bio: {
+        type: String,
+        trim: true,
+        maxlength: 250 // Good practice to set a reasonable character limit
     },
     whitelist: [{
         type: Schema.Types.ObjectId,

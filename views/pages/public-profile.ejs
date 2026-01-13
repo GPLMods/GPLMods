@@ -3,6 +3,18 @@
     <div class="profile-header">
         <img src="<%= profileUser.profileImageUrl || '/images/default-avatar.png' %>" alt="<%= profileUser.username %>'s Avatar" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
         <h1><%= profileUser.username %>'s Uploads</h1>
+
+        <!-- ======== ADD THIS NEW ELEMENT ======== -->
+        <% if (profileUser.bio) { %>
+            <p style="color: var(--silver); max-width: 600px; margin: 1rem auto 0; font-style: italic;">
+                "<%= profileUser.bio %>"
+            </p>
+        <% } %>
+        <!-- ======== END OF NEW ELEMENT ======== -->
+        
+        <button id="share-profile-btn" class="btn btn-secondary" style="margin-top: 1rem;">
+            🔗 Share Profile
+        </button>
     </div>
 
     <section class="upload-history" style="margin-top: 2rem;">
@@ -27,4 +39,49 @@
         <% } %>
     </section>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const shareButton = document.getElementById('share-profile-btn');
+        const profileUser = <%- JSON.stringify(profileUser) %>; // Securely pass user data to JS
+
+        // --- The URL to be shared ---
+        const shareUrl = window.location.href;
+        const shareTitle = `${profileUser.username}'s Profile on GPL Mods`;
+        const shareText = `Check out all the mods uploaded by ${profileUser.username} on GPL Mods!`;
+
+        if (shareButton) {
+            shareButton.addEventListener('click', async () => {
+                
+                // --- Check if the modern Web Share API is available ---
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: shareTitle,
+                            text: shareText,
+                            url: shareUrl,
+                        });
+                        console.log('Profile shared successfully!');
+                    } catch (error) {
+                        console.error('Error using Web Share API:', error);
+                    }
+                } else {
+                    // --- Fallback for desktop browsers: Copy to clipboard ---
+                    try {
+                        await navigator.clipboard.writeText(shareUrl);
+                        // Provide feedback to the user
+                        shareButton.textContent = '✅ Link Copied!';
+                        setTimeout(() => {
+                            shareButton.innerHTML = '🔗 Share Profile'; // Revert back after 2 seconds
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy link to clipboard:', err);
+                        alert('Could not copy link. Please copy the URL from your browser address bar.');
+                    }
+                }
+            });
+        }
+    });
+</script>
+
 <%- include('../partials/footer') %>

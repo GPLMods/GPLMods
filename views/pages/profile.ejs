@@ -237,6 +237,13 @@
                 <input type="email" id="email" name="email" value="<%= user.email %>" required style="width: 100%; ...">
                 <p style="font-size: 0.8rem; color: #ffd700;">Note: Changing your email will require re-verification and you will be logged out.</p>
             </div>
+
+            <!-- ======== NEWLY ADDED FORM GROUP ======== -->
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="bio">Your Bio (Max 250 characters)</label>
+                <textarea id="bio" name="bio" maxlength="250" style="width: 100%; min-height: 80px; padding: 8px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px; resize: vertical;"><%= user.bio || '' %></textarea>
+            </div>
+            <!-- ======== END OF NEW FORM GROUP ======== -->
         
             <button type="submit" class="btn btn-primary">Save Changes</button>
         </form>

@@ -149,27 +149,49 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     } catch (e) { return done(e); }
 }));
 
+// --- PASSPORT.JS GOOGLE OAUTH STRATEGY (IMPROVED) ---
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://gplmods.onrender.com/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
+    callbackURL: "/auth/google/callback"
+},
+async (accessToken, refreshToken, profile, done) => {
+    const googleUserData = {
+        googleId: profile.id,
+        username: profile.displayName,
+        email: profile.emails[0].value,
+        profileImageUrl: profile.photos[0].value, // Get their Google profile picture!
+        isVerified: true
+    };
+
     try {
-        let user = await User.findOne({ email: profile.emails[0].value });
-        if (user) return done(null, user);
+        // Find a user in our database with the same email as the Google profile
+        let user = await User.findOne({ email: googleUserData.email });
 
-        const username = profile.displayName;
-        const existingUsername = await User.findOne({ username });
-        const finalUsername = existingUsername ? `${username}${Math.floor(Math.random() * 1000)}` : username;
-
-        user = await User.create({
-            googleId: profile.id,
-            username: finalUsername,
-            email: profile.emails[0].value,
-            isVerified: true
-        });
-        done(null, user);
-    } catch (err) { done(err, null); }
+        if (user) {
+            // --- If user already exists, UPDATE their info ---
+            // This is useful if they signed up manually and are now linking their Google account.
+            // It also updates their profile picture if it has changed.
+            user.googleId = googleUserData.googleId;
+            user.profileImageUrl = user.profileImageUrl || googleUserData.profileImageUrl; // Only update if they don't have a custom one
+            await user.save();
+            done(null, user);
+        } else {
+            // --- If user does NOT exist, CREATE a new user ---
+            // Check if the proposed username from Google is already taken
+            const existingUsername = await User.findOne({ username: googleUserData.username });
+            if (existingUsername) {
+                // If username is taken, append a random number to make it unique
+                googleUserData.username = `${googleUserData.username}${Math.floor(Math.random() * 1000)}`;
+            }
+            
+            // This will now succeed because the password field is no longer required
+            user = await User.create(googleUserData);
+            done(null, user);
+        }
+    } catch (err) {
+        done(err, null);
+    }
 }));
 
 passport.serializeUser((user, done) => done(null, user.id));
@@ -520,10 +542,18 @@ app.get('/users/:username', async (req, res) => {
     }
 });
 
-app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
+app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
-        const { username, email } = req.body;
+        // 1. Destructure 'bio' from the request body
+        const { username, email, bio } = req.body;
         const user = await User.findById(req.user.id);
+
+        // --- Handle Bio Change ---
+        // Check if the bio has been submitted and is different
+        if (bio !== undefined && bio !== user.bio) {
+            // The maxlength is already enforced by the model, but you could add server-side validation here too.
+            user.bio = bio;
+        }
 
         // --- Handle Username Change ---
         if (username && username !== user.username) {
@@ -557,20 +587,27 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
             // You already have this mailer function from the registration step!
             await sendVerificationEmail(user);
 
+            // Save before logout
+            await user.save();
             // Log the user out for security, forcing them to verify the new email
             req.logout(function (err) {
                 if (err) { return next(err); }
                 return res.redirect('/login?message=Please check your new email address to re-verify your account.');
             });
-            // We save inside the logout callback if possible, or just before
+            // This part already handles the redirect, so we need to return
+            return;
         }
 
         await user.save();
 
-        // If it was just a username change, redirect normally
-        if (username && !email) {
-            res.redirect('/profile?success=Username updated successfully!');
-        } else if (!username && !email) {
+        // Update the redirect logic to handle bio-only or username-only changes
+        if ((username && username !== req.user.username) || (bio !== undefined && bio !== req.user.bio)) {
+            // Manually update the user in the session to reflect changes immediately
+            req.login(user, (err) => {
+                if (err) return next(err);
+                return res.redirect('/profile?success=Profile updated successfully!');
+            });
+        } else {
             res.redirect('/profile'); // Nothing was changed
         }
 
@@ -579,6 +616,7 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res) => {
         res.status(500).redirect('/profile?error=An unknown error occurred.');
     }
 });
+
 
 /**
  * POST Route to update profile image - UPDATED
