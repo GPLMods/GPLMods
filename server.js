@@ -21,6 +21,7 @@ const bodyParser = require('body-parser');
 const { sendVerificationEmail } = require('./utils/mailer');
 const http = require('http');
 const { Server } = require("socket.io");
+const crypto = require('crypto'); // <-- ADDED FOR PASSWORD RESET
 
 // AdminJS Setup Import
 const adminRouter = require('./config/admin');
@@ -34,6 +35,8 @@ const File = require('./models/file');
 const User = require('./models/user');
 const Review = require('./models/review');
 const Report = require('./models/report');
+const Dmca = require('./models/dmca'); // <-- ADDED FOR DMCA REQUESTS
+const Announcement = require('./models/announcement'); // <-- ADDED FOR UPDATES PAGE
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -243,6 +246,17 @@ app.get('/', async (req, res) => {
     }
 });
 
+// NEW UPDATES/ANNOUNCEMENTS ROUTE
+app.get('/updates', async (req, res) => {
+    try {
+        const announcements = await Announcement.find().sort({ createdAt: -1 });
+        res.render('pages/updates', { announcements: announcements });
+    } catch (error) {
+        console.error("Error fetching announcements:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
 app.get('/category', async (req, res) => {
     try {
         const { cat } = req.query;
@@ -408,6 +422,46 @@ app.get('/verify-email', async (req, res) => {
         await user.save();
         req.login(user, () => res.redirect('/profile'));
     } catch (e) { res.status(400).send('Expired or invalid token.'); }
+});
+
+// --- NEW PASSWORD RECOVERY ROUTES ---
+app.get('/forgot-password', (req, res) => {
+    res.render('pages/forgot-password');
+});
+
+app.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email });
+
+        if (!user) {
+            // IMPORTANT: For security, always show a generic success message,
+            // even if the email doesn't exist. This prevents email fishing.
+            return res.redirect('/forgot-password?success=If an account with that email exists, a reset link has been sent.');
+        }
+
+        // --- Generate a secure, random token ---
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // --- Hash the token before saving it to the database for extra security ---
+        user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.passwordResetExpires = Date.now() + 3600000; // Token expires in 1 hour
+
+        await user.save();
+        
+        // --- Send the email ---
+        // TODO: Create the sendPasswordResetEmail function in your mailer utility
+        // It would be similar to your verification email function.
+        // The URL must include the UN-hashed token.
+        const resetURL = `http://localhost:3000/reset-password/${resetToken}`;
+        // await sendPasswordResetEmail(user, resetURL);
+        console.log(`Password reset link for ${user.email}: ${resetURL}`);
+
+        res.redirect('/forgot-password?success=If an account with that email exists, a reset link has been sent.');
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.redirect('/forgot-password?error=An error occurred.');
+    }
 });
 
 app.get('/logout', (req, res, next) => {
@@ -904,25 +958,12 @@ app.get('/faq', (req, res) => res.render('pages/static/faq'));
 app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 
+// UPDATED DMCA ROUTE
 app.post('/dmca-request', async (req, res) => {
     try {
-        const { fullName, email, copyrightHolder, originalWorkUrl, infringingUrl, signature } = req.body;
-        // --- Basic Validation ---
-        if (!fullName || !email || !infringingUrl || !signature) {
-            return res.redirect('/dmca?error=Please fill out all required fields.');
-        }
-
-        // --- Send the email notification to the site admin ---
-        // TODO: Create a 'sendDmcaNoticeEmail' function in your mailer utility
-        // This function would send an email to your admin email address
-        // containing all the details from req.body.
-        console.log("--- DMCA NOTICE RECEIVED ---");
-        console.log("From:", fullName, `<${email}>`);
-        console.log("Infringing URL:", infringingUrl);
-        console.log("----------------------------");
-
-        res.redirect('/dmca?success=Your DMCA request has been submitted. We will review it shortly.');
-
+        const newDmcaRequest = new Dmca(req.body);
+        await newDmcaRequest.save();
+        res.redirect('/dmca?success=Your DMCA request has been submitted and will be reviewed.');
     } catch (error) {
         console.error("DMCA Form Error:", error);
         res.redirect('/dmca?error=An error occurred while submitting your request.');

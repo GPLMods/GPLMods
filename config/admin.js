@@ -8,6 +8,7 @@ const User = require('../models/user');
 const File = require('../models/file');
 const Review = require('../models/review');
 const Report = require('../models/report');
+const Dmca = require('../models/dmca'); // 1. Imported the new model
 
 // Register the Mongoose adapter
 AdminJS.registerAdapter({
@@ -109,6 +110,11 @@ const adminJsOptions = {
         },
         {
             resource: Report,
+            options: { sort: { direction: 'desc', sortBy: 'createdAt' } }
+        },
+        // 2. Added the new DMCA resource to the array
+        {
+            resource: Dmca,
             options: { sort: { direction: 'desc', sortBy: 'createdAt' } }
         },
     ],

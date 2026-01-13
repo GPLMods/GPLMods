@@ -34,19 +34,25 @@ const UserSchema = new Schema({
         type: String,
         default: '' // Default to an empty string (or a URL to a default avatar)
     },
-    // --- NEW FIELD ADDED ---
     whitelist: [{
         type: Schema.Types.ObjectId,
         ref: 'File'
     }],
-    // -----------------------
     isVerified: {
         type: Boolean,
         default: false
     },
     verificationToken: {
         type: String
+    },
+    // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
+    passwordResetToken: {
+        type: String
+    },
+    passwordResetExpires: {
+        type: Date
     }
+    // -------------------------------------------
 }, { timestamps: true });
 
 // Pre-save hook to hash the password before saving a new user
