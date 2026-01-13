@@ -45,24 +45,6 @@
                 <!-- ===== 1. DESKTOP NAVIGATION ===== -->
                 <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
 
-                    <!-- ======== START: UPDATED SECTION ======== -->
-                    <div id="music-controls" style="display: flex; align-items: center; gap: 10px;">
-                        <!-- The Play/Pause buttons remain the same -->
-                        <button id="play-music-btn" title="Play Music">▶️</button>
-                        <button id="pause-music-btn" title="Pause Music">⏸️</button>
-                        
-                        <!-- ======== ADDED NEW DROPDOWN ======== -->
-                        <select id="music-track-selector" title="Select Track" style="background:none; border: 1px solid var(--light-grey); color: var(--silver); border-radius: 4px; padding: 5px;">
-                            <option value="/audio/bgm-1.mp3">BGM 1</option>
-                            <option value="/audio/bgm-2.mp3">BGM 2</option>
-                            <option value="/audio/bgm-3.mp3">BGM 3</option>
-                            <option value="/audio/bgm-4.mp3">BGM 4</option>
-                            <option value="/audio/bgm-5.mp3">BGM 5</option>
-                            <option value="/audio/bgm-6.mp3">BGM 6</option>
-                        </select>
-                    </div>
-                    <!-- ======== END: UPDATED SECTION ======== -->
-
                     <!-- Login/User Buttons -->
                     <div class="user-actions">
                         <% if (typeof user !== 'undefined' && user) { %>
@@ -107,12 +89,23 @@
                     <div id="searchHistory" class="search-history"></div>
                 </div>
 
-                <!-- Music Controls for Mobile View -->
-                <div id="music-controls-mobile" style="display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 10px 0;">
-                    <span>Music:</span>
-                    <button id="play-music-btn-mobile" title="Play Music">▶️</button>
-                    <button id="pause-music-btn-mobile" title="Pause Music">⏸️</button>
+                <!-- ======== REPLACED aS PER YOUR REQUEST ======== -->
+                <div class="mobile-menu-section">
+                    <span>Music Controls</span>
+                    <div id="music-controls-mobile" class="music-controls-container">
+                        <button id="play-music-btn-mobile" class="play-music-btn" title="Play Music">▶️</button>
+                        <button id="pause-music-btn-mobile" class="pause-music-btn" title="Pause Music">⏸️</button>
+                        <select id="music-track-selector-mobile" class="music-track-selector" title="Select Track">
+                            <option value="/audio/bgm-1.mp3">BGM 1</option>
+                            <option value="/audio/bgm-2.mp3">BGM 2</option>
+                            <option value="/audio/bgm-3.mp3">BGM 3</option>
+                            <option value="/audio/bgm-4.mp3">BGM 4</option>
+                            <option value="/audio/bgm-5.mp3">BGM 5</option>
+                            <option value="/audio/bgm-6.mp3">BGM 6</option>
+                        </select>
+                    </div>
                 </div>
+                <!-- ======== END OF REPLACEMENT ======== -->
 
                 <a href="/profile">My Profile</a>
                 <a href="/upload">Upload Mod</a>

@@ -282,22 +282,25 @@ function initializeMobileMenu() {
  */
 function initializeMusicPlayer() {
     const audioPlayer = document.getElementById('background-audio');
-    const playBtn = document.getElementById('play-music-btn');
-    const pauseBtn = document.getElementById('pause-music-btn');
-    const trackSelector = document.getElementById('music-track-selector');
+    const playBtn = document.getElementById('play-music-btn-mobile');
+    const pauseBtn = document.getElementById('pause-music-btn-mobile');
+    const trackSelector = document.getElementById('music-track-selector-mobile');
 
+    // Exit if the controls (which are only in the mobile menu) are not found
     if (!audioPlayer || !playBtn || !pauseBtn || !trackSelector) {
         return;
     }
 
-    // --- Set default volume ---
+    const updateButtons = (isPlaying) => {
+        playBtn.style.display = isPlaying ? 'none' : 'block';
+        pauseBtn.style.display = isPlaying ? 'block' : 'none';
+    };
+
     audioPlayer.volume = 0.25;
 
-    // --- Get user preferences from localStorage ---
     const musicStatePreference = localStorage.getItem('musicState');
     const musicTrackPreference = localStorage.getItem('musicTrack');
 
-    // --- Set the initial track based on user's last choice ---
     if (musicTrackPreference) {
         audioPlayer.src = musicTrackPreference;
         trackSelector.value = musicTrackPreference;
@@ -306,49 +309,38 @@ function initializeMusicPlayer() {
     const startPlayback = async () => {
         try {
             await audioPlayer.play();
-            playBtn.style.display = 'none';
-            pauseBtn.style.display = 'block';
+            updateButtons(true);
             localStorage.setItem('musicState', 'playing');
         } catch (error) {
             console.warn("Autoplay was prevented by the browser.");
-            playBtn.style.display = 'block';
-            pauseBtn.style.display = 'none';
+            updateButtons(false);
             localStorage.setItem('musicState', 'paused');
         }
     };
     
-    // --- Decide initial state on page load ---
     if (musicStatePreference === 'playing') {
         startPlayback();
     } else {
         audioPlayer.pause();
-        playBtn.style.display = 'block';
-        pauseBtn.style.display = 'none';
-        localStorage.setItem('musicState', 'paused');
+        updateButtons(false);
     }
-
-    // --- Event Listeners for Buttons ---
+    
     playBtn.addEventListener('click', () => {
         audioPlayer.play();
-        playBtn.style.display = 'none';
-        pauseBtn.style.display = 'block';
+        updateButtons(true);
         localStorage.setItem('musicState', 'playing');
     });
 
     pauseBtn.addEventListener('click', () => {
         audioPlayer.pause();
-        playBtn.style.display = 'block';
-        pauseBtn.style.display = 'none';
+        updateButtons(false);
         localStorage.setItem('musicState', 'paused');
     });
-
-    // --- NEW Event Listener for the track selector ---
+    
     trackSelector.addEventListener('change', () => {
         const newTrack = trackSelector.value;
         audioPlayer.src = newTrack;
-        localStorage.setItem('musicTrack', newTrack); // Remember the track choice
-
-        // If the music was already playing, continue playing the new track
+        localStorage.setItem('musicTrack', newTrack);
         if (localStorage.getItem('musicState') === 'playing') {
             startPlayback();
         }

@@ -354,12 +354,38 @@ h4 { font-size: 1.2rem; }
 
 /* --- Default styles (Desktop First) --- */
 
-/* Initially, the mobile-specific controls and menu are hidden on desktop */
+/* Initially, the mobile-specific controls are hidden on desktop */
 .mobile-header-controls {
     display: none;
 }
+
+/* --- Styling for the Mobile Menu Panel --- */
 #mobile-nav-menu {
-    display: none;
+    position: fixed; /* Position relative to the viewport */
+    top: 0;
+    right: -100%; /* Start off-screen to the right */
+    width: 80%;
+    max-width: 300px;
+    height: 100vh; /* Full height */
+    background-color: var(--dark-grey);
+    padding: 6rem 1.5rem 1.5rem;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+    transition: right 0.4s ease-in-out; /* Smooth slide animation */
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+#mobile-nav-menu a {
+    color: var(--white);
+    font-size: 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--light-grey);
+}
+
+/* --- Styles for when the menu IS OPEN --- */
+#mobile-nav-menu.is-open {
+    right: 0; /* Slide into view */
 }
 
 
@@ -387,56 +413,22 @@ h4 { font-size: 1.2rem; }
         border: 2px solid var(--light-grey);
     }
     
-    /* 3. STYLING the hamburger button */
-    #hamburger-btn {
+    /* --- Styling for the Hamburger Button --- */
+    .mobile-menu-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 1002; /* Ensure it's above the menu */
         display: flex;
         flex-direction: column;
         gap: 5px; /* Space between the bars */
-        background: none;
-        border: 1px solid var(--light-grey);
-        padding: 8px;
-        border-radius: 5px;
-        cursor: pointer;
     }
     .hamburger-bar {
         width: 25px;
         height: 3px;
         background-color: var(--silver);
+        border-radius: 5px;
         transition: all 0.3s ease;
-    }
-    
-    /* 4. STYLING the mobile navigation menu itself */
-    #mobile-nav-menu {
-        display: none; /* It's hidden by default, JS will show it */
-        position: absolute;
-        top: 100%; /* Position it right below the header */
-        right: 0;
-        width: 300px; /* Or 100% for a full-width menu */
-        max-width: 90vw;
-        background-color: var(--dark-grey);
-        border: 1px solid var(--light-grey);
-        border-radius: 0 0 8px 8px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-        z-index: 1000;
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    /* When the menu is open (class added by JS) */
-    #mobile-nav-menu.is-open {
-        display: flex;
-    }
-
-    #mobile-nav-menu a {
-        color: var(--white);
-        padding: 10px;
-        border-radius: 4px;
-        text-align: center;
-    }
-    #mobile-nav-menu a:hover {
-        background-color: var(--light-grey);
-        color: var(--gold);
     }
 }
