@@ -577,7 +577,17 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
 app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', maxCount: 1 }, { name: 'screenshots', maxCount: 4 }, { name: 'modFile', maxCount: 1 }]), async (req, res) => {
     try {
-        const { softwareName, softwareVersion, modDescription, officialDescription, category, platforms, tags, videoUrl } = req.body;
+        const { 
+            softwareName, 
+            softwareVersion, 
+            developerName, // <-- UPDATED
+            modDescription, 
+            officialDescription, 
+            category, 
+            platforms, 
+            tags, 
+            videoUrl 
+        } = req.body;
         const { softwareIcon, screenshots, modFile } = req.files;
 
         if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) {
@@ -629,6 +639,7 @@ app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', 
         const newFile = new File({
             name: softwareName,
             version: softwareVersion,
+            developer: developerName, // <-- UPDATED
             modDescription,
             officialDescription,
             iconKey,

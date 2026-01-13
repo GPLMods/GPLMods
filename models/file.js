@@ -26,6 +26,11 @@ const FileSchema = new Schema({
     fileSize: { type: Number, required: true },
     originalFilename: { type: String, required: true },
     uploader: { type: String, default: "Anonymous" },
+    developer: {
+        type: String,
+        trim: true,
+        default: 'N/A' // Name of the original creator/developer
+    },
 
     // --- VERSION CONTROL SYSTEM ---
     isLatestVersion: {

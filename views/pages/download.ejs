@@ -138,9 +138,10 @@
                 <span style="color: var(--silver);">(<%= file.ratingCount %> Reviews)</span>
             </div>
             <p class="mod-meta-info" style="margin-top: 0.5rem;">
+                Developer: <strong style="color:var(--white);"><%= file.developer %></strong> |
                 Version: <%= file.version %> | 
                 Downloads: <%= file.downloads.toLocaleString() %> | 
-                By: <%= file.uploader %>
+                Uploaded By: <a href="/users/<%= file.uploader %>"><%= file.uploader %></a>
             </p>
         </div>
     </section>
