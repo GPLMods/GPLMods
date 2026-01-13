@@ -138,7 +138,17 @@
                 <span style="color: var(--silver);">(<%= file.ratingCount %> Reviews)</span>
             </div>
             <p class="mod-meta-info" style="margin-top: 0.5rem;">
-                Developer: <strong style="color:var(--white);"><%= file.developer %></strong> |
+                Developer: 
+                <% if (file.developer && file.developer !== 'N/A') { %>
+                    <!-- Create a link for the developer -->
+                    <a href="/developer?name=<%= encodeURIComponent(file.developer) %>">
+                        <strong style="color:var(--white);"><%= file.developer %></strong>
+                    </a>
+                <% } else { %>
+                    <!-- Just display the text if there's no developer listed -->
+                    <strong style="color:var(--white);">N/A</strong>
+                <% } %>
+                |
                 Version: <%= file.version %> | 
                 Downloads: <%= file.downloads.toLocaleString() %> | 
                 Uploaded By: <a href="/users/<%= file.uploader %>"><%= file.uploader %></a>

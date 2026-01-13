@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+
+    <!-- Page Title: Will display the developer's name dynamically -->
+    <h1 style="margin-bottom: 2rem; border-bottom: 1px solid var(--light-grey); padding-bottom: 1rem;">
+        More Mods by: <span style="color: var(--gold);"><%= developerName %></span>
+    </h1>
+    
+    <!-- Results Grid -->
+    <section class="results-grid">
+         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+        
+            <!-- Check if any results were found -->
+            <% if (files && files.length > 0) { %>
+                <!-- Loop through each file in the results -->
+                <% files.forEach(file => { %>
+    
+                    <!-- This is our standard, reusable item card component -->
+                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
+                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title"><%= file.name %></h3>
+                            <p class="card-platform"><%= file.version %></p>
+                            <div class="star-rating" data-rating="<%= file.averageRating %>">
+                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
+                            </div>
+                        </div>
+                    </a>
+    
+                <% }) %>
+            <% } else { %>
+                <!-- This message shows if no other mods are found for that developer -->
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <h2>No other mods found for <%= developerName %>.</h2>
+                </div>
+            <% } %>
+    
+        </div>
+    </section>
+
+</div>
+
+<%- include('../partials/footer') %>

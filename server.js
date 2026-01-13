@@ -289,6 +289,38 @@ app.get('/search', async (req, res) => {
     }
 });
 
+/**
+GET Route for the developer page.
+Uses a URL query parameter to filter by developer name.
+e.g., /developer?name=Adobe
+*/
+app.get('/developer', async (req, res) => {
+    try {
+        const developerName = req.query.name;
+        if (!developerName || developerName.trim() === '') {
+            // If no name is provided, just redirect to the homepage.
+            return res.redirect('/');
+        }
+        
+        // Find all LATEST versions of files where the 'developer' field
+        // matches the 'name' parameter exactly (case-insensitive search).
+        const filesByDeveloper = await File.find({
+            developer: { $regex: new RegExp(`^${developerName}$`, 'i') },
+            isLatestVersion: true
+        }).sort({ createdAt: -1 });
+
+        // If no files are found for that developer, we should still render the page
+        // so the user knows the developer doesn't have any other mods listed.
+        res.render('pages/developer', {
+            files: filesByDeveloper,
+            developerName: developerName
+        });
+    } catch (error) {
+        console.error("Error fetching files for developer page:", error);
+        res.status(500).render('pages/500'); // Use your custom 500 error page
+    }
+});
+
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
