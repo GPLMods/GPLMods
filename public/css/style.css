@@ -352,165 +352,91 @@ h4 { font-size: 1.2rem; }
 /* 11. RESPONSIVE HEADER & NAVIGATION
 -------------------------------------------------- */
 
-/* --- Hamburger Button Styling --- */
-#hamburger-btn {
-    display: none; /* Hidden by default on desktop */
-    flex-direction: column;
-    justify-content: space-around;
-    width: 2.25rem;
-    height: 2.25rem;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    z-index: 1002; /* Must be above the mobile menu */
-}
-.hamburger-bar {
-    width: 2.25rem;
-    height: 0.25rem;
-    background-color: var(--white);
-    border-radius: 10px;
-    transition: all 0.3s linear;
-}
+/* --- Default styles (Desktop First) --- */
 
-/* --- Mobile Menu Styling --- */
+/* Initially, the mobile-specific controls and menu are hidden on desktop */
+.mobile-header-controls {
+    display: none;
+}
 #mobile-nav-menu {
-    display: none; /* Initially hidden */
-    position: absolute;
-    top: 100%; /* Position right below the header */
-    left: 0;
-    width: 100%;
-    background-color: var(--dark-grey);
-    border-top: 1px solid var(--light-grey);
-    padding: 1rem 0;
-    z-index: 1001;
-}
-#mobile-nav-menu a {
-    display: block;
-    color: var(--white);
-    text-align: center;
-    padding: 1rem 0;
-    font-size: 1.2rem;
-}
-#mobile-nav-menu a:hover {
-    background-color: var(--light-grey);
-    color: var(--gold);
-}
-#mobile-nav-menu hr {
-    border-color: var(--light-grey);
+    display: none;
 }
 
 
-/* --- THE MEDIA QUERY FOR MOBILE DEVICES --- */
-/* On screens 992px or less, these styles will apply */
-@media screen and (max-width: 992px) {
-    /* --- HEADER & NAVIGATION --- */
+/* --- Media Query for Mobile Screens (e.g., tablets and phones) --- */
+@media (max-width: 992px) { /* A wider breakpoint like 992px is often better for nav changes */
+    
+    /* 1. HIDE the entire desktop navigation wrapper */
     .desktop-nav {
-        display: none !important; /* Hide the original desktop navigation */
+        display: none !important; /* Use !important to override inline styles if needed */
     }
 
-    #hamburger-btn {
-        display: flex; /* Show the hamburger button */
-    }
-    
-    #mobile-nav-menu.active {
-        display: block; /* Show the mobile menu when active */
-    }
-
-    /* Animation for hamburger turning into an 'X' */
-    #hamburger-btn.active .hamburger-bar:nth-child(1) { transform: rotate(45deg) translate(0.5rem, 0.5rem); }
-    #hamburger-btn.active .hamburger-bar:nth-child(2) { opacity: 0; }
-    #hamburger-btn.active .hamburger-bar:nth-child(3) { transform: rotate(-45deg) translate(0.5rem, -0.5rem); }
-
-    .logo h1 { font-size: 1.8rem; }
-    
-    /* --- MOBILE SEARCH BAR (INSIDE DROPDOWN) --- */
-    #mobile-nav-menu .search-bar-container, 
-    #mobile-nav-menu .search-bar-container.active {
-        display: block; /* Ensure the search container is visible */
-        width: auto;
-        padding: 1rem;
-        border-bottom: 1px solid var(--light-grey);
-    }
-    #mobile-nav-menu .search-form {
-        border-color: var(--light-grey); /* Keep border color static */
-    }
-    #mobile-nav-menu #searchInput {
-        font-size: 1rem;
-    }
-    /* Position the suggestions box correctly within the mobile menu */
-    #mobile-nav-menu .search-suggestions {
-        position: static;
-        border: none;
-    }
-
-    /* --- CATEGORY TABS (Make them scrollable) --- */
-    .category-nav {
+    /* 2. SHOW the mobile header controls (avatar and hamburger) */
+    .mobile-header-controls {
         display: flex;
-        overflow-x: auto; /* This enables horizontal scrolling */
-        white-space: nowrap; /* Prevents the buttons from wrapping to the next line */
-        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-        padding-bottom: 15px !important; /* Add padding to make space for scrollbar */
-        margin-bottom: 1rem !important;
+        align-items: center;
+        gap: 1rem; /* Space between avatar and hamburger */
     }
-    .category-nav a.btn {
-        flex: 0 0 auto; /* Allow buttons to shrink but not grow, and set their basis to auto */
-    }
-    /* Hide the ugly scrollbar on browsers that support it */
-    .category-nav::-webkit-scrollbar {
-        display: none;
+
+    /* Styling for the mobile avatar */
+    .mobile-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--light-grey);
     }
     
-    /* --- ITEM CARD GRID (For Homepage, Category pages, etc.) --- */
-    /* Let's give our grid a class instead of using inline styles */
-    .item-grid {
-        display: grid;
-        gap: 1rem; /* A slightly smaller gap on mobile */
-        /* Make columns responsive, allowing for 2 columns on most mobile screens */
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+    /* 3. STYLING the hamburger button */
+    #hamburger-btn {
+        display: flex;
+        flex-direction: column;
+        gap: 5px; /* Space between the bars */
+        background: none;
+        border: 1px solid var(--light-grey);
+        padding: 8px;
+        border-radius: 5px;
+        cursor: pointer;
     }
-    .item-card .card-title {
-        font-size: 1rem; /* Slightly smaller font for smaller cards */
+    .hamburger-bar {
+        width: 25px;
+        height: 3px;
+        background-color: var(--silver);
+        transition: all 0.3s ease;
+    }
+    
+    /* 4. STYLING the mobile navigation menu itself */
+    #mobile-nav-menu {
+        display: none; /* It's hidden by default, JS will show it */
+        position: absolute;
+        top: 100%; /* Position it right below the header */
+        right: 0;
+        width: 300px; /* Or 100% for a full-width menu */
+        max-width: 90vw;
+        background-color: var(--dark-grey);
+        border: 1px solid var(--light-grey);
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        z-index: 1000;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    /* When the menu is open (class added by JS) */
+    #mobile-nav-menu.is-open {
+        display: flex;
     }
 
-    /* --- SUBCATEGORY NAV on mobile --- */
-    .subcategory-nav {
-        /* Make it scrollable just like the main category nav */
-        overflow-x: auto;
-        justify-content: flex-start; /* Align to the start instead of center */
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 15px !important;
-        margin-top: 0 !important; /* Reduce top margin for better flow */
-        white-space: nowrap;
+    #mobile-nav-menu a {
+        color: var(--white);
+        padding: 10px;
+        border-radius: 4px;
+        text-align: center;
     }
-    .subcategory-nav::-webkit-scrollbar {
-        display: none;
-    }
-    .subcategory-nav a.btn {
-        flex: 0 0 auto;
-        /* Make the sub-category buttons smaller than main category buttons */
-        padding: 6px 14px;
-        font-size: 0.9rem;
-    }
-
-    /* --- GENERAL BUTTON TWEAKS FOR MOBILE --- */
-    /* Adjust padding on ALL category buttons on mobile to make them fit better */
-    .category-nav a.btn {
-        padding: 8px 16px; /* Slightly reduce padding on main category buttons */
-    }
-
-    /* Target the Windows button specifically if it's still an issue */
-    .category-nav a[href*="windows"] {
-         /* If you want to shorten text, that's better done with JS or responsive text, but simple padding adjustments are best first. */
-    }
-
-    /* --- RESPONSIVE BUTTON TEXT --- */
-    /* On mobile, hide the full text... */
-    .btn .text-full {
-        display: none;
-    }
-    /* ...and show the short text instead. */
-    .btn .text-short {
-        display: inline; /* 'inline' is the default for a span */
+    #mobile-nav-menu a:hover {
+        background-color: var(--light-grey);
+        color: var(--gold);
     }
 }

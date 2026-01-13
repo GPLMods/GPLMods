@@ -257,15 +257,21 @@ function initializeMobileMenu() {
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const mobileNavMenu = document.getElementById('mobile-nav-menu');
 
-    // Make sure both elements exist before adding a listener
-    if (hamburgerBtn && mobileNavMenu) {
-        hamburgerBtn.addEventListener('click', () => {
-            // Toggle the 'active' class on both the button (for the X animation)
-            // and the menu (to show/hide it).
-            hamburgerBtn.classList.toggle('active');
-            mobileNavMenu.classList.toggle('active');
-        });
+    if (!hamburgerBtn || !mobileNavMenu) {
+        return; // Exit if the elements don't exist
     }
+
+    hamburgerBtn.addEventListener('click', () => {
+        // Toggle the .is-open class on the menu
+        mobileNavMenu.classList.toggle('is-open');
+    });
+
+    // Optional: Close the menu if the user clicks outside of it
+    document.addEventListener('click', (event) => {
+        if (!mobileNavMenu.contains(event.target) && !hamburgerBtn.contains(event.target)) {
+            mobileNavMenu.classList.remove('is-open');
+        }
+    });
 }
 
 /**

@@ -77,12 +77,22 @@
                     </div>
                 </div>
                 
-                <!-- ===== 2. HAMBURGER BUTTON (MOBILE ONLY) ===== -->
-                <button id="hamburger-btn" aria-label="Open menu">
-                    <span class="hamburger-bar"></span>
-                    <span class="hamburger-bar"></span>
-                    <span class="hamburger-bar"></span>
-                </button>
+                <!-- ===== 2. MOBILE HEADER CONTROLS (AVATAR & HAMBURGER) ===== -->
+                <div class="mobile-header-controls">
+                    <!-- The Mobile-Only Avatar -->
+                    <% if (typeof user !== 'undefined' && user && user.signedAvatarUrl) { %>
+                        <a href="/profile" class="mobile-avatar-link">
+                            <img src="<%= user.signedAvatarUrl %>" alt="Your Avatar" class="mobile-avatar">
+                        </a>
+                    <% } %>
+                    
+                    <!-- The Hamburger Button -->
+                    <button id="hamburger-btn" aria-label="Open menu">
+                        <span class="hamburger-bar"></span>
+                        <span class="hamburger-bar"></span>
+                        <span class="hamburger-bar"></span>
+                    </button>
+                </div>
             </div>
         
             <!-- ===== 3. MOBILE NAVIGATION MENU (HIDDEN BY DEFAULT) ===== -->
