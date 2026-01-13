@@ -12,6 +12,7 @@
  * 5. Search Suggestions FETCHER (Updated with Live API)
  * 6. Mobile Menu Toggle
  * 7. Background Music Player Controls
+ * 8. Smart Audio Handler
  * ==================================================================================
  */
 
@@ -30,7 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMobileMenu(); 
     
     // Initialize the music player
-    initializeMusicPlayer(); // <-- THIS LINE WAS ADDED
+    initializeMusicPlayer();
+
+    // Initialize the smart audio handler
+    initializeSmartAudioHandler();
 
 });
 
@@ -274,60 +278,108 @@ function initializeMusicPlayer() {
     const audioPlayer = document.getElementById('background-audio');
     const playBtn = document.getElementById('play-music-btn');
     const pauseBtn = document.getElementById('pause-music-btn');
-    
-    // Check if the necessary elements exist on the page
-    if (!audioPlayer || !playBtn || !pauseBtn) {
+    const trackSelector = document.getElementById('music-track-selector');
+
+    if (!audioPlayer || !playBtn || !pauseBtn || !trackSelector) {
         return;
     }
 
-    // --- The key part: check localStorage for the user's preference ---
-    // The key is 'musicState' and its value can be 'playing' or 'paused'.
-    const musicPreference = localStorage.getItem('musicState');
+    // --- Set default volume ---
+    audioPlayer.volume = 0.25;
 
-    // Autoplay logic: browsers often block autoplay until the user interacts with the page.
-    // This is a safety feature. We'll try to play and handle the browser's decision gracefully.
+    // --- Get user preferences from localStorage ---
+    const musicStatePreference = localStorage.getItem('musicState');
+    const musicTrackPreference = localStorage.getItem('musicTrack');
+
+    // --- Set the initial track based on user's last choice ---
+    if (musicTrackPreference) {
+        audioPlayer.src = musicTrackPreference;
+        trackSelector.value = musicTrackPreference;
+    }
+
     const startPlayback = async () => {
         try {
-            // Attempt to play the audio
             await audioPlayer.play();
-            // If successful, update UI and state
             playBtn.style.display = 'none';
-            pauseBtn.style.display = 'block'; // Changed from 'flex'
+            pauseBtn.style.display = 'block';
             localStorage.setItem('musicState', 'playing');
         } catch (error) {
-            console.warn("Autoplay was prevented by the browser. User must click 'Play' manually.");
-            // If autoplay fails, update UI to show the Play button
-            playBtn.style.display = 'block'; // Changed from 'flex'
+            console.warn("Autoplay was prevented by the browser.");
+            playBtn.style.display = 'block';
             pauseBtn.style.display = 'none';
-            localStorage.setItem('musicState', 'paused'); // Mark as paused since it couldn't start
+            localStorage.setItem('musicState', 'paused');
         }
     };
-
-
+    
     // --- Decide initial state on page load ---
-    if (musicPreference === 'playing') {
-        // If the user's last state was 'playing', try to start the music.
+    if (musicStatePreference === 'playing') {
         startPlayback();
     } else {
-        // If they last chose 'paused' (or it's their first visit), show the 'Play' button.
         audioPlayer.pause();
-        playBtn.style.display = 'block'; // Changed from 'flex'
+        playBtn.style.display = 'block';
         pauseBtn.style.display = 'none';
-        localStorage.setItem('musicState', 'paused'); // Set default state
+        localStorage.setItem('musicState', 'paused');
     }
 
     // --- Event Listeners for Buttons ---
     playBtn.addEventListener('click', () => {
         audioPlayer.play();
         playBtn.style.display = 'none';
-        pauseBtn.style.display = 'block'; // Changed from 'flex'
-        localStorage.setItem('musicState', 'playing'); // Remember this choice
+        pauseBtn.style.display = 'block';
+        localStorage.setItem('musicState', 'playing');
     });
 
     pauseBtn.addEventListener('click', () => {
         audioPlayer.pause();
-        playBtn.style.display = 'block'; // Changed from 'flex'
+        playBtn.style.display = 'block';
         pauseBtn.style.display = 'none';
-        localStorage.setItem('musicState', 'paused'); // Remember this choice
+        localStorage.setItem('musicState', 'paused');
     });
+
+    // --- NEW Event Listener for the track selector ---
+    trackSelector.addEventListener('change', () => {
+        const newTrack = trackSelector.value;
+        audioPlayer.src = newTrack;
+        localStorage.setItem('musicTrack', newTrack); // Remember the track choice
+
+        // If the music was already playing, continue playing the new track
+        if (localStorage.getItem('musicState') === 'playing') {
+            startPlayback();
+        }
+    });
+}
+
+/**
+ * ==================================================================================
+ * 8. SMART AUDIO HANDLER
+ * Pauses background music when other media (like YouTube embeds) starts playing.
+ * ==================================================================================
+ */
+function initializeSmartAudioHandler() {
+    const backgroundAudio = document.getElementById('background-audio');
+    if (!backgroundAudio) return;
+
+    // Find all media elements that could play sound. This is great for mod video embeds.
+    // We are targeting iframes (YouTube, Vimeo) and standard <video> tags.
+    const allMediaPlayers = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video');
+
+    allMediaPlayers.forEach(player => {
+        // This is a simple but effective approach. When the mouse enters the video/iframe area,
+        // we anticipate the user might click play, so we pause our music.
+        player.addEventListener('mouseenter', () => {
+            const isMusicPlaying = localStorage.getItem('musicState') === 'playing';
+            if (isMusicPlaying) {
+                backgroundAudio.pause();
+                // We don't change the 'state' in localStorage, so the music can resume later.
+                // You could add logic here to show the play button if you want.
+            }
+        });
+        
+        // When the mouse leaves the media area, you could potentially resume,
+        // but it's often better to let the user resume it manually.
+    });
+
+    // An even more advanced method would involve using the YouTube IFrame Player API
+    // to listen for actual 'play' events, but that is much more complex.
+    // This mouseenter approach is a very good and simple approximation.
 }
