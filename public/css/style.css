@@ -432,3 +432,76 @@ h4 { font-size: 1.2rem; }
         transition: all 0.3s ease;
     }
 }
+
+
+/* --- START OF NEWLY ADDED STYLES --- */
+
+:root {
+    --black: #0a0a0a;
+    --dark-gray: #1a1a1a;
+    --white: #ffffff;
+    --gold: #FFD700;
+    --silver: #c0c0c0;
+    --glow-gold: rgba(255, 215, 0, 0.5);
+    --glow-silver: rgba(192, 192, 192, 0.5);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); line-height: 1.6; }
+.container { width: 90%; max-width: 1200px; margin: auto; }
+
+/* Mobile Navigation Sidebar */
+.mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
+.mobile-nav ul { list-style: none; padding-top: 50px; }
+.mobile-nav li { margin-bottom: 25px; }
+.mobile-nav a { color: var(--silver); text-decoration: none; font-size: 1.2em; transition: color 0.3s ease; }
+.mobile-nav a:hover { color: var(--gold); }
+
+/* --- Page Header (MODIFIED) --- */
+.page-header { text-align: center; padding: 60px 20px; }
+.page-header h1 {
+    font-size: 3em;
+    color: var(--white); /* Base color for "About" */
+}
+.page-header h1 .gold {
+    color: var(--gold);
+    text-shadow: 0 0 15px var(--glow-gold);
+}
+.page-header h1 .silver {
+    color: var(--silver);
+    text-shadow: 0 0 10px var(--glow-silver); /* Added for consistency */
+}
+.page-header p { font-size: 1.2em; color: var(--silver); max-width: 700px; margin: 15px auto 0 auto; }
+
+/* Main Content Styles */
+.about-section { padding: 40px 0; border-bottom: 1px solid var(--dark-gray); }
+.about-section:last-of-type { border-bottom: none; }
+.section-title { text-align: center; font-size: 2.5em; margin-bottom: 40px; color: var(--white); }
+
+/* Two-column layout for features */
+.feature-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: flex-start; }
+.feature-item { display: flex; align-items: flex-start; gap: 25px; }
+.feature-icon { font-size: 3em; color: var(--gold); margin-top: 5px; }
+.feature-text h3 { font-size: 1.5em; margin-bottom: 10px; color: var(--white); }
+.feature-text p { color: var(--silver); }
+
+/* Team Section */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 30px; }
+.team-card { background-color: var(--dark-gray); padding: 25px; text-align: center; border-radius: 15px; border: 1px solid transparent; transition: all 0.3s ease; }
+.team-card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 20px var(--glow-gold); }
+.team-card img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 15px; object-fit: cover; }
+.team-card h4 { font-size: 1.3em; margin-bottom: 5px; }
+.team-card span { color: var(--gold); font-weight: 600; }
+
+/* CTA Section */
+.cta-section { background-color: var(--dark-gray); text-align: center; padding: 50px 20px; margin: 40px 0; border-radius: 15px; }
+.cta-button { display: inline-block; background: var(--gold); color: var(--black); padding: 15px 40px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; margin-top: 20px; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
+.cta-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
+
+/* Responsive Design */
+@media (min-width: 768px) {
+    .page-header h1 { font-size: 3.5em; }
+    .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+}

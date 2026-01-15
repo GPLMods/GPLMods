@@ -279,22 +279,78 @@ app.get('/updates', async (req, res) => {
     }
 });
 
+/**
+ * GET Route for the category/filter page (UPGRADED).
+ * Handles advanced filtering for platform, category, and sorting, plus pagination.
+ */
 app.get('/category', async (req, res) => {
     try {
-        const { cat } = req.query;
-        if (!cat) return res.redirect('/');
-        const filteredFiles = await File.find({ category: cat, isLatestVersion: true }).sort({ createdAt: -1 });
-        const pageTitle = cat.charAt(0).toUpperCase() + cat.slice(1);
-        const filesWithUrls = await Promise.all(filteredFiles.map(async (file) => {
-            const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 });
+        // --- 1. Get filter and pagination options from URL query ---
+        const { platform, category, sort, page = 1 } = req.query;
+        const limit = 12; // Number of mods to show per page
+        const currentPage = parseInt(page);
+
+        // --- 2. Build a dynamic query for MongoDB based on filters ---
+        const queryFilter = {
+            isLatestVersion: true // Always show only the latest versions
+        };
+        if (platform && platform !== 'all') {
+            // Your new design uses 'ios-ipa' and 'ios-deb'. We'll map them to our 'ios' category.
+            if (platform.startsWith('ios')) {
+                queryFilter.category = 'ios';
+            } else {
+                queryFilter.category = platform; // 'android', 'windows', 'wordpress'
+            }
+        }
+        if (category && category !== 'all') {
+            // This is for sub-categories like games, apps, etc. We'll add this to the model later.
+            // For now, this is a placeholder for a future feature.
+        }
+
+        // --- 3. Build dynamic sort options ---
+        const sortOptions = {};
+        if (sort === 'popular') {
+            // Sort by popularity (e.g., number of downloads or whitelist adds)
+            sortOptions.whitelistCount = -1; // -1 for descending order
+            sortOptions.downloads = -1;
+        } else {
+            // Default sort by latest
+            sortOptions.createdAt = -1;
+        }
+
+        // --- 4. Execute queries to get files and total count ---
+        const totalMods = await File.countDocuments(queryFilter);
+        const totalPages = Math.ceil(totalMods / limit);
+        const files = await File.find(queryFilter)
+            .sort(sortOptions)
+            .skip((currentPage - 1) * limit)
+            .limit(limit);
+
+        // --- ADDED: Generate presigned URLs for each result ---
+        const filesWithUrls = await Promise.all(files.map(async (file) => {
+            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
-        res.render('pages/category', { files: filesWithUrls, title: pageTitle, currentCategory: cat });
-    } catch (e) {
-        console.error("Category Error:", e);
-        res.status(500).send("Category error.");
+
+        // --- 5. Render the page with all the necessary data ---
+        res.render('pages/category', {
+            files: filesWithUrls,
+            totalPages: totalPages,
+            currentPage: currentPage,
+            // Pass the current filters back to the template to "remember" selections
+            currentFilters: {
+                platform: platform || 'all',
+                category: category || 'all',
+                sort: sort || 'latest'
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching files for category page:", error);
+        res.status(500).render('pages/500');
     }
 });
+
 
 // This is the NEW (fixed) route
 app.get('/search', async (req, res) => {
@@ -1050,4 +1106,4 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-});
+});```

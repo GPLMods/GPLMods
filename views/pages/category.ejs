@@ -1,63 +1,81 @@
 <%- include('../partials/header') %>
 
-<div class="container">
-
-    <!-- Page Title: Will display "Windows", "Android", etc. dynamically -->
-    <h1><%= title %> Mods</h1>
-    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--silver);">
-        Browse the latest uploads for <%= title %>
-    </p>
-
-
-    <!-- Main Category Navigation Bar (Same as homepage) -->
-    <!-- We can add a simple active state here -->
-    <nav class="category-nav" style="padding: 1rem 0; margin-bottom: 2rem; border-top: 1px solid var(--light-grey); border-bottom: 1px solid var(--light-grey); display: flex; gap: 1.5rem; justify-content: center;">
-        <a href="/category?cat=windows" class="btn <%= currentCategory === 'windows' ? 'btn-primary' : 'btn-secondary' %>">
-            <span class="text-full">Windows</span><span class="text-short">PC</span>
-        </a>
-        <a href="/category?cat=android" class="btn <%= currentCategory === 'android' ? 'btn-primary' : 'btn-secondary' %>">
-             <span class="text-full">Android</span><span class="text-short">Android</span>
-        </a>
-        <a href="/category?cat=ios" class="btn <%= currentCategory === 'ios' ? 'btn-primary' : 'btn-secondary' %>">
-             <span class="text-full">iOS</span><span class="text-short">iOS</span>
-        </a>
-        <a href="/category?cat=wordpress" class="btn <%= currentCategory === 'wordpress' ? 'btn-primary' : 'btn-secondary' %>">
-             <span class="text-full">WordPress</span><span class="text-short">WP</span>
-        </a>
-    </nav>
-    
-    
-    <!-- Results Grid -->
-    <section class="results-grid">
-         <div class="item-grid">
-        
-            <!-- Check if there are any files to display -->
-            <% if (files && files.length > 0) { %>
-                <!-- Loop through each file passed from the server -->
-                <% files.forEach(file => { %>
-    
-                    <!-- This is the EXACT SAME item card component from the homepage, making our code reusable -->
-                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
-                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
-                        </div>
-                        <div class="card-body">
-                            <h3 class="card-title"><%= file.name %></h3>
-                            <p class="card-platform"><%= file.version %></p>
-                            <div class="star-rating" data-rating="<%= file.ratings %>">
-                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                            </div>
-                        </div>
-                    </a>
-    
-                <% }) %>
-            <% } else { %>
-                <!-- This message shows if a category has no mods yet -->
-                <p style="grid-column: 1 / -1; text-align: center; padding: 2rem;">No mods have been uploaded to the <%= title %> category yet.</p>
-            <% } %>
-    
+<main>
+    <section class="page-header">
+        <div class="container">
+            <h1>Browse <span>All Mods</span></h1>
+            <p>Use the filters below to find the perfect mod for any platform.</p>
         </div>
     </section>
 
-</div>
+    <div class="container">
+        <!-- The form action will reload the page with new query parameters -->
+        <form action="/category" method="GET" class="filter-section">
+            <div class="filter-group">
+                <label for="platform-filter">Platform</label>
+                <!-- The 'name' attribute is crucial for the form submission -->
+                <select id="platform-filter" name="platform">
+                    <option value="all" <%= currentFilters.platform === 'all' ? 'selected' : '' %>>All Platforms</option>
+                    <option value="android" <%= currentFilters.platform === 'android' ? 'selected' : '' %>>Android</option>
+                    <option value="ios" <%= currentFilters.platform === 'ios' ? 'selected' : '' %>>iOS</option>
+                    <option value="windows" <%= currentFilters.platform === 'windows' ? 'selected' : '' %>>Windows</option>
+                    <option value="wordpress" <%= currentFilters.platform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
+                </select>
+            </div>
+            <!-- Sub-category filter (placeholder for now) -->
+            <div class="filter-group">
+                <label for="category-filter">Category</label>
+                <select id="category-filter" name="category" disabled>
+                    <option value="all">All (Coming Soon)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sort-filter">Sort By</label>
+                <select id="sort-filter" name="sort">
+                    <option value="latest" <%= currentFilters.sort === 'latest' ? 'selected' : '' %>>Latest</option>
+                    <option value="popular" <%= currentFilters.sort === 'popular' ? 'selected' : '' %>>Popularity</option>
+                </select>
+            </div>
+            <button type="submit" class="filter-button">Filter</button>
+        </form>
+        
+        <!-- The mod grid is now built dynamically -->
+        <section class="mod-grid">
+            <% files.forEach(file => { %>
+                <a href="/mods/<%= file._id %>" class="mod-card">
+                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                    <div class="mod-card-content">
+                        <h3><%= file.name %></h3>
+                        <p><%= file.modDescription.substring(0, 50) %>...</p> <!-- Short description -->
+                        <div class="card-footer">
+                            <% if (file.category === 'android') { %>
+                                <span class="platform-tag android">Android</span>
+                            <% } else if (file.category === 'ios') { %>
+                                <span class="platform-tag ios-ipa">iOS</span>
+                            <% } else if (file.category === 'windows') { %>
+                                <span class="platform-tag windows">Windows</span>
+                            <% } else if (file.category === 'wordpress') { %>
+                                <span class="platform-tag wordpress">WordPress</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </a>
+            <% }) %>
+        </section>
 
+        <!-- Pagination is now built dynamically -->
+        <% if (totalPages > 1) { %>
+            <nav class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <!-- Construct link with existing filters preserved -->
+                    <a href="/category?page=<%= i %>&platform=<%= currentFilters.platform %>&sort=<%= currentFilters.sort %>" 
+                       class="<%= currentPage === i ? 'active' : '' %>">
+                       <%= i %>
+                    </a>
+                <% } %>
+            </nav>
+        <% } %>
+    </div>
+</main>
+    
 <%- include('../partials/footer') %>
