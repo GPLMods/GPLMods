@@ -1,10 +1,28 @@
-<%- include('../partials/header') %>
-<div class="container" style="text-align: center; padding: 4rem 1rem;">
-    <h1 style="font-size: 5rem; color: var(--gold); margin-bottom: 0;">404</h1>
-    <h2>Page Not Found</h2>
-    <p style="font-size: 1.2rem; color: var(--silver);">
-        Sorry, the page you are looking for does not exist or has been moved.
-    </p>
-    <a href="/" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
-</div>
-<%- include('../partials/footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found - GPL Mods</title>
+
+    <!-- Link to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to our dedicated stylesheet for error pages -->
+    <link rel="stylesheet" href="/css/error-pages.css">
+</head>
+<body>
+
+    <main class="error-container container">
+        <div class="error-code">404</div>
+        <h1 class="error-title">Page <span>Not Found</span></h1>
+        <p class="error-message">Oops! The page you're looking for doesn't exist. It might have been moved, deleted, or you might have mistyped the URL.</p>
+        
+        <!-- Updated the link to point to the root of your site -->
+        <a href="/" class="home-button">Go to Homepage</a>
+    </main>
+
+</body>
+</html>

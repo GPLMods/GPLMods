@@ -1,27 +1,95 @@
 <%- include('../../partials/header') %>
 
-<style>
-    /* Reusing styles */
-    .static-page-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-grey); border-radius: 8px; }
-    .static-page-container h1 { color: var(--gold); }
-    .static-page-container h3 { color: var(--silver); margin-top: 2rem; }
-    .static-page-container p { margin-bottom: 1rem; line-height: 1.7; }
-</style>
-
-<div class="static-page-container">
-    <h1>Frequently Asked Questions (FAQ)</h1>
-
-    <h3>What is the purpose of this site?</h3>
-    <p>GPL Mods is a platform for users to share and download modifications, themes, and plugins for various software, built as a project for fun.</p>
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1>Frequently Asked <span>Questions</span></h1>
+        </div>
+    </div>
     
-    <h3>Are all files safe?</h3>
-    <p>We use VirusTotal to scan uploaded files, but we cannot guarantee that all content is 100% safe. Always use caution and run your own antivirus scans. You download and use files at your own risk.</p>
-    
-    <h3>How do I report a harmful file?</h3>
-    <p>On every mod download page, there is a "Report File" button. Please use this to notify our administrators of any issues.</p>
-    
-    <!-- Add more Q&As here -->
+    <div class="container">
+        <div class="faq-container">
+            <!-- FAQ Item 1 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Are all the mods available on GPL MODS safe to use/download?</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Safety is our first priority for every user. We check our mods with multiple antiviruses, and all mods provided here are tested for more than 14 days by our community members.</p>
+                </div>
+            </div>
 
-</div>
+            <!-- FAQ Item 2 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How do I install/download a .XAPK file?</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>A .XAPK file is a special type of Android file that contains both the APK and OBB data. It cannot be installed by the default Android package installer. You will need a dedicated XAPK installer app from the Play Store to install these files.</p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 3 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How do I install an .APK file?</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>To install an APK file, locate the downloaded file on your device. When you tap to open it, you may be prompted to "Enable unknown sources" in your device's security settings. After enabling this, you can proceed with the installation.</p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 4 -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>A mod I downloaded isn't working. What should I do?</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>First, ensure the mod you downloaded is compatible with your device and operating system (e.g., an iOS mod won't work on Android). For WordPress, check for version compatibility. For jailbroken tweaks, ensure your device's jailbreak status matches the tweak's requirements.</p>
+                </div>
+            </div>
+            
+            <!-- Add the rest of your FAQ items here following the same structure -->
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>How do I upload a mod to GPL Mods?</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>You must be a registered member to share mods. After logging in, you can find an "Upload Mod" button in the header or on your profile page. Your submission will be tested by our team, and if it passes all safety checks, it will be made available to the community.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<!-- Paste the page-specific JavaScript here -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- FAQ Accordion Logic ---
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            question.addEventListener('click', () => {
+                const isAlreadyActive = item.classList.contains('active');
+                
+                // Optional: Close all other items before opening the new one
+                // faqItems.forEach(i => i.classList.remove('active'));
+                
+                // If it wasn't already active, open it. Otherwise, just close it.
+                if (!isAlreadyActive) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        });
+    });
+</script>
 
 <%- include('../../partials/footer') %>

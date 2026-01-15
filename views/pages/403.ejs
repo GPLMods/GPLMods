@@ -1,10 +1,28 @@
-<%- include('../partials/header') %>
-<div class="container" style="text-align: center; padding: 4rem 1rem;">
-    <h1 style="font-size: 5rem; color: #ffadad; margin-bottom: 0;">403</h1>
-    <h2>Forbidden</h2>
-    <p style="font-size: 1.2rem; color: var(--silver);">
-        Sorry, you do not have the necessary permissions to access this page.
-    </p>
-    <a href="/" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
-</div>
-<%- include('../partials/footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden - GPL Mods</title>
+
+    <!-- Link to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to our dedicated stylesheet for error pages -->
+    <link rel="stylesheet" href="/css/error-pages.css">
+</head>
+<body>
+
+    <main class="error-container container">
+        <div class="error-code">403</div>
+        <h1 class="error-title">Access <span>Denied</span></h1>
+        <p class="error-message">You do not have the necessary permissions to view this page. If you believe this is an error, please try logging in or contact support.</p>
+        
+        <!-- Updated the link to point to the root of your site -->
+        <a href="/" class="home-button">Go to Homepage</a>
+    </main>
+
+</body>
+</html>

@@ -1,9 +1,130 @@
-<%- include('../partials/header') %>
-<div class="container" style="text-align: center; padding: 4rem 1rem;">
-    <h1 style="font-size: 4rem; color: var(--gold);">Coming Soon!</h1>
-    <p style="font-size: 1.2rem; color: var(--silver);">
-        We're working hard on this new feature. Please check back later!
-    </p>
-    <a href="/" class="btn btn-primary" style="margin-top: 2rem;">Go back to safety</a>
-</div>
-<%- include('../partials/footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coming Soon - GPL Mods</title>
+
+    <!-- Link to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to our stylesheet that now contains the coming-soon styles -->
+    <link rel="stylesheet" href="/css/error-pages.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <!-- Updated link to point to the site's root -->
+            <a href="/" class="logo">GPL <span>Mods</span></a>
+        </div>
+    </header>
+
+    <main class="main-content container">
+        <h1><span>Something Awesome</span> is Coming Soon</h1>
+        <p>We're working hard to bring you a new and exciting feature. Stay tuned for the big reveal!</p>
+
+        <div id="countdown">
+            <div class="time-block">
+                <div id="days" class="number">00</div>
+                <div class="label">Days</div>
+            </div>
+            <div class="time-block">
+                <div id="hours" class="number">00</div>
+                <div class="label">Hours</div>
+            </div>
+            <div class="time-block">
+                <div id="minutes" class="number">00</div>
+                <div class="label">Minutes</div>
+            </div>
+            <div class="time-block">
+                <div id="seconds" class="number">00</div>
+                <div class="label">Seconds</div>
+            </div>
+        </div>
+
+        <!-- We'll make this form functional -->
+        <form class="subscription-form" id="notify-form" action="/notify-launch" method="POST">
+            <h3>Get Notified When We Launch</h3>
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Enter your email address" required>
+                <button type="submit">Notify Me</button>
+            </div>
+        </form>
+
+        <a href="/" class="home-link">Back to Homepage</a>
+    </main>
+    
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Countdown Timer Logic ---
+            // You can dynamically pass this date from your route if you want
+            const countDownDate = new Date();
+            countDownDate.setDate(countDownDate.getDate() + 30); // Example: 30 days from now
+
+            const daysEl = document.getElementById('days');
+            const hoursEl = document.getElementById('hours');
+            const minutesEl = document.getElementById('minutes');
+            const secondsEl = document.getElementById('seconds');
+
+            const timer = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = countDownDate - now;
+
+                if (distance < 0) {
+                    clearInterval(timer);
+                    document.getElementById('countdown').innerHTML = "<h2 style='color: var(--gold);'>Feature is Live!</h2>";
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                daysEl.textContent = String(days).padStart(2, '0');
+                hoursEl.textContent = String(hours).padStart(2, '0');
+                minutesEl.textContent = String(minutes).padStart(2, '0');
+                secondsEl.textContent = String(seconds).padStart(2, '0');
+            }, 1000);
+            
+            // --- Form Submission Handler ---
+            const notifyForm = document.getElementById('notify-form');
+            notifyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const emailInput = this.querySelector('input[type="email"]');
+                const button = this.querySelector('button');
+
+                // In a real app, you would send this to the backend
+                // For now, we'll just provide user feedback
+                console.log(`Email submitted for notification: ${emailInput.value}`);
+                
+                button.textContent = 'Submitted!';
+                button.disabled = true;
+                emailInput.disabled = true;
+
+                // Optionally, save to localStorage to remember submission
+                localStorage.setItem('notified_launch', 'true');
+            });
+            
+            // Check if user has already submitted
+            if (localStorage.getItem('notified_launch') === 'true') {
+                 const button = notifyForm.querySelector('button');
+                 const emailInput = notifyForm.querySelector('input[type="email"]');
+                 button.textContent = 'Submitted!';
+                 button.disabled = true;
+                 emailInput.placeholder = 'We will notify you!';
+                 emailInput.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -254,7 +254,8 @@ app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 // 7. CORE APP ROUTES
 // ===============================
 
-app.get('/', async (req, res) => {
+
+('/', async (req, res) => {
     try {
         const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
@@ -1051,6 +1052,7 @@ app.get('/about', (req, res) => res.render('pages/static/about'));
 app.get('/faq', (req, res) => res.render('pages/static/faq'));
 app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
+app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 
 // UPDATED DMCA ROUTE
 app.post('/dmca-request', async (req, res) => {
