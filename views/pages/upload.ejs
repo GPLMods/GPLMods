@@ -1,245 +1,192 @@
 <%- include('../partials/header') %>
 
-<style>
-    /* Page-specific styles for the upload form */
-    .upload-form-container {
-        max-width: 800px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background-color: var(--dark-grey);
-        border: 1px solid var(--light-grey);
-        border-radius: 8px;
-    }
-
-    .form-section {
-        margin-bottom: 2rem;
-        border-bottom: 1px solid var(--light-grey);
-        padding-bottom: 2rem;
-    }
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1>Upload <span>Your Mod</span></h1>
+            <p>Contribute to the community by sharing your creation. All submissions are reviewed by our team.</p>
+        </div>
+    </div>
     
-    .form-section:last-of-type {
-        border-bottom: none;
-        padding-bottom: 0;
-        margin-bottom: 0;
-    }
-
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-        color: var(--silver);
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="url"],
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 10px;
-        background-color: var(--black);
-        border: 1px solid var(--light-grey);
-        border-radius: 4px;
-        color: var(--white);
-        font-size: 1rem;
-    }
-
-    .form-group textarea {
-        min-height: 150px;
-        resize: vertical;
-    }
-
-    .form-group input[type="file"] {
-        color: var(--silver);
-    }
-    
-    .icon-preview-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-    }
-    
-    #iconPreview {
-        width: 100px;
-        height: 100px;
-        background-color: var(--black);
-        border: 1px dashed var(--light-grey);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--silver);
-        text-align: center;
-        overflow: hidden; /* This will contain the image */
-    }
-    
-    #iconPreview img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .checkbox-group label {
-        margin-right: 1rem;
-        color: var(--white);
-        font-weight: normal;
-    }
-
-</style>
-
-<div class="container">
-    <div class="upload-form-container">
-        <h2 style="text-align: center; margin-bottom: 2rem;">Upload Your Mod</h2>
-
-        <!-- The 'enctype' is CRUCIAL for file uploads -->
-        <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
-
-            <!-- Section 1: Basic Information -->
-            <fieldset class="form-section">
-                <legend><h3>1. Basic Information</h3></legend>
+    <div class="container">
+        <div class="upload-layout">
+            <!-- Upload Form -->
+            <form class="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
                 
-                <div class="form-group icon-preview-wrapper">
-                    <div id="iconPreview">
-                        <span>Icon Preview</span>
+                <!-- Mod Icon Preview & Upload -->
+                <div class="icon-upload-container">
+                    <label>Mod Icon</label>
+                    <div class="icon-preview" id="iconPreviewBox">
+                        <img id="iconImage" src="" alt="Icon Preview">
+                        <span id="iconPlaceholder">Preview</span>
                     </div>
-                    <div>
-                        <label for="softwareIcon">Software Icon*</label>
-                        <input type="file" id="softwareIcon" name="softwareIcon" accept="image/png, image/jpeg" required>
+                    <div class="file-input-wrapper" style="max-width: 250px;">
+                        <input type="file" id="softwareIcon" name="softwareIcon" accept="image/*" required>
+                        <label for="softwareIcon" class="file-input-label">Choose Icon</label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="softwareName">Name*</label>
-                    <input type="text" id="softwareName" name="softwareName" placeholder="e.g., Ultimate Graphics Mod" required>
+                    <label for="softwareName">Mod Name</label>
+                    <input type="text" id="softwareName" name="softwareName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="softwareVersion">Version*</label>
-                    <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.1.0" required>
+                    <label for="developerName">Official Developer / Company</label>
+                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
                 </div>
 
                 <div class="form-group">
-                    <label for="developerName">Original Developer/Company</label>
-                    <input type="text" id="developerName" name="developerName" placeholder="e.g., CD PROJEKT RED, Adobe, etc.">
-                </div>
-            </fieldset>
-
-            <!-- Section 2: Descriptions -->
-            <fieldset class="form-section">
-                <legend><h3>2. Descriptions</h3></legend>
-                <div class="form-group">
-                    <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" placeholder="Describe the features of your mod, what it does, and how to use it." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="officialDescription">Official Description</label>
-                    <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source."></textarea>
-                </div>
-            </fieldset>
-
-            <!-- Section 3: Media -->
-            <fieldset class="form-section">
-                <legend><h3>3. Media</h3></legend>
-                <div class="form-group">
-                    <label for="screenshots">Screenshots* (Up to 4, at least 1 required)</label>
-                    <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple>
-                </div>
-                 <div class="form-group">
-                    <label for="videoUrl">YouTube/Vimeo Video URL (Optional)</label>
-                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
-                </div>
-            </fieldset>
-            
-            <!-- Section 4: Categorization -->
-            <fieldset class="form-section">
-                <legend><h3>4. Categorization</h3></legend>
-
-                <div class="form-group">
-                    <label for="category">Main Category*</label>
+                    <label for="category">Platform</label>
                     <select id="category" name="category" required>
-                        <option value="" disabled selected>Select a category</option>
-                        <option value="windows">Windows</option>
+                        <option value="" disabled selected>Select a platform...</option>
                         <option value="android">Android</option>
-                        <option value="ios">iOS</option>
+                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                        <option value="windows">Windows</option>
                         <option value="wordpress">WordPress</option>
                     </select>
                 </div>
 
-                <div class="form-group checkbox-group">
-                    <label>Supported Platforms*</label><br>
-                    <input type="checkbox" id="platformWin" name="platforms" value="windows"> <label for="platformWin">Windows</label>
-                    <input type="checkbox" id="platformMac" name="platforms" value="macos"> <label for="platformMac">macOS</label>
-                    <input type="checkbox" id="platformLinux" name="platforms" value="linux"> <label for="platformLinux">Linux</label>
-                    <input type="checkbox" id="platformAndroid" name="platforms" value="android"> <label for="platformAndroid">Android</label>
-                    <input type="checkbox" id="platformIos" name="platforms" value="ios"> <label for="platformIos">iOS</label>
-                </div>
-                 <div class="form-group">
-                    <label for="tags">Tags (Comma-separated)</label>
-                    <input type="text" id="tags" name="tags" placeholder="e.g., utility, editor, productivity, action">
-                </div>
-            </fieldset>
-            
-             <!-- Section 5: The File Itself -->
-            <fieldset class="form-section">
-                <legend><h3>5. The Mod File*</h3></legend>
                 <div class="form-group">
-                    <label for="modFile">Select your mod file (.exe, .msi, .rar, .zip, .apk, etc.)</label>
-                    <input type="file" id="modFile" name="modFile" required>
+                    <label for="subCategory">Category</label>
+                    <select id="subCategory" name="subCategory" required disabled>
+                        <option value="" disabled selected>Select a platform first...</option>
+                    </select>
                 </div>
-            </fieldset>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.2rem;">Upload File</button>
+                <div class="form-group">
+                    <label for="softwareVersion">Mod Version</label>
+                    <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 3.2.5" required>
+                </div>
 
-        </form>
+                <div class="form-group">
+                    <label for="modDescription">Mod Features</label>
+                    <textarea id="modDescription" name="modDescription" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="officialDescription">What's New (Optional)</label>
+                    <textarea id="officialDescription" name="officialDescription" placeholder="What's new in this version?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">Tags (Optional)</label>
+                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
+                </div>
+
+                <div class="form-group">
+                    <label>Mod File</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="modFile" name="modFile" accept=".apk,.xapk,.ipa,.deb,.zip,.exe,.msi" required>
+                        <label for="modFile" class="file-input-label">Choose Mod File</label>
+                        <span class="file-name" id="modFileName">No file selected</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mod Screenshots (Up to 4)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
+                        <label for="screenshots" class="file-input-label">Choose Screenshots</label>
+                        <span class="file-name" id="screenshotFileName">No file selected</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="videoUrl">Video URL (Optional)</label>
+                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+
+                <button type="submit" class="submit-button">Submit Mod for Review</button>
+            </form>
+            
+            <!-- Submission Guidelines -->
+            <aside class="guidelines">
+                <h3>Submission Guidelines</h3>
+                <ul>
+                    <li><b>Be Accurate:</b> The mod name, version, and developer details must be correct.</li>
+                    <li><b>Safety First:</b> Mods containing malware or harmful code result in a permanent ban.</li>
+                    <li><b>Testing:</b> Ensure the mod works as described before uploading.</li>
+                    <li><b>Media:</b> High-quality icons and screenshots improve approval chances.</li>
+                </ul>
+            </aside>
+        </div>
     </div>
-</div>
+</main>
 
 <script>
-// This script is specific to the upload page
-document.addEventListener('DOMContentLoaded', () => {
-    const iconInput = document.getElementById('softwareIcon');
-    const iconPreview = document.getElementById('iconPreview');
-    const uploadForm = document.getElementById('uploadForm');
-    const screenshotsInput = document.getElementById('screenshots');
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- Icon Preview Logic ---
+        const softwareIcon = document.getElementById('softwareIcon');
+        const iconImage = document.getElementById('iconImage');
+        const iconPlaceholder = document.getElementById('iconPlaceholder');
 
-    // 1. Live Icon Preview
-    iconInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            iconPreview.innerHTML = ''; // Clear previous content
-            reader.onload = function(event) {
-                const img = document.createElement('img');
-                img.setAttribute('src', event.target.result);
-                iconPreview.appendChild(img);
+        softwareIcon.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    iconImage.src = e.target.result;
+                    iconImage.style.display = 'block';
+                    iconPlaceholder.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
             }
-            reader.readAsDataURL(file);
-        } else {
-            iconPreview.innerHTML = '<span>Icon Preview</span>';
-        }
+        });
+
+        // --- Dynamic Category Dropdown Logic ---
+        const platformSelect = document.getElementById('category');
+        const subCategorySelect = document.getElementById('subCategory');
+
+        const categoriesByPlatform = {
+            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+        };
+
+        platformSelect.addEventListener('change', function() {
+            const selectedPlatform = this.value;
+            const categories = categoriesByPlatform[selectedPlatform] || [];
+            subCategorySelect.innerHTML = '';
+            if (categories.length > 0) {
+                subCategorySelect.disabled = false;
+                let defaultOption = document.createElement('option');
+                defaultOption.text = 'Select a category...';
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                subCategorySelect.add(defaultOption);
+                categories.forEach(function(category) {
+                    let option = document.createElement('option');
+                    option.text = category;
+                    option.value = category.toLowerCase().replace(/ /g, '-');
+                    subCategorySelect.add(option);
+                });
+            } else {
+                subCategorySelect.disabled = true;
+            }
+        });
+
+        // --- File Name Display Logic ---
+        const setupFileNameDisplay = (inputId, spanId) => {
+            const input = document.getElementById(inputId);
+            const span = document.getElementById(spanId);
+            input.addEventListener('change', function() {
+                if (this.files.length > 1) {
+                    span.textContent = this.files.length + ' files selected';
+                } else {
+                    span.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
+                }
+            });
+        };
+
+        setupFileNameDisplay('modFile', 'modFileName');
+        setupFileNameDisplay('screenshots', 'screenshotFileName');
     });
-    
-    // 2. Form submission validation
-    uploadForm.addEventListener('submit', function(event) {
-        // Check for number of screenshots
-        if (screenshotsInput.files.length < 1) {
-            alert('Error: You must upload at least one screenshot.');
-            event.preventDefault(); // Stop form submission
-            return;
-        }
-        
-        if (screenshotsInput.files.length > 4) {
-            alert('Error: You cannot upload more than 4 screenshots.');
-            event.preventDefault(); // Stop form submission
-            return;
-        }
-        
-        // Add any other front-end validation you need here
-    });
-});
 </script>
 
 <%- include('../partials/footer') %>

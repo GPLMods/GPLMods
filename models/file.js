@@ -19,6 +19,9 @@ const FileSchema = new Schema({
         required: true, 
         enum: ['windows', 'android', 'ios', 'wordpress'] 
     },
+    subCategory: { 
+        type: String 
+    },
     platforms: { type: [String], required: true },
     tags: { type: [String] },
 
