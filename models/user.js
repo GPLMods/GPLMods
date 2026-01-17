@@ -42,6 +42,10 @@ const UserSchema = new Schema({
         trim: true,
         maxlength: 250 // Good practice to set a reasonable character limit
     },
+    lastSeen: {
+        type: Date,
+        default: Date.now
+    },
     whitelist: [{
         type: Schema.Types.ObjectId,
         ref: 'File'

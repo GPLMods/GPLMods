@@ -1,87 +1,112 @@
 <%- include('../partials/header') %>
-<div class="container">
-    <div class="profile-header">
-        <img src="<%= profileUser.profileImageUrl || '/images/default-avatar.png' %>" alt="<%= profileUser.username %>'s Avatar" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
-        <h1><%= profileUser.username %>'s Uploads</h1>
 
-        <!-- ======== ADD THIS NEW ELEMENT ======== -->
-        <% if (profileUser.bio) { %>
-            <p style="color: var(--silver); max-width: 600px; margin: 1rem auto 0; font-style: italic;">
-                "<%= profileUser.bio %>"
-            </p>
-        <% } %>
-        <!-- ======== END OF NEW ELEMENT ======== -->
-        
-        <button id="share-profile-btn" class="btn btn-secondary" style="margin-top: 1rem;">
-            🔗 Share Profile
-        </button>
-    </div>
+<title><%= profileUser.username %> - GPL Mods</title>
 
-    <section class="upload-history" style="margin-top: 2rem;">
-        <% if(uploads && uploads.length > 0) { %>
-            <div class="item-grid">
-                <% uploads.forEach(file => { %>
-                    <!-- Reusing our standard item card -->
-                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
-                         <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;"></div>
-                         <div class="card-body">
-                            <h3 class="card-title"><%= file.name %></h3>
-                            <p class="card-platform"><%= file.version %></p>
-                            <div class="star-rating" data-rating="<%= file.averageRating %>">
-                                <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                            </div>
-                        </div>
-                    </a>
-                <% }) %>
+<main>
+    <div class="container">
+        <header class="profile-header">
+            <!-- Avatar with Share Button -->
+            <div class="avatar-container">
+                <img src="<%= profileUser.signedAvatarUrl || '/images/default-avatar.png' %>" alt="<%= profileUser.username %>'s Avatar" class="profile-avatar">
+                <button class="share-btn" onclick="shareProfile()" title="Share Profile">
+                    <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                </button>
             </div>
-        <% } else { %>
-            <p style="text-align: center; padding: 2rem;"><%= profileUser.username %> hasn't uploaded any mods yet.</p>
-        <% } %>
-    </section>
-</div>
+
+            <h1><%= profileUser.username %></h1>
+            <!-- Capitalize the role -->
+            <p class="user-role"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
+            
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-number"><%= uploads.length %></div>
+                    <div class="stat-label">Total Mods Uploaded</div>
+                </div>
+                <div class="stat-item">
+                    <!-- Format the date to show 'Month Year' -->
+                    <div class="stat-number">
+                        <%= profileUser.createdAt.toLocaleString('default', { month: 'short' }) %> '<%= profileUser.createdAt.getFullYear().toString().substr(-2) %>
+                    </div>
+                    <div class="stat-label">Member Since</div>
+                </div>
+                <!-- Last Online Section -->
+                <div class="stat-item">
+                    <div class="stat-number"><%= lastSeen %></div>
+                    <div class="stat-label">Last Online</div>
+                </div>
+            </div>
+        </header>
+
+        <section class="profile-content">
+            <div class="tabs-nav">
+                <button class="tab-button active" data-tab="overview">Overview</button>
+                <button class="tab-button" data-tab="uploads">Uploads</button>
+            </div>
+
+            <!-- Bio Tab -->
+            <div id="overview" class="tab-content active">
+                <h2>About Me</h2>
+                <% if (profileUser.bio) { %>
+                    <p>"<%- profileUser.bio.replace(/\n/g, '<br>') %>"</p>
+                <% } else { %>
+                    <p>This user hasn't written a bio yet. They are a valued member of the GPL Mods community.</p>
+                <% } %>
+            </div>
+
+            <!-- Uploads Tab -->
+            <div id="uploads" class="tab-content">
+                <h2>Uploaded Mods</h2>
+                <% if (uploads && uploads.length > 0) { %>
+                    <div class="mod-grid">
+                        <% uploads.forEach(file => { %>
+                            <a href="/mods/<%= file._id %>" class="mod-card-link">
+                                <div class="mod-card">
+                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                                    <div class="mod-card-content">
+                                        <h3><%= file.name %></h3>
+                                        <p>Version: <%= file.version %></p>
+                                    </div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p><%= profileUser.username %> hasn't uploaded any mods yet.</p>
+                <% } %>
+            </div>
+        </section>
+    </div>
+</main>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const shareButton = document.getElementById('share-profile-btn');
-        const profileUser = <%- JSON.stringify(profileUser) %>; // Securely pass user data to JS
+    // Tab Functionality
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-        // --- The URL to be shared ---
-        const shareUrl = window.location.href;
-        const shareTitle = `${profileUser.username}'s Profile on GPL Mods`;
-        const shareText = `Check out all the mods uploaded by ${profileUser.username} on GPL Mods!`;
-
-        if (shareButton) {
-            shareButton.addEventListener('click', async () => {
-                
-                // --- Check if the modern Web Share API is available ---
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: shareTitle,
-                            text: shareText,
-                            url: shareUrl,
-                        });
-                        console.log('Profile shared successfully!');
-                    } catch (error) {
-                        console.error('Error using Web Share API:', error);
-                    }
-                } else {
-                    // --- Fallback for desktop browsers: Copy to clipboard ---
-                    try {
-                        await navigator.clipboard.writeText(shareUrl);
-                        // Provide feedback to the user
-                        shareButton.textContent = '✅ Link Copied!';
-                        setTimeout(() => {
-                            shareButton.innerHTML = '🔗 Share Profile'; // Revert back after 2 seconds
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Failed to copy link to clipboard:', err);
-                        alert('Could not copy link. Please copy the URL from your browser address bar.');
-                    }
-                }
-            });
-        }
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTabId = button.getAttribute('data-tab');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            button.classList.add('active');
+            document.getElementById(targetTabId).classList.add('active');
+        });
     });
+
+    // Share Profile Function
+    function shareProfile() {
+        if (navigator.share) {
+            navigator.share({
+                title: '<%= profileUser.username %>\'s Profile on GPL Mods',
+                text: 'Check out <%= profileUser.username %> on GPL Mods!',
+                url: window.location.href
+            }).then(() => console.log('Successful share'))
+            .catch((error) => console.log('Error sharing', error));
+        } else {
+            alert("Profile link copied to clipboard: " + window.location.href);
+            navigator.clipboard.writeText(window.location.href);
+        }
+    }
 </script>
 
 <%- include('../partials/footer') %>

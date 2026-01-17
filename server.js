@@ -48,6 +48,12 @@ const { Types } = mongoose;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// You'll need a helper function. You can put this at the top of server.js
+function timeAgo(date) {
+    if (!date) return 'Never';
+    return date.toLocaleDateString();
+}
+
 // ===============================
 // 3. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
@@ -109,6 +115,14 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Middleware to update user's last seen timestamp
+app.use(async (req, res, next) => {
+    if (req.isAuthenticated()) {
+        User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
+    }
+    next();
+});
 
 // ===============================
 // 5. DATABASE CONNECTION
@@ -224,7 +238,7 @@ app.get('/', async (req, res) => {
     try {
         const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
-            const iconUrl = file.iconKey 
+            const iconUrl = file.iconKey
                 ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 })
                 : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
@@ -296,12 +310,12 @@ app.get('/search', async (req, res) => {
                 { tags: { $regex: query, $options: 'i' } }
             ]
         }).sort({ createdAt: -1 });
-        
+
         const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
             const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
-        res.render('pages/search', { results: resultsWithUrls, query }); 
+        res.render('pages/search', { results: resultsWithUrls, query });
     } catch (e) {
         res.status(500).send("Search Error");
     }
@@ -342,7 +356,9 @@ app.get('/mods/:id', async (req, res) => {
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: currentFile.iconKey }), { expiresIn: 3600 });
         const screenshotUrls = await Promise.all(currentFile.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
 
-        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 });
+        // UPDATED: Added population of user data for reviews
+        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageUrl');
+        
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(currentFile._id) : false;
         const userHasVotedOnStatus = req.user ? currentFile.votedOnStatusBy.includes(req.user._id) : false;
 
@@ -409,7 +425,6 @@ app.post('/forgot-password', async (req, res) => {
         user.passwordResetExpires = Date.now() + 3600000;
         await user.save();
         const resetURL = `${process.env.BASE_URL}/reset-password/${resetToken}`;
-        console.log(`Reset link: ${resetURL}`);
         res.redirect('/forgot-password?success=Link sent if account exists.');
     } catch (error) { res.redirect('/forgot-password?error=Error.'); }
 });
@@ -447,7 +462,14 @@ app.get('/users/:username', async (req, res) => {
             const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
-        res.render('pages/public-profile', { profileUser: user, uploads: uploadsWithUrls });
+
+        const lastSeenString = timeAgo(user.lastSeen);
+
+        res.render('pages/public-profile', {
+            profileUser: user,
+            uploads: uploadsWithUrls,
+            lastSeen: lastSeenString
+        });
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
@@ -514,14 +536,22 @@ app.post('/account/delete', ensureAuthenticated, async (req, res) => {
 // ===============================
 
 app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
-app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', maxCount: 1 }, { name: 'screenshots', maxCount: 4 }, { name: 'modFile', maxCount: 1 }]), async (req, res) => {
-    try {
-        const { softwareName, softwareVersion, developerName, modDescription, officialDescription, category, platforms, tags, videoUrl } = req.body;
-        const { softwareIcon, screenshots, modFile } = req.files;
-        if (!softwareIcon || !screenshots || !modFile || !softwareName || !category) return res.status(400).send("Missing field.");
 
-        const iconKey = await uploadToB2(softwareIcon[0], 'icons');
-        const screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+app.post('/upload', ensureAuthenticated, upload.fields([
+    { name: 'modIcon', maxCount: 1 },
+    { name: 'screenshotFile', maxCount: 1 },
+    { name: 'modFile', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const { modIcon, screenshotFile, modFile } = req.files;
+        const { modName, developerName, modPlatform, modCategory, modVersion, modFeatures, whatsNew, tags, videoUrl } = req.body;
+
+        if (!modIcon || !screenshotFile || !modFile || !modName || !modPlatform) {
+            return res.status(400).send("Missing a required field.");
+        }
+
+        const iconKey = await uploadToB2(modIcon[0], 'icons');
+        const screenshotKey = await uploadToB2(screenshotFile[0], 'screenshots');
         const fileKey = await uploadToB2(modFile[0], 'mods');
 
         let analysisId = null, scanDate, positiveCount, totalScans = null;
@@ -540,15 +570,19 @@ app.post('/upload', ensureAuthenticated, upload.fields([{ name: 'softwareIcon', 
         } catch (vtError) { console.error("VT Error:", vtError.message); }
 
         const newFile = new File({
-            name: softwareName, version: softwareVersion, developer: developerName, modDescription, officialDescription,
-            iconKey, screenshotKeys, videoUrl, fileKey, originalFilename: modFile[0].originalname, category,
-            platforms: Array.isArray(platforms) ? platforms : [platforms], tags: tags ? tags.split(',').map(t => t.trim()) : [],
-            uploader: req.user.username, fileSize: modFile[0].size, isLatestVersion: true,
-            virusTotalAnalysisId: analysisId, virusTotalScanDate: scanDate, virusTotalPositiveCount: positiveCount, virusTotalTotalScans: totalScans
+            name: modName, version: modVersion, developer: developerName, modDescription: modFeatures,
+            officialDescription: whatsNew, iconKey, screenshotKeys: [screenshotKey], videoUrl,
+            fileKey, originalFilename: modFile[0].originalname, category: modPlatform, platforms: [modCategory],
+            tags: tags ? tags.split(',').map(tag => tag.trim()) : [], fileSize: modFile[0].size,
+            uploader: req.user.username, isLatestVersion: true, virusTotalAnalysisId: analysisId,
+            virusTotalScanDate: scanDate, virusTotalPositiveCount: positiveCount, virusTotalTotalScans: totalScans
         });
+
         await newFile.save();
-        res.redirect(`/mods/${newFile._id}`);
-    } catch (e) { res.status(500).send("Upload failed."); }
+        res.status(201).send({ message: "File uploaded successfully!" });
+    } catch (e) {
+        res.status(500).send("Upload failed.");
+    }
 });
 
 app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {

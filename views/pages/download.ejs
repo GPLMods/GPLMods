@@ -1,436 +1,193 @@
-<%- include('../partials/header') %>
+<%- include('partials/header') %> <!-- Assuming you have a header partial -->
 
 <style>
-    /* Page-specific styles for the download page */
-    .mod-header {
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-        margin-bottom: 2rem;
+    /* Keeping your specific layout styles */
+    :root {
+        --black: #0a0a0a; --dark-gray: #1a1a1a; --white: #ffffff;
+        --gold: #FFD700; --silver: #c0c0c0; --glow-gold: rgba(255, 215, 0, 0.5);
+        --light-gray: #3a3a3a;
     }
-    .mod-icon {
-        width: 120px;
-        height: 120px;
-        border-radius: 12px;
-        object-fit: cover;
-        border: 2px solid var(--light-grey);
-    }
-    .mod-title h1 { margin-bottom: 0.5rem; }
-    .mod-meta-info { color: var(--silver); }
+    .download-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
+    .info-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; text-align: center; align-self: flex-start; }
+    .app-icon { width: 120px; height: 120px; border-radius: 25px; margin: 0 auto 20px auto; object-fit: cover; display: block; }
+    .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
+    .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
+    .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
+    .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
+    .stars-inner::before { content: "★★★★★"; color: var(--gold); }
     
-    .mod-actions {
-        margin: 2rem 0;
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap; /* Added for responsiveness */
-        gap: 1rem;
-    }
+    .download-button { display: block; background: var(--gold); color: var(--black); padding: 18px 20px; border-radius: 10px; text-decoration: none; font-size: 1.3em; font-weight: 700; margin-bottom: 15px; transition: 0.3s; box-shadow: 0 0 15px var(--glow-gold); }
+    .download-button:hover { transform: translateY(-5px); }
+    
+    .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+    .full-width-btn { width: 100%; border: 1px solid #444; background: transparent; color: var(--silver); padding: 10px; border-radius: 8px; cursor: pointer; }
+    
+    .details-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; }
+    .tabs-nav { display: flex; border-bottom: 2px solid #2a2a2a; margin-bottom: 25px; }
+    .tab-button { background: none; border: none; color: var(--silver); padding: 15px 25px; cursor: pointer; }
+    .tab-button.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    /* Voting Bar Styles */
-    .vote-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: #602d2d; width: 150px; }
-    .vote-bar-working { background-color: #5db05d; }
-
-    .mod-media-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    .mod-media-gallery img {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid var(--light-grey);
-    }
-
-    .mod-description-tabs { margin-bottom: 2rem; }
-    .tabs-nav {
-        display: flex;
-        gap: 0.5rem;
-        border-bottom: 2px solid var(--light-grey);
-    }
-    .tabs-nav button {
-        padding: 10px 20px;
-        border: none;
-        background: none;
-        color: var(--silver);
-        cursor: pointer;
-        font-size: 1.1rem;
-        border-bottom: 3px solid transparent;
-        transform: translateY(2px);
-    }
-    .tabs-nav button.active {
-        color: var(--gold);
-        border-bottom-color: var(--gold);
-    }
-    .tab-content {
-        padding: 1.5rem;
-        background-color: var(--dark-grey);
-        border: 1px solid var(--light-grey);
-        border-top: none;
-        display: none;
-        line-height: 1.7;
-    }
-    .tab-content.active {
-        display: block;
-    }
-
-    /* Table Styles for Version History */
-    .uploads-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-        background-color: var(--dark-grey);
-        border: 1px solid var(--light-grey);
-    }
-    .uploads-table th, .uploads-table td {
-        text-align: left;
-        padding: 12px;
-        border-bottom: 1px solid var(--light-grey);
-    }
-    .uploads-table th {
-        background-color: var(--black);
-        color: var(--gold);
-    }
-
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-
-    /* Badge Styling */
-    .certification-badge {
-        padding: 5px 12px;
-        font-size: 0.9rem;
-        font-weight: bold;
-        border-radius: 20px;
-        color: var(--black);
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    .badge-certified { background-color: var(--gold); }
-    .badge-community-tested { background-color: var(--silver); }
+    .screenshot-gallery { column-count: 3; column-gap: 15px; }
+    .screenshot-gallery img { width: 100%; border-radius: 10px; margin-bottom: 15px; }
+    
+    /* Meta Info List */
+    .meta-info { list-style: none; text-align: left; color: var(--silver); }
+    .meta-info li { padding: 10px 0; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; }
+    
+    @media (max-width: 992px) { .download-layout { grid-template-columns: 1fr; } }
 </style>
 
-<div class="container">
-
-    <!-- Mod Header: Icon, Title, Rating, and Meta Info -->
-    <section class="mod-header">
-        <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="mod-icon">
-        <div class="mod-title">
+<main class="container">
+    <div class="download-layout">
+        <!-- Left Info Panel -->
+        <aside class="info-panel">
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="app-icon">
             <h1><%= file.name %></h1>
             
-            <!-- Certification Badge Logic -->
+            <div class="rating">
+                <div class="stars-outer">
+                    <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                </div>
+                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+            </div>
+
             <% if (file.certification === 'certified') { %>
-                <span class="certification-badge badge-certified">✔ Certified by Admin</span>
-            <% } else if (file.certification === 'community-tested') { %>
-                <span class="certification-badge badge-community-tested">Community Tested</span>
-            <% } %>
-
-            <!-- Rating display -->
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div class="star-rating" data-rating="<%= file.averageRating %>">
-                    <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                </div>
-                <span style="color: var(--silver);">(<%= file.ratingCount %> Reviews)</span>
+            <div class="safety-badge">
+                <span class="badge-icon">🛡️</span>
+                <span class="badge-text">100% Safe & Tested</span>
             </div>
-            <p class="mod-meta-info" style="margin-top: 0.5rem;">
-                Developer: 
-                <% if (file.developer && file.developer !== 'N/A') { %>
-                    <!-- Create a link for the developer -->
-                    <a href="/developer?name=<%= encodeURIComponent(file.developer) %>">
-                        <strong style="color:var(--white);"><%= file.developer %></strong>
-                    </a>
-                <% } else { %>
-                    <!-- Just display the text if there's no developer listed -->
-                    <strong style="color:var(--white);">N/A</strong>
-                <% } %>
-                |
-                Version: <%= file.version %> | 
-                Downloads: <%= file.downloads.toLocaleString() %> | 
-                Uploaded By: <a href="/users/<%= file.uploader %>"><%= file.uploader %></a>
-            </p>
-        </div>
-    </section>
-
-    <!-- Download & Action Buttons -->
-    <section class="mod-actions">
-        <a href="/download-file/<%= file._id %>" class="btn btn-primary" style="padding: 15px 30px; font-size: 1.2rem;">Download Now</a>
-        
-        <!-- Whitelist/Wishlist Toggle Logic -->
-        <% if (user) { %>
-            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0;">
-                <% if (userHasWhitelisted) { %>
-                    <button type="submit" class="btn btn-primary">Remove from Whitelist</button>
-                <% } else { %>
-                    <button type="submit" class="btn btn-secondary">Add to Whitelist</button>
-                <% } %>
-            </form>
-        <% } %>
-
-        <button type="button" class="btn btn-secondary" id="reportModalBtn">Report File</button>
-
-        <!-- Uploader Add Version Button -->
-        <% if (user && user.username === file.uploader) { %>
-            <a href="/mods/<%= file._id %>/add-version" class="btn btn-secondary">Add New Version</a>
-        <% } %>
-
-        <!-- Voting UI -->
-        <div class="status-voting-container" style="margin-left: auto; text-align: right;">
-            <p style="margin-bottom: 0.5rem; color: var(--silver); font-size: 0.9rem;">Does this mod work?</p>
+            <% } %>
             
-            <% const totalVotes = (file.workingVoteCount || 0) + (file.notWorkingVoteCount || 0); %>
-            <% const workingPercentage = totalVotes > 0 ? (file.workingVoteCount / totalVotes) * 100 : 0; %>
+            <a href="/download-file/<%= file._id %>" class="download-button">
+                Download APK (<%= (file.fileSize / (1024 * 1024)).toFixed(1) %> MB)
+            </a>
             
-            <div style="display: flex; justify-content: flex-end;">
-                <div class="vote-bar" title="<%= file.workingVoteCount %> Working / <%= file.notWorkingVoteCount %> Not Working">
-                    <div class="vote-bar-working" style="width: <%= workingPercentage %>%;"></div>
+            <div class="action-buttons">
+                <% if (user) { %>
+                    <form action="/files/<%= file._id %>/wishlist" method="POST">
+                        <button type="submit" class="full-width-btn">
+                            <%= userHasWhitelisted ? '❤️ In Wishlist' : '🤍 Add to Wishlist' %>
+                        </button>
+                    </form>
+                <% } %>
+                <button class="full-width-btn">⚑ Report File</button>
+            </div>
+
+            <ul class="meta-info">
+                <li>Version: <span><%= file.version %></span></li>
+                <li>Category: <span><%= file.category %></span></li>
+                <li>Developer: <span class="gold"><%= file.developer %></span></li>
+                <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
+                <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+                <li>Working?: 
+                    <span class="gold">
+                        <% let total = file.workingVoteCount + file.notWorkingVoteCount; %>
+                        <%= total > 0 ? Math.round((file.workingVoteCount / total) * 100) : 0 %>%
+                    </span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Right Details Panel -->
+        <section class="details-panel">
+            <div class="tabs-nav">
+                <button class="tab-button active" data-tab="description">Description</button>
+                <button class="tab-button" data-tab="screenshots">Screenshots</button>
+                <button class="tab-button" data-tab="versions">Versions</button>
+                <button class="tab-button" data-tab="comments">Comments</button>
+            </div>
+
+            <!-- Tab: Description -->
+            <div id="description" class="tab-content active">
+                <div class="info-box silver">
+                    <h2>What's New</h2>
+                    <p><%- file.officialDescription ? file.officialDescription.replace(/\n/g, '<br>') : 'No recent update notes.' %></p>
+                </div>
+
+                <div class="info-box gold">
+                    <h2>Mod Information</h2>
+                    <p><%- file.modDescription ? file.modDescription.replace(/\n/g, '<br>') : 'No mod info provided.' %></p>
                 </div>
             </div>
-            
-            <div class="vote-buttons" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
-            <% if (user && !userHasVotedOnStatus) { %>
-                <form action="/files/<%= file._id %>/vote-status" method="POST">
-                    <input type="hidden" name="voteType" value="working">
-                    <button type="submit" class="btn btn-secondary" style="padding: 2px 10px;" title="Yes, it works!">✔</button>
-                </form>
-                <form action="/files/<%= file._id %>/vote-status" method="POST">
-                    <input type="hidden" name="voteType" value="not-working">
-                    <button type="submit" class="btn btn-secondary" style="padding: 2px 10px;" title="No, it's broken.">✖</button>
-                </form>
-            <% } else if (user && userHasVotedOnStatus) { %>
-                <p style="font-size: 0.8rem; color: var(--silver);"><em>Thanks for voting!</em></p>
-            <% } %>
+
+            <!-- Tab: Screenshots -->
+            <div id="screenshots" class="tab-content">
+                <div class="screenshot-gallery">
+                    <% if (file.screenshotUrls && file.screenshotUrls.length > 0) { %>
+                        <% file.screenshotUrls.forEach(url => { %>
+                            <img src="<%= url %>" alt="Screenshot">
+                        <% }) %>
+                    <% } else { %>
+                        <p>No screenshots available.</p>
+                    <% } %>
+                </div>
             </div>
-        </div>
-    </section>
+            
+            <!-- Tab: Versions -->
+            <div id="versions" class="tab-content">
+                <table class="versions-table" style="width:100%; text-align:left;">
+                    <thead>
+                        <tr style="color:var(--gold)">
+                            <th>Version</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% versionHistory.forEach(v => { %>
+                        <tr>
+                            <td><%= v.version %></td>
+                            <td><%= new Date(v.createdAt).toLocaleDateString() %></td>
+                            <td><a href="/download-file/<%= v._id %>" style="color:var(--gold)">Download</a></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
 
-    <!-- Screenshots and Video Gallery -->
-    <section class="mod-media-gallery">
-        <% file.screenshotUrls.forEach(url => { %>
-            <img src="<%= url %>" alt="Screenshot of <%= file.name %>">
-        <% }) %>
-    </section>
-
-    <!-- VirusTotal Scan Section -->
-    <% if (file.virusTotalAnalysisId) { %>
-    <section class="virustotal-results" style="margin-top: 3rem; padding: 1.5rem; background-color:var(--dark-grey); border-radius:8px;">
-        <h3>VirusTotal Scan Report</h3>
-        <% if (file.virusTotalScanDate) { %>
-            <p>Scanned on: <%= file.virusTotalScanDate.toLocaleDateString() %></p>
-            <p style="font-size: 1.5rem; color: <%= file.virusTotalPositiveCount > 0 ? '#ffadad' : '#b0ffb0' %>; font-weight: bold;">
-                <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %> detections
-            </p>
-            <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="btn btn-secondary" style="margin-top:1rem;">View Full Report</a>
-        <% } else { %>
-            <p style="color: var(--silver);">The file has been submitted for analysis. The report is pending.</p>
-             <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="btn btn-secondary" style="margin-top:1rem;">Check Scan Status</a>
-        <% } %>
-    </section>
-    <% } %>
-
-    <!-- Mod/Official Description Tabs -->
-    <section class="mod-description-tabs">
-        <div class="tabs-nav">
-            <button class="tab-button active" data-tab="mod-info">Mod Information</button>
-            <button class="tab-button" data-tab="original-desc">Original Description</button>
-        </div>
-        <div id="mod-info" class="tab-content active">
-            <%- file.modDescription.replace(/\n/g, '<br>') %>
-        </div>
-        <div id="original-desc" class="tab-content">
-            <%- file.officialDescription ? file.officialDescription.replace(/\n/g, '<br>') : 'No official description was provided.' %>
-        </div>
-    </section>
-
-    <!-- Version History Section -->
-    <section class="version-history" style="margin-top: 3rem;">
-        <h2>Version History</h2>
-        <table class="uploads-table">
-            <thead>
-                <tr>
-                    <th>Version</th>
-                    <th>File Size</th>
-                    <th>Upload Date</th>
-                    <th>Download</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% versionHistory.forEach(version => { %>
-                    <tr style="<%= version._id.equals(file._id) ? 'background-color: rgba(255, 215, 0, 0.1);' : '' %>">
-                        <td>
-                            <%= version.version %>
-                            <% if(version._id.equals(file._id)) { %> <strong>(Current)</strong> <% } %>
-                        </td>
-                        <td><%= (version.fileSize / 1024 / 1024).toFixed(2) %> MB</td>
-                        <td><%= version.createdAt.toLocaleDateString() %></td>
-                        <td><a href="/download-file/<%= version._id %>" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">Download</a></td>
-                    </tr>
-                <% }) %>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- Write a Review Section -->
-    <% if (user) { %> 
-    <section class="write-review-section" style="margin-top: 3rem;">
-        <h3>Write a Review</h3>
-        <form action="/reviews/add/<%= file._id %>" method="POST" class="review-form">
-             <div class="form-group">
-                <label for="rating">Your Rating (1-5)*</label>
-                <select name="rating" id="rating" required style="width:100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;">
-                    <option value="" disabled selected>Select a rating</option>
-                    <option value="5">5 Stars (Excellent)</option>
-                    <option value="4">4 Stars (Good)</option>
-                    <option value="3">3 Stars (Average)</option>
-                    <option value="2">2 Stars (Poor)</option>
-                    <option value="1">1 Star (Awful)</option>
-                </select>
-             </div>
-             <div class="form-group">
-                <label for="comment">Your Comment*</label>
-                <textarea name="comment" id="comment" required style="width: 100%; min-height: 100px; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;"></textarea>
-             </div>
-             <button type="submit" class="btn btn-primary">Submit Review</button>
-        </form>
-    </section>
-    <% } %>
-
-    <!-- Existing Reviews Section -->
-    <section class="reviews-list" style="margin-top: 3rem; margin-bottom: 3rem;">
-        <h2>User Reviews (<%= file.ratingCount %>)</h2>
-        <% if (reviews && reviews.length > 0) { %>
-            <% reviews.forEach(review => { %>
-                <div class="review-card" style="background-color: var(--dark-grey); border: 1px solid var(--light-grey); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="star-rating" data-rating="<%= review.rating %>">
-                             <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                        </div>
-                        <span style="color: var(--silver); font-size: 0.9rem;">
-                            by <%= review.username %> on <%= review.createdAt.toLocaleDateString() %>
-                        </span>
-                    </div>
-                    <p style="margin-top: 1rem;"><%- review.comment.replace(/\n/g, '<br>') %></p>
-
-                    <!-- REVIEW ACTIONS SECTION -->
-                    <div class="review-actions" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--light-grey); display: flex; align-items: center; gap: 1rem;">
-                        <form action="/reviews/<%= review._id %>/vote" method="POST">
-                            <button type="submit" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.9rem;">
-                                Helpful
-                            </button>
+            <!-- Tab: Comments -->
+            <div id="comments" class="tab-content">
+                <% if (user) { %>
+                    <div class="comment-form">
+                        <h3>Leave a Review</h3>
+                        <form action="/reviews/add/<%= file._id %>" method="POST">
+                            <textarea name="comment" placeholder="Share your experience..." required style="width:100%; height:100px; background:#222; color:white; border-radius:8px; padding:10px;"></textarea>
+                            <button type="submit" class="download-button" style="margin-top:10px; cursor:pointer;">Post Comment</button>
                         </form>
-                        <% if (review.isHelpfulCount > 0) { %>
-                            <span style="color: var(--silver);"><%= review.isHelpfulCount %> people found this helpful</span>
-                        <% } %>
                     </div>
-                </div>
-            <% }) %>
-        <% } else { %>
-            <p>No reviews have been written for this mod yet. Be the first!</p>
-        <% } %>
-    </section>
+                <% } %>
 
-    <!-- REPORT FILE MODAL -->
-    <div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
-        <div class="modal-content" style="background-color: var(--dark-grey); margin: 15% auto; padding: 2rem; border: 1px solid var(--light-grey); width: 80%; max-width: 500px; border-radius: 8px; position: relative;">
-            <span class="close-modal" style="color: var(--silver); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-            <h3>Report "<%= file.name %>"</h3>
-            <form action="/files/<%= file._id %>/report" method="POST">
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label for="reason">Reason for reporting*</label>
-                    <select name="reason" id="reason" required style="width:100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;">
-                        <option value="" disabled selected>Select a reason...</option>
-                        <option value="malware">Contains malware/virus</option>
-                        <option value="broken-file">File is broken or does not work</option>
-                        <option value="incorrect-info">Description or screenshots are incorrect</option>
-                        <option value="copyright">Copyright infringement</option>
-                        <option value="other">Other</option>
-                    </select>
+                <div class="comment-list">
+                    <% reviews.forEach(review => { %>
+                    <div class="comment-item" style="background:#111; padding:15px; border-radius:10px; margin-top:15px;">
+                        <div class="comment-header" style="display:flex; justify-content:space-between;">
+                            <strong><%= review.username %></strong>
+                            <span class="gold">★ <%= review.rating %></span>
+                        </div>
+                        <p style="color:var(--silver); margin-top:10px;"><%= review.comment %></p>
+                    </div>
+                    <% }) %>
                 </div>
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label for="additionalComments">Additional Comments (Optional)</label>
-                    <textarea name="additionalComments" id="additionalComments" style="width: 100%; min-height: 80px; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Submit Report</button>
-            </form>
-        </div>
+            </div>
+        </section>
     </div>
-
-</div> <!-- End of container -->
+</main>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- Tab Functionality ---
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-
-                button.classList.add('active');
-                const target = button.getAttribute('data-tab');
-                document.getElementById(target).classList.add('active');
-            });
-        });
-
-        // --- Initialize Star Ratings ---
-        initializeStarRatings();
-
-        // --- MODAL LOGIC ---
-        const modal = document.getElementById('reportModal');
-        const btn = document.getElementById('reportModalBtn');
-        const span = document.getElementsByClassName('close-modal')[0];
-
-        if (btn) {
-            btn.onclick = function() {
-                modal.style.display = 'block';
-            }
-        }
-        if (span) {
-            span.onclick = function() {
-                modal.style.display = 'none';
-            }
-        }
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        }
-
-        // Show a "Thank you" message after reporting
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('reported') && urlParams.get('reported') === 'true') {
-            alert('Thank you for your report. An administrator will review it shortly.');
-        }
-    });
-
-    function initializeStarRatings() {
-        document.querySelectorAll('.star-rating').forEach(container => {
-            const rating = parseFloat(container.dataset.rating);
-            if(isNaN(rating)) return;
+    // Simple Tab Switcher Logic
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.getAttribute('data-tab');
             
-            const stars = container.querySelectorAll('.star');
-            const fullStars = Math.floor(rating);
-            const partialStar = (rating % 1);
-
-            stars.forEach((star, i) => {
-                if (i < fullStars) {
-                    star.classList.add('filled');
-                } else if (i === fullStars && partialStar > 0) {
-                    star.style.setProperty('--fill-percentage', `${partialStar * 100}%`);
-                    star.classList.add('partial');
-                } else {
-                    star.classList.remove('filled', 'partial');
-                    star.style.removeProperty('--fill-percentage');
-                }
-            });
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            button.classList.add('active');
+            document.getElementById(target).classList.add('active');
         });
-    }
+    });
 </script>
 
-<%- include('../partials/footer') %>
+<%- include('partials/footer') %>
