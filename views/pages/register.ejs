@@ -1,56 +1,245 @@
-<%- include('../partials/header') %>
-
-<!-- Google reCAPTCHA Script -->
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
-<style>
-    .auth-form-container {
-        max-width: 450px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background-color: var(--dark-grey);
-        border: 1px solid var(--light-grey);
-        border-radius: 8px;
-    }
-    .form-group { margin-bottom: 1.5rem; }
-    .form-group label { display: block; margin-bottom: .5rem; font-weight: bold; }
-    .form-group input { width: 100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); border-radius: 4px; color: var(--white); font-size: 1rem; }
-    .form-footer { margin-top: 1.5rem; text-align: center; color: var(--silver); }
-</style>
-
-<div class="auth-form-container">
-    <h2 style="text-align: center; margin-bottom: 2rem;">Create a New Account</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - GPL Mods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Dynamic reCAPTCHA Script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
-    <!-- Google Authentication Button -->
-    <a href="/auth/google" class="btn btn-secondary" style="width:100%; display:block; text-align:center; margin-bottom:1.5rem;">Continue with Google</a>
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --error: #ff4d4d;
+            --success: #2ecc71;
+        }
 
-    <p style="text-align:center; color: var(--silver); margin-bottom:1.5rem;">- OR -</p>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--black); 
+            color: var(--white); 
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    <form action="/register" method="POST">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" required>
-        </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
+        .auth-container { 
+            width: 100%;
+            max-width: 450px; 
+            background-color: var(--dark-gray); 
+            padding: 40px; 
+            border-radius: 15px; 
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-        <!-- reCAPTCHA widget added here -->
-        <div class="form-group">
-            <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
-        </div>
+        .logo-area {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--gold);
+            text-decoration: none;
+            display: block;
+        }
+        .logo-area span { color: var(--silver); }
 
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
-    </form>
-    
-    <div class="form-footer">
-        <p>Already have an account? <a href="/login">Log In</a></p>
+        .form-container h2 { text-align: center; font-size: 1.8em; margin-bottom: 25px; }
+        
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); font-size: 0.9em; }
+        .form-group input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; }
+        .form-group input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+
+        /* Password Strength Bar */
+        .strength-container {
+            margin-top: 8px;
+            height: 5px;
+            width: 100%;
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+        }
+        #strength-text {
+            font-size: 0.75em;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+        }
+
+        .submit-button { 
+            display: block; 
+            width: 100%; 
+            background: var(--gold); 
+            color: var(--black); 
+            padding: 14px 20px; 
+            border-radius: 8px; 
+            font-size: 1.1em; 
+            font-weight: 700; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            margin-top: 10px;
+        }
+        .submit-button:hover { transform: translateY(-2px); box-shadow: 0 0 20px var(--glow-gold); }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #333;
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-color: var(--white);
+            color: #000;
+            padding: 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1em;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .google-btn img {
+            width: 20px;
+            margin-right: 10px;
+        }
+        .google-btn:hover { background-color: #f1f1f1; }
+
+        .form-switch { text-align: center; margin-top: 25px; color: var(--silver); font-size: 0.9em; }
+        .form-switch a { color: var(--gold); text-decoration: none; font-weight: 600; }
+        .form-switch a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .auth-container { padding: 25px; border-radius: 0; height: 100vh; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Changed index.html to / -->
+        <a href="/" class="logo-area">GPL <span>Mods</span></a>
+        
+        <section class="form-container">
+            <h2>Create Account</h2>
+
+            <!-- Dynamic Messages Block -->
+            <% if (message) { %>
+                <p style="padding: 10px; background-color: #2b1a1a; border: 1px solid var(--gold); text-align: center; margin-bottom: 1rem; border-radius: 8px; color: var(--gold);">
+                    <%= message %>
+                </p>
+            <% } %>
+
+            <!-- Updated form to POST to /register -->
+            <form id="signup-form" action="/register" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. ModMaster2025" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    <div class="strength-container">
+                        <div id="strength-bar"></div>
+                    </div>
+                    <span id="strength-text">Strength: Too short</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+                </div>
+
+                <!-- reCAPTCHA widget -->
+                <div class="form-group">
+                    <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
+                </div>
+
+                <button type="submit" class="submit-button">Sign Up</button>
+            </form>
+
+            <div class="divider">or</div>
+
+            <!-- Google Login Link -->
+            <a href="/auth/google" class="google-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_G_Logo.svg" alt="Google Logo">
+                Continue with Google
+            </a>
+
+            <!-- Switch to Login link -->
+            <p class="form-switch">Already have an account? <a href="/login">Login</a></p>
+        </section>
     </div>
-</div>
 
-<%- include('../partials/footer') %>
+    <script>
+        // Keeping only the UI logic for the password strength bar
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthText = document.getElementById('strength-text');
+
+        passwordInput.addEventListener('input', () => {
+            const val = passwordInput.value;
+            let strength = 0;
+            if (val.length >= 6) strength += 25;
+            if (val.match(/[a-z]/) && val.match(/[A-Z]/)) strength += 25;
+            if (val.match(/\d/)) strength += 25;
+            if (val.match(/[^a-zA-Z\d]/)) strength += 25;
+
+            strengthBar.style.width = strength + '%';
+            if (strength <= 25) {
+                strengthBar.style.backgroundColor = '#ff4d4d';
+                strengthText.innerText = 'Strength: Weak';
+                strengthText.style.color = '#ff4d4d';
+            } else if (strength <= 75) {
+                strengthBar.style.backgroundColor = '#ffa500';
+                strengthText.innerText = 'Strength: Medium';
+                strengthText.style.color = '#ffa500';
+            } else {
+                strengthBar.style.backgroundColor = '#2ecc71';
+                strengthText.innerText = 'Strength: Strong';
+                strengthText.style.color = '#2ecc71';
+            }
+        });
+    </script>
+</body>
+</html>

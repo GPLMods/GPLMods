@@ -1,49 +1,10 @@
-<%- include('partials/header') %> <!-- Assuming you have a header partial -->
-
-<style>
-    /* Keeping your specific layout styles */
-    :root {
-        --black: #0a0a0a; --dark-gray: #1a1a1a; --white: #ffffff;
-        --gold: #FFD700; --silver: #c0c0c0; --glow-gold: rgba(255, 215, 0, 0.5);
-        --light-gray: #3a3a3a;
-    }
-    .download-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
-    .info-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; text-align: center; align-self: flex-start; }
-    .app-icon { width: 120px; height: 120px; border-radius: 25px; margin: 0 auto 20px auto; object-fit: cover; display: block; }
-    .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
-    .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
-    .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
-    .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
-    .stars-inner::before { content: "★★★★★"; color: var(--gold); }
-    
-    .download-button { display: block; background: var(--gold); color: var(--black); padding: 18px 20px; border-radius: 10px; text-decoration: none; font-size: 1.3em; font-weight: 700; margin-bottom: 15px; transition: 0.3s; box-shadow: 0 0 15px var(--glow-gold); }
-    .download-button:hover { transform: translateY(-5px); }
-    
-    .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
-    .full-width-btn { width: 100%; border: 1px solid #444; background: transparent; color: var(--silver); padding: 10px; border-radius: 8px; cursor: pointer; }
-    
-    .details-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; }
-    .tabs-nav { display: flex; border-bottom: 2px solid #2a2a2a; margin-bottom: 25px; }
-    .tab-button { background: none; border: none; color: var(--silver); padding: 15px 25px; cursor: pointer; }
-    .tab-button.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .screenshot-gallery { column-count: 3; column-gap: 15px; }
-    .screenshot-gallery img { width: 100%; border-radius: 10px; margin-bottom: 15px; }
-    
-    /* Meta Info List */
-    .meta-info { list-style: none; text-align: left; color: var(--silver); }
-    .meta-info li { padding: 10px 0; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; }
-    
-    @media (max-width: 992px) { .download-layout { grid-template-columns: 1fr; } }
-</style>
+<%- include('../partials/header') %>
 
 <main class="container">
     <div class="download-layout">
         <!-- Left Info Panel -->
         <aside class="info-panel">
-            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="app-icon">
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="app-icon">
             <h1><%= file.name %></h1>
             
             <div class="rating">
@@ -56,36 +17,54 @@
             <% if (file.certification === 'certified') { %>
             <div class="safety-badge">
                 <span class="badge-icon">🛡️</span>
-                <span class="badge-text">100% Safe & Tested</span>
+                <span class="badge-text">100% Safe & Admin Certified</span>
             </div>
             <% } %>
             
             <a href="/download-file/<%= file._id %>" class="download-button">
-                Download APK (<%= (file.fileSize / (1024 * 1024)).toFixed(1) %> MB)
+                Download (<%= (file.fileSize / (1024 * 1024)).toFixed(1) %> MB)
             </a>
             
             <div class="action-buttons">
-                <% if (user) { %>
-                    <form action="/files/<%= file._id %>/wishlist" method="POST">
-                        <button type="submit" class="full-width-btn">
-                            <%= userHasWhitelisted ? '❤️ In Wishlist' : '🤍 Add to Wishlist' %>
-                        </button>
-                    </form>
+                <div class="action-row">
+                    <% if (user) { %>
+                        <form action="/files/<%= file._id %>/whitelist" method="POST" style="flex: 1; margin:0;">
+                            <button type="submit" class="full-width-btn" style="cursor:pointer; font-family: 'Poppins'; font-size: 1em;">
+                                <%= userHasWhitelisted ? '❤️ In Wishlist' : '🤍 Add to Wishlist' %>
+                            </button>
+                        </form>
+                        <button type="button" id="reportModalBtn" class="full-width-btn" style="flex: 1; cursor:pointer;">⚑ Report</button>
+                    <% } %>
+                </div>
+
+                <% if (file.virusTotalAnalysisId) { %>
+                <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
                 <% } %>
-                <button class="full-width-btn">⚑ Report File</button>
+
+                <% if (user && user.username === file.uploader) { %>
+                <a href="/mods/<%= file._id %>/add-version" class="full-width-btn">＋ Add New Version</a>
+                <% } %>
             </div>
 
             <ul class="meta-info">
                 <li>Version: <span><%= file.version %></span></li>
-                <li>Category: <span><%= file.category %></span></li>
-                <li>Developer: <span class="gold"><%= file.developer %></span></li>
+                <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
+                <li>Developer: <a href="/developer?name=<%= encodeURIComponent(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a></li>
+                <li>Uploaded by: <a href="/users/<%= file.uploader %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a></li>
                 <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
                 <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
-                <li>Working?: 
-                    <span class="gold">
-                        <% let total = file.workingVoteCount + file.notWorkingVoteCount; %>
-                        <%= total > 0 ? Math.round((file.workingVoteCount / total) * 100) : 0 %>%
-                    </span>
+                <li>Working?:
+                    <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 0; %>
+                    <div class="voting-system">
+                        <span class="working-percentage"><%= workingPercentage %>%</span>
+                        <% if(user && !userHasVotedOnStatus) { %>
+                        <div class="vote-buttons">
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
+                        </div>
+                        <% } %>
+                    </div>
                 </li>
             </ul>
         </aside>
@@ -99,95 +78,113 @@
                 <button class="tab-button" data-tab="comments">Comments</button>
             </div>
 
-            <!-- Tab: Description -->
             <div id="description" class="tab-content active">
+                <% if (file.officialDescription) { %>
                 <div class="info-box silver">
                     <h2>What's New</h2>
-                    <p><%- file.officialDescription ? file.officialDescription.replace(/\n/g, '<br>') : 'No recent update notes.' %></p>
+                    <p><%- file.officialDescription.replace(/\n/g, '<br>') %></p>
                 </div>
+                <% } %>
 
                 <div class="info-box gold">
                     <h2>Mod Information</h2>
-                    <p><%- file.modDescription ? file.modDescription.replace(/\n/g, '<br>') : 'No mod info provided.' %></p>
+                    <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
                 </div>
             </div>
 
-            <!-- Tab: Screenshots -->
             <div id="screenshots" class="tab-content">
+                <h2>Screenshots</h2>
                 <div class="screenshot-gallery">
-                    <% if (file.screenshotUrls && file.screenshotUrls.length > 0) { %>
-                        <% file.screenshotUrls.forEach(url => { %>
-                            <img src="<%= url %>" alt="Screenshot">
-                        <% }) %>
-                    <% } else { %>
-                        <p>No screenshots available.</p>
-                    <% } %>
+                    <% file.screenshotUrls.forEach(url => { %>
+                        <img src="<%= url %>" alt="Screenshot of <%= file.name %>">
+                    <% }) %>
                 </div>
             </div>
             
-            <!-- Tab: Versions -->
             <div id="versions" class="tab-content">
-                <table class="versions-table" style="width:100%; text-align:left;">
-                    <thead>
-                        <tr style="color:var(--gold)">
-                            <th>Version</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+                <h2>Version History</h2>
+                <table class="versions-table">
+                    <thead><tr><th>Version</th><th>Date</th><th>Download</th></tr></thead>
                     <tbody>
-                        <% versionHistory.forEach(v => { %>
-                        <tr>
-                            <td><%= v.version %></td>
-                            <td><%= new Date(v.createdAt).toLocaleDateString() %></td>
-                            <td><a href="/download-file/<%= v._id %>" style="color:var(--gold)">Download</a></td>
-                        </tr>
+                        <% versionHistory.forEach(version => { %>
+                            <tr>
+                                <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
+                                <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
+                                <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
+                            </tr>
                         <% }) %>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Tab: Comments -->
             <div id="comments" class="tab-content">
+                <h2>Community Comments</h2>
                 <% if (user) { %>
-                    <div class="comment-form">
-                        <h3>Leave a Review</h3>
-                        <form action="/reviews/add/<%= file._id %>" method="POST">
-                            <textarea name="comment" placeholder="Share your experience..." required style="width:100%; height:100px; background:#222; color:white; border-radius:8px; padding:10px;"></textarea>
-                            <button type="submit" class="download-button" style="margin-top:10px; cursor:pointer;">Post Comment</button>
-                        </form>
-                    </div>
+                <div class="comment-form">
+                    <h3>Leave a Review</h3>
+                    <form action="/reviews/add/<%= file._id %>" method="POST">
+                        <textarea name="comment" placeholder="Share your experience..." required></textarea>
+                        <div class="form-footer">
+                            <div class="rating-input">
+                                <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 stars">☆</label>
+                                <input type="radio" id="star4" name="rating" value="4"><label for="star4">☆</label>
+                                <input type="radio" id="star3" name="rating" value="3"><label for="star3">☆</label>
+                                <input type="radio" id="star2" name="rating" value="2"><label for="star2">☆</label>
+                                <input type="radio" id="star1" name="rating" value="1"><label for="star1">☆</label>
+                            </div>
+                            <button type="submit">Post Comment</button>
+                        </div>
+                    </form>
+                </div>
                 <% } %>
 
                 <div class="comment-list">
-                    <% reviews.forEach(review => { %>
-                    <div class="comment-item" style="background:#111; padding:15px; border-radius:10px; margin-top:15px;">
-                        <div class="comment-header" style="display:flex; justify-content:space-between;">
-                            <strong><%= review.username %></strong>
-                            <span class="gold">★ <%= review.rating %></span>
+                    <% if(reviews && reviews.length > 0) { %>
+                        <% reviews.forEach(review => { %>
+                        <div class="comment-item">
+                            <div class="comment-header">
+                                <div class="avatar-wrapper">
+                                    <img src="<%= (review.user && review.user.profileImageUrl) ? review.user.profileImageUrl : '/images/default-avatar.png' %>" alt="User Avatar">
+                                </div>
+                                <span class="comment-author"><%= review.username %></span>
+                                <div class="comment-rating rating">
+                                    <div class="stars-outer">
+                                        <div class="stars-inner" style="width: <%= (review.rating / 5) * 100 %>%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="comment-body"><%- review.comment.replace(/\n/g, '<br>') %></p>
                         </div>
-                        <p style="color:var(--silver); margin-top:10px;"><%= review.comment %></p>
-                    </div>
-                    <% }) %>
+                        <% }) %>
+                    <% } else { %>
+                        <p>No reviews yet. Be the first to leave one!</p>
+                    <% } %>
                 </div>
             </div>
         </section>
     </div>
 </main>
 
+<!-- Page-specific Report Modal (if you want to keep it) -->
+<!-- You would add the modal HTML here -->
+
 <script>
-    // Simple Tab Switcher Logic
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const target = button.getAttribute('data-tab');
-            
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            button.classList.add('active');
-            document.getElementById(target).classList.add('active');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab Functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTabId = button.getAttribute('data-tab');
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(targetTabId).classList.add('active');
+            });
         });
+
+        // Add your report modal JS logic here if you re-add the modal HTML
     });
 </script>
 
-<%- include('partials/footer') %>
+<%- include('../partials/footer') %>

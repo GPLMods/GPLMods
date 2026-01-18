@@ -1,0 +1,306 @@
+<%- include('../partials/header') %>
+
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1>Upload <span>Your Mod</span></h1>
+            <p>Contribute to the community by sharing your creation. All submissions are reviewed by our team.</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="upload-layout">
+            <!-- Updated Form Tag with action, method, and enctype -->
+            <form class="upload-form" id="modForm" action="/upload" method="POST" enctype="multipart/form-data">
+                
+                <!-- Mod Icon Preview & Upload -->
+                <div class="icon-upload-container">
+                    <label>Mod Icon</label>
+                    <div class="icon-preview" id="iconPreviewBox">
+                        <img id="iconImage" src="" alt="Icon Preview">
+                        <span id="iconPlaceholder">Preview</span>
+                    </div>
+                    <div class="file-input-wrapper" style="max-width: 250px;">
+                        <input type="file" id="modIcon" name="modIcon" accept="image/*" required>
+                        <label for="modIcon" class="file-input-label">Choose Icon</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modName">Mod Name</label>
+                    <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="developerName">Official Developer / Company</label>
+                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
+                </div>
+
+                <div class="form-group">
+                    <label for="modPlatform">Platform</label>
+                    <select id="modPlatform" name="modPlatform" required>
+                        <option value="" disabled selected>Select a platform...</option>
+                        <option value="android">Android</option>
+                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                        <option value="windows">Windows</option>
+                        <option value="wordpress">WordPress</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="modCategory">Category</label>
+                    <select id="modCategory" name="modCategory" required disabled>
+                        <option value="" disabled selected>Select a platform first...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="modVersion">Mod Version</label>
+                    <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="modFeatures">Mod Features</label>
+                    <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="whatsNew">What's New (Optional)</label>
+                    <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">Tags (Optional)</label>
+                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
+                </div>
+
+                <div class="form-group">
+                    <label>Mod File</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="modFile" name="modFile" accept=".apk,.xapk,.ipa,.deb,.zip,.exe,.msi" required>
+                        <label for="modFile" class="file-input-label">Choose Mod File</label>
+                        <span class="file-name" id="modFileName">No file selected</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mod Screenshots</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="screenshotFile" name="screenshotFile" accept="image/png, image/jpeg" required>
+                        <label for="screenshotFile" class="file-input-label">Choose Screenshot</label>
+                        <span class="file-name" id="screenshotFileName">No file selected</span>
+                    </div>
+                    <div class="preview-container" id="screenshotPreviewContainer">
+                        <img id="screenshotPreview" src="" alt="Screenshot Preview">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="videoUrl">Video URL (Optional)</label>
+                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    <div class="preview-container" id="videoPreviewContainer">
+                        <!-- YouTube Iframe will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="progress-bar-container" id="progressBarContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <span class="progress-text" id="progressText">0%</span>
+                </div>
+
+                <button type="submit" class="submit-button" id="submitBtn">Submit Mod for Review</button>
+            </form>
+            
+            <!-- Submission Guidelines -->
+            <aside class="guidelines">
+                <h3>Submission Guidelines</h3>
+                <ul>
+                    <li><b>Be Accurate:</b> The mod name, version, and developer details must be correct.</li>
+                    <li><b>Safety First:</b> Mods containing malware or harmful code result in a permanent ban.</li>
+                    <li><b>Testing:</b> Ensure the mod works as described before uploading.</li>
+                    <li><b>Media:</b> High-quality icons and screenshots improve approval chances.</li>
+                </ul>
+            </aside>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        const modForm = document.getElementById('modForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // --- Icon Preview Logic ---
+        const modIcon = document.getElementById('modIcon');
+        const iconImage = document.getElementById('iconImage');
+        const iconPlaceholder = document.getElementById('iconPlaceholder');
+
+        modIcon.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    iconImage.src = e.target.result;
+                    iconImage.style.display = 'block';
+                    iconPlaceholder.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- Dynamic Category Dropdown Logic ---
+        const platformSelect = document.getElementById('modPlatform');
+        const categorySelect = document.getElementById('modCategory');
+
+        const categoriesByPlatform = {
+            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+        };
+
+        platformSelect.addEventListener('change', function() {
+            const selectedPlatform = this.value;
+            const categories = categoriesByPlatform[selectedPlatform] || [];
+            categorySelect.innerHTML = '';
+            if (categories.length > 0) {
+                categorySelect.disabled = false;
+                let defaultOption = document.createElement('option');
+                defaultOption.text = 'Select a category...';
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                categorySelect.add(defaultOption);
+                categories.forEach(function(category) {
+                    let option = document.createElement('option');
+                    option.text = category;
+                    option.value = category.toLowerCase().replace(/ /g, '-');
+                    categorySelect.add(option);
+                });
+            } else {
+                categorySelect.disabled = true;
+            }
+        });
+
+        // --- File Name Display Logic ---
+        const setupFileNameDisplay = (inputId, spanId) => {
+            const input = document.getElementById(inputId);
+            const span = document.getElementById(spanId);
+            input.addEventListener('change', function() {
+                span.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
+            });
+        };
+
+        setupFileNameDisplay('modFile', 'modFileName');
+        setupFileNameDisplay('screenshotFile', 'screenshotFileName');
+        
+        // --- Screenshot Preview Logic ---
+        const screenshotInput = document.getElementById('screenshotFile');
+        const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
+        const screenshotPreview = document.getElementById('screenshotPreview');
+
+        screenshotInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    screenshotPreview.src = e.target.result;
+                    screenshotPreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                screenshotPreview.src = '';
+                screenshotPreviewContainer.style.display = 'none';
+            }
+        });
+
+        // --- Video Preview Logic ---
+        const videoUrlInput = document.getElementById('videoUrl');
+        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+
+        function getYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        videoUrlInput.addEventListener('input', function() {
+            const videoId = getYouTubeId(this.value);
+            if (videoId) {
+                videoPreviewContainer.style.display = 'block';
+                videoPreviewContainer.innerHTML = `<div class="video-preview-wrapper"><iframe src="//www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            } else {
+                videoPreviewContainer.style.display = 'none';
+                videoPreviewContainer.innerHTML = '';
+            }
+        });
+
+        // --- Real Form Submission with Live Progress ---
+        modForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const progressBarContainer = document.getElementById('progressBarContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            // Show progress bar and disable the button
+            progressBarContainer.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+
+            // Create a FormData object from the form
+            const formData = new FormData(modForm);
+            
+            // Use XMLHttpRequest (XHR) to get upload progress events
+            const xhr = new XMLHttpRequest();
+
+            // Listen for progress events
+            xhr.upload.addEventListener('progress', function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = percentComplete + '%';
+                }
+            });
+
+            // Handle the response when the upload is complete
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 201 || xhr.status === 200) { // Check for success status
+                    progressText.textContent = 'Success!';
+                    progressBar.style.backgroundColor = '#2ecc71'; // Green for success
+                    
+                    setTimeout(() => {
+                        alert('Thank you! Your mod has been submitted for review.');
+                        window.location.href = '/'; // Redirect after success
+                    }, 500);
+
+                } else {
+                    // Handle server errors
+                    alert(`Upload failed. Server responded with an error: ${xhr.statusText}`);
+                    progressBar.style.backgroundColor = '#ff4d4d'; // Red for error
+                    progressText.textContent = 'Failed!';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Mod for Review';
+                }
+            });
+
+            // Handle network errors
+            xhr.addEventListener('error', function() {
+                alert('An error occurred during the upload. Please check your network connection.');
+                progressBar.style.backgroundColor = '#ff4d4d'; // Red for error
+                progressText.textContent = 'Network Error!';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Mod for Review';
+            });
+
+            // Configure and send the request to your backend
+            xhr.open('POST', '/upload'); // Your existing backend upload route
+            xhr.send(formData); // Send the form data
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

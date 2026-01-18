@@ -48,7 +48,6 @@ const { Types } = mongoose;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// You'll need a helper function. You can put this at the top of server.js
 function timeAgo(date) {
     if (!date) return 'Never';
     return date.toLocaleDateString();
@@ -91,7 +90,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// --- MAINTENANCE MODE MIDDLEWARE ---
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE === 'on') {
         if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
@@ -110,13 +108,12 @@ app.use(session({
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions'
     }),
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 7 days
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware to update user's last seen timestamp
 app.use(async (req, res, next) => {
     if (req.isAuthenticated()) {
         User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
@@ -134,7 +131,6 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 // ===============================
 // 6. PASSPORT STRATEGIES & UPLOAD CONFIG
 // ===============================
-
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage, limits: { fileSize: 500 * 1024 * 1024 } });
 
@@ -185,7 +181,6 @@ passport.deserializeUser(async (id, done) => {
     try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
 });
 
-// --- ATTACH SIGNED AVATAR URL TO USER SESSION ---
 app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user && req.user.profileImageKey) {
         try {
@@ -195,7 +190,6 @@ app.use(async (req, res, next) => {
             }), { expiresIn: 3600 });
             req.user.signedAvatarUrl = avatarUrl;
         } catch (error) {
-            console.error("Error generating signed avatar URL:", error);
             req.user.signedAvatarUrl = '/images/default-avatar.png';
         }
     }
@@ -207,7 +201,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Auth Helpers
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) return next();
     res.redirect('/login');
@@ -238,23 +231,14 @@ app.get('/', async (req, res) => {
     try {
         const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
-            const iconUrl = file.iconKey
-                ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 })
+            const key = file.iconUrl || file.iconKey; // Handles transition from iconKey to iconUrl
+            const iconUrl = key
+                ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })
                 : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
         res.render('pages/index', { files: filesWithUrls });
     } catch (e) {
-        console.error("Homepage Error:", e);
-        res.status(500).render('pages/500');
-    }
-});
-
-app.get('/updates', async (req, res) => {
-    try {
-        const announcements = await Announcement.find().sort({ createdAt: -1 });
-        res.render('pages/updates', { announcements });
-    } catch (error) {
         res.status(500).render('pages/500');
     }
 });
@@ -283,7 +267,8 @@ app.get('/category', async (req, res) => {
         const files = await File.find(queryFilter).sort(sortOptions).skip((currentPage - 1) * limit).limit(limit);
 
         const filesWithUrls = await Promise.all(files.map(async (file) => {
-            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
+            const key = file.iconUrl || file.iconKey;
+            const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
 
@@ -293,43 +278,6 @@ app.get('/category', async (req, res) => {
             currentPage,
             currentFilters: { platform: platform || 'all', category: category || 'all', sort: sort || 'latest' }
         });
-    } catch (error) {
-        res.status(500).render('pages/500');
-    }
-});
-
-app.get('/search', async (req, res) => {
-    try {
-        const query = req.query.q;
-        if (!query) return res.redirect('/');
-        const searchResults = await File.find({
-            isLatestVersion: true,
-            $or: [
-                { name: { $regex: query, $options: 'i' } },
-                { modDescription: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } }
-            ]
-        }).sort({ createdAt: -1 });
-
-        const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
-            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
-            return { ...file.toObject(), iconUrl };
-        }));
-        res.render('pages/search', { results: resultsWithUrls, query });
-    } catch (e) {
-        res.status(500).send("Search Error");
-    }
-});
-
-app.get('/developer', async (req, res) => {
-    try {
-        const developerName = req.query.name;
-        if (!developerName || developerName.trim() === '') return res.redirect('/');
-        const filesByDeveloper = await File.find({
-            developer: { $regex: new RegExp(`^${developerName}$`, 'i') },
-            isLatestVersion: true
-        }).sort({ createdAt: -1 });
-        res.render('pages/developer', { files: filesByDeveloper, developerName });
     } catch (error) {
         res.status(500).render('pages/500');
     }
@@ -353,10 +301,12 @@ app.get('/mods/:id', async (req, res) => {
             versionHistory = [currentFile, ...currentFile.olderVersions.slice().reverse()];
         }
 
-        const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: currentFile.iconKey }), { expiresIn: 3600 });
-        const screenshotUrls = await Promise.all(currentFile.screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
+        const iconKey = currentFile.iconUrl || currentFile.iconKey;
+        const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: iconKey }), { expiresIn: 3600 });
+        
+        const screenshotKeys = currentFile.screenshotUrls || currentFile.screenshotKeys || [];
+        const screenshotUrls = await Promise.all(screenshotKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
 
-        // UPDATED: Added population of user data for reviews
         const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageUrl');
         
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(currentFile._id) : false;
@@ -414,27 +364,9 @@ app.get('/verify-email', async (req, res) => {
     } catch (e) { res.status(400).send('Expired token.'); }
 });
 
-app.get('/forgot-password', (req, res) => res.render('pages/forgot-password'));
-app.post('/forgot-password', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.redirect('/forgot-password?success=Link sent if account exists.');
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        user.passwordResetExpires = Date.now() + 3600000;
-        await user.save();
-        const resetURL = `${process.env.BASE_URL}/reset-password/${resetToken}`;
-        res.redirect('/forgot-password?success=Link sent if account exists.');
-    } catch (error) { res.redirect('/forgot-password?error=Error.'); }
-});
-
 app.get('/logout', (req, res, next) => {
     req.logout(err => { if (err) return next(err); res.redirect('/'); });
 });
-
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/profile'));
 
 // ===============================
 // 9. PROFILE & ACCOUNT MGMT
@@ -448,91 +380,8 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send('Profile fetch error.'); }
 });
 
-app.get('/users/:username', async (req, res) => {
-    try {
-        const user = await User.findOne({ username: req.params.username });
-        if (!user) return res.status(404).render('pages/404');
-        if (user.profileImageKey) {
-            user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
-            }), { expiresIn: 3600 });
-        }
-        const uploads = await File.find({ uploader: req.params.username, isLatestVersion: true }).sort({ createdAt: -1 });
-        const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
-            const iconUrl = file.iconKey ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: file.iconKey }), { expiresIn: 3600 }) : '/images/default-avatar.png';
-            return { ...file.toObject(), iconUrl };
-        }));
-
-        const lastSeenString = timeAgo(user.lastSeen);
-
-        res.render('pages/public-profile', {
-            profileUser: user,
-            uploads: uploadsWithUrls,
-            lastSeen: lastSeenString
-        });
-    } catch (error) { res.status(500).render('pages/500'); }
-});
-
-app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
-    try {
-        const { username, email, bio } = req.body;
-        const user = await User.findById(req.user.id);
-        if (bio !== undefined) user.bio = bio;
-        if (username && username !== user.username) {
-            const existingUser = await User.findOne({ username });
-            if (existingUser) return res.redirect('/profile?error=Taken');
-            await File.updateMany({ uploader: user.username }, { uploader: username });
-            user.username = username;
-        }
-        if (email && email !== user.email) {
-            const existingEmail = await User.findOne({ email });
-            if (existingEmail) return res.redirect('/profile?error=Email used');
-            user.email = email;
-            user.isVerified = false;
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-            user.verificationToken = token;
-            await sendVerificationEmail(user);
-            await user.save();
-            req.logout(() => res.redirect('/login?message=Verify your new email.'));
-            return;
-        }
-        await user.save();
-        req.login(user, () => res.redirect('/profile?success=Updated'));
-    } catch (error) { res.status(500).redirect('/profile?error=Error'); }
-});
-
-app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => {
-    try {
-        if (!req.file) return res.status(400).redirect('/profile?error=No file');
-        const imageKey = await uploadToB2(req.file, 'avatars');
-        const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
-        req.login(updatedUser, () => res.redirect('/profile?success=Image updated'));
-    } catch (error) { next(error); }
-});
-
-app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
-    try {
-        const { currentPassword, newPassword, confirmPassword } = req.body;
-        if (newPassword !== confirmPassword) return res.redirect('/profile?error=No match');
-        const user = await User.findById(req.user.id);
-        if (!(await user.comparePassword(currentPassword))) return res.redirect('/profile?error=Wrong password');
-        user.password = newPassword;
-        await user.save();
-        res.redirect('/profile?success=Changed');
-    } catch (error) { res.redirect('/profile?error=Error'); }
-});
-
-app.post('/account/delete', ensureAuthenticated, async (req, res) => {
-    try {
-        await File.deleteMany({ uploader: req.user.username });
-        await Review.deleteMany({ user: req.user._id });
-        await User.findByIdAndDelete(req.user._id);
-        req.logout(() => res.redirect('/'));
-    } catch (e) { res.status(500).send('Failed'); }
-});
-
 // ===============================
-// 10. FILE MGMT & VERSIONING
+// 10. FILE MGMT & VERSIONING (UPDATED)
 // ===============================
 
 app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
@@ -544,15 +393,25 @@ app.post('/upload', ensureAuthenticated, upload.fields([
 ]), async (req, res) => {
     try {
         const { modIcon, screenshotFile, modFile } = req.files;
-        const { modName, developerName, modPlatform, modCategory, modVersion, modFeatures, whatsNew, tags, videoUrl } = req.body;
+        const {
+            modName,
+            developerName,
+            modPlatform,
+            modCategory,
+            modVersion,
+            modFeatures,
+            whatsNew,
+            tags,
+            videoUrl
+        } = req.body;
 
         if (!modIcon || !screenshotFile || !modFile || !modName || !modPlatform) {
             return res.status(400).send("Missing a required field.");
         }
 
-        const iconKey = await uploadToB2(modIcon[0], 'icons');
-        const screenshotKey = await uploadToB2(screenshotFile[0], 'screenshots');
-        const fileKey = await uploadToB2(modFile[0], 'mods');
+        const iconUrl = await uploadToB2(modIcon[0], 'icons');
+        const screenshotUrl = await uploadToB2(screenshotFile[0], 'screenshots');
+        const fileUrl = await uploadToB2(modFile[0], 'mods');
 
         let analysisId = null, scanDate, positiveCount, totalScans = null;
         try {
@@ -570,49 +429,42 @@ app.post('/upload', ensureAuthenticated, upload.fields([
         } catch (vtError) { console.error("VT Error:", vtError.message); }
 
         const newFile = new File({
-            name: modName, version: modVersion, developer: developerName, modDescription: modFeatures,
-            officialDescription: whatsNew, iconKey, screenshotKeys: [screenshotKey], videoUrl,
-            fileKey, originalFilename: modFile[0].originalname, category: modPlatform, platforms: [modCategory],
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : [], fileSize: modFile[0].size,
-            uploader: req.user.username, isLatestVersion: true, virusTotalAnalysisId: analysisId,
-            virusTotalScanDate: scanDate, virusTotalPositiveCount: positiveCount, virusTotalTotalScans: totalScans
+            name: modName,
+            version: modVersion,
+            developer: developerName,
+            modDescription: modFeatures,
+            officialDescription: whatsNew,
+            iconUrl,
+            screenshotUrls: [screenshotUrl],
+            videoUrl,
+            fileUrl,
+            category: modPlatform,
+            platforms: [modCategory],
+            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+            fileSize: modFile[0].size,
+            uploader: req.user.username,
+            isLatestVersion: true,
+            virusTotalAnalysisId: analysisId,
+            virusTotalScanDate: scanDate,
+            virusTotalPositiveCount: positiveCount,
+            virusTotalTotalScans: totalScans
         });
 
         await newFile.save();
-        res.status(201).send({ message: "File uploaded successfully!" });
+        res.status(201).json({ message: "File uploaded successfully!", file: newFile });
     } catch (e) {
-        res.status(500).send("Upload failed.");
+        console.error(e);
+        res.status(500).json({ error: "Upload failed." });
     }
-});
-
-app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
-    const parentFile = await File.findById(req.params.id);
-    if (!parentFile || req.user.username !== parentFile.uploader) return res.status(403).send("Forbidden");
-    res.render('pages/add-version', { parentFile });
-});
-
-app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
-    try {
-        const headFile = await File.findById(req.params.id);
-        if (!headFile || req.user.username !== headFile.uploader) return res.status(403).send("Forbidden.");
-        const fileKey = await uploadToB2(req.file, 'mods');
-        const newVersion = new File({
-            ...headFile.toObject(), _id: new Types.ObjectId(), version: req.body.softwareVersion,
-            fileKey, originalFilename: req.file.originalname, fileSize: req.file.size,
-            isLatestVersion: false, parentFile: headFile._id, olderVersions: []
-        });
-        await newVersion.save();
-        await File.findByIdAndUpdate(req.params.id, { $push: { olderVersions: newVersion._id } });
-        res.redirect(`/mods/${headFile._id}`);
-    } catch (e) { res.status(500).send("Failed."); }
 });
 
 app.get('/download-file/:id', async (req, res) => {
     try {
         const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
         if (!file) return res.status(404).send("File not found.");
+        const key = file.fileUrl || file.fileKey;
         const url = await getSignedUrl(s3Client, new GetObjectCommand({
-            Bucket: process.env.B2_BUCKET_NAME, Key: file.fileKey,
+            Bucket: process.env.B2_BUCKET_NAME, Key: key,
             ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
         }), { expiresIn: 300 });
         res.redirect(url);
@@ -622,17 +474,6 @@ app.get('/download-file/:id', async (req, res) => {
 // ===============================
 // 11. SOCIAL & INTERACTION
 // ===============================
-
-app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
-    try {
-        const isWhitelisted = req.user.whitelist.includes(req.params.fileId);
-        const update = isWhitelisted ? { $pull: { whitelist: req.params.fileId } } : { $push: { whitelist: req.params.fileId } };
-        const fileUpdate = isWhitelisted ? { $inc: { whitelistCount: -1 } } : { $inc: { whitelistCount: 1 } };
-        await User.findByIdAndUpdate(req.user._id, update);
-        await File.findByIdAndUpdate(req.params.fileId, fileUpdate);
-        res.redirect(`/mods/${req.params.fileId}`);
-    } catch (e) { res.status(500).send("Error."); }
-});
 
 app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     try {
@@ -647,80 +488,10 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send("Error."); }
 });
 
-app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
-    const review = await Review.findById(req.params.reviewId);
-    if (review && !review.votedBy.includes(req.user._id)) {
-        review.votedBy.push(req.user._id);
-        review.isHelpfulCount += 1;
-        await review.save();
-    }
-    res.redirect(`/mods/${review.file}`);
-});
-
-app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => {
-    try {
-        const { voteType } = req.body;
-        const file = await File.findById(req.params.fileId);
-        if (file && !file.votedOnStatusBy.includes(req.user._id)) {
-            const update = voteType === 'working' ? { $inc: { workingVoteCount: 1 } } : { $inc: { notWorkingVoteCount: 1 } };
-            await File.findByIdAndUpdate(req.params.fileId, { ...update, $push: { votedOnStatusBy: req.user._id } });
-        }
-        res.redirect(`/mods/${req.params.fileId}`);
-    } catch (e) { res.status(500).send("Error."); }
-});
-
 app.get('/community-chat', ensureAuthenticated, (req, res) => res.render('pages/community-chat'));
 
 // ===============================
-// 12. REPORTING & ADMIN
-// ===============================
-
-app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
-    try {
-        const file = await File.findById(req.params.fileId);
-        const existing = await Report.findOne({ file: req.params.fileId, reportingUser: req.user._id });
-        if (!existing && file) {
-            await new Report({ file: req.params.fileId, reportingUser: req.user._id, reportedFileName: file.name, reportingUsername: req.user.username, reason: req.body.reason, additionalComments: req.body.additionalComments }).save();
-        }
-        res.redirect(`/mods/${req.params.fileId}?reported=true`);
-    } catch (e) { res.status(500).send("Error."); }
-});
-
-app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const reports = await Report.find().populate('file').populate('reportingUser').sort({ status: 1, createdAt: -1 });
-        res.render('pages/admin/reports', { reports });
-    } catch (e) { res.status(500).send("Error."); }
-});
-
-app.post('/admin/reports/:reportId/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        await Report.findByIdAndUpdate(req.params.reportId, { status: req.body.status });
-        res.redirect('/admin/reports');
-    } catch (error) { res.status(500).send("Error"); }
-});
-
-app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const fileId = req.params.fileId;
-        await File.findByIdAndDelete(fileId);
-        await Review.deleteMany({ file: fileId });
-        await Report.updateMany({ file: fileId }, { status: 'resolved' });
-        res.redirect('/admin/reports');
-    } catch (error) { res.status(500).send("Error"); }
-});
-
-app.get('/api/search/suggestions', async (req, res) => {
-    try {
-        const query = req.query.q;
-        if (!query || query.length < 2) return res.json([]);
-        const suggestions = await File.find({ name: { $regex: `^${query}`, $options: 'i' }, isLatestVersion: true }).limit(10);
-        res.json(suggestions.map(f => f.name));
-    } catch (e) { res.status(500).json([]); }
-});
-
-// ===============================
-// 13. STATIC PAGES & START
+// 12. STATIC PAGES & START
 // ===============================
 app.get('/about', (req, res) => res.render('pages/static/about'));
 app.get('/faq', (req, res) => res.render('pages/static/faq'));
@@ -728,24 +499,12 @@ app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 
-app.post('/dmca-request', async (req, res) => {
-    try {
-        const newDmcaRequest = new Dmca(req.body);
-        await newDmcaRequest.save();
-        res.redirect('/dmca?success=Submitted');
-    } catch (error) { res.redirect('/dmca?error=Error'); }
-});
-
-// Error Handlers
 app.use((req, res) => res.status(404).render('pages/404'));
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).render('pages/500');
 });
 
-// ===============================
-// 14. SERVER & SOCKET.IO START
-// ===============================
 const server = http.createServer(app);
 const io = new Server(server);
 
