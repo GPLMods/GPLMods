@@ -651,18 +651,21 @@ app.post('/upload', ensureAuthenticated, upload.fields([
     { name: 'modFile', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        // Extract fields using the NEW names
+        // ========== MODIFICATION START ==========
+        // Extract fields using the NEW names, including officialDescription
         const { 
             modName, 
             modVersion, 
             developerName, 
-            modPlatform, // Maps to 'category' (e.g., android, windows)
-            modCategory, // Maps to 'platforms' (e.g., game, app)
-            modFeatures, // Description
-            whatsNew,    // Official Desc
+            modPlatform, 
+            modCategory,
+            modFeatures,
+            whatsNew,
+            officialDescription, // Added this new field
             tags, 
             videoUrl 
         } = req.body;
+        // ========== MODIFICATION END ==========
 
         const { modIcon, screenshotFile, modFile } = req.files;
 
@@ -702,18 +705,22 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             console.error("VT Error (Non-fatal):", vtError.message);
         }
 
+        // ========== MODIFICATION START ==========
         // Save to Database (Mapping new form fields to schema)
         const newFile = new File({
             name: modName,
             version: modVersion,
             developer: developerName,
-            modDescription: modFeatures,
-            officialDescription: whatsNew,
             
+            // Updated mapping
+            modDescription: modFeatures,
+            whatsNew: whatsNew,
+            officialDescription: officialDescription,
+
             // Storage Keys
-            iconKey: iconKey,               // Save as Key
-            screenshotKeys: screenshotKeys, // Save as Array of Keys
-            fileKey: fileKey,               // Save as Key
+            iconKey: iconKey,
+            screenshotKeys: screenshotKeys,
+            fileKey: fileKey,
             
             // Also save as Url fields for forward compatibility if schema changed
             iconUrl: iconKey,
@@ -723,8 +730,8 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             videoUrl,
             originalFilename: modFile[0].originalname,
             
-            category: modPlatform,        // e.g. 'android'
-            platforms: [modCategory],     // e.g. 'game'
+            category: modPlatform,
+            platforms: [modCategory],
             tags: tags ? tags.split(',').map(t => t.trim()) : [],
             
             uploader: req.user.username,
@@ -736,6 +743,7 @@ app.post('/upload', ensureAuthenticated, upload.fields([
             virusTotalPositiveCount: positiveCount,
             virusTotalTotalScans: totalScans
         });
+        // ========== MODIFICATION END ==========
 
         await newFile.save();
         

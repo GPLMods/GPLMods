@@ -6,6 +6,9 @@ const FileSchema = new Schema({
     version: { type: String, required: true },
     modDescription: { type: String, required: true },
     officialDescription: { type: String },
+    whatsNew: {
+        type: String
+    },
     
     // --- STORAGE KEYS (S3/Cloud) ---
     iconKey: { type: String, required: true },
