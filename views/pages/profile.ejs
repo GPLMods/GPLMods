@@ -1,297 +1,113 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header') %>    
 
-<style>
-    /* Page-specific styles for the profile page */
-    .profile-header {
-        text-align: center;
-        margin-bottom: 2rem;
-        padding-bottom: 2rem;
-        border-bottom: 1px solid var(--light-grey);
-    }
-
-    .profile-header h1 {
-        color: var(--gold);
-    }
-    .profile-header p {
-        color: var(--silver);
-        font-size: 1.1rem;
-    }
-    
-    .uploads-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1.5rem;
-    }
-    
-    .uploads-table th, .uploads-table td {
-        padding: 12px 15px;
-        border: 1px solid var(--light-grey);
-        text-align: left;
-    }
-    
-    .uploads-table thead {
-        background-color: var(--dark-grey);
-    }
-    
-    .uploads-table tbody tr:nth-child(even) {
-        background-color: var(--dark-grey);
-    }
-    
-    .uploads-table tbody tr:hover {
-        background-color: var(--light-grey);
-    }
-    
-    .no-uploads {
-        text-align: center;
-        padding: 2rem;
-        font-size: 1.2rem;
-    }
-
-    /* Account Management Styling */
-    .account-management {
-        margin-top: 3rem;
-    }
-    
-    .password-form {
-        margin-top: 1.5rem; 
-        padding: 1.5rem; 
-        background-color: var(--dark-grey); 
-        border-radius: 8px;
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    .form-group input {
-        width: 100%; 
-        padding: 8px; 
-        background-color: var(--black); 
-        border: 1px solid var(--light-grey); 
-        color: var(--white);
-        border-radius: 4px;
-    }
-    
-    .danger-zone {
-        margin-top: 2rem;
-        padding: 1.5rem;
-        border: 1px solid #a04040; /* Reddish border */
-        border-radius: 8px;
-        background-color: #2b1a1a; /* Dark red background */
-    }
-    .danger-zone h3 {
-        color: #ff8080; /* Light red text */
-    }
-
-    /* Responsive styles for mobile screens */
-    @media (max-width: 768px) {
-        
-        /* 1. Hide the table header completely on mobile */
-        .uploads-table thead {
-            display: none;
-        }
-
-        /* 2. Make the table, body, rows, and cells behave like blocks */
-        .uploads-table, .uploads-table tbody, .uploads-table tr, .uploads-table td {
-            display: block;
-            width: 100%;
-        }
-
-        /* 3. Style each row to look like a separate card */
-        .uploads-table tr {
-            margin-bottom: 1.5rem;
-            border: 1px solid var(--light-grey);
-            border-radius: 8px;
-            overflow: hidden; /* Ensures the corners are rounded */
-        }
-
-        /* 4. Style each cell and add a data label */
-        .uploads-table td {
-            text-align: right; /* Align the cell content to the right */
-            position: relative;
-            padding-left: 50%; /* Make space for the label on the left */
-            border: none; /* Remove individual cell borders */
-            border-bottom: 1px solid var(--dark-grey); /* Add separator lines inside the card */
-        }
-
-        /* 5. The magic part: Use a pseudo-element to add the data labels */
-        .uploads-table td::before {
-            content: attr(data-label); /* Read the label from the data-label attribute */
-            position: absolute;
-            left: 10px;
-            width: calc(50% - 20px); /* Position the label on the left */
-            text-align: left;
-            font-weight: bold;
-            color: var(--silver); /* Give the label a distinct color */
-        }
-        
-    }
-</style>
-
-<div class="container">
-    <div class="profile-header">
-    
-        <!-- New Avatar and Upload Form section -->
-        <div class="avatar-section" style="margin-bottom: 2rem;">
-            <img src="<%= user.signedAvatarUrl || '/images/default-avatar.png' %>" alt="Profile Avatar" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--dark-grey);">
-            
-            <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
-                <label for="profileImage" style="display:block; margin-bottom:0.5rem;">Update Your Avatar</label>
-                <input type="file" id="profileImage" name="profileImage" accept="image/png, image/jpeg" required>
-                <button type="submit" class="btn btn-secondary" style="margin-left: 1rem;">Upload</button>
-            </form>
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1>Edit <span>Your Profile</span></h1>
         </div>
-
-        <h1>Welcome, <%= user.username %>!</h1>
-        <p>This is your personal dashboard. Here you can manage your account and view your uploads.</p>
-        
-        <!-- Inside the profile-header div -->
-        <p>
-            Your public profile is available at: 
-            <a href="/users/<%= user.username %>" target="_blank">/users/<%= user.username %></a>
-        </p>
     </div>
     
-    <!-- Upload History Section -->
-    <section class="upload-history">
-        <h2>Your Upload History</h2>
-        
-        <% if(uploads && uploads.length > 0) { %>
-            <table class="uploads-table">
-                <thead>
-                    <tr>
-                        <th>Mod Name</th>
-                        <th>Category</th>
-                        <th>Downloads</th>
-                        <th>Avg. Rating</th>
-                        <th>Date Uploaded</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% uploads.forEach(file => { %>
-                        <tr>
-                            <td data-label="Mod Name"><a href="/mods/<%= file._id %>"><%= file.name %></a></td>
-                            <td data-label="Category"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></td>
-                            <td data-label="Downloads"><%= file.downloads.toLocaleString() %></td>
-                            <td data-label="Avg. Rating"><%= file.averageRating %> ★</td>
-                            <td data-label="Date Uploaded"><%= file.createdAt.toLocaleDateString() %></td>
-                        </tr>
-                    <% }) %>
-                </tbody>
-            </table>
-        <% } else { %>
-            <div class="no-uploads">
-                <p>You haven't uploaded any mods yet.</p>
-                <a href="/upload" class="btn btn-primary" style="margin-top: 1rem;">Upload Your First Mod</a>
-            </div>
-        <% } %>
-    </section>
+    <div class="container">
+        <div class="edit-profile-layout">
+            <!-- Profile Details Form -->
+            <section class="form-section">
+                <h2>Profile Details</h2>
+                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section">
+                    <div class="avatar-preview-wrapper">
+                        <img src="<%= user.profileImageUrl || '/images/default-avatar.png' %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
+                        <label for="avatar-input" class="avatar-edit-button">✏️</label>
+                        <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
+                    </div>
+                    <!-- The button to submit the avatar is now part of its form -->
+                    <button type="submit" class="submit-button secondary-button" style="margin-bottom: 20px;">Save New Avatar</button>
+                </form>
 
-    <!-- Whitelist Section -->
-    <section class="whitelist-history" style="margin-top: 3rem;">
-        <h2>Your Whitelist</h2>
-        
-        <% if(user.whitelist && user.whitelist.length > 0) { %>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-                <% user.whitelist.forEach(file => { %>
-                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
-                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;"></div>
-                        <div class="card-body">
-                            <h3 class="card-title"><%= file.name %></h3>
-                            <p class="card-platform"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></p>
-                            <div class="star-rating" data-rating="<%= file.averageRating %>">
-                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                            </div>
-                        </div>
-                    </a>
-                <% }) %>
-            </div>
-        <% } else { %>
-            <div class="no-uploads">
-                <p>You haven't whitelisted any mods yet.</p>
-            </div>
-        <% } %>
-    </section>
-    
-    <!-- Account Management Section -->
-    <section class="account-management">
-        <h2>Account Management</h2>
+                <h3 class="current-username"><%= user.username %></h3>
+                <div class="profile-actions">
+                    <a href="/my-uploads" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Mod Upload History</a>
+                    <a href="/users/<%= user.username %>" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Public User Profile</a>
+                </div>
+                
+                <hr style="border-color: #333; margin: 30px 0;">
 
-        <!-- Inside the <section class="account-management"> -->
-        <form action="/account/update-details" method="POST" style="margin-top: 1.5rem; padding: 1.5rem; background-color: var(--dark-grey); border-radius: 8px;">
-            <h4>Update Your Details</h4>
-            <p style="font-size: 0.9rem; color: var(--silver);">Only fill in the fields you wish to change.</p>
-        
-            <div class="form-group" style="margin-bottom: 1rem; margin-top: 1rem;">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" value="<%= user.username %>" required style="width: 100%; ...">
-            </div>
-        
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" value="<%= user.email %>" required style="width: 100%; ...">
-                <p style="font-size: 0.8rem; color: #ffd700;">Note: Changing your email will require re-verification and you will be logged out.</p>
-            </div>
+                <form action="/account/update-details" method="POST">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="<%= user.username %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bio">Your Bio</label>
+                        <textarea id="bio" name="bio" placeholder="Tell us a little about yourself..."><%= user.bio || '' %></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" value="<%= user.email %>" required>
+                         <p class="email-note">Note: Changing your email will require re-verification and you will be logged out.</p>
+                    </div>
+                    <button type="submit" class="submit-button">Save Profile Changes</button>
+                </form>
+            </section>
 
-            <!-- ======== NEWLY ADDED FORM GROUP ======== -->
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="bio">Your Bio (Max 250 characters)</label>
-                <textarea id="bio" name="bio" maxlength="250" style="width: 100%; min-height: 80px; padding: 8px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px; resize: vertical;"><%= user.bio || '' %></textarea>
-            </div>
-            <!-- ======== END OF NEW FORM GROUP ======== -->
-        
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-        </form>
+            <!-- Change Password Form -->
+            <section class="form-section">
+                <h2>Change Password</h2>
+                <form action="/account/change-password" method="POST">
+                    <div class="form-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" name="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" name="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="submit-button secondary-button">Update Password</button>
+                </form>
+            </section>
 
-        <!-- Change Password Form -->
-        <form action="/account/change-password" method="POST" class="password-form">
-            <h4>Change Password</h4>
-            <div class="form-group">
-                <label for="currentPassword">Current Password</label>
-                <input type="password" id="currentPassword" name="currentPassword" required>
-            </div>
-            <div class="form-group">
-                <label for="newPassword">New Password</label>
-                <input type="password" id="newPassword" name="newPassword" required>
-            </div>
-            <div class="form-group">
-                <label for="confirmPassword">Confirm New Password</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Update Password</button>
-        </form>
-        
-        <!-- Danger Zone -->
-        <div class="danger-zone">
-            <h3>Danger Zone</h3>
-            <p>Be careful, these actions are permanent. This will also remove all your uploads and cannot be undone.</p>
-            <form action="/account/delete" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This will also remove all your uploads and cannot be undone.');">
-                <button type="submit" class="btn btn-secondary" style="background-color:#a04040; border-color:#a04040; color:white; margin-top: 1rem;">Delete My Account</button>
-            </form>
+            <!-- Danger Zone for Deleting Account -->
+            <section class="form-section danger-zone">
+                <h2>Danger Zone</h2>
+                <p>Deleting your account is a permanent action. All of your uploaded mods, comments, and personal data will be removed forever. This action cannot be undone.</p>
+                <form action="/account/delete" method="POST">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="preserve-mods" name="preserveMods" value="true">
+                        <label for="preserve-mods">Preserve my uploaded mods.</label>
+                    </div>
+                     <p>If checked, your uploads will remain on the site and the author will be changed to "GPL Community". Otherwise, all your uploads will be deleted with your account.</p>
+                    <button type="submit" class="submit-button delete-button" id="delete-account-btn">Delete My Account</button>
+                </form>
+            </section>
         </div>
-    </section>
+    </div>
+</main>
 
-</div>
-
-<!-- Script to display success/error messages from URL parameters -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const success = urlParams.get('success');
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Live Avatar Preview Logic ---
+        const avatarInput = document.getElementById('avatar-input');
+        const avatarPreview = document.getElementById('avatar-preview');
+        avatarInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { avatarPreview.src = e.target.result; }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
 
-        if(error) {
-            alert('Error: ' + error);
-        }
-        if(success) {
-            alert('Success: ' + success);
+        // --- Delete Account Confirmation ---
+        const deleteForm = document.querySelector('form[action="/account/delete"]');
+        if (deleteForm) {
+            deleteForm.addEventListener('submit', function(e) {
+                const confirmation = confirm('Are you absolutely sure you want to delete your account? This is permanent.');
+                if (!confirmation) {
+                    e.preventDefault(); // Stop the form from submitting if user cancels
+                }
+            });
         }
     });
 </script>
-
 <%- include('../partials/footer') %>

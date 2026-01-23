@@ -1,46 +1,103 @@
 <%- include('../partials/header') %>
 
-<div class="container">
-
-    <!-- Page Title: Will display what the user searched for -->
-    <h1 style="margin-bottom: 2rem; border-bottom: 1px solid var(--light-grey); padding-bottom: 1rem;">
-        Search Results for: <span style="color: var(--gold);"><%= query %></span>
-    </h1>
-
-    <!-- Results Grid -->
-    <section class="results-grid">
-         <div class="item-grid">
-        
-            <!-- Check if any results were found -->
-            <% if (results && results.length > 0) { %>
-                <!-- Loop through each file in the results -->
-                <% results.forEach(file => { %>
-    
-                    <!-- This is the EXACT SAME item card component from the homepage, making our code reusable -->
-                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
-                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
-                        </div>
-                        <div class.card-body">
-                            <h3 class="card-title"><%= file.name %></h3>
-                            <p class="card-platform"><%= file.version %></p>
-                            <div class="star-rating" data-rating="<%= file.averageRating %>">
-                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                            </div>
-                        </div>
-                    </a>
-    
-                <% }) %>
-            <% } else { %>
-                <!-- This message shows if the search returned no results -->
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <h2>No mods found matching your search.</h2>
-                    <p style="color: var(--silver);">Try searching for a different keyword.</p>
-                </div>
-            <% } %>
-    
+<main>
+    <section class="page-header">
+        <div class="container">
+            <h1>Search Results for "<span class="query"><%= query %></span>"</h1>
         </div>
     </section>
 
-</div>
+    <div class="container">
+        <section class="filter-section">
+            <div class="filter-controls">
+                <label for="platform-filter">Platform:</label>
+                <select id="platform-filter" name="platform">
+                    <option value="all">All Platforms</option>
+                    <option value="windows">Windows</option>
+                    <option value="android">Android</option>
+                    <option value="ios">iOS</option>
+                    <option value="wordpress">WordPress</option>
+                </select>
+                <label for="sort-filter">Sort by:</label>
+                <select id="sort-filter" name="sort">
+                    <option value="newest">Newest</option>
+                    <option value="downloads">Most Downloads</option>
+                    <option value="rating">Highest Rating</option>
+                </select>
+            </div>
+            <div class="results-count">
+                <!-- Will be updated by JS -->
+                <span>Showing <%= results.length %> of <%= totalResults %> results</span>
+            </div>
+        </section>
+
+        <!-- Only show the grid if there are results -->
+        <% if(results.length > 0) { %>
+            <section class="mod-grid" id="search-results-grid">
+                <!-- EJS Loop to dynamically create mod cards -->
+                <% results.forEach(file => { %>
+                    <a href="/mods/<%= file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
+                        <div class="mod-card">
+                            <div class="mod-type-tag"><%= file.category %></div>
+                            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                            <div class="mod-card-content">
+                                <h3><%= file.name %></h3>
+                                <p><%= file.modDescription.substring(0, 50) %>...</p> <!-- Short description -->
+                                <div class="rating">
+                                    <div class="stars-outer">
+                                        <!-- Calculate star width percentage -->
+                                        <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                    </div>
+                                    <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                <% }) %>
+            </section>
+        <% } %>
+
+        <!-- Show the "No Results" message if there are no results -->
+        <% if(results.length === 0) { %>
+            <section class="no-results" id="no-results-message">
+                <h2>No Mods Found</h2>
+                <p>We couldn't find any mods matching your search. Please try a different keyword.</p>
+            </section>
+        <% } %>
+
+        <!-- Pagination (dynamically generated) -->
+        <nav class="pagination">
+            <% for(let i = 1; i <= totalPages; i++) { %>
+                <a href="/search?q=<%= query %>&page=<%= i %>" class="<%= currentPage === i ? 'active' : '' %>">
+                    <%= i %>
+                </a>
+            <% } %>
+        </nav>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const platformFilter = document.getElementById('platform-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        
+        // Pre-select the dropdowns based on the current URL
+        platformFilter.value = '<%= currentPlatform %>';
+        sortFilter.value = '<%= currentSort %>';
+
+        function applyFilters() {
+            const platform = platformFilter.value;
+            const sort = sortFilter.value;
+            const query = '<%= query %>';
+            
+            // Construct the new URL with the selected filters
+            // We reset to page=1 whenever a filter is changed
+            window.location.href = `/search?q=${encodeURIComponent(query)}&platform=${platform}&sort=${sort}&page=1`;
+        }
+        
+        platformFilter.addEventListener('change', applyFilters);
+        sortFilter.addEventListener('change', applyFilters);
+    });
+</script>
 
 <%- include('../partials/footer') %>

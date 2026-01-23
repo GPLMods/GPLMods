@@ -179,8 +179,8 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.BASE_URL 
-        ? `${process.env.BASE_URL}/auth/google/callback` 
+    callbackURL: process.env.BASE_URL
+        ? `${process.env.BASE_URL}/auth/google/callback`
         : "https://gplmods.onrender.com/auth/google/callback"
 },
 async (accessToken, refreshToken, profile, done) => {
@@ -244,8 +244,8 @@ app.get('/', async (req, res) => {
         const recentFiles = await File.find({ isLatestVersion: true }).sort({ createdAt: -1 }).limit(12);
         const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
             // Support both old 'iconKey' and new 'iconUrl' naming from DB
-            const key = file.iconUrl || file.iconKey; 
-            const iconUrl = key 
+            const key = file.iconUrl || file.iconKey;
+            const iconUrl = key
                 ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })
                 : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
@@ -311,26 +311,71 @@ app.get('/category', async (req, res) => {
 // Search
 app.get('/search', async (req, res) => {
     try {
-        const query = req.query.q;
-        if (!query) return res.redirect('/');
+        const query = req.query.q || '';
+        const platform = req.query.platform || 'all';
+        const sort = req.query.sort || 'newest';
+        const page = parseInt(req.query.page) || 1;
+        const resultsPerPage = 12; // Set how many results to show per page
+
+        if (!query) {
+            return res.redirect('/');
+        }
         
-        const searchResults = await File.find({
+        // --- 1. Build the initial search query ---
+        let searchQuery = {
             isLatestVersion: true,
             $or: [
                 { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } }
+                { tags: { $regex: query, $options: 'i' } },
+                { developer: { $regex: query, $options: 'i' } }
             ]
-        }).sort({ createdAt: -1 });
-        
-        const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
-            const key = file.iconUrl || file.iconKey;
-            const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';
-            return { ...file.toObject(), iconUrl };
-        }));
+        };
 
-        res.render('pages/search', { results: resultsWithUrls, query }); 
-    } catch (e) { res.status(500).send("Search Error"); }
+        // --- 2. Add platform filter if not 'all' ---
+        if (platform !== 'all') {
+            searchQuery.category = platform;
+        }
+
+        // --- 3. Define the sort order ---
+        let sortQuery = {};
+        switch (sort) {
+            case 'downloads':
+                sortQuery = { downloads: -1 }; // -1 for descending
+                break;
+            case 'rating':
+                sortQuery = { averageRating: -1 };
+                break;
+            default: // 'newest'
+                sortQuery = { createdAt: -1 };
+                break;
+        }
+        
+        // --- 4. Execute the query with pagination ---
+        const totalResults = await File.countDocuments(searchQuery);
+        const totalPages = Math.ceil(totalResults / resultsPerPage);
+
+        const searchResults = await File.find(searchQuery)
+            .sort(sortQuery)
+            .skip((page - 1) * resultsPerPage) // Skip results for previous pages
+            .limit(resultsPerPage); // Limit to the number of results for the current page
+
+        // --- 5. Render the page with all the necessary data ---
+        res.render('pages/search', {
+            results: searchResults,
+            query: query,
+            totalResults: totalResults,
+            totalPages: totalPages,
+            currentPage: page,
+            // You can also pass the current filters to pre-select them in the dropdowns
+            currentPlatform: platform,
+            currentSort: sort
+        });
+
+    } catch (error) {
+        console.error("Error during advanced search:", error);
+        res.status(500).render('pages/500');
+    }
 });
 
 // Single Mod Page
@@ -358,8 +403,8 @@ app.get('/mods/:id', async (req, res) => {
         const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: iconKey }), { expiresIn: 3600 });
         
         // Handle screenshot array (support both old 'screenshotKeys' and new 'screenshotUrls')
-        const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0) 
-            ? currentFile.screenshotUrls 
+        const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0)
+            ? currentFile.screenshotUrls
             : (currentFile.screenshotKeys || []);
             
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
@@ -454,7 +499,7 @@ app.post('/forgot-password', async (req, res) => {
 
         const resetToken = crypto.randomBytes(32).toString('hex');
         user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        user.passwordResetExpires = Date.now() + 3600000; 
+        user.passwordResetExpires = Date.now() + 3600000;
         await user.save();
         
         const resetURL = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
@@ -468,7 +513,7 @@ app.post('/forgot-password', async (req, res) => {
 app.get('/reset-password/:token', async (req, res) => {
     try {
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-        const user = await User.findOne({ 
+        const user = await User.findOne({
             passwordResetToken: hashedToken,
             passwordResetExpires: { $gt: Date.now() } // Check if not expired
         });
@@ -486,9 +531,9 @@ app.get('/reset-password/:token', async (req, res) => {
 app.post('/reset-password/:token', async (req, res, next) => {
     try {
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-        const user = await User.findOne({ 
+        const user = await User.findOne({
             passwordResetToken: hashedToken,
-            passwordResetExpires: { $gt: Date.now() } 
+            passwordResetExpires: { $gt: Date.now() }
         });
         
         if (!user) {
@@ -537,6 +582,22 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
         res.render('pages/profile', { user: userWithWhitelist, uploads: userUploads });
     } catch (e) { res.status(500).send('Profile fetch error.'); }
+});
+
+// This is a new, protected route
+app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
+    try {
+        // Find all files uploaded by the current user, regardless of version status
+        const userUploads = await File.find({ uploader: req.user.username })
+                                      .sort({ createdAt: -1 });
+
+        res.render('pages/my-uploads', {
+            uploads: userUploads
+        });
+    } catch (error) {
+        console.error('Error fetching user uploads:', error);
+        res.status(500).render('pages/500');
+    }
 });
 
 // Public Profile
@@ -627,13 +688,39 @@ app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
 });
 
 // Delete Account
-app.post('/account/delete', ensureAuthenticated, async (req, res) => {
+app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     try {
-        await File.deleteMany({ uploader: req.user.username });
-        await Review.deleteMany({ user: req.user._id });
-        await User.findByIdAndDelete(req.user._id);
-        req.logout(err => res.redirect('/'));
-    } catch (e) { res.status(500).send('Deletion failed.'); }
+        const userId = req.user._id;
+        const username = req.user.username;
+        const preserveMods = req.body.preserveMods === 'true'; // Check if the checkbox was checked
+
+        if (preserveMods) {
+            // --- Logic to PRESERVE mods ---
+            // Update all files uploaded by this user to a generic author name
+            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
+        } else {
+            // --- Logic to DELETE mods (as before) ---
+            // In a real app, you would also delete the files from Backblaze B2 here.
+            await File.deleteMany({ uploader: username });
+        }
+
+        // --- Delete the rest of the user's data (same as before) ---
+        // 2. Delete all reviews written by this user
+        await Review.deleteMany({ user: userId });
+
+        // 3. Delete the user account itself
+        await User.findByIdAndDelete(userId);
+
+        // 4. Log the user out
+        req.logout(function(err) {
+            if (err) { return next(err); }
+            res.redirect('/?message=Your account has been successfully deleted.');
+        });
+
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).render('pages/500');
+    }
 });
 
 // ===============================
@@ -646,24 +733,24 @@ app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload')
 // Process Upload (MERGED LOGIC)
 // Accepts: modIcon, screenshotFile, modFile (from new form)
 app.post('/upload', ensureAuthenticated, upload.fields([
-    { name: 'modIcon', maxCount: 1 }, 
+    { name: 'modIcon', maxCount: 1 },
     { name: 'screenshotFile', maxCount: 4 }, // Allow up to 4 screenshots
     { name: 'modFile', maxCount: 1 }
 ]), async (req, res) => {
     try {
         // ========== MODIFICATION START ==========
         // Extract fields using the NEW names, including officialDescription
-        const { 
-            modName, 
-            modVersion, 
-            developerName, 
-            modPlatform, 
+        const {
+            modName,
+            modVersion,
+            developerName,
+            modPlatform,
             modCategory,
             modFeatures,
             whatsNew,
             officialDescription, // Added this new field
-            tags, 
-            videoUrl 
+            tags,
+            videoUrl
         } = req.body;
         // ========== MODIFICATION END ==========
 
@@ -821,12 +908,12 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
         const file = await File.findById(req.params.fileId);
         const existing = await Report.findOne({ file: req.params.fileId, reportingUser: req.user._id });
         if (!existing && file) {
-            await new Report({ 
-                file: req.params.fileId, 
-                reportingUser: req.user._id, 
-                reportedFileName: file.name, 
-                reportingUsername: req.user.username, 
-                reason, additionalComments 
+            await new Report({
+                file: req.params.fileId,
+                reportingUser: req.user._id,
+                reportedFileName: file.name,
+                reportingUsername: req.user.username,
+                reason, additionalComments
             }).save();
         }
         res.redirect(`/mods/${req.params.fileId}?reported=true`);

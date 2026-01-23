@@ -91,6 +91,16 @@ const FileSchema = new Schema({
         default: 'none'
     },
 
+    status: {
+        type: String,
+        enum: ['pending', 'live', 'rejected'],
+        default: 'pending' // All new uploads will require admin approval
+    },
+    rejectionReason: { // To store why a mod was rejected
+        type: String,
+        trim: true
+    },
+
     virusTotalScanDate: {
         type: Date
     },

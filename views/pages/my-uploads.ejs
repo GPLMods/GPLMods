@@ -1,0 +1,99 @@
+<%- include('../partials/header') %>
+
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1><span>My Uploads</span></h1>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="page-actions">
+            <a href="/upload" class="upload-cta-button">Upload a New Mod</a>
+            <div class="filter-tabs">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="windows">Windows</button>
+                <button class="filter-btn" data-category="android">Android</button>
+                <button class="filter-btn" data-category="ios">iOS</button>
+                <button class="filter-btn" data-category="wordpress">WordPress</button>
+            </div>
+        </div>
+
+        <div class="uploads-list">
+            <% if(uploads && uploads.length > 0) { %>
+                <% uploads.forEach(file => { %>
+                    <div class="upload-item" data-category="<%= file.category %>">
+                        <div class="item-header">
+                            <div class="item-icon">
+                                <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon">
+                            </div>
+                            <div class="item-title">
+                                <h3><%= file.name %></h3>
+                                <span class="category-badge"><%= file.category %></span>
+                            </div>
+                        </div>
+                        <div class="item-details-grid">
+                            <div class="detail-row">
+                                <span>Downloads:</span>
+                                <span><%= file.downloads.toLocaleString() %></span>
+                            </div>
+                            <div class="detail-row rating">
+                                <span>AVG Rating:</span>
+                                <span><%= file.averageRating.toFixed(1) %> ★</span>
+                            </div>
+                            <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+                            <% const workingPercentage = totalVotes > 0 ? ((file.workingVoteCount / totalVotes) * 100).toFixed(0) : 'N/A'; %>
+                            <div class="detail-row working-vote">
+                                <span>Working Vote:</span>
+                                <span><%= workingPercentage %>%</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Date Upload:</span>
+                                <span><%= file.createdAt.toLocaleDateString() %></span>
+                            </div>
+                            <% if (file.status === 'rejected' && file.rejectionReason) { %>
+                                <div class="detail-row">
+                                    <span>Reason for Rejection:</span>
+                                    <span><%= file.rejectionReason %></span>
+                                </div>
+                            <% } %>
+                        </div>
+                        <div class="item-status-actions">
+                            <span class="status-badge status-<%= file.status %>"><%= file.status %></span>
+                            <div class="item-actions">
+                                <% if (file.status === 'live') { %>
+                                    <a href="/mods/<%= file._id %>" class="view-btn">View</a>
+                                <% } %>
+                                <a href="#" class="edit-btn">Edit</a>
+                                <a href="#" class="delete-btn">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>You haven't uploaded any mods yet.</p>
+            <% } %>
+        </div>
+    </div>
+</main>
+    
+<!-- The JavaScript from your new layout -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Filter Tabs Logic ---
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const uploadItems = document.querySelectorAll('.upload-item');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                const category = this.dataset.category;
+                uploadItems.forEach(item => {
+                    item.style.display = (category === 'all' || item.dataset.category === category) ? 'flex' : 'none';
+                });
+            });
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>
