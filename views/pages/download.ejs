@@ -56,16 +56,6 @@
     <% } %>
 
 </div>
-
-                <% if (file.virusTotalAnalysisId) { %>
-                <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
-                <% } %>
-
-                <% if (user && user.username === file.uploader) { %>
-                <a href="/mods/<%= file._id %>/add-version" class="full-width-btn">＋ Add New Version</a>
-                <% } %>
-            </div>
-
             <ul class="meta-info">
                 <li>Version: <span><%= file.version %></span></li>
                 <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
