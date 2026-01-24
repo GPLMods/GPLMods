@@ -10,8 +10,8 @@
     
     <div class="container">
         <div class="upload-layout">
-            <!-- Updated Form Tag with action, method, and enctype -->
-            <form class="upload-form" id="modForm" action="/upload" method="POST" enctype="multipart/form-data">
+            <!-- Updated Form Tag with new ID -->
+            <form class="upload-form" id="directUploadForm" action="/upload-finalize" method="POST" enctype="multipart/form-data">
                 
                 <!-- Mod Icon Preview & Upload -->
                 <div class="icon-upload-container">
@@ -104,11 +104,6 @@
                     </div>
                 </div>
 
-                <div class="progress-bar-container" id="progressBarContainer">
-                    <div class="progress-bar" id="progressBar"></div>
-                    <span class="progress-text" id="progressText">0%</span>
-                </div>
-
                 <button type="submit" class="submit-button" id="submitBtn">Submit Mod for Review</button>
             </form>
             
@@ -129,7 +124,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
-        const modForm = document.getElementById('modForm');
+        const uploadForm = document.getElementById('directUploadForm');
         const submitBtn = document.getElementById('submitBtn');
 
         // --- Icon Preview Logic ---
@@ -238,67 +233,69 @@
             }
         });
 
-        // --- Real Form Submission with Live Progress ---
-        modForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the default form submission
-
-            const progressBarContainer = document.getElementById('progressBarContainer');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            
-            // Show progress bar and disable the button
-            progressBarContainer.style.display = 'block';
+        // --- NEW Direct-to-Cloud Form Submission Logic ---
+        uploadForm.addEventListener('submit', async function(event) {
+            event.preventDefault(); // Stop the form from submitting the old way
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Uploading...';
+            submitBtn.textContent = 'Uploading... Please wait.';
 
-            // Create a FormData object from the form
-            const formData = new FormData(modForm);
+            const modFileInput = document.getElementById('modFile');
+            const modFile = modFileInput.files[0];
             
-            // Use XMLHttpRequest (XHR) to get upload progress events
-            const xhr = new XMLHttpRequest();
-
-            // Listen for progress events
-            xhr.upload.addEventListener('progress', function(event) {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    progressBar.style.width = percentComplete + '%';
-                    progressText.textContent = percentComplete + '%';
-                }
-            });
-
-            // Handle the response when the upload is complete
-            xhr.addEventListener('load', function() {
-                if (xhr.status === 201 || xhr.status === 200) { // Check for success status
-                    progressText.textContent = 'Success!';
-                    progressBar.style.backgroundColor = '#2ecc71'; // Green for success
-                    
-                    setTimeout(() => {
-                        alert('Thank you! Your mod has been submitted for review.');
-                        window.location.href = '/'; // Redirect after success
-                    }, 500);
-
-                } else {
-                    // Handle server errors
-                    alert(`Upload failed. Server responded with an error: ${xhr.statusText}`);
-                    progressBar.style.backgroundColor = '#ff4d4d'; // Red for error
-                    progressText.textContent = 'Failed!';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Mod for Review';
-                }
-            });
-
-            // Handle network errors
-            xhr.addEventListener('error', function() {
-                alert('An error occurred during the upload. Please check your network connection.');
-                progressBar.style.backgroundColor = '#ff4d4d'; // Red for error
-                progressText.textContent = 'Network Error!';
+            if (!modFile) {
+                alert('Please select a mod file to upload.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Mod for Review';
-            });
+                return;
+            }
 
-            // Configure and send the request to your backend
-            xhr.open('POST', '/upload'); // Your existing backend upload route
-            xhr.send(formData); // Send the form data
+            try {
+                // --- STEP 1: Get the presigned URL from our server ---
+                const presignedUrlResponse = await fetch('/generate-presigned-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: modFile.name,
+                        filetype: modFile.type,
+                        folder: 'mods' // The destination folder in B2
+                    })
+                });
+                
+                if (!presignedUrlResponse.ok) throw new Error('Could not get upload permission.');
+                const { presignedUrl, fileKey } = await presignedUrlResponse.json();
+
+                // --- STEP 2: Upload the file DIRECTLY to Backblaze B2 ---
+                const uploadToB2Response = await fetch(presignedUrl, {
+                    method: 'PUT',
+                    body: modFile,
+                    headers: { 'Content-Type': modFile.type }
+                });
+                
+                if (!uploadToB2Response.ok) throw new Error('Direct upload to cloud failed.');
+
+                // --- STEP 3: Submit the rest of the form data to our server ---
+                // We create a new FormData object, but WITHOUT the large file
+                const formData = new FormData(uploadForm);
+                formData.delete('modFile'); // Remove the file input
+                formData.append('fileKey', fileKey); // Add the final file location key
+
+                const finalizeUploadResponse = await fetch('/upload-finalize', {
+                    method: 'POST',
+                    body: formData // No need for Content-Type, FormData sets it
+                });
+
+                if (!finalizeUploadResponse.ok) throw new Error('Server failed to finalize the upload.');
+
+                // --- SUCCESS ---
+                alert('Thank you! Your mod has been submitted for review.');
+                window.location.href = '/'; // Redirect to homepage on success
+
+            } catch (error) {
+                console.error('Upload process failed:', error);
+                alert('Upload Failed: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Mod for Review';
+            }
         });
     });
 </script>
