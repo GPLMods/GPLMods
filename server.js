@@ -235,7 +235,7 @@ async function verifyRecaptcha(req, res, next) {
 // 7. PUBLIC ROUTES
 // ===============================
 
-// Home - FIXED: Now fetches recent files and passes them to the view
+// Home
 app.get('/', async (req, res) => {
     try {
         // Fetch 12 most recent files that are the latest version
@@ -669,7 +669,7 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 
 app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
 
-// NEW: Step 1 of upload - Client requests a presigned URL
+// Step 1 of upload - Client requests a presigned URL
 app.post('/generate-presigned-url', ensureAuthenticated, async (req, res) => {
     try {
         const { filename, filetype, folder } = req.body;
@@ -700,8 +700,7 @@ app.post('/generate-presigned-url', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// NEW: Step 2 of upload - Client finalizes the upload with metadata
-// This route replaces the functionality of the old POST /upload
+// Step 2 of upload - Client finalizes the upload with metadata
 app.post('/upload-finalize', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
