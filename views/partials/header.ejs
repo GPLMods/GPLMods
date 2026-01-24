@@ -3,122 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPL Mods - Modded Games and Software</title>
-    
-    <!-- Link to our Global CSS -->
-    <link rel="stylesheet" href="/css/style.css">
-
-    <!-- Google Fonts: Roboto -->
+    <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome for Icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <!-- Link to your global stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
 
-    <!-- Google reCAPTCHA Script -->
+    <!-- Google reCAPTCHA & any other global head scripts -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
-    <!-- Cashfree SDK Script -->
-    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 </head>
 <body>
 
     <header class="main-header">
-        <nav class="container" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <a href="/" class="logo">
-                    <h1>GPL Mods</h1>
-                </a>
-                
-                <% if (typeof user !== 'undefined' && user) { %>
-                    <!-- New avatar display using the signed URL -->
-                    <% if (user.signedAvatarUrl) { %>
-                        <img src="<%= user.signedAvatarUrl %>" alt="<%= user.username %>'s avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                    <% } %>
-                <% } %>
+        <div class="container header-content">
+            <a href="/" class="logo">GPL <span>Mods</span></a>
+            
+            <!-- Reusing our existing animated search bar structure -->
+            <div class="search-bar" id="animatedSearchBar">
+                <form action="/search" method="GET" class="search-form">
+                    <input type="search" id="searchInput" name="q" placeholder="">
+                </form>
+                <div id="searchSuggestions" class="search-suggestions"></div>
+                <div id="searchHistory" class="search-history"></div>
             </div>
-        
-            <!-- A container for all the navigation elements -->
-            <div class="navigation-wrapper">
-        
-                <!-- ===== 1. DESKTOP NAVIGATION ===== -->
-                <div class="desktop-nav" style="display: flex; align-items: center; gap: 1rem;">
-
-                    <!-- Login/User Buttons -->
-                    <div class="user-actions">
-                        <% if (typeof user !== 'undefined' && user) { %>
-                            <span style="margin-right: 1rem;">Welcome, <%= user.username %></span>
-                            <a href="/profile" class="btn btn-secondary">My Profile</a>
-                            <a href="/upload" class="btn btn-primary">Upload Mod</a>
-                            <a href="/logout" class="btn btn-secondary">Logout</a>
-                        <% } else { %>
-                            <a href="/login" class="btn btn-secondary">Login</a>
-                            <a href="/register" class="btn btn-primary">Sign Up</a>
-                        <% } %>
-                    </div>
-                </div>
-                
-                <!-- ===== 2. MOBILE HEADER CONTROLS (AVATAR & HAMBURGER) ===== -->
-                <div class="mobile-header-controls">
-                    <!-- The Mobile-Only Avatar -->
-                    <% if (typeof user !== 'undefined' && user && user.signedAvatarUrl) { %>
-                        <a href="/profile" class="mobile-avatar-link">
-                            <img src="<%= user.signedAvatarUrl %>" alt="Your Avatar" class="mobile-avatar">
-                        </a>
-                    <% } %>
-                    
-                    <!-- The Hamburger Button -->
-                    <button id="hamburger-btn" aria-label="Open menu">
-                        <span class="hamburger-bar"></span>
-                        <span class="hamburger-bar"></span>
-                        <span class="hamburger-bar"></span>
-                    </button>
-                </div>
-            </div>
-        
-            <!-- ===== 3. MOBILE NAVIGATION MENU (HIDDEN BY DEFAULT) ===== -->
-            <div id="mobile-nav-menu">
-                <!-- Animated Search Bar is now here for mobile view -->
-                <div id="animatedSearchBar" class="search-bar-container">
-                    <form action="/search" method="GET" class="search-form">
-                        <span class="search-icon">&#128269;</span>
-                        <input type="text" id="searchInput" name="q" placeholder="Search for mods..." autocomplete="off">
-                    </form>
-                    <div id="searchSuggestions" class="search-suggestions"></div>
-                    <div id="searchHistory" class="search-history"></div>
-                </div>
-
-                <!-- ======== REPLACED aS PER YOUR REQUEST ======== -->
-                <div class="mobile-menu-section">
-                    <span>Music Controls</span>
-                    <div id="music-controls-mobile" class="music-controls-container">
-                        <button id="play-music-btn-mobile" class="play-music-btn" title="Play Music">▶️</button>
-                        <button id="pause-music-btn-mobile" class="pause-music-btn" title="Pause Music">⏸️</button>
-                        <select id="music-track-selector-mobile" class="music-track-selector" title="Select Track">
-                            <option value="/audio/bgm-1.mp3">BGM 1</option>
-                            <option value="/audio/bgm-2.mp3">BGM 2</option>
-                            <option value="/audio/bgm-3.mp3">BGM 3</option>
-                            <option value="/audio/bgm-4.mp3">BGM 4</option>
-                            <option value="/audio/bgm-5.mp3">BGM 5</option>
-                            <option value="/audio/bgm-6.mp3">BGM 6</option>
-                        </select>
-                    </div>
-                </div>
-                <!-- ======== END OF REPLACEMENT ======== -->
-
-                <a href="/profile">My Profile</a>
-                <a href="/upload">Upload Mod</a>
-                <a href="/community-chat">Community Chat</a>
-                <hr>
-                <% if (typeof user !== 'undefined' && user) { %>
-                    <a href="/logout">Logout</a>
+            
+            <!-- Desktop User Actions -->
+            <div class="header-actions">
+                <% if (user) { %>
+                    <a href="/profile" class="avatar-placeholder">
+                        <img src="<%= user.profileImageUrl || '/images/default-avatar.png' %>" alt="User Avatar">
+                    </a>
+                    <a href="/my-uploads" class="btn btn-login">My Uploads</a>
+                    <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
-                    <a href="/login">Login</a>
-                    <a href="/register">Sign Up</a>
+                    <a href="/login" class="btn btn-login">Login</a>
+                    <a href="/register" class="btn btn-signup">Sign Up</a>
                 <% } %>
             </div>
-        </nav>
+
+            <!-- Mobile User Actions -->
+            <div class="header-mobile-actions">
+                 <a href="/profile" class="avatar-placeholder">
+                    <% if (user && user.profileImageUrl) { %>
+                        <img src="<%= user.profileImageUrl %>" alt="User Avatar">
+                    <% } %>
+                </a>
+                <div class="hamburger-menu" id="hamburger">&#9776;</div>
+            </div>
+        </div>
     </header>
 
+    <!-- Mobile Sidebar Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li class="has-submenu">
+                <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
+                <ul class="sub-menu">
+                    <li><a href="/category?cat=android">Android</a></li>
+                    <li><a href="/category?cat=ios">iOS</a></li>
+                    <li><a href="/category?cat=wordpress">WordPress</a></li>
+                    <li><a href="/category?cat=windows">Windows</a></li>
+                </ul>
+            </li>
+            <% if (user) { %>
+                <li><a href="/my-uploads">My Uploads</a></li>
+                <li><a href="/profile">Profile Settings</a></li>
+                <li><a href="/community-chat">Community Chat</a></li>
+            <% } %>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/dmca">DMCA</a></li>
+            <hr style="border-color: #333; margin: 20px 0;">
+            <div class="music-player">
+                <span id="track-name">Select a track</span>
+                <div class="music-controls">
+                    <button id="prev-track-btn">⏪</button>
+                    <button id="play-pause-btn">▶️</button>
+                    <button id="next-track-btn">⏩</button>
+                </div>
+            </div>
+            <hr style="border-color: #333; margin: 20px 0;">
+            <% if (user) { %>
+                <li><a href="/logout">Logout</a></li>
+            <% } else { %>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Sign Up</a></li>
+            <% } %>
+        </ul>
+    </nav>
+    
     <main>

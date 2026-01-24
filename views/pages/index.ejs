@@ -1,77 +1,71 @@
 <%- include('../partials/header') %>
 
-<div class="container">
+<section class="hero"></section>
 
-    <!-- 1. Main Category Navigation -->
-    <nav class="category-nav">
-        <a href="/category?cat=windows" class="btn btn-secondary">
-            <span class="text-full">Windows</span><span class="text-short">PC</span>
-        </a>
-        <a href="/category?cat=android" class="btn btn-secondary">
-             <span class="text-full">Android</span><span class="text-short">Android</span>
-        </a>
-        <a href="/category?cat=ios" class="btn btn-secondary">
-             <span class="text-full">iOS</span><span class="text-short">iOS</span>
-        </a>
-        <a href="/category?cat=wordpress" class="btn btn-secondary">
-             <span class="text-full">WordPress</span><span class="text-short">WP</span>
-        </a>
-    </nav>
-
-    <!-- 2. "Latest Uploads" Section -->
-    <section class="editor-choice">
-        <h2>Latest Uploads</h2>
-        <div class="item-grid">
+<div class="container" id="mods-container">
+    <!-- Main Category Tabs -->
+    <div class="tabs-container">
+        <nav class="tabs-nav" id="main-tabs-nav">
+            <div class="tab-highlight" id="main-tab-highlight"></div>
+            <button class="tab-button active" data-tab="android">Android</button>
+            <button class="tab-button" data-tab="ios">iOS</button>
+            <button class="tab-button" data-tab="wordpress">WordPress</button>
+            <button class="tab-button" data-tab="windows">Windows</button>
+        </nav>
+    </div>
+    
+    <!-- Loop through each category provided from the backend -->
+    <% Object.keys(filesByCategory).forEach(category => { %>
+        <div id="<%= category %>-mods" class="tab-content <%= category === 'android' ? 'active' : '' %>">
             
-            <!-- Check if there are any files to display -->
-            <% if (files && files.length > 0) { %>
-                <!-- Loop through each file passed from the server -->
-                <% files.forEach(file => { %>
-    
-                    <!-- The link now points to the mod's specific page -->
-                    <a href="/mods/<%= file._id %>" class="item-card <%= file.category === 'android' || file.category === 'ios' ? 'square-image' : '' %>">
-                        <div class="card-image" style="background-image: url('<%= file.iconUrl %>'); background-size: cover; background-position: center;">
-                            <!-- The image is now a background for better scaling -->
-                        </div>
-                        <div class="card-body">
-                            <h3 class="card-title"><%= file.name %></h3>
-                            <p class="card-platform"><%= file.category.charAt(0).toUpperCase() + file.category.slice(1) %></p>
-                            <div class="star-rating" data-rating="<%= file.ratings %>"> <!-- Use file.ratings later -->
-                                 <span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span><span class="star">&#9733;</span>
-                            </div>
-                        </div>
-                    </a>
-    
-                <% }) %>
-            <% } else { %>
-                <p>No mods have been uploaded yet. Be the first!</p>
-            <% } %>
-    
-        </div>
-    </section>
-
-    <!-- 3. Sub-Category Tabs (FIXED) -->
-     <nav class="subcategory-nav">
-        <a href="/trending" class="btn btn-primary">Trending</a>
-        <a href="/new-updates" class="btn btn-secondary">New Updates</a>
-        <a href="/popular" class="btn btn-secondary">Most Popular</a>
-    </nav>
-    
-    <!-- 4. Other Sections -->
-    <!-- Trending on Windows Section -->
-    <section class="trending-windows" style="margin-top: 3rem;">
-        <h2>Trending on Windows</h2>
-        
-    </section>
-    
-    <!-- Popular in Android Section -->
-    <section class="popular-android" style="margin-top: 3rem;">
-        <h2>Popular on Android</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem;">
+            <!-- Loop through each sub-section for the category -->
+            <% Object.keys(filesByCategory[category]).forEach(section => { %>
+                <section class="mod-section">
+                    <div class="section-header">
+                        <h2 class="section-title"><%= section.replace('-', ' ') %></h2>
+                        <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
+                    </div>
+                    <div class="mods-grid">
+                        <!-- Loop through the files in this section -->
+                        <% filesByCategory[category][section].forEach(file => { %>
+                            <a href="/mods/<%= file._id %>" class="mod-card-link">
+                                <div class="mod-card">
+                                    <% if (file.certification === 'certified') { %>
+                                        <div class="app-feature-tag">✔ Certified</div>
+                                    <% } %>
+                                    <div class="mod-type-tag"><%= file.version %></div>
+                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                                    <div class="mod-card-content">
+                                        <h3><%= file.name %></h3>
+                                        <p><%= file.developer %></p>
+                                        <div class="rating">
+                                            <div class="stars-outer">
+                                                <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                            </div>
+                                            <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                        </div>
+                                    </div>
+                                    <div class="download-overlay">
+                                        <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary">View Mod</a>
+                                        <% if (user) { %>
+                                         <a href="/files/<%= file._id %>/whitelist" class="overlay-button overlay-btn-secondary">Add to Whitelist</a>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </section>
+            <% }) %>
 
         </div>
-    </section>
+    <% }) %>
 
+    <section class="upload-section">
+        <h2>Have a Mod to Share?</h2>
+        <p>Contribute to GPL Mods by sharing and uploading your mods.</p>
+        <a href="/upload" class="upload-button">Upload Your Mod</a>
+    </section>
 </div>
 
 <%- include('../partials/footer') %>

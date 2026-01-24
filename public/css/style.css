@@ -24,416 +24,220 @@
 /* 1. Root Variables & CSS Reset
 -------------------------------------------------- */
 :root {
-    --black: #0a0a0a;
-    --dark-grey: #1a1a1a;
-    --light-grey: #333333;
-    --white: #f5f5f5;
-    --gold: #FFD700;
-    --silver: #c0c0c0;
-    --glow-gold: rgba(255, 215, 0, 0.5);
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--black);
+            color: var(--white);
+            line-height: 1.6;
+        }
+        .container { width: 90%; max-width: 1200px; margin: auto; }
+        
+        /* --- Header --- */
+        .main-header { padding: 15px 0; border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; background-color: var(--black); z-index: 1000; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; }
+        .logo span { color: var(--silver); }
+        .search-bar { flex-grow: 1; order: 3; width: 100%; }
+        .search-bar input {
+            width: 100%; padding: 12px 15px; border-radius: 25px; border: 1px solid var(--dark-gray);
+            background-color: var(--dark-gray); color: var(--white); font-size: 1em;
+            transition: all 0.3s ease; --placeholder-color: var(--gold);
+        }
+        .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+        .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
+        .header-actions { display: none; }
+        
+        /* --- New Header Mobile Actions --- */
+        .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
+        .avatar-placeholder {
+            display: block; width: 35px; height: 35px;
+            border: 2px solid var(--silver);
+            background-color: transparent;
+            border-radius: 50%; cursor: pointer; text-decoration: none;
+            overflow: hidden;
+        }
+        .avatar-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .hamburger-menu { display: block; cursor: pointer; font-size: 2em; color: var(--silver); }
+        
+        /* --- Optimized Sidebar Navigation --- */
+        .mobile-nav {
+            display: none; position: fixed; top: 0; left: 0; width: 80%;
+            max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001;
+            overflow-y: auto;
+        }
+        .mobile-nav ul { list-style: none; padding-top: 50px; }
+        .mobile-nav li { margin-bottom: 20px; }
+        .mobile-nav a { color: var(--silver); text-decoration: none; font-size: 1.2em; transition: color 0.3s ease; display: block; }
+        .mobile-nav a:hover { color: var(--gold); }
+        .mobile-nav .has-submenu .arrow {
+            display: inline-block; transition: transform 0.3s ease;
+            font-size: 0.8em; margin-left: 10px;
+        }
+        .mobile-nav .has-submenu.open .arrow { transform: rotate(180deg); }
+        .mobile-nav .has-submenu .sub-menu {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out;
+            padding-left: 20px; margin-top: 10px;
+        }
+        .mobile-nav .has-submenu.open .sub-menu { max-height: 250px; } /* Adjust as needed */
+        .mobile-nav .sub-menu li { margin-bottom: 12px; font-size: 0.9em; }
 
-    --font-primary: 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
-    --transition-speed: 0.3s;
-}
+        /* --- New Music Player in Sidebar --- */
+        .music-player {
+            padding: 15px; margin: 20px -20px; background-color: rgba(0,0,0,0.2);
+            text-align: center; color: var(--silver);
+        }
+        #track-name { font-weight: 600; display: block; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .music-controls button {
+            background: none; border: none; color: var(--silver); font-size: 1.5em;
+            cursor: pointer; margin: 0 10px; transition: color 0.3s ease;
+        }
+        .music-controls button:hover { color: var(--gold); }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+        /* --- Hero Section (Now just a spacer) --- */
+        .hero { padding: 20px 0 0 0; }
+        
+        /* --- Category Tab Navigation --- */
+        .tabs-container { position: relative; margin-bottom: 25px; overflow-x: auto; scrollbar-width: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tabs-nav { display: inline-flex; position: relative; background-color: var(--dark-gray); border-radius: 25px; padding: 5px; white-space: nowrap; }
+        .tab-button { background: none; border: none; color: var(--silver); font-size: 1em; font-weight: 600; padding: 10px 20px; flex: 1 0 auto; cursor: pointer; position: relative; z-index: 2; transition: color 0.4s ease; }
+        .tab-button.active { color: var(--black); }
+        .tab-highlight {
+            position: absolute; top: 5px; left: 0; height: calc(100% - 10px);
+            background-color: var(--gold); border-radius: 20px; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 1;
+        }
+        .sub-tabs-container { margin-top: -15px; margin-bottom: 25px; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
 
-/* 2. Global Typography & Body Styles
--------------------------------------------------- */
-body {
-    background-color: var(--black);
-    color: var(--white);
-    font-family: var(--font-primary);
-    line-height: 1.6;
-    overflow-x: hidden; /* Prevents horizontal scroll */
-}
+        /* --- Mod Sections & Cards (Optimized Layout) --- */
+        .mod-section { padding-top: 30px; }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; gap: 20px;
+        }
+        .section-title { font-size: 1.3em; }
+        .section-more { color: var(--gold); text-decoration: none; font-weight: 600; flex-shrink: 0; }
+        
+        /* New: Flexbox grid for mods */
+        .mods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .mod-card-link { text-decoration: none; }
+        .mod-card {
+            background-color: var(--dark-gray); border-radius: 15px;
+            overflow: hidden; position: relative; color: var(--white);
+            transition: all 0.3s ease;
+            border: 1px solid transparent; cursor: pointer;
+        }
+        .mod-card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 20px var(--glow-gold); }
+        .mod-card-image { height: 140px; width: 100%; object-fit: cover; background-color: #333; }
+        .mod-card-content { padding: 15px; }
+        .mod-card h3 { font-size: 1.2em; color: var(--white) !important; }
+        .mod-card p { color: var(--silver); font-size: 0.9em; margin: 5px 0 10px 0; }
+        .rating { display: flex; align-items: center; gap: 5px; }
+        .stars-outer { position: relative; display: inline-block; font-size: 1em; letter-spacing: 2px; }
+        .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
+        .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
+        .stars-inner::before { content: "★★★★★"; color: var(--gold); }
+        .rating-text { color: var(--silver); font-size: 0.9em; font-weight: 600; }
+        .app-feature-tag { position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+        .mod-type-tag { position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+        .download-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.98), transparent); text-align: center; padding: 20px; opacity: 0; transform: translateY(20%); transition: opacity 0.3s ease, transform 0.3s ease; display: flex; flex-direction: column; gap: 10px; justify-content: flex-end; height: 100%; z-index: 3; }
+        .mod-card:hover .download-overlay { opacity: 1; transform: translateY(0); }
+        .overlay-button { display: block; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9em; transition: all 0.3s ease; width: 100%; }
+        .overlay-btn-primary { background: var(--gold); color: var(--black); }
+        .overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
+        .overlay-button:hover { transform: scale(1.05); }
 
-a {
-    color: var(--gold);
-    text-decoration: none;
-    transition: color var(--transition-speed) ease;
-}
+        /* --- Policy Acceptance Banner --- */
+        .policy-banner {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: var(--dark-gray); color: var(--white);
+            padding: 15px 20px; text-align: center; z-index: 1000;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 15px; border-top: 1px solid #333;
+            transform: translateY(100%); opacity: 0;
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+        }
+        .policy-banner.visible {
+            transform: translateY(0); opacity: 1;
+        }
+        .policy-banner p {
+            margin: 0; font-size: 0.9em;
+        }
+        .policy-banner a {
+            color: var(--gold); text-decoration: underline;
+        }
+        .policy-buttons {
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+        }
+        .policy-button {
+            background-color: var(--gold); color: var(--black);
+            padding: 8px 20px; border-radius: 20px; text-decoration: none;
+            font-weight: bold; border: none; cursor: pointer;
+            transition: all 0.3s ease; font-size: 0.9em;
+        }
+        .policy-button:hover {
+            opacity: 0.9; transform: scale(1.05);
+        }
+        .policy-button.decline {
+            background-color: transparent; border: 2px solid var(--silver);
+            color: var(--silver);
+        }
+        .policy-button.decline:hover {
+            border-color: var(--gold); color: var(--gold);
+        }
 
-a:hover {
-    color: var(--white);
-}
+        /* --- Other Sections & Footer --- */
+        .upload-section { background-color: var(--dark-gray); text-align: center; padding: 60px 20px; margin: 40px 0; border-radius: 15px; border: 1px dashed var(--silver); }
+        .upload-section h2 { font-size: 2em; margin-bottom: 20px; }
+        .upload-section p { margin-bottom: 20px; }
+        .upload-button { display: inline-block; padding: 12px 30px; background: transparent; color: var(--gold); border: 2px solid var(--gold); border-radius: 30px; cursor: pointer; font-size: 1.1em; transition: all 0.3s ease; text-decoration: none; }
+        .upload-button:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+        .main-footer { background-color: var(--dark-gray); padding: 40px 20px; text-align: center; color: var(--silver); margin-top: 60px; }
+        .footer-links { margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 20px; }
+        .footer-links a { color: var(--silver); text-decoration: none; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--gold); }
+        main { padding-bottom: 0; }
 
-h1, h2, h3, h4 {
-    font-weight: 500;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-}
-
-h1 { font-size: 2.5rem; color: var(--gold); }
-h2 { font-size: 2rem; color: var(--silver); }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.2rem; }
-
-
-/* 3. Reusable Components (Buttons, Containers)
--------------------------------------------------- */
-.container {
-    width: 90%;
-    max-width: 1200px;
-    margin: auto;
-    padding: 2rem 0;
-}
-
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all var(--transition-speed) ease;
-    text-transform: uppercase;
-}
-
-.btn-primary {
-    background-color: var(--gold);
-    color: var(--black);
-    border: 1px solid var(--gold);
-}
-
-.btn-primary:hover {
-    background-color: var(--black);
-    color: var(--gold);
-    box-shadow: 0 0 15px var(--glow-gold);
-}
-
-.btn-secondary {
-    background-color: transparent;
-    color: var(--silver);
-    border: 1px solid var(--silver);
-}
-
-.btn-secondary:hover {
-    background-color: var(--silver);
-    color: var(--black);
-}
-
-/* --- Responsive Text for Buttons --- */
-/* By default, hide the short text */
-.btn .text-short {
-    display: none;
-}
-
-/* 4. Header & Navigation
--------------------------------------------------- */
-.main-header {
-    background-color: var(--dark-grey);
-    padding: 1rem 0;
-    border-bottom: 2px solid var(--light-grey);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-
-/* 4b. Music Controls in Header
--------------------------------------------------- */
-#music-controls button {
-    background: none;
-    border: 1px solid var(--light-grey);
-    color: var(--silver);
-    border-radius: 50%; /* Makes the buttons circular */
-    width: 38px;
-    height: 38px;
-    cursor: pointer;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-speed) ease;
-}
-#music-controls button:hover {
-    border-color: var(--gold);
-    color: var(--gold);
-    box-shadow: 0 0 10px var(--glow-gold);
-}
-/* We will control which button is shown using 'display: none' from JS, just like before */
-#play-music-btn {
-    display: none; /* Initially hide the play button */
-}
-
-/* 5. Animated Search Bar
--------------------------------------------------- */
-.search-bar-container {
-    position: relative;
-    width: 300px;
-    transition: width var(--transition-speed) ease-in-out;
-}
-
-.search-bar-container.active {
-    width: 500px; /* Expands on focus */
-}
-
-.search-bar-container .search-form {
-    display: flex;
-    align-items: center;
-    background-color: var(--dark-grey);
-    border: 1px solid var(--light-grey);
-    border-radius: 50px;
-    overflow: hidden;
-    padding: 5px;
-    transition: border-color var(--transition-speed) ease;
-}
-
-.search-bar-container.active .search-form {
-    border-color: var(--gold); /* Gold border on focus */
-}
-
-.search-bar-container .search-icon {
-    padding: 0 10px;
-    color: var(--silver);
-}
-
-.search-bar-container #searchInput {
-    flex-grow: 1;
-    border: none;
-    background: none;
-    outline: none;
-    color: var(--white);
-    font-size: 1rem;
-    padding: 5px;
-}
-
-/* 6. Search Suggestions & History
--------------------------------------------------- */
-.search-suggestions, .search-history {
-    display: none; /* Hidden by default, shown by JS */
-    position: absolute;
-    top: 110%;
-    left: 0;
-    right: 0;
-    background-color: var(--dark-grey);
-    border: 1px solid var(--light-grey);
-    border-radius: 8px;
-    max-height: 400px;
-    overflow-y: auto;
-    z-index: 999;
-}
-
-.search-suggestions ul, .search-history ul {
-    list-style: none;
-}
-
-.search-suggestions a, .search-history a {
-    display: block;
-    padding: 12px 20px;
-    color: var(--white);
-}
-
-.search-suggestions a:hover, .search-history a:hover {
-    background-color: var(--light-grey);
-    color: var(--gold);
-}
-
-.search-history h4 {
-    padding: 12px 20px 5px;
-    color: var(--silver);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-}
-
-/* 7. Star Rating System
--------------------------------------------------- */
-.star-rating {
-    display: flex;
-    align-items: center;
-}
-
-.star {
-    font-size: 1.2rem;
-    color: var(--light-grey); /* The color of an empty star */
-    position: relative;
-    display: inline-block;
-    --fill-percentage: 0%; /* Custom property for partial stars */
-}
-
-.star.filled {
-    color: var(--gold);
-}
-
-/* The magic for partial stars */
-.star.partial::before {
-    content: '\2605'; /* This is a star character ★ */
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: var(--gold);
-    overflow: hidden;
-    /* Create a gradient that is gold up to the percentage, then transparent */
-    background: linear-gradient(90deg, var(--gold) var(--fill-percentage), transparent var(--fill-percentage));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-
-/* 8. Item Card (For Apps, Games, etc.)
--------------------------------------------------- */
-.item-card {
-    background-color: var(--dark-grey);
-    border: 1px solid var(--light-grey);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all var(--transition-speed) ease;
-    cursor: pointer;
-}
-
-.item-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px var(--glow-gold);
-    border-color: var(--gold);
-}
-
-.item-card .card-image {
-    width: 100%;
-    height: 180px; /* Example height for PC games (rectangle) */
-    background-color: var(--light-grey);
-    /* Square for mobile */
-}
-
-.item-card.square-image .card-image {
-    height: auto; /* reset height */
-    aspect-ratio: 1 / 1; /* Makes it a perfect square */
-}
-
-.item-card .card-body {
-    padding: 15px;
-}
-
-.item-card .card-title {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    color: var(--white);
-}
-
-.item-card .card-platform {
-    font-size: 0.8rem;
-    color: var(--silver);
-    margin-bottom: 0.5rem;
-}
-
-/* 9. Sub-Category Navigation Bar
--------------------------------------------------- */
-.subcategory-nav {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1rem 0;
-    margin: 2rem 0;
-    border-top: 1px solid var(--light-grey);
-    border-bottom: 1px solid var(--light-grey);
-}
-
-/* 10. Basic Responsive Design
--------------------------------------------------- */
-@media (max-width: 768px) {
-    .search-bar-container,
-    .search-bar-container.active {
-        width: 100%;
-    }
-    
-    .container {
-        width: 95%;
-    }
-    
-    h1 { font-size: 2rem; }
-    h2 { font-size: 1.6rem; }
-}
-
-/* 11. RESPONSIVE HEADER & NAVIGATION
--------------------------------------------------- */
-
-/* --- Default styles (Desktop First) --- */
-
-/* Initially, the mobile-specific controls are hidden on desktop */
-.mobile-header-controls {
-    display: none;
-}
-
-/* --- Styling for the Mobile Menu Panel --- */
-#mobile-nav-menu {
-    position: fixed; /* Position relative to the viewport */
-    top: 0;
-    right: -100%; /* Start off-screen to the right */
-    width: 80%;
-    max-width: 300px;
-    height: 100vh; /* Full height */
-    background-color: var(--dark-grey);
-    padding: 6rem 1.5rem 1.5rem;
-    box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-    transition: right 0.4s ease-in-out; /* Smooth slide animation */
-    z-index: 1001;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-#mobile-nav-menu a {
-    color: var(--white);
-    font-size: 1.2rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--light-grey);
-}
-
-/* --- Styles for when the menu IS OPEN --- */
-#mobile-nav-menu.is-open {
-    right: 0; /* Slide into view */
-}
-
-
-/* --- Media Query for Mobile Screens (e.g., tablets and phones) --- */
-@media (max-width: 992px) { /* A wider breakpoint like 992px is often better for nav changes */
-    
-    /* 1. HIDE the entire desktop navigation wrapper */
-    .desktop-nav {
-        display: none !important; /* Use !important to override inline styles if needed */
-    }
-
-    /* 2. SHOW the mobile header controls (avatar and hamburger) */
-    .mobile-header-controls {
-        display: flex;
-        align-items: center;
-        gap: 1rem; /* Space between avatar and hamburger */
-    }
-
-    /* Styling for the mobile avatar */
-    .mobile-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid var(--light-grey);
-    }
-    
-    /* --- Styling for the Hamburger Button --- */
-    .mobile-menu-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        z-index: 1002; /* Ensure it's above the menu */
-        display: flex;
-        flex-direction: column;
-        gap: 5px; /* Space between the bars */
-    }
-    .hamburger-bar {
-        width: 25px;
-        height: 3px;
-        background-color: var(--silver);
-        border-radius: 5px;
-        transition: all 0.3s ease;
-    }
-}
-
-
+        @media (min-width: 768px) {
+            .search-bar { order: 2; width: auto; max-width: 400px; }
+            .header-mobile-actions { order: 3; }
+            .section-title { font-size: 2em; }
+        }
+        @media (min-width: 1024px) {
+            .search-bar { order: 2; flex-grow: 1; max-width: 500px; margin: 0 20px; }
+            .header-mobile-actions { order: 3; }
+            .hamburger-menu { display: none; }
+            .avatar-placeholder { order: 2; } /* Avatar before login/signup */
+            .header-actions {
+                display: flex; align-items: center; gap: 10px; order: 3;
+            }
+            .header-actions .btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
+            .header-actions .btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
+            .header-actions .btn-login:hover { color: var(--gold); border-color: var(--gold); }
+            .header-actions .btn-signup { background: var(--gold); color: var(--black); border: 2px solid var(--gold); }
+            .header-actions .btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
+            .policy-banner { flex-direction: row; justify-content: center; }
+            .policy-buttons { margin-left: 20px; }
+        }
 /* --- START OF ABOUT PAGE NEW STYLES --- */
 
 :root {

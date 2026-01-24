@@ -1,22 +1,29 @@
     </main>
-
-    <footer style="background-color: var(--dark-grey); text-align: center; padding: 2rem 0; margin-top: 4rem; border-top: 1px solid var(--light-grey);">
+    
+    <footer class="main-footer">
         <div class="container">
-            <p>&copy; 2026 GPL Mods. All Rights Reserved.</p>
-            <div class="footer-links" style="margin-top: 1rem;">
-                <a href="/dmca">DMCA</a> |
-                <a href="/about">About</a> |
-                <a href="/faq">FAQ</a> |
-                <a href="/tos">Terms of Service</a> |
-                <a href="/privacy-policy">Privacy Policy</a>
+            <div class="footer-links">
+                <a href="/about">About Us</a>
+                <a href="/faq">FAQ</a>
+                <a href="/dmca">DMCA</a>
+                <a href="/tos">Terms of Service</a>
             </div>
+            <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
         </div>
     </footer>
 
-    <!-- Link to our Global JavaScript File -->
-    <!-- Placed at the end to ensure the HTML is loaded before the script runs -->
+    <!-- Policy Acceptance Banner -->
+    <div class="policy-banner" id="policyBanner">
+        <p>This website uses cookies to ensure you get the best experience. By using our site, you agree to our <a href="/tos" target="_blank">Terms of Service</a>.</p>
+        <div class="policy-buttons">
+            <button class="policy-button" id="acceptPolicy">Accept</button>
+            <button class="policy-button decline" id="declinePolicy">Decline</button>
+        </div>
+    </div>
+    
+    <!-- Your global JavaScript files -->
     <script src="/js/main.js"></script>
-    <script src="//code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async></script>
-
+    <!-- Your Tidio/Chatbot script -->
+    <script src="//code.tidio.co/YOUR_UNIQUE_KEY.js" async></script>
 </body>
 </html>
