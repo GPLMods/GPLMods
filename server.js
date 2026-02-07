@@ -771,8 +771,43 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
     }
 });
 
+
+// ===================================
+// 11. API ROUTES
+// ===================================
+
+app.get('/api/search/suggestions', async (req, res) => { 
+    // This route was mentioned in the update but was not in the original file.
+    // Add your search suggestion logic here. For now, it returns an empty array.
+    res.json([]);
+});
+
+// --- NEW: Trending Searches API Route ---
+app.get('/api/trending-searches', async (req, res) => {
+    try {
+        // We will fetch the names of the top 5 most downloaded mods
+        // that are also the "latest version".
+        const trendingFiles = await File.find(
+            { isLatestVersion: true },
+            { name: 1, _id: 0 } // Projection: only return the 'name' field
+        )
+        .sort({ downloads: -1 }) // Sort by most downloads
+        .limit(5); // Get the top 5
+
+        // Extract just the name strings from the result objects
+        const trendingNames = trendingFiles.map(file => file.name);
+
+        res.json(trendingNames); // Send back the array of names
+
+    } catch (error) {
+        console.error("API Trending Searches Error:", error);
+        res.status(500).json({ error: 'Could not fetch trending searches.' });
+    }
+});
+
+
 // ===============================
-// 11. SOCIAL & ADMIN INTERACTION
+// 12. SOCIAL & ADMIN INTERACTION
 // ===============================
 
 app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
@@ -850,7 +885,7 @@ app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin,
 app.get('/community-chat', ensureAuthenticated, (req, res) => res.render('pages/community-chat'));
 
 // ===============================
-// 12. STATIC PAGES
+// 13. STATIC PAGES
 // ===============================
 app.get('/about', (req, res) => res.render('pages/static/about'));
 app.get('/faq', (req, res) => res.render('pages/static/faq'));
@@ -874,7 +909,7 @@ app.use((err, req, res, next) => {
 });
 
 // ===============================
-// 13. SERVER START
+// 14. SERVER START
 // ===============================
 const server = http.createServer(app);
 const io = new Server(server);

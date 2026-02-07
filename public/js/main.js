@@ -7,7 +7,7 @@
  * Table of Contents:
  * 1. Document Ready Initializer
  * 2. Star Rating System
- * 3. Search Bar Animation & Functionality
+ * 3. Search Bar Handler with DYNAMIC Animation
  * 4. Search History Management (for all users)
  * 5. Search Suggestions FETCHER (Updated with Live API)
  * 6. Mobile Menu Toggle
@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSearchBar();
 
     // Initialize the mobile menu toggle
-    initializeMobileMenu(); 
-    
+    initializeMobileMenu();
+
     // Initialize the music player
     initializeMusicPlayer();
 
@@ -56,7 +56,7 @@ function initializeStarRatings() {
 
         // Get all the star icons within this container
         const stars = container.querySelectorAll('.star');
-        
+
         // Calculate how many full and partial stars to show
         const fullStars = Math.floor(rating);
         const partialStarPercentage = (rating % 1) * 100;
@@ -78,47 +78,128 @@ function initializeStarRatings() {
 
 
 /**
- * ----------------------------------------------------------------------------------
- * 3. SEARCH BAR ANIMATION & FUNCTIONALITY
- * Handles the visual effects and user interactions for the search bar.
- * ----------------------------------------------------------------------------------
+ * ==================================================================================
+ * REVISED: 3. SEARCH BAR HANDLER with DYNAMIC Animation
+ * ==================================================================================
  */
-function initializeSearchBar() {
-    const searchBar = document.getElementById('animatedSearchBar');
+async function initializeSearchBar() {
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
     const searchHistoryBox = document.getElementById('searchHistory');
+    const searchBar = document.getElementById('animatedSearchBar'); // Keep for focus animation
 
-    if (!searchBar || !searchInput) return;
+    if (!searchInput) {
+        console.warn("Search input not found.");
+        return;
+    }
 
-    // Add a class for animation when the user clicks/taps into the search input
+    // --- Live Suggestions & History Logic ---
     searchInput.addEventListener('focus', () => {
-        searchBar.classList.add('active');
-        // Show recent searches when the user focuses on the input
+        if(searchBar) searchBar.classList.add('active');
         displaySearchHistory();
     });
 
-    // Remove the class when the user clicks away, unless they are clicking into the suggestions
     searchInput.addEventListener('blur', () => {
         // A small delay allows clicks on suggestion items to register before hiding
         setTimeout(() => {
-            if (!suggestionsBox.contains(document.activeElement)) {
-                searchBar.classList.remove('active');
+            if (!suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
+                 if(searchBar) searchBar.classList.remove('active');
+                 suggestionsBox.style.display = 'none';
+                 searchHistoryBox.style.display = 'none';
             }
         }, 200);
     });
-    
-    // Listen for user typing to fetch suggestions
+
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
         if (query.length > 1) {
-            // Fetch and display live search suggestions
             fetchAndDisplaySuggestions(query);
             searchHistoryBox.style.display = 'none'; // Hide history when showing suggestions
         } else {
-            // If the query is too short, hide suggestions and show history again
             suggestionsBox.style.display = 'none';
             displaySearchHistory();
+        }
+    });
+
+    // --- DYNAMIC Placeholder Typing Animation ---
+
+    // 1. Fetch the trending search terms from our API
+    let searchTerms = ["Search for mods..."]; // Default fallback
+    try {
+        const response = await fetch('/api/trending-searches');
+        if (response.ok) {
+            const trending = await response.json();
+            if (trending.length > 0) {
+                // Add "..." to each term for the typing effect
+                searchTerms = trending.map(term => `${term}...`);
+            }
+        }
+    } catch (error) {
+        console.error("Could not fetch trending search terms:", error);
+        // The animation will proceed with the default fallback term.
+    }
+
+    // 2. The animation logic
+    const themeColors = ["var(--gold)", "var(--silver)"];
+    let termIndex = 0,
+        letterIndex = 0,
+        currentTerm = '',
+        isDeleting = false;
+    let typingTimeout;
+
+    function typeAnimation() {
+        // Stop animation if the user is focused on the input
+        if (document.activeElement === searchInput) return;
+
+        const fullTerm = searchTerms[termIndex];
+
+        if (isDeleting) {
+            // Subtract letters
+            currentTerm = fullTerm.substring(0, letterIndex - 1);
+            letterIndex--;
+        } else {
+            // Add letters
+            currentTerm = fullTerm.substring(0, letterIndex + 1);
+            letterIndex++;
+        }
+
+        searchInput.placeholder = currentTerm;
+        let typeSpeed = isDeleting ? 60 : 120;
+
+        if (!isDeleting && letterIndex === fullTerm.length) {
+            // Pause at the end of the term
+            isDeleting = true;
+            typeSpeed = 1500;
+        } else if (isDeleting && letterIndex === 0) {
+            // Move to the next term
+            isDeleting = false;
+            termIndex = (termIndex + 1) % searchTerms.length;
+            // Update color for the next term
+            searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
+            typeSpeed = 300;
+        }
+
+        typingTimeout = setTimeout(typeAnimation, typeSpeed);
+    }
+
+    // 3. Start the animation and set up controlling event listeners
+    typeAnimation(); // Initial call to start
+
+    searchInput.addEventListener('focus', () => {
+        clearTimeout(typingTimeout); // Stop animation
+        searchInput.placeholder = "Search for mods..."; // Set a static placeholder
+        searchInput.style.setProperty('--placeholder-color', 'var(--silver)'); // Reset color
+    });
+
+    searchInput.addEventListener('blur', () => {
+        // If the input is empty when the user clicks away, restart the animation
+        if (searchInput.value === '') {
+            searchInput.placeholder = ""; // Clear immediately
+            letterIndex = 0;
+            isDeleting = false;
+            // Start with the next term for variety
+            termIndex = (termIndex + 1) % searchTerms.length;
+            typeAnimation();
         }
     });
     
@@ -133,6 +214,7 @@ function initializeSearchBar() {
         });
     }
 }
+
 
 /**
  * ----------------------------------------------------------------------------------
@@ -155,7 +237,7 @@ function saveSearchTerm(term) {
     let history = getSearchHistory();
     // Remove the term if it already exists to avoid duplicates and move it to the top
     history = history.filter(item => item.toLowerCase() !== term.toLowerCase());
-    
+
     // Add the new term to the beginning of the array
     history.unshift(term);
 
@@ -163,7 +245,7 @@ function saveSearchTerm(term) {
     if (history.length > MAX_HISTORY_ITEMS) {
         history.pop();
     }
-    
+
     // Save the updated history back to localStorage
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
 }
@@ -173,8 +255,8 @@ function displaySearchHistory() {
     const history = getSearchHistory();
     const historyBox = document.getElementById('searchHistory');
     const suggestionsBox = document.getElementById('searchSuggestions');
-    
-    if(!historyBox) return;
+
+    if (!historyBox) return;
 
     historyBox.innerHTML = ''; // Clear previous history items
 
@@ -182,7 +264,7 @@ function displaySearchHistory() {
         const title = document.createElement('h4');
         title.textContent = 'Recent Searches';
         historyBox.appendChild(title);
-        
+
         const list = document.createElement('ul');
         history.forEach(term => {
             const listItem = document.createElement('li');
@@ -212,14 +294,14 @@ async function fetchAndDisplaySuggestions(query) {
     try {
         // Use encodeURIComponent to safely handle special characters in the query
         const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
-        
+
         if (!response.ok) {
             // If the server response is not OK (e.g., 500 error), throw an error
             throw new Error('Network response was not ok');
         }
-        
+
         const suggestions = await response.json(); // Parse the JSON array of strings
-        
+
         suggestionsBox.innerHTML = ''; // Clear old suggestions
 
         if (suggestions.length > 0) {
@@ -317,14 +399,14 @@ function initializeMusicPlayer() {
             localStorage.setItem('musicState', 'paused');
         }
     };
-    
+
     if (musicStatePreference === 'playing') {
         startPlayback();
     } else {
         audioPlayer.pause();
         updateButtons(false);
     }
-    
+
     playBtn.addEventListener('click', () => {
         audioPlayer.play();
         updateButtons(true);
@@ -336,7 +418,7 @@ function initializeMusicPlayer() {
         updateButtons(false);
         localStorage.setItem('musicState', 'paused');
     });
-    
+
     trackSelector.addEventListener('change', () => {
         const newTrack = trackSelector.value;
         audioPlayer.src = newTrack;
@@ -372,7 +454,7 @@ function initializeSmartAudioHandler() {
                 // You could add logic here to show the play button if you want.
             }
         });
-        
+
         // When the mouse leaves the media area, you could potentially resume,
         // but it's often better to let the user resume it manually.
     });
