@@ -45,11 +45,16 @@
 
             <!-- Mobile User Actions -->
             <div class="header-mobile-actions">
-                 <a href="/profile" class="avatar-placeholder">
-                    <% if (user && user.profileImageUrl) { %>
-                        <img src="<%= user.profileImageUrl %>" alt="User Avatar">
-                    <% } %>
-                </a>
+                <% if (user) { %>
+                    <a href="/profile" class="avatar-placeholder">
+                        <% if (user.profileImageUrl) { %>
+                            <img src="<%= user.profileImageUrl %>" alt="User Avatar">
+                        <% } else { %>
+                             <!-- Optional: Show a default icon inside if they have no image -->
+                             <img src="/images/default-avatar.png" alt="User Avatar">
+                        <% } %>
+                    </a>
+                <% } %>
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
             </div>
         </div>

@@ -17,25 +17,31 @@
  */
 
 // 1. Waits for the entire HTML document to be loaded and parsed
+// This is the main entry point for all client-side JavaScript
 document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- Define a single async function to run all initializers ---
+    const runInitializers = async () => {
+        try {
+            // Run functions that do NOT depend on external data first
+            initializeMobileMenu(); // This has no dependencies, let's run it early
+            initializeStarRatings();
+            initializeMusicPlayer(); // Or your new sidebar music player logic
+            initializeSmartAudioHandler();
 
-    // --- INITIALIZE ALL GLOBAL FUNCTIONS ---
+            // Now, run the async function that fetches data
+            await initializeSearchBar();
 
-    // Initialize all star rating displays on the page
-    initializeStarRatings();
+            // You can add other initializers here
+            
+        } catch (error) {
+            console.error("An error occurred during page initialization:", error);
+        }
+    };
 
-    // Initialize the interactive search bar
-    initializeSearchBar();
-
-    // Initialize the mobile menu toggle
-    initializeMobileMenu();
-
-    // Initialize the music player
-    initializeMusicPlayer();
-
-    // Initialize the smart audio handler
-    initializeSmartAudioHandler();
-
+    // --- Execute the main function ---
+    runInitializers();
+    
 });
 
 

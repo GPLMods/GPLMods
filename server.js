@@ -81,7 +81,7 @@ const uploadToB2 = async (file, folder) => {
         ContentType: file.mimetype
     };
     await s3Client.send(new PutObjectCommand(params));
-    return fileName; 
+    return fileName;
 };
 
 // ===============================
@@ -235,28 +235,59 @@ async function verifyRecaptcha(req, res, next) {
 // 7. PUBLIC ROUTES
 // ===============================
 
-// Home
+// Home (UPDATED)
 app.get('/', async (req, res) => {
     try {
-        // Fetch 12 most recent files that are the latest version
-        const recentFiles = await File.find({ isLatestVersion: true })
-            .sort({ createdAt: -1 })
-            .limit(12);
+        const findQuery = { status: 'live', isLatestVersion: true };
+        const categories = ['android', 'ios', 'wordpress', 'windows'];
+        const filesByCategory = {};
 
-        // Map files to include Signed URLs for their icons
-        const filesWithUrls = await Promise.all(recentFiles.map(async (file) => {
-            const key = file.iconUrl || file.iconKey;
-            const iconUrl = key
-                ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })
-                : '/images/default-avatar.png';
+        await Promise.all(categories.map(async (cat) => {
+            const workingMods = await File.find({ category: cat, ...findQuery })
+                                          .sort({ averageRating: -1, downloads: -1 })
+                                          .limit(4);
+
+            const popularMods = await File.find({ category: cat, ...findQuery })
+                                          .sort({ downloads: -1 })
+                                          .limit(4);
             
-            return { ...file.toObject(), iconUrl };
+            const newUpdates = await File.find({ category: cat, ...findQuery })
+                                         .sort({ createdAt: -1 })
+                                         .limit(4);
+            
+            filesByCategory[cat] = {
+                '100-Percent-Working': workingMods,
+                'Most-Popular': popularMods,
+                'New-Updates': newUpdates,
+            };
         }));
 
-        res.render('pages/index', { files: filesWithUrls });
-    } catch (e) {
-        console.error("Home Error:", e);
-        res.status(500).render('pages/500');
+        // This part gets the signed URLs for every icon.
+        for (const category in filesByCategory) {
+            for (const section in filesByCategory[category]) {
+                filesByCategory[category][section] = await Promise.all(
+                    filesByCategory[category][section].map(async (file) => {
+                        const key = file.iconUrl || file.iconKey;
+                        let signedIconUrl = '/images/default-avatar.png'; // Fallback
+                        if (key) {
+                            try {
+                                signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                            } catch (urlError) {
+                                console.error(`Could not get signed URL for key: ${key}`, urlError);
+                            }
+                        }
+                        return { ...file.toObject(), iconUrl: signedIconUrl };
+                    })
+                );
+            }
+        }
+
+        // Now, we render the page and pass the correctly named object
+        res.render('pages/index', { filesByCategory });
+
+    } catch (error) {
+        console.error("Error fetching files for homepage:", error);
+        res.status(500).render('pages/500'); // Render the 500 page on error
     }
 });
 
