@@ -21,10 +21,11 @@ const bodyParser = require('body-parser');
 const http = require('http');
 const { Server } = require("socket.io");
 const crypto = require('crypto');
+const cors = require('cors'); // Added for CORS
 
 // Custom Utilities & Config
 const { sendVerificationEmail } = require('./utils/mailer');
-const adminRouter = require('./config/admin');
+const setupAdmin = require('./config/admin'); // Updated from adminRouter
 
 // AWS SDK v3 Imports (Backblaze B2)
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -98,6 +99,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// --- ADD CORS MIDDLEWARE HERE ---
+const allowedOrigins = [
+    'http://localhost:3000',          // Your local dev environment
+    'https://gplmods.webredirect.org'   // Your live custom domain
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    }
+}));
+
 // --- Maintenance Mode ---
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE === 'on') {
@@ -155,6 +174,9 @@ app.use((req, res, next) => {
     res.locals.timeAgo = timeAgo;
     next();
 });
+
+// --- SETUP ADMINJS ---
+setupAdmin(app);
 
 // ===============================
 // 6. PASSPORT STRATEGIES
@@ -243,18 +265,9 @@ app.get('/', async (req, res) => {
         const filesByCategory = {};
 
         await Promise.all(categories.map(async (cat) => {
-            const workingMods = await File.find({ category: cat, ...findQuery })
-                                          .sort({ averageRating: -1, downloads: -1 })
-                                          .limit(4);
-
-            const popularMods = await File.find({ category: cat, ...findQuery })
-                                          .sort({ downloads: -1 })
-                                          .limit(4);
-            
-            const newUpdates = await File.find({ category: cat, ...findQuery })
-                                         .sort({ createdAt: -1 })
-                                         .limit(4);
-            
+            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4);
+            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4);
+            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4);
             filesByCategory[cat] = {
                 '100-Percent-Working': workingMods,
                 'Most-Popular': popularMods,
@@ -262,13 +275,12 @@ app.get('/', async (req, res) => {
             };
         }));
 
-        // This part gets the signed URLs for every icon.
         for (const category in filesByCategory) {
             for (const section in filesByCategory[category]) {
                 filesByCategory[category][section] = await Promise.all(
                     filesByCategory[category][section].map(async (file) => {
                         const key = file.iconUrl || file.iconKey;
-                        let signedIconUrl = '/images/default-avatar.png'; // Fallback
+                        let signedIconUrl = '/images/default-avatar.png';
                         if (key) {
                             try {
                                 signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -281,15 +293,13 @@ app.get('/', async (req, res) => {
                 );
             }
         }
-
-        // Now, we render the page and pass the correctly named object
         res.render('pages/index', { filesByCategory });
-
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
-        res.status(500).render('pages/500'); // Render the 500 page on error
+        res.status(500).render('pages/500');
     }
 });
+
 
 // Updates / Announcements
 app.get('/updates', async (req, res) => {
@@ -737,6 +747,18 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
     { name: 'screenshots', maxCount: 4 }
 ]), async (req, res) => {
     try {
+        // ======== ADD THIS EXTRA SERVER-SIDE CHECK ========
+        // Even though multer should handle this, an explicit check is good for robustness.
+        if (req.files.screenshots && req.files.screenshots.length > 4) {
+            // If for some reason more than 4 files get through, reject the request.
+            return res.status(400).send("Error: A maximum of 4 screenshots are allowed.");
+        }
+        // =================================================
+
+        // Log for debugging
+        console.log('Received files:', req.files);
+        console.log('Received body:', req.body);
+
         const { fileKey, ...formData } = req.body; // The final location of the mod file from B2
         const { softwareIcon, screenshots } = req.files; // Avatars/screenshots are small, still handled by multer
 
@@ -778,7 +800,7 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
             developer: formData.developerName,
             modDescription: formData.modFeatures,
             whatsNew: formData.whatsNew,
-            officialDescription: formData.officialDescription,
+            officialDescription: formData.officialDescription, // <-- ADDED THIS FIELD
             videoUrl: formData.videoUrl,
             category: formData.modPlatform,
             platforms: [formData.modCategory],

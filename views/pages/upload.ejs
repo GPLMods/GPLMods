@@ -10,14 +10,14 @@
     
     <div class="container">
         <div class="upload-layout">
-            <!-- Updated Form Tag with new ID -->
+            <!-- Updated Form Tag -->
             <form class="upload-form" id="directUploadForm" action="/upload-finalize" method="POST" enctype="multipart/form-data">
                 
                 <!-- Mod Icon Preview & Upload -->
                 <div class="icon-upload-container">
-                    <label>Mod Icon</label>
+                    <label>Mod Icon*</label>
                     <div class="icon-preview" id="iconPreviewBox">
-                        <img id="iconImage" src="" alt="Icon Preview">
+                        <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
                         <span id="iconPlaceholder">Preview</span>
                     </div>
                     <div class="file-input-wrapper" style="max-width: 250px;">
@@ -27,7 +27,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="modName">Mod Name</label>
+                    <label for="modName">Mod Name*</label>
                     <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
                 </div>
 
@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="modPlatform">Platform</label>
+                    <label for="modPlatform">Platform*</label>
                     <select id="modPlatform" name="modPlatform" required>
                         <option value="" disabled selected>Select a platform...</option>
                         <option value="android">Android</option>
@@ -49,20 +49,31 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="modCategory">Category</label>
+                    <label for="modCategory">Category*</label>
                     <select id="modCategory" name="modCategory" required disabled>
                         <option value="" disabled selected>Select a platform first...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="modVersion">Mod Version</label>
+                    <label for="modVersion">Mod Version*</label>
                     <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
                 </div>
 
+                <!-- Descriptions Section -->
                 <div class="form-group">
-                    <label for="modFeatures">Mod Features</label>
+                    <label for="modDescription">Mod Description*</label>
+                    <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="modFeatures">Mod Features*</label>
                     <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="officialDescription">Official Description (Optional)</label>
+                    <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store or developer's website."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -76,7 +87,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Mod File</label>
+                    <label>Mod File*</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="modFile" name="modFile" accept=".apk,.xapk,.ipa,.deb,.zip,.exe,.msi" required>
                         <label for="modFile" class="file-input-label">Choose Mod File</label>
@@ -85,14 +96,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Mod Screenshots</label>
+                    <label>Mod Screenshots* (1-4 images)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="screenshotFile" name="screenshotFile" accept="image/png, image/jpeg" required>
-                        <label for="screenshotFile" class="file-input-label">Choose Screenshot</label>
-                        <span class="file-name" id="screenshotFileName">No file selected</span>
+                        <!-- Updated ID and added 'multiple' -->
+                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
+                        <label for="screenshots" class="file-input-label">Choose Screenshots</label>
+                        <span class="file-name" id="screenshotFileName">No files selected</span>
                     </div>
-                    <div class="preview-container" id="screenshotPreviewContainer">
-                        <img id="screenshotPreview" src="" alt="Screenshot Preview">
+                    <!-- Container for multiple previews -->
+                    <div class="preview-container" id="screenshotPreviewContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <!-- Images will be injected here -->
                     </div>
                 </div>
 
@@ -114,7 +127,7 @@
                     <li><b>Be Accurate:</b> The mod name, version, and developer details must be correct.</li>
                     <li><b>Safety First:</b> Mods containing malware or harmful code result in a permanent ban.</li>
                     <li><b>Testing:</b> Ensure the mod works as described before uploading.</li>
-                    <li><b>Media:</b> High-quality icons and screenshots improve approval chances.</li>
+                    <li><b>Media:</b> High-quality icons and screenshots (1-4) improve approval chances.</li>
                 </ul>
             </aside>
         </div>
@@ -181,34 +194,41 @@
         });
 
         // --- File Name Display Logic ---
-        const setupFileNameDisplay = (inputId, spanId) => {
-            const input = document.getElementById(inputId);
-            const span = document.getElementById(spanId);
-            input.addEventListener('change', function() {
-                span.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
-            });
-        };
+        const modFileInput = document.getElementById('modFile');
+        const modFileNameSpan = document.getElementById('modFileName');
+        modFileInput.addEventListener('change', function() {
+            modFileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
+        });
 
-        setupFileNameDisplay('modFile', 'modFileName');
-        setupFileNameDisplay('screenshotFile', 'screenshotFileName');
-        
-        // --- Screenshot Preview Logic ---
-        const screenshotInput = document.getElementById('screenshotFile');
+        // --- Screenshot Preview & Name Logic (Handles Multiple) ---
+        const screenshotsInput = document.getElementById('screenshots');
+        const screenshotFileNameSpan = document.getElementById('screenshotFileName');
         const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-        const screenshotPreview = document.getElementById('screenshotPreview');
 
-        screenshotInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    screenshotPreview.src = e.target.result;
-                    screenshotPreviewContainer.style.display = 'block';
-                }
-                reader.readAsDataURL(file);
+        screenshotsInput.addEventListener('change', function() {
+            const files = this.files;
+            screenshotPreviewContainer.innerHTML = ''; // Clear old previews
+            
+            if (files.length > 0) {
+                screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
+                
+                // Limit preview to 4 for visual consistency
+                Array.from(files).slice(0, 4).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100px';
+                        img.style.height = '150px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '4px';
+                        img.style.border = '1px solid #ddd';
+                        screenshotPreviewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
             } else {
-                screenshotPreview.src = '';
-                screenshotPreviewContainer.style.display = 'none';
+                screenshotFileNameSpan.textContent = 'No files selected';
             }
         });
 
@@ -233,38 +253,48 @@
             }
         });
 
-        // --- NEW Direct-to-Cloud Form Submission Logic ---
+        // --- Form Submission Logic (Includes Validation) ---
         uploadForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); // Stop the form from submitting the old way
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Uploading... Please wait.';
+            event.preventDefault(); 
 
-            const modFileInput = document.getElementById('modFile');
-            const modFile = modFileInput.files[0];
-            
-            if (!modFile) {
-                alert('Please select a mod file to upload.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Mod for Review';
+            // 1. Screenshot Validation
+            const screenFiles = screenshotsInput.files;
+            if (screenFiles.length < 1) {
+                alert('Error: You must upload at least one screenshot.');
+                return;
+            }
+            if (screenFiles.length > 4) {
+                alert('Error: You cannot upload more than 4 screenshots. You have selected ' + screenFiles.length + '.');
                 return;
             }
 
+            // 2. Mod File Check
+            const modFile = modFileInput.files[0];
+            if (!modFile) {
+                alert('Please select a mod file to upload.');
+                return;
+            }
+
+            // 3. Start Upload Process
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading... Please wait.';
+
             try {
-                // --- STEP 1: Get the presigned URL from our server ---
+                // --- STEP A: Get presigned URL ---
                 const presignedUrlResponse = await fetch('/generate-presigned-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         filename: modFile.name,
                         filetype: modFile.type,
-                        folder: 'mods' // The destination folder in B2
+                        folder: 'mods'
                     })
                 });
                 
                 if (!presignedUrlResponse.ok) throw new Error('Could not get upload permission.');
                 const { presignedUrl, fileKey } = await presignedUrlResponse.json();
 
-                // --- STEP 2: Upload the file DIRECTLY to Backblaze B2 ---
+                // --- STEP B: Direct Cloud Upload ---
                 const uploadToB2Response = await fetch(presignedUrl, {
                     method: 'PUT',
                     body: modFile,
@@ -273,22 +303,20 @@
                 
                 if (!uploadToB2Response.ok) throw new Error('Direct upload to cloud failed.');
 
-                // --- STEP 3: Submit the rest of the form data to our server ---
-                // We create a new FormData object, but WITHOUT the large file
+                // --- STEP C: Finalize with Server ---
                 const formData = new FormData(uploadForm);
-                formData.delete('modFile'); // Remove the file input
-                formData.append('fileKey', fileKey); // Add the final file location key
+                formData.delete('modFile'); // Don't re-upload the huge file
+                formData.append('fileKey', fileKey); 
 
                 const finalizeUploadResponse = await fetch('/upload-finalize', {
                     method: 'POST',
-                    body: formData // No need for Content-Type, FormData sets it
+                    body: formData
                 });
 
                 if (!finalizeUploadResponse.ok) throw new Error('Server failed to finalize the upload.');
 
-                // --- SUCCESS ---
                 alert('Thank you! Your mod has been submitted for review.');
-                window.location.href = '/'; // Redirect to homepage on success
+                window.location.href = '/';
 
             } catch (error) {
                 console.error('Upload process failed:', error);
