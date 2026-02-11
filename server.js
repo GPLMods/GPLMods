@@ -21,7 +21,7 @@ const bodyParser = require('body-parser');
 const http = require('http');
 const { Server } = require("socket.io");
 const crypto = require('crypto');
-const csetupAdmin(app);ors = require('cors'); // Added for CORS
+const cors = require('cors');// Added for CORS
 
 // Custom Utilities & Config
 const { sendVerificationEmail } = require('./utils/mailer');
