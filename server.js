@@ -21,11 +21,11 @@ const bodyParser = require('body-parser');
 const http = require('http');
 const { Server } = require("socket.io");
 const crypto = require('crypto');
-const cors = require('cors'); // Added for CORS
+const csetupAdmin(app);ors = require('cors'); // Added for CORS
 
 // Custom Utilities & Config
 const { sendVerificationEmail } = require('./utils/mailer');
-const setupAdmin = require('./config/admin'); // Updated from adminRouter
+const adminRouter = require('./config/admin'); // Updated from adminRouter
 
 // AWS SDK v3 Imports (Backblaze B2)
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -176,7 +176,7 @@ app.use((req, res, next) => {
 });
 
 // --- SETUP ADMINJS ---
-setupAdmin(app);
+app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 // ===============================
 // 6. PASSPORT STRATEGIES
