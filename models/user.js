@@ -35,12 +35,12 @@ const UserSchema = new Schema({
     },
     profileImageUrl: {
         type: String,
-        default: '' // Default to an empty string (or a URL to a default avatar)
+        default: ''
     },
     bio: {
         type: String,
         trim: true,
-        maxlength: 250 // Good practice to set a reasonable character limit
+        maxlength: 250
     },
     lastSeen: {
         type: Date,
@@ -51,16 +51,15 @@ const UserSchema = new Schema({
         ref: 'File'
     }],
     isVerified: {
-    type: Boolean,
-    default: false
-},
-// --- NEW OTP FIELDS ---
-verificationOtp: {
-    type: String
-},
-otpExpires: {
-    type: Date
-}
+        type: Boolean,
+        default: false
+    },
+    // --- NEW OTP FIELDS ---
+    verificationOtp: {
+        type: String
+    },
+    otpExpires: {
+        type: Date
     },
     // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
     passwordResetToken: {
@@ -69,18 +68,16 @@ otpExpires: {
     passwordResetExpires: {
         type: Date
     }
-    // -------------------------------------------
-}, { timestamps: true });
+}, { timestamps: true }); // <--- Schema closes here, followed by options
 
 // Pre-save hook to hash the password before saving a new user
 UserSchema.pre('save', async function(next) {
-    // Only hash the password if it has been modified (or is new)
     if (!this.isModified('password')) {
         return next();
     }
     try {
-        const salt = await bcrypt.genSalt(10); // Generate a salt
-        this.password = await bcrypt.hash(this.password, salt); // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
         next();
     } catch (error) {
         next(error);
