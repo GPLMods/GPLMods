@@ -51,11 +51,16 @@ const UserSchema = new Schema({
         ref: 'File'
     }],
     isVerified: {
-        type: Boolean,
-        default: false
-    },
-    verificationToken: {
-        type: String
+    type: Boolean,
+    default: false
+},
+// --- NEW OTP FIELDS ---
+verificationOtp: {
+    type: String
+},
+otpExpires: {
+    type: Date
+}
     },
     // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
     passwordResetToken: {

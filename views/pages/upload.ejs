@@ -1,331 +1,129 @@
 <%- include('../partials/header') %>
+<style>
+    .upload-container { max-width: 700px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-gray); border-radius: 8px; text-align: center; }
+    #drop-area { border: 2px dashed var(--silver); border-radius: 8px; padding: 40px; margin-bottom: 20px; transition: all 0.3s ease; }
+    #drop-area.highlight { border-color: var(--gold); background-color: #333; }
+    #file-input { display: none; }
+    #progress-bar-container { display: none; }
+    #progress-bar { width: 100%; height: 25px; background-color: var(--black); border-radius: 5px; overflow: hidden; }
+    #progress-bar-fill { width: 0%; height: 100%; background-color: var(--gold); transition: width 0.3s ease; }
+    #upload-status { margin-top: 10px; color: var(--silver); }
+</style>
 
-<main>
-    <div class="page-header">
-        <div class="container">
-            <h1>Upload <span>Your Mod</span></h1>
-            <p>Contribute to the community by sharing your creation. All submissions are reviewed by our team.</p>
+<div class="container">
+    <div class="upload-container">
+        <h2>Upload Your Mod File</h2>
+        <p>Step 1 of 2: Select or drag & drop your mod file (.zip, .rar, .exe, etc.).</p>
+        
+        <div id="drop-area">
+            <p>Drag your file here, or <a href="#" id="browse-link">browse your computer</a>.</p>
+            <input type="file" id="file-input">
+        </div>
+
+        <div id="progress-bar-container">
+            <p id="file-name-display"></p>
+            <div id="progress-bar"><div id="progress-bar-fill"></div></div>
+            <p id="upload-status">Initializing upload...</p>
         </div>
     </div>
-    
-    <div class="container">
-        <div class="upload-layout">
-            <!-- Updated Form Tag -->
-            <form class="upload-form" id="directUploadForm" action="/upload-finalize" method="POST" enctype="multipart/form-data">
-                
-                <!-- Mod Icon Preview & Upload -->
-                <div class="icon-upload-container">
-                    <label>Mod Icon*</label>
-                    <div class="icon-preview" id="iconPreviewBox">
-                        <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
-                        <span id="iconPlaceholder">Preview</span>
-                    </div>
-                    <div class="file-input-wrapper" style="max-width: 250px;">
-                        <input type="file" id="modIcon" name="modIcon" accept="image/*" required>
-                        <label for="modIcon" class="file-input-label">Choose Icon</label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="modName">Mod Name*</label>
-                    <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="developerName">Official Developer / Company</label>
-                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
-                </div>
-
-                <div class="form-group">
-                    <label for="modPlatform">Platform*</label>
-                    <select id="modPlatform" name="modPlatform" required>
-                        <option value="" disabled selected>Select a platform...</option>
-                        <option value="android">Android</option>
-                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
-                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
-                        <option value="windows">Windows</option>
-                        <option value="wordpress">WordPress</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="modCategory">Category*</label>
-                    <select id="modCategory" name="modCategory" required disabled>
-                        <option value="" disabled selected>Select a platform first...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="modVersion">Mod Version*</label>
-                    <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
-                </div>
-
-                <!-- Descriptions Section -->
-                <div class="form-group">
-                    <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="modFeatures">Mod Features*</label>
-                    <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="officialDescription">Official Description (Optional)</label>
-                    <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store or developer's website."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="whatsNew">What's New (Optional)</label>
-                    <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="tags">Tags (Optional)</label>
-                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
-                </div>
-
-                <div class="form-group">
-                    <label>Mod File*</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="modFile" name="modFile" accept=".apk,.xapk,.ipa,.deb,.zip,.exe,.msi" required>
-                        <label for="modFile" class="file-input-label">Choose Mod File</label>
-                        <span class="file-name" id="modFileName">No file selected</span>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Mod Screenshots* (1-4 images)</label>
-                    <div class="file-input-wrapper">
-                        <!-- Updated ID and added 'multiple' -->
-                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
-                        <label for="screenshots" class="file-input-label">Choose Screenshots</label>
-                        <span class="file-name" id="screenshotFileName">No files selected</span>
-                    </div>
-                    <!-- Container for multiple previews -->
-                    <div class="preview-container" id="screenshotPreviewContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                        <!-- Images will be injected here -->
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="videoUrl">Video URL (Optional)</label>
-                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
-                    <div class="preview-container" id="videoPreviewContainer">
-                        <!-- YouTube Iframe will be inserted here -->
-                    </div>
-                </div>
-
-                <button type="submit" class="submit-button" id="submitBtn">Submit Mod for Review</button>
-            </form>
-            
-            <!-- Submission Guidelines -->
-            <aside class="guidelines">
-                <h3>Submission Guidelines</h3>
-                <ul>
-                    <li><b>Be Accurate:</b> The mod name, version, and developer details must be correct.</li>
-                    <li><b>Safety First:</b> Mods containing malware or harmful code result in a permanent ban.</li>
-                    <li><b>Testing:</b> Ensure the mod works as described before uploading.</li>
-                    <li><b>Media:</b> High-quality icons and screenshots (1-4) improve approval chances.</li>
-                </ul>
-            </aside>
-        </div>
-    </div>
-</main>
+</div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        
-        const uploadForm = document.getElementById('directUploadForm');
-        const submitBtn = document.getElementById('submitBtn');
+document.addEventListener('DOMContentLoaded', () => {
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const browseLink = document.getElementById('browse-link');
+    const progressBarContainer = document.getElementById('progress-bar-container');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const uploadStatus = document.getElementById('upload-status');
+    const fileNameDisplay = document.getElementById('file-name-display');
 
-        // --- Icon Preview Logic ---
-        const modIcon = document.getElementById('modIcon');
-        const iconImage = document.getElementById('iconImage');
-        const iconPlaceholder = document.getElementById('iconPlaceholder');
-
-        modIcon.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    iconImage.src = e.target.result;
-                    iconImage.style.display = 'block';
-                    iconPlaceholder.style.display = 'none';
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // --- Dynamic Category Dropdown Logic ---
-        const platformSelect = document.getElementById('modPlatform');
-        const categorySelect = document.getElementById('modCategory');
-
-        const categoriesByPlatform = {
-            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
-        };
-
-        platformSelect.addEventListener('change', function() {
-            const selectedPlatform = this.value;
-            const categories = categoriesByPlatform[selectedPlatform] || [];
-            categorySelect.innerHTML = '';
-            if (categories.length > 0) {
-                categorySelect.disabled = false;
-                let defaultOption = document.createElement('option');
-                defaultOption.text = 'Select a category...';
-                defaultOption.value = '';
-                defaultOption.disabled = true;
-                defaultOption.selected = true;
-                categorySelect.add(defaultOption);
-                categories.forEach(function(category) {
-                    let option = document.createElement('option');
-                    option.text = category;
-                    option.value = category.toLowerCase().replace(/ /g, '-');
-                    categorySelect.add(option);
-                });
-            } else {
-                categorySelect.disabled = true;
-            }
-        });
-
-        // --- File Name Display Logic ---
-        const modFileInput = document.getElementById('modFile');
-        const modFileNameSpan = document.getElementById('modFileName');
-        modFileInput.addEventListener('change', function() {
-            modFileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
-        });
-
-        // --- Screenshot Preview & Name Logic (Handles Multiple) ---
-        const screenshotsInput = document.getElementById('screenshots');
-        const screenshotFileNameSpan = document.getElementById('screenshotFileName');
-        const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-
-        screenshotsInput.addEventListener('change', function() {
-            const files = this.files;
-            screenshotPreviewContainer.innerHTML = ''; // Clear old previews
-            
-            if (files.length > 0) {
-                screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
-                
-                // Limit preview to 4 for visual consistency
-                Array.from(files).slice(0, 4).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.style.width = '100px';
-                        img.style.height = '150px';
-                        img.style.objectFit = 'cover';
-                        img.style.borderRadius = '4px';
-                        img.style.border = '1px solid #ddd';
-                        screenshotPreviewContainer.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
-                });
-            } else {
-                screenshotFileNameSpan.textContent = 'No files selected';
-            }
-        });
-
-        // --- Video Preview Logic ---
-        const videoUrlInput = document.getElementById('videoUrl');
-        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
-
-        function getYouTubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
-        videoUrlInput.addEventListener('input', function() {
-            const videoId = getYouTubeId(this.value);
-            if (videoId) {
-                videoPreviewContainer.style.display = 'block';
-                videoPreviewContainer.innerHTML = `<div class="video-preview-wrapper"><iframe src="//www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-            } else {
-                videoPreviewContainer.style.display = 'none';
-                videoPreviewContainer.innerHTML = '';
-            }
-        });
-
-        // --- Form Submission Logic (Includes Validation) ---
-        uploadForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); 
-
-            // 1. Screenshot Validation
-            const screenFiles = screenshotsInput.files;
-            if (screenFiles.length < 1) {
-                alert('Error: You must upload at least one screenshot.');
-                return;
-            }
-            if (screenFiles.length > 4) {
-                alert('Error: You cannot upload more than 4 screenshots. You have selected ' + screenFiles.length + '.');
-                return;
-            }
-
-            // 2. Mod File Check
-            const modFile = modFileInput.files[0];
-            if (!modFile) {
-                alert('Please select a mod file to upload.');
-                return;
-            }
-
-            // 3. Start Upload Process
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Uploading... Please wait.';
-
-            try {
-                // --- STEP A: Get presigned URL ---
-                const presignedUrlResponse = await fetch('/generate-presigned-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        filename: modFile.name,
-                        filetype: modFile.type,
-                        folder: 'mods'
-                    })
-                });
-                
-                if (!presignedUrlResponse.ok) throw new Error('Could not get upload permission.');
-                const { presignedUrl, fileKey } = await presignedUrlResponse.json();
-
-                // --- STEP B: Direct Cloud Upload ---
-                const uploadToB2Response = await fetch(presignedUrl, {
-                    method: 'PUT',
-                    body: modFile,
-                    headers: { 'Content-Type': modFile.type }
-                });
-                
-                if (!uploadToB2Response.ok) throw new Error('Direct upload to cloud failed.');
-
-                // --- STEP C: Finalize with Server ---
-                const formData = new FormData(uploadForm);
-                formData.delete('modFile'); // Don't re-upload the huge file
-                formData.append('fileKey', fileKey); 
-
-                const finalizeUploadResponse = await fetch('/upload-finalize', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!finalizeUploadResponse.ok) throw new Error('Server failed to finalize the upload.');
-
-                alert('Thank you! Your mod has been submitted for review.');
-                window.location.href = '/';
-
-            } catch (error) {
-                console.error('Upload process failed:', error);
-                alert('Upload Failed: ' + error.message);
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Mod for Review';
-            }
+    // --- Drag & Drop Event Handlers ---
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
         });
     });
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'));
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'));
+    });
+    dropArea.addEventListener('drop', e => {
+        handleFiles(e.dataTransfer.files);
+    });
+
+    // --- Click to Browse ---
+    browseLink.addEventListener('click', e => {
+        e.preventDefault();
+        fileInput.click();
+    });
+    fileInput.addEventListener('change', () => {
+        handleFiles(fileInput.files);
+    });
+
+    // --- Main Upload Logic ---
+    async function handleFiles(files) {
+        if (files.length === 0) return;
+        const file = files[0];
+        
+        // --- Show the progress bar ---
+        fileNameDisplay.textContent = `Uploading: ${file.name}`;
+        progressBarContainer.style.display = 'block';
+        dropArea.style.display = 'none';
+
+        try {
+            // --- STEP 1: Ask our server for a presigned URL ---
+            uploadStatus.textContent = 'Preparing secure upload...';
+            const response = await fetch('/generate-presigned-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: file.name, filetype: file.type, folder: 'mods' })
+            });
+
+            if (!response.ok) throw new Error('Could not prepare upload. Server error.');
+            
+            const { presignedUrl, fileKey } = await response.json();
+
+            // --- STEP 2: Upload directly to B2 using the presigned URL ---
+            uploadStatus.textContent = 'Uploading... 0%';
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', presignedUrl, true);
+            xhr.setRequestHeader('Content-Type', file.type);
+            
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBarFill.style.width = percentComplete + '%';
+                    uploadStatus.textContent = `Uploading... ${percentComplete}%`;
+                }
+            };
+            
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    uploadStatus.textContent = 'Upload Complete! Redirecting...';
+                    // --- STEP 3: Redirect to the metadata form on success ---
+                    window.location.href = `/upload-details?fileKey=${encodeURIComponent(fileKey)}&filename=${encodeURIComponent(file.name)}&filesize=${file.size}`;
+                } else {
+                    throw new Error(`Upload failed with status: ${xhr.status}`);
+                }
+            };
+            
+            xhr.onerror = () => {
+                throw new Error('Upload failed. Network error.');
+            };
+
+            xhr.send(file);
+
+        } catch (error) {
+            console.error('Upload process failed:', error);
+            uploadStatus.textContent = `Error: ${error.message}`;
+            uploadStatus.style.color = '#ff4d4d';
+        }
+    }
+});
 </script>
 
 <%- include('../partials/footer') %>

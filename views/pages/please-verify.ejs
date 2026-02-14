@@ -1,7 +1,242 @@
-<%- include('../partials/header') %>
-<div class="container" style="text-align: center; padding: 4rem 1rem;">
-    <h1>Thank You for Registering!</h1>
-    <p style="font-size: 1.2rem; color: var(--silver);">One final step is required to activate your account.</p>
-    <p>We've sent a verification link to your email address. Please check your inbox (and spam folder) and click the link to complete your registration.</p>
-</div>
-<%- include('../partials/footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Account - GPL Mods</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --error: #ff4d4d;
+            --success: #2ecc71;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--black); 
+            color: var(--white); 
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-container { 
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--dark-gray); 
+            padding: 40px; 
+            border-radius: 15px; 
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--gold);
+            text-decoration: none;
+            display: block;
+        }
+        .logo-area span { color: var(--silver); }
+        .form-container h2 { 
+            font-size: 1.8em; 
+            margin-bottom: 15px; 
+        }
+        .form-container p {
+            color: var(--silver);
+            margin-bottom: 25px;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .form-container p strong {
+            color: var(--white);
+            font-weight: 600;
+        }
+        .otp-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .otp-group input {
+            width: 50px;
+            height: 60px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: var(--black);
+            color: var(--white);
+            font-size: 1.5em;
+            text-align: center;
+            font-weight: 600;
+        }
+        .otp-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+        .otp-group input::-webkit-outer-spin-button,
+        .otp-group input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .otp-group input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .submit-button { 
+            display: block; 
+            width: 100%; 
+            background: var(--gold); 
+            color: var(--black); 
+            padding: 14px 20px; 
+            border-radius: 8px; 
+            font-size: 1.1em; 
+            font-weight: 700; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            margin-top: 10px;
+        }
+        .submit-button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 0 20px var(--glow-gold); 
+        }
+        .submit-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .form-switch { 
+            text-align: center; 
+            margin-top: 25px; 
+            color: var(--silver); 
+            font-size: 0.9em; 
+        }
+        .form-switch a { 
+            color: var(--gold); 
+            text-decoration: none; 
+            font-weight: 600; 
+            cursor: pointer;
+        }
+        .form-switch a:hover { 
+            text-decoration: underline; 
+        }
+        @media (max-width: 480px) {
+            .auth-container { 
+                padding: 25px; 
+                border-radius: 0; 
+                height: 100vh; 
+                border: none; 
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .otp-group input {
+                width: 40px;
+                height: 50px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <a href="/" class="logo-area">GPL <span>Mods</span></a>
+        
+        <section class="form-container">
+            <h2>Check Your Email</h2>
+            <p>We've sent a 6-digit verification code to <br><strong><%= email %></strong></p>
+            
+            <form id="otp-form" action="/verify-otp" method="POST">
+                <div class="otp-group" id="otp-inputs">
+                    <!-- Hidden input to combine OTP for backend -->
+                    <input type="hidden" name="otp" id="otp-full">
+                    <!-- Hidden input to pass the email to the next route -->
+                    <input type="hidden" name="email" value="<%= email %>">
+                    
+                    <!-- Visible inputs for user experience -->
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)">
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)" disabled>
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)" disabled>
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)" disabled>
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)" disabled>
+                    <input type="number" class="otp-input" maxlength="1" oninput="this.value=this.value.slice(0,1)" disabled>
+                </div>
+
+                <button type="submit" class="submit-button" id="verify-button">Verify Account</button>
+            </form>
+
+            <p class="form-switch">Didn't receive the code? <a id="resend-code">Resend Code</a></p>
+        </section>
+    </div>
+
+    <script>
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpForm = document.getElementById('otp-form');
+        const hiddenOtpInput = document.getElementById('otp-full');
+
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                // If a digit is entered, move to the next input
+                if (input.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].disabled = false;
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                // If backspace is pressed on an empty input, move to the previous input
+                if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+
+            // Handle pasting an OTP code
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData).getData('text').slice(0, 6);
+                if (/^\d{6}$/.test(pasteData)) {
+                    pasteData.split('').forEach((char, i) => {
+                        otpInputs[i].value = char;
+                        otpInputs[i].disabled = false;
+                    });
+                    otpInputs[5].focus();
+                }
+            });
+        });
+
+        // Form Submission Logic
+        otpForm.addEventListener('submit', function(e) {
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            
+            if (otpCode.length !== 6) {
+                e.preventDefault(); // Stop the form from submitting
+                alert('Please enter all 6 digits of the code.');
+            } else {
+                // If the code is complete, populate the hidden input and let the form submit naturally
+                hiddenOtpInput.value = otpCode;
+            }
+        });
+
+        // Resend Code Logic
+        document.getElementById('resend-code').addEventListener('click', function() {
+            // TODO: Implement a real fetch request to a new '/resend-otp' backend route.
+            // This route would be similar to the register route but would only find the user
+            // by email, generate a new OTP, and resend the email.
+            alert('This would trigger a request to resend the code.');
+        });
+    </script>
+</body>
+</html>

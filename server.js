@@ -483,41 +483,95 @@ app.get('/login', (req, res) => {
 app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }));
 
 app.get('/register', (req, res) => res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, message: null }));
+
+// --- UPDATED /register route with OTP ---
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        if (!username || !email || !password) return res.status(400).send("All fields required.");
+        if (!username || !email || !password) {
+            return res.status(400).send("All fields are required.");
+        }
+        let user = await User.findOne({ email: email.toLowerCase() });
 
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
-        if (existingUser) {
-            if (existingUser.isVerified) return res.status(400).send("User exists.");
-            const token = jwt.sign({ userId: existingUser._id }, process.env.JWT_SECRET || 'fallback', { expiresIn: '1d' });
-            existingUser.verificationToken = token;
-            await existingUser.save();
-            await sendVerificationEmail(existingUser);
-            return res.render('pages/please-verify');
+        if (user && user.isVerified) {
+            return res.status(400).send("An account with this email already exists.");
         }
 
-        const newUser = new User({ username, email: email.toLowerCase(), password });
-        const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET || 'fallback', { expiresIn: '1d' });
-        newUser.verificationToken = token;
-        await newUser.save();
-        await sendVerificationEmail(newUser);
-        res.render('pages/please-verify');
-    } catch (e) { res.status(500).send("Registration error."); }
+        // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = Date.now() + 600000; // 10 minutes from now
+
+        if (user && !user.isVerified) {
+            // If user exists but is not verified, update their OTP and expiry
+            user.verificationOtp = otp;
+            user.otpExpires = otpExpires;
+        } else {
+            // If it's a brand new user
+            user = new User({
+                username,
+                email: email.toLowerCase(),
+                password,
+                verificationOtp: otp,
+                otpExpires: otpExpires
+            });
+        }
+        
+        await user.save();
+        await sendVerificationEmail(user); // Assumes this function sends the 'otp' variable in an email
+        
+        // Render the OTP entry page and pass the user's email to it
+        res.render('pages/please-verify', { email: user.email });
+
+    } catch (e) {
+        console.error("Registration error:", e);
+        res.status(500).render('pages/500');
+    }
 });
 
-app.get('/verify-email', async (req, res) => {
+// --- NEW /verify-otp route (replaces old /verify-email) ---
+app.post('/verify-otp', async (req, res) => {
     try {
-        const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET || 'fallback');
-        const user = await User.findOne({ _id: decoded.userId, verificationToken: req.query.token });
-        if (!user) return res.status(400).send('Invalid token.');
+        // Get email and OTP from the hidden inputs in the form
+        const { otp, email } = req.body; 
+
+        if (!otp || !email) {
+            // This case should ideally not be hit with frontend validation
+            return res.status(400).send("OTP and email are required.");
+        }
+
+        const user = await User.findOne({
+            email: email.toLowerCase(),
+            verificationOtp: otp,
+            otpExpires: { $gt: Date.now() } // Check that the OTP is not expired
+        });
+
+        if (!user) {
+            // If no user is found, the OTP was wrong or has expired.
+            // Redirect back to the registration page with an error message for the user.
+            return res.redirect('/register?error=Invalid or expired verification code.');
+        }
+
+        // OTP is correct, update the user account
         user.isVerified = true;
-        user.verificationToken = undefined;
+        user.verificationOtp = undefined; // Invalidate the OTP so it can't be used again
+        user.otpExpires = undefined;
         await user.save();
-        req.login(user, () => res.redirect('/profile'));
-    } catch (e) { res.status(400).send('Expired token.'); }
+        
+        // Log the user in automatically and redirect to their profile page
+        req.login(user, (err) => {
+            if (err) {
+                console.error("Login after verification failed:", err);
+                return res.redirect('/login?message=Verification successful. Please log in.');
+            }
+            return res.redirect('/profile');
+        });
+
+    } catch (error) {
+        console.error("OTP Verification Error:", error);
+        res.status(500).render('pages/500');
+    }
 });
+
 
 app.get('/forgot-password', (req, res) => res.render('pages/forgot-password'));
 app.post('/forgot-password', async (req, res) => {
@@ -719,7 +773,7 @@ app.post('/generate-presigned-url', ensureAuthenticated, async (req, res) => {
         }
         
         // Sanitize filename and create a unique key for the object in B2
-        const uniqueKey = `${folder}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+        const uniqueKey = `${folder}/${Date.now()}-${sanitizeFilename(filename)}`;
 
         const command = new PutObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
@@ -740,6 +794,17 @@ app.post('/generate-presigned-url', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Could not prepare upload.' });
     }
 });
+
+// --- NEW ROUTE: The Metadata Form Page ---
+app.get('/upload-details', ensureAuthenticated, (req, res) => {
+    const { fileKey, filename, filesize } = req.query;
+    if (!fileKey || !filename || !filesize) {
+        return res.redirect('/upload?error=Invalid file details.');
+    }
+    // Render a new EJS page for the form, passing the file info
+    res.render('pages/upload-details', { fileKey, filename, filesize });
+});
+
 
 // Step 2 of upload - Client finalizes the upload with metadata
 app.post('/upload-finalize', ensureAuthenticated, upload.fields([

@@ -323,7 +323,7 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 7. BACKGROUND MUSIC PLAYER CONTROLS
+ * 7. BACKGROUND MUSIC PLAYER CONTROLS (FIXED)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -332,76 +332,131 @@ function initializeMusicPlayer() {
     const pauseBtn = document.getElementById('pause-music-btn-mobile');
     const trackSelector = document.getElementById('music-track-selector-mobile');
 
-    if (!audioPlayer || !playBtn || !pauseBtn || !trackSelector) return;
+    // Safety check: ensure all elements exist before running
+    if (!audioPlayer || !playBtn || !pauseBtn || !trackSelector) {
+        console.warn("Music Player Error: One or more ID elements are missing in the HTML.");
+        return;
+    }
 
+    // 1. Helper to toggle Play/Pause buttons
     const updateButtons = (isPlaying) => {
         playBtn.style.display = isPlaying ? 'none' : 'block';
         pauseBtn.style.display = isPlaying ? 'block' : 'none';
     };
 
+    // 2. Set Default Volume
     audioPlayer.volume = 0.25;
-    const musicStatePreference = localStorage.getItem('musicState');
-    const musicTrackPreference = localStorage.getItem('musicTrack');
 
-    if (musicTrackPreference) {
-        audioPlayer.src = musicTrackPreference;
-        trackSelector.value = musicTrackPreference;
+    // 3. Load Saved Preferences
+    const savedState = localStorage.getItem('musicState'); // 'playing' or 'paused'
+    const savedTrack = localStorage.getItem('musicTrack');
+
+    // 4. Initialize Track Source (CRITICAL FIX)
+    // If a track is saved, use it. Otherwise, default to the first option in the dropdown.
+    if (savedTrack) {
+        audioPlayer.src = savedTrack;
+        trackSelector.value = savedTrack;
+    } else if (trackSelector.options.length > 0) {
+        const defaultTrack = trackSelector.options[0].value;
+        audioPlayer.src = defaultTrack;
+        trackSelector.value = defaultTrack;
     }
 
-    const startPlayback = async () => {
+    // 5. Robust Play Function
+    const attemptPlay = async () => {
+        if (!audioPlayer.src) return; 
+
         try {
             await audioPlayer.play();
             updateButtons(true);
             localStorage.setItem('musicState', 'playing');
         } catch (error) {
-            console.warn("Autoplay prevented.");
-            updateButtons(false);
-            localStorage.setItem('musicState', 'paused');
+            // This catches the "Autoplay prevented" browser error
+            console.warn("Autoplay blocked. Waiting for user interaction...");
+            updateButtons(false); 
         }
     };
 
-    if (musicStatePreference === 'playing') {
-        startPlayback();
+    // 6. Handle Initial State on Page Load
+    if (savedState === 'playing') {
+        attemptPlay();
     } else {
-        audioPlayer.pause();
         updateButtons(false);
     }
 
-    playBtn.addEventListener('click', () => {
-        audioPlayer.play();
-        updateButtons(true);
-        localStorage.setItem('musicState', 'playing');
-    });
-
+    // 7. Event Listeners for Buttons
+    playBtn.addEventListener('click', attemptPlay);
+    
     pauseBtn.addEventListener('click', () => {
         audioPlayer.pause();
         updateButtons(false);
         localStorage.setItem('musicState', 'paused');
     });
 
+    // 8. Track Change Listener
     trackSelector.addEventListener('change', () => {
-        const newTrack = trackSelector.value;
-        audioPlayer.src = newTrack;
-        localStorage.setItem('musicTrack', newTrack);
-        if (localStorage.getItem('musicState') === 'playing') startPlayback();
+        audioPlayer.src = trackSelector.value;
+        localStorage.setItem('musicTrack', trackSelector.value);
+        // Automatically play when user manually selects a new song
+        attemptPlay();
     });
+
+    // 9. BROWSER AUTOPLAY FIX (The "Magic" Unlocker)
+    // If music should be playing but is paused (due to browser block), 
+    // try playing again on the very first click anywhere on the document.
+    document.addEventListener('click', () => {
+        if (localStorage.getItem('musicState') === 'playing' && audioPlayer.paused) {
+            attemptPlay();
+        }
+    }, { once: true }); // This runs only once
 }
 
 /**
  * ==================================================================================
- * 8. SMART AUDIO HANDLER
+ * 8. SMART AUDIO HANDLER (FIXED)
+ * Pauses music when hovering videos, Resumes when leaving.
  * ==================================================================================
  */
 function initializeSmartAudioHandler() {
     const backgroundAudio = document.getElementById('background-audio');
     if (!backgroundAudio) return;
 
-    const allMediaPlayers = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video');
+    // specific selectors for common embeds and video tags
+    const mediaSelectors = 'iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video';
+    const allMediaPlayers = document.querySelectorAll(mediaSelectors);
 
     allMediaPlayers.forEach(player => {
+        // When mouse enters video: Pause music if it was playing
         player.addEventListener('mouseenter', () => {
-            const isMusicPlaying = localStorage.getItem('musicState') === 'playing';
-            if (isMusicPlaying) backgroundAudio.pause();
+            if (!backgroundAudio.paused) {
+                // Save a "flag" on the element so we know to resume it later
+                backgroundAudio.dataset.wasPlaying = 'true'; 
+                backgroundAudio.pause();
+                
+                // Optional: Update the play/pause buttons visually
+                const playBtn = document.getElementById('play-music-btn-mobile');
+                const pauseBtn = document.getElementById('pause-music-btn-mobile');
+                if(playBtn && pauseBtn) {
+                     playBtn.style.display = 'block';
+                     pauseBtn.style.display = 'none';
+                }
+            }
+        });
+
+        // When mouse leaves video: Resume ONLY if it was paused by us
+        player.addEventListener('mouseleave', () => {
+            if (backgroundAudio.dataset.wasPlaying === 'true') {
+                backgroundAudio.play().catch(e => console.log("Resume failed:", e));
+                backgroundAudio.dataset.wasPlaying = 'false'; // Reset flag
+                
+                // Update buttons back to "Playing" state
+                const playBtn = document.getElementById('play-music-btn-mobile');
+                const pauseBtn = document.getElementById('pause-music-btn-mobile');
+                if(playBtn && pauseBtn) {
+                     playBtn.style.display = 'none';
+                     pauseBtn.style.display = 'block';
+                }
+            }
         });
     });
 }

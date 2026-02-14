@@ -1,0 +1,429 @@
+<%- include('../partials/header') %>
+
+<style>
+    /* Your custom theme styles are now integrated */
+    :root {
+        --black: #0a0a0a;
+        --dark-gray: #1a1a1a;
+        --white: #ffffff;
+        --gold: #FFD700;
+        --silver: #c0c0c0;
+        --glow-gold: rgba(255, 215, 0, 0.5);
+    }
+    /* General body and container styles */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); line-height: 1.6; }
+    .container { width: 90%; max-width: 1200px; margin: auto; padding: 20px 0; }
+
+    /* Main form container (adapted from your .upload-form styles) */
+    .upload-form-container {
+        background-color: var(--dark-gray);
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 800px; /* Control the width */
+        margin: 2rem auto;
+    }
+
+    /* Form Header Text */
+    .upload-form-container h2 {
+        text-align: center;
+        font-size: 2.5em;
+        margin-bottom: 1rem;
+    }
+    .upload-form-container h2 span {
+        color: var(--gold);
+        text-shadow: 0 0 15px var(--glow-gold);
+    }
+    .upload-form-container p {
+        text-align: center;
+        font-size: 1.1em;
+        color: var(--silver);
+        margin-bottom: 2rem;
+    }
+
+    /* Form Groups and Inputs */
+    .form-group {
+        margin-bottom: 25px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--silver);
+    }
+    .form-group input[type="text"],
+    .form-group input[type="url"],
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        color: var(--white);
+        font-size: 1em;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s ease;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    /* Icon Preview Section */
+    .icon-upload-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 2px dashed #333;
+        border-radius: 15px;
+        background-color: rgba(0,0,0,0.2);
+    }
+    .icon-preview {
+        width: 100px;
+        height: 100px;
+        background-color: var(--black);
+        border-radius: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--gold);
+        overflow: hidden;
+    }
+    .icon-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Changed to cover for a fuller look */
+    }
+    .icon-preview span {
+        color: #444;
+        font-size: 0.8em;
+        text-align: center;
+    }
+
+    /* Custom File Input Styles */
+    .file-input-wrapper {
+        position: relative;
+        display: block; /* Changed to block for full width */
+        width: 100%;
+    }
+    input[type="file"] {
+        display: none;
+    }
+    .file-input-label {
+        display: block;
+        padding: 12px 20px;
+        background: transparent;
+        color: var(--gold);
+        border: 2px solid var(--gold);
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    .file-input-label:hover {
+        background: var(--gold);
+        color: var(--black);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .file-name {
+        display: block;
+        margin-top: 10px;
+        color: var(--silver);
+        font-size: 0.9em;
+        text-align: center;
+    }
+
+    /* Screenshot & Video Previews */
+    .preview-container {
+        margin-top: 15px;
+        display: flex; /* Using flex for better alignment */
+        gap: 10px;
+        flex-wrap: wrap;
+        background-color: var(--black);
+        padding: 8px;
+        border: 1px solid #333;
+        border-radius: 8px;
+    }
+    .preview-container img {
+        width: 120px; /* Fixed width for previews */
+        height: auto;
+        aspect-ratio: 9 / 16; /* Portrait aspect ratio */
+        object-fit: cover;
+        border-radius: 4px;
+    }
+    .video-preview-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 */
+        height: 0;
+        overflow: hidden;
+        border-radius: 4px;
+        width: 100%;
+    }
+    .video-preview-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Submit Button */
+    .submit-button {
+        display: block;
+        width: 100%;
+        background: var(--gold);
+        color: var(--black);
+        padding: 15px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 1.2em;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px var(--glow-gold);
+        margin-top: 20px;
+    }
+    .submit-button:hover {
+        opacity: 0.9;
+    }
+</style>
+
+<div class="container">
+    <div class="upload-form-container">
+        <h2>Upload Your Mod <span>- Details</span></h2>
+        <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
+
+        <form action="/upload-finalize" method="POST" enctype="multipart/form-data">
+            <!-- HIDDEN INPUTS to pass the main file info -->
+            <input type="hidden" name="fileKey" value="<%= fileKey %>">
+            <input type="hidden" name="originalFilename" value="<%= filename %>">
+            <input type="hidden" name="fileSize" value="<%= filesize %>">
+
+            <!-- Icon Upload -->
+            <div class="icon-upload-container">
+                <label>Mod Icon*</label>
+                <div class="icon-preview" id="iconPreviewBox">
+                    <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
+                    <span id="iconPlaceholder">Preview</span>
+                </div>
+                <div style="max-width: 250px;">
+                    <input type="file" id="modIcon" name="modIcon" accept="image/*" required>
+                    <label for="modIcon" class="file-input-label">Choose Icon</label>
+                </div>
+            </div>
+
+            <!-- Text and Select Fields -->
+            <div class="form-group">
+                <label for="modName">Mod Name*</label>
+                <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
+            </div>
+
+            <div class="form-group">
+                <label for="developerName">Official Developer / Company</label>
+                <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
+            </div>
+
+            <div class="form-group">
+                <label for="modPlatform">Platform*</label>
+                <select id="modPlatform" name="modPlatform" required>
+                    <option value="" disabled selected>Select a platform...</option>
+                    <option value="android">Android</option>
+                    <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                    <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                    <option value="windows">Windows</option>
+                    <option value="wordpress">WordPress</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="modCategory">Category*</label>
+                <select id="modCategory" name="modCategory" required disabled>
+                    <option value="" disabled selected>Select a platform first...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="modVersion">Mod Version*</label>
+                <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
+            </div>
+
+            <!-- Textarea Fields -->
+            <div class="form-group">
+                <label for="modDescription">Mod Description*</label>
+                <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="modFeatures">Mod Features*</label>
+                <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="officialDescription">Official Description (Optional)</label>
+                <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store or developer's website."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="whatsNew">What's New (Optional)</label>
+                <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
+            </div>
+
+            <!-- More Form Fields -->
+            <div class="form-group">
+                <label for="tags">Tags (Optional, comma-separated)</label>
+                <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
+            </div>
+
+            <div class="form-group">
+                <label>Mod Screenshots* (1-4 images)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
+                    <label for="screenshots" class="file-input-label">Choose Screenshots</label>
+                    <span class="file-name" id="screenshotFileName">No files selected</span>
+                </div>
+                <div class="preview-container" id="screenshotPreviewContainer"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="videoUrl">Video URL (Optional)</label>
+                <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                <div class="preview-container" id="videoPreviewContainer"></div>
+            </div>
+            
+            <button type="submit" class="submit-button">Submit Mod for Review</button>
+        </form>
+    </div>
+</div>
+
+<!-- All the interactive JavaScript from the old file -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Icon Preview Logic ---
+        const modIcon = document.getElementById('modIcon');
+        const iconImage = document.getElementById('iconImage');
+        const iconPlaceholder = document.getElementById('iconPlaceholder');
+
+        modIcon.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    iconImage.src = e.target.result;
+                    iconImage.style.display = 'block';
+                    iconPlaceholder.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- Dynamic Category Dropdown Logic ---
+        const platformSelect = document.getElementById('modPlatform');
+        const categorySelect = document.getElementById('modCategory');
+
+        const categoriesByPlatform = {
+            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+        };
+
+        platformSelect.addEventListener('change', function() {
+            const selectedPlatform = this.value;
+            const categories = categoriesByPlatform[selectedPlatform] || [];
+            categorySelect.innerHTML = '';
+            if (categories.length > 0) {
+                categorySelect.disabled = false;
+                let defaultOption = document.createElement('option');
+                defaultOption.text = 'Select a category...';
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                categorySelect.add(defaultOption);
+                categories.forEach(function(category) {
+                    let option = document.createElement('option');
+                    option.text = category;
+                    option.value = category.toLowerCase().replace(/ /g, '-');
+                    categorySelect.add(option);
+                });
+            } else {
+                categorySelect.disabled = true;
+            }
+        });
+
+        // --- Screenshot Preview & Name Logic ---
+        const screenshotsInput = document.getElementById('screenshots');
+        const screenshotFileNameSpan = document.getElementById('screenshotFileName');
+        const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
+
+        screenshotsInput.addEventListener('change', function() {
+            const files = this.files;
+            screenshotPreviewContainer.innerHTML = '';
+            
+            if (files.length > 0) {
+                screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
+                
+                Array.from(files).slice(0, 4).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        screenshotPreviewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                screenshotFileNameSpan.textContent = 'No files selected';
+            }
+        });
+
+        // --- Video Preview Logic ---
+        const videoUrlInput = document.getElementById('videoUrl');
+        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+
+        function getYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        videoUrlInput.addEventListener('input', function() {
+            const videoId = getYouTubeId(this.value);
+            if (videoId) {
+                videoPreviewContainer.innerHTML = `<div class="video-preview-wrapper"><iframe src="//www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            } else {
+                videoPreviewContainer.innerHTML = '';
+            }
+        });
+
+        // --- Screenshot Validation on Form Submit ---
+        const uploadForm = document.querySelector('form');
+        uploadForm.addEventListener('submit', function(event) {
+            const screenFiles = screenshotsInput.files;
+            if (screenFiles.length < 1) {
+                alert('Error: You must upload at least one screenshot.');
+                event.preventDefault(); // Stop submission
+                return;
+            }
+            if (screenFiles.length > 4) {
+                alert('Error: You cannot upload more than 4 screenshots. You have selected ' + screenFiles.length + '.');
+                event.preventDefault(); // Stop submission
+                return;
+            }
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

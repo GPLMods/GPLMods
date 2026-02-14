@@ -81,14 +81,23 @@
             <li><a href="/faq">FAQ</a></li>
             <li><a href="/dmca">DMCA</a></li>
             <hr style="border-color: #333; margin: 20px 0;">
-            <div class="music-player">
-                <span id="track-name">Select a track</span>
-                <div class="music-controls">
-                    <button id="prev-track-btn">⏪</button>
-                    <button id="play-pause-btn">▶️</button>
-                    <button id="next-track-btn">⏩</button>
-                </div>
-            </div>
+           <div class="music-player" style="padding: 10px; text-align: center;">
+    <audio id="background-audio" loop></audio>
+
+    <select id="music-track-selector-mobile" style="width: 100%; margin-bottom: 10px; padding: 5px;">
+        <option value="/music/bgm-1.mp3">NCS 1</option>
+        <option value="/music/bgm-2.mp3">NCS 2</option>
+        <option value="/music/bgm-3.mp3">NCS 3</option>
+        <option value="/music/bgm-4.mp3">NCS 4</option>
+        <option value="/music/bgm-5.mp3">NCS 5</option>
+        <option value="/music/bgm-6.mp3">NCS 6</option>
+    </select>
+
+    <div class="music-controls" style="display: flex; justify-content: center; gap: 10px;">
+        <button id="play-music-btn-mobile" style="padding: 5px 15px; cursor: pointer;">▶ Play</button>
+        <button id="pause-music-btn-mobile" style="padding: 5px 15px; cursor: pointer; display: none;">⏸ Pause</button>
+    </div>
+</div>
             <hr style="border-color: #333; margin: 20px 0;">
             <% if (user) { %>
                 <li><a href="/logout">Logout</a></li>

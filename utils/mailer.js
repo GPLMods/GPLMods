@@ -1,40 +1,43 @@
 const s2g = require('smtp2go-nodejs');
 
-// We will create the options object that will be used in every send call.
-// This is the new, correct way to provide the API key.
+// Create the options object with the API key to be used in every send call.
 const options = {
     api_key: process.env.SMTP2GO_API_KEY
 };
 
-
 /**
- * Sends a user account verification email using SMTP2GO.
+ * Sends a 6-digit OTP for user account verification using SMTP2GO.
  * @param {object} user - The user object from your database.
  */
 exports.sendVerificationEmail = async (user) => {
     try {
-        const verificationUrl = `http://localhost:${process.env.PORT || 3000}/verify-email?token=${user.verificationToken}`; // NOTE: You'll want to change localhost to your live URL
+        // The OTP is generated elsewhere in the app; we just send it.
+        const otpCode = user.verificationOtp;
 
         const msg = {
             sender: process.env.EMAIL_FROM,
             to: [user.email],
-            subject: 'Please Verify Your Email for GPL Mods',
+            subject: 'Your GPL Mods Verification Code',
             html_body: `
-                <h2>Welcome to GPL Mods!</h2>
-                <p>Thank you for registering. Please click the link below to verify your email address:</p>
-                <a href="${verificationUrl}" style="padding: 10px 15px; background-color: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 5px;">Verify My Email</a>
-                <p>If you did not register for an account, please ignore this email.</p>
+                <div style="font-family: Poppins, sans-serif; text-align: center; padding: 20px;">
+                    <h2>Welcome to GPL Mods!</h2>
+                    <p>Your verification code is below. Enter this code in your browser to complete your registration.</p>
+                    <p style="font-size: 2.5em; font-weight: 600; letter-spacing: 5px; color: #FFD700; margin: 20px 0;">
+                        ${otpCode}
+                    </p>
+                    <p>This code will expire in 10 minutes.</p>
+                    <p style="color: #c0c0c0; font-size: 0.9em;">If you did not request this, you can safely ignore this email.</p>
+                </div>
             `,
-            text_body: `Welcome to GPL Mods! Please visit the following link to verify your email: ${verificationUrl}`
+            text_body: `Your GPL Mods verification code is: ${otpCode}`
         };
         
-        // Pass BOTH the message AND the options object to the send function.
-        const response = await s2g.send(msg, options);
-        console.log('Verification email sent successfully via SMTP2GO!');
-        console.log(response);
-
+        // Pass both the message and the options object to the send function.
+        await s2g.send(msg, options);
+        console.log(`OTP email sent to ${user.email} via SMTP2GO!`);
+        
     } catch (error) {
-        console.error("Error sending email via SMTP2GO:", error);
+        console.error("Error sending OTP email via SMTP2GO:", error);
     }
 };
 
@@ -60,7 +63,7 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
             text_body: `A password reset was requested for your account. Visit the following link to reset it: ${resetURL}`
         };
 
-        // Pass BOTH the message AND the options object here as well.
+        // Pass both the message and the options object here as well.
         const response = await s2g.send(msg, options);
         console.log('Password reset email sent successfully via SMTP2GO!');
         console.log(response);

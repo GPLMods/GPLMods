@@ -1106,9 +1106,27 @@
             .tabs-nav { flex-wrap: wrap; justify-content: center; }
             .tabs-nav button { padding: 10px 12px; font-size: 0.9em; }
             .versions-table thead { display: none; }
-            .versions-table tr { display: block; margin-bottom: 15px; border: 1px solid #2a2a2a; border-radius: 10px; padding: 10px; }
-            .versions-table td { display: block; text-align: right; padding: 8px 5px; }
+            .versions-table tr {
+                display: block;
+                margin-bottom: 15px;
+                background: #111; /* Use background color to match other boxes */
+                border-radius: 10px;
+                padding: 15px; /* Slightly increased padding for better spacing */
+                border: none; /* Remove the old border */
+            }
+            .versions-table td { display: block; text-align: right; padding: 8px 5px; border-bottom: 1px solid #2a2a2a; }
+            .versions-table tr:last-child td:last-child { border-bottom: none; } /* Prevents double border issue */
             .versions-table td::before { content: attr(data-label); float: left; font-weight: bold; color: var(--silver); }
+            
+            .comment-form .form-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .comment-form button {
+                width: 100%;
+                text-align: center;
+            }
         }
 /* --- New  Styles For Search Page --- */
 :root {
