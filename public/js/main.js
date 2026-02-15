@@ -6,13 +6,14 @@
  *
  * Table of Contents:
  * 1. Document Ready Initializer
- * 2. Star Rating System
- * 3. Search Bar Handler with DYNAMIC Animation
- * 4. Search History Management (for all users)
- * 5. Search Suggestions FETCHER (Updated with Live API)
- * 6. Mobile Navigation Handler (CORRECTED)
- * 7. Background Music Player Controls
- * 8. Smart Audio Handler
+ * 2. NEW: HOMEPAGE TAB NAVIGATION
+ * 3. Star Rating System
+ * 4. Search Bar Handler with DYNAMIC Animation
+ * 5. Search History Management (for all users)
+ * 6. Search Suggestions FETCHER (Updated with Live API)
+ * 7. Mobile Navigation Handler (CORRECTED)
+ * 8. Background Music Player Controls
+ * 9. Smart Audio Handler
  * ==================================================================================
  */
 
@@ -21,13 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const runInitializers = async () => {
         try {
-            // Run functions that do NOT depend on external data first
             initializeMobileMenu(); 
             initializeStarRatings();
+            
+            // --- ADD THE NEW FUNCTION CALL HERE ---
+            initializeHomepageTabs(); 
+
             initializeMusicPlayer(); 
             initializeSmartAudioHandler();
-
-            // Now, run the async function that fetches data
             await initializeSearchBar();
             
         } catch (error) {
@@ -38,10 +40,81 @@ document.addEventListener('DOMContentLoaded', () => {
     runInitializers();
 });
 
+/**
+ * ==================================================================================
+ * 2. NEW: HOMEPAGE TAB NAVIGATION
+ * Handles the animated tab switching for the main categories on the homepage.
+ * ==================================================================================
+ */
+function initializeHomepageTabs() {
+    const mainTabNav = document.getElementById('main-tabs-nav');
+    
+    // --- Important: Only run this code if we are on the homepage ---
+    // This prevents errors on other pages that don't have these elements.
+    if (!mainTabNav) {
+        return;
+    }
+
+    const allTabContents = document.querySelectorAll('.tab-content');
+    const mainTabHighlight = document.getElementById('main-tab-highlight');
+    const tabButtons = mainTabNav.querySelectorAll('.tab-button');
+
+    // Function to move the highlight bar under the clicked tab
+    function moveHighlight(targetTab) {
+        if (!targetTab) return;
+        // The requestAnimationFrame ensures the browser has calculated the new layout
+        // before we try to move the highlight, making the animation smoother.
+        requestAnimationFrame(() => {
+            mainTabHighlight.style.width = `${targetTab.offsetWidth}px`;
+            mainTabHighlight.style.transform = `translateX(${targetTab.offsetLeft}px)`;
+        });
+    }
+
+    // --- Set the initial position of the highlight ---
+    const initialActiveTab = mainTabNav.querySelector('.tab-button.active');
+    if (initialActiveTab) {
+        moveHighlight(initialActiveTab);
+    }
+
+    // --- Add click event listeners to all tab buttons ---
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTabId = button.dataset.tab;
+            
+            // --- Update button active state ---
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // --- Animate the highlight ---
+            moveHighlight(button);
+            
+            // --- Show/Hide the correct content section ---
+            allTabContents.forEach(content => {
+                if (content.id === `${targetTabId}-mods`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // Scroll the tabs into view if they are off-screen on mobile
+            button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        });
+    });
+
+    // --- Recalculate highlight position on window resize ---
+    window.addEventListener('resize', () => {
+        const activeTab = mainTabNav.querySelector('.tab-button.active');
+        if (activeTab) {
+            moveHighlight(activeTab);
+        }
+    });
+}
+
 
 /**
  * ----------------------------------------------------------------------------------
- * 2. STAR RATING SYSTEM
+ * 3. STAR RATING SYSTEM
  * Fills the static star icons with the correct color based on a data attribute.
  * ----------------------------------------------------------------------------------
  */
@@ -71,7 +144,7 @@ function initializeStarRatings() {
 
 /**
  * ==================================================================================
- * 3. SEARCH BAR HANDLER with DYNAMIC Animation
+ * 4. SEARCH BAR HANDLER with DYNAMIC Animation
  * ==================================================================================
  */
 async function initializeSearchBar() {
@@ -187,7 +260,7 @@ async function initializeSearchBar() {
 
 /**
  * ----------------------------------------------------------------------------------
- * 4. SEARCH HISTORY MANAGEMENT
+ * 5. SEARCH HISTORY MANAGEMENT
  * ----------------------------------------------------------------------------------
  */
 const SEARCH_HISTORY_KEY = 'gplmods_search_history';
@@ -236,7 +309,7 @@ function displaySearchHistory() {
 
 /**
  * ----------------------------------------------------------------------------------
- * 5. SEARCH SUGGESTIONS FETCHER
+ * 6. SEARCH SUGGESTIONS FETCHER
  * ----------------------------------------------------------------------------------
  */
 async function fetchAndDisplaySuggestions(query) {
@@ -272,7 +345,7 @@ async function fetchAndDisplaySuggestions(query) {
 
 /**
  * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
- * 6. MOBILE NAVIGATION HANDLER (CORRECTED)
+ * 7. MOBILE NAVIGATION HANDLER (CORRECTED)
  * -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
  */
 function initializeMobileMenu() {
@@ -323,7 +396,7 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 7. BACKGROUND MUSIC PLAYER CONTROLS (FIXED)
+ * 8. BACKGROUND MUSIC PLAYER CONTROLS (FIXED)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -413,7 +486,7 @@ function initializeMusicPlayer() {
 
 /**
  * ==================================================================================
- * 8. SMART AUDIO HANDLER (FIXED)
+ * 9. SMART AUDIO HANDLER (FIXED)
  * Pauses music when hovering videos, Resumes when leaving.
  * ==================================================================================
  */
