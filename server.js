@@ -152,16 +152,28 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// --- Signed Avatar URL Middleware ---
+// --- NEW & IMPROVED Signed Avatar URL Middleware ---
 app.use(async (req, res, next) => {
-    if (req.isAuthenticated() && req.user && req.user.profileImageKey) {
-        try {
-            const avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.B2_BUCKET_NAME,
-                Key: req.user.profileImageKey
-            }), { expiresIn: 3600 });
-            req.user.signedAvatarUrl = avatarUrl;
-        } catch (error) {
+    // Run this logic ONLY if a user is logged in
+    if (req.isAuthenticated() && req.user) {
+        
+        // Case 1: The user has a custom avatar uploaded to our B2 bucket
+        if (req.user.profileImageKey) {
+            try {
+                // Generate a temporary, secure URL for their private image
+                const avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME,
+                    Key: req.user.profileImageKey
+                }), { expiresIn: 3600 }); // Link is valid for 1 hour
+                req.user.signedAvatarUrl = avatarUrl;
+            } catch (error) {
+                console.error("Error generating signed URL for avatar:", error);
+                // If URL generation fails, fall back to the default
+                req.user.signedAvatarUrl = '/images/default-avatar.png';
+            }
+        } else {
+            // Case 2: The user does NOT have a custom avatar
+            // Set the URL to our local default avatar image
             req.user.signedAvatarUrl = '/images/default-avatar.png';
         }
     }
@@ -200,14 +212,13 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.BASE_URL
         ? `${process.env.BASE_URL}/auth/google/callback`
-        : "https://gplmods.onrender.com/auth/google/callback"
+        : "https://https://gplmods.webredirect.org/auth/google/callback"
 },
 async (accessToken, refreshToken, profile, done) => {
     const googleUserData = {
         googleId: profile.id,
         username: profile.displayName,
         email: profile.emails[0].value,
-        profileImageUrl: profile.photos[0].value,
         isVerified: true
     };
 
@@ -215,7 +226,6 @@ async (accessToken, refreshToken, profile, done) => {
         let user = await User.findOne({ email: googleUserData.email });
         if (user) {
             user.googleId = googleUserData.googleId;
-            user.profileImageUrl = user.profileImageUrl || googleUserData.profileImageUrl;
             await user.save();
             done(null, user);
         } else {
@@ -656,16 +666,21 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 });
 
 app.get('/users/:username', async (req, res) => {
-    try {
-        const username = req.params.username;
-        const user = await User.findOne({ username: username });
-        if (!user) return res.status(404).render('pages/404');
+        try {
+            const username = req.params.username;
+            const user = await User.findOne({ username: username });
+            if (!user) return res.status(404).render('pages/404');
 
-        if (user.profileImageKey) {
-            user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
-            }), { expiresIn: 3600 });
-        }
+            // --- Apply the same avatar logic here for the 'profileUser' ---
+            if (user.profileImageKey) {
+                try {
+                    user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                        Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
+                    }), { expiresIn: 3600 });
+                } catch (e) { user.signedAvatarUrl = '/images/default-avatar.png'; }
+            } else {
+                user.signedAvatarUrl = '/images/default-avatar.png';
+            }
 
         const uploads = await File.find({ uploader: username, isLatestVersion: true }).sort({ createdAt: -1 });
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {

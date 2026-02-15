@@ -33,10 +33,9 @@ const UserSchema = new Schema({
         enum: ['free', 'premium'],
         default: 'free'
     },
-    profileImageUrl: {
-        type: String,
-        default: ''
-    },
+profileImageKey: {
+    type: String // Stores the path like 'avatars/12345-image.png'
+},
     bio: {
         type: String,
         trim: true,

@@ -14,7 +14,7 @@
                 <h2>Profile Details</h2>
                 <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section">
                     <div class="avatar-preview-wrapper">
-                        <img src="<%= user.profileImageUrl || '/images/default-avatar.png' %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
+                        <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
                         <label for="avatar-input" class="avatar-edit-button">✏️</label>
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>

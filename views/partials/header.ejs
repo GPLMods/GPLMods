@@ -33,7 +33,7 @@
             <div class="header-actions">
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
-                        <img src="<%= user.profileImageUrl || '/images/default-avatar.png' %>" alt="User Avatar">
+                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                     </a>
                     <a href="/my-uploads" class="btn btn-login">My Uploads</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
@@ -85,9 +85,9 @@
     <audio id="background-audio" loop></audio>
 
     <select id="music-track-selector-mobile" style="width: 100%; margin-bottom: 10px; padding: 5px;">
-        <option value="../public/audio/bgm-1.mp3">NCS 1</option>
-        <option value="../public/audio/bgm-2.mp3">NCS 2</option>
-        <option value="../public/audio/bgm-3.mp3">NCS 3</option>
+        <option value="./public/audio/bgm-1.mp3">NCS 1</option>
+        <option value="./public/audio/bgm-2.mp3">NCS 2</option>
+        <option value="./public/audio/bgm-3.mp3">NCS 3</option>
         <option value="../public/audio/bgm-4.mp3">NCS 4</option>
         <option value="../public/audio/bgm-5.mp3">NCS 5</option>
         <option value="../public/audio/bgm-6.mp3">NCS 6</option>
