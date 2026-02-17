@@ -394,94 +394,91 @@ function initializeMobileMenu() {
     });
 }
 
-/**
- * ==================================================================================
- * 8. BACKGROUND MUSIC PLAYER CONTROLS (FIXED)
+ /* ==================================================================================
+ * 8. BACKGROUND MUSIC PLAYER CONTROLS (Sidebar Version)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
     const audioPlayer = document.getElementById('background-audio');
-    const playBtn = document.getElementById('play-music-btn-mobile');
-    const pauseBtn = document.getElementById('pause-music-btn-mobile');
-    const trackSelector = document.getElementById('music-track-selector-mobile');
+    // --- Use the IDs from your NEW sidebar player ---
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const prevTrackBtn = document.getElementById('prev-track-btn');
+    const nextTrackBtn = document.getElementById('next-track-btn');
+    const trackNameDisplay = document.getElementById('track-name');
 
-    // Safety check: ensure all elements exist before running
-    if (!audioPlayer || !playBtn || !pauseBtn || !trackSelector) {
-        console.warn("Music Player Error: One or more ID elements are missing in the HTML.");
+    // This is the audio tag in the music player div now, let's create it if it's not there.
+    // A better approach is to have a single <audio> tag in the footer.
+    // For now, let's assume `background-audio` exists in the footer.
+    if (!audioPlayer || !playPauseBtn || !prevTrackBtn || !nextTrackBtn) {
+        console.warn("Music player elements not found in the sidebar.");
         return;
     }
+    
+    // --- This logic is from your new homepage layout, it's very good ---
+    const playlist = [
+        { title: 'NCS 1', src: '/audio/bgm-1.mp3' },
+        { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
+        { title: 'NCS 3', src: '/audio/bgm-3.mp3' },
+        { title: 'NCS 4', src: '/audio/bgm-4.mp3' },
+        { title: 'NCS 5', src: '/audio/bgm-5.mp3' },
+        { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
+    ];
 
-    // 1. Helper to toggle Play/Pause buttons
-    const updateButtons = (isPlaying) => {
-        playBtn.style.display = isPlaying ? 'none' : 'block';
-        pauseBtn.style.display = isPlaying ? 'block' : 'none';
-    };
-
-    // 2. Set Default Volume
+    let trackIndex = 0;
+    // Set default volume
     audioPlayer.volume = 0.25;
 
-    // 3. Load Saved Preferences
-    const savedState = localStorage.getItem('musicState'); // 'playing' or 'paused'
-    const savedTrack = localStorage.getItem('musicTrack');
-
-    // 4. Initialize Track Source (CRITICAL FIX)
-    // If a track is saved, use it. Otherwise, default to the first option in the dropdown.
-    if (savedTrack) {
-        audioPlayer.src = savedTrack;
-        trackSelector.value = savedTrack;
-    } else if (trackSelector.options.length > 0) {
-        const defaultTrack = trackSelector.options[0].value;
-        audioPlayer.src = defaultTrack;
-        trackSelector.value = defaultTrack;
+    function loadTrack(index) {
+        if (!playlist[index]) return;
+        audioPlayer.src = playlist[index].src;
+        trackNameDisplay.textContent = playlist[index].title;
     }
 
-    // 5. Robust Play Function
-    const attemptPlay = async () => {
-        if (!audioPlayer.src) return; 
-
-        try {
-            await audioPlayer.play();
-            updateButtons(true);
-            localStorage.setItem('musicState', 'playing');
-        } catch (error) {
-            // This catches the "Autoplay prevented" browser error
-            console.warn("Autoplay blocked. Waiting for user interaction...");
-            updateButtons(false); 
-        }
-    };
-
-    // 6. Handle Initial State on Page Load
-    if (savedState === 'playing') {
-        attemptPlay();
-    } else {
-        updateButtons(false);
+    function playTrack() {
+        audioPlayer.play().catch(e => console.warn("Autoplay was prevented.", e));
+        playPauseBtn.textContent = '⏸️';
     }
 
-    // 7. Event Listeners for Buttons
-    playBtn.addEventListener('click', attemptPlay);
-    
-    pauseBtn.addEventListener('click', () => {
+    function pauseTrack() {
         audioPlayer.pause();
-        updateButtons(false);
-        localStorage.setItem('musicState', 'paused');
-    });
+        playPauseBtn.textContent = '▶️';
+    }
+    
+    // Check for saved preferences
+    const savedTrackIndex = localStorage.getItem('musicTrackIndex');
+    if (savedTrackIndex) {
+        trackIndex = parseInt(savedTrackIndex, 10);
+    }
+    loadTrack(trackIndex);
 
-    // 8. Track Change Listener
-    trackSelector.addEventListener('change', () => {
-        audioPlayer.src = trackSelector.value;
-        localStorage.setItem('musicTrack', trackSelector.value);
-        // Automatically play when user manually selects a new song
-        attemptPlay();
-    });
-
-    // 9. BROWSER AUTOPLAY FIX (The "Magic" Unlocker)
-    // If music should be playing but is paused (due to browser block), 
-    // try playing again on the very first click anywhere on the document.
-    document.addEventListener('click', () => {
-        if (localStorage.getItem('musicState') === 'playing' && audioPlayer.paused) {
-            attemptPlay();
+    playPauseBtn.addEventListener('click', () => {
+        if (audioPlayer.paused) {
+            playTrack();
+            localStorage.setItem('musicState', 'playing');
+        } else {
+            pauseTrack();
+            localStorage.setItem('musicState', 'paused');
         }
-    }, { once: true }); // This runs only once
+    });
+
+    nextTrackBtn.addEventListener('click', () => {
+        trackIndex = (trackIndex + 1) % playlist.length;
+        localStorage.setItem('musicTrackIndex', trackIndex);
+        loadTrack(trackIndex);
+        playTrack();
+    });
+
+    prevTrackBtn.addEventListener('click', () => {
+        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+        localStorage.setItem('musicTrackIndex', trackIndex);
+        loadTrack(trackIndex);
+        playTrack();
+    });
+
+    // Automatically play if the last state was 'playing'
+    if (localStorage.getItem('musicState') === 'playing') {
+        playTrack();
+    }
 }
 
 /**
