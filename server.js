@@ -267,6 +267,13 @@ async function verifyRecaptcha(req, res, next) {
 // 7. PUBLIC ROUTES
 // ===============================
 
+// --- NEW: Health Check Endpoint ---
+// This is a standard endpoint for health checks from hosting providers.
+app.get('/healthz', (req, res) => {
+    // Send a simple JSON response with a 200 OK status
+    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+});
+
 // Home (UPDATED)
 app.get('/', async (req, res) => {
     try {

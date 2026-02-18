@@ -14,6 +14,7 @@
  * 7. Mobile Navigation Handler (CORRECTED)
  * 8. Background Music Player Controls
  * 9. Smart Audio Handler
+ * 10. POLICY ACCEPTANCE BANNER
  * ==================================================================================
  */
 
@@ -30,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             initializeMusicPlayer(); 
             initializeSmartAudioHandler();
+            
+            // --- ADD THIS NEW FUNCTION CALL ---
+            initializePolicyBanner();
+        
             await initializeSearchBar();
             
         } catch (error) {
@@ -394,27 +399,25 @@ function initializeMobileMenu() {
     });
 }
 
- /* ==================================================================================
- * 8. BACKGROUND MUSIC PLAYER CONTROLS (Sidebar Version)
+ /**
+ * ==================================================================================
+ * 8. BACKGROUND MUSIC PLAYER CONTROLS (UNIFIED & CORRECTED)
+ * This version is self-contained and matches the new header.ejs sidebar player.
  * ==================================================================================
  */
 function initializeMusicPlayer() {
-    const audioPlayer = document.getElementById('background-audio');
-    // --- Use the IDs from your NEW sidebar player ---
+    // --- Find the UI elements in the sidebar ---
+    const trackNameDisplay = document.getElementById('track-name');
     const playPauseBtn = document.getElementById('play-pause-btn');
     const prevTrackBtn = document.getElementById('prev-track-btn');
     const nextTrackBtn = document.getElementById('next-track-btn');
-    const trackNameDisplay = document.getElementById('track-name');
 
-    // This is the audio tag in the music player div now, let's create it if it's not there.
-    // A better approach is to have a single <audio> tag in the footer.
-    // For now, let's assume `background-audio` exists in the footer.
-    if (!audioPlayer || !playPauseBtn || !prevTrackBtn || !nextTrackBtn) {
-        console.warn("Music player elements not found in the sidebar.");
+    // If these elements don't exist (i.e., we're not on a page with the sidebar), stop.
+    if (!trackNameDisplay || !playPauseBtn || !prevTrackBtn || !nextTrackBtn) {
         return;
     }
-    
-    // --- This logic is from your new homepage layout, it's very good ---
+
+    // --- Define the playlist with correct absolute paths ---
     const playlist = [
         { title: 'NCS 1', src: '/audio/bgm-1.mp3' },
         { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
@@ -423,59 +426,71 @@ function initializeMusicPlayer() {
         { title: 'NCS 5', src: '/audio/bgm-5.mp3' },
         { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
     ];
+    
+    // --- Create a single, global audio object ---
+    const audio = new Audio();
+    // audio.loop = true; // Loop is removed to allow advancing to the next track
+    audio.volume = 0.25; // Set a comfortable default volume
 
     let trackIndex = 0;
-    // Set default volume
-    audioPlayer.volume = 0.25;
 
+    // --- Core Functions ---
     function loadTrack(index) {
-        if (!playlist[index]) return;
-        audioPlayer.src = playlist[index].src;
+        audio.src = playlist[index].src;
         trackNameDisplay.textContent = playlist[index].title;
+        localStorage.setItem('musicTrackIndex', index); // Save the current track index
     }
 
     function playTrack() {
-        audioPlayer.play().catch(e => console.warn("Autoplay was prevented.", e));
+        audio.play().catch(e => console.warn("Browser prevented autoplay. User must interact first."));
         playPauseBtn.textContent = '⏸️';
+        localStorage.setItem('musicState', 'playing');
     }
 
     function pauseTrack() {
-        audioPlayer.pause();
+        audio.pause();
         playPauseBtn.textContent = '▶️';
+        localStorage.setItem('musicState', 'paused');
     }
-    
-    // Check for saved preferences
-    const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex) {
-        trackIndex = parseInt(savedTrackIndex, 10);
-    }
-    loadTrack(trackIndex);
 
+    // --- Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) {
+        if (audio.paused) {
             playTrack();
-            localStorage.setItem('musicState', 'playing');
         } else {
             pauseTrack();
-            localStorage.setItem('musicState', 'paused');
         }
     });
 
     nextTrackBtn.addEventListener('click', () => {
+        trackIndex = (trackIndex + 1) % playlist.length;
+        loadTrack(trackIndex);
+        playTrack(); // Automatically play the next track
+    });
+
+    prevTrackBtn.addEventListener('click', () => {
+        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+        loadTrack(trackIndex);
+        playTrack(); // Automatically play the previous track
+    });
+    
+    // --- ADDED: When the current song finishes, automatically play the next one. ---
+    audio.addEventListener('ended', () => {
+        console.log("Track ended, playing next...");
         trackIndex = (trackIndex + 1) % playlist.length;
         localStorage.setItem('musicTrackIndex', trackIndex);
         loadTrack(trackIndex);
         playTrack();
     });
 
-    prevTrackBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
-        localStorage.setItem('musicTrackIndex', trackIndex);
-        loadTrack(trackIndex);
-        playTrack();
-    });
+    // --- Initialize on Page Load ---
+    const savedTrackIndex = localStorage.getItem('musicTrackIndex');
+    if (savedTrackIndex) {
+        trackIndex = parseInt(savedTrackIndex, 10);
+    }
+    loadTrack(trackIndex);
 
-    // Automatically play if the last state was 'playing'
+    // Check if the music should be playing from the last session
     if (localStorage.getItem('musicState') === 'playing') {
         playTrack();
     }
@@ -528,5 +543,44 @@ function initializeSmartAudioHandler() {
                 }
             }
         });
+    });
+}
+
+/**
+ * ==================================================================================
+ * 10. POLICY ACCEPTANCE BANNER
+ * Checks if the user has accepted the site policies and shows the banner if not.
+ * ==================================================================================
+ */
+function initializePolicyBanner() {
+    const policyBanner = document.getElementById('policyBanner');
+    const acceptPolicyButton = document.getElementById('acceptPolicy');
+    const declinePolicyButton = document.getElementById('declinePolicy');
+
+    // If the banner doesn't exist on the page, do nothing.
+    if (!policyBanner || !acceptPolicyButton || !declinePolicyButton) {
+        return;
+    }
+
+    // Check localStorage to see if the user has already accepted.
+    const hasAcceptedPolicy = localStorage.getItem('gplmods_policy_accepted');
+
+    // If they have NOT accepted, show the banner.
+    if (!hasAcceptedPolicy) {
+        setTimeout(() => {
+            policyBanner.classList.add('visible');
+        }, 1000); // Show banner after a 1-second delay.
+    }
+
+    // When user clicks "Accept"
+    acceptPolicyButton.addEventListener('click', () => {
+        localStorage.setItem('gplmods_policy_accepted', 'true');
+        policyBanner.classList.remove('visible');
+    });
+
+    // When user clicks "Decline"
+    declinePolicyButton.addEventListener('click', () => {
+        // Just hide the banner for this session. It will reappear on their next visit.
+        policyBanner.classList.remove('visible');
     });
 }
