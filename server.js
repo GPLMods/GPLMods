@@ -1049,14 +1049,49 @@ app.use((err, req, res, next) => {
 });
 
 // ===============================
-// 14. SERVER START
+// 14. SERVER START & SOCKET.IO LOGIC
 // ===============================
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: { // Add a CORS policy for Socket.IO
+        origin: [ "http://localhost:3000", "https://gplmods.webredirect.org" ],
+        methods: ["GET", "POST"]
+    }
+});
+
+// --- In-memory store for recent messages ---
+let recentMessages = [];
 
 io.on('connection', (socket) => {
+    console.log('A user connected to chat');
+
+    // --- 1. Send message history to the newly connected user ---
+    socket.emit('chat history', recentMessages);
+
+    // --- 2. Listen for new chat messages from a user ---
     socket.on('chat message', (msg) => {
-        io.emit('chat message', { username: msg.username, avatar: msg.avatar, text: msg.text });
+        // Create a timestamp for the message
+        const messageData = {
+            username: msg.username,
+            avatar: msg.avatar,
+            text: msg.text,
+            timestamp: new Date() // Add a timestamp
+        };
+
+        // Add message to our history
+        recentMessages.push(messageData);
+        // Keep the history capped at 50 messages
+        if (recentMessages.length > 50) {
+            recentMessages.shift(); // Removes the oldest message
+        }
+
+        // Broadcast the new message to everyone
+        io.emit('chat message', messageData);
+    });
+
+    // --- 3. Handle user disconnection ---
+    socket.on('disconnect', () => {
+        console.log('User disconnected from chat');
     });
 });
 
