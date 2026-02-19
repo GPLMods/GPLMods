@@ -1,31 +1,115 @@
 <%- include('../partials/header') %>
+
 <style>
-    .upload-container { max-width: 700px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-gray); border-radius: 8px; text-align: center; }
-    #drop-area { border: 2px dashed var(--silver); border-radius: 8px; padding: 40px; margin-bottom: 20px; transition: all 0.3s ease; }
-    #drop-area.highlight { border-color: var(--gold); background-color: #333; }
-    #file-input { display: none; }
-    #progress-bar-container { display: none; }
-    #progress-bar { width: 100%; height: 25px; background-color: var(--black); border-radius: 5px; overflow: hidden; }
-    #progress-bar-fill { width: 0%; height: 100%; background-color: var(--gold); transition: width 0.3s ease; }
-    #upload-status { margin-top: 10px; color: var(--silver); }
+/* --- GPL Upload Section Styled Same As Homepage --- */
+
+.upload-section {
+    background-color: var(--dark-gray);
+    text-align: center;
+    padding: 60px 20px;
+    margin: 40px auto;
+    border-radius: 15px;
+    border: 1px dashed var(--silver);
+    max-width: 700px;
+    transition: all 0.3s ease;
+}
+
+.upload-section:hover {
+    box-shadow: 0 0 25px var(--glow-gold);
+    border-color: var(--gold);
+}
+
+.upload-section h2 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.upload-section p {
+    color: var(--silver);
+    margin-bottom: 30px;
+}
+
+/* Drop Area Styled Same As Upload Button Feel */
+
+#drop-area {
+    border: 2px dashed var(--silver);
+    border-radius: 15px;
+    padding: 40px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#drop-area.highlight {
+    border-color: var(--gold);
+    background-color: #222;
+    box-shadow: 0 0 15px var(--glow-gold);
+}
+
+#browse-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+#browse-link:hover {
+    text-decoration: underline;
+}
+
+/* Progress Bar */
+
+#progress-bar-container {
+    display: none;
+    margin-top: 20px;
+}
+
+#progress-bar {
+    width: 100%;
+    height: 25px;
+    background-color: var(--black);
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--silver);
+}
+
+#progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 15px var(--glow-gold);
+}
+
+#upload-status {
+    margin-top: 10px;
+    color: var(--silver);
+}
 </style>
 
 <div class="container">
-    <div class="upload-container">
-        <h2>Upload Your Mod File</h2>
-        <p>Step 1 of 2: Select or drag & drop your mod file (.zip, .rar, .exe, etc.).</p>
-        
-        <div id="drop-area">
-            <p>Drag your file here, or <a href="#" id="browse-link">browse your computer</a>.</p>
-            <input type="file" id="file-input">
-        </div>
 
-        <div id="progress-bar-container">
-            <p id="file-name-display"></p>
-            <div id="progress-bar"><div id="progress-bar-fill"></div></div>
-            <p id="upload-status">Initializing upload...</p>
-        </div>
+<section class="upload-section">
+
+    <h2>Have a Mod to Share?</h2>
+    <p>Step 1 of 2: Select or drag & drop your mod file (.zip, .rar, .exe, etc.)</p>
+
+    <div id="drop-area">
+        <p>Drag your file here, or 
+            <a href="#" id="browse-link">browse your computer</a>.
+        </p>
+        <input type="file" id="file-input" hidden>
     </div>
+
+    <div id="progress-bar-container">
+        <p id="file-name-display"></p>
+        <div id="progress-bar">
+            <div id="progress-bar-fill"></div>
+        </div>
+        <p id="upload-status">Initializing upload...</p>
+    </div>
+
+</section>
+
 </div>
 
 <script>
