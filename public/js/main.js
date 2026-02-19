@@ -548,7 +548,7 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
+ * 10. POLICY ACCEPTANCE BANNER (CORRECTED & ROBUST)
  * ==================================================================================
  */
 function initializePolicyBanner() {
@@ -558,7 +558,7 @@ function initializePolicyBanner() {
     const policyBlockerOverlay = document.getElementById('policy-blocker-overlay');
 
     if (!policyBanner || !acceptPolicyButton || !declinePolicyButton || !policyBlockerOverlay) {
-        return; // Exit if any necessary element is missing
+        return; // Exit if elements are missing
     }
 
     // --- Check the different storage states ---
@@ -567,14 +567,21 @@ function initializePolicyBanner() {
 
     // --- Main Logic on Page Load ---
 
+    // By default, the blocker is hidden.
+    policyBlockerOverlay.style.display = 'none';
+    
     if (hasAccepted === 'true') {
-        // 1. User has permanently accepted. Do nothing.
+        // 1. User has permanently accepted. Do nothing, just ensure banner is hidden.
+        policyBanner.classList.remove('visible');
         return;
-    } else if (hasDeclined === 'true') {
-        // 2. User has declined in this session. Show the blocker.
+    } 
+    
+    if (hasDeclined === 'true') {
+        // 2. User has declined IN THIS SESSION. Show the blocker, hide the banner.
+        policyBanner.classList.remove('visible');
         policyBlockerOverlay.style.display = 'flex';
     } else {
-        // 3. User has neither accepted nor declined. Show the banner.
+        // 3. User has NEITHER accepted nor declined yet. Show the banner.
         setTimeout(() => {
             policyBanner.classList.add('visible');
         }, 1000);
@@ -582,23 +589,16 @@ function initializePolicyBanner() {
 
     // --- Event Listeners for Buttons ---
 
-    // When user clicks "Accept"
     acceptPolicyButton.addEventListener('click', () => {
-        // Save the choice permanently in localStorage
         localStorage.setItem('gplmods_policy_accepted', 'true');
-        // Make sure any session "decline" state is removed
         sessionStorage.removeItem('gplmods_policy_declined');
-        // Hide the banner
         policyBanner.classList.remove('visible');
+        policyBlockerOverlay.style.display = 'none'; // Ensure blocker is hidden
     });
 
-    // When user clicks "Decline"
     declinePolicyButton.addEventListener('click', () => {
-        // Save the choice TEMPORARILY for this session only
         sessionStorage.setItem('gplmods_policy_declined', 'true');
-        // Hide the banner
         policyBanner.classList.remove('visible');
-        // Show the blocker overlay immediately
-        policyBlockerOverlay.style.display = 'flex';
+        policyBlockerOverlay.style.display = 'flex'; // Show blocker ONLY when "Decline" is clicked
     });
 }
