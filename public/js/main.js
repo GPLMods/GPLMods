@@ -548,7 +548,7 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. POLICY ACCEPTANCE BANNER (CORRECTED & ROBUST)
+ * 10. POLICY ACCEPTANCE BANNER (FINAL, CORRECTED LOGIC)
  * ==================================================================================
  */
 function initializePolicyBanner() {
@@ -556,49 +556,60 @@ function initializePolicyBanner() {
     const acceptPolicyButton = document.getElementById('acceptPolicy');
     const declinePolicyButton = document.getElementById('declinePolicy');
     const policyBlockerOverlay = document.getElementById('policy-blocker-overlay');
+    const policyBlockerRefreshBtn = document.getElementById('policy-blocker-refresh-btn'); // Get the new button
 
-    if (!policyBanner || !acceptPolicyButton || !declinePolicyButton || !policyBlockerOverlay) {
+    if (!policyBanner || !policyBlockerOverlay || !policyBlockerRefreshBtn) {
         return; // Exit if elements are missing
     }
 
-    // --- Check the different storage states ---
+    // --- Check storage states ---
     const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
     const hasDeclined = sessionStorage.getItem('gplmods_policy_declined');
 
     // --- Main Logic on Page Load ---
-
-    // By default, the blocker is hidden.
-    policyBlockerOverlay.style.display = 'none';
-    
     if (hasAccepted === 'true') {
-        // 1. User has permanently accepted. Do nothing, just ensure banner is hidden.
-        policyBanner.classList.remove('visible');
+        // User has accepted, do nothing.
         return;
     } 
     
     if (hasDeclined === 'true') {
-        // 2. User has declined IN THIS SESSION. Show the blocker, hide the banner.
-        policyBanner.classList.remove('visible');
+        // User has declined in this session, show the blocker.
         policyBlockerOverlay.style.display = 'flex';
     } else {
-        // 3. User has NEITHER accepted nor declined yet. Show the banner.
+        // User is new or has refreshed after declining, show the banner.
         setTimeout(() => {
             policyBanner.classList.add('visible');
         }, 1000);
     }
 
-    // --- Event Listeners for Buttons ---
+    // --- Event Listeners ---
 
-    acceptPolicyButton.addEventListener('click', () => {
-        localStorage.setItem('gplmods_policy_accepted', 'true');
-        sessionStorage.removeItem('gplmods_policy_declined');
-        policyBanner.classList.remove('visible');
-        policyBlockerOverlay.style.display = 'none'; // Ensure blocker is hidden
-    });
+    if (acceptPolicyButton) {
+        acceptPolicyButton.addEventListener('click', () => {
+            localStorage.setItem('gplmods_policy_accepted', 'true');
+            sessionStorage.removeItem('gplmods_policy_declined'); // Clean up session storage
+            policyBanner.classList.remove('visible');
+            policyBlockerOverlay.style.display = 'none';
+        });
+    }
 
-    declinePolicyButton.addEventListener('click', () => {
-        sessionStorage.setItem('gplmods_policy_declined', 'true');
-        policyBanner.classList.remove('visible');
-        policyBlockerOverlay.style.display = 'flex'; // Show blocker ONLY when "Decline" is clicked
-    });
+    if (declinePolicyButton) {
+        declinePolicyButton.addEventListener('click', () => {
+            // Set the decline flag for this session
+            sessionStorage.setItem('gplmods_policy_declined', 'true');
+            // Hide the banner and show the blocker
+            policyBanner.classList.remove('visible');
+            policyBlockerOverlay.style.display = 'flex';
+        });
+    }
+    
+    // --- NEW: Smart Refresh Button Logic ---
+    if (policyBlockerRefreshBtn) {
+        policyBlockerRefreshBtn.addEventListener('click', () => {
+            // 1. Remove the "declined" flag from session storage.
+            sessionStorage.removeItem('gplmods_policy_declined');
+            // 2. Now, reload the page.
+            location.reload();
+        });
+    }
 }
