@@ -114,10 +114,10 @@
         .tabs-container::-webkit-scrollbar { display: none; }
         .tabs-nav { display: inline-flex; position: relative; background-color: var(--dark-gray); border-radius: 25px; padding: 5px; white-space: nowrap; }
         .tab-button { background: none; border: none; color: var(--silver); font-size: 1em; font-weight: 600; padding: 10px 20px; flex: 1 0 auto; cursor: pointer; position: relative; z-index: 2; transition: color 0.4s ease; }
-        .tab-button.active {
-    color: var(--black);
-    /* --- ADD THIS NEW LINE --- */
-    text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2); /* Adds a very subtle shadow to make text sharper */
+        /* By adding the parent nav's ID, this rule becomes more important */
+.tabs-nav .tab-button.active {
+    color: var(--black) !important; /* Adding !important is a final guarantee */
+    text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2);
 }
         .tab-highlight {
             position: absolute; top: 5px; left: 0; height: calc(100% - 10px);
@@ -242,6 +242,28 @@
             .policy-banner { flex-direction: row; justify-content: center; }
             .policy-buttons { margin-left: 20px; }
         }
+/* Footer Social Icons
+-------------------------------------------------- */
+.social-icons {
+    margin-bottom: 25px; /* Add space between icons and text links */
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Space between each icon */
+}
+
+.social-icons a {
+    color: var(--silver); /* Set the icon color to silver */
+    font-size: 1.8em;      /* Make the icons larger and easier to click */
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+/* Add a hover effect */
+.social-icons a:hover {
+    color: var(--gold); /* Change to gold on hover */
+    transform: scale(1.2); /* Make the icon slightly bigger on hover */
+}
+
 /* --- START OF ABOUT PAGE NEW STYLES --- */
 
 :root {

@@ -1,7 +1,25 @@
-    </main>
+</main>
     
     <footer class="main-footer">
         <div class="container">
+            <!-- ======== ADD THIS NEW SOCIAL ICONS BLOCK ======== -->
+            <div class="social-icons">
+                <a href="https://www.youtube.com/your-channel-url" target="_blank" title="YouTube">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                <a href="https://discord.gg/your-invite-code" target="_blank" title="Discord">
+                    <i class="fab fa-discord"></i>
+                </a>
+                <a href="https://github.com/your-repo-url" target="_blank" title="GitHub">
+                    <i class="fab fa-github"></i>
+                </a>
+                <a href="https://t.me/your-telegram-channel" target="_blank" title="Telegram">
+                    <i class="fab fa-telegram"></i>
+                </a>
+                <!-- Add more icons as needed -->
+            </div>
+            <!-- ======== END OF NEW BLOCK ======== -->
+
             <div class="footer-links">
                 <a href="/about">About Us</a>
                 <a href="/faq">FAQ</a>
@@ -20,6 +38,18 @@
             <button class="policy-button decline" id="declinePolicy">Decline</button>
         </div>
     </div>
+
+    <!-- ======== ADD THIS NEW OVERLAY BLOCK ======== -->
+    <div id="policy-blocker-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 2000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+        <div>
+            <h2 style="color: var(--gold); font-size: 2em; margin-bottom: 1rem;">Policies Declined</h2>
+            <p style="color: var(--silver); max-width: 500px; margin-bottom: 2rem;">
+                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again and accept the terms.
+            </p>
+            <button class="policy-button" onclick="location.reload();">Refresh Page</button>
+        </div>
+    </div>
+    <!-- ======== END OF NEW OVERLAY BLOCK ======== -->
     
     <!-- Your global JavaScript files -->
     <script src="/js/main.js"></script>

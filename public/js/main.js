@@ -14,7 +14,7 @@
  * 7. Mobile Navigation Handler (CORRECTED)
  * 8. Background Music Player Controls
  * 9. Smart Audio Handler
- * 10. POLICY ACCEPTANCE BANNER
+ * 10. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
  * ==================================================================================
  */
 
@@ -548,39 +548,57 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. POLICY ACCEPTANCE BANNER
- * Checks if the user has accepted the site policies and shows the banner if not.
+ * 10. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
  * ==================================================================================
  */
 function initializePolicyBanner() {
     const policyBanner = document.getElementById('policyBanner');
     const acceptPolicyButton = document.getElementById('acceptPolicy');
     const declinePolicyButton = document.getElementById('declinePolicy');
+    const policyBlockerOverlay = document.getElementById('policy-blocker-overlay');
 
-    // If the banner doesn't exist on the page, do nothing.
-    if (!policyBanner || !acceptPolicyButton || !declinePolicyButton) {
-        return;
+    if (!policyBanner || !acceptPolicyButton || !declinePolicyButton || !policyBlockerOverlay) {
+        return; // Exit if any necessary element is missing
     }
 
-    // Check localStorage to see if the user has already accepted.
-    const hasAcceptedPolicy = localStorage.getItem('gplmods_policy_accepted');
+    // --- Check the different storage states ---
+    const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
+    const hasDeclined = sessionStorage.getItem('gplmods_policy_declined');
 
-    // If they have NOT accepted, show the banner.
-    if (!hasAcceptedPolicy) {
+    // --- Main Logic on Page Load ---
+
+    if (hasAccepted === 'true') {
+        // 1. User has permanently accepted. Do nothing.
+        return;
+    } else if (hasDeclined === 'true') {
+        // 2. User has declined in this session. Show the blocker.
+        policyBlockerOverlay.style.display = 'flex';
+    } else {
+        // 3. User has neither accepted nor declined. Show the banner.
         setTimeout(() => {
             policyBanner.classList.add('visible');
-        }, 1000); // Show banner after a 1-second delay.
+        }, 1000);
     }
+
+    // --- Event Listeners for Buttons ---
 
     // When user clicks "Accept"
     acceptPolicyButton.addEventListener('click', () => {
+        // Save the choice permanently in localStorage
         localStorage.setItem('gplmods_policy_accepted', 'true');
+        // Make sure any session "decline" state is removed
+        sessionStorage.removeItem('gplmods_policy_declined');
+        // Hide the banner
         policyBanner.classList.remove('visible');
     });
 
     // When user clicks "Decline"
     declinePolicyButton.addEventListener('click', () => {
-        // Just hide the banner for this session. It will reappear on their next visit.
+        // Save the choice TEMPORARILY for this session only
+        sessionStorage.setItem('gplmods_policy_declined', 'true');
+        // Hide the banner
         policyBanner.classList.remove('visible');
+        // Show the blocker overlay immediately
+        policyBlockerOverlay.style.display = 'flex';
     });
 }
