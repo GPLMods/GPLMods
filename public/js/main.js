@@ -548,68 +548,60 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. POLICY ACCEPTANCE BANNER (FINAL, CORRECTED LOGIC)
+ * 10. POLICY ACCEPTANCE MODAL (FINAL, UNIFIED LOGIC)
  * ==================================================================================
  */
 function initializePolicyBanner() {
-    const policyBanner = document.getElementById('policyBanner');
-    const acceptPolicyButton = document.getElementById('acceptPolicy');
-    const declinePolicyButton = document.getElementById('declinePolicy');
-    const policyBlockerOverlay = document.getElementById('policy-blocker-overlay');
-    const policyBlockerRefreshBtn = document.getElementById('policy-blocker-refresh-btn'); // Get the new button
+    const policyModal = document.getElementById('policy-modal-container');
+    const policyContent = policyModal.querySelector('.policy-modal-content');
+    const acceptBtn = document.getElementById('acceptPolicy');
+    const declineBtn = document.getElementById('declinePolicy');
 
-    if (!policyBanner || !policyBlockerOverlay || !policyBlockerRefreshBtn) {
+    if (!policyModal || !acceptBtn || !declineBtn) {
         return; // Exit if elements are missing
     }
 
-    // --- Check storage states ---
+    // --- Check permanent storage ---
     const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
-    const hasDeclined = sessionStorage.getItem('gplmods_policy_declined');
 
     // --- Main Logic on Page Load ---
-    if (hasAccepted === 'true') {
-        // User has accepted, do nothing.
-        return;
-    } 
-    
-    if (hasDeclined === 'true') {
-        // User has declined in this session, show the blocker.
-        policyBlockerOverlay.style.display = 'flex';
-    } else {
-        // User is new or has refreshed after declining, show the banner.
+    if (hasAccepted !== 'true') {
+        // If user has not accepted, show the modal.
+        policyModal.style.display = 'block'; // Show the container and its background
+        // Animate the content sliding up from the bottom
         setTimeout(() => {
-            policyBanner.classList.add('visible');
-        }, 1000);
+            policyContent.style.transform = 'translateY(0)';
+        }, 100); // A tiny delay to allow the CSS transition to work
     }
 
     // --- Event Listeners ---
+    acceptBtn.addEventListener('click', () => {
+        // Save choice permanently and hide the modal
+        localStorage.setItem('gplmods_policy_accepted', 'true');
+        policyContent.style.transform = 'translateY(100%)'; // Animate out
+        // Wait for animation to finish before hiding the container
+        setTimeout(() => {
+            policyModal.style.display = 'none';
+        }, 400);
+    });
 
-    if (acceptPolicyButton) {
-        acceptPolicyButton.addEventListener('click', () => {
-            localStorage.setItem('gplmods_policy_accepted', 'true');
-            sessionStorage.removeItem('gplmods_policy_declined'); // Clean up session storage
-            policyBanner.classList.remove('visible');
-            policyBlockerOverlay.style.display = 'none';
+    declineBtn.addEventListener('click', () => {
+        // When user declines, we just block interaction by leaving the modal open.
+        // We can update the content to give them instructions.
+        const contentDiv = policyModal.querySelector('div > div'); // Find the inner content div
+        contentDiv.innerHTML = `
+            <h2 style="color: var(--gold);">Policies Declined</h2>
+            <p>You must accept the policies to use this site. Please click "Accept" or close this browser tab.</p>
+             <div class="policy-buttons" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button class="policy-button" id="acceptPolicyAgain">Accept</button>
+            </div>
+        `;
+        
+        // We need to re-add the event listener to the new "Accept" button
+        document.getElementById('acceptPolicyAgain').addEventListener('click', () => {
+             localStorage.setItem('gplmods_policy_accepted', 'true');
+             policyContent.style.transform = 'translateY(100%)';
+             setTimeout(() => { policyModal.style.display = 'none'; }, 400);
         });
-    }
-
-    if (declinePolicyButton) {
-        declinePolicyButton.addEventListener('click', () => {
-            // Set the decline flag for this session
-            sessionStorage.setItem('gplmods_policy_declined', 'true');
-            // Hide the banner and show the blocker
-            policyBanner.classList.remove('visible');
-            policyBlockerOverlay.style.display = 'flex';
-        });
-    }
-    
-    // --- NEW: Smart Refresh Button Logic ---
-    if (policyBlockerRefreshBtn) {
-        policyBlockerRefreshBtn.addEventListener('click', () => {
-            // 1. Remove the "declined" flag from session storage.
-            sessionStorage.removeItem('gplmods_policy_declined');
-            // 2. Now, reload the page.
-            location.reload();
-        });
-    }
+    });
 }

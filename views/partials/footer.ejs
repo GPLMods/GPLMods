@@ -30,27 +30,21 @@
         </div>
     </footer>
 
-    <!-- Policy Acceptance Banner -->
-    <div class="policy-banner" id="policyBanner">
-        <p>This website uses cookies to ensure you get the best experience. By using our site, you agree to our <a href="/tos" target="_blank">Terms of Service</a>.</p>
-        <div class="policy-buttons">
-            <button class="policy-button" id="acceptPolicy">Accept</button>
-            <button class="policy-button decline" id="declinePolicy">Decline</button>
-        </div>
+    <!-- ======== NEW UNIFIED POLICY MODAL ======== -->
+    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;">
+<!-- The semi-transparent background overlay -->
+<div class="policy-modal-background" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);"></div>
+<!-- The content that sits on top of the overlay -->
+<div class="policy-modal-content" style="position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--dark-gray); color: var(--white); padding: 20px; text-align: center; border-top: 1px solid #333; transform: translateY(100%); transition: transform 0.4s ease-out;">
+    <p style="margin: 0; font-size: 0.9em;">
+        To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.
+    </p>
+    <div class="policy-buttons" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+        <button class="policy-button" id="acceptPolicy">Accept</button>
+        <button class="policy-button decline" id="declinePolicy">Decline</button>
     </div>
+</div>
 
-    <!-- ======== ADD THIS NEW OVERLAY BLOCK ======== -->
-    <div id="policy-blocker-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 2000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px;">
-        <div>
-            <h2 style="color: var(--gold); font-size: 2em; margin-bottom: 1rem;">Policies Declined</h2>
-            <p style="color: var(--silver); max-width: 500px; margin-bottom: 2rem;">
-                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again and accept the terms.
-            </p>
-            <button class="policy-button" id="policy-blocker-refresh-btn">Refresh Page</button>
-        </div>
-    </div>
-    <!-- ======== END OF NEW OVERLAY BLOCK ======== -->
-    
     <!-- Your global JavaScript files -->
     <script src="/js/main.js"></script>
     <!-- Your Tidio/Chatbot script -->
