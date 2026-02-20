@@ -462,6 +462,37 @@ app.get('/mods/:id', async (req, res) => {
     }
 });
 
+// ===============================================
+// FILE VERSIONING ROUTES
+// ===============================================
+
+// --- THIS IS THE MISSING GET ROUTE ---
+// It displays the form for adding a new version.
+app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
+    try {
+        const parentFile = await File.findById(req.params.id);
+
+        // Security Check: Ensure the person trying to add a version is the original uploader
+        if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
+            // If they are not the uploader, show the 403 Forbidden page
+            return res.status(403).render('pages/403');
+        }
+
+        // If all checks pass, render the page and pass the file data to it
+        res.render('pages/add-version', { parentFile: parentFile });
+
+    } catch (error) {
+        console.error('Error loading the add-version page:', error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- Your POST route for handling the form submission should also be here ---
+// It seems you may have this one already, but double-check
+app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    // ... all the logic for processing the new version upload ...
+});
+
 // Download Action - UPDATED with presigned URL
 app.get('/download-file/:id', async (req, res) => {
     try {
