@@ -167,18 +167,20 @@ app.use(async (req, res, next) => {
                 }), { expiresIn: 3600 }); // Link is valid for 1 hour
                 req.user.signedAvatarUrl = avatarUrl;
             } catch (error) {
-                console.error("Error generating signed URL for avatar:", error);
-                // If URL generation fails, fall back to the default
+                console.error("Error generating signed URL for user avatar:", error);
+                // If URL generation fails for any reason, fall back to the default
                 req.user.signedAvatarUrl = '/images/default-avatar.png';
             }
         } else {
             // Case 2: The user does NOT have a custom avatar
-            // Set the URL to our local default avatar image
+            // Explicitly set the URL to our local default avatar image
             req.user.signedAvatarUrl = '/images/default-avatar.png';
         }
     }
+    // Proceed to the next middleware or route handler
     next();
 });
+
 
 // --- Globals ---
 app.use((req, res, next) => {
