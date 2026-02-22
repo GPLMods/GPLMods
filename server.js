@@ -86,13 +86,6 @@ const uploadToB2 = async (file, folder) => {
 };
 
 // ===============================
-// 4. DATABASE CONNECTION
-// ===============================
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('Successfully connected to MongoDB Atlas!'))
-    .catch(error => console.error('MongoDB Connection Error:', error));
-
-// ===============================
 // 5. MIDDLEWARE
 // ===============================
 app.use(express.static(path.join(__dirname, 'public')));
@@ -1109,51 +1102,75 @@ app.use((err, req, res, next) => {
     res.status(500).render('pages/500');
 });
 
-// ===============================
-// 14. SERVER START & SOCKET.IO LOGIC
-// ===============================
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { // Add a CORS policy for Socket.IO
-        origin: [ "http://localhost:3000", "https://gplmods.webredirect.org" ],
-        methods: ["GET", "POST"]
-    }
-});
+// ===============================================
+// 14. DATABASE CONNECTION & SERVER STARTUP
+// ===============================================
 
-// --- In-memory store for recent messages ---
+// In-memory store for recent messages
 let recentMessages = [];
 
-io.on('connection', (socket) => {
-    console.log('A user connected to chat');
+const startServer = async () => {
+    try {
+        // --- Step 1: Connect to the Database ---
+        await mongoose.connect(process.env.MONGO_URI, {
+            // These options are deprecated but leaving them won't hurt for now
+            useNewUrlParser: true, 
+            useUnifiedTopology: true 
+        });
+        console.log('Successfully connected to MongoDB Atlas!');
 
-    // --- 1. Send message history to the newly connected user ---
-    socket.emit('chat history', recentMessages);
+        // --- Step 2: Only start the server AFTER the database is connected ---
+        const server = http.createServer(app);
+        const io = new Server(server, {
+            cors: {
+                origin: allowedOrigins, // Use the 'allowedOrigins' array you defined earlier
+                methods: ["GET", "POST"]
+            }
+        });
 
-    // --- 2. Listen for new chat messages from a user ---
-    socket.on('chat message', (msg) => {
-        // Create a timestamp for the message
-        const messageData = {
-            username: msg.username,
-            avatar: msg.avatar,
-            text: msg.text,
-            timestamp: new Date() // Add a timestamp
-        };
+        // Your existing Socket.IO logic
+        io.on('connection', (socket) => {
+            console.log('A user connected to chat');
 
-        // Add message to our history
-        recentMessages.push(messageData);
-        // Keep the history capped at 50 messages
-        if (recentMessages.length > 50) {
-            recentMessages.shift(); // Removes the oldest message
-        }
+            // --- 1. Send message history to the newly connected user ---
+            socket.emit('chat history', recentMessages);
 
-        // Broadcast the new message to everyone
-        io.emit('chat message', messageData);
-    });
+            // --- 2. Listen for new chat messages from a user ---
+            socket.on('chat message', (msg) => {
+                // Create a timestamp for the message
+                const messageData = {
+                    username: msg.username,
+                    avatar: msg.avatar,
+                    text: msg.text,
+                    timestamp: new Date() // Add a timestamp
+                };
 
-    // --- 3. Handle user disconnection ---
-    socket.on('disconnect', () => {
-        console.log('User disconnected from chat');
-    });
-});
+                // Add message to our history
+                recentMessages.push(messageData);
+                // Keep the history capped at 50 messages
+                if (recentMessages.length > 50) {
+                    recentMessages.shift(); // Removes the oldest message
+                }
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+                // Broadcast the new message to everyone
+                io.emit('chat message', messageData);
+            });
+
+            // --- 3. Handle user disconnection ---
+            socket.on('disconnect', () => {
+                console.log('User disconnected from chat');
+            });
+        });
+
+        server.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT} and connected to the database.`);
+        });
+
+    } catch (error) {
+        console.error('Failed to connect to the database. Server is not starting.', error);
+        process.exit(1); // Exit the process with an error code
+    }
+};
+
+// --- Call the function to start the entire application ---
+startServer();
