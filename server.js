@@ -464,6 +464,34 @@ app.get('/mods/:id', async (req, res) => {
     }
 });
 
+// --- NEW DEVELOPER PAGE ROUTE ---
+app.get('/developer', async (req, res) => {
+    try {
+        const developerName = req.query.name;
+        if (!developerName || developerName.trim() === '') {
+            return res.redirect('/');
+        }
+        
+        // --- THE FIX: Use a simpler, more flexible regex ---
+        const filesByDeveloper = await File.find({
+            // This now looks for any document where the developer field CONTAINS the developerName, case-insensitively.
+            developer: { $regex: developerName, $options: 'i' }, 
+            isLatestVersion: true,
+            status: 'live' // Also ensure we only show live mods
+        }).sort({ createdAt: -1 });
+
+        res.render('pages/developer', {
+            files: filesByDeveloper,
+            developerName: developerName
+        });
+
+    } catch (error) {
+        console.error("Error fetching files for developer page:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+
 // ===============================================
 // FILE VERSIONING ROUTES
 // ===============================================
