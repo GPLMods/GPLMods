@@ -36,9 +36,9 @@
             <!-- Desktop User Actions -->
             <div class="header-actions">
                 <% if (user) { %>
-                    <a href="/profile" class="avatar-placeholder">
-                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-                    </a>
+                <a href="/profile" class="avatar-placeholder">
+               <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+               </a>
                     <a href="/my-uploads" class="btn btn-login">My Uploads</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
@@ -48,19 +48,12 @@
             </div>
 
             <!-- Mobile User Actions -->
-            <div class="header-mobile-actions">
-                <% if (user) { %>
-                    <a href="/profile" class="avatar-placeholder">
-                        <% if (user.profileImageUrl) { %>
-                            <img src="<%= user.profileImageUrl %>" alt="User Avatar">
-                        <% } else { %>
-                             <!-- Optional: Show a default icon inside if they have no image -->
-                             <img src="/images/default-avatar.png" alt="User Avatar">
-                        <% } %>
-                    </a>
-                <% } %>
-                <div class="hamburger-menu" id="hamburger">&#9776;</div>
-            </div>
+         <a href="/profile" class="avatar-placeholder">
+            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+        </a>
+    <% } %>
+    <div class="hamburger-menu" id="hamburger">&#9776;</div>
+</div>
         </div>
     </header>
 

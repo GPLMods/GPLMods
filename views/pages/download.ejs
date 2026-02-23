@@ -65,9 +65,11 @@
 
             </div>
             <ul class="meta-info">
-                <li>Version: <span><%= file.version %></span></li>
-                <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
-                <li>Developer: 
+    <li>Version: <span><%= file.version %></span></li>
+    <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
+
+    <li> <!-- Developer LI -->
+        Developer: 
         <% if (file.developer && file.developer !== 'N/A') { %>
             <a href="/developer?name=<%= encodeURIComponent(file.developer) %>" class="meta-link">
                 <%= file.developer %> <span class="arrow">›</span>
@@ -75,25 +77,32 @@
         <% } else { %>
             <span>N/A</span>
         <% } %>
-                <li>Uploaded by: 
+    </li> <!-- CORRECTLY CLOSED -->
+
+    <li> <!-- Uploader LI -->
+        Uploaded by: 
         <a href="/users/<%= file.uploader %>" class="meta-link">
             <%= file.uploader %> <span class="arrow">›</span>
-                <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
-                <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
-                <li>Working?:
-                    <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 0; %>
-                    <div class="voting-system">
-                        <span class="working-percentage"><%= workingPercentage %>%</span>
-                        <% if(user && !userHasVotedOnStatus) { %>
-                        <div class="vote-buttons">
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
-                        </div>
-                        <% } %>
-                    </div>
-                </li>
-            </ul>
+        </a>
+    </li> <!-- CORRECTLY CLOSED -->
+
+    <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
+    <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+    
+    <li>Working?:
+        <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+        <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 0; %>
+        <div class="voting-system">
+            <span class="working-percentage"><%= workingPercentage %>%</span>
+            <% if(user && !userHasVotedOnStatus) { %>
+            <div class="vote-buttons">
+                <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
+                <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
+            </div>
+            <% } %>
+        </div>
+    </li>
+</ul>
         </aside>
 
         <!-- Right Details Panel -->
@@ -181,7 +190,7 @@
                         <div class="comment-item">
                             <div class="comment-header">
                                 <div class="avatar-wrapper">
-                                    <img src="<%= (review.user && review.user.profileImageUrl) ? review.user.profileImageUrl : '/images/default-avatar.png' %>" alt="User Avatar">
+                                    <img src="<%= (review.user && review.user.signedAvatarUrl) ? review.user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar">
                                 </div>
                                 <span class="comment-author"><%= review.username %></span>
                                 <div class="comment-rating rating">

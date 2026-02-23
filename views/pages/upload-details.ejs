@@ -16,12 +16,12 @@
     body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); line-height: 1.6; }
     .container { width: 90%; max-width: 1200px; margin: auto; padding: 20px 0; }
 
-    /* Main form container (adapted from your .upload-form styles) */
+    /* Main form container */
     .upload-form-container {
         background-color: var(--dark-gray);
         padding: 30px;
         border-radius: 15px;
-        max-width: 800px; /* Control the width */
+        max-width: 800px;
         margin: 2rem auto;
     }
 
@@ -40,6 +40,21 @@
         font-size: 1.1em;
         color: var(--silver);
         margin-bottom: 2rem;
+    }
+    
+    /* Fieldset and Legend for Structure */
+    .form-section {
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    .form-section legend {
+        padding: 0 10px;
+        margin-left: 15px;
+        font-size: 1.3em;
+        font-weight: 600;
+        color: var(--gold);
     }
 
     /* Form Groups and Inputs */
@@ -102,7 +117,7 @@
     .icon-preview img {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* Changed to cover for a fuller look */
+        object-fit: cover;
     }
     .icon-preview span {
         color: #444;
@@ -113,7 +128,7 @@
     /* Custom File Input Styles */
     .file-input-wrapper {
         position: relative;
-        display: block; /* Changed to block for full width */
+        display: block;
         width: 100%;
     }
     input[type="file"] {
@@ -147,7 +162,7 @@
     /* Screenshot & Video Previews */
     .preview-container {
         margin-top: 15px;
-        display: flex; /* Using flex for better alignment */
+        display: flex;
         gap: 10px;
         flex-wrap: wrap;
         background-color: var(--black);
@@ -156,9 +171,9 @@
         border-radius: 8px;
     }
     .preview-container img {
-        width: 120px; /* Fixed width for previews */
+        width: 120px;
         height: auto;
-        aspect-ratio: 9 / 16; /* Portrait aspect ratio */
+        aspect-ratio: 9 / 16;
         object-fit: cover;
         border-radius: 4px;
     }
@@ -211,103 +226,112 @@
             <input type="hidden" name="originalFilename" value="<%= filename %>">
             <input type="hidden" name="fileSize" value="<%= filesize %>">
 
-            <!-- Icon Upload -->
-            <div class="icon-upload-container">
-                <label>Mod Icon*</label>
-                <div class="icon-preview" id="iconPreviewBox">
-                    <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
-                    <span id="iconPlaceholder">Preview</span>
+            <fieldset class="form-section">
+                <legend>Core Details</legend>
+
+                <!-- Icon Upload -->
+                <div class="icon-upload-container">
+                    <label>Mod Icon*</label>
+                    <div class="icon-preview" id="iconPreviewBox">
+                        <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
+                        <span id="iconPlaceholder">Preview</span>
+                    </div>
+                    <div style="max-width: 250px;">
+                        <input type="file" id="modIcon" name="modIcon" accept="image/*" required>
+                        <label for="modIcon" class="file-input-label">Choose Icon</label>
+                    </div>
                 </div>
-                <div style="max-width: 250px;">
-                    <input type="file" id="modIcon" name="modIcon" accept="image/*" required>
-                    <label for="modIcon" class="file-input-label">Choose Icon</label>
+
+                <!-- Text and Select Fields -->
+                <div class="form-group">
+                    <label for="modName">Mod Name*</label>
+                    <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
                 </div>
-            </div>
 
-            <!-- Text and Select Fields -->
-            <div class="form-group">
-                <label for="modName">Mod Name*</label>
-                <input type="text" id="modName" name="modName" placeholder="e.g., Galaxy Invaders [Mod Menu]" required>
-            </div>
+                <div class="form-group">
+                    <label for="developerName">Official Developer / Company</label>
+                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
+                </div>
 
-            <div class="form-group">
-                <label for="developerName">Official Developer / Company</label>
-                <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
-            </div>
+                <div class="form-group">
+                    <label for="modPlatform">Platform*</label>
+                    <select id="modPlatform" name="modPlatform" required>
+                        <option value="" disabled selected>Select a platform...</option>
+                        <option value="android">Android</option>
+                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                        <option value="windows">Windows</option>
+                        <option value="wordpress">WordPress</option>
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label for="modPlatform">Platform*</label>
-                <select id="modPlatform" name="modPlatform" required>
-                    <option value="" disabled selected>Select a platform...</option>
-                    <option value="android">Android</option>
-                    <option value="ios-jailed">iOS - Jailed (IPA)</option>
-                    <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
-                    <option value="windows">Windows</option>
-                    <option value="wordpress">WordPress</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="modCategory">Category*</label>
+                    <select id="modCategory" name="modCategory" required disabled>
+                        <option value="" disabled selected>Select a platform first...</option>
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label for="modCategory">Category*</label>
-                <select id="modCategory" name="modCategory" required disabled>
-                    <option value="" disabled selected>Select a platform first...</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="modVersion">Mod Version*</label>
-                <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
-            </div>
-
-            <!-- Textarea Fields -->
-            <div class="form-group">
-                <label for="modDescription">Mod Description*</label>
-                <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="modFeatures">Mod Features*</label>
-                <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="officialDescription">Official Description (Optional)</label>
-                <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store or developer's website."></textarea>
-            </div>
+                <div class="form-group">
+                    <label for="modVersion">Mod Version*</label>
+                    <input type="text" id="modVersion" name="modVersion" placeholder="e.g., 3.2.5" required>
+                </div>
+            </fieldset>
             
-            <div class="form-group">
-                <label for="whatsNew">What's New (Optional)</label>
-                <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
-            </div>
+            <fieldset class="form-section">
+                <legend>Descriptions</legend>
 
-            <!-- More Form Fields -->
-            <div class="form-group">
-                <label for="tags">Tags (Optional, comma-separated)</label>
-                <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
-            </div>
-
-            <div class="form-group">
-                <label>Mod Screenshots* (1-4 images)</label>
-                <div class="file-input-wrapper">
-                    <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
-                    <label for="screenshots" class="file-input-label">Choose Screenshots</label>
-                    <span class="file-name" id="screenshotFileName">No files selected</span>
+                <div class="form-group">
+                    <label for="modDescription">Mod Description*</label>
+                    <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
                 </div>
-                <div class="preview-container" id="screenshotPreviewContainer"></div>
-            </div>
 
-            <div class="form-group">
-                <label for="videoUrl">Video URL (Optional)</label>
-                <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
-                <div class="preview-container" id="videoPreviewContainer"></div>
-            </div>
+                <div class="form-group">
+                    <label for="modFeatures">Mod Features*</label>
+                    <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="officialDescription">Official Description (Optional)</label>
+                    <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store or developer's website."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="whatsNew">What's New (Optional)</label>
+                    <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Media & Metadata</legend>
+                <div class="form-group">
+                    <label for="tags">Tags (Optional, comma-separated)</label>
+                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
+                </div>
+
+                <div class="form-group">
+                    <label>Mod Screenshots* (1-4 images)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
+                        <label for="screenshots" class="file-input-label">Choose Screenshots</label>
+                        <span class="file-name" id="screenshotFileName">No files selected</span>
+                    </div>
+                    <div class="preview-container" id="screenshotPreviewContainer"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="videoUrl">Video URL (Optional)</label>
+                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    <div class="preview-container" id="videoPreviewContainer"></div>
+                </div>
+            </fieldset>
             
             <button type="submit" class="submit-button">Submit Mod for Review</button>
         </form>
     </div>
 </div>
 
-<!-- All the interactive JavaScript from the old file -->
+<!-- All the interactive JavaScript from the original file -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // --- Icon Preview Logic ---
