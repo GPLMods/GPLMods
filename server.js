@@ -19,7 +19,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const http = require('http');
-const { Server } = require("socket.io");
+const { Server } = require("socket.io"); // Corrected import
 const crypto = require('crypto');
 const cors = require('cors');// Added for CORS
 
@@ -166,6 +166,7 @@ app.use(async (req, res, next) => {
     }
     next();
 });
+
 
 // --- Globals ---
 app.use((req, res, next) => {
@@ -436,8 +437,9 @@ app.get('/mods/:id', async (req, res) => {
             
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
 
-        // --- NEW: Manually generate signed URLs for each reviewer's avatar ---
         const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); // Populate the key
+
+        // --- NEW: Manually generate signed URLs for each reviewer's avatar ---
         const reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
@@ -461,6 +463,7 @@ app.get('/mods/:id', async (req, res) => {
             userHasVotedOnStatus
         });
     } catch (e) {
+        console.error("Error on /mods/:id route:", e);
         res.status(500).send("Server error.");
     }
 });
@@ -891,7 +894,7 @@ app.get('/upload-details', ensureAuthenticated, (req, res) => {
 });
 
 
-// This route is already designed for the new hybrid approach. It's perfect.
+// Step 2 of upload - Client finalizes the upload with metadata
 app.post('/upload-finalize', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
@@ -919,13 +922,43 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
         
         // --- 2. SUBMIT B2 URL OF THE LARGE FILE TO VIRUSTOTAL (unchanged) ---
         // ... your VirusTotal logic ...
+        const filePublicUrlForScan = `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${fileKey}`;
+        let analysisId = null;
+        try {
+            const vtUrlScanResponse = await axios.post('https://www.virustotal.com/api/v3/urls',
+                `url=${encodeURIComponent(filePublicUrlForScan)}`,
+                { 
+                    headers: { 
+                        'x-apikey': process.env.VIRUSTOTAL_API_KEY,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    } 
+                }
+            );
+            analysisId = vtUrlScanResponse.data.data.id;
+        } catch (vtError) {
+            console.error("VT URL Scan Error:", vtError.response?.data);
+        }
 
         // --- 3. SAVE TO MONGODB (unchanged) ---
         const newFile = new File({
-            // ... uses formData for name, version, etc.
-            // ... uses iconKey and screenshotKeys for the image paths
+            name: formData.modName,
+            version: formData.modVersion,
+            developer: formData.developerName,
+            modDescription: formData.modFeatures,
+            whatsNew: formData.whatsNew,
+            officialDescription: formData.officialDescription,
+            videoUrl: formData.videoUrl,
+            category: formData.modPlatform,
+            platforms: [formData.modCategory],
+            tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+            uploader: req.user.username,
+            fileSize: fileSize,
+            originalFilename: originalFilename,
+            iconKey: iconKey, // Use iconKey
+            screenshotKeys: screenshotKeys, // Use screenshotKeys
             fileKey: fileKey, // The key for the LARGE mod file
-            // ...
+            virusTotalAnalysisId: analysisId,
+            isLatestVersion: true
         });
         await newFile.save();
 
@@ -936,7 +969,6 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
         res.status(500).json({ error: 'Server failed to finalize upload.' });
     }
 });
-
 
 // ===================================
 // 11. API ROUTES
@@ -1109,12 +1141,19 @@ const startServer = async () => {
 
             // --- 2. Listen for new chat messages from a user ---
             socket.on('chat message', (msg) => {
-                io.emit('chat message', {
+                const messageData = {
                     username: msg.username,
                     avatar: msg.avatar, // 'msg.avatar' from the client is already the signed URL
                     text: msg.text,
                     timestamp: new Date()
-                });
+                };
+
+                recentMessages.push(messageData);
+                if (recentMessages.length > 50) {
+                    recentMessages.shift();
+                }
+
+                io.emit('chat message', messageData);
             });
 
             // --- 3. Handle user disconnection ---
