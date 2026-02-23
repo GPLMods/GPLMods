@@ -48,13 +48,16 @@
             </div>
 
             <!-- Mobile User Actions -->
-         <a href="/profile" class="avatar-placeholder">
+    <!-- Mobile User Actions -->
+<div class="header-mobile-actions">
+    <% if (user) { %>
+        <a href="/profile" class="avatar-placeholder">
+            <!-- Use the single, reliable variable -->
             <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
         </a>
     <% } %>
     <div class="hamburger-menu" id="hamburger">&#9776;</div>
 </div>
-        </div>
     </header>
 
     <!-- Mobile Sidebar Navigation -->
