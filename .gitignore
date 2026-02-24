@@ -9,4 +9,4 @@ node_modules/
 npm-debug.log
 
 #CORS Rules
-cors_rules.json
+rules.json
