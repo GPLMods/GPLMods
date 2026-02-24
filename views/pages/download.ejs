@@ -1,8 +1,15 @@
 <%- include('../partials/header') %>
 
+<style>
+    /* Most styles are now in global style.css, but we can keep page-specific ones here */
+</style>
+
 <main class="container">
     <div class="download-layout">
+
+        <!-- ============================ -->
         <!-- Left Info Panel -->
+        <!-- ============================ -->
         <aside class="info-panel">
             <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="app-icon">
             <h1><%= file.name %></h1>
@@ -11,7 +18,7 @@
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
                 </div>
-                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                <span class="rating-text"><%= file.averageRating.toFixed(1) %> (<%= file.ratingCount %> reviews)</span>
             </div>
 
             <% if (file.certification === 'certified') { %>
@@ -26,19 +33,14 @@
             </a>
             
             <div class="action-buttons">
-    
-                <!-- This row will contain Wishlist and Report -->
                 <div class="action-row">
                     <% if (user) { %>
-                        <!-- Wishlist Form -->
                         <form action="/files/<%= file._id %>/whitelist" method="POST" style="flex: 1; margin:0; display: contents;">
-                            <button type="submit" style="flex: 1; text-align: center; text-decoration: none; padding: 10px; border-radius: 8px; background-color: #2a2a2a; color: var(--silver); font-weight: 600; transition: all 0.3s ease; border:none; cursor:pointer; font-family: 'Poppins'; font-size: 1em;">
+                             <button type="submit" class="full-width-btn" style="border:none; font-family: 'Poppins', sans-serif; font-size: 1em;">
                                 <%= userHasWhitelisted ? '❤ In Wishlist' : '❤ Add to Wishlist' %>
                             </button>
                         </form>
-
-                        <!-- Report Button -->
-                        <button type="button" id="reportModalBtn" style="flex: 1; text-align: center; text-decoration: none; padding: 10px; border-radius: 8px; background-color: #2a2a2a; color: var(--silver); font-weight: 600; transition: all 0.3s ease; border:none; cursor:pointer; font-family: 'Poppins'; font-size: 1em;">
+                        <button type="button" id="reportModalBtn" class="full-width-btn" style="border:none; font-family: 'Poppins', sans-serif; font-size: 1em;">
                             ⚑ Report
                         </button>
                     <% } else { %>
@@ -46,66 +48,51 @@
                     <% } %>
                 </div>
 
-                <!-- The rest of the buttons follow, each on its own line -->
                 <% if (file.virusTotalAnalysisId) { %>
                     <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
                 <% } %>
                 
-                <!-- Add these lines for debugging. You can remove them later. -->
-                <!-- 
-                    DEBUG:
-                    Logged in as: <%= user ? user.username : 'Not Logged In' %>
-                    File Uploader: <%= file.uploader %>
-                    Do they match?: <%= user && user.username.toLowerCase() === file.uploader.toLowerCase() %>
-                -->
-
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="full-width-btn">＋ Add New Version</a>
                 <% } %>
-
             </div>
+
             <ul class="meta-info">
-    <li>Version: <span><%= file.version %></span></li>
-    <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
-
-    <li> <!-- Developer LI -->
-        Developer: 
-        <% if (file.developer && file.developer !== 'N/A') { %>
-            <a href="/developer?name=<%= encodeURIComponent(file.developer) %>" class="meta-link">
-                <%= file.developer %> <span class="arrow">›</span>
-            </a>
-        <% } else { %>
-            <span>N/A</span>
-        <% } %>
-    </li> <!-- CORRECTLY CLOSED -->
-
-    <li> <!-- Uploader LI -->
-        Uploaded by: 
-        <a href="/users/<%= file.uploader %>" class="meta-link">
-            <%= file.uploader %> <span class="arrow">›</span>
-        </a>
-    </li> <!-- CORRECTLY CLOSED -->
-
-    <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
-    <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
-    
-    <li>Working?:
-        <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-        <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 0; %>
-        <div class="voting-system">
-            <span class="working-percentage"><%= workingPercentage %>%</span>
-            <% if(user && !userHasVotedOnStatus) { %>
-            <div class="vote-buttons">
-                <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
-                <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
-            </div>
-            <% } %>
-        </div>
-    </li>
-</ul>
+                <li>Version: <span><%= file.version %></span></li>
+                <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
+                <li>
+                    Developer: 
+                    <% if (file.developer && file.developer !== 'N/A') { %>
+                        <a href="/developer?name=<%= encodeURIComponent(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
+                    <% } else { %>
+                        <span>N/A</span>
+                    <% } %>
+                </li>
+                <li>
+                    Uploaded by: 
+                    <a href="/users/<%= file.uploader %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
+                </li>
+                <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
+                <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+                <li>Working?:
+                    <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 'N/A'; %>
+                    <div class="voting-system">
+                        <span class="working-percentage"><%= workingPercentage %>%</span>
+                        <% if(user && !userHasVotedOnStatus) { %>
+                        <div class="vote-buttons">
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
+                        </div>
+                        <% } %>
+                    </div>
+                </li>
+            </ul>
         </aside>
 
+        <!-- ============================ -->
         <!-- Right Details Panel -->
+        <!-- ============================ -->
         <section class="details-panel">
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="description">Description</button>
@@ -114,70 +101,47 @@
                 <button class="tab-button" data-tab="comments">Comments</button>
             </div>
 
+            <!-- Description Tab -->
             <div id="description" class="tab-content active">
-<!-- The Main "Mod Information" Container -->
-<div class="info-box gold">
-    <h2>Mod Information</h2>
-    
-    <!-- General Mod Description (from modDescription) -->
-    <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
+                <div class="info-box gold">
+                    <h2>Mod Information</h2>
+                    <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
+                    <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
+                        <ul>
+                            <% file.modFeatures.split(/\r?\n/).forEach(feature => { if (feature.trim() !== '') { %>
+                                <li><%= feature %></li>
+                            <% }}) %>
+                        </ul>
+                    <% } %>
+                </div>
 
-    <!-- The Styled Features List (from modFeatures) -->
-    <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
-        <div class="features-list-container">
-            <ul class="features-list">
-                <% 
-                file.modFeatures.split(/\r?\n/).forEach(feature => {
-                    if (feature.trim() !== '') {
-                        // This logic correctly handles lines with and without a colon
-                        const parts = feature.split(/:(.*)/s);
-                        const title = parts[0].trim();
-                        const description = parts.length > 1 ? parts[1].trim() : '';
-                %>
-                        <li>
-                            <span class="feature-icon">✓</span>
-                            <div class="feature-text">
-                                <strong><%= title %>:</strong>
-                                <% if (description) { %>
-                                    <span><%= description %></span>
-                                <% } %>
-                            </div>
-                        </li>
-                <%
-                    }
-                });
-                %>
-            </ul>
-        </div>
-    <% } %>
-</div> <!-- End of info-box gold -->
+                <% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
+                <div class="info-box silver">
+                    <h2>What's New</h2>
+                    <p><%- file.whatsNew.replace(/\n/g, '<br>') %></p>
+                </div>
+                <% } %>
 
-<!-- "What's New" Section (if it exists) -->
-<% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
-<div class="info-box silver">
-    <h2>What's New</h2>
-    <p><%- file.whatsNew.replace(/\n/g, '<br>') %></p>
-</div>
-<% } %>
-
-<!-- "Official Description" Section (if it exists) -->
-<% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
-<div class="app-description-content" style="margin-top: 2rem;">
-    <h2>About This App/Game</h2>
-    <p><%- file.officialDescription.replace(/\n/g, '<br>') %></p>
-</div>
-<% } %>
-</div>
+                <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
+                <div class="app-description-content">
+                    <h2>About This App/Game</h2>
+                    <!-- This will correctly render lists from official descriptions -->
+                    <%- file.officialDescription.replace(/\r?\n/g, '<br>') %>
+                </div>
+                <% } %>
+            </div>
             
+            <!-- Screenshots Tab -->
             <div id="screenshots" class="tab-content">
                 <h2>Screenshots</h2>
                 <div class="screenshot-gallery">
                     <% file.screenshotUrls.forEach(url => { %>
-                        <img src="<%= url %>" alt="Screenshot of <%= file.name %>">
+                        <a href="<%= url %>" target="_blank"><img src="<%= url %>" alt="Screenshot of <%= file.name %>"></a>
                     <% }) %>
                 </div>
             </div>
             
+            <!-- Versions Tab -->
             <div id="versions" class="tab-content">
                 <h2>Version History</h2>
                 <table class="versions-table">
@@ -194,6 +158,7 @@
                 </table>
             </div>
 
+            <!-- Comments/Reviews Tab -->
             <div id="comments" class="tab-content">
                 <h2>Community Comments</h2>
                 <% if (user) { %>
@@ -242,7 +207,7 @@
     </div>
 </main>
 
-<!-- ======== ADD THE REPORT MODAL HTML BACK IN ======== -->
+<!-- Report Modal -->
 <div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
     <div class="modal-content" style="background-color: var(--dark-gray); margin: 15% auto; padding: 2rem; border: 1px solid var(--light-grey); width: 80%; max-width: 500px; border-radius: 8px; position: relative;">
         <span class="close-modal" style="color: var(--silver); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
@@ -267,8 +232,6 @@
         </form>
     </div>
 </div>
-<!-- ======================================================= -->
-
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -285,33 +248,26 @@
             });
         });
 
-        // ======== ADD THIS MODAL JS LOGIC BACK IN ========
+        // Report Modal JS Logic
         const modal = document.getElementById('reportModal');
         const btn = document.getElementById('reportModalBtn');
-        const span = document.querySelector('.close-modal'); // Use querySelector for classes
+        const span = document.querySelector('.close-modal');
 
         if (btn) {
             btn.onclick = function() {
-                if(modal) modal.style.display = 'block';
+                if (modal) modal.style.display = 'block';
             }
         }
         if (span) {
             span.onclick = function() {
-                if(modal) modal.style.display = 'none';
+                if (modal) modal.style.display = 'none';
             }
         }
         window.onclick = function(event) {
             if (event.target == modal) {
-                if(modal) modal.style.display = 'none';
+                if (modal) modal.style.display = 'none';
             }
         }
-
-        // --- Optional: Show a "Thank you" message after reporting ---
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('reported') && urlParams.get('reported') === 'true') {
-            alert('Thank you for your report. An administrator will review it shortly.');
-        }
-        // ==================================================
     });
 </script>
 
