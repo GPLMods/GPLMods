@@ -115,32 +115,21 @@
             </div>
 
             <div id="description" class="tab-content active">
-                <!-- What's New Section (pulls from the new 'whatsNew' field) -->
-                <% if (file.whatsNew) { %>
-                <div class="info-box silver">
-                    <h2>What's New</h2>
-                    <p><%- file.whatsNew.replace(/\n/g, '<br>') %></p>
-                </div>
-                <% } %>
-
-                <!-- Mod Information (pulls from 'modDescription') -->
-                <div class="info-box gold">
+<!-- The Main "Mod Information" Container -->
+<div class="info-box gold">
     <h2>Mod Information</h2>
-    <!-- The general description still shows first -->
+    
+    <!-- General Mod Description (from modDescription) -->
     <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
 
-    <!-- ======== ADD THIS NEW FEATURES LIST LOGIC ======== -->
-    <% if (file.modFeatures) { %>
+    <!-- The Styled Features List (from modFeatures) -->
+    <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
         <div class="features-list-container">
             <ul class="features-list">
                 <% 
-                // 1. Split the modFeatures string into an array, one item per line
-                const features = file.modFeatures.split(/\r?\n/);
-
-                // 2. Loop through each feature line
-                features.forEach(feature => {
-                    if (feature.trim() !== '') { // Ignore empty lines
-                        // 3. Split each line by the first colon ':' to separate title and description
+                file.modFeatures.split(/\r?\n/).forEach(feature => {
+                    if (feature.trim() !== '') {
+                        // This logic correctly handles lines with and without a colon
                         const parts = feature.split(/:(.*)/s);
                         const title = parts[0].trim();
                         const description = parts.length > 1 ? parts[1].trim() : '';
@@ -161,7 +150,23 @@
             </ul>
         </div>
     <% } %>
-    <!-- ================================================ -->
+</div> <!-- End of info-box gold -->
+
+<!-- "What's New" Section (if it exists) -->
+<% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
+<div class="info-box silver">
+    <h2>What's New</h2>
+    <p><%- file.whatsNew.replace(/\n/g, '<br>') %></p>
+</div>
+<% } %>
+
+<!-- "Official Description" Section (if it exists) -->
+<% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
+<div class="app-description-content" style="margin-top: 2rem;">
+    <h2>About This App/Game</h2>
+    <p><%- file.officialDescription.replace(/\n/g, '<br>') %></p>
+</div>
+<% } %>
 </div>
             
             <div id="screenshots" class="tab-content">
