@@ -939,12 +939,13 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
             console.error("VT URL Scan Error:", vtError.response?.data);
         }
 
-        // --- 3. SAVE TO MONGODB (unchanged) ---
+        // --- 3. SAVE TO MONGODB ---
         const newFile = new File({
             name: formData.modName,
             version: formData.modVersion,
             developer: formData.developerName,
-            modDescription: formData.modFeatures,
+            modDescription: formData.modDescription,
+            modFeatures: formData.modFeatures,
             whatsNew: formData.whatsNew,
             officialDescription: formData.officialDescription,
             videoUrl: formData.videoUrl,

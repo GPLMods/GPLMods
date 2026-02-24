@@ -1,0 +1,21 @@
+[
+  {
+    "corsRuleName": "gplmods-production-policy",
+    "allowedOrigins": [
+      "https://gplmods.webredirect.org",
+      "http://localhost:3000"
+    ],
+    "allowedOperations": [
+      "s3_put",
+      "s3_get"
+    ],
+    "allowedHeaders": [
+      "*"
+    ],
+    "exposeHeaders": [
+      "etag",
+      "x-amz-request-id"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
