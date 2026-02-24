@@ -1154,6 +1154,48 @@
                 text-align: center;
             }
         }
+   /* ======== NEW STYLES FOR THE FEATURE LIST ======== */
+    .features-list-container {
+        background-color: var(--dark-gray); /* Or #1c1c1e for a slightly different dark */
+        border-left: 4px solid var(--gold);
+        border-radius: 8px;
+        padding: 25px;
+        margin-top: 1.5rem; /* Add space above the list */
+    }
+
+    .features-list {
+        list-style: none; /* Remove default bullet points */
+        padding: 0;
+        margin: 0;
+    }
+
+    .features-list li {
+        display: flex;
+        align-items: flex-start; /* Align icon with the top of the text */
+        font-size: 1.1em;
+        margin-bottom: 20px; /* Space between each feature */
+    }
+    .features-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .features-list .feature-icon {
+        color: var(--gold);
+        font-weight: bold;
+        margin-right: 15px;
+        font-size: 1.2em; /* Make the checkmark slightly larger */
+    }
+
+    .features-list .feature-text strong {
+        color: var(--white);
+        display: block; /* Makes the title and description stack vertically */
+        font-weight: 600;
+    }
+    .features-list .feature-text span {
+        color: var(--silver);
+        font-size: 0.9em;
+    }
+    /* ================================================== */
 /* --- New  Styles For Search Page --- */
 :root {
             --black: #0a0a0a;

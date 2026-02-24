@@ -71,7 +71,7 @@ const adminJsOptions = {
                 listProperties: ['name', 'uploader', 'status', 'certification', 'category'],
                 editProperties: [
                     'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
-                    'certification', 'category', 'modDescription', 'officialDescription',
+                    'certification', 'category', 'modDescription', 'modFeatures', 'officialDescription',
                     'tags', 'videoUrl'
                 ],
                 showProperties: [
@@ -136,7 +136,7 @@ const adminJsOptions = {
         },
     ],
     branding: {
-        companyName: 'GPL Mods Dashboard',
+        companyName: 'GPL Mods Aamin Panel',
         softwareBrothers: false,
     },
 };

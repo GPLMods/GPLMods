@@ -125,18 +125,44 @@
 
                 <!-- Mod Information (pulls from 'modDescription') -->
                 <div class="info-box gold">
-                    <h2>Mod Information</h2>
-                    <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
-                </div>
-                
-                <!-- About This Game / Official Description (pulls from 'officialDescription') -->
-                <% if (file.officialDescription) { %>
-                <div class="app-description-content">
-                    <h2>About This Game</h2>
-                    <p><%- file.officialDescription.replace(/\n/g, '<br>') %></p>
-                </div>
-                <% } %>
-            </div>
+    <h2>Mod Information</h2>
+    <!-- The general description still shows first -->
+    <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
+
+    <!-- ======== ADD THIS NEW FEATURES LIST LOGIC ======== -->
+    <% if (file.modFeatures) { %>
+        <div class="features-list-container">
+            <ul class="features-list">
+                <% 
+                // 1. Split the modFeatures string into an array, one item per line
+                const features = file.modFeatures.split(/\r?\n/);
+
+                // 2. Loop through each feature line
+                features.forEach(feature => {
+                    if (feature.trim() !== '') { // Ignore empty lines
+                        // 3. Split each line by the first colon ':' to separate title and description
+                        const parts = feature.split(/:(.*)/s);
+                        const title = parts[0].trim();
+                        const description = parts.length > 1 ? parts[1].trim() : '';
+                %>
+                        <li>
+                            <span class="feature-icon">✓</span>
+                            <div class="feature-text">
+                                <strong><%= title %>:</strong>
+                                <% if (description) { %>
+                                    <span><%= description %></span>
+                                <% } %>
+                            </div>
+                        </li>
+                <%
+                    }
+                });
+                %>
+            </ul>
+        </div>
+    <% } %>
+    <!-- ================================================ -->
+</div>
             
             <div id="screenshots" class="tab-content">
                 <h2>Screenshots</h2>
