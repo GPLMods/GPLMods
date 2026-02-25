@@ -113,7 +113,7 @@ const FileSchema = new Schema({
     },
 
     virusTotalAnalysisId: { type: String },
-
-}, { timestamps: true }); // Adds createdAt and updatedAt automatically
+    virusTotalId: { type: String }, 
+{ timestamps: true }); // Adds createdAt and updatedAt automatically
 
 module.exports = mongoose.model('File', FileSchema);

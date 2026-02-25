@@ -36,21 +36,22 @@
                 <div class="action-row">
                     <% if (user) { %>
                         <form action="/files/<%= file._id %>/whitelist" method="POST" style="flex: 1; margin:0; display: contents;">
-                             <button type="submit" class="full-width-btn" style="border:none; font-family: 'Poppins', sans-serif; font-size: 1em;">
-                                <%= userHasWhitelisted ? '❤ In Wishlist' : '❤ Add to Wishlist' %>
-                            </button>
-                        </form>
-                        <button type="button" id="reportModalBtn" class="full-width-btn" style="border:none; font-family: 'Poppins', sans-serif; font-size: 1em;">
-                            ⚑ Report
-                        </button>
+    <button type="submit" class="full-width-btn" style="border-width: 1px; font-family: 'Poppins', sans-serif; font-size: 1em;">
+        <%= userHasWhitelisted ? '❤ In Wishlist' : '❤ Add to Wishlist' %>
+    </button>
+</form>
+
+<button type="button" id="reportModalBtn" class="full-width-btn" style="border-width: 1px; font-family: 'Poppins', sans-serif; font-size: 1em;">
+    ⚑ Report
+</button>
                     <% } else { %>
                         <a href="/login" class="full-width-btn">Login to Wishlist or Report</a>
                     <% } %>
                 </div>
 
-                <% if (file.virusTotalAnalysisId) { %>
-                    <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
-                <% } %>
+                <% if (file.virusTotalId) { %>
+    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
+<% } %>
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="full-width-btn">＋ Add New Version</a>

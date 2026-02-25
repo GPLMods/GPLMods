@@ -533,22 +533,29 @@ app.get('/download-file/:id', async (req, res) => {
     try {
         const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
         if (!file) {
-            return res.status(404).send("File not found.");
+            return res.status(404).render('pages/404');
+        }
+
+        // --- THE FIX: Check for the file key ---
+        const fileKey = file.fileKey || file.fileUrl; // Check for new 'fileKey' OR old 'fileUrl'
+
+        if (!fileKey) {
+            console.error(`File with ID ${file._id} has no fileKey or fileUrl in the database.`);
+            return res.status(500).send("File record is incomplete and cannot be downloaded.");
         }
 
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
-            Key: file.fileUrl, // The key we stored in the DB
-            ResponseContentDisposition: `attachment; filename="${file.originalFilename}"`
+            Key: fileKey, // Use the validated key
+            ResponseContentDisposition: `attachment; filename="${file.originalFilename || file.name}"`
         });
         
-        // The link is temporary, e.g., valid for 5 minutes
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
 
-        res.redirect(signedUrl); // Redirect the user to the temporary download link
+        res.redirect(signedUrl);
     } catch (e) {
         console.error("Download generation error:", e);
-        res.status(500).send("Download generation error.");
+        res.status(500).send("Could not generate download link.");
     }
 });
 
@@ -913,32 +920,59 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
         }
 
         // --- 1. UPLOAD ICONS/SCREENSHOTS (Handled by multer) ---
-        // This logic is correct: it takes the small files and uploads them.
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
         const screenshotKeys = [];
         for (const shot of screenshots) {
             screenshotKeys.push(await uploadToB2(shot, 'screenshots'));
         }
         
-        // --- 2. SUBMIT B2 URL OF THE LARGE FILE TO VIRUSTOTAL (unchanged) ---
-        // ... your VirusTotal logic ...
+        // --- 2. SUBMIT B2 URL TO VIRUSTOTAL & GET FINAL REPORT ---
         const filePublicUrlForScan = `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${fileKey}`;
-        let analysisId = null;
+        let finalVirusTotalId = null;
+        let scanDate, positiveCount, totalScans = null;
+
         try {
+            console.log("Submitting B2 URL to VirusTotal for analysis...");
             const vtUrlScanResponse = await axios.post('https://www.virustotal.com/api/v3/urls',
-                `url=${encodeURIComponent(filePublicUrlForScan)}`,
-                { 
-                    headers: { 
+                `url=${encodeURIComponent(filePublicUrlForScan)}`, {
+                    headers: {
                         'x-apikey': process.env.VIRUSTOTAL_API_KEY,
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    } 
+                    }
                 }
             );
-            analysisId = vtUrlScanResponse.data.data.id;
-        } catch (vtError) {
-            console.error("VT URL Scan Error:", vtError.response?.data);
-        }
 
+            // This is the temporary ID for the scan JOB
+            const analysisId = vtUrlScanResponse.data.data.id;
+            console.log(`File URL submitted. VirusTotal Analysis ID: ${analysisId}`);
+
+            // --- NOW, GET THE FINAL REPORT ---
+            // In a real high-traffic app, this would be a background job with retries.
+            console.log("Attempting to fetch final analysis report from VirusTotal...");
+            const vtReportResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
+
+            // The report gives us the permanent SHA-256 hash of the file
+            if (vtReportResponse.data.meta && vtReportResponse.data.meta.file_info) {
+                finalVirusTotalId = vtReportResponse.data.meta.file_info.sha256;
+                console.log(`Analysis complete. Permanent File ID (SHA-256): ${finalVirusTotalId}`);
+
+                // If the report is ready, process the stats too
+                if (vtReportResponse.data.data.attributes.status === 'completed') {
+                    const stats = vtReportResponse.data.data.attributes.stats;
+                    scanDate = new Date();
+                    positiveCount = stats.malicious + stats.suspicious;
+                    totalScans = stats.harmless + stats.malicious + stats.suspicious + stats.undetected;
+                }
+            } else {
+                console.log("VirusTotal scan is queued, but final file ID is not yet available.");
+            }
+
+        } catch (vtError) {
+            console.error("Error during VirusTotal processing:", vtError.response?.data || vtError.message);
+        }
+        
         // --- 3. SAVE TO MONGODB ---
         const newFile = new File({
             name: formData.modName,
@@ -955,11 +989,15 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
             uploader: req.user.username,
             fileSize: fileSize,
             originalFilename: originalFilename,
-            iconKey: iconKey, // Use iconKey
-            screenshotKeys: screenshotKeys, // Use screenshotKeys
-            fileKey: fileKey, // The key for the LARGE mod file
-            virusTotalAnalysisId: analysisId,
-            isLatestVersion: true
+            iconKey: iconKey,
+            screenshotKeys: screenshotKeys,
+            fileKey: fileKey,
+            isLatestVersion: true,
+            // Updated VirusTotal Fields
+            virusTotalId: finalVirusTotalId, // <-- SAVE THE CORRECT, PERMANENT ID
+            virusTotalScanDate: scanDate,
+            virusTotalPositiveCount: positiveCount,
+            virusTotalTotalScans: totalScans
         });
         await newFile.save();
 
