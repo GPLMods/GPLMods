@@ -51,12 +51,18 @@
                     <a href="/login" class="action-btn">Login to Interact</a>
                 <% } %>
 
-                <% if (file.virusTotalId) { %>
-                    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="action-btn">
-                        <i class="fas fa-shield-alt"></i>
-                        Check File Safety
-                    </a>
-                <% } %>
+                <!-- This new logic checks for either the permanent ID or the temporary one -->
+<% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
+    <% 
+        // Prioritize the correct, permanent ID if it exists
+        const vtId = file.virusTotalId; 
+        const vtUrl = `https://www.virustotal.com/gui/file/${vtId}`;
+    %>
+    <a href="<%= vtUrl %>" target="_blank" class="action-btn">
+        <i class="fas fa-shield-alt"></i>
+        Check File Safety
+    </a>
+<% } %>
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="action-btn">
