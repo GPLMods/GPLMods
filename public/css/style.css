@@ -242,6 +242,30 @@
             .policy-banner { flex-direction: row; justify-content: center; }
             .policy-buttons { margin-left: 20px; }
         }
+.action-btn {
+    display: flex; /* This aligns the icon and text */
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* This adds a nice space between the icon and the text */
+    text-align: center;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+    color: var(--silver);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 1px solid #444; /* Added the border back */
+    width: 100%;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background-color: var(--light-gray);
+    color: var(--gold);
+}
 /* Footer Social Icons
 -------------------------------------------------- */
 .social-icons {

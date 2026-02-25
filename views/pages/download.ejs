@@ -32,31 +32,42 @@
                 Download (<%= (file.fileSize / (1024 * 1024)).toFixed(1) %> MB)
             </a>
             
+            <!-- ============================ -->
+            <!-- Updated Action Buttons Start -->
+            <!-- ============================ -->
             <div class="action-buttons">
-                <div class="action-row">
-                    <% if (user) { %>
-                        <form action="/files/<%= file._id %>/whitelist" method="POST" style="flex: 1; margin:0; display: contents;">
-    <button type="submit" class="full-width-btn" style="border-width: 1px; font-family: 'Poppins', sans-serif; font-size: 1em;">
-        <%= userHasWhitelisted ? '❤ In Wishlist' : '❤ Add to Wishlist' %>
-    </button>
-</form>
-
-<button type="button" id="reportModalBtn" class="full-width-btn" style="border-width: 1px; font-family: 'Poppins', sans-serif; font-size: 1em;">
-    ⚑ Report
-</button>
-                    <% } else { %>
-                        <a href="/login" class="full-width-btn">Login to Wishlist or Report</a>
-                    <% } %>
-                </div>
+                <% if (user) { %>
+                    <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin:0;">
+                        <button type="submit" class="action-btn">
+                            <i class="fas fa-heart"></i>
+                            <%= userHasWhitelisted ? 'In Wishlist' : 'Add to Wishlist' %>
+                        </button>
+                    </form>
+                    <button type="button" id="reportModalBtn" class="action-btn">
+                        <i class="fas fa-flag"></i>
+                        Report File
+                    </button>
+                <% } else { %>
+                    <a href="/login" class="action-btn">Login to Interact</a>
+                <% } %>
 
                 <% if (file.virusTotalId) { %>
-    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="full-width-btn">Check File Safety Status</a>
-<% } %>
+                    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="action-btn">
+                        <i class="fas fa-shield-alt"></i>
+                        Check File Safety
+                    </a>
+                <% } %>
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
-                    <a href="/mods/<%= file._id %>/add-version" class="full-width-btn">＋ Add New Version</a>
+                    <a href="/mods/<%= file._id %>/add-version" class="action-btn">
+                        <i class="fas fa-plus"></i>
+                        Add New Version
+                    </a>
                 <% } %>
             </div>
+            <!-- ============================ -->
+            <!--  Updated Action Buttons End  -->
+            <!-- ============================ -->
 
             <ul class="meta-info">
                 <li>Version: <span><%= file.version %></span></li>
