@@ -94,18 +94,6 @@
         .mobile-nav .has-submenu.open .sub-menu { max-height: 250px; } /* Adjust as needed */
         .mobile-nav .sub-menu li { margin-bottom: 12px; font-size: 0.9em; }
 
-        /* --- New Music Player in Sidebar --- */
-        .music-player {
-            padding: 15px; margin: 20px -20px; background-color: rgba(0,0,0,0.2);
-            text-align: center; color: var(--silver);
-        }
-        #track-name { font-weight: 600; display: block; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .music-controls button {
-            background: none; border: none; color: var(--silver); font-size: 1.5em;
-            cursor: pointer; margin: 0 10px; transition: color 0.3s ease;
-        }
-        .music-controls button:hover { color: var(--gold); }
-
         /* --- Hero Section (Now just a spacer) --- */
         .hero { padding: 20px 0 0 0; }
         
@@ -308,7 +296,7 @@
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1001; /* Above most content, but below modals */
+    z-index: 9990; /* Above most content, but below modals */
 
     display: flex;
     align-items: center;

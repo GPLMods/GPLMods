@@ -901,79 +901,26 @@ app.get('/upload-details', ensureAuthenticated, (req, res) => {
 });
 
 
-// Step 2 of upload - Client finalizes the upload with metadata
+// =========================================================
+// ========= START: UPDATED /upload-finalize ROUTE =========
+// =========================================================
 app.post('/upload-finalize', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
 ]), async (req, res) => {
+    let newFileId = null; // To hold the ID of the newly created file
+
     try {
-        // ... screenshot validation check ...
-
-        // Destructures the hidden input fields from the form
-        const { fileKey, originalFilename, fileSize, ...formData } = req.body; 
+        // ... (your existing file validation, destructuring, and icon/screenshot uploads are fine)
+        const { fileKey, originalFilename, fileSize, ...formData } = req.body;
+        const { softwareIcon, screenshots } = req.files;
+        if (!fileKey || !softwareIcon || !screenshots ) return res.status(400).json({ error: 'Missing file key or icon/screenshots.' });
         
-        // Destructures the icon and screenshots uploaded with this form
-        const { softwareIcon, screenshots } = req.files; 
-
-        if (!fileKey || !softwareIcon || !screenshots ) {
-             return res.status(400).json({ error: 'Missing main file key or icon/screenshots.' });
-        }
-
-        // --- 1. UPLOAD ICONS/SCREENSHOTS (Handled by multer) ---
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
-        const screenshotKeys = [];
-        for (const shot of screenshots) {
-            screenshotKeys.push(await uploadToB2(shot, 'screenshots'));
-        }
+        const screenshotKeys = await Promise.all(screenshots.map(shot => uploadToB2(shot, 'screenshots')));
         
-        // --- 2. SUBMIT B2 URL TO VIRUSTOTAL & GET FINAL REPORT ---
-        const filePublicUrlForScan = `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${fileKey}`;
-        let finalVirusTotalId = null;
-        let scanDate, positiveCount, totalScans = null;
-
-        try {
-            console.log("Submitting B2 URL to VirusTotal for analysis...");
-            const vtUrlScanResponse = await axios.post('https://www.virustotal.com/api/v3/urls',
-                `url=${encodeURIComponent(filePublicUrlForScan)}`, {
-                    headers: {
-                        'x-apikey': process.env.VIRUSTOTAL_API_KEY,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }
-            );
-
-            // This is the temporary ID for the scan JOB
-            const analysisId = vtUrlScanResponse.data.data.id;
-            console.log(`File URL submitted. VirusTotal Analysis ID: ${analysisId}`);
-
-            // --- NOW, GET THE FINAL REPORT ---
-            // In a real high-traffic app, this would be a background job with retries.
-            console.log("Attempting to fetch final analysis report from VirusTotal...");
-            const vtReportResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
-                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
-            });
-
-            // The report gives us the permanent SHA-256 hash of the file
-            if (vtReportResponse.data.meta && vtReportResponse.data.meta.file_info) {
-                finalVirusTotalId = vtReportResponse.data.meta.file_info.sha256;
-                console.log(`Analysis complete. Permanent File ID (SHA-256): ${finalVirusTotalId}`);
-
-                // If the report is ready, process the stats too
-                if (vtReportResponse.data.data.attributes.status === 'completed') {
-                    const stats = vtReportResponse.data.data.attributes.stats;
-                    scanDate = new Date();
-                    positiveCount = stats.malicious + stats.suspicious;
-                    totalScans = stats.harmless + stats.malicious + stats.suspicious + stats.undetected;
-                }
-            } else {
-                console.log("VirusTotal scan is queued, but final file ID is not yet available.");
-            }
-
-        } catch (vtError) {
-            console.error("Error during VirusTotal processing:", vtError.response?.data || vtError.message);
-        }
-        
-        // --- 3. SAVE TO MONGODB ---
+        // --- 1. SAVE TO MONGODB FIRST ---
+        // The file now has a 'pending' status by default from the model.
         const newFile = new File({
             name: formData.modName,
             version: formData.modVersion,
@@ -993,21 +940,50 @@ app.post('/upload-finalize', ensureAuthenticated, upload.fields([
             screenshotKeys: screenshotKeys,
             fileKey: fileKey,
             isLatestVersion: true,
-            // Updated VirusTotal Fields
-            virusTotalId: finalVirusTotalId, // <-- SAVE THE CORRECT, PERMANENT ID
-            virusTotalScanDate: scanDate,
-            virusTotalPositiveCount: positiveCount,
-            virusTotalTotalScans: totalScans
         });
         await newFile.save();
+        newFileId = newFile._id; // Save the ID for the response
 
-        res.status(201).json({ message: 'Upload finalized successfully.', fileId: newFile._id });
+        // --- 2. RESPOND TO THE USER IMMEDIATELY ---
+        // The user's upload is complete from their perspective.
+        res.status(201).json({ message: 'Upload submitted for review!', fileId: newFileId });
+
+        // --- 3. RUN VIRUSTOTAL SCAN IN THE BACKGROUND (FIRE-AND-FORGET) ---
+        // This code will run after the response has been sent to the user.
+        console.log(`Starting background VirusTotal scan for file ID: ${newFileId}`);
+        const filePublicUrlForScan = `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${fileKey}`;
+
+        (async () => {
+            try {
+                const vtUrlScanResponse = await axios.post('https://www.virustotal.com/api/v3/urls',
+                    `url=${encodeURIComponent(filePublicUrlForScan)}`,
+                    { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, 'Content-Type': 'application/x-www-form-urlencoded' } }
+                );
+                const analysisId = vtUrlScanResponse.data.data.id;
+
+                // We won't wait for the final report here. An admin can check the status later,
+                // or you could build a more advanced system with webhooks from VirusTotal.
+                
+                // Update the file in the database with the temporary analysis ID.
+                await File.findByIdAndUpdate(newFileId, { virusTotalAnalysisId: analysisId });
+                console.log(`VirusTotal analysis ID ${analysisId} saved for file ${newFileId}`);
+
+            } catch (vtError) {
+                console.error(`Background VirusTotal scan failed for file ${newFileId}:`, vtError.response?.data);
+            }
+        })(); // Immediately invoke the async function
 
     } catch (error) {
         console.error("Finalize upload error:", error);
-        res.status(500).json({ error: 'Server failed to finalize upload.' });
+        // We check if a response has already been sent to avoid crashing
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Server failed to finalize upload.' });
+        }
     }
 });
+// =======================================================
+// ========= END: UPDATED /upload-finalize ROUTE =========
+// =======================================================
 
 // ===================================
 // 11. API ROUTES

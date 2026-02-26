@@ -49,8 +49,12 @@
                                         <div class="download-overlay">
                                             <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary">View Mod</a>
                                             <% if (user) { %>
-                                             <a href="/files/<%= file._id %>/whitelist" class="overlay-button overlay-btn-secondary">Add to Whitelist</a>
-                                            <% } %>
+<form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%;">
+    <button type="submit" class="overlay-button overlay-btn-secondary">
+        Add to Whitelist
+    </button>
+</form>
+                                           <% } %>
                                         </div>
                                     </div>
                                 </a>
