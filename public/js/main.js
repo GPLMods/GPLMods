@@ -401,7 +401,7 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. ANIMATED FOOTER MUSIC PLAYER (with Custom SVG Icons)
+ * 8. ANIMATED FOOTER MUSIC PLAYER (with Minimize/Maximize)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -410,8 +410,9 @@ function initializeMusicPlayer() {
     const playPauseBtn = document.getElementById('footer-play-pause-btn');
     const prevBtn = document.getElementById('footer-prev-btn');
     const nextBtn = document.getElementById('footer-next-btn');
+    const toggleBtn = document.getElementById('player-toggle-btn');
     
-    if (!playerContainer || !playPauseBtn) return; // Safety check
+    if (!playerContainer || !playPauseBtn || !toggleBtn) return; // Safety check
 
     // --- SVG Icons ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
@@ -473,18 +474,35 @@ function initializeMusicPlayer() {
         nextBtn.click();
     });
 
+    // --- NEW: Toggle Button Logic ---
+    toggleBtn.addEventListener('click', () => {
+        playerContainer.classList.toggle('minimized');
+        
+        // Save the state to localStorage
+        if (playerContainer.classList.contains('minimized')) {
+            localStorage.setItem('musicPlayerState', 'minimized');
+        } else {
+            localStorage.setItem('musicPlayerState', 'maximized');
+        }
+    });
+
     // --- Initialize on Page Load ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
     
     loadTrack(trackIndex);
+
+    // NEW: Check for saved minimized/maximized state
+    if (localStorage.getItem('musicPlayerState') === 'minimized') {
+        playerContainer.classList.add('minimized');
+    }
     
     // Make the player visible after a short delay
     setTimeout(() => {
         playerContainer.classList.add('visible');
     }, 500);
 
-    // Set initial icon state
+    // Set initial icon state / If the last state was 'playing', try to resume
     if (localStorage.getItem('musicState') === 'playing') {
         playTrack();
     } else {

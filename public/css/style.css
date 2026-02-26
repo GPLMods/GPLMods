@@ -420,6 +420,56 @@
 .player-controls button:hover {
     color: var(--gold);
 }
+    /* Add this transition to make the height change smooth */
+    transition: opacity 0.5s ease, transform 0.5s ease, height 0.4s ease-in-out, padding 0.4s ease-in-out;
+}
+
+/* NEW: The wrapper for the content that will be hidden */
+.player-main-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    transition: opacity 0.3s ease;
+}
+
+/* NEW: The toggle button itself */
+.player-toggle-btn {
+    position: absolute;
+    top: -25px; /* Position it just above the player bar */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    background-color: var(--dark-gray);
+    border: 1px solid #333;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 2px 10px;
+    cursor: pointer;
+    z-index: -1; /* Place it behind the player by default */
+}
+.player-toggle-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--silver);
+    transition: transform 0.4s ease;
+}
+
+/* --- THE MINIMIZED STATE --- */
+.footer-music-player.minimized {
+    /* When minimized, shrink the player */
+    height: 20px;
+    padding: 0;
+}
+.footer-music-player.minimized .player-main-content {
+    /* Hide the content inside */
+    opacity: 0;
+    visibility: hidden;
+}
+.footer-music-player.minimized .player-toggle-btn svg {
+    /* Flip the arrow upside down */
+    transform: rotate(180deg);
+}
 
 /* --- START OF ABOUT PAGE NEW STYLES --- */
 
@@ -1146,7 +1196,7 @@
         .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
         .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
-        .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
+        .stars-outer::before { content: "★★★★★"; color: #555; }
         .stars-inner::before { content: "★★★★★"; color: var(--gold); }
         .rating-text { color: var(--silver); font-size: 1em; font-weight: 600; }
 
