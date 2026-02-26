@@ -100,22 +100,23 @@
 
         /* Google Button - Matches Sign Up */
 
-/* Custom Google Sign-In Button
+/* Custom Google Sign-In Button (Ghost Style)
 -------------------------------------------------- */
 .google-signin-btn {
-    display: flex; /* Use flexbox to align icon and text */
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px; /* Space between icon and text */
+    gap: 12px;
     
     width: 100%;
     padding: 12px;
     margin-bottom: 1.5rem;
     
-    background-color: #4285F4; /* Google Blue */
-    color: var(--white);
+    /* --- The "Ghost Button" Style --- */
+    background-color: transparent; /* Transparent background */
+    border: 2px solid var(--silver); /* Silver border */
+    color: var(--silver);           /* Silver text */
     
-    border: none;
     border-radius: 8px;
     font-size: 1.1em;
     font-weight: 600;
@@ -123,19 +124,27 @@
     
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
+/* --- Hover Effect: Fill with Gold --- */
 .google-signin-btn:hover {
-    background-color: #357ae8; /* A slightly darker blue on hover */
+    background-color: var(--gold);
+    border-color: var(--gold);
+    color: var(--black); /* Black text on hover for contrast */
+    box-shadow: 0 0 15px var(--glow-gold);
 }
 
+/* --- Specific Icon Styling --- */
+/* This selector is now more specific, so it won't affect footer icons */
 .google-signin-btn .google-icon {
     width: 24px;
     height: 24px;
-    background-color: var(--white); /* White background for the icon */
-    border-radius: 50%; /* Make the icon background circular */
-    padding: 2px; /* Small padding inside the circle */
+}
+
+/* Change icon color on hover to match the text */
+.google-signin-btn:hover .google-icon path {
+    fill: var(--black);
 }
 
         .form-switch { text-align: center; margin-top: 25px; color: var(--silver); font-size: 0.9em; }
@@ -194,12 +203,10 @@
 
             <!-- Google Login Link -->
             <a href="/auth/google" class="google-signin-btn">
-    <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-        <path fill="#1976D2" d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.978,36.316,44,30.659,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-    </svg>
+    <!-- This SVG is a single shape that will inherit its color -->
+<svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,11.63 21.95,11.36 21.89,11.1H21.35Z"/>
+</svg>
     <span>Continue with Google</span>
 </a>
 
