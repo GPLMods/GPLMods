@@ -301,6 +301,104 @@
     /* This can often help reset styles if the 'a' tag isn't enough */
 }
 
+/* Footer Music Player
+-------------------------------------------------- */
+.footer-music-player {
+    position: fixed;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001; /* Above most content, but below modals */
+
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    
+    background-color: rgba(26, 26, 26, 0.9); /* var(--dark-gray) with transparency */
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(10px);
+    
+    padding: 8px;
+    border-radius: 50px; /* Pill shape */
+    border: 1px solid #333;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    
+    width: 90%;
+    max-width: 350px;
+    
+    /* Animation for appearing */
+    opacity: 0;
+    transform: translate(-50%, 20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.footer-music-player.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.album-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.vinyl-record {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #333, #111);
+    border: 2px solid #444;
+    position: relative;
+    transition: transform 1s linear;
+}
+.vinyl-record::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background-color: var(--gold);
+    border-radius: 50%;
+}
+/* Spinning animation when playing */
+.footer-music-player.playing .vinyl-record {
+    animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.track-info {
+    flex-grow: 1;
+    overflow: hidden; /* For the marquee effect */
+    white-space: nowrap;
+}
+.track-title {
+    color: var(--silver);
+    font-weight: 500;
+}
+
+.player-controls button {
+    background: none;
+    border: none;
+    color: var(--silver);
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+.player-controls button:hover {
+    color: var(--gold);
+}
+
 /* --- START OF ABOUT PAGE NEW STYLES --- */
 
 :root {

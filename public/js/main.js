@@ -399,25 +399,20 @@ function initializeMobileMenu() {
     });
 }
 
- /**
+/**
  * ==================================================================================
- * 8. BACKGROUND MUSIC PLAYER CONTROLS (UNIFIED & CORRECTED)
- * This version is self-contained and matches the new header.ejs sidebar player.
+ * 8. ANIMATED FOOTER MUSIC PLAYER
  * ==================================================================================
  */
 function initializeMusicPlayer() {
-    // --- Find the UI elements in the sidebar ---
-    const trackNameDisplay = document.getElementById('track-name');
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    const prevTrackBtn = document.getElementById('prev-track-btn');
-    const nextTrackBtn = document.getElementById('next-track-btn');
+    const playerContainer = document.getElementById('footer-player');
+    const trackTitleDisplay = document.getElementById('footer-track-title');
+    const playPauseBtn = document.getElementById('footer-play-pause-btn');
+    const prevBtn = document.getElementById('footer-prev-btn');
+    const nextBtn = document.getElementById('footer-next-btn');
+    
+    if (!playerContainer || !playPauseBtn) return; // Safety check
 
-    // If these elements don't exist (i.e., we're not on a page with the sidebar), stop.
-    if (!trackNameDisplay || !playPauseBtn || !prevTrackBtn || !nextTrackBtn) {
-        return;
-    }
-
-    // --- Define the playlist with correct absolute paths ---
     const playlist = [
         { title: 'NCS 1', src: '/audio/bgm-1.mp3' },
         { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
@@ -427,70 +422,65 @@ function initializeMusicPlayer() {
         { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
     ];
     
-    // --- Create a single, global audio object ---
     const audio = new Audio();
-    // audio.loop = true; // Loop is removed to allow advancing to the next track
-    audio.volume = 0.25; // Set a comfortable default volume
-
+    audio.volume = 0.25;
     let trackIndex = 0;
 
-    // --- Core Functions ---
     function loadTrack(index) {
+        if (!playlist[index]) return;
         audio.src = playlist[index].src;
-        trackNameDisplay.textContent = playlist[index].title;
-        localStorage.setItem('musicTrackIndex', index); // Save the current track index
+        trackTitleDisplay.textContent = playlist[index].title;
+        localStorage.setItem('musicTrackIndex', index);
     }
 
     function playTrack() {
-        audio.play().catch(e => console.warn("Browser prevented autoplay. User must interact first."));
+        audio.play().catch(e => console.warn("Browser prevented autoplay."));
         playPauseBtn.textContent = '⏸️';
+        playerContainer.classList.add('playing'); // Add class for spin animation
         localStorage.setItem('musicState', 'playing');
     }
 
     function pauseTrack() {
         audio.pause();
         playPauseBtn.textContent = '▶️';
+        playerContainer.classList.remove('playing'); // Remove class to stop spin
         localStorage.setItem('musicState', 'paused');
     }
 
-    // --- Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
-        if (audio.paused) {
-            playTrack();
-        } else {
-            pauseTrack();
-        }
+        if (audio.paused) playTrack();
+        else pauseTrack();
     });
 
-    nextTrackBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', () => {
         trackIndex = (trackIndex + 1) % playlist.length;
-        loadTrack(trackIndex);
-        playTrack(); // Automatically play the next track
-    });
-
-    prevTrackBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
-        loadTrack(trackIndex);
-        playTrack(); // Automatically play the previous track
-    });
-    
-    // --- ADDED: When the current song finishes, automatically play the next one. ---
-    audio.addEventListener('ended', () => {
-        console.log("Track ended, playing next...");
-        trackIndex = (trackIndex + 1) % playlist.length;
-        localStorage.setItem('musicTrackIndex', trackIndex);
         loadTrack(trackIndex);
         playTrack();
     });
 
+    prevBtn.addEventListener('click', () => {
+        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+        loadTrack(trackIndex);
+        playTrack();
+    });
+
+    audio.addEventListener('ended', () => {
+        // Automatically play the next track
+        nextBtn.click();
+    });
+
     // --- Initialize on Page Load ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex) {
-        trackIndex = parseInt(savedTrackIndex, 10);
-    }
+    if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
+    
     loadTrack(trackIndex);
+    
+    // Make the player visible after a short delay
+    setTimeout(() => {
+        playerContainer.classList.add('visible');
+    }, 500);
 
-    // Check if the music should be playing from the last session
+    // If the last state was 'playing', try to resume
     if (localStorage.getItem('musicState') === 'playing') {
         playTrack();
     }
