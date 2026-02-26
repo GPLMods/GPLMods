@@ -2346,7 +2346,8 @@ input[type="file"] {
 -------------------------------------------------------------------- */
 .edit-profile-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* UPDATED: Default to a single column for a mobile-first approach */
+    grid-template-columns: 1fr;
     gap: 40px;
     align-items: flex-start;
     max-width: 1000px;
@@ -2367,12 +2368,47 @@ input[type="file"] {
     padding-bottom: 10px;
 }
 
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--silver);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: var(--black);
+    color: var(--white);
+    font-size: 1em;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 10px var(--glow-gold);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
 .email-note {
     font-size: 0.9em;
     color: var(--silver);
     margin-top: 10px;
 }
 
+/* Avatar and Profile Actions */
 .avatar-section {
     text-align: center;
 }
@@ -2430,6 +2466,27 @@ input[type="file"] {
     gap: 10px;
 }
 
+/* Buttons */
+.submit-button {
+    display: block;
+    width: 100%;
+    background: var(--gold);
+    color: var(--black);
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px var(--glow-gold);
+}
+
+.submit-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px var(--glow-gold);
+}
+
 .secondary-button {
     background: var(--silver);
     color: var(--black);
@@ -2442,8 +2499,10 @@ input[type="file"] {
     box-shadow: 0 0 25px var(--glow-silver);
 }
 
+/* Danger Zone */
 .danger-zone {
     margin-top: 40px;
+    /* This will automatically span the full width in a single-column grid */
     grid-column: 1 / -1;
     border: 2px solid var(--red);
 }
@@ -2481,6 +2540,14 @@ input[type="file"] {
 
 .checkbox-group label {
     margin-bottom: 0;
+}
+
+/* NEW: Media query for larger screens */
+@media (min-width: 992px) {
+    .edit-profile-layout {
+        /* Switch back to two columns on desktops */
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 
