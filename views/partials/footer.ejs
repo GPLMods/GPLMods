@@ -31,7 +31,7 @@
     </footer>
 
     <!-- ======== NEW UNIFIED POLICY MODAL ======== -->
-    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;">
+    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
 <!-- The semi-transparent background overlay -->
 <div class="policy-modal-background" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);"></div>
 <!-- The content that sits on top of the overlay -->
@@ -56,11 +56,17 @@
     <div class="track-info">
         <div class="track-title" id="footer-track-title">No track selected</div>
     </div>
-    <div class="player-controls">
-        <button id="footer-prev-btn" title="Previous">⏪</button>
-        <button id="footer-play-pause-btn" title="Play/Pause">▶️</button>
-        <button id="footer-next-btn" title="Next">⏩</button>
-    </div>
+    <<div class="player-controls">
+    <button id="footer-prev-btn" title="Previous">
+        <svg class="player-icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+    </button>
+    <button id="footer-play-pause-btn" title="Play/Pause">
+        <!-- The content of this button will be changed by JavaScript -->
+    </button>
+    <button id="footer-next-btn" title="Next">
+        <svg class="player-icon" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6z"></path></svg>
+    </button>
+</div>
 </div>
 </body>
 </html>

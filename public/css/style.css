@@ -337,6 +337,28 @@
     transform: translate(-50%, 0);
 }
 
+.player-controls button {
+    background: none;
+    border: none;
+    color: var(--silver); /* This now acts as a fallback */
+    font-size: 1.5em; /* This is no longer needed but is harmless */
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.3s ease;
+    padding: 5px; /* Add some padding for a better click area */
+    line-height: 0; /* Important for aligning SVGs */
+}
+.player-controls button:hover {
+    color: var(--gold);
+    transform: scale(1.1);
+}
+
+/* --- NEW SVG STYLES --- */
+.player-icon {
+    width: 28px;
+    height: 28px;
+    fill: currentColor; /* This makes the SVG take the color of its parent button */
+}
+
 .album-art {
     width: 40px;
     height: 40px;

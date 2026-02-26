@@ -401,7 +401,7 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. ANIMATED FOOTER MUSIC PLAYER
+ * 8. ANIMATED FOOTER MUSIC PLAYER (with Custom SVG Icons)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -412,6 +412,10 @@ function initializeMusicPlayer() {
     const nextBtn = document.getElementById('footer-next-btn');
     
     if (!playerContainer || !playPauseBtn) return; // Safety check
+
+    // --- SVG Icons ---
+    const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
+    const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
     const playlist = [
         { title: 'NCS 1', src: '/audio/bgm-1.mp3' },
@@ -435,14 +439,14 @@ function initializeMusicPlayer() {
 
     function playTrack() {
         audio.play().catch(e => console.warn("Browser prevented autoplay."));
-        playPauseBtn.textContent = '⏸️';
+        playPauseBtn.innerHTML = pauseIconSVG; // Use pause icon when playing
         playerContainer.classList.add('playing'); // Add class for spin animation
         localStorage.setItem('musicState', 'playing');
     }
 
     function pauseTrack() {
         audio.pause();
-        playPauseBtn.textContent = '▶️';
+        playPauseBtn.innerHTML = playIconSVG; // Use play icon when paused
         playerContainer.classList.remove('playing'); // Remove class to stop spin
         localStorage.setItem('musicState', 'paused');
     }
@@ -480,9 +484,11 @@ function initializeMusicPlayer() {
         playerContainer.classList.add('visible');
     }, 500);
 
-    // If the last state was 'playing', try to resume
+    // Set initial icon state
     if (localStorage.getItem('musicState') === 'playing') {
         playTrack();
+    } else {
+        pauseTrack(); // This will correctly set the initial play icon
     }
 }
 
