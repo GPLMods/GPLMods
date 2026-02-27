@@ -20,23 +20,20 @@
 
 // 1. Waits for the entire HTML document to be loaded and parsed
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     const runInitializers = async () => {
         try {
-            initializeMobileMenu(); 
+            initializeMobileMenu();
             initializeStarRatings();
-            
-            // --- ADD THE NEW FUNCTION CALL HERE ---
-            initializeHomepageTabs(); 
-
-            initializeMusicPlayer(); 
+            initializeHomepageTabs();
+            // initializeMusicPlayer(); // <-- This is now controlled by the policy banner
             initializeSmartAudioHandler();
-            
-            // --- ADD THIS NEW FUNCTION CALL ---
+
+            // --- Let the policy banner control the music player ---
             initializePolicyBanner();
-        
+
             await initializeSearchBar();
-            
+
         } catch (error) {
             console.error("An error occurred during page initialization:", error);
         }
@@ -53,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initializeHomepageTabs() {
     const mainTabNav = document.getElementById('main-tabs-nav');
-    
+
     // --- Important: Only run this code if we are on the homepage ---
     // This prevents errors on other pages that don't have these elements.
     if (!mainTabNav) {
@@ -85,14 +82,14 @@ function initializeHomepageTabs() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetTabId = button.dataset.tab;
-            
+
             // --- Update button active state ---
             tabButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
+
             // --- Animate the highlight ---
             moveHighlight(button);
-            
+
             // --- Show/Hide the correct content section ---
             allTabContents.forEach(content => {
                 if (content.id === `${targetTabId}-mods`) {
@@ -101,9 +98,13 @@ function initializeHomepageTabs() {
                     content.classList.remove('active');
                 }
             });
-            
+
             // Scroll the tabs into view if they are off-screen on mobile
-            button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            button.scrollIntoView({
+                behavior: 'smooth',
+                inline: 'center',
+                block: 'nearest'
+            });
         });
     });
 
@@ -164,16 +165,16 @@ async function initializeSearchBar() {
     }
 
     searchInput.addEventListener('focus', () => {
-        if(searchBar) searchBar.classList.add('active');
+        if (searchBar) searchBar.classList.add('active');
         displaySearchHistory();
     });
 
     searchInput.addEventListener('blur', () => {
         setTimeout(() => {
             if (!suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
-                 if(searchBar) searchBar.classList.remove('active');
-                 suggestionsBox.style.display = 'none';
-                 searchHistoryBox.style.display = 'none';
+                if (searchBar) searchBar.classList.remove('active');
+                suggestionsBox.style.display = 'none';
+                searchHistoryBox.style.display = 'none';
             }
         }, 200);
     });
@@ -204,7 +205,10 @@ async function initializeSearchBar() {
     }
 
     const themeColors = ["var(--gold)", "var(--silver)"];
-    let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false;
+    let termIndex = 0,
+        letterIndex = 0,
+        currentTerm = '',
+        isDeleting = false;
     let typingTimeout;
 
     function typeAnimation() {
@@ -252,9 +256,9 @@ async function initializeSearchBar() {
             typeAnimation();
         }
     });
-    
+
     const searchForm = searchBar.querySelector('form');
-    if(searchForm) {
+    if (searchForm) {
         searchForm.addEventListener('submit', () => {
             const query = searchInput.value.trim();
             if (query) saveSearchTerm(query);
@@ -401,7 +405,7 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. ANIMATED FOOTER MUSIC PLAYER (with Minimize/Maximize)
+ * 8. ANIMATED FOOTER MUSIC PLAYER (with Playback Persistence)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -411,22 +415,36 @@ function initializeMusicPlayer() {
     const prevBtn = document.getElementById('footer-prev-btn');
     const nextBtn = document.getElementById('footer-next-btn');
     const toggleBtn = document.getElementById('player-toggle-btn');
-    
-    if (!playerContainer || !playPauseBtn || !toggleBtn) return; // Safety check
+
+    if (!playerContainer || !playPauseBtn || !toggleBtn) return;
 
     // --- SVG Icons ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
-    const playlist = [
-        { title: 'NCS 1', src: '/audio/bgm-1.mp3' },
-        { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
-        { title: 'NCS 3', src: '/audio/bgm-3.mp3' },
-        { title: 'NCS 4', src: '/audio/bgm-4.mp3' },
-        { title: 'NCS 5', src: '/audio/bgm-5.mp3' },
-        { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
-    ];
-    
+    const playlist = [{
+        title: 'CJ Whoopty',
+        src: '/audio/bgm-1.mp3'
+    }, {
+        title: 'NCS 2',
+        src: '/audio/bgm-2.mp3'
+    }, {
+        title: 'NCS 3',
+        src: '/audio/bgm-3.mp3'
+    }, {
+        title: 'NCS 4',
+        src: '/audio/bgm-4.mp3'
+    }, {
+        title: 'NCS 5',
+        src: '/audio/bgm-5.mp3'
+    }, {
+        title: 'NCS 6',
+        src: '/audio/bgm-6.mp3'
+    }, {
+        title: 'NCS 7',
+        src: '/audio/bgm-7.mp3'
+    }, ];
+
     const audio = new Audio();
     audio.volume = 0.25;
     let trackIndex = 0;
@@ -439,10 +457,14 @@ function initializeMusicPlayer() {
     }
 
     function playTrack() {
-        audio.play().catch(e => console.warn("Browser prevented autoplay."));
-        playPauseBtn.innerHTML = pauseIconSVG; // Use pause icon when playing
-        playerContainer.classList.add('playing'); // Add class for spin animation
-        localStorage.setItem('musicState', 'playing');
+        audio.play().then(() => {
+            playPauseBtn.innerHTML = pauseIconSVG; // Use pause icon when playing
+            playerContainer.classList.add('playing'); // Add class for spin animation
+            localStorage.setItem('musicState', 'playing');
+        }).catch(e => {
+            console.warn("Browser prevented autoplay.");
+            pauseTrack(); // If play fails, ensure state is paused
+        });
     }
 
     function pauseTrack() {
@@ -470,15 +492,18 @@ function initializeMusicPlayer() {
     });
 
     audio.addEventListener('ended', () => {
-        // Automatically play the next track
         nextBtn.click();
     });
 
-    // --- NEW: Toggle Button Logic ---
+    // --- NEW: SAVE CURRENT TIME PERIODICALLY ---
+    audio.addEventListener('timeupdate', () => {
+        if (!audio.paused) { // Only save while it's actively playing
+            localStorage.setItem('musicCurrentTime', audio.currentTime);
+        }
+    });
+
     toggleBtn.addEventListener('click', () => {
         playerContainer.classList.toggle('minimized');
-        
-        // Save the state to localStorage
         if (playerContainer.classList.contains('minimized')) {
             localStorage.setItem('musicPlayerState', 'minimized');
         } else {
@@ -486,29 +511,42 @@ function initializeMusicPlayer() {
         }
     });
 
-    // --- Initialize on Page Load ---
+    // --- Initialize on Page Load (UPGRADED LOGIC) ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
-    
+    if (savedTrackIndex) {
+        trackIndex = parseInt(savedTrackIndex, 10);
+    }
     loadTrack(trackIndex);
 
-    // NEW: Check for saved minimized/maximized state
+    // Make the player visible
+    playerContainer.classList.add('visible');
+
+    // Check for saved minimized/maximized state
     if (localStorage.getItem('musicPlayerState') === 'minimized') {
         playerContainer.classList.add('minimized');
     }
-    
-    // Make the player visible after a short delay
-    setTimeout(() => {
-        playerContainer.classList.add('visible');
-    }, 500);
 
-    // Set initial icon state / If the last state was 'playing', try to resume
-    if (localStorage.getItem('musicState') === 'playing') {
-        playTrack();
+    const savedState = localStorage.getItem('musicState');
+    const savedTime = localStorage.getItem('musicCurrentTime');
+
+    if (savedState === 'playing') {
+        // If there's a saved time from the last page, start from there.
+        if (savedTime) {
+            // Wait for the audio metadata to load before setting the time
+            audio.addEventListener('loadedmetadata', () => {
+                audio.currentTime = parseFloat(savedTime);
+                playTrack();
+            }, {
+                once: true
+            }); // This listener runs only once
+        } else {
+            playTrack(); // If no saved time, just play from beginning
+        }
     } else {
-        pauseTrack(); // This will correctly set the initial play icon
+        pauseTrack(); // This correctly sets the initial play icon
     }
 }
+
 
 /**
  * ==================================================================================
@@ -529,15 +567,15 @@ function initializeSmartAudioHandler() {
         player.addEventListener('mouseenter', () => {
             if (!backgroundAudio.paused) {
                 // Save a "flag" on the element so we know to resume it later
-                backgroundAudio.dataset.wasPlaying = 'true'; 
+                backgroundAudio.dataset.wasPlaying = 'true';
                 backgroundAudio.pause();
-                
+
                 // Optional: Update the play/pause buttons visually
                 const playBtn = document.getElementById('play-music-btn-mobile');
                 const pauseBtn = document.getElementById('pause-music-btn-mobile');
-                if(playBtn && pauseBtn) {
-                     playBtn.style.display = 'block';
-                     pauseBtn.style.display = 'none';
+                if (playBtn && pauseBtn) {
+                    playBtn.style.display = 'block';
+                    pauseBtn.style.display = 'none';
                 }
             }
         });
@@ -547,13 +585,13 @@ function initializeSmartAudioHandler() {
             if (backgroundAudio.dataset.wasPlaying === 'true') {
                 backgroundAudio.play().catch(e => console.log("Resume failed:", e));
                 backgroundAudio.dataset.wasPlaying = 'false'; // Reset flag
-                
+
                 // Update buttons back to "Playing" state
                 const playBtn = document.getElementById('play-music-btn-mobile');
                 const pauseBtn = document.getElementById('pause-music-btn-mobile');
-                if(playBtn && pauseBtn) {
-                     playBtn.style.display = 'none';
-                     pauseBtn.style.display = 'block';
+                if (playBtn && pauseBtn) {
+                    playBtn.style.display = 'none';
+                    pauseBtn.style.display = 'block';
                 }
             }
         });
@@ -562,60 +600,39 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. POLICY ACCEPTANCE MODAL (FINAL, UNIFIED LOGIC)
+ * 10. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
  * ==================================================================================
  */
 function initializePolicyBanner() {
     const policyModal = document.getElementById('policy-modal-container');
-    const policyContent = policyModal.querySelector('.policy-modal-content');
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
     if (!policyModal || !acceptBtn || !declineBtn) {
-        return; // Exit if elements are missing
+        initializeMusicPlayer(); // Ensure music player always initializes if banner is absent
+        return;
     }
 
-    // --- Check permanent storage ---
     const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
 
-    // --- Main Logic on Page Load ---
-    if (hasAccepted !== 'true') {
-        // If user has not accepted, show the modal.
-        policyModal.style.display = 'block'; // Show the container and its background
-        // Animate the content sliding up from the bottom
-        setTimeout(() => {
-            policyContent.style.transform = 'translateY(0)';
-        }, 100); // A tiny delay to allow the CSS transition to work
+    if (hasAccepted === 'true') {
+        initializeMusicPlayer(); // User has accepted, play music
+        return;
     }
+
+    // If not accepted, show the modal. Music player remains uninitialized.
+    policyModal.style.display = 'flex'; // Use flex to center the content
 
     // --- Event Listeners ---
     acceptBtn.addEventListener('click', () => {
-        // Save choice permanently and hide the modal
         localStorage.setItem('gplmods_policy_accepted', 'true');
-        policyContent.style.transform = 'translateY(100%)'; // Animate out
-        // Wait for animation to finish before hiding the container
-        setTimeout(() => {
-            policyModal.style.display = 'none';
-        }, 400);
+        policyModal.style.display = 'none'; // Simply hide the modal
+        initializeMusicPlayer(); // NOW initialize the music player
     });
 
     declineBtn.addEventListener('click', () => {
-        // When user declines, we just block interaction by leaving the modal open.
-        // We can update the content to give them instructions.
-        const contentDiv = policyModal.querySelector('div > div'); // Find the inner content div
-        contentDiv.innerHTML = `
-            <h2 style="color: var(--gold);">Policies Declined</h2>
-            <p>You must accept the policies to use this site. Please click "Accept" or close this browser tab.</p>
-             <div class="policy-buttons" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-                <button class="policy-button" id="acceptPolicyAgain">Accept</button>
-            </div>
-        `;
-        
-        // We need to re-add the event listener to the new "Accept" button
-        document.getElementById('acceptPolicyAgain').addEventListener('click', () => {
-             localStorage.setItem('gplmods_policy_accepted', 'true');
-             policyContent.style.transform = 'translateY(100%)';
-             setTimeout(() => { policyModal.style.display = 'none'; }, 400);
-        });
+        // When user declines, simply provide an alert and do nothing.
+        // The modal remains open, blocking the site.
+        alert('You must accept the Terms of Service to continue using this site.');
     });
 }

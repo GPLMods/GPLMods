@@ -25,17 +25,20 @@
                 <a href="/faq">FAQ</a>
                 <a href="/dmca">DMCA</a>
                 <a href="/tos">Terms of Service</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/donate">Donate Us!</a>
             </div>
             <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
         </div>
     </footer>
 
     <!-- ======== NEW UNIFIED POLICY MODAL ======== -->
-    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
+    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; align-items: center; justify-content: center;">
 <!-- The semi-transparent background overlay -->
 <div class="policy-modal-background" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);"></div>
 <!-- The content that sits on top of the overlay -->
-<div class="policy-modal-content" style="position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--dark-gray); color: var(--white); padding: 20px; text-align: center; border-top: 1px solid #333; transform: translateY(100%); transition: transform 0.4s ease-out;">
+<!-- The content div now has styles to center it on the screen -->
+<div class="policy-modal-content" style="position: relative; background-color: var(--dark-gray); color: var(--white); padding: 25px; text-align: center; border-radius: 15px; max-width: 450px; margin: auto; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
     <p style="margin: 0; font-size: 0.9em;">
         To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.
     </p>

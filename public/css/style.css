@@ -55,7 +55,51 @@
         .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
         .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
         .header-actions { display: none; }
-        
+
+/* The container for BOTH suggestion boxes */
+.search-suggestions, .search-history {
+    display: none; /* Hidden by default, shown by JS */
+    position: absolute;
+    top: 110%; /* Position it just below the search bar */
+    left: 0;
+    right: 0;
+    
+    /* The missing background and styling */
+    background-color: var(--dark-gray);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 999; /* Ensure it appears on top of page content */
+}
+
+/* Styling for the items inside the boxes */
+.search-suggestions ul, .search-history ul {
+    list-style: none;
+    padding: 5px 0;
+}
+
+.search-suggestions li a, .search-history li a {
+    display: block;
+    padding: 10px 20px;
+    color: var(--silver);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.search-suggestions li a:hover, .search-history li a:hover {
+    background-color: var(--light-gray);
+    color: var(--gold);
+}
+
+.search-history h4 {
+    padding: 12px 20px 5px;
+    color: var(--silver);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
         /* --- New Header Mobile Actions --- */
         .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
         .avatar-placeholder {
