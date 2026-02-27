@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
             initializeMobileMenu();
             initializeStarRatings();
             initializeHomepageTabs();
-            // initializeMusicPlayer(); // <-- This is now controlled by the policy banner
-            initializeSmartAudioHandler();
 
             // --- Let the policy banner control the music player ---
             initializePolicyBanner();
