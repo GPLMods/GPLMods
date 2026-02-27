@@ -1184,7 +1184,7 @@
         .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
         .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
-        .stars-outer::before { content: "★★★★★"; color: #555; }
+        .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
         .stars-inner::before { content: "★★★★★"; color: var(--gold); }
         .rating-text { color: var(--silver); font-size: 1em; font-weight: 600; }
 
