@@ -13,12 +13,11 @@
  * 6. Search Suggestions FETCHER (Updated with Live API)
  * 7. Mobile Navigation Handler (CORRECTED)
  * 8. Background Music Player Controls
- * 9. Smart Audio Handler
- * 10. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
+ * 9. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
  * ==================================================================================
  */
 
-// 1. Waits for the entire HTML document to be loaded and parsed
+// 1. W        aits for the entire HTML document to be loaded and parsed
 document.addEventListener('DOMContentLoaded', () => {
 
     const runInitializers = async () => {
@@ -405,7 +404,8 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. ANIMATED FOOTER MUSIC PLAYER (with Playback Persistence)
+ * 8. FINALIZED: ANIMATED FOOTER MUSIC PLAYER
+ * Controls the footer player, handles persistence, and includes smart audio ducking.
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -415,40 +415,34 @@ function initializeMusicPlayer() {
     const prevBtn = document.getElementById('footer-prev-btn');
     const nextBtn = document.getElementById('footer-next-btn');
     const toggleBtn = document.getElementById('player-toggle-btn');
+    
+    if (!playerContainer || !playPauseBtn || !toggleBtn) {
+        console.warn("Footer music player elements not found.");
+        return;
+    }
 
-    if (!playerContainer || !playPauseBtn || !toggleBtn) return;
-
-    // --- SVG Icons ---
+    // --- SVG Icons for dynamic state changes ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
-    const playlist = [{
-        title: 'CJ Whoopty',
-        src: '/audio/bgm-1.mp3'
-    }, {
-        title: 'NCS 2',
-        src: '/audio/bgm-2.mp3'
-    }, {
-        title: 'NCS 3',
-        src: '/audio/bgm-3.mp3'
-    }, {
-        title: 'NCS 4',
-        src: '/audio/bgm-4.mp3'
-    }, {
-        title: 'NCS 5',
-        src: '/audio/bgm-5.mp3'
-    }, {
-        title: 'NCS 6',
-        src: '/audio/bgm-6.mp3'
-    }, {
-        title: 'NCS 7',
-        src: '/audio/bgm-7.mp3'
-    }, ];
-
+    // --- Playlist (ensure paths are correct) ---
+    const playlist = [
+        { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
+        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
+        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
+        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
+        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
+        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
+        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
+        // ... add all your tracks here
+    ];
+    
+    // --- Create a single Audio object for the entire site ---
     const audio = new Audio();
     audio.volume = 0.25;
     let trackIndex = 0;
 
+    // --- Core Functions ---
     function loadTrack(index) {
         if (!playlist[index]) return;
         audio.src = playlist[index].src;
@@ -458,22 +452,23 @@ function initializeMusicPlayer() {
 
     function playTrack() {
         audio.play().then(() => {
-            playPauseBtn.innerHTML = pauseIconSVG; // Use pause icon when playing
-            playerContainer.classList.add('playing'); // Add class for spin animation
+            playPauseBtn.innerHTML = pauseIconSVG;
+            playerContainer.classList.add('playing');
             localStorage.setItem('musicState', 'playing');
         }).catch(e => {
-            console.warn("Browser prevented autoplay.");
-            pauseTrack(); // If play fails, ensure state is paused
+            console.warn("Browser prevented autoplay. User must interact first.");
+            pauseTrack();
         });
     }
 
     function pauseTrack() {
         audio.pause();
-        playPauseBtn.innerHTML = playIconSVG; // Use play icon when paused
-        playerContainer.classList.remove('playing'); // Remove class to stop spin
+        playPauseBtn.innerHTML = playIconSVG;
+        playerContainer.classList.remove('playing');
         localStorage.setItem('musicState', 'paused');
     }
 
+    // --- Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
         if (audio.paused) playTrack();
         else pauseTrack();
@@ -491,116 +486,65 @@ function initializeMusicPlayer() {
         playTrack();
     });
 
-    audio.addEventListener('ended', () => {
-        nextBtn.click();
-    });
-
-    // --- NEW: SAVE CURRENT TIME PERIODICALLY ---
+    audio.addEventListener('ended', () => { nextBtn.click(); });
     audio.addEventListener('timeupdate', () => {
-        if (!audio.paused) { // Only save while it's actively playing
-            localStorage.setItem('musicCurrentTime', audio.currentTime);
-        }
+        if (!audio.paused) localStorage.setItem('musicCurrentTime', audio.currentTime);
     });
 
     toggleBtn.addEventListener('click', () => {
         playerContainer.classList.toggle('minimized');
-        if (playerContainer.classList.contains('minimized')) {
-            localStorage.setItem('musicPlayerState', 'minimized');
-        } else {
-            localStorage.setItem('musicPlayerState', 'maximized');
-        }
+        localStorage.setItem('musicPlayerState', playerContainer.classList.contains('minimized') ? 'minimized' : 'maximized');
     });
 
-    // --- Initialize on Page Load (UPGRADED LOGIC) ---
+    // --- Smart Audio Handler (Integrated) ---
+    // This uses the same 'audio' object we just created
+    const mediaPlayers = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video');
+    mediaPlayers.forEach(player => {
+        player.addEventListener('mouseenter', () => {
+            if (!audio.paused) {
+                audio.dataset.wasPlaying = 'true';
+                pauseTrack();
+            }
+        });
+        player.addEventListener('mouseleave', () => {
+            if (audio.dataset.wasPlaying === 'true') {
+                playTrack();
+                audio.dataset.wasPlaying = 'false';
+            }
+        });
+    });
+
+    // --- Initialize on Page Load ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex) {
-        trackIndex = parseInt(savedTrackIndex, 10);
-    }
+    if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
     loadTrack(trackIndex);
 
-    // Make the player visible
-    playerContainer.classList.add('visible');
-
-    // Check for saved minimized/maximized state
     if (localStorage.getItem('musicPlayerState') === 'minimized') {
         playerContainer.classList.add('minimized');
     }
+
+    playerContainer.classList.add('visible'); // Make the player visible
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
-        // If there's a saved time from the last page, start from there.
         if (savedTime) {
-            // Wait for the audio metadata to load before setting the time
             audio.addEventListener('loadedmetadata', () => {
                 audio.currentTime = parseFloat(savedTime);
                 playTrack();
-            }, {
-                once: true
-            }); // This listener runs only once
+            }, { once: true });
         } else {
-            playTrack(); // If no saved time, just play from beginning
+            playTrack();
         }
     } else {
-        pauseTrack(); // This correctly sets the initial play icon
+        pauseTrack(); // Set initial play icon
     }
 }
 
-
 /**
  * ==================================================================================
- * 9. SMART AUDIO HANDLER (FIXED)
- * Pauses music when hovering videos, Resumes when leaving.
- * ==================================================================================
- */
-function initializeSmartAudioHandler() {
-    const backgroundAudio = document.getElementById('background-audio');
-    if (!backgroundAudio) return;
-
-    // specific selectors for common embeds and video tags
-    const mediaSelectors = 'iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video';
-    const allMediaPlayers = document.querySelectorAll(mediaSelectors);
-
-    allMediaPlayers.forEach(player => {
-        // When mouse enters video: Pause music if it was playing
-        player.addEventListener('mouseenter', () => {
-            if (!backgroundAudio.paused) {
-                // Save a "flag" on the element so we know to resume it later
-                backgroundAudio.dataset.wasPlaying = 'true';
-                backgroundAudio.pause();
-
-                // Optional: Update the play/pause buttons visually
-                const playBtn = document.getElementById('play-music-btn-mobile');
-                const pauseBtn = document.getElementById('pause-music-btn-mobile');
-                if (playBtn && pauseBtn) {
-                    playBtn.style.display = 'block';
-                    pauseBtn.style.display = 'none';
-                }
-            }
-        });
-
-        // When mouse leaves video: Resume ONLY if it was paused by us
-        player.addEventListener('mouseleave', () => {
-            if (backgroundAudio.dataset.wasPlaying === 'true') {
-                backgroundAudio.play().catch(e => console.log("Resume failed:", e));
-                backgroundAudio.dataset.wasPlaying = 'false'; // Reset flag
-
-                // Update buttons back to "Playing" state
-                const playBtn = document.getElementById('play-music-btn-mobile');
-                const pauseBtn = document.getElementById('pause-music-btn-mobile');
-                if (playBtn && pauseBtn) {
-                    playBtn.style.display = 'none';
-                    pauseBtn.style.display = 'block';
-                }
-            }
-        });
-    });
-}
-
-/**
- * ==================================================================================
- * 10. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
+ * 9. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
  * ==================================================================================
  */
 function initializePolicyBanner() {
