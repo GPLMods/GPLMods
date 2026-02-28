@@ -406,11 +406,12 @@ function initializeMobileMenu() {
  * Controls the footer player, handles persistence, and includes smart audio ducking.
  * ==================================================================================
  */
-const playerContainer = document.getElementById('footer-player');
-if (!playerContainer) {
-    console.warn("Footer music player container (#footer-player) not found.");
-    return;
-}
+function initializeMusicPlayer() { // Wrap it in this function
+    const playerContainer = document.getElementById('footer-player');
+    if (!playerContainer) {
+        console.warn("Footer music player container (#footer-player) not found.");
+        return; // Now this is legal!
+    }
 
 // Query optional controls (warn if missing but don't abort)
 const trackTitleDisplay = document.getElementById('footer-track-title');
