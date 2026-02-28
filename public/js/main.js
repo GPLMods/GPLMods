@@ -17,7 +17,7 @@
  * ==================================================================================
  */
 
-// 1. W        aits for the entire HTML document to be loaded and parsed
+// 1.  For the entire HTML document to be loaded and parsed
 document.addEventListener('DOMContentLoaded', () => {
 
     const runInitializers = async () => {
@@ -406,18 +406,24 @@ function initializeMobileMenu() {
  * Controls the footer player, handles persistence, and includes smart audio ducking.
  * ==================================================================================
  */
-function initializeMusicPlayer() {
-    const playerContainer = document.getElementById('footer-player');
-    const trackTitleDisplay = document.getElementById('footer-track-title');
-    const playPauseBtn = document.getElementById('footer-play-pause-btn');
-    const prevBtn = document.getElementById('footer-prev-btn');
-    const nextBtn = document.getElementById('footer-next-btn');
-    const toggleBtn = document.getElementById('player-toggle-btn');
-    
-    if (!playerContainer || !playPauseBtn || !toggleBtn) {
-        console.warn("Footer music player elements not found.");
-        return;
-    }
+const playerContainer = document.getElementById('footer-player');
+if (!playerContainer) {
+    console.warn("Footer music player container (#footer-player) not found.");
+    return;
+}
+
+// Query optional controls (warn if missing but don't abort)
+const trackTitleDisplay = document.getElementById('footer-track-title');
+const playPauseBtn = document.getElementById('footer-play-pause-btn');
+const prevBtn = document.getElementById('footer-prev-btn');
+const nextBtn = document.getElementById('footer-next-btn');
+const toggleBtn = document.getElementById('player-toggle-btn');
+
+if (!playPauseBtn) console.warn("Play/pause button (#footer-play-pause-btn) not found — player will still show but controls may be limited.");
+if (!toggleBtn) console.warn("Toggle button (#player-toggle-btn) not found — player will still show but cannot be toggled.");
+
+ // Make player visible as early as possible
+playerContainer.classList.add('visible');
 
     // --- SVG Icons for dynamic state changes ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
@@ -550,31 +556,47 @@ function initializePolicyBanner() {
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
+    // If modal or its buttons don't exist, just init the music player and exit.
     if (!policyModal || !acceptBtn || !declineBtn) {
-        initializeMusicPlayer(); // Ensure music player always initializes if banner is absent
+        initializeMusicPlayer(); // ensure the player still initializes.
         return;
     }
 
     const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
 
     if (hasAccepted === 'true') {
-        initializeMusicPlayer(); // User has accepted, play music
+        // already accepted → start the music player
+        initializeMusicPlayer();
         return;
     }
 
-    // If not accepted, show the modal. Music player remains uninitialized.
-    policyModal.style.display = 'flex'; // Use flex to center the content
+    // Show the modal (it was hidden by default in the HTML).
+    policyModal.style.display = 'flex';
 
-    // --- Event Listeners ---
+    // Remove existing handlers (safe-guard if this function ever runs twice)
+    acceptBtn.onclick = null;
+    declineBtn.onclick = null;
+
     acceptBtn.addEventListener('click', () => {
-        localStorage.setItem('gplmods_policy_accepted', 'true');
-        policyModal.style.display = 'none'; // Simply hide the modal
-        initializeMusicPlayer(); // NOW initialize the music player
+        try {
+            localStorage.setItem('gplmods_policy_accepted', 'true');
+            // hide the modal cleanly
+            policyModal.style.display = 'none';
+
+            // Small delay to allow layout to settle before bringing up the music UI.
+            // (50ms is only to let the browser repaint; not a user wait.)
+            setTimeout(() => {
+                initializeMusicPlayer();
+            }, 50);
+        } catch (e) {
+            console.error('Error accepting policy:', e);
+            policyModal.style.display = 'none';
+            initializeMusicPlayer();
+        }
     });
 
     declineBtn.addEventListener('click', () => {
-        // When user declines, simply provide an alert and do nothing.
-        // The modal remains open, blocking the site.
+        // Let the user know they need to accept to continue.
         alert('You must accept the Terms of Service to continue using this site.');
     });
 }

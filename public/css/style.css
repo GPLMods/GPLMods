@@ -6,7 +6,7 @@
  * overall theme, layout, and appearance of common elements.
  *
  * Table of Contents:
- * 1. Root Variables & CSS Reset
+ *.policy 1. Root Variables & CSS Reset
  * 2. Global Typography & Body Styles
  * 3. Reusable Components (Buttons, Containers)
  * 4. Header & Navigation
@@ -203,7 +203,7 @@
         .overlay-button:hover { transform: scale(1.05); }
 
         /* --- Policy Acceptance Banner --- */
-        .policy-banner {
+        -banner {
             position: fixed; bottom: 0; left: 0; right: 0;
             background-color: var(--dark-gray); color: var(--white);
             padding: 15px 20px; text-align: center; z-index: 1000;
@@ -240,6 +240,27 @@
         .policy-button.decline:hover {
             border-color: var(--gold); color: var(--gold);
         }
+        /* Add near the modal / policy styles block */
+.policy-modal {
+  position: fixed;
+  inset: 0;
+  display: none; /* hidden by default - JS will set display:flex */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  background: rgba(0,0,0,0.6);
+}
+.policy-modal .policy-modal-content {
+  max-width: 450px;
+  width: calc(100% - 40px);
+  transition: transform .18s ease, opacity .18s ease;
+  transform: translateY(6px);
+  opacity: 0;
+}
+.policy-modal.show .policy-modal-content {
+  transform: translateY(0);
+  opacity: 1;
+}
 
         /* --- Other Sections & Footer --- */
         .upload-section { background-color: var(--dark-gray); text-align: center; padding: 60px 20px; margin: 40px 0; border-radius: 15px; border: 1px dashed var(--silver); }
