@@ -72,15 +72,17 @@
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
         <ul>
+   <!-- Music Sidebar Controls-->
 <hr style="border-color: #333; margin: 20px 0;">
 <div class="music-player">
     <span id="track-name">Select a track</span>
     <div class="music-controls">
+        <!-- Using specific IDs for the sidebar player -->
         <button id="sidebar-prev-btn" title="Previous Track">
-             <svg class="player-icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+            <svg class="player-icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" transform="scale(-1, 1) translate(-24, 0)"></path></svg>
         </button>
         <button id="sidebar-play-pause-btn" title="Play/Pause">
-            <!-- Icon will be injected by JS -->
+            <!-- This will be populated by JavaScript -->
         </button>
         <button id="sidebar-next-btn" title="Next Track">
             <svg class="player-icon" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6z"></path></svg>

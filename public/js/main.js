@@ -12,7 +12,7 @@
  * 5. Search History Management (for all users)
  * 6. Search Suggestions FETCHER (Updated with Live API)
  * 7. Mobile Navigation Handler (CORRECTED)
- * 8. Background Music Player Controls
+ * 8. FINAL SIDEBAR MUSIC PLAYER
  * 9. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
  * ==================================================================================
  */
@@ -394,55 +394,31 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. RESTORED & UPGRADED SIDEBAR MUSIC PLAYER
+ * 8. FINAL SIDEBAR MUSIC PLAYER
  * ==================================================================================
  */
 function initializeMusicPlayer() {
-    const audioPlayer = document.getElementById('background-audio');
-    // --- Use the new sidebar-specific IDs ---
+    // --- Find elements by their new, specific IDs ---
+    const audioPlayer = document.getElementById('background-audio'); // Still in footer
     const playPauseBtn = document.getElementById('sidebar-play-pause-btn');
     const prevBtn = document.getElementById('sidebar-prev-btn');
     const nextBtn = document.getElementById('sidebar-next-btn');
     const trackNameDisplay = document.getElementById('track-name');
 
     if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn) {
-        // This code won't run if the sidebar isn't open, which is fine.
-        return;
+        return; // Exit if the sidebar player isn't on the page
     }
 
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
-
-    // --- Playlist (ensure paths are correct) ---
-    const playlist = [{
-            title: 'CJ Whoopty',
-            src: '/audio/bgm-1.mp3'
-        },
-        {
-            title: 'NCS 1',
-            src: '/audio/bgm-2.mp3'
-        },
-        {
-            title: 'NCS 2',
-            src: '/audio/bgm-3.mp3'
-        },
-        {
-            title: 'NCS 3',
-            src: '/audio/bgm-4.mp3'
-        },
-        {
-            title: 'NCS 4',
-            src: '/audio/bgm-5.mp3'
-        },
-        {
-            title: 'NCS 5',
-            src: '/audio/bgm-6.mp3'
-        },
-        {
-            title: 'NCS 6',
-            src: '/audio/bgm-7.mp3'
-        },
-        // ... add all your tracks here
+    const playlist = [
+        { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
+        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
+        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
+        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
+        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
+        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
+        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
     ];
 
     let trackIndex = 0;
@@ -473,11 +449,13 @@ function initializeMusicPlayer() {
         if (audioPlayer.paused) playTrack();
         else pauseTrack();
     });
+
     nextBtn.addEventListener('click', () => {
         trackIndex = (trackIndex + 1) % playlist.length;
         loadTrack(trackIndex);
         playTrack();
     });
+
     prevBtn.addEventListener('click', () => {
         trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
         loadTrack(trackIndex);
@@ -504,9 +482,7 @@ function initializeMusicPlayer() {
             audioPlayer.addEventListener('loadedmetadata', () => {
                 audioPlayer.currentTime = parseFloat(savedTime);
                 playTrack();
-            }, {
-                once: true
-            });
+            }, { once: true });
         } else {
             playTrack();
         }

@@ -202,6 +202,49 @@
         .overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
         .overlay-button:hover { transform: scale(1.05); }
 
+/* Sidebar Music Player
+-------------------------------------------------- */
+.music-player {
+    padding: 15px 0;
+    text-align: center;
+}
+.music-player #track-name {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: var(--silver);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.music-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+/* --- The New Borderless Button Style --- */
+.music-controls button {
+    background: none; /* No background */
+    border: none;     /* No border */
+    padding: 5px;
+    line-height: 0; /* Helps align SVGs vertically */
+    cursor: pointer;
+}
+
+.music-controls .player-icon {
+    width: 28px;
+    height: 28px;
+    fill: var(--silver); /* Default silver color */
+    transition: all 0.3s ease;
+}
+
+.music-controls button:hover .player-icon {
+    fill: var(--gold); /* Gold color on hover */
+    transform: scale(1.1);
+}
+
         /* --- Policy Acceptance Banner --- */
         -banner {
             position: fixed; bottom: 0; left: 0; right: 0;
