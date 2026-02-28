@@ -394,47 +394,51 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. FINAL SIDEBAR MUSIC PLAYER
+ * 8. FINAL, ROBUST SIDEBAR MUSIC PLAYER
+ * This version is synchronized with the final header.ejs HTML and is fully functional.
  * ==================================================================================
  */
 function initializeMusicPlayer() {
-    // --- Find elements by their new, specific IDs ---
-    const audioPlayer = document.getElementById('background-audio'); // Still in footer
-    const playPauseBtn = document.getElementById('sidebar-play-pause-btn');
-    const prevBtn = document.getElementById('sidebar-prev-btn');
-    const nextBtn = document.getElementById('sidebar-next-btn');
-    const trackNameDisplay = document.getElementById('track-name');
+    // --- Find elements using the final, correct IDs ---
+    const audioPlayer = document.getElementById('background-audio'); // From footer.ejs
+    const playPauseBtn = document.getElementById('music-play-pause-btn');
+    const prevBtn = document.getElementById('music-prev-btn');
+    const nextBtn = document.getElementById('music-next-btn');
+    const trackNameDisplay = document.getElementById('music-track-name');
 
-    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn) {
-        return; // Exit if the sidebar player isn't on the page
+    // Strict check: if any single element is missing, stop to prevent errors.
+    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
+        return;
     }
 
+    // --- Define SVG Icons ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
+
+    // --- Define Playlist (with correct absolute paths) ---
     const playlist = [
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
-        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
-        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
-        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
-        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
-        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
-        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
+        { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
+        { title: 'NCS 3', src: '/audio/bgm-3.mp3' },
+        { title: 'NCS 4', src: '/audio/bgm-4.mp3' },
+        { title: 'NCS 5', src: '/audio/bgm-5.mp3' },
+        { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
     ];
-
+    
     let trackIndex = 0;
     audioPlayer.volume = 0.25;
 
+    // --- Core Functions ---
     function loadTrack(index) {
-        if (!playlist[index]) return;
-        audioPlayer.src = playlist[index].src;
-        if (trackNameDisplay) {
-            trackNameDisplay.textContent = playlist[index].title;
-        }
+        const track = playlist[index];
+        if (!track) return;
+        audioPlayer.src = track.src;
+        trackNameDisplay.textContent = track.title;
         localStorage.setItem('musicTrackIndex', index);
     }
 
     function playTrack() {
-        audioPlayer.play().catch(e => console.warn("Autoplay prevented."));
+        audioPlayer.play().catch(e => console.warn("Browser prevented autoplay.", e));
         playPauseBtn.innerHTML = pauseIconSVG;
         localStorage.setItem('musicState', 'playing');
     }
@@ -444,10 +448,14 @@ function initializeMusicPlayer() {
         playPauseBtn.innerHTML = playIconSVG;
         localStorage.setItem('musicState', 'paused');
     }
-
+    
+    // --- Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) playTrack();
-        else pauseTrack();
+        if (audioPlayer.paused) {
+            playTrack();
+        } else {
+            pauseTrack();
+        }
     });
 
     nextBtn.addEventListener('click', () => {
@@ -461,25 +469,27 @@ function initializeMusicPlayer() {
         loadTrack(trackIndex);
         playTrack();
     });
-
-    audioPlayer.addEventListener('ended', () => {
-        nextBtn.click();
-    });
+    
+    audioPlayer.addEventListener('ended', () => { nextBtn.click(); });
+    
     audioPlayer.addEventListener('timeupdate', () => {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    // --- Initialize ---
+    // --- Initialize Player State on Page Load ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
-    loadTrack(trackIndex);
+    if (savedTrackIndex && savedTrackIndex < playlist.length) {
+        trackIndex = parseInt(savedTrackIndex, 10);
+    }
+    loadTrack(trackIndex); // Load the track first
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
         if (savedTime) {
-            audioPlayer.addEventListener('loadedmetadata', () => {
+            // Wait for the track to be ready before seeking and playing
+            audioPlayer.addEventListener('canplay', () => {
                 audioPlayer.currentTime = parseFloat(savedTime);
                 playTrack();
             }, { once: true });
@@ -487,11 +497,9 @@ function initializeMusicPlayer() {
             playTrack();
         }
     } else {
-        pauseTrack(); // Set initial icon
+        pauseTrack(); // This ensures the 'Play' icon is visible initially
     }
 }
-
-
 /**
  * ==================================================================================
  * 9. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
