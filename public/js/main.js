@@ -156,46 +156,27 @@ async function initializeSearchBar() {
     const searchHistoryBox = document.getElementById('searchHistory');
     const searchBar = document.getElementById('animatedSearchBar');
 
-    if (!searchInput) {
-        console.warn("Search input not found.");
-        return;
-    }
+    if (!searchInput || !searchBar) return;
 
-    searchInput.addEventListener('focus', () => {
-        if (searchBar) searchBar.classList.add('active');
-        displaySearchHistory();
-    });
-
-    searchInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (!suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
-                if (searchBar) searchBar.classList.remove('active');
-                suggestionsBox.style.display = 'none';
-                searchHistoryBox.style.display = 'none';
-            }
-        }, 200);
-    });
-
+    // --- Main Input Event Listener ---
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
         if (query.length > 1) {
-            fetchAndDisplaySuggestions(query);
+            fetchAndDisplaySuggestions(query); // Fetch live suggestions
             searchHistoryBox.style.display = 'none';
         } else {
             suggestionsBox.style.display = 'none';
-            displaySearchHistory();
+            displaySearchHistory(); // Show history if query is too short
         }
     });
 
     // --- DYNAMIC Placeholder Typing Animation ---
-    let searchTerms = ["Search for mods..."];
+    let searchTerms = ["Search for mods..."]; // Default
     try {
         const response = await fetch('/api/trending-searches');
         if (response.ok) {
             const trending = await response.json();
-            if (trending.length > 0) {
-                searchTerms = trending.map(term => `${term}...`);
-            }
+            if (trending.length > 0) searchTerms = trending.map(term => `${term}...`);
         }
     } catch (error) {
         console.error("Could not fetch trending search terms:", error);
@@ -236,15 +217,24 @@ async function initializeSearchBar() {
         typingTimeout = setTimeout(typeAnimation, typeSpeed);
     }
 
-    typeAnimation();
-
+    // --- Combined Focus and Blur Listeners ---
     searchInput.addEventListener('focus', () => {
         clearTimeout(typingTimeout);
         searchInput.placeholder = "Search for mods...";
         searchInput.style.setProperty('--placeholder-color', 'var(--silver)');
+        displaySearchHistory();
     });
 
     searchInput.addEventListener('blur', () => {
+        // Hide popups after a short delay
+        setTimeout(() => {
+            if (!suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
+                suggestionsBox.style.display = 'none';
+                searchHistoryBox.style.display = 'none';
+            }
+        }, 200);
+
+        // Restart animation if input is empty
         if (searchInput.value === '') {
             searchInput.placeholder = "";
             letterIndex = 0;
@@ -261,6 +251,8 @@ async function initializeSearchBar() {
             if (query) saveSearchTerm(query);
         });
     }
+
+    typeAnimation(); // Start animation initially
 }
 
 
@@ -402,150 +394,127 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. FINALIZED: ANIMATED FOOTER MUSIC PLAYER
- * Controls the footer player, handles persistence, and includes smart audio ducking.
+ * 8. RESTORED & UPGRADED SIDEBAR MUSIC PLAYER
  * ==================================================================================
  */
-function initializeMusicPlayer() { // Wrap it in this function
-    const playerContainer = document.getElementById('footer-player');
-    if (!playerContainer) {
-        console.warn("Footer music player container (#footer-player) not found.");
-        return; // Now this is legal!
+function initializeMusicPlayer() {
+    const audioPlayer = document.getElementById('background-audio');
+    // --- Use the new sidebar-specific IDs ---
+    const playPauseBtn = document.getElementById('sidebar-play-pause-btn');
+    const prevBtn = document.getElementById('sidebar-prev-btn');
+    const nextBtn = document.getElementById('sidebar-next-btn');
+    const trackNameDisplay = document.getElementById('track-name');
+
+    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn) {
+        // This code won't run if the sidebar isn't open, which is fine.
+        return;
     }
 
-// Query optional controls (warn if missing but don't abort)
-const trackTitleDisplay = document.getElementById('footer-track-title');
-const playPauseBtn = document.getElementById('footer-play-pause-btn');
-const prevBtn = document.getElementById('footer-prev-btn');
-const nextBtn = document.getElementById('footer-next-btn');
-const toggleBtn = document.getElementById('player-toggle-btn');
-
-if (!playPauseBtn) console.warn("Play/pause button (#footer-play-pause-btn) not found — player will still show but controls may be limited.");
-if (!toggleBtn) console.warn("Toggle button (#player-toggle-btn) not found — player will still show but cannot be toggled.");
-
- // Make player visible as early as possible
-playerContainer.classList.add('visible');
-
-    // --- SVG Icons for dynamic state changes ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
     // --- Playlist (ensure paths are correct) ---
-    const playlist = [
-        { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
-        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
-        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
-        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
-        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
-        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
-        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
+    const playlist = [{
+            title: 'CJ Whoopty',
+            src: '/audio/bgm-1.mp3'
+        },
+        {
+            title: 'NCS 1',
+            src: '/audio/bgm-2.mp3'
+        },
+        {
+            title: 'NCS 2',
+            src: '/audio/bgm-3.mp3'
+        },
+        {
+            title: 'NCS 3',
+            src: '/audio/bgm-4.mp3'
+        },
+        {
+            title: 'NCS 4',
+            src: '/audio/bgm-5.mp3'
+        },
+        {
+            title: 'NCS 5',
+            src: '/audio/bgm-6.mp3'
+        },
+        {
+            title: 'NCS 6',
+            src: '/audio/bgm-7.mp3'
+        },
         // ... add all your tracks here
     ];
-    
-    // --- Create a single Audio object for the entire site ---
-    const audio = new Audio();
-    audio.volume = 0.25;
-    let trackIndex = 0;
 
-    // --- Core Functions ---
+    let trackIndex = 0;
+    audioPlayer.volume = 0.25;
+
     function loadTrack(index) {
         if (!playlist[index]) return;
-        audio.src = playlist[index].src;
-        trackTitleDisplay.textContent = playlist[index].title;
+        audioPlayer.src = playlist[index].src;
+        if (trackNameDisplay) {
+            trackNameDisplay.textContent = playlist[index].title;
+        }
         localStorage.setItem('musicTrackIndex', index);
     }
 
     function playTrack() {
-        audio.play().then(() => {
-            playPauseBtn.innerHTML = pauseIconSVG;
-            playerContainer.classList.add('playing');
-            localStorage.setItem('musicState', 'playing');
-        }).catch(e => {
-            console.warn("Browser prevented autoplay. User must interact first.");
-            pauseTrack();
-        });
+        audioPlayer.play().catch(e => console.warn("Autoplay prevented."));
+        playPauseBtn.innerHTML = pauseIconSVG;
+        localStorage.setItem('musicState', 'playing');
     }
 
     function pauseTrack() {
-        audio.pause();
+        audioPlayer.pause();
         playPauseBtn.innerHTML = playIconSVG;
-        playerContainer.classList.remove('playing');
         localStorage.setItem('musicState', 'paused');
     }
 
-    // --- Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
-        if (audio.paused) playTrack();
+        if (audioPlayer.paused) playTrack();
         else pauseTrack();
     });
-
     nextBtn.addEventListener('click', () => {
         trackIndex = (trackIndex + 1) % playlist.length;
         loadTrack(trackIndex);
         playTrack();
     });
-
     prevBtn.addEventListener('click', () => {
         trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
         loadTrack(trackIndex);
         playTrack();
     });
 
-    audio.addEventListener('ended', () => { nextBtn.click(); });
-    audio.addEventListener('timeupdate', () => {
-        if (!audio.paused) localStorage.setItem('musicCurrentTime', audio.currentTime);
+    audioPlayer.addEventListener('ended', () => {
+        nextBtn.click();
+    });
+    audioPlayer.addEventListener('timeupdate', () => {
+        if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    toggleBtn.addEventListener('click', () => {
-        playerContainer.classList.toggle('minimized');
-        localStorage.setItem('musicPlayerState', playerContainer.classList.contains('minimized') ? 'minimized' : 'maximized');
-    });
-
-    // --- Smart Audio Handler (Integrated) ---
-    // This uses the same 'audio' object we just created
-    const mediaPlayers = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video');
-    mediaPlayers.forEach(player => {
-        player.addEventListener('mouseenter', () => {
-            if (!audio.paused) {
-                audio.dataset.wasPlaying = 'true';
-                pauseTrack();
-            }
-        });
-        player.addEventListener('mouseleave', () => {
-            if (audio.dataset.wasPlaying === 'true') {
-                playTrack();
-                audio.dataset.wasPlaying = 'false';
-            }
-        });
-    });
-
-    // --- Initialize on Page Load ---
+    // --- Initialize ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex) trackIndex = parseInt(savedTrackIndex, 10);
     loadTrack(trackIndex);
-
-    if (localStorage.getItem('musicPlayerState') === 'minimized') {
-        playerContainer.classList.add('minimized');
-    }
-
-    playerContainer.classList.add('visible'); // Make the player visible
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
         if (savedTime) {
-            audio.addEventListener('loadedmetadata', () => {
-                audio.currentTime = parseFloat(savedTime);
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                audioPlayer.currentTime = parseFloat(savedTime);
                 playTrack();
-            }, { once: true });
+            }, {
+                once: true
+            });
         } else {
             playTrack();
         }
     } else {
-        pauseTrack(); // Set initial play icon
+        pauseTrack(); // Set initial icon
     }
 }
+
 
 /**
  * ==================================================================================
@@ -575,29 +544,25 @@ function initializePolicyBanner() {
     policyModal.style.display = 'flex';
 
     // Remove existing handlers (safe-guard if this function ever runs twice)
-    acceptBtn.onclick = null;
-    declineBtn.onclick = null;
+    acceptBtn.replaceWith(acceptBtn.cloneNode(true));
+    declineBtn.replaceWith(declineBtn.cloneNode(true));
 
-    acceptBtn.addEventListener('click', () => {
-        try {
-            localStorage.setItem('gplmods_policy_accepted', 'true');
-            // hide the modal cleanly
-            policyModal.style.display = 'none';
+    // Re-select the cloned buttons
+    const newAcceptBtn = document.getElementById('acceptPolicy');
+    const newDeclineBtn = document.getElementById('declinePolicy');
 
-            // Small delay to allow layout to settle before bringing up the music UI.
-            // (50ms is only to let the browser repaint; not a user wait.)
-            setTimeout(() => {
-                initializeMusicPlayer();
-            }, 50);
-        } catch (e) {
-            console.error('Error accepting policy:', e);
-            policyModal.style.display = 'none';
-            initializeMusicPlayer();
-        }
+
+    newAcceptBtn.addEventListener('click', () => {
+        localStorage.setItem('gplmods_policy_accepted', 'true');
+        policyModal.style.display = 'none';
+        initializeMusicPlayer(); // Initialize player on acceptance
+    }, {
+        once: true
     });
 
-    declineBtn.addEventListener('click', () => {
-        // Let the user know they need to accept to continue.
-        alert('You must accept the Terms of Service to continue using this site.');
+    newDeclineBtn.addEventListener('click', () => {
+        policyModal.innerHTML = '<div class="policy-content"><h4>Music Player Disabled</h4><p>You have declined the policies required for the music player. You can accept them at any time by refreshing the page.</p></div>';
+    }, {
+        once: true
     });
 }
