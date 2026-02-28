@@ -398,17 +398,24 @@ function initializeMobileMenu() {
  * This version is synchronized with the final header.ejs HTML and is fully functional.
  * ==================================================================================
  */
-function initializeMusicPlayer() {
-    // --- Find elements using the final, correct IDs ---
-    const audioPlayer = document.getElementById('background-audio'); // From footer.ejs
-    const playPauseBtn = document.getElementById('music-play-pause-btn');
+const audioPlayer = document.getElementById('background-audio');
+    const playPauseBtn = document.getElementById('music-play-pause-btn'); 
     const prevBtn = document.getElementById('music-prev-btn');
     const nextBtn = document.getElementById('music-next-btn');
     const trackNameDisplay = document.getElementById('music-track-name');
 
-    // Strict check: if any single element is missing, stop to prevent errors.
-    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
-        return;
+    // 👇 ADD THESE CONSOLE WARNINGS INSTEAD 👇
+    let hasError = false;
+
+    if (!audioPlayer) { console.error("Missing ID: background-audio"); hasError = true; }
+    if (!playPauseBtn) { console.warn("Missing ID: music-play-pause-btn"); hasError = true; }
+    if (!prevBtn) { console.warn("Missing ID: music-prev-btn"); hasError = true; }
+    if (!nextBtn) { console.warn("Missing ID: music-next-btn"); hasError = true; }
+    if (!trackNameDisplay) { console.warn("Missing ID: music-track-name"); hasError = true; }
+
+    if (hasError) {
+        console.error("Music player initialization stopped because HTML elements are missing.");
+        return; // Stop the script, but now we know WHY.
     }
 
     // --- Define SVG Icons ---

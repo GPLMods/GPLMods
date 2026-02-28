@@ -22,6 +22,8 @@ const http = require('http');
 const { Server } = require("socket.io"); // Corrected import
 const crypto = require('crypto');
 const cors = require('cors');// Added for CORS
+const fs = require('fs'); // Added for new upload logic
+const FormData = require('form-data'); // Added for new upload logic
 
 // Custom Utilities & Config
 const { sendVerificationEmail } = require('./utils/mailer');
@@ -73,12 +75,14 @@ const sanitizeFilename = (filename) => {
 };
 
 const uploadToB2 = async (file, folder) => {
+    // This function now needs to handle both buffer-based (from memory) and path-based (from disk) files
+    const fileBuffer = file.buffer ? file.buffer : fs.readFileSync(file.path);
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
     const params = {
         Bucket: process.env.B2_BUCKET_NAME,
         Key: fileName,
-        Body: file.buffer,
+        Body: fileBuffer,
         ContentType: file.mimetype
     };
     await s3Client.send(new PutObjectCommand(params));
@@ -179,10 +183,21 @@ app.use((req, res, next) => {
 app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 // ===============================
-// 6. PASSPORT STRATEGIES
+// 6. PASSPORT STRATEGIES & MULTER CONFIG
 // ===============================
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 1024 * 1024 * 1024 } }); // 1GB limit
+
+// UPDATED Multer configuration to use disk storage
+const diskStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Ensure the 'uploads/' directory exists
+        const uploadPath = 'uploads/';
+        fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage: diskStorage });
+
 
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
@@ -256,9 +271,7 @@ async function verifyRecaptcha(req, res, next) {
 // ===============================
 
 // --- NEW: Health Check Endpoint ---
-// This is a standard endpoint for health checks from hosting providers.
 app.get('/healthz', (req, res) => {
-    // Send a simple JSON response with a 200 OK status
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
 
@@ -853,153 +866,146 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
-// ===============================
-// 10. FILE UPLOAD & MANAGEMENT
-// ===============================
 
-app.get('/upload', ensureAuthenticated, (req, res) => res.render('pages/upload'));
+// ===================================
+// 10. FILE UPLOAD & MANAGEMENT (NEW LOGIC)
+// ===================================
 
-// Step 1 of upload - Client requests a presigned URL
-app.post('/generate-presigned-url', ensureAuthenticated, async (req, res) => {
+app.get('/upload', ensureAuthenticated, (req, res) => {
+    res.render('pages/upload');
+});
+
+// Step 1: Handle initial file upload, upload to B2, and start background scan
+app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).redirect('/upload?error=No file selected.');
+    }
+    const tempFilePath = req.file.path;
+    let newFile = null;
+
     try {
-        const { filename, filetype, folder } = req.body;
-        if (!filename || !filetype || !folder) {
-            return res.status(400).json({ error: 'Missing required parameters.' });
-        }
+        // --- 1. Upload to B2 (AWAIT this) ---
+        console.log("Uploading main file to B2...");
+        const fileForB2 = { path: tempFilePath, originalname: req.file.originalname, mimetype: req.file.mimetype };
+        const fileKey = await uploadToB2(fileForB2, 'mods');
+        console.log("Upload to B2 complete.");
+
+        // --- 2. Create Preliminary DB Record ---
+        newFile = new File({
+            uploader: req.user.username,
+            fileKey: fileKey,
+            originalFilename: req.file.originalname,
+            fileSize: req.file.size,
+            status: 'processing' // A temporary status
+        });
+        await newFile.save();
         
-        // Sanitize filename and create a unique key for the object in B2
-        const uniqueKey = `${folder}/${Date.now()}-${sanitizeFilename(filename)}`;
+        // --- 3. Start VT Scan in Background ---
+        console.log("Starting background VirusTotal scan...");
+        (async () => {
+            try {
+                const vtFormData = new FormData();
+                // We need to re-read the file for the form-data stream
+                vtFormData.append('file', fs.createReadStream(tempFilePath), req.file.originalname);
 
-        const command = new PutObjectCommand({
-            Bucket: process.env.B2_BUCKET_NAME,
-            Key: uniqueKey,
-            ContentType: filetype
-        });
+                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
+                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
+                });
+                
+                // Get the final report and update the DB record asynchronously
+                const analysisId = vtResponse.data.data.id;
+                await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
+                console.log(`VT Scan submitted for ${newFile._id}. Analysis ID: ${analysisId}`);
+            } catch (vtError) {
+                console.error(`Background VT scan failed for ${newFile._id}:`, vtError.response?.data || vtError.message);
+            } finally {
+                // --- 4. Cleanup ---
+                fs.unlinkSync(tempFilePath); // Delete the temp file after we're done with it
+            }
+        })(); // Fire-and-forget
 
-        // Generate the presigned URL, valid for 15 minutes
-        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
-
-        res.json({
-            presignedUrl: signedUrl,
-            fileKey: uniqueKey // The final path of the file in the bucket
-        });
+        // --- 5. Redirect user to the details page ---
+        res.redirect(`/upload-details/${newFile._id}`);
 
     } catch (error) {
-        console.error("Error generating presigned URL:", error);
-        res.status(500).json({ error: 'Could not prepare upload.' });
+        console.error("Initial upload error:", error);
+        // If something went wrong, clean up the temp file if it exists
+        if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+        }
+        res.status(500).render('pages/500');
     }
 });
 
-// --- NEW ROUTE: The Metadata Form Page ---
-app.get('/upload-details', ensureAuthenticated, (req, res) => {
-    const { fileKey, filename, filesize } = req.query;
-    if (!fileKey || !filename || !filesize) {
-        return res.redirect('/upload?error=Invalid file details.');
+// Step 2: Display the details form
+app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
+    try {
+        const file = await File.findById(req.params.fileId);
+        // Security check: ensure the user editing this is the one who uploaded it.
+        if (!file || file.uploader !== req.user.username) {
+            return res.status(403).render('pages/403');
+        }
+        res.render('pages/upload-details', { fileId: req.params.fileId });
+    } catch(error) {
+        console.error("Error showing upload details page:", error);
+        res.status(500).render('pages/500');
     }
-    // Render a new EJS page for the form, passing the file info
-    res.render('pages/upload-details', { fileKey, filename, filesize });
 });
 
-
-// =========================================================
-// ========= START: UPDATED /upload-finalize ROUTE =========
-// =========================================================
-app.post('/upload-finalize', ensureAuthenticated, upload.fields([
+// Step 3: Finalize the upload with metadata, icon, and screenshots
+app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
 ]), async (req, res) => {
-    let newFileId = null; // To hold the ID of the newly created file
-
     try {
-        // ... (your existing file validation, destructuring, and icon/screenshot uploads are fine)
-        const { fileKey, originalFilename, fileSize, ...formData } = req.body;
+        const fileId = req.params.fileId;
+        const fileToUpdate = await File.findById(fileId);
+
+        // Security check
+        if (!fileToUpdate || fileToUpdate.uploader !== req.user.username) {
+            return res.status(403).render('pages/403');
+        }
+
         const { softwareIcon, screenshots } = req.files;
-        if (!fileKey || !softwareIcon || !screenshots ) return res.status(400).json({ error: 'Missing file key or icon/screenshots.' });
-        
+        if (!softwareIcon || !screenshots) {
+            return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required.`);
+        }
+
+        // Upload icon and screenshots
         const iconKey = await uploadToB2(softwareIcon[0], 'icons');
-        const screenshotKeys = await Promise.all(screenshots.map(shot => uploadToB2(shot, 'screenshots')));
-        
-        // --- 1. SAVE TO MONGODB FIRST ---
-        // The file now has a 'pending' status by default from the model.
-        const newFile = new File({
-            name: formData.modName,
-            version: formData.modVersion,
-            developer: formData.developerName,
-            modDescription: formData.modDescription,
-            modFeatures: formData.modFeatures,
-            whatsNew: formData.whatsNew,
-            officialDescription: formData.officialDescription,
-            videoUrl: formData.videoUrl,
-            category: formData.modPlatform,
-            platforms: [formData.modCategory],
-            tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
-            uploader: req.user.username,
-            fileSize: fileSize,
-            originalFilename: originalFilename,
+        const screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+
+        // Clean up the temporary icon/screenshot files
+        fs.unlinkSync(softwareIcon[0].path);
+        screenshots.forEach(f => fs.unlinkSync(f.path));
+
+        // Update the existing document in the database
+        await File.findByIdAndUpdate(fileId, {
+            ...req.body, // This will grab all the text fields from the form
             iconKey: iconKey,
             screenshotKeys: screenshotKeys,
-            fileKey: fileKey,
-            isLatestVersion: true,
+            status: 'pending' // Set status to 'pending' for admin review
         });
-        await newFile.save();
-        newFileId = newFile._id; // Save the ID for the response
 
-        // --- 2. RESPOND TO THE USER IMMEDIATELY ---
-        // The user's upload is complete from their perspective.
-        res.status(201).json({ message: 'Upload submitted for review!', fileId: newFileId });
-
-        // --- 3. RUN VIRUSTOTAL SCAN IN THE BACKGROUND (FIRE-AND-FORGET) ---
-        // This code will run after the response has been sent to the user.
-        console.log(`Starting background VirusTotal scan for file ID: ${newFileId}`);
-        const filePublicUrlForScan = `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${fileKey}`;
-
-        (async () => {
-            try {
-                const vtUrlScanResponse = await axios.post('https://www.virustotal.com/api/v3/urls',
-                    `url=${encodeURIComponent(filePublicUrlForScan)}`,
-                    { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, 'Content-Type': 'application/x-www-form-urlencoded' } }
-                );
-                const analysisId = vtUrlScanResponse.data.data.id;
-
-                // We won't wait for the final report here. An admin can check the status later,
-                // or you could build a more advanced system with webhooks from VirusTotal.
-                
-                // Update the file in the database with the temporary analysis ID.
-                await File.findByIdAndUpdate(newFileId, { virusTotalAnalysisId: analysisId });
-                console.log(`VirusTotal analysis ID ${analysisId} saved for file ${newFileId}`);
-
-            } catch (vtError) {
-                console.error(`Background VirusTotal scan failed for file ${newFileId}:`, vtError.response?.data);
-            }
-        })(); // Immediately invoke the async function
+        res.redirect('/my-uploads?success=Upload complete and submitted for review!');
 
     } catch (error) {
         console.error("Finalize upload error:", error);
-        // We check if a response has already been sent to avoid crashing
-        if (!res.headersSent) {
-            res.status(500).json({ error: 'Server failed to finalize upload.' });
-        }
+        res.status(500).render('pages/500');
     }
 });
-// =======================================================
-// ========= END: UPDATED /upload-finalize ROUTE =========
-// =======================================================
 
 // ===================================
 // 11. API ROUTES
 // ===================================
 
 app.get('/api/search/suggestions', async (req, res) => { 
-    // This route was mentioned in the update but was not in the original file.
-    // Add your search suggestion logic here. For now, it returns an empty array.
     res.json([]);
 });
 
 // --- NEW: Trending Searches API Route ---
 app.get('/api/trending-searches', async (req, res) => {
     try {
-        // We will fetch the names of the top 5 most downloaded mods
-        // that are also the "latest version".
         const trendingFiles = await File.find(
             { isLatestVersion: true },
             { name: 1, _id: 0 } // Projection: only return the 'name' field
@@ -1007,9 +1013,7 @@ app.get('/api/trending-searches', async (req, res) => {
         .sort({ downloads: -1 }) // Sort by most downloads
         .limit(5); // Get the top 5
 
-        // Extract just the name strings from the result objects
         const trendingNames = trendingFiles.map(file => file.name);
-
         res.json(trendingNames); // Send back the array of names
 
     } catch (error) {
@@ -1132,7 +1136,6 @@ const startServer = async () => {
     try {
         // --- Step 1: Connect to the Database ---
         await mongoose.connect(process.env.MONGO_URI, {
-            // These options are deprecated but leaving them won't hurt for now
             useNewUrlParser: true, 
             useUnifiedTopology: true 
         });
