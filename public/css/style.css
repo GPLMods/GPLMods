@@ -358,10 +358,10 @@
 -------------------------------------------------- */
 .footer-music-player {
     position: fixed;
-    bottom: 15px;
+    bottom: 20px;
     left: 50%;
-    transform: translateX(-50%);
-    z-index: 9990; /* Above most content, but below modals */
+    transform: translate(-50%, 100%);
+    z-index: 9998; /* Above most content, but below modals */
 
     display: flex;
     align-items: center;
@@ -382,7 +382,7 @@
     /* Animation for appearing */
     opacity: 0;
     transform: translate(-50%, 20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transition: opacity 0.5s ease, transform 0.3s ease;
 }
 
 .footer-music-player.visible {
