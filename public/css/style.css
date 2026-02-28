@@ -354,42 +354,6 @@
     /* This can often help reset styles if the 'a' tag isn't enough */
 }
 
-/* Footer Music Player
--------------------------------------------------- */
-.footer-music-player {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translate(-50%, 100%);
-    z-index: 9998; /* Above most content, but below modals */
-
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    
-    background-color: rgba(26, 26, 26, 0.9); /* var(--dark-gray) with transparency */
-    backdrop-filter: blur(10px); /* Frosted glass effect */
-    -webkit-backdrop-filter: blur(10px);
-    
-    padding: 8px;
-    border-radius: 50px; /* Pill shape */
-    border: 1px solid #333;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    
-    width: 90%;
-    max-width: 350px;
-    
-    /* Animation for appearing */
-    opacity: 0;
-    transform: translate(-50%, 20px);
-    transition: opacity 0.5s ease, transform 0.3s ease;
-}
-
-.footer-music-player.visible {
-    opacity: 1;
-    transform: translate(-50%, 0);
-}
-
 .player-controls button {
     background: none;
     border: none;
@@ -506,22 +470,6 @@
     height: 24px;
     fill: var(--silver);
     transition: transform 0.4s ease;
-}
-
-/* --- THE MINIMIZED STATE --- */
-.footer-music-player.minimized {
-    /* When minimized, shrink the player */
-    height: 20px;
-    padding: 0;
-}
-.footer-music-player.minimized .player-main-content {
-    /* Hide the content inside */
-    opacity: 0;
-    visibility: hidden;
-}
-.footer-music-player.minimized .player-toggle-btn svg {
-    /* Flip the arrow upside down */
-    transform: rotate(180deg);
 }
 
 /* --- START OF ABOUT PAGE NEW STYLES --- */
