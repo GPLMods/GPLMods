@@ -395,35 +395,36 @@ function initializeMobileMenu() {
 /**
  * ==================================================================================
  * 8. FINAL, ROBUST SIDEBAR MUSIC PLAYER
- * This version is synchronized with the final header.ejs HTML and is fully functional.
  * ==================================================================================
  */
-const audioPlayer = document.getElementById('background-audio');
-    const playPauseBtn = document.getElementById('music-play-pause-btn'); 
-    const prevBtn = document.getElementById('music-prev-btn');
-    const nextBtn = document.getElementById('music-next-btn');
-    const trackNameDisplay = document.getElementById('music-track-name');
+function initializeMusicPlayer() {
+    // --- 1. Find elements using the IDs from header.ejs ---
+    const audioPlayer = document.getElementById('background-audio'); // From footer.ejs
+    const playPauseBtn = document.getElementById('music-play-pause-btn'); // From header.ejs
+    const prevBtn = document.getElementById('music-prev-btn'); // From header.ejs
+    const nextBtn = document.getElementById('music-next-btn'); // From header.ejs
+    const trackNameDisplay = document.getElementById('music-track-name'); // From header.ejs
 
-    // 👇 ADD THESE CONSOLE WARNINGS INSTEAD 👇
+    // --- 2. Diagnostic Checks (The "Safe Kill Switch") ---
     let hasError = false;
-
-    if (!audioPlayer) { console.error("Missing ID: background-audio"); hasError = true; }
-    if (!playPauseBtn) { console.warn("Missing ID: music-play-pause-btn"); hasError = true; }
-    if (!prevBtn) { console.warn("Missing ID: music-prev-btn"); hasError = true; }
-    if (!nextBtn) { console.warn("Missing ID: music-next-btn"); hasError = true; }
-    if (!trackNameDisplay) { console.warn("Missing ID: music-track-name"); hasError = true; }
+    if (!audioPlayer) { console.error("Music Player: Missing <audio id='background-audio'>"); hasError = true; }
+    if (!playPauseBtn) { console.warn("Music Player: Missing <button id='music-play-pause-btn'>"); hasError = true; }
+    if (!prevBtn) { console.warn("Music Player: Missing <button id='music-prev-btn'>"); hasError = true; }
+    if (!nextBtn) { console.warn("Music Player: Missing <button id='music-next-btn'>"); hasError = true; }
+    if (!trackNameDisplay) { console.warn("Music Player: Missing <span id='music-track-name'>"); hasError = true; }
 
     if (hasError) {
-        console.error("Music player initialization stopped because HTML elements are missing.");
-        return; // Stop the script, but now we know WHY.
+        console.error("Music player initialization aborted due to missing HTML elements.");
+        return; // Stop here if HTML is broken
     }
 
-    // --- Define SVG Icons ---
+    // --- 3. Define SVG Icons (Double-check these strings!) ---
+    // These use backticks (`) for multi-line string literals
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
-    // --- Define Playlist (with correct absolute paths) ---
-    const playlist = [
+    // --- 4. Define Playlist ---
+    const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
         { title: 'NCS 3', src: '/audio/bgm-3.mp3' },
@@ -435,7 +436,7 @@ const audioPlayer = document.getElementById('background-audio');
     let trackIndex = 0;
     audioPlayer.volume = 0.25;
 
-    // --- Core Functions ---
+    // --- 5. Core Functions ---
     function loadTrack(index) {
         const track = playlist[index];
         if (!track) return;
@@ -445,18 +446,22 @@ const audioPlayer = document.getElementById('background-audio');
     }
 
     function playTrack() {
-        audioPlayer.play().catch(e => console.warn("Browser prevented autoplay.", e));
-        playPauseBtn.innerHTML = pauseIconSVG;
-        localStorage.setItem('musicState', 'playing');
+        audioPlayer.play().then(() => {
+            playPauseBtn.innerHTML = pauseIconSVG; // Set to pause icon when playing
+            localStorage.setItem('musicState', 'playing');
+        }).catch(e => {
+            console.warn("Browser prevented autoplay.", e);
+            pauseTrack(); // Fallback if browser blocks it
+        });
     }
 
     function pauseTrack() {
         audioPlayer.pause();
-        playPauseBtn.innerHTML = playIconSVG;
+        playPauseBtn.innerHTML = playIconSVG; // Set to play icon when paused
         localStorage.setItem('musicState', 'paused');
     }
     
-    // --- Event Listeners ---
+    // --- 6. Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
         if (audioPlayer.paused) {
             playTrack();
@@ -483,7 +488,7 @@ const audioPlayer = document.getElementById('background-audio');
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    // --- Initialize Player State on Page Load ---
+    // --- 7. Initialize Player State on Page Load ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex && savedTrackIndex < playlist.length) {
         trackIndex = parseInt(savedTrackIndex, 10);
@@ -495,7 +500,6 @@ const audioPlayer = document.getElementById('background-audio');
 
     if (savedState === 'playing') {
         if (savedTime) {
-            // Wait for the track to be ready before seeking and playing
             audioPlayer.addEventListener('canplay', () => {
                 audioPlayer.currentTime = parseFloat(savedTime);
                 playTrack();
@@ -504,7 +508,7 @@ const audioPlayer = document.getElementById('background-audio');
             playTrack();
         }
     } else {
-        pauseTrack(); // This ensures the 'Play' icon is visible initially
+        pauseTrack(); // This ensures the 'Play' icon is injected initially
     }
 }
 /**
