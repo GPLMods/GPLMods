@@ -426,11 +426,12 @@ function initializeMusicPlayer() {
     // --- 4. Define Playlist ---
     const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
-        { title: 'NCS 2', src: '/audio/bgm-2.mp3' },
-        { title: 'NCS 3', src: '/audio/bgm-3.mp3' },
-        { title: 'NCS 4', src: '/audio/bgm-4.mp3' },
-        { title: 'NCS 5', src: '/audio/bgm-5.mp3' },
-        { title: 'NCS 6', src: '/audio/bgm-6.mp3' },
+        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
+        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
+        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
+        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
+        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
+        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
     ];
     
     let trackIndex = 0;
