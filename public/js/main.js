@@ -489,29 +489,57 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    // --- 7. Initialize Player State on Page Load ---
+   // --- 7. Initialize Player State on Page Load (Advanced Resumption) ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex && savedTrackIndex < playlist.length) {
         trackIndex = parseInt(savedTrackIndex, 10);
     }
-    loadTrack(trackIndex); // Load the track first
+    loadTrack(trackIndex);
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
+        // If it SHOULD be playing, try to play it immediately.
+        // If there's a saved time, start from there.
         if (savedTime) {
-            audioPlayer.addEventListener('canplay', () => {
-                audioPlayer.currentTime = parseFloat(savedTime);
-                playTrack();
-            }, { once: true });
-        } else {
-            playTrack();
+            audioPlayer.currentTime = parseFloat(savedTime);
+        }
+        
+        // Attempt the play. 
+        const playPromise = audioPlayer.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                // Success! Browser allowed autoplay.
+                playPauseBtn.innerHTML = pauseIconSVG;
+            })
+            .catch(error => {
+                // FAILURE: Browser blocked autoplay. 
+                console.warn("Browser blocked autoplay on new page load. Waiting for user interaction...");
+                
+                // Set the button to 'play' visually so the user knows they need to click it
+                playPauseBtn.innerHTML = playIconSVG; 
+                
+                // --- THE MAGIC FIX ---
+                // We add a one-time event listener to the entire document.
+                // The VERY FIRST TIME the user clicks anywhere on the new page, 
+                // we try to resume the music.
+                document.addEventListener('click', function resumeAudio() {
+                    audioPlayer.play().then(() => {
+                        playPauseBtn.innerHTML = pauseIconSVG;
+                    }).catch(e => console.error("Still couldn't play:", e));
+                    
+                    // Remove this listener immediately so it only runs once
+                    document.removeEventListener('click', resumeAudio);
+                }, { once: true }); 
+            });
         }
     } else {
-        pauseTrack(); // This ensures the 'Play' icon is injected initially
+        // It was paused previously, keep it paused.
+        pauseTrack(); 
     }
-}
+} // End of initializeMusicPlayer function
 /**
  * ==================================================================================
  * 9. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
