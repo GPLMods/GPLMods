@@ -51,16 +51,16 @@
                     <a href="/login" class="action-btn">Login to Interact</a>
                 <% } %>
 
-                <!-- This new logic checks for either the permanent ID or the temporary one -->
-<% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
-    <% 
-        // Prioritize the correct, permanent ID if it exists
-        const vtId = file.virusTotalId; 
-        const vtUrl = `https://www.virustotal.com/gui/file/${vtId}`;
-    %>
-    <a href="<%= vtUrl %>" target="_blank" class="action-btn">
-        <i class="fas fa-shield-alt"></i>
-        Check File Safety
+<!-- RESTORED & FIXED: VirusTotal Button -->
+<% if (file.virusTotalId) { %>
+    <!-- If we have the final permanent hash, go to the final file report -->
+    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="action-btn">
+        <i class="fas fa-shield-alt"></i> Check File Safety
+    </a>
+<% } else if (file.virusTotalAnalysisId) { %>
+    <!-- If we only have the temporary analysis ID, go to the live scan status -->
+    <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="action-btn">
+        <i class="fas fa-shield-alt"></i> Check Scan Status (Pending)
     </a>
 <% } %>
                 

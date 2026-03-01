@@ -941,25 +941,46 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
-        
-        // --- 1. Find the preliminary file record ---
         const pendingFile = await File.findById(fileId);
 
-        // --- 2. Safety Check ---
-        if (!pendingFile) {
-            return res.status(404).render('pages/404');
-        }
-        if (pendingFile.uploader !== req.user.username) {
-            return res.status(403).render('pages/403');
+        if (!pendingFile) return res.status(404).render('pages/404');
+        if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
+
+        // --- SMART EXTRACTION LOGIC ---
+        const filename = pendingFile.originalFilename || "";
+        
+        // 1. Guess the Platform based on file extension
+        const ext = filename.split('.').pop().toLowerCase();
+        let defaultPlatform = "";
+        if (ext === 'apk' || ext === 'xapk' || ext === 'apks') defaultPlatform = 'android';
+        else if (ext === 'exe' || ext === 'msi') defaultPlatform = 'windows';
+        else if (ext === 'ipa') defaultPlatform = 'ios-jailed';
+        else if (ext === 'deb') defaultPlatform = 'ios-jailbroken';
+        else if (ext === 'zip') defaultPlatform = 'wordpress'; // Educated guess
+
+        // 2. Extract Version (Looks for v1.2, 1.0.4, etc.)
+        let cleanName = filename.replace(/\.[^/.]+$/, ""); // Remove extension
+        let defaultVersion = "";
+        const versionMatch = cleanName.match(/v?(\d+\.\d+(\.\d+)?)/i);
+        
+        if (versionMatch) {
+            defaultVersion = versionMatch[1]; // Grab the numbers
+            // Remove the version from the name to clean it up
+            cleanName = cleanName.replace(versionMatch[0], "").replace(/[-_]+/g, " ").trim(); 
+        } else {
+            // Just replace dashes and underscores with spaces if no version is found
+            cleanName = cleanName.replace(/[-_]+/g, " ").trim();
         }
 
-        // --- 3. Render the page and pass the required variables ---
-        // We get these from the database record we created in Step 1
         res.render('pages/upload-details', { 
             fileId: pendingFile._id,
             fileKey: pendingFile.fileKey,
-            filename: pendingFile.originalFilename, // Pass the filename!
-            filesize: pendingFile.fileSize
+            filename: pendingFile.originalFilename,
+            filesize: pendingFile.fileSize,
+            // Pass our smart guesses to the frontend
+            defaultName: cleanName,
+            defaultVersion: defaultVersion,
+            defaultPlatform: defaultPlatform
         });
 
     } catch (error) {
