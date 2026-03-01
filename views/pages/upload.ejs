@@ -1,213 +1,147 @@
 <%- include('../partials/header') %>
 
 <style>
-/* --- GPL Upload Section Styled Same As Homepage --- */
-
-.upload-section {
-    background-color: var(--dark-gray);
-    text-align: center;
-    padding: 60px 20px;
-    margin: 40px auto;
-    border-radius: 15px;
-    border: 1px dashed var(--silver);
-    max-width: 700px;
-    transition: all 0.3s ease;
-}
-
-.upload-section:hover {
-    box-shadow: 0 0 25px var(--glow-gold);
-    border-color: var(--gold);
-}
-
-.upload-section h2 {
-    font-size: 2em;
-    margin-bottom: 10px;
-}
-
-.upload-section p {
-    color: var(--silver);
-    margin-bottom: 30px;
-}
-
-/* Drop Area Styled Same As Upload Button Feel */
-
-#drop-area {
-    border: 2px dashed var(--silver);
-    border-radius: 15px;
-    padding: 40px;
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-#drop-area.highlight {
-    border-color: var(--gold);
-    background-color: #222;
-    box-shadow: 0 0 15px var(--glow-gold);
-}
-
-#browse-link {
-    color: var(--gold);
-    text-decoration: none;
-    font-weight: 600;
-}
-
-#browse-link:hover {
-    text-decoration: underline;
-}
-
-/* Progress Bar */
-
-#progress-bar-container {
-    display: none;
-    margin-top: 20px;
-}
-
-#progress-bar {
-    width: 100%;
-    height: 25px;
-    background-color: var(--black);
-    border-radius: 20px;
-    overflow: hidden;
-    border: 1px solid var(--silver);
-}
-
-#progress-bar-fill {
-    width: 0%;
-    height: 100%;
-    background: var(--gold);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 15px var(--glow-gold);
-}
-
-#upload-status {
-    margin-top: 10px;
-    color: var(--silver);
-}
+    .upload-container { 
+        max-width: 700px; 
+        margin: 4rem auto; 
+        padding: 3rem 2rem; 
+        background-color: var(--dark-gray); 
+        border-radius: 12px; 
+        text-align: center;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .file-input-label { 
+        display: inline-block; 
+        padding: 15px 30px; 
+        background: transparent; 
+        color: var(--gold); 
+        border: 2px dashed var(--gold); 
+        border-radius: 8px; 
+        cursor: pointer; 
+        transition: all 0.3s ease; 
+        font-size: 1.2em; 
+        margin-bottom: 1rem; 
+        width: 100%;
+    }
+    .file-input-label:hover { 
+        background: rgba(255, 215, 0, 0.1); 
+    }
+    .submit-button { 
+        display: block; 
+        width: 100%; 
+        background: var(--gold); 
+        color: var(--black); 
+        padding: 15px 20px; 
+        border-radius: 8px; 
+        font-weight: 700; 
+        font-size: 1.2em; 
+        border: none; 
+        cursor: pointer; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 0 15px var(--glow-gold); 
+        margin-top: 2rem; 
+    }
+    .submit-button:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 0 25px var(--glow-gold);
+    }
+    .submit-button:disabled { 
+        background-color: #555; 
+        color: #aaa; 
+        cursor: not-allowed; 
+        box-shadow: none; 
+        transform: none; 
+    }
+    #file-name-display { 
+        margin-top: 15px; 
+        color: var(--white); 
+        font-weight: 600; 
+        font-size: 1.1em;
+    }
+    
+    /* Loading Spinner */
+    .loader-container { display: none; margin-top: 20px; }
+    .loader { 
+        margin: 0 auto; 
+        border: 4px solid #333; 
+        border-top: 4px solid var(--gold); 
+        border-radius: 50%; 
+        width: 40px; 
+        height: 40px; 
+        animation: spin 1s linear infinite; 
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 
 <div class="container">
+    <div class="upload-container">
+        <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 2.2em;">Upload Mod File</h2>
+        <p style="color: var(--silver); margin-bottom: 2.5rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe). It will be securely uploaded to the cloud and scanned for safety.</p>
+        
+        <!-- Notice the action is now pointing to /upload-initial -->
+        <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
+            
+            <div class="form-group">
+                <label for="modFile" class="file-input-label" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
+                    Click to Choose File
+                </label>
+                <!-- Hidden file input -->
+                <input type="file" id="modFile" name="modFile" required style="display:none;">
+                
+                <div id="file-name-display">No file selected</div>
+            </div>
+            
+            <!-- Loading Animation -->
+            <div class="loader-container" id="loaderContainer">
+                <div class="loader"></div>
+                <p style="color: var(--gold); margin-top: 15px;">Uploading to cloud & initiating safety scan...<br><span style="color: var(--silver); font-size: 0.85em;">Please do not close this page. Large files may take a minute.</span></p>
+            </div>
 
-<section class="upload-section">
-
-    <h2>Have a Mod to Share?</h2>
-    <p>Step 1 of 2: Select or drag & drop your mod file (.zip, .rar, .exe, etc.)</p>
-
-    <div id="drop-area">
-        <p>Drag your file here, or 
-            <a href="#" id="browse-link">browse your computer</a>.
-        </p>
-        <input type="file" id="file-input" hidden>
+            <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
+        </form>
     </div>
-
-    <div id="progress-bar-container">
-        <p id="file-name-display"></p>
-        <div id="progress-bar">
-            <div id="progress-bar-fill"></div>
-        </div>
-        <p id="upload-status">Initializing upload...</p>
-    </div>
-
-</section>
-
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const dropArea = document.getElementById('drop-area');
-    const fileInput = document.getElementById('file-input');
-    const browseLink = document.getElementById('browse-link');
-    const progressBarContainer = document.getElementById('progress-bar-container');
-    const progressBarFill = document.getElementById('progress-bar-fill');
-    const uploadStatus = document.getElementById('upload-status');
-    const fileNameDisplay = document.getElementById('file-name-display');
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('modFile');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const form = document.getElementById('initialUploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loaderContainer = document.getElementById('loaderContainer');
+        const dropZone = document.getElementById('drop-zone');
 
-    // --- Drag & Drop Event Handlers ---
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, e => {
-            e.preventDefault();
-            e.stopPropagation();
+        // Update UI when file is selected
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = 'Ready to upload: ' + this.files[0].name;
+                dropZone.style.borderColor = 'var(--gold)';
+                dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
+            } else {
+                fileNameDisplay.textContent = 'No file selected';
+                dropZone.style.borderColor = 'var(--gold)';
+                dropZone.style.backgroundColor = 'transparent';
+            }
+        });
+
+        // Handle form submission and show loading state
+        form.addEventListener('submit', function(e) {
+            if (fileInput.files.length === 0) {
+                e.preventDefault();
+                alert("Please select a file to upload first.");
+                return;
+            }
+            
+            // Disable the button to prevent double-clicks
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Processing...';
+            
+            // Show the loading spinner
+            loaderContainer.style.display = 'block';
         });
     });
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'));
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'));
-    });
-    dropArea.addEventListener('drop', e => {
-        handleFiles(e.dataTransfer.files);
-    });
-
-    // --- Click to Browse ---
-    browseLink.addEventListener('click', e => {
-        e.preventDefault();
-        fileInput.click();
-    });
-    fileInput.addEventListener('change', () => {
-        handleFiles(fileInput.files);
-    });
-
-    // --- Main Upload Logic ---
-    async function handleFiles(files) {
-        if (files.length === 0) return;
-        const file = files[0];
-        
-        // --- Show the progress bar ---
-        fileNameDisplay.textContent = `Uploading: ${file.name}`;
-        progressBarContainer.style.display = 'block';
-        dropArea.style.display = 'none';
-
-        try {
-            // --- STEP 1: Ask our server for a presigned URL ---
-            uploadStatus.textContent = 'Preparing secure upload...';
-            const response = await fetch('/generate-presigned-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: file.name, filetype: file.type, folder: 'mods' })
-            });
-
-            if (!response.ok) throw new Error('Could not prepare upload. Server error.');
-            
-            const { presignedUrl, fileKey } = await response.json();
-
-            // --- STEP 2: Upload directly to B2 using the presigned URL ---
-            uploadStatus.textContent = 'Uploading... 0%';
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', presignedUrl, true);
-            xhr.setRequestHeader('Content-Type', file.type);
-            
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    progressBarFill.style.width = percentComplete + '%';
-                    uploadStatus.textContent = `Uploading... ${percentComplete}%`;
-                }
-            };
-            
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    uploadStatus.textContent = 'Upload Complete! Redirecting...';
-                    // --- STEP 3: Redirect to the metadata form on success ---
-                    window.location.href = `/upload-details?fileKey=${encodeURIComponent(fileKey)}&filename=${encodeURIComponent(file.name)}&filesize=${file.size}`;
-                } else {
-                    throw new Error(`Upload failed with status: ${xhr.status}`);
-                }
-            };
-            
-            xhr.onerror = () => {
-                throw new Error('Upload failed. Network error.');
-            };
-
-            xhr.send(file);
-
-        } catch (error) {
-            console.error('Upload process failed:', error);
-            uploadStatus.textContent = `Error: ${error.message}`;
-            uploadStatus.style.color = '#ff4d4d';
-        }
-    }
-});
 </script>
 
 <%- include('../partials/footer') %>
