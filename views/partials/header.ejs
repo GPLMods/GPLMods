@@ -39,20 +39,12 @@
                 <a href="/profile" class="avatar-placeholder">
                <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                </a>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/my-uploads">My Uploads</a></li>
-                    <li><a href="/upload">Upload A New Mod</a></li>
-                    <li><a href="/community-chat">Community Chat</a></li>
-                    <li><a href="/membership">Membership</a></li>
-                    <li><a href="/about">About Us!</a></li>
-                    <li><a href="/donate">Donate Us!</a></li>
-                    <li><a href="/logout" class="btn btn-signup">Logout</a>
+                    <a href="/upload" class="btn btn-login">Upload A New Mod</a>
+                    <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
-              <li><a href="/upload" class="btn btn-login">Upload A New Mod</a></li>
-              <li><a href="/about">About Us!</a></li>
-              <li><a href="/donate">Donate Us!</a></li>
-              <li><a href="/login" class="btn btn-login">Login</a></li>
-              <li><a href="/register" class="btn btn-signup">Sign Up</a></li>
+              <a href="/upload" class="btn btn-login">Upload A New Mod</a>
+              <a href="/login" class="btn btn-login">Login</a>
+              <a href="/register" class="btn btn-signup">Sign Up</a>
                 <% } %>
             </div>
 
