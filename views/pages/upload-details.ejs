@@ -220,7 +220,7 @@
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
 
-        <form action="/upload-finalize" method="POST" enctype="multipart/form-data">
+        <form action="/upload-finalize/<%= fileId %>" method="POST" enctype="multipart/form-data">
             <!-- HIDDEN INPUTS to pass the main file info -->
             <input type="hidden" name="fileKey" value="<%= fileKey %>">
             <input type="hidden" name="originalFilename" value="<%= filename %>">

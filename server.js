@@ -97,7 +97,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // --- ADD CORS MIDDLEWARE HERE ---
-const allowedOrigins = [
+const allowedOrigins =[
     'http://localhost:3000',          // Your local dev environment
     'https://gplmods.webredirect.org'   // Your live custom domain
 ];
@@ -279,7 +279,7 @@ app.get('/healthz', (req, res) => {
 app.get('/', async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
-        const categories = ['android', 'ios', 'wordpress', 'windows'];
+        const categories =['android', 'ios', 'wordpress', 'windows'];
         const filesByCategory = {};
 
         await Promise.all(categories.map(async (cat) => {
@@ -382,7 +382,7 @@ app.get('/search', async (req, res) => {
         
         let searchQuery = {
             isLatestVersion: true,
-            $or: [
+            $or:[
                 { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
                 { tags: { $regex: query, $options: 'i' } },
@@ -431,14 +431,14 @@ app.get('/mods/:id', async (req, res) => {
         let currentFile = await File.findById(fileId);
         if (!currentFile) return res.status(404).send("File not found.");
 
-        let versionHistory = [];
+        let versionHistory =[];
         if (currentFile.parentFile) {
             let headFile = await File.findById(currentFile.parentFile).populate('olderVersions');
-            versionHistory = [headFile, ...headFile.olderVersions.slice().reverse()];
+            versionHistory =[headFile, ...headFile.olderVersions.slice().reverse()];
             currentFile = headFile;
         } else {
             await currentFile.populate('olderVersions');
-            versionHistory = [currentFile, ...currentFile.olderVersions.slice().reverse()];
+            versionHistory =[currentFile, ...currentFile.olderVersions.slice().reverse()];
         }
 
         const iconKey = currentFile.iconUrl || currentFile.iconKey;
@@ -446,7 +446,7 @@ app.get('/mods/:id', async (req, res) => {
         
         const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0)
             ? currentFile.screenshotUrls
-            : (currentFile.screenshotKeys || []);
+            : (currentFile.screenshotKeys ||[]);
             
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
 
@@ -940,14 +940,30 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 // Step 2: Display the details form
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
-        const file = await File.findById(req.params.fileId);
-        // Security check: ensure the user editing this is the one who uploaded it.
-        if (!file || file.uploader !== req.user.username) {
+        const fileId = req.params.fileId;
+        
+        // --- 1. Find the preliminary file record ---
+        const pendingFile = await File.findById(fileId);
+
+        // --- 2. Safety Check ---
+        if (!pendingFile) {
+            return res.status(404).render('pages/404');
+        }
+        if (pendingFile.uploader !== req.user.username) {
             return res.status(403).render('pages/403');
         }
-        res.render('pages/upload-details', { fileId: req.params.fileId });
-    } catch(error) {
-        console.error("Error showing upload details page:", error);
+
+        // --- 3. Render the page and pass the required variables ---
+        // We get these from the database record we created in Step 1
+        res.render('pages/upload-details', { 
+            fileId: pendingFile._id,
+            fileKey: pendingFile.fileKey,
+            filename: pendingFile.originalFilename, // Pass the filename!
+            filesize: pendingFile.fileSize
+        });
+
+    } catch (error) {
+        console.error("Error loading upload details:", error);
         res.status(500).render('pages/500');
     }
 });
@@ -1130,7 +1146,7 @@ app.use((err, req, res, next) => {
 // ===============================================
 
 // In-memory store for recent messages
-let recentMessages = [];
+let recentMessages =[];
 
 const startServer = async () => {
     try {
