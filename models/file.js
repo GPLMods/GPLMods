@@ -2,29 +2,32 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose; // Destructured Schema for easier access
 
 const FileSchema = new Schema({
-    name: { type: String, required: true },
-    version: { type: String, required: true },
-    modDescription: { type: String, required: true },
-    modFeatures: { type: String, required: true },
+    // --- DYNAMICALLY REQUIRED FIELDS ---
+    // These are NOT required during the initial 'processing' step, 
+    // but they ARE required once the user submits the final form.
+    name: { type: String, required: function() { return this.status !== 'processing'; } },
+    version: { type: String, required: function() { return this.status !== 'processing'; } },
+    modDescription: { type: String, required: function() { return this.status !== 'processing'; } },
+    modFeatures: { type: String, required: function() { return this.status !== 'processing'; } },
     officialDescription: { type: String },
     whatsNew: { type: String },
     
     // --- STORAGE KEYS (S3/Cloud) ---
-    iconKey: { type: String, required: true },
-    screenshotKeys: { type: [String], required: true },
+    iconKey: { type: String, required: function() { return this.status !== 'processing'; } },
+    screenshotKeys: { type: [String], required: function() { return this.status !== 'processing'; } },
     videoUrl: { type: String }, 
-    fileKey: { type: String, required: true },
+    fileKey: { type: String, required: true }, // This is always required from Step 1
 
     // --- CATEGORIZATION ---
     category: { 
         type: String, 
-        required: true, 
-        enum: ['windows', 'android', 'ios', 'wordpress'] 
+        required: function() { return this.status !== 'processing'; }, 
+        enum:['windows', 'android', 'ios', 'wordpress'] 
     },
     subCategory: { 
         type: String 
     },
-    platforms: { type: [String], required: true },
+    platforms: { type: [String], required: function() { return this.status !== 'processing'; } },
     tags: { type: [String] },
 
     // --- FILE INFO ---
@@ -79,20 +82,21 @@ const FileSchema = new Schema({
         default: 0
     },
     // Array to store the IDs of users who have voted on this file's status
-    votedOnStatusBy: [{
+    votedOnStatusBy:[{
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],
 
     certification: {
         type: String,
-        enum: ['none', 'certified', 'community-tested'],
+        enum:['none', 'certified', 'community-tested'],
         default: 'none'
     },
 
     status: {
         type: String,
-        enum: ['pending', 'live', 'rejected'],
+        // ADDED 'processing' to the enum array so Mongoose doesn't reject it
+        enum: ['processing', 'pending', 'live', 'rejected'], 
         default: 'pending' // All new uploads will require admin approval
     },
     rejectionReason: { // To store why a mod was rejected
