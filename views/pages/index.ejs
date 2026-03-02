@@ -2,6 +2,7 @@
 
 <section class="hero"></section>
 
+<!-- Start replacing from here -->
 <div class="container" id="mods-container">
     <!-- Main Category Tabs -->
     <div class="tabs-container">
@@ -30,43 +31,38 @@
                             <!-- Loop through the files in this section -->
                             <% filesByCategory[category][section].forEach(file => { %>
                                 <a href="/mods/<%= file._id %>" class="mod-card-link">
-                                  <!-- The card is now just a div -->
-<div class="mod-card">
-    <% if (file.certification === 'certified') { %>
-        <div class="app-feature-tag">✔ Certified</div>
-    <% } %>
-    <div class="mod-type-tag"><%= file.version %></div>
-    
-    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
-    
-    <div class="mod-card-content">
-        <!-- ======== FIX: THE LINK IS NOW ON THE TITLE ======== -->
-        <h3>
-            <a href="/mods/<%= file._id %>" class="full-card-link"><%= file.name %></a>
-        </h3>
-        <!-- =================================================== -->
-        <p><%= file.developer %></p>
-        <div class="rating">
-            <div class="stars-outer">
-                <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
-            </div>
-            <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
-        </div>
-    </div>
-    
-    <div class="download-overlay">
-        <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary">View Mod</a>
-        <% if (user) { %>
-        <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%;">
-            <button type="submit" class="overlay-button overlay-btn-secondary">
-                Add to Whitelist
-            </button>
-        </form>
-        <% } %>
-    </div>
-</div>
-</section>
-<% }) %>
+                                    <div class="mod-card">
+                                        <% if (file.certification === 'certified') { %>
+                                            <div class="app-feature-tag">✔ Certified</div>
+                                        <% } %>
+                                        <div class="mod-type-tag"><%= file.version %></div>
+                                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                                        <div class="mod-card-content">
+                                            <h3><%= file.name %></h3>
+                                            <p><%= file.developer %></p>
+                                            <div class="rating">
+                                                <div class="stars-outer">
+                                                    <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                                </div>
+                                                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                            </div>
+                                        </div>
+                                        <div class="download-overlay">
+                                            <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary">View Mod</a>
+                                            <% if (user) { %>
+                                                <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%;">
+                                                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
+                                                        Add to Whitelist
+                                                    </button>
+                                                </form>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </a>
+                            <% }) %>
+                        </div>
+                    </section>
+                <% }) %>
 
             </div>
         <% }) %>
@@ -84,5 +80,6 @@
         <a href="/upload" class="upload-button">Upload Your Mod</a>
     </section>
 </div>
+<!-- End replacing here -->
 
 <%- include('../partials/footer') %>
