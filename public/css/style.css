@@ -1699,3 +1699,19 @@
     border-radius: 8px;
     font-weight: 700;
 }
+/* --- Fix for Long Text Breaking the Download Page Layout --- */
+.details-panel {
+    max-width: 100%;
+    overflow: hidden; /* Prevents the panel from expanding off-screen */
+}
+
+.tab-content p, 
+.app-description-content, 
+.info-box,
+.info-box p {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word; /* Forces long words/URLs to break and wrap */
+    white-space: pre-wrap;  /* Honors your line breaks (\n) but still wraps text to fit the screen */
+    max-width: 100%;
+}

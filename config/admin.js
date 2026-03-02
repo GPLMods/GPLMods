@@ -71,23 +71,21 @@ const adminJsOptions = {
                 
                 // 1. ADD iconKey and screenshotKeys to editProperties
                 editProperties:[
-                    'name', 'version', 'developer', 'modDescription', 'officialDescription',
-                    'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                    'virusTotalId', 'virusTotalAnalysisId',
-                    'iconKey', 'screenshotKeys' 
-                ],
-                
-                // 2. ADD them to showProperties
-                showProperties:[
-                    'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
-                    'certification', 'category', 'downloads', 'averageRating', 'virusTotalId', 'virusTotalAnalysisId', 
-                    'iconKey', 'screenshotKeys', 'createdAt', 'updatedAt'
-                ],
-                
-                // 3. Add formatting and instructions in properties
-                properties: {
-                    modDescription: { type: 'richtext' },
-                    officialDescription: { type: 'richtext' },
+    'name', 'version', 'developer', 'modDescription', 'modFeatures', 'whatsNew', 'officialDescription', // <-- ADDED MISSING FIELDS HERE
+    'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+    'virusTotalId', 'virusTotalAnalysisId',
+    'iconKey', 'screenshotKeys' 
+],
+showProperties:[
+    'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
+    'certification', 'category', 'downloads', 'averageRating', 'virusTotalId', 'virusTotalAnalysisId', 
+    'iconKey', 'screenshotKeys', 'modDescription', 'modFeatures', 'whatsNew', 'officialDescription', 'createdAt', 'updatedAt' // <-- ADDED HERE TOO
+],
+properties: {
+    modDescription: { type: 'richtext' },
+    officialDescription: { type: 'richtext' },
+    modFeatures: { type: 'textarea' }, // Use textarea so your line-breaks stay intact for the checkmark list
+    whatsNew: { type: 'textarea' },
                     iconKey: {
                         description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.'
                     },
