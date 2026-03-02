@@ -54,14 +54,32 @@
 <!-- ======== VIRUSTOTAL BUTTON FIX ======== -->
         <% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
             <% 
-                const isPending = !file.virusTotalId;
-                const vtUrl = isPending 
-                    ? `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}` 
-                    : `https://www.virustotal.com/gui/file/${file.virusTotalId}`;
+                // Grab whichever IDs we have in the database
+                const vtHash = file.virusTotalId || "";
+                const vtAnalysis = file.virusTotalAnalysisId || "";
+                
+                let vtUrl = "";
+                let btnText = "Check File Safety";
+
+                // A true SHA-256 hash is exactly 64 characters long.
+                if (vtHash.length === 64) {
+                    // It's a real hash, use the direct file link
+                    vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
+                } 
+                else if (vtAnalysis) {
+                    // It's a temporary Analysis ID. VT will automatically redirect this to the final page!
+                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+                    btnText = "Check Scan Status";
+                } 
+                else {
+                    // Fallback: If an admin accidentally pasted the Base64 ID into the wrong box
+                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                    btnText = "Check Scan Status";
+                }
             %>
             <a href="<%= vtUrl %>" target="_blank" class="action-btn">
                 <i class="fas fa-shield-alt"></i>
-                <%= isPending ? 'Check Scan Status (Pending)' : 'Check File Safety' %>
+                <%= btnText %>
             </a>
         <% } %>
         <!-- ======================================= -->
