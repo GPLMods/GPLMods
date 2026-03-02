@@ -245,15 +245,18 @@
     </div>
 </main>
 
-<!-- Report Modal -->
-<div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
-    <div class="modal-content" style="background-color: var(--dark-gray); margin: 15% auto; padding: 2rem; border: 1px solid var(--light-grey); width: 80%; max-width: 500px; border-radius: 8px; position: relative;">
-        <span class="close-modal" style="color: var(--silver); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-        <h3>Report "<%= file.name %>"</h3>
+<!-- Report Modal (Cleaned up and Styled) -->
+<div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
+    <div class="modal-content" style="background-color: var(--dark-gray); margin: 10% auto; padding: 2.5rem; border: 1px solid #333; width: 90%; max-width: 500px; border-radius: 12px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <span class="close-modal" style="color: var(--silver); position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.3s;">&times;</span>
+        
+        <h3 style="color: var(--gold); margin-bottom: 20px; font-size: 1.5em;">Report "<%= file.name %>"</h3>
+        
         <form action="/files/<%= file._id %>/report" method="POST">
-            <div class="form-group" style="margin-top: 1rem;">
-                <label for="reason">Reason for reporting*</label>
-                <select name="reason" id="reason" required style="width:100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="reason" style="display: block; margin-bottom: 8px; color: var(--silver);">Reason for reporting*</label>
+                <select name="reason" id="reason" required>
                     <option value="" disabled selected>Select a reason...</option>
                     <option value="malware">Contains malware/virus</option>
                     <option value="broken-file">File is broken or does not work</option>
@@ -262,6 +265,16 @@
                     <option value="other">Other</option>
                 </select>
             </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="additionalComments" style="display: block; margin-bottom: 8px; color: var(--silver);">Additional Comments (Optional)</label>
+                <textarea name="additionalComments" id="additionalComments" placeholder="Please provide more details..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Submit Report</button>
+        </form>
+    </div>
+</div>
             <div class="form-group" style="margin-top: 1rem;">
                 <label for="additionalComments">Additional Comments (Optional)</label>
                 <textarea name="additionalComments" id="additionalComments" style="width: 100%; min-height: 80px; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); color: var(--white); border-radius: 4px;"></textarea>

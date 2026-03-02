@@ -1227,16 +1227,26 @@
 
         /* Left Panel - Info & Download */
         .info-panel { background-color: var(--dark-gray); padding: 30px; border-radius: 15px; text-align: center; align-self: flex-start; }
-        .app-icon { 
-            width: 120px; 
-            height: 120px; 
-            border-radius: 25px; 
-            margin: 0 auto 20px auto; 
-            background-color: #333;
-            object-fit: cover;
-            display: block;
-        }
-        .info-panel h1 { font-size: 2em; line-height: 1.2; margin-bottom: 10px; }
+        /* Fixes the icon cropping - allows dynamic height based on aspect ratio */
+.app-icon { 
+    width: 100%; 
+    max-width: 200px; /* Caps the maximum width */
+    height: auto; /* Lets the image scale naturally without squishing */
+    border-radius: 15px; 
+    margin: 0 auto 20px auto; 
+    background-color: transparent; /* Better for transparent PNGs */
+    object-fit: contain; /* Ensures the WHOLE image is visible, no cropping */
+    display: block;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); /* Adds a nice depth shadow */
+}
+        /* Fixes long mod names overflowing the box */
+.info-panel h1 { 
+    font-size: 2em; 
+    line-height: 1.3; 
+    margin-bottom: 10px; 
+    word-wrap: break-word; 
+    overflow-wrap: break-word; 
+}
         .rating { display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 20px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1.2em; letter-spacing: 2px; }
         .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
@@ -1290,13 +1300,21 @@
         }
 
         .meta-info { list-style: none; text-align: left; color: var(--silver); }
-        .meta-info li { 
-            padding: 10px 0; 
-            border-bottom: 1px solid #2a2a2a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        /* Fixes long developer/uploader names breaking the list layout */
+.meta-info li { 
+    padding: 12px 0; 
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Aligns text to the top if it wraps to 2 lines */
+    gap: 15px; /* Ensures space between the label and the value */
+}
+.meta-info li span, .meta-info li a {
+    text-align: right;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 65%; /* Prevents long text from pushing the left label off-screen */
+}
         .meta-info li:last-child { border-bottom: none; }
         .meta-link {
             color: var(--white);
@@ -1655,3 +1673,29 @@
             .page-header h1 { font-size: 2.2em; }
             .form-section { padding: 20px; }
         }
+/* Custom styling for the Report Modal Form */
+.modal-content select, 
+.modal-content textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: var(--black);
+    color: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+.modal-content select:focus, 
+.modal-content textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 10px var(--glow-gold);
+}
+.modal-content .btn-primary {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.1em;
+    border-radius: 8px;
+    font-weight: 700;
+}
