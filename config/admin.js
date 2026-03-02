@@ -64,31 +64,43 @@ const adminJsOptions = {
         // ---------------------------------
         // FILE (MOD) MANAGEMENT RESOURCE
         // ---------------------------------
-        {
+{
             resource: File,
             options: {
-                // Show all important fields for complete management
-                listProperties: ['name', 'uploader', 'status', 'certification', 'category'],
-                editProperties: [
-                    'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
-                    'certification', 'category', 'modDescription', 'modFeatures', 'officialDescription',
-                    'tags', 'videoUrl'
+                listProperties:['name', 'uploader', 'status', 'certification', 'category'],
+                
+                // 1. ADD iconKey and screenshotKeys to editProperties
+                editProperties:[
+                    'name', 'version', 'developer', 'modDescription', 'officialDescription',
+                    'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+                    'virusTotalId', 'virusTotalAnalysisId',
+                    'iconKey', 'screenshotKeys' 
                 ],
-                showProperties: [
+                
+                // 2. ADD them to showProperties
+                showProperties:[
                     'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
-                    'certification', 'category', 'downloads', 'averageRating', 'workingVoteCount',
-                    'createdAt', 'updatedAt'
+                    'certification', 'category', 'downloads', 'averageRating', 'virusTotalId', 'virusTotalAnalysisId', 
+                    'iconKey', 'screenshotKeys', 'createdAt', 'updatedAt'
                 ],
+                
+                // 3. Add formatting and instructions in properties
                 properties: {
-                    // Use a rich text editor for long descriptions
                     modDescription: { type: 'richtext' },
                     officialDescription: { type: 'richtext' },
-                    rejectionReason: {
-                        // This field should only be visible if the status is 'rejected'
-                        isVisible: { 
-                            list: false, show: true, edit: true, filter: false 
-                        },
+                    iconKey: {
+                        description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.'
                     },
+                    screenshotKeys: {
+                        isArray: true, // This creates an "Add New Item" button for multiple screenshots
+                        description: 'Paste direct image URLs (https://...). Click "Add new item" for multiple.'
+                    },
+                    rejectionReason: {
+                        isVisible: {
+                           edit: (record) => record.params.status === 'rejected',
+                           list: false, filter: false, show: true
+                        }
+                    }
                 },
             },
         },

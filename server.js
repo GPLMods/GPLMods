@@ -57,6 +57,25 @@ function timeAgo(date) {
     return date.toLocaleDateString();
 }
 
+// --- NEW SMART HELPER FOR IMAGES ---
+async function getSmartImageUrl(key) {
+    if (!key) return '/images/default-avatar.png'; // Fallback
+    
+    // If the admin pasted a direct web URL, just use it directly!
+    if (key.startsWith('http://') || key.startsWith('https://')) {
+        return key;
+    }
+    
+    // Otherwise, it's a Backblaze key, so generate the secure signed URL
+    try {
+        return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+    } catch (error) {
+        console.error(`Could not sign URL for key: ${key}`);
+        return '/images/default-avatar.png';
+    }
+}
+// --------------------------------------
+
 // ===============================
 // 3. AWS S3 CLIENT (BACKBLAZE B2)
 // ===============================
@@ -441,14 +460,16 @@ app.get('/mods/:id', async (req, res) => {
             versionHistory =[currentFile, ...currentFile.olderVersions.slice().reverse()];
         }
 
+        // Uses the new smart helper for the icon
         const iconKey = currentFile.iconUrl || currentFile.iconKey;
-        const iconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: iconKey }), { expiresIn: 3600 });
+        const iconUrl = await getSmartImageUrl(iconKey);
         
+        // Uses the new smart helper for all screenshots
         const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0)
             ? currentFile.screenshotUrls
             : (currentFile.screenshotKeys ||[]);
             
-        const screenshotUrls = await Promise.all(screenKeys.map(key => getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 })));
+        const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
         const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); // Populate the key
 
@@ -896,6 +917,14 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             fileKey: fileKey,
             originalFilename: req.file.originalname,
             fileSize: req.file.size,
+            
+            // --- ADD THESE FALLBACKS ---
+            name: req.file.originalname, // Temporary name
+            version: 'Draft',
+            category: 'android',         // Temporary category
+            platforms:[],
+            // ---------------------------
+            
             status: 'processing' // A temporary status
         });
         await newFile.save();
@@ -1004,21 +1033,43 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         }
 
         const { softwareIcon, screenshots } = req.files;
+        const formData = req.body; // All the text from your form
+
         if (!softwareIcon || !screenshots) {
             return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required.`);
         }
 
-        // Upload icon and screenshots
-        const iconKey = await uploadToB2(softwareIcon[0], 'icons');
-        const screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+        // 1. Upload icon and screenshots to Backblaze
+        let iconKey = null;
+        if (softwareIcon && softwareIcon.length > 0) {
+            iconKey = await uploadToB2(softwareIcon[0], 'icons');
+        }
+        
+        let screenshotKeys =[];
+        if (screenshots && screenshots.length > 0) {
+            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+        }
 
         // Clean up the temporary icon/screenshot files
-        fs.unlinkSync(softwareIcon[0].path);
-        screenshots.forEach(f => fs.unlinkSync(f.path));
+        if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
+        if (screenshots) screenshots.forEach(f => fs.unlinkSync(f.path));
 
-        // Update the existing document in the database
+        // 2. Format the tags properly into an array
+        const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) :[];
+
+        // --- 3. THE FIX: EXPLICITLY MAP FORM DATA TO DATABASE FIELDS ---
         await File.findByIdAndUpdate(fileId, {
-            ...req.body, // This will grab all the text fields from the form
+            name: formData.modName,                 // Maps HTML 'modName' -> DB 'name'
+            version: formData.modVersion,           // Maps HTML 'modVersion' -> DB 'version'
+            developer: formData.developerName || 'N/A',
+            modDescription: formData.modDescription,
+            modFeatures: formData.modFeatures,
+            whatsNew: formData.whatsNew,
+            officialDescription: formData.officialDescription,
+            videoUrl: formData.videoUrl,
+            category: formData.modPlatform,         // Maps HTML 'modPlatform' -> DB 'category'
+            platforms: formData.modCategory ? [formData.modCategory] :[],
+            tags: processedTags,
             iconKey: iconKey,
             screenshotKeys: screenshotKeys,
             status: 'pending' // Set status to 'pending' for admin review
@@ -1036,8 +1087,38 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // 11. API ROUTES
 // ===================================
 
-app.get('/api/search/suggestions', async (req, res) => { 
-    res.json([]);
+app.get('/api/search/suggestions', async (req, res) => {
+    try {
+        const query = req.query.q;
+        
+        // Don't search if query is too short
+        if (!query || query.length < 2) {
+            return res.json([]);
+        }
+
+        // Search the database for matching names, tags, category, or developer
+        const suggestions = await File.find({
+            status: 'live',
+            isLatestVersion: true,
+            $or:[
+                { name: { $regex: query, $options: 'i' } },
+                { tags: { $regex: query, $options: 'i' } },
+                { category: { $regex: query, $options: 'i' } },
+                { developer: { $regex: query, $options: 'i' } }
+            ]
+        })
+        .select('name') // Only grab the name field to keep it fast
+        .limit(6);      // Max 6 suggestions
+
+        // Extract names and remove exact duplicates
+        const suggestionNames = [...new Set(suggestions.map(file => file.name))];
+
+        res.json(suggestionNames);
+
+    } catch (error) {
+        console.error("API Suggestion Error:", error);
+        res.status(500).json({ error: 'Server error while fetching suggestions.' });
+    }
 });
 
 // --- NEW: Trending Searches API Route ---
@@ -1183,7 +1264,7 @@ const startServer = async () => {
         const io = new Server(server, {
             cors: {
                 origin: allowedOrigins, // Use the 'allowedOrigins' array you defined earlier
-                methods: ["GET", "POST"]
+                methods:["GET", "POST"]
             }
         });
 

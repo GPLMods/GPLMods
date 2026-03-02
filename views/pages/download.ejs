@@ -51,18 +51,20 @@
                     <a href="/login" class="action-btn">Login to Interact</a>
                 <% } %>
 
-<!-- RESTORED & FIXED: VirusTotal Button -->
-<% if (file.virusTotalId) { %>
-    <!-- If we have the final permanent hash, go to the final file report -->
-    <a href="https://www.virustotal.com/gui/file/<%= file.virusTotalId %>" target="_blank" class="action-btn">
-        <i class="fas fa-shield-alt"></i> Check File Safety
-    </a>
-<% } else if (file.virusTotalAnalysisId) { %>
-    <!-- If we only have the temporary analysis ID, go to the live scan status -->
-    <a href="https://www.virustotal.com/gui/file-analysis/<%= file.virusTotalAnalysisId %>" target="_blank" class="action-btn">
-        <i class="fas fa-shield-alt"></i> Check Scan Status (Pending)
-    </a>
-<% } %>
+<!-- ======== VIRUSTOTAL BUTTON FIX ======== -->
+        <% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
+            <% 
+                const isPending = !file.virusTotalId;
+                const vtUrl = isPending 
+                    ? `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}` 
+                    : `https://www.virustotal.com/gui/file/${file.virusTotalId}`;
+            %>
+            <a href="<%= vtUrl %>" target="_blank" class="action-btn">
+                <i class="fas fa-shield-alt"></i>
+                <%= isPending ? 'Check Scan Status (Pending)' : 'Check File Safety' %>
+            </a>
+        <% } %>
+        <!-- ======================================= -->
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="action-btn">
