@@ -169,24 +169,23 @@
         .section-title { font-size: 1.3em; }
         .section-more { color: var(--gold); text-decoration: none; font-weight: 600; flex-shrink: 0; }
         
-       /* ==========================================================================
-   PERFECTED HOMEPAGE GRID & APP ICON SIZING
+/* ==========================================================================
+   PERFECTED HOMEPAGE GRID & APP ICON SIZING (V2)
    ========================================================================== */
 
-/* 1. The Grid Layout - Responsive and Uniform */
+/* 1. The Grid Layout - Fix Mobile Squishing */
 .mods-grid {
     display: grid;
-    /* Mobile: 2 columns if space allows, otherwise 1. */
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-    /* Forces all cards in a row to stretch to the exact same height */
+    /* Mobile: 1 Column (Restores the horizontal stretching layout you liked) */
+    grid-template-columns: 1fr;
+    gap: 20px;
     align-items: stretch; 
 }
 
 @media (min-width: 768px) {
     .mods-grid {
-        /* Desktop/Tablet: larger cards, 4-5 columns automatically */
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        /* Desktop: Vertical card layout with multiple columns */
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: 25px;
     }
 }
@@ -195,7 +194,7 @@
 .mod-card-link { 
     text-decoration: none; 
     display: block;
-    height: 100%; /* Takes full height of the grid cell */
+    height: 100%; 
 }
 
 /* 3. The Card Itself */
@@ -208,10 +207,9 @@
     transition: all 0.3s ease; 
     border: 1px solid transparent; 
     cursor: pointer;
-    
     display: flex;
     flex-direction: column;
-    height: 100%; /* Stretches to fill the wrapper */
+    height: 100%; 
 }
 .mod-card:hover { 
     transform: translateY(-8px); 
@@ -219,58 +217,57 @@
     box-shadow: 0 10px 25px var(--glow-gold); 
 }
 
-/* 4. The Image - NO MORE CROPPING */
+/* 4. The Image - NO CROPPING & AUTO SIZING */
 .mod-card-image { 
-    height: 150px; 
     width: 100%; 
-    /* 'contain' fits the whole image without cutting it, preserving aspect ratio */
-    object-fit: contain; 
-    background-color: #111; /* Very dark background behind the icon */
-    padding: 15px; /* Adds breathing room around the logo */
-    border-bottom: 1px solid #222;
+    height: auto; /* Automatically expands/contracts to fit the exact image size */
+    max-height: 280px; /* Prevents overly tall images from breaking the page */
+    object-fit: contain; /* Guarantees no cropping */
+    background-color: transparent; /* Removes the ugly dark box placeholder */
+    padding: 0; /* Removes padding so the image touches the edges */
+    border-bottom: 1px solid #222; /* Border adjusts automatically with the image */
+    display: block;
 }
 
 /* 5. The Content Area */
 .mod-card-content { 
-    padding: 15px; 
-    flex-grow: 1; /* Pushes the rating/buttons to the bottom if content is short */
+    padding: 20px; 
+    flex-grow: 1; 
     display: flex;
     flex-direction: column;
 }
 
-/* Truncate text so extremely long titles don't break the card */
 .mod-card h3 { 
-    font-size: 1.1em; 
+    font-size: 1.3em; 
     color: var(--white) !important; 
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Max 2 lines for title */
+    -webkit-line-clamp: 2; 
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-/* Truncate developer names/descriptions uniformly */
 .mod-card p { 
     color: var(--silver); 
-    font-size: 0.85em; 
+    font-size: 0.9em; 
     margin: 0 0 15px 0; 
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Max 2 lines */
+    -webkit-line-clamp: 2; 
     -webkit-box-orient: vertical;
     overflow: hidden;
-    flex-grow: 1; /* Fills remaining space inside the card */
+    flex-grow: 1; 
 }
 
 /* 6. Fix Overlapping Top Tags */
 .app-feature-tag { 
-    position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); 
-    font-size: 0.75em; font-weight: bold; padding: 4px 8px; border-radius: 12px; z-index: 2; 
-    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Prevents overlap */
+    position: absolute; top: 12px; left: 12px; background-color: var(--gold); color: var(--black); 
+    font-size: 0.75em; font-weight: bold; padding: 5px 10px; border-radius: 12px; z-index: 2; 
+    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
 .mod-type-tag { 
-    position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); 
-    font-size: 0.75em; font-weight: bold; padding: 4px 8px; border-radius: 12px; z-index: 2; 
-    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Prevents overlap */
+    position: absolute; top: 12px; right: 12px; background-color: var(--silver); color: var(--black); 
+    font-size: 0.75em; font-weight: bold; padding: 5px 10px; border-radius: 12px; z-index: 2; 
+    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
         .rating { display: flex; align-items: center; gap: 5px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1em; letter-spacing: 2px; }
