@@ -189,6 +189,39 @@
         gap: 25px;
     }
 }
+/* ==========================================================================
+   HOMEPAGE HORIZONTAL CAROUSEL (GLIDE) LAYOUT
+   ========================================================================== */
+
+/* The scrolling container */
+.mod-carousel { 
+    display: flex; 
+    overflow-x: auto; 
+    gap: 15px; 
+    padding-bottom: 15px; 
+    scroll-snap-type: x mandatory; 
+    scrollbar-width: none; /* Hides scrollbar in Firefox */
+}
+
+/* Hides scrollbar in Chrome/Safari/Edge */
+.mod-carousel::-webkit-scrollbar { 
+    display: none; 
+}
+
+/* Sizing the cards specifically inside the carousel */
+.mod-carousel .mod-card {
+    flex: 0 0 75%; /* Mobile: Takes up 75% of screen so the next card peeks out */
+    max-width: 280px;
+    scroll-snap-align: start; /* Snaps perfectly when swiping */
+}
+
+/* Desktop sizing for the carousel */
+@media (min-width: 768px) {
+    .mod-carousel .mod-card { 
+        flex: 0 0 250px; /* Fixed width on desktop to fit nicely */
+        max-width: none; 
+    }
+}
 
 /* 2. The Card Link Wrapper */
 /* NEW: Stretched Link CSS Trick */

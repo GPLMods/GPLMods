@@ -585,8 +585,18 @@ function initializePolicyBanner() {
     });
 
     newDeclineBtn.addEventListener('click', () => {
-        policyModal.innerHTML = '<div class="policy-content"><h4>Music Player Disabled</h4><p>You have declined the policies required for the music player. You can accept them at any time by refreshing the page.</p></div>';
+        // Target the INNER content box so we keep the dark background and styles!
+        const contentBox = policyModal.querySelector('.policy-modal-content');
+        
+        contentBox.innerHTML = `
+            <h2 style="color: var(--gold); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
+                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again.
+            </p>
+            <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: transform 0.3s ease; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
+                Refresh Page
+            </button>
+        `;
     }, {
         once: true
     });
-}
