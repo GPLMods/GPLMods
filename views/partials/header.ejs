@@ -8,14 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-<!-- ======== ADD THIS LINE FOR ICONS ======== -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<!-- ======================================== -->
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Global stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
 
-<!-- Link to your global stylesheet -->
-<link rel="stylesheet" href="/css/style.css">
-
-    <!-- Google reCAPTCHA & any other global head scripts -->
+    <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
@@ -24,7 +23,6 @@
         <div class="container header-content">
             <a href="/" class="logo">GPL <span>Mods</span></a>
             
-            <!-- Reusing our existing animated search bar structure -->
             <div class="search-bar" id="animatedSearchBar">
                 <form action="/search" method="GET" class="search-form">
                     <input type="search" id="searchInput" name="q" placeholder="">
@@ -36,32 +34,36 @@
             <!-- Desktop User Actions -->
             <div class="header-actions">
                 <% if (user) { %>
-               </a>
+                    <a href="/profile" class="avatar-placeholder">
+                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+                    </a>
                     <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
-              <a href="/upload" class="btn btn-login">Upload A New Mod</a>
-              <a href="/login" class="btn btn-login">Login</a>
-              <a href="/register" class="btn btn-signup">Sign Up</a>
+                    <a href="/upload" class="btn btn-login">Upload A New Mod</a>
+                    <a href="/login" class="btn btn-login">Login</a>
+                    <a href="/register" class="btn btn-signup">Sign Up</a>
                 <% } %>
             </div>
 
             <!-- Mobile User Actions -->
-    <!-- Mobile User Actions -->
-<div class="header-mobile-actions">
-    <% if (user) { %>
-        <a href="/profile" class="avatar-placeholder">
-            <!-- Use the single, reliable variable -->
-            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-        </a>
-    <% } %>
-    <div class="hamburger-menu" id="hamburger">&#9776;</div>
-</div>
+            <div class="header-mobile-actions">
+                <% if (user) { %>
+                    <a href="/profile" class="avatar-placeholder">
+                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+                    </a>
+                <% } %>
+                <div class="hamburger-menu" id="hamburger">&#9776;</div>
+            </div>
+        </div> <!-- THIS CLOSING DIV WAS MISSING -->
     </header>
+
     <!-- Mobile Sidebar Navigation -->
-            <hr style="border-color: #333; margin: 20px 0;">
+    <nav class="mobile-nav" id="mobileNav"> <!-- THIS NAV WAS MISSING -->
+        <ul> <!-- THIS UL WAS MISSING -->
             
-            <div class="music-player" style="text-align: center;">
+            <!-- Sidebar Music Player -->
+            <div class="music-player" style="text-align: center; padding-top: 10px;">
                 <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Select a track</span>
                 
                 <div class="music-controls" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
@@ -80,6 +82,8 @@
             </div>
 
             <hr style="border-color: #333; margin: 20px 0;">
+            
+            <!-- Sidebar Links -->
             <li><a href="/">Home</a></li>
             <li class="has-submenu">
                 <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
@@ -90,6 +94,7 @@
                     <li><a href="/category?cat=windows">Windows</a></li>
                 </ul>
             </li>
+            
             <% if (user) { %>
                 <li><a href="/my-uploads">My Uploads</a></li>
                 <li><a href="/upload">Upload A New Mod</a></li>
@@ -97,16 +102,15 @@
                 <li><a href="/membership">Membership</a></li>
                 <li><a href="/about">About Us!</a></li>
                 <li><a href="/donate">Donate Us!</a></li>
-            <% } %>
-            <% if (user) { %>
                 <li><a href="/logout">Logout</a></li>
             <% } else { %>
-                <li><a href="/upload" class="btn btn-login">Upload A New Mod</a></li>
+                <li><a href="/upload">Upload A New Mod</a></li>
                 <li><a href="/about">About Us!</a></li>
                 <li><a href="/donate">Donate Us!</a></li>
                 <li><a href="/login">Login</a></li>
                 <li><a href="/register">Sign Up</a></li>
             <% } %>
+            
         </ul>
     </nav>
     
