@@ -180,99 +180,39 @@
         .section-more { color: var(--gold); text-decoration: none; font-weight: 600; flex-shrink: 0; }
         
 /* ==========================================================================
-   PERFECTED HOMEPAGE GRID & MAXIMUM IMAGE AREA
-   ========================================================================== */
-
-/* 1. The Grid Layout */
-.mods-grid {
-    display: grid;
-    /* Mobile: 1 Column (Restores the horizontal stretching layout you liked) */
-    grid-template-columns: 1fr;
-    gap: 20px;
-    align-items: stretch; 
-}
-
-@media (min-width: 768px) {
-    .mods-grid {
-        /* Desktop: Vertical card layout with multiple columns */
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 25px;
-    }
-}
-/* ==========================================================================
    HOMEPAGE HORIZONTAL CAROUSEL (GLIDE) LAYOUT
    ========================================================================== */
 
-/* The scrolling container */
+/* 1. The Scrolling Container */
 .mod-carousel { 
     display: flex; 
     overflow-x: auto; 
     gap: 15px; 
     padding-bottom: 15px; 
     scroll-snap-type: x mandatory; 
-    scrollbar-width: none; /* Hides scrollbar in Firefox */
+    scrollbar-width: none; 
 }
-
-/* Hides scrollbar in Chrome/Safari/Edge */
 .mod-carousel::-webkit-scrollbar { 
     display: none; 
 }
 
-/* Sizing the cards specifically inside the carousel */
-.mod-carousel .mod-card {
-    flex: 0 0 75%; /* Mobile: Takes up 75% of screen so the next card peeks out */
-    max-width: 280px;
-    scroll-snap-align: start; /* Snaps perfectly when swiping */
-}
-
-/* Desktop sizing for the carousel */
-@media (min-width: 768px) {
-    .mod-carousel .mod-card { 
-        flex: 0 0 250px; /* Fixed width on desktop to fit nicely */
-        max-width: none; 
-    }
-}
-
-/* 2. The Card Link Wrapper */
-/* NEW: Stretched Link CSS Trick */
-.full-card-link {
-    color: inherit;
-    text-decoration: none;
-}
-.full-card-link:hover {
-    color: var(--gold);
-}
-
-/* This pseudo-element stretches the title link over the entire card */
-.full-card-link::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1; /* Sits below the hover overlay (z-index 3) */
-}
-
-/* Ensure the overlay buttons can be clicked */
-.overlay-button, .download-overlay form {
-    position: relative;
-    z-index: 10; 
-}
-
-/* 3. The Card Itself - Clean Outer Container */
-.mod-card { 
-    background-color: var(--dark-gray); /* The main card color */
-    border-radius: 15px; 
+/* 2. The Card Base */
+.mod-card {
+    flex: 0 0 75%; /* Mobile: Shows 1 full card and peeks at the next */
+    max-width: 250px;
+    background-color: var(--dark-gray); 
+    border-radius: 15px;
     overflow: hidden; 
     position: relative; 
     color: var(--white);
-    transition: all 0.3s ease; 
-    border: 1px solid #222; /* Clean, subtle outer border */
-    cursor: pointer;
+    scroll-snap-align: start; 
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    border: 1px solid #222; /* Clean, subtle border */
     display: flex;
     flex-direction: column;
-    height: 100%; 
+}
+.mod-card:active { 
+    transform: scale(0.98); 
 }
 .mod-card:hover { 
     transform: translateY(-8px); 
@@ -280,45 +220,53 @@
     box-shadow: 0 10px 25px var(--glow-gold); 
 }
 
-/* 4. The Image - MAXIMUM AREA, NO CROPPING, NO INNER BOX */
-.mod-card-image { 
-    width: 100%; 
-    height: 220px; /* INCREASED HEIGHT for a much bigger image area */
-    object-fit: contain; /* Guarantees the image is NEVER cropped */
-    background-color: transparent; /* FIX: Removes the ugly duplicate black box */
-    padding: 5px; /* Drastically reduced padding so the image is larger */
-    border-bottom: 1px solid #222; /* Clean separator line */
-    display: block;
+/* Desktop Adjustment */
+@media (min-width: 768px) {
+    .mod-card { 
+        flex: 0 0 250px; /* Fixed width on desktop */
+        max-width: none; 
+    }
 }
 
-/* 5. The Content Area */
+/* 3. The Image - MAXIMUM AREA, NO CROPPING, NO BLACK BOX */
+.mod-card-image { 
+    width: 100%;
+    height: 180px; /* Increased height for bigger images */
+    object-fit: contain; /* Guarantees the image is NEVER cropped */
+    background-color: transparent; /* Removes the duplicate black box illusion */
+    padding: 10px; /* Tiny padding so the image breathes */
+    border-bottom: 1px solid #222;
+}
+
+/* 4. Content Area */
 .mod-card-content { 
-    padding: 15px 20px; 
+    padding: 15px; 
     flex-grow: 1; 
     display: flex;
     flex-direction: column;
 }
-
 .mod-card h3 { 
-    font-size: 1.3em; 
-    color: var(--white) !important; 
-    margin-bottom: 5px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Prevents super long titles from breaking layout */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 1.2em; 
+    margin-bottom: 5px; 
+    color: var(--white);
 }
-
 .mod-card p { 
     color: var(--silver); 
     font-size: 0.9em; 
-    margin: 0 0 15px 0; 
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Prevents super long dev names from breaking layout */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    flex-grow: 1; 
+    margin: 0 0 10px 0; 
+    flex-grow: 1;
 }
+
+/* 5. Stretched Link Trick (Crucial for the Whitelist Button!) */
+.full-card-link { color: inherit; text-decoration: none; }
+.full-card-link::after {
+    content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1;
+}
+.download-overlay, .overlay-button, form { position: relative; z-index: 10; }
+
+/* 6. Tags */
+.app-feature-tag { position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+.mod-type-tag { position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
 
 /* 6. Fix Overlapping Top Tags */
 .app-feature-tag { 
