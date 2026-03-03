@@ -388,7 +388,7 @@ app.get('/category', async (req, res) => {
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
-// Search
+// Search Route
 app.get('/search', async (req, res) => {
     try {
         const query = req.query.q || '';
@@ -426,8 +426,23 @@ app.get('/search', async (req, res) => {
             .skip((page - 1) * resultsPerPage)
             .limit(resultsPerPage);
 
+        // ====== FIX: MAP THE PRESIGNED URLS FOR SEARCH RESULTS ======
+        const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
+            const key = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/default-avatar.png'; // Fallback
+            if (key) {
+                try {
+                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                } catch (urlError) {
+                    console.error(`Could not get signed URL for key: ${key}`);
+                }
+            }
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+        // ============================================================
+
         res.render('pages/search', {
-            results: searchResults,
+            results: resultsWithUrls, // Pass the updated array here!
             query: query,
             totalResults: totalResults,
             totalPages: totalPages,
@@ -757,25 +772,49 @@ app.get('/logout', (req, res, next) => {
     req.logout(err => { if (err) return next(err); res.redirect('/'); });
 });
 
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/profile'));
 
 // ===============================
 // 9. PROFILE ROUTES
 // ===============================
 
+// Profile Route
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
         const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
+        
+        // ====== FIX: PREVENT OVERWRITING THE AVATAR URL ======
+        // Convert to a plain JS object so we can append custom properties easily
+        const userObj = userWithWhitelist.toObject();
+        userObj.signedAvatarUrl = req.user.signedAvatarUrl; // Copy the URL from the global middleware
+        // =====================================================
+
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
-        res.render('pages/profile', { user: userWithWhitelist, uploads: userUploads });
+        
+        res.render('pages/profile', { user: userObj, uploads: userUploads });
     } catch (e) { res.status(500).send('Profile fetch error.'); }
 });
 
+// My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
         const userUploads = await File.find({ uploader: req.user.username }).sort({ createdAt: -1 });
-        res.render('pages/my-uploads', { uploads: userUploads });
+        
+        // ====== FIX: MAP THE PRESIGNED URLS FOR UPLOADS ======
+        const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
+            const key = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/default-avatar.png';
+            if (key) {
+                try {
+                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                } catch (urlError) {}
+            }
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+        // =====================================================
+
+        res.render('pages/my-uploads', { uploads: uploadsWithUrls }); // Pass the updated array
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
@@ -1111,7 +1150,7 @@ app.get('/api/search/suggestions', async (req, res) => {
         .limit(6);      // Max 6 suggestions
 
         // Extract names and remove exact duplicates
-        const suggestionNames = [...new Set(suggestions.map(file => file.name))];
+        const suggestionNames =[...new Set(suggestions.map(file => file.name))];
 
         res.json(suggestionNames);
 

@@ -33,10 +33,9 @@
     const input = document.getElementById('input');
     const messages = document.getElementById('messages');
     const currentUser = {
-    username: '<%= user.username %>',
-    // Use the guaranteed variable
-    avatar: '<%= user.signedAvatarUrl %>' 
-};
+        username: '<%- user.username %>',
+        avatar: '<%- user.signedAvatarUrl %>' 
+    };
 
     // --- Function to create and append a message element ---
     function appendMessage(msg) {
