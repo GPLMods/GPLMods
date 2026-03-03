@@ -230,12 +230,31 @@
             }
         });
 
-        // Resend Code Logic
-        document.getElementById('resend-code').addEventListener('click', function() {
-            // TODO: Implement a real fetch request to a new '/resend-otp' backend route.
-            // This route would be similar to the register route but would only find the user
-            // by email, generate a new OTP, and resend the email.
-            alert('This would trigger a request to resend the code.');
+        // --- REAL Resend Code Logic ---
+        document.getElementById('resend-code').addEventListener('click', async function() {
+            const email = document.querySelector('input[name="email"]').value;
+            const btn = this;
+            
+            // Give visual feedback
+            btn.innerText = 'Sending...';
+            btn.style.pointerEvents = 'none';
+            btn.style.color = 'var(--silver)';
+            
+            try {
+                await fetch('/resend-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                alert('A new 6-digit verification code has been sent to your email.');
+            } catch (e) {
+                alert('Failed to send code. Please try again.');
+            }
+            
+            // Reset button
+            btn.innerText = 'Resend Code';
+            btn.style.pointerEvents = 'auto';
+            btn.style.color = 'var(--gold)';
         });
     </script>
 </body>

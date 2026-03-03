@@ -19,15 +19,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const http = require('http');
-const { Server } = require("socket.io"); // Corrected import
+const { Server } = require("socket.io");
 const crypto = require('crypto');
-const cors = require('cors');// Added for CORS
-const fs = require('fs'); // Added for new upload logic
-const FormData = require('form-data'); // Added for new upload logic
+const cors = require('cors');
+const fs = require('fs');
+const FormData = require('form-data');
 
 // Custom Utilities & Config
 const { sendVerificationEmail } = require('./utils/mailer');
-const adminRouter = require('./config/admin'); // Updated from adminRouter
+const adminRouter = require('./config/admin');
 
 // AWS SDK v3 Imports (Backblaze B2)
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -94,7 +94,6 @@ const sanitizeFilename = (filename) => {
 };
 
 const uploadToB2 = async (file, folder) => {
-    // This function now needs to handle both buffer-based (from memory) and path-based (from disk) files
     const fileBuffer = file.buffer ? file.buffer : fs.readFileSync(file.path);
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
@@ -109,7 +108,7 @@ const uploadToB2 = async (file, folder) => {
 };
 
 // ===============================
-// 5. MIDDLEWARE
+// 4. MIDDLEWARE
 // ===============================
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
@@ -117,13 +116,12 @@ app.use(express.json());
 
 // --- ADD CORS MIDDLEWARE HERE ---
 const allowedOrigins =[
-    'http://localhost:3000',          // Your local dev environment
-    'https://gplmods.webredirect.org'   // Your live custom domain
+    'http://localhost:3000',          
+    'https://gplmods.webredirect.org'   
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -162,7 +160,6 @@ app.use(passport.session());
 // --- User Last Seen Updater ---
 app.use(async (req, res, next) => {
     if (req.isAuthenticated()) {
-        // Update user's last seen timestamp in the background
         User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
     }
     next();
@@ -183,13 +180,11 @@ app.use(async (req, res, next) => {
                 req.user.signedAvatarUrl = '/images/default-avatar.png';
             }
         } else {
-            // User is logged in but has no custom avatar
             req.user.signedAvatarUrl = '/images/default-avatar.png';
         }
     }
     next();
 });
-
 
 // --- Globals ---
 app.use((req, res, next) => {
@@ -202,13 +197,12 @@ app.use((req, res, next) => {
 app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 // ===============================
-// 6. PASSPORT STRATEGIES & MULTER CONFIG
+// 5. PASSPORT STRATEGIES & MULTER CONFIG
 // ===============================
 
 // UPDATED Multer configuration to use disk storage
 const diskStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Ensure the 'uploads/' directory exists
         const uploadPath = 'uploads/';
         fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
@@ -216,7 +210,6 @@ const diskStorage = multer.diskStorage({
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage: diskStorage });
-
 
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
@@ -286,15 +279,15 @@ async function verifyRecaptcha(req, res, next) {
 }
 
 // ===============================
-// 7. PUBLIC ROUTES
+// 6. PUBLIC ROUTES
 // ===============================
 
-// --- NEW: Health Check Endpoint ---
+// Health Check Endpoint
 app.get('/healthz', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
 
-// Home (UPDATED)
+// Home
 app.get('/', async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
@@ -336,7 +329,6 @@ app.get('/', async (req, res) => {
         res.status(500).render('pages/500');
     }
 });
-
 
 // Updates / Announcements
 app.get('/updates', async (req, res) => {
@@ -426,10 +418,9 @@ app.get('/search', async (req, res) => {
             .skip((page - 1) * resultsPerPage)
             .limit(resultsPerPage);
 
-        // ====== FIX: MAP THE PRESIGNED URLS FOR SEARCH RESULTS ======
         const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-avatar.png'; // Fallback
+            let signedIconUrl = '/images/default-avatar.png'; 
             if (key) {
                 try {
                     signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -439,10 +430,9 @@ app.get('/search', async (req, res) => {
             }
             return { ...file.toObject(), iconUrl: signedIconUrl };
         }));
-        // ============================================================
 
         res.render('pages/search', {
-            results: resultsWithUrls, // Pass the updated array here!
+            results: resultsWithUrls, 
             query: query,
             totalResults: totalResults,
             totalPages: totalPages,
@@ -475,20 +465,17 @@ app.get('/mods/:id', async (req, res) => {
             versionHistory =[currentFile, ...currentFile.olderVersions.slice().reverse()];
         }
 
-        // Uses the new smart helper for the icon
         const iconKey = currentFile.iconUrl || currentFile.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
         
-        // Uses the new smart helper for all screenshots
         const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0)
             ? currentFile.screenshotUrls
             : (currentFile.screenshotKeys ||[]);
             
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
-        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); // Populate the key
+        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
 
-        // --- NEW: Manually generate signed URLs for each reviewer's avatar ---
         const reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
@@ -496,18 +483,16 @@ app.get('/mods/:id', async (req, res) => {
                     avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: review.user.profileImageKey }), { expiresIn: 3600 });
                 } catch (e) { console.error("Could not get signed URL for reviewer avatar."); }
             }
-            // Return a new object that combines the review and the generated URL
             return { ...review.toObject(), user: { ...review.user.toObject(), signedAvatarUrl: avatarUrl } };
         }));
 
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(currentFile._id) : false;
         const userHasVotedOnStatus = req.user ? currentFile.votedOnStatusBy.includes(req.user._id) : false;
 
-        // --- Pass the NEW reviews object to the template ---
         res.render('pages/download', {
             file: { ...currentFile.toObject(), iconUrl, screenshotUrls },
             versionHistory,
-            reviews: reviewsWithAvatars, // <-- Use the new object
+            reviews: reviewsWithAvatars,
             userHasWhitelisted,
             userHasVotedOnStatus
         });
@@ -517,52 +502,53 @@ app.get('/mods/:id', async (req, res) => {
     }
 });
 
-
-// --- NEW DEVELOPER PAGE ROUTE ---
+// --- UPDATED DEVELOPER PAGE ROUTE ---
 app.get('/developer', async (req, res) => {
     try {
         const developerName = req.query.name;
-        if (!developerName || developerName.trim() === '') {
-            return res.redirect('/');
-        }
+        if (!developerName || developerName.trim() === '') return res.redirect('/');
         
-        // --- THE FIX: Use a simpler, more flexible regex ---
         const filesByDeveloper = await File.find({
-            // This now looks for any document where the developer field CONTAINS the developerName, case-insensitively.
             developer: { $regex: developerName, $options: 'i' }, 
             isLatestVersion: true,
-            status: 'live' // Also ensure we only show live mods
+            status: 'live'
         }).sort({ createdAt: -1 });
 
+        // --- FIX: GENERATE SIGNED URLS FOR IMAGES ---
+        const filesWithUrls = await Promise.all(filesByDeveloper.map(async (file) => {
+            const key = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/default-avatar.png';
+            if (key) {
+                try {
+                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                } catch (e) {}
+            }
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+
         res.render('pages/developer', {
-            files: filesByDeveloper,
+            files: filesWithUrls, // Use the mapped array with real images
             developerName: developerName
         });
 
     } catch (error) {
-        console.error("Error fetching files for developer page:", error);
+        console.error("Developer page error:", error);
         res.status(500).render('pages/500');
     }
 });
 
-
 // ===============================================
-// FILE VERSIONING ROUTES
+// 7. FILE VERSIONING ROUTES
 // ===============================================
 
-// --- THIS IS THE MISSING GET ROUTE ---
-// It displays the form for adding a new version.
 app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
     try {
         const parentFile = await File.findById(req.params.id);
 
-        // Security Check: Ensure the person trying to add a version is the original uploader
         if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
-            // If they are not the uploader, show the 403 Forbidden page
             return res.status(403).render('pages/403');
         }
 
-        // If all checks pass, render the page and pass the file data to it
         res.render('pages/add-version', { parentFile: parentFile });
 
     } catch (error) {
@@ -571,10 +557,8 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- Your POST route for handling the form submission should also be here ---
-// It seems you may have this one already, but double-check
 app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
-    // ... all the logic for processing the new version upload ...
+    // Add version processing logic here
 });
 
 // Download Action - UPDATED with presigned URL
@@ -585,8 +569,7 @@ app.get('/download-file/:id', async (req, res) => {
             return res.status(404).render('pages/404');
         }
 
-        // --- THE FIX: Check for the file key ---
-        const fileKey = file.fileKey || file.fileUrl; // Check for new 'fileKey' OR old 'fileUrl'
+        const fileKey = file.fileKey || file.fileUrl; 
 
         if (!fileKey) {
             console.error(`File with ID ${file._id} has no fileKey or fileUrl in the database.`);
@@ -595,7 +578,7 @@ app.get('/download-file/:id', async (req, res) => {
 
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
-            Key: fileKey, // Use the validated key
+            Key: fileKey, 
             ResponseContentDisposition: `attachment; filename="${file.originalFilename || file.name}"`
         });
         
@@ -623,7 +606,6 @@ app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedi
 
 app.get('/register', (req, res) => res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, message: null }));
 
-// --- UPDATED /register route with OTP ---
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -636,16 +618,13 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
             return res.status(400).send("An account with this email already exists.");
         }
 
-        // Generate a 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpires = Date.now() + 600000; // 10 minutes from now
+        const otpExpires = Date.now() + 600000; 
 
         if (user && !user.isVerified) {
-            // If user exists but is not verified, update their OTP and expiry
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
         } else {
-            // If it's a brand new user
             user = new User({
                 username,
                 email: email.toLowerCase(),
@@ -656,10 +635,9 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         }
         
         await user.save();
-        await sendVerificationEmail(user); // Assumes this function sends the 'otp' variable in an email
+        await sendVerificationEmail(user);
         
-        // Render the OTP entry page and pass the user's email to it
-        res.render('pages/please-verify', { email: user.email });
+        res.render('pages/please-verify', { email: user.email, error: null });
 
     } catch (e) {
         console.error("Registration error:", e);
@@ -667,50 +645,59 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
     }
 });
 
-// --- NEW /verify-otp route (replaces old /verify-email) ---
+// --- UPDATED Verify Route ---
 app.post('/verify-otp', async (req, res) => {
     try {
-        // Get email and OTP from the hidden inputs in the form
         const { otp, email } = req.body; 
-
-        if (!otp || !email) {
-            // This case should ideally not be hit with frontend validation
-            return res.status(400).send("OTP and email are required.");
-        }
 
         const user = await User.findOne({
             email: email.toLowerCase(),
             verificationOtp: otp,
-            otpExpires: { $gt: Date.now() } // Check that the OTP is not expired
+            otpExpires: { $gt: Date.now() }
         });
 
         if (!user) {
-            // If no user is found, the OTP was wrong or has expired.
-            // Redirect back to the registration page with an error message for the user.
-            return res.redirect('/register?error=Invalid or expired verification code.');
+            // FIX: Render the page again with an error message!
+            return res.render('pages/please-verify', { 
+                email: email, 
+                error: 'Invalid or expired verification code. Please try again.' 
+            });
         }
 
-        // OTP is correct, update the user account
         user.isVerified = true;
-        user.verificationOtp = undefined; // Invalidate the OTP so it can't be used again
+        user.verificationOtp = undefined; 
         user.otpExpires = undefined;
         await user.save();
         
-        // Log the user in automatically and redirect to their profile page
         req.login(user, (err) => {
-            if (err) {
-                console.error("Login after verification failed:", err);
-                return res.redirect('/login?message=Verification successful. Please log in.');
-            }
+            if (err) return res.redirect('/login');
             return res.redirect('/profile');
         });
 
     } catch (error) {
-        console.error("OTP Verification Error:", error);
         res.status(500).render('pages/500');
     }
 });
 
+// --- NEW Route to handle Resend Button ---
+app.post('/resend-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase() });
+        
+        if (user && !user.isVerified) {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            user.verificationOtp = otp;
+            user.otpExpires = Date.now() + 600000;
+            await user.save();
+            await sendVerificationEmail(user);
+            return res.json({ success: true });
+        }
+        res.json({ success: false });
+    } catch (e) {
+        res.status(500).json({ success: false });
+    }
+});
 
 app.get('/forgot-password', (req, res) => res.render('pages/forgot-password'));
 app.post('/forgot-password', async (req, res) => {
@@ -784,11 +771,8 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
         const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
         
-        // ====== FIX: PREVENT OVERWRITING THE AVATAR URL ======
-        // Convert to a plain JS object so we can append custom properties easily
         const userObj = userWithWhitelist.toObject();
-        userObj.signedAvatarUrl = req.user.signedAvatarUrl; // Copy the URL from the global middleware
-        // =====================================================
+        userObj.signedAvatarUrl = req.user.signedAvatarUrl; 
 
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
         
@@ -801,7 +785,6 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
         const userUploads = await File.find({ uploader: req.user.username }).sort({ createdAt: -1 });
         
-        // ====== FIX: MAP THE PRESIGNED URLS FOR UPLOADS ======
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-avatar.png';
@@ -812,9 +795,8 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             }
             return { ...file.toObject(), iconUrl: signedIconUrl };
         }));
-        // =====================================================
 
-        res.render('pages/my-uploads', { uploads: uploadsWithUrls }); // Pass the updated array
+        res.render('pages/my-uploads', { uploads: uploadsWithUrls }); 
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
@@ -824,7 +806,6 @@ app.get('/users/:username', async (req, res) => {
             const user = await User.findOne({ username: username });
             if (!user) return res.status(404).render('pages/404');
 
-            // --- Apply the same avatar logic here for the 'profileUser' ---
             if (user.profileImageKey) {
                 try {
                     user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
@@ -928,14 +909,13 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 
 
 // ===================================
-// 10. FILE UPLOAD & MANAGEMENT (NEW LOGIC)
+// 10. FILE UPLOAD & MANAGEMENT
 // ===================================
 
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
 
-// Step 1: Handle initial file upload, upload to B2, and start background scan
 app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
     if (!req.file) {
         return res.status(400).redirect('/upload?error=No file selected.');
@@ -944,60 +924,50 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     let newFile = null;
 
     try {
-        // --- 1. Upload to B2 (AWAIT this) ---
         console.log("Uploading main file to B2...");
         const fileForB2 = { path: tempFilePath, originalname: req.file.originalname, mimetype: req.file.mimetype };
         const fileKey = await uploadToB2(fileForB2, 'mods');
         console.log("Upload to B2 complete.");
 
-        // --- 2. Create Preliminary DB Record ---
         newFile = new File({
             uploader: req.user.username,
             fileKey: fileKey,
             originalFilename: req.file.originalname,
             fileSize: req.file.size,
             
-            // --- ADD THESE FALLBACKS ---
-            name: req.file.originalname, // Temporary name
+            name: req.file.originalname, 
             version: 'Draft',
-            category: 'android',         // Temporary category
+            category: 'android',         
             platforms:[],
-            // ---------------------------
             
-            status: 'processing' // A temporary status
+            status: 'processing' 
         });
         await newFile.save();
         
-        // --- 3. Start VT Scan in Background ---
         console.log("Starting background VirusTotal scan...");
         (async () => {
             try {
                 const vtFormData = new FormData();
-                // We need to re-read the file for the form-data stream
                 vtFormData.append('file', fs.createReadStream(tempFilePath), req.file.originalname);
 
                 const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
                     headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
                 });
                 
-                // Get the final report and update the DB record asynchronously
                 const analysisId = vtResponse.data.data.id;
                 await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
                 console.log(`VT Scan submitted for ${newFile._id}. Analysis ID: ${analysisId}`);
             } catch (vtError) {
                 console.error(`Background VT scan failed for ${newFile._id}:`, vtError.response?.data || vtError.message);
             } finally {
-                // --- 4. Cleanup ---
-                fs.unlinkSync(tempFilePath); // Delete the temp file after we're done with it
+                fs.unlinkSync(tempFilePath); 
             }
-        })(); // Fire-and-forget
+        })(); 
 
-        // --- 5. Redirect user to the details page ---
         res.redirect(`/upload-details/${newFile._id}`);
 
     } catch (error) {
         console.error("Initial upload error:", error);
-        // If something went wrong, clean up the temp file if it exists
         if (fs.existsSync(tempFilePath)) {
             fs.unlinkSync(tempFilePath);
         }
@@ -1005,7 +975,6 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     }
 });
 
-// Step 2: Display the details form
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
@@ -1014,29 +983,24 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         if (!pendingFile) return res.status(404).render('pages/404');
         if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
 
-        // --- SMART EXTRACTION LOGIC ---
         const filename = pendingFile.originalFilename || "";
         
-        // 1. Guess the Platform based on file extension
         const ext = filename.split('.').pop().toLowerCase();
         let defaultPlatform = "";
         if (ext === 'apk' || ext === 'xapk' || ext === 'apks') defaultPlatform = 'android';
         else if (ext === 'exe' || ext === 'msi') defaultPlatform = 'windows';
         else if (ext === 'ipa') defaultPlatform = 'ios-jailed';
         else if (ext === 'deb') defaultPlatform = 'ios-jailbroken';
-        else if (ext === 'zip') defaultPlatform = 'wordpress'; // Educated guess
+        else if (ext === 'zip') defaultPlatform = 'wordpress'; 
 
-        // 2. Extract Version (Looks for v1.2, 1.0.4, etc.)
-        let cleanName = filename.replace(/\.[^/.]+$/, ""); // Remove extension
+        let cleanName = filename.replace(/\.[^/.]+$/, ""); 
         let defaultVersion = "";
         const versionMatch = cleanName.match(/v?(\d+\.\d+(\.\d+)?)/i);
         
         if (versionMatch) {
-            defaultVersion = versionMatch[1]; // Grab the numbers
-            // Remove the version from the name to clean it up
+            defaultVersion = versionMatch[1]; 
             cleanName = cleanName.replace(versionMatch[0], "").replace(/[-_]+/g, " ").trim(); 
         } else {
-            // Just replace dashes and underscores with spaces if no version is found
             cleanName = cleanName.replace(/[-_]+/g, " ").trim();
         }
 
@@ -1045,7 +1009,6 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             fileKey: pendingFile.fileKey,
             filename: pendingFile.originalFilename,
             filesize: pendingFile.fileSize,
-            // Pass our smart guesses to the frontend
             defaultName: cleanName,
             defaultVersion: defaultVersion,
             defaultPlatform: defaultPlatform
@@ -1057,7 +1020,6 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// Step 3: Finalize the upload with metadata, icon, and screenshots
 app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
@@ -1066,19 +1028,17 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const fileId = req.params.fileId;
         const fileToUpdate = await File.findById(fileId);
 
-        // Security check
         if (!fileToUpdate || fileToUpdate.uploader !== req.user.username) {
             return res.status(403).render('pages/403');
         }
 
         const { softwareIcon, screenshots } = req.files;
-        const formData = req.body; // All the text from your form
+        const formData = req.body; 
 
         if (!softwareIcon || !screenshots) {
             return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required.`);
         }
 
-        // 1. Upload icon and screenshots to Backblaze
         let iconKey = null;
         if (softwareIcon && softwareIcon.length > 0) {
             iconKey = await uploadToB2(softwareIcon[0], 'icons');
@@ -1089,29 +1049,26 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
         }
 
-        // Clean up the temporary icon/screenshot files
         if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
         if (screenshots) screenshots.forEach(f => fs.unlinkSync(f.path));
 
-        // 2. Format the tags properly into an array
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) :[];
 
-        // --- 3. THE FIX: EXPLICITLY MAP FORM DATA TO DATABASE FIELDS ---
         await File.findByIdAndUpdate(fileId, {
-            name: formData.modName,                 // Maps HTML 'modName' -> DB 'name'
-            version: formData.modVersion,           // Maps HTML 'modVersion' -> DB 'version'
+            name: formData.modName,                 
+            version: formData.modVersion,           
             developer: formData.developerName || 'N/A',
             modDescription: formData.modDescription,
             modFeatures: formData.modFeatures,
             whatsNew: formData.whatsNew,
             officialDescription: formData.officialDescription,
             videoUrl: formData.videoUrl,
-            category: formData.modPlatform,         // Maps HTML 'modPlatform' -> DB 'category'
+            category: formData.modPlatform,         
             platforms: formData.modCategory ? [formData.modCategory] :[],
             tags: processedTags,
             iconKey: iconKey,
             screenshotKeys: screenshotKeys,
-            status: 'pending' // Set status to 'pending' for admin review
+            status: 'pending' 
         });
 
         res.redirect('/my-uploads?success=Upload complete and submitted for review!');
@@ -1130,12 +1087,10 @@ app.get('/api/search/suggestions', async (req, res) => {
     try {
         const query = req.query.q;
         
-        // Don't search if query is too short
         if (!query || query.length < 2) {
             return res.json([]);
         }
 
-        // Search the database for matching names, tags, category, or developer
         const suggestions = await File.find({
             status: 'live',
             isLatestVersion: true,
@@ -1146,10 +1101,9 @@ app.get('/api/search/suggestions', async (req, res) => {
                 { developer: { $regex: query, $options: 'i' } }
             ]
         })
-        .select('name') // Only grab the name field to keep it fast
-        .limit(6);      // Max 6 suggestions
+        .select('name') 
+        .limit(6);      
 
-        // Extract names and remove exact duplicates
         const suggestionNames =[...new Set(suggestions.map(file => file.name))];
 
         res.json(suggestionNames);
@@ -1160,18 +1114,17 @@ app.get('/api/search/suggestions', async (req, res) => {
     }
 });
 
-// --- NEW: Trending Searches API Route ---
 app.get('/api/trending-searches', async (req, res) => {
     try {
         const trendingFiles = await File.find(
             { isLatestVersion: true },
-            { name: 1, _id: 0 } // Projection: only return the 'name' field
+            { name: 1, _id: 0 } 
         )
-        .sort({ downloads: -1 }) // Sort by most downloads
-        .limit(5); // Get the top 5
+        .sort({ downloads: -1 }) 
+        .limit(5); 
 
         const trendingNames = trendingFiles.map(file => file.name);
-        res.json(trendingNames); // Send back the array of names
+        res.json(trendingNames); 
 
     } catch (error) {
         console.error("API Trending Searches Error:", error);
@@ -1267,7 +1220,8 @@ app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
-
+app.get('/donate', (req, res) => res.render('pages/static/donate'));
+app.get('/membership', ensureAuthenticated, (req, res) => res.render('pages/membership'));
 app.post('/dmca-request', async (req, res) => {
     try {
         await new Dmca(req.body).save();
@@ -1302,23 +1256,21 @@ const startServer = async () => {
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
-                origin: allowedOrigins, // Use the 'allowedOrigins' array you defined earlier
+                origin: allowedOrigins, 
                 methods:["GET", "POST"]
             }
         });
 
-        // Your existing Socket.IO logic
+        // Socket.IO logic
         io.on('connection', (socket) => {
             console.log('A user connected to chat');
 
-            // --- 1. Send message history to the newly connected user ---
             socket.emit('chat history', recentMessages);
 
-            // --- 2. Listen for new chat messages from a user ---
             socket.on('chat message', (msg) => {
                 const messageData = {
                     username: msg.username,
-                    avatar: msg.avatar, // 'msg.avatar' from the client is already the signed URL
+                    avatar: msg.avatar, 
                     text: msg.text,
                     timestamp: new Date()
                 };
@@ -1331,7 +1283,6 @@ const startServer = async () => {
                 io.emit('chat message', messageData);
             });
 
-            // --- 3. Handle user disconnection ---
             socket.on('disconnect', () => {
                 console.log('User disconnected from chat');
             });
@@ -1343,9 +1294,8 @@ const startServer = async () => {
 
     } catch (error) {
         console.error('Failed to connect to the database. Server is not starting.', error);
-        process.exit(1); // Exit the process with an error code
     }
 };
 
-// --- Call the function to start the entire application ---
+// --- Execution ---
 startServer();
