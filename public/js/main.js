@@ -325,7 +325,8 @@ async function fetchAndDisplaySuggestions(query) {
             const list = document.createElement('ul');
             suggestions.forEach(suggestion => {
                 const listItem = document.createElement('li');
-                const regex = new RegExp(query, 'gi');
+               const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const regex = new RegExp(escapedQuery, 'gi');
                 const boldedSuggestion = suggestion.replace(regex, (match) => `<b>${match}</b>`);
                 listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(suggestion)}">${boldedSuggestion}</a>`;
                 list.appendChild(listItem);

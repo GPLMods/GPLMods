@@ -92,22 +92,7 @@
             .error-title { font-size: 2em; }
             .error-message { font-size: 1em; }
         }
-/* --- ERROR 400 STYLE --- */
-:root {
-            --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --white: #ffffff;
-            --gold: #FFD700;
-            --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        html, body { 
-            height: 100%; 
-        }
-
+/* --- ERROR 400 STYLE --- */        
         body { 
             font-family: 'Poppins', sans-serif; 
             background-color: var(--black); 
@@ -116,12 +101,6 @@
             justify-content: center; 
             align-items: center; 
             text-align: center; 
-        }
-
-        .container { 
-            width: 90%; 
-            max-width: 1200px; 
-            margin: auto; 
         }
 
         /* Error Content */
@@ -182,25 +161,6 @@
             .error-title { font-size: 1.8em; margin-top: -15px; }
         }
 /* --- ERROR 402 STYLE --- */
-        :root {
-            --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --white: #ffffff;
-            --gold: #FFD700;
-            --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-
-        html, body { 
-            height: 100%; 
-        }
-
         body { 
             font-family: 'Poppins', sans-serif; 
             background-color: var(--black); 
@@ -209,12 +169,6 @@
             justify-content: center; 
             align-items: center; 
             text-align: center; 
-        }
-
-        .container { 
-            width: 90%; 
-            max-width: 1200px; 
-            margin: auto; 
         }
 
         .error-container { 
@@ -234,10 +188,6 @@
             margin-top: -20px; 
             margin-bottom: 20px; 
             text-transform: uppercase;
-        }
-
-        .error-title span { 
-            color: var(--gold); 
         }
 
         .error-message { 
@@ -267,24 +217,6 @@
             background-color: #fff;
         }
 /* --- ERROR 403 STYLE --- */
-        :root {
-            --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --white: #ffffff;
-            --gold: #FFD700;
-            --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-        }
-
-        html, body { 
-            height: 100%; 
-        }
 
         body { 
             font-family: 'Poppins', sans-serif; 
@@ -296,32 +228,8 @@
             text-align: center; 
         }
 
-        .container { 
-            width: 90%; 
-            max-width: 1200px; 
-            margin: auto; 
-        }
-
         .error-container { 
             padding: 40px 20px; 
-        }
-
-        .error-code { 
-            font-size: 8em; 
-            font-weight: 700; 
-            color: var(--dark-gray); 
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1); 
-            line-height: 1; 
-        }
-
-        .error-title { 
-            font-size: 2.5em; 
-            margin-top: -20px; 
-            margin-bottom: 20px; 
-        }
-
-        .error-title span { 
-            color: var(--gold); 
         }
 
         .error-message { 
@@ -330,34 +238,7 @@
             max-width: 600px; 
             margin: 0 auto 30px auto; 
         }
-
-        .home-button { 
-            display: inline-block; 
-            background: var(--gold); 
-            color: var(--black); 
-            padding: 12px 30px; 
-            border-radius: 25px; 
-            text-decoration: none; 
-            font-size: 1.1em; 
-            font-weight: 600; 
-            transition: all 0.3s ease; 
-            box-shadow: 0 0 15px var(--glow-gold); 
-        }
-
-        .home-button:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 0 25px var(--glow-gold); 
-        }
 /* --- COMMING SOON STYLE --- */
-        :root {
-            --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --white: #ffffff;
-            --gold: #FFD700;
-            --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); display: flex; flex-direction: column; text-align: center; }
         .container { width: 90%; max-width: 1200px; margin: auto; }
