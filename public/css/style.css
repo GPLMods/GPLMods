@@ -267,6 +267,15 @@
 /* 6. Tags */
 .app-feature-tag { position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
 .mod-type-tag { position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+/* Platform Tag Colors */
+.platform-tag {
+    color: var(--black);
+}
+.platform-tag.android { background-color: var(--android-color, #A4C639); }
+.platform-tag.ios-ipa { background-color: var(--ios-color, #555); color: var(--white); }
+.platform-tag.ios-deb { background-color: #333; color: var(--white); }
+.platform-tag.windows { background-color: var(--windows-color, #0078D6); color: var(--white); }
+.platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
 
 /* 6. Fix Overlapping Top Tags */
 .app-feature-tag { 

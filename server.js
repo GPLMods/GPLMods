@@ -1020,6 +1020,46 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// --- NEW: User Delete Mod Route ---
+app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.id;
+        const file = await File.findById(fileId);
+
+        // Security check: Make sure the file exists and the logged-in user owns it
+        if (!file || file.uploader !== req.user.username) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Delete the file and its associated reviews/reports from the database
+        await File.findByIdAndDelete(fileId);
+        await Review.deleteMany({ file: fileId });
+        await Report.updateMany({ file: fileId }, { status: 'resolved' });
+
+        res.json({ success: true, message: 'Mod deleted successfully.' });
+    } catch (error) {
+        console.error("Error deleting mod:", error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// --- NEW: User Edit Mod Route (GET form) ---
+app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        
+        if (!file || file.uploader !== req.user.username) {
+            return res.status(403).render('pages/403');
+        }
+
+        // For now, we will render a placeholder or you can create an 'edit-mod.ejs' 
+        // that looks just like 'upload-details.ejs' but pre-filled with this file's data.
+        res.send(`<h1>Edit Page for ${file.name}</h1><p>Feature coming soon! You will build edit-mod.ejs next.</p><a href="/my-uploads">Go Back</a>`);
+    } catch (error) {
+        res.status(500).render('pages/500');
+    }
+});
+
 app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
