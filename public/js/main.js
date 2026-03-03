@@ -1,39 +1,39 @@
 /**
  * ==================================================================================
- * GPL MODS GLOBAL JAVASCRIPT
+ * GPL MODS GLOBAL JAVASCRIPT (BULLETPROOF VERSION)
  * ==================================================================================
- * This file contains the core client-side functionality for the GPL Mods website.
- *
  * Table of Contents:
- * 1. Document Ready Initializer
- * 2. NEW: HOMEPAGE TAB NAVIGATION
+ * 1. Document Ready Initializer (with Try/Catch Safety)
+ * 2. Homepage Tab Navigation
  * 3. Star Rating System
- * 4. Search Bar Handler with DYNAMIC Animation
- * 5. Search History Management (for all users)
- * 6. Search Suggestions FETCHER (Updated with Live API)
- * 7. Mobile Navigation Handler (CORRECTED)
- * 8. FINAL SIDEBAR MUSIC PLAYER
- * 9. POLICY ACCEPTANCE BANNER (UPGRADED with Decline Logic)
+ * 4. Search Bar Handler (Dynamic Animation)
+ * 5. Search History & Suggestions
+ * 6. Mobile Navigation Handler
+ * 7. Policy Acceptance Banner
+ * 8. Robust Sidebar Music Player
+ * 9. Smart Audio Handler (YouTube/Vimeo pauses BG music)
  * ==================================================================================
  */
 
-// 1.  For the entire HTML document to be loaded and parsed
+console.log("GPL Mods main.js is loading...");
+
+// ==================================================================================
+// 1. DOCUMENT READY INITIALIZER
+// ==================================================================================
 document.addEventListener('DOMContentLoaded', () => {
-
+    console.log("DOM loaded. Running initializers...");
+    
+    // By wrapping each function in a try/catch, we guarantee that one bug 
+    // won't crash the entire website!
     const runInitializers = async () => {
-        try {
-            initializeMobileMenu();
-            initializeStarRatings();
-            initializeHomepageTabs();
-
-            // --- Let the policy banner control the music player ---
-            initializePolicyBanner();
-
-            await initializeSearchBar();
-
-        } catch (error) {
-            console.error("An error occurred during page initialization:", error);
-        }
+        try { initializeMobileMenu(); } catch (e) { console.error("Mobile Menu Error:", e); }
+        try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:", e); }
+        try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
+        try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
+        try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
+        try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
+        
+        console.log("All initializers finished.");
     };
 
     runInitializers();
@@ -41,53 +41,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * ==================================================================================
- * 2. NEW: HOMEPAGE TAB NAVIGATION
- * Handles the animated tab switching for the main categories on the homepage.
+ * 2. HOMEPAGE TAB NAVIGATION
  * ==================================================================================
  */
 function initializeHomepageTabs() {
     const mainTabNav = document.getElementById('main-tabs-nav');
-
-    // --- Important: Only run this code if we are on the homepage ---
-    // This prevents errors on other pages that don't have these elements.
-    if (!mainTabNav) {
-        return;
-    }
+    if (!mainTabNav) return; // Exit if not on homepage
 
     const allTabContents = document.querySelectorAll('.tab-content');
     const mainTabHighlight = document.getElementById('main-tab-highlight');
     const tabButtons = mainTabNav.querySelectorAll('.tab-button');
 
-    // Function to move the highlight bar under the clicked tab
     function moveHighlight(targetTab) {
-        if (!targetTab) return;
-        // The requestAnimationFrame ensures the browser has calculated the new layout
-        // before we try to move the highlight, making the animation smoother.
+        if (!targetTab || !mainTabHighlight) return;
         requestAnimationFrame(() => {
             mainTabHighlight.style.width = `${targetTab.offsetWidth}px`;
             mainTabHighlight.style.transform = `translateX(${targetTab.offsetLeft}px)`;
         });
     }
 
-    // --- Set the initial position of the highlight ---
     const initialActiveTab = mainTabNav.querySelector('.tab-button.active');
-    if (initialActiveTab) {
-        moveHighlight(initialActiveTab);
-    }
+    if (initialActiveTab) moveHighlight(initialActiveTab);
 
-    // --- Add click event listeners to all tab buttons ---
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetTabId = button.dataset.tab;
-
-            // --- Update button active state ---
+            
             tabButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-
-            // --- Animate the highlight ---
+            
             moveHighlight(button);
-
-            // --- Show/Hide the correct content section ---
+            
             allTabContents.forEach(content => {
                 if (content.id === `${targetTabId}-mods`) {
                     content.classList.add('active');
@@ -95,35 +79,24 @@ function initializeHomepageTabs() {
                     content.classList.remove('active');
                 }
             });
-
-            // Scroll the tabs into view if they are off-screen on mobile
-            button.scrollIntoView({
-                behavior: 'smooth',
-                inline: 'center',
-                block: 'nearest'
-            });
+            
+            button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         });
     });
 
-    // --- Recalculate highlight position on window resize ---
     window.addEventListener('resize', () => {
         const activeTab = mainTabNav.querySelector('.tab-button.active');
-        if (activeTab) {
-            moveHighlight(activeTab);
-        }
+        if (activeTab) moveHighlight(activeTab);
     });
 }
 
-
 /**
- * ----------------------------------------------------------------------------------
+ * ==================================================================================
  * 3. STAR RATING SYSTEM
- * Fills the static star icons with the correct color based on a data attribute.
- * ----------------------------------------------------------------------------------
+ * ==================================================================================
  */
 function initializeStarRatings() {
     const allRatingContainers = document.querySelectorAll('.star-rating');
-
     allRatingContainers.forEach(container => {
         const rating = parseFloat(container.dataset.rating);
         if (isNaN(rating)) return;
@@ -133,10 +106,10 @@ function initializeStarRatings() {
         const partialStarPercentage = (rating % 1) * 100;
 
         for (let i = 0; i < fullStars; i++) {
-            stars[i].classList.add('filled');
+            if (stars[i]) stars[i].classList.add('filled');
         }
 
-        if (fullStars < 5 && partialStarPercentage > 0) {
+        if (fullStars < 5 && partialStarPercentage > 0 && stars[fullStars]) {
             const partialStar = stars[fullStars];
             partialStar.style.setProperty('--fill-percentage', `${partialStarPercentage}%`);
             partialStar.classList.add('partial');
@@ -144,10 +117,9 @@ function initializeStarRatings() {
     });
 }
 
-
 /**
  * ==================================================================================
- * 4. SEARCH BAR HANDLER with DYNAMIC Animation
+ * 4. SEARCH BAR HANDLER (DYNAMIC ANIMATION)
  * ==================================================================================
  */
 async function initializeSearchBar() {
@@ -156,22 +128,47 @@ async function initializeSearchBar() {
     const searchHistoryBox = document.getElementById('searchHistory');
     const searchBar = document.getElementById('animatedSearchBar');
 
-    if (!searchInput || !searchBar) return;
+    if (!searchInput) return;
 
-    // --- Main Input Event Listener ---
+    searchInput.addEventListener('focus', () => {
+        if(searchBar) searchBar.classList.add('active');
+        displaySearchHistory();
+    });
+
+    searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            if (suggestionsBox && searchHistoryBox && !suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
+                 if(searchBar) searchBar.classList.remove('active');
+                 suggestionsBox.style.display = 'none';
+                 searchHistoryBox.style.display = 'none';
+            }
+        }, 200);
+    });
+
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
         if (query.length > 1) {
-            fetchAndDisplaySuggestions(query); // Fetch live suggestions
-            searchHistoryBox.style.display = 'none';
+            fetchAndDisplaySuggestions(query);
+            if(searchHistoryBox) searchHistoryBox.style.display = 'none';
         } else {
-            suggestionsBox.style.display = 'none';
-            displaySearchHistory(); // Show history if query is too short
+            if(suggestionsBox) suggestionsBox.style.display = 'none';
+            displaySearchHistory();
         }
     });
 
-    // --- DYNAMIC Placeholder Typing Animation ---
-    let searchTerms = ["Search for mods..."]; // Default
+    // Form submission handler to save search history
+    if (searchBar) {
+        const searchForm = searchBar.querySelector('form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', () => {
+                const query = searchInput.value.trim();
+                if (query) saveSearchTerm(query);
+            });
+        }
+    }
+
+    // Dynamic typing animation setup
+    let searchTerms = ["Search for mods..."]; 
     try {
         const response = await fetch('/api/trending-searches');
         if (response.ok) {
@@ -179,20 +176,16 @@ async function initializeSearchBar() {
             if (trending.length > 0) searchTerms = trending.map(term => `${term}...`);
         }
     } catch (error) {
-        console.error("Could not fetch trending search terms:", error);
+        console.error("Could not fetch trending searches:", error);
     }
 
     const themeColors = ["var(--gold)", "var(--silver)"];
-    let termIndex = 0,
-        letterIndex = 0,
-        currentTerm = '',
-        isDeleting = false;
-    let typingTimeout;
+    let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false, typingTimeout;
 
     function typeAnimation() {
         if (document.activeElement === searchInput) return;
+        const fullTerm = searchTerms[termIndex] || "Search...";
 
-        const fullTerm = searchTerms[termIndex];
         if (isDeleting) {
             currentTerm = fullTerm.substring(0, letterIndex - 1);
             letterIndex--;
@@ -213,28 +206,18 @@ async function initializeSearchBar() {
             searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
             typeSpeed = 300;
         }
-
         typingTimeout = setTimeout(typeAnimation, typeSpeed);
     }
 
-    // --- Combined Focus and Blur Listeners ---
+    typeAnimation();
+
     searchInput.addEventListener('focus', () => {
         clearTimeout(typingTimeout);
         searchInput.placeholder = "Search for mods...";
         searchInput.style.setProperty('--placeholder-color', 'var(--silver)');
-        displaySearchHistory();
     });
 
     searchInput.addEventListener('blur', () => {
-        // Hide popups after a short delay
-        setTimeout(() => {
-            if (!suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
-                suggestionsBox.style.display = 'none';
-                searchHistoryBox.style.display = 'none';
-            }
-        }, 200);
-
-        // Restart animation if input is empty
         if (searchInput.value === '') {
             searchInput.placeholder = "";
             letterIndex = 0;
@@ -243,30 +226,19 @@ async function initializeSearchBar() {
             typeAnimation();
         }
     });
-
-    const searchForm = searchBar.querySelector('form');
-    if (searchForm) {
-        searchForm.addEventListener('submit', () => {
-            const query = searchInput.value.trim();
-            if (query) saveSearchTerm(query);
-        });
-    }
-
-    typeAnimation(); // Start animation initially
 }
 
-
 /**
- * ----------------------------------------------------------------------------------
- * 5. SEARCH HISTORY MANAGEMENT
- * ----------------------------------------------------------------------------------
+ * ==================================================================================
+ * 5. SEARCH HISTORY & SUGGESTIONS
+ * ==================================================================================
  */
 const SEARCH_HISTORY_KEY = 'gplmods_search_history';
 const MAX_HISTORY_ITEMS = 5;
 
 function getSearchHistory() {
     const historyJSON = localStorage.getItem(SEARCH_HISTORY_KEY);
-    return historyJSON ? JSON.parse(historyJSON) : [];
+    return historyJSON ? JSON.parse(historyJSON) :[];
 }
 
 function saveSearchTerm(term) {
@@ -281,15 +253,13 @@ function displaySearchHistory() {
     const history = getSearchHistory();
     const historyBox = document.getElementById('searchHistory');
     const suggestionsBox = document.getElementById('searchSuggestions');
-
     if (!historyBox) return;
-    historyBox.innerHTML = '';
 
+    historyBox.innerHTML = '';
     if (history.length > 0) {
         const title = document.createElement('h4');
         title.textContent = 'Recent Searches';
         historyBox.appendChild(title);
-
         const list = document.createElement('ul');
         history.forEach(term => {
             const listItem = document.createElement('li');
@@ -298,26 +268,19 @@ function displaySearchHistory() {
         });
         historyBox.appendChild(list);
         historyBox.style.display = 'block';
-        suggestionsBox.style.display = 'none';
+        if(suggestionsBox) suggestionsBox.style.display = 'none';
     } else {
         historyBox.style.display = 'none';
     }
 }
 
-
-/**
- * ----------------------------------------------------------------------------------
- * 6. SEARCH SUGGESTIONS FETCHER
- * ----------------------------------------------------------------------------------
- */
 async function fetchAndDisplaySuggestions(query) {
     const suggestionsBox = document.getElementById('searchSuggestions');
     if (!suggestionsBox) return;
 
     try {
         const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-
+        if (!response.ok) throw new Error('Network error');
         const suggestions = await response.json();
         suggestionsBox.innerHTML = '';
 
@@ -325,8 +288,8 @@ async function fetchAndDisplaySuggestions(query) {
             const list = document.createElement('ul');
             suggestions.forEach(suggestion => {
                 const listItem = document.createElement('li');
-               const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const regex = new RegExp(escapedQuery, 'gi');
+                const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedQuery, 'gi');
                 const boldedSuggestion = suggestion.replace(regex, (match) => `<b>${match}</b>`);
                 listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(suggestion)}">${boldedSuggestion}</a>`;
                 list.appendChild(listItem);
@@ -337,35 +300,25 @@ const regex = new RegExp(escapedQuery, 'gi');
             suggestionsBox.style.display = 'none';
         }
     } catch (error) {
-        console.error('Error fetching search suggestions:', error);
         suggestionsBox.style.display = 'none';
     }
 }
 
 /**
- * =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
- * 7. MOBILE NAVIGATION HANDLER (CORRECTED)
- * -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ * ==================================================================================
+ * 6. MOBILE NAVIGATION
+ * ==================================================================================
  */
 function initializeMobileMenu() {
-    // --- Use the CORRECT IDs from your header.ejs file ---
     const hamburger = document.getElementById('hamburger');
     const mobileNav = document.getElementById('mobileNav');
+    if (!hamburger || !mobileNav) return;
 
-    if (!hamburger || !mobileNav) {
-        console.warn("Mobile menu elements not found. Check IDs: 'hamburger' and 'mobileNav'");
-        return;
-    }
-
-    // --- Toggle display on hamburger click ---
     hamburger.addEventListener('click', (event) => {
-        // Stop the click from bubbling up to the document
         event.stopPropagation();
-        const isVisible = mobileNav.style.display === 'block';
-        mobileNav.style.display = isVisible ? 'none' : 'block';
+        mobileNav.style.display = mobileNav.style.display === 'block' ? 'none' : 'block';
     });
 
-    // --- Accordion for sub-menus ---
     const collapsibleTriggers = mobileNav.querySelectorAll('.collapsible-trigger');
     collapsibleTriggers.forEach(trigger => {
         trigger.addEventListener('click', function(e) {
@@ -374,19 +327,13 @@ function initializeMobileMenu() {
         });
     });
 
-    // --- Close nav when a main link is clicked ---
-    const mobileNavLinks = mobileNav.querySelectorAll('a');
-    mobileNavLinks.forEach(link => {
+    mobileNav.querySelectorAll('a').forEach(link => {
         if (!link.classList.contains('collapsible-trigger')) {
-            link.addEventListener('click', () => {
-                mobileNav.style.display = 'none';
-            });
+            link.addEventListener('click', () => { mobileNav.style.display = 'none'; });
         }
     });
 
-    // --- Close the menu if the user clicks anywhere else on the page ---
     document.addEventListener('click', (event) => {
-        // If the menu is open AND the click was NOT inside the menu itself...
         if (mobileNav.style.display === 'block' && !mobileNav.contains(event.target)) {
             mobileNav.style.display = 'none';
         }
@@ -395,7 +342,49 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 8. FINAL, ROBUST SIDEBAR MUSIC PLAYER
+ * 7. POLICY BANNER
+ * ==================================================================================
+ */
+function initializePolicyBanner() {
+    const policyModal = document.getElementById('policy-modal-container');
+    const acceptBtn = document.getElementById('acceptPolicy');
+    const declineBtn = document.getElementById('declinePolicy');
+
+    if (!policyModal || !acceptBtn || !declineBtn) {
+        initializeMusicPlayer(); 
+        return;
+    }
+
+    if (localStorage.getItem('gplmods_policy_accepted') === 'true') {
+        initializeMusicPlayer(); 
+        return;
+    }
+
+    policyModal.style.display = 'flex';
+
+    acceptBtn.addEventListener('click', () => {
+        localStorage.setItem('gplmods_policy_accepted', 'true');
+        policyModal.style.display = 'none'; 
+        initializeMusicPlayer(); 
+    }, { once: true });
+
+    declineBtn.addEventListener('click', () => {
+        const contentBox = policyModal.querySelector('.policy-modal-content');
+        contentBox.innerHTML = `
+            <h2 style="color: var(--gold); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
+                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again.
+            </p>
+            <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
+                Refresh Page
+            </button>
+        `;
+    }, { once: true });
+}
+
+/**
+ * ==================================================================================
+ * 8. ROBUST SIDEBAR MUSIC PLAYER
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -419,8 +408,7 @@ function initializeMusicPlayer() {
         return; // Stop here if HTML is broken
     }
 
-    // --- 3. Define SVG Icons (Double-check these strings!) ---
-    // These use backticks (`) for multi-line string literals
+    // --- 3. Define SVG Icons ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
@@ -449,17 +437,17 @@ function initializeMusicPlayer() {
 
     function playTrack() {
         audioPlayer.play().then(() => {
-            playPauseBtn.innerHTML = pauseIconSVG; // Set to pause icon when playing
+            playPauseBtn.innerHTML = pauseIconSVG; 
             localStorage.setItem('musicState', 'playing');
         }).catch(e => {
             console.warn("Browser prevented autoplay.", e);
-            pauseTrack(); // Fallback if browser blocks it
+            pauseTrack(); 
         });
     }
 
     function pauseTrack() {
         audioPlayer.pause();
-        playPauseBtn.innerHTML = playIconSVG; // Set to play icon when paused
+        playPauseBtn.innerHTML = playIconSVG; 
         localStorage.setItem('musicState', 'paused');
     }
     
@@ -490,7 +478,7 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-   // --- 7. Initialize Player State on Page Load (Advanced Resumption) ---
+    // --- 7. Initialize Player State on Page Load (Advanced Resumption) ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex && savedTrackIndex < playlist.length) {
         trackIndex = parseInt(savedTrackIndex, 10);
@@ -501,103 +489,55 @@ function initializeMusicPlayer() {
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
-        // If it SHOULD be playing, try to play it immediately.
-        // If there's a saved time, start from there.
         if (savedTime) {
             audioPlayer.currentTime = parseFloat(savedTime);
         }
         
-        // Attempt the play. 
         const playPromise = audioPlayer.play();
         
         if (playPromise !== undefined) {
             playPromise.then(_ => {
-                // Success! Browser allowed autoplay.
                 playPauseBtn.innerHTML = pauseIconSVG;
             })
             .catch(error => {
-                // FAILURE: Browser blocked autoplay. 
                 console.warn("Browser blocked autoplay on new page load. Waiting for user interaction...");
-                
-                // Set the button to 'play' visually so the user knows they need to click it
                 playPauseBtn.innerHTML = playIconSVG; 
                 
-                // --- THE MAGIC FIX ---
-                // We add a one-time event listener to the entire document.
-                // The VERY FIRST TIME the user clicks anywhere on the new page, 
-                // we try to resume the music.
                 document.addEventListener('click', function resumeAudio() {
                     audioPlayer.play().then(() => {
                         playPauseBtn.innerHTML = pauseIconSVG;
                     }).catch(e => console.error("Still couldn't play:", e));
-                    
-                    // Remove this listener immediately so it only runs once
                     document.removeEventListener('click', resumeAudio);
                 }, { once: true }); 
             });
         }
     } else {
-        // It was paused previously, keep it paused.
         pauseTrack(); 
     }
-} // End of initializeMusicPlayer function
+}
+
 /**
  * ==================================================================================
- * 9. POLICY ACCEPTANCE MODAL (CENTERED & SIMPLIFIED)
+ * 9. SMART AUDIO HANDLER
+ * Pauses background music dynamically if user interacts with media players.
  * ==================================================================================
  */
-function initializePolicyBanner() {
-    const policyModal = document.getElementById('policy-modal-container');
-    const acceptBtn = document.getElementById('acceptPolicy');
-    const declineBtn = document.getElementById('declinePolicy');
-
-    // If modal or its buttons don't exist, just init the music player and exit.
-    if (!policyModal || !acceptBtn || !declineBtn) {
-        initializeMusicPlayer(); // ensure the player still initializes.
-        return;
-    }
-
-    const hasAccepted = localStorage.getItem('gplmods_policy_accepted');
-
-    if (hasAccepted === 'true') {
-        // already accepted → start the music player
-        initializeMusicPlayer();
-        return;
-    }
-
-    // Show the modal (it was hidden by default in the HTML).
-    policyModal.style.display = 'flex';
-
-    // Remove existing handlers (safe-guard if this function ever runs twice)
-    acceptBtn.replaceWith(acceptBtn.cloneNode(true));
-    declineBtn.replaceWith(declineBtn.cloneNode(true));
-
-    // Re-select the cloned buttons
-    const newAcceptBtn = document.getElementById('acceptPolicy');
-    const newDeclineBtn = document.getElementById('declinePolicy');
-
-
-    newAcceptBtn.addEventListener('click', () => {
-        localStorage.setItem('gplmods_policy_accepted', 'true');
-        policyModal.style.display = 'none';
-        initializeMusicPlayer(); // Initialize player on acceptance
-    }, {
-        once: true
+function initializeSmartAudioHandler() {
+    const backgroundAudio = document.getElementById('background-audio');
+    if (!backgroundAudio) return;
+    const mediaPlayers = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="vimeo.com"], video');
+    mediaPlayers.forEach(player => {
+        player.addEventListener('mouseenter', () => { 
+            if (!backgroundAudio.paused) { 
+                backgroundAudio.dataset.wasPlaying = 'true'; 
+                backgroundAudio.pause(); 
+            }
+        });
+        player.addEventListener('mouseleave', () => { 
+            if (backgroundAudio.dataset.wasPlaying === 'true') { 
+                backgroundAudio.play(); 
+                backgroundAudio.dataset.wasPlaying = 'false'; 
+            }
+        });
     });
-
-    newDeclineBtn.addEventListener('click', () => {
-        // Target the INNER content box so we keep the dark background and styles!
-        const contentBox = policyModal.querySelector('.policy-modal-content');
-        
-        contentBox.innerHTML = `
-            <h2 style="color: var(--gold); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
-            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
-                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again.
-            </p>
-            <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: transform 0.3s ease; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
-                Refresh Page
-            </button>
-        `;
-    }, {
-        once: true
-    });
+}
