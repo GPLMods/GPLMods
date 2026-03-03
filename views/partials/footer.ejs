@@ -28,29 +28,25 @@
         </div>
     </footer>
 
-    <!-- ======== NEW UNIFIED POLICY MODAL ======== -->
-    <!-- policy modal (hidden by default) -->
-<div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center;">
-<!-- The semi-transparent background overlay -->
-<div class="policy-modal-background" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);"></div>
-<!-- The content that sits on top of the overlay -->
-<!-- The content div now has styles to center it on the screen -->
-<div class="policy-modal-content" style="position: relative; background-color: var(--dark-gray); color: var(--white); padding: 25px; text-align: center; border-radius: 15px; max-width: 450px; margin: auto; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-    <p style="margin: 0; font-size: 0.9em;">
-        To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.
-    </p>
-    <div class="policy-buttons" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-        <button class="policy-button" id="acceptPolicy">Accept</button>
-        <button class="policy-button decline" id="declinePolicy">Decline</button>
+<!-- ======== NEW UNIFIED POLICY MODAL ======== -->
+    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
+        <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <h2 style="color: var(--gold); margin-bottom: 15px;">Welcome to GPL Mods</h2>
+            <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
+                To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.
+            </p>
+            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+                <button class="policy-button" id="acceptPolicy" style="background-color: var(--gold); color: var(--black); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em;">Accept</button>
+                <button class="policy-button decline" id="declinePolicy" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Decline</button>
+            </div>
+        </div>
     </div>
-</div>
+    
+    <!-- Hidden Audio Player for JS to control -->
+    <audio id="background-audio" loop></audio>
 
-<audio id="background-audio"></audio>
-
-    <!-- Your global JavaScript files -->
+    <!-- Your scripts -->
     <script src="/js/main.js"></script>
-    <!-- Your Tidio/Chatbot script -->
-    <script src="https://code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async>
-</script>
+    <script src="//code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async></script>
 </body>
 </html>

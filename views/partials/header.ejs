@@ -59,22 +59,27 @@
 </div>
     </header>
     <!-- Mobile Sidebar Navigation -->
-    <nav class="mobile-nav" id="mobileNav">
-        <ul>
-   <div class="music-player">
-    <span id="music-track-name">No Track Loaded</span>
-    <div class="music-controls">
-        <button id="music-prev-btn" title="Previous Track">
-            <svg class="player-icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
-        </button>
-        <button id="music-play-pause-btn" title="Play/Pause">
-            <!-- JS will inject the correct icon here -->
-        </button>
-        <button id="music-next-btn" title="Next Track">
-            <svg class="player-icon" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6l8.5 6z"></path></svg>
-        </button>
-    </div>
-</div>
+            <hr style="border-color: #333; margin: 20px 0;">
+            
+            <div class="music-player" style="text-align: center;">
+                <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Select a track</span>
+                
+                <div class="music-controls" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
+                    <button id="music-prev-btn" title="Previous Track" style="background:none; border:none; cursor:pointer; width:30px; fill:var(--silver); transition: fill 0.3s;">
+                        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
+                    </button>
+                    
+                    <button id="music-play-pause-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; width:35px; fill:var(--silver); transition: fill 0.3s;">
+                        <!-- JS injects the icon here -->
+                    </button>
+                    
+                    <button id="music-next-btn" title="Next Track" style="background:none; border:none; cursor:pointer; width:30px; fill:var(--silver); transition: fill 0.3s;">
+                        <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6l8.5 6z"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <hr style="border-color: #333; margin: 20px 0;">
             <li><a href="/">Home</a></li>
             <li class="has-submenu">
                 <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
