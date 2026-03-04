@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPL Mods - 100% Safe And Tested Mods!</title>
+    <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
     
-    <!-- ======== ADD THESE 2 LINES FOR YOUR BROWSER TAB LOGO ======== -->
+    <!-- Browser Tab Logo -->
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <!-- ============================================================= -->
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +28,7 @@
         <div class="container header-content">
             <a href="/" class="logo">GPL <span>Mods</span></a>
             
+            <!-- Animated search bar -->
             <div class="search-bar" id="animatedSearchBar">
                 <form action="/search" method="GET" class="search-form">
                     <input type="search" id="searchInput" name="q" placeholder="">
@@ -65,18 +65,20 @@
                     </a>
                 <% } %>
                 
-                <!-- Mobile Bell (Between Avatar and Hamburger, or before Hamburger for guests) -->
+                <!-- Mobile Bell -->
                 <a href="/updates" style="color: var(--silver); font-size: 1.6em; line-height: 0;">
                     <i class="fas fa-bell"></i>
                 </a>
                 
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
             </div>
+            
+        </div> <!-- THESE TWO CLOSING TAGS WERE MISSING! -->
+    </header> 
 
     <!-- Mobile Sidebar Navigation -->
-    <nav class="mobile-nav" id="mobileNav"> <!-- THIS NAV WAS MISSING -->
-        <ul> <!-- THIS UL WAS MISSING -->
-            
+    <nav class="mobile-nav" id="mobileNav">
+        <ul>
             <!-- Sidebar Music Player -->
             <div class="music-player" style="text-align: center; padding-top: 10px;">
                 <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Select a track</span>
