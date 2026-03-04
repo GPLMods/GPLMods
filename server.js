@@ -1043,19 +1043,82 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- NEW: User Edit Mod Route (GET form) ---
+// --- GET Edit Mod Route ---
 app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
         
+        // Security check
         if (!file || file.uploader !== req.user.username) {
             return res.status(403).render('pages/403');
         }
 
-        // For now, we will render a placeholder or you can create an 'edit-mod.ejs' 
-        // that looks just like 'upload-details.ejs' but pre-filled with this file's data.
-        res.send(`<h1>Edit Page for ${file.name}</h1><p>Feature coming soon! You will build edit-mod.ejs next.</p><a href="/my-uploads">Go Back</a>`);
+        // Generate signed URLs so the user can see their current images
+        const iconUrl = await getSmartImageUrl(file.iconKey);
+        const screenshotUrls = await Promise.all((file.screenshotKeys ||[]).map(key => getSmartImageUrl(key)));
+
+        res.render('pages/edit-mod', { 
+            file: { ...file.toObject(), iconUrl, screenshotUrls } 
+        });
     } catch (error) {
+        console.error("Error loading edit page:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- POST Edit Mod Route ---
+app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
+    { name: 'softwareIcon', maxCount: 1 },
+    { name: 'screenshots', maxCount: 4 }
+]), async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        
+        if (!file || file.uploader !== req.user.username) {
+            return res.status(403).send("Unauthorized");
+        }
+
+        const formData = req.body;
+        const { softwareIcon, screenshots } = req.files || {};
+
+        // 1. Update images ONLY IF new ones were uploaded
+        if (softwareIcon && softwareIcon.length > 0) {
+            file.iconKey = await uploadToB2(softwareIcon[0], 'icons');
+        }
+        if (screenshots && screenshots.length > 0) {
+            file.screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+        }
+
+        // 2. Format tags
+        const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : file.tags;
+
+        // 3. Update all text fields
+        file.name = formData.modName || file.name;
+        file.version = formData.modVersion || file.version;
+        file.developer = formData.developerName || file.developer;
+        file.modDescription = formData.modDescription || file.modDescription;
+        file.modFeatures = formData.modFeatures || file.modFeatures;
+        file.whatsNew = formData.whatsNew || file.whatsNew;
+        file.officialDescription = formData.officialDescription || file.officialDescription;
+        file.videoUrl = formData.videoUrl || file.videoUrl;
+        file.category = formData.modPlatform || file.category;
+        file.tags = processedTags;
+
+        if (formData.modCategory) {
+            file.platforms = [formData.modCategory];
+        }
+
+        // 4. IMPORTANT: If the mod was rejected, switch it back to pending for re-review!
+        if (file.status === 'rejected') {
+            file.status = 'pending';
+            file.rejectionReason = ''; // Clear the old rejection reason
+        }
+
+        await file.save();
+        res.redirect('/my-uploads');
+
+    } catch (error) {
+        console.error("Error updating mod:", error);
         res.status(500).render('pages/500');
     }
 });
