@@ -26,7 +26,7 @@ const fs = require('fs');
 const FormData = require('form-data');
 
 // Custom Utilities & Config
-const { sendVerificationEmail } = require('./utils/mailer');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
 const adminRouter = require('./config/admin');
 
 // AWS SDK v3 Imports (Backblaze B2)
@@ -699,23 +699,32 @@ app.post('/resend-otp', async (req, res) => {
     }
 });
 
-app.get('/forgot-password', (req, res) => res.render('pages/forgot-password'));
 app.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email: email });
-        if (!user) return res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
+        
+        if (!user) {
+            // Security best practice: don't reveal if email exists or not
+            return res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
+        }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
         user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        user.passwordResetExpires = Date.now() + 3600000;
+        user.passwordResetExpires = Date.now() + 3600000; // 1 hour
         await user.save();
         
-        const resetURL = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
-        console.log(`Reset Link: ${resetURL}`); 
+        // FIX 1: Smart URL generation using the actual host domain
+        const resetURL = `https://${req.get('host')}/reset-password/${resetToken}`;
+        
+        // FIX 2: Actually trigger the email to send!
+        await sendPasswordResetEmail(user, resetURL);
 
         res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
-    } catch (e) { res.redirect('/forgot-password?error=Error.'); }
+    } catch (e) { 
+        console.error("Forgot Password Error:", e);
+        res.redirect('/forgot-password?error=An error occurred while processing your request.'); 
+    }
 });
 
 app.get('/reset-password/:token', async (req, res) => {
