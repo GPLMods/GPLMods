@@ -183,13 +183,18 @@
             <form id="login-form" action="/login" method="POST">
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="e.g. modmaster@example.com" required>
+                    <input type="email" id="email" name="email" placeholder="e.g. youremail@example.com" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="••••••••" required>
-                </div>
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" placeholder="********" required>
+    <!-- ======== ADD THIS NEW LINK ======== -->
+    <div style="text-align: right; margin-top: 8px;">
+        <a href="/forgot-password" style="color: var(--silver); font-size: 0.85em; text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">Forgot Password?</a>
+    </div>
+    <!-- =================================== -->
+</div>
 
                 <!-- reCAPTCHA integration -->
                 <div class="form-group">
