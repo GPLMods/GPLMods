@@ -32,16 +32,8 @@
                 <div id="searchHistory" class="search-history"></div>
             </div>
             
-            <!-- Desktop User Actions -->
-            <div class="header-actions">
-                <a href="/updates" class="nav-bell" title="Site Updates">
-                    <i class="fas fa-bell"></i>
-                </a>
-                
+            <!-- Desktop User Actions -->                
                 <% if (user) { %>
-                    <a href="/profile" class="avatar-placeholder">
-                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-                    </a>
                     <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
