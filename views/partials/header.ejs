@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
+    <title>GPL Mods - 100% Safe And Tested Mods!</title>
+    
+    <!-- ======== ADD THESE 2 LINES FOR YOUR BROWSER TAB LOGO ======== -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <!-- ============================================================= -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -32,7 +38,12 @@
             </div>
             
             <!-- Desktop User Actions -->
-            <div class="header-actions">
+            <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
+                <!-- Desktop Bell -->
+                <a href="/updates" title="Site Updates" style="color: var(--silver); font-size: 1.5em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">
+                    <i class="fas fa-bell"></i>
+                </a>
+                
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
                         <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
@@ -47,16 +58,20 @@
             </div>
 
             <!-- Mobile User Actions -->
-            <div class="header-mobile-actions">
+            <div class="header-mobile-actions" style="display: flex; align-items: center; gap: 15px;">
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
                         <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                     </a>
                 <% } %>
+                
+                <!-- Mobile Bell (Between Avatar and Hamburger, or before Hamburger for guests) -->
+                <a href="/updates" style="color: var(--silver); font-size: 1.6em; line-height: 0;">
+                    <i class="fas fa-bell"></i>
+                </a>
+                
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
             </div>
-        </div> <!-- THIS CLOSING DIV WAS MISSING -->
-    </header>
 
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav"> <!-- THIS NAV WAS MISSING -->

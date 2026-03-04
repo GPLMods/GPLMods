@@ -1,39 +1,42 @@
 <%- include('../../partials/header') %>
 
 <style>
-    /* Reusing some styles */
-    .static-page-container { text-align: center; max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-grey); border-radius: 8px; }
-    .donation-options { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; flex-wrap: wrap; }
-    .donation-btn { width: 150px; font-size: 1.2rem !important; }
+    .donate-wrapper { max-width: 700px; margin: 60px auto; background-color: var(--dark-gray); padding: 50px 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border-top: 4px solid var(--gold); }
+    .donate-wrapper h1 { color: var(--white); font-size: 2.8em; margin-bottom: 15px; }
+    .donate-wrapper h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .donate-wrapper p { color: var(--silver); line-height: 1.8; font-size: 1.1em; margin-bottom: 40px; }
+    
+    .donation-options { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    .donation-btn { 
+        background-color: transparent; border: 2px solid var(--gold); color: var(--gold); 
+        padding: 15px 40px; font-size: 1.4em; font-weight: 700; border-radius: 10px; 
+        cursor: pointer; transition: all 0.3s ease; min-width: 140px; font-family: 'Poppins', sans-serif;
+    }
+    .donation-btn:hover { background-color: var(--gold); color: var(--black); box-shadow: 0 0 20px var(--glow-gold); transform: translateY(-5px); }
 </style>
 
-<div class="static-page-container">
-    <h1>Support GPL Mods</h1>
-    <p style="color: var(--silver); line-height: 1.7;">
-        If you find this site useful, please consider making a small donation. Your support helps cover server costs, maintenance, and allows us to continue building new features. Every contribution is greatly appreciated!
-    </p>
+<main class="container">
+    <div class="donate-wrapper">
+        <h1>Support <span>GPL Mods</span></h1>
+        <p>
+            If you find this site useful, please consider making a small donation. Your support helps cover our heavy server costs, maintenance, and allows us to continue building new features for the community!
+        </p>
 
-    <div id="donation-form" class="donation-options">
-        <!-- Amount in cents (e.g., 500 = $5.00) -->
-        <button class="btn btn-primary donation-btn" data-amount="500">$5</button>
-        <button class="btn btn-primary donation-btn" data-amount="1000">$10</button>
-        <button class="btn btn-primary donation-btn" data-amount="2000">$20</button>
+        <div id="donation-form" class="donation-options">
+            <button class="donation-btn" data-amount="500">$5</button>
+            <button class="donation-btn" data-amount="1000">$10</button>
+            <button class="donation-btn" data-amount="2000">$20</button>
+        </div>
+        
+        <p id="error-message" style="color: var(--red); margin-top: 15px; font-weight: bold;"></p>
+        <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><i class="fas fa-lock"></i> Payments are securely processed by Cashfree.</p>
     </div>
-    <p id="error-message" style="color: #ffadad; margin-top: 1rem;"></p>
-</div>
+</main>
 
-<!-- 1. Include Cashfree SDK (v3) -->
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
-
-<!-- 2. Client-side logic -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Initialize the Cashfree SDK
-        // Note: Change 'sandbox' to 'production' when you go live
-        const cashfree = Cashfree({
-            mode: "sandbox" 
-        });
-
+        const cashfree = Cashfree({ mode: "sandbox" }); // Change to production later
         const donationButtons = document.querySelectorAll('.donation-btn');
         const errorMessage = document.getElementById('error-message');
 
@@ -42,13 +45,12 @@
                 const amount = this.dataset.amount;
                 const originalText = this.textContent;
 
-                errorMessage.textContent = ""; // Clear old errors
-
-                // Disable the button to prevent multiple clicks
+                errorMessage.textContent = ""; 
                 this.disabled = true;
-                this.textContent = "Processing...";
+                this.textContent = "Wait...";
+                this.style.backgroundColor = "var(--gold)";
+                this.style.color = "var(--black)";
 
-                // 1. Call your backend to create a payment order
                 fetch('/create-cashfree-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -57,23 +59,17 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.payment_session_id) {
-                        // 2. Start the payment process using the session ID
-                        const checkoutOptions = {
-                            paymentSessionId: data.payment_session_id,
-                            redirectTarget: "_self" // Redirect in the same tab
-                        };
-                        cashfree.checkout(checkoutOptions);
+                        cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
                     } else {
                         throw new Error(data.error || 'Could not create payment order.');
                     }
                 })
                 .catch(err => {
-                    errorMessage.textContent = 'An error occurred. Please try again later.';
-                    console.error('Donation error:', err);
-                    
-                    // Re-enable the button on failure
+                    errorMessage.textContent = 'Integration pending or server error.';
                     this.disabled = false;
                     this.textContent = originalText;
+                    this.style.backgroundColor = "transparent";
+                    this.style.color = "var(--gold)";
                 });
             });
         });
