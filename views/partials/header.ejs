@@ -39,15 +39,8 @@
             
             <!-- Desktop User Actions -->
             <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
-                <!-- Desktop Bell -->
-                <a href="/updates" title="Site Updates" style="color: var(--silver); font-size: 1.5em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">
-                    <i class="fas fa-bell"></i>
-                </a>
                 
                 <% if (user) { %>
-                    <a href="/profile" class="avatar-placeholder">
-                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-                    </a>
                     <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
@@ -71,11 +64,10 @@
                 </a>
                 
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
-            </div>
-            
-        </div> <!-- THESE TWO CLOSING TAGS WERE MISSING! -->
-    </header> 
+            </div>    
+        </div> 
 
+    </header> 
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
         <ul>
@@ -126,9 +118,7 @@
                 <li><a href="/donate">Donate Us!</a></li>
                 <li><a href="/login">Login</a></li>
                 <li><a href="/register">Sign Up</a></li>
-            <% } %>
-            
+            <% } %>        
         </ul>
-    </nav>
-    
+    </nav>    
     <main>
