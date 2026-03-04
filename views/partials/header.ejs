@@ -32,30 +32,36 @@
                 <div id="searchHistory" class="search-history"></div>
             </div>
             
-            <!-- Desktop User Actions -->                
-                <% if (user) { %>
-                    <a href="/upload" class="btn btn-login">Upload A New Mod</a>
-                    <a href="/logout" class="btn btn-signup">Logout</a>
-                <% } else { %>
-                    <a href="/upload" class="btn btn-login">Upload A New Mod</a>
-                    <a href="/login" class="btn btn-login">Login</a>
-                    <a href="/register" class="btn btn-signup">Sign Up</a>
-                <% } %>
-            </div>
-
-            <!-- Mobile User Actions -->
-            <div class="header-mobile-actions">
+            <!-- UNIFIED USER ACTIONS (Mobile & Desktop) -->
+            <div class="header-right">
+                
+                <!-- Common Notification Bell (Shows on both) -->
+                <a href="/updates" class="nav-bell" title="Site Updates">
+                    <i class="fas fa-bell"></i>
+                </a>
+                
+                <!-- Common Avatar (Shows on both IF logged in) -->
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
                         <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                     </a>
                 <% } %>
                 
-                <a href="/updates" class="nav-bell-mobile" title="Site Updates">
-                    <i class="fas fa-bell"></i>
-                </a>
-                
+                <!-- Desktop Text Buttons (Hidden on mobile) -->
+                <div class="desktop-only-buttons">
+                    <% if (user) { %>
+                        <a href="/upload" class="btn btn-login">Upload A New Mod</a>
+                        <a href="/logout" class="btn btn-signup">Logout</a>
+                    <% } else { %>
+                        <a href="/upload" class="btn btn-login">Upload A New Mod</a>
+                        <a href="/login" class="btn btn-login">Login</a>
+                        <a href="/register" class="btn btn-signup">Sign Up</a>
+                    <% } %>
+                </div>
+
+                <!-- Hamburger Menu (Hidden on desktop) -->
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
+                
             </div>
         </div> 
     </header> 
