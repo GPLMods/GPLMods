@@ -1349,18 +1349,15 @@ app.use((err, req, res, next) => {
 });
 // --- NEW: DYNAMIC SITEMAP FOR SEO ---
 app.get('/sitemap.xml', async (req, res) => {
-    // Tell the browser and search engines this is an XML file
     res.header('Content-Type', 'application/xml');
     
     try {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        
-        // Start the XML structure
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
         // 1. Add Static Pages
-        const staticPages =['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy'];
+        const staticPages = ['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy'];
         staticPages.forEach(page => {
             xml += `  <url>\n    <loc>${baseUrl}${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
         });
@@ -1371,16 +1368,21 @@ app.get('/sitemap.xml', async (req, res) => {
              xml += `  <url>\n    <loc>${baseUrl}/category?platform=${cat}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
-        // 3. Add ALL Live Mods dynamically from the database!
-        const liveMods = await File.find({ status: 'live', isLatestVersion: true }).select('_id updatedAt');
+        // 3. Add ALL Live Mods dynamically from the database
+        // FIX: We now look for showInSitemap (to allow admin overrides) 
+        // We use $ne: false so that OLD mods that don't even have this field yet are still included!
+        const liveMods = await File.find({ 
+            showInSitemap: { $ne: false }, 
+            isLatestVersion: true 
+        }).select('_id updatedAt');
+
         liveMods.forEach(mod => {
-            xml += `  <url>\n    <loc>${baseUrl}/mods/${mod._id}</loc>\n    <lastmod>${mod.updatedAt.toISOString()}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+            // Check if updatedAt exists to prevent crashes on very old, broken DB entries
+            const lastModDate = mod.updatedAt ? mod.updatedAt.toISOString() : new Date().toISOString();
+            xml += `  <url>\n    <loc>${baseUrl}/mods/${mod._id}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
         });
 
-        // Close the XML structure
         xml += '</urlset>';
-        
-        // Send the completed XML file
         res.send(xml);
         
     } catch (error) {

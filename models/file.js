@@ -103,7 +103,10 @@ const FileSchema = new Schema({
         type: String,
         trim: true
     },
-
+showInSitemap: {
+        type: Boolean,
+        default: true // Automatically true for new uploads
+    },
     virusTotalScanDate: {
         type: Date
     },

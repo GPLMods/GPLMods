@@ -99,19 +99,23 @@
 
 /* --- Desktop View Overrides --- */
 @media (min-width: 1024px) {
-    .header-right {
-        order: 3; /* Moves to far right after the search bar */
-    }
+    .search-bar { order: 2; flex-grow: 1; max-width: 500px; margin: 0 20px; }
+    .header-mobile-actions { order: 4; display: flex !important; } /* Ensure this shows */
     
-    .desktop-only-buttons { 
-        display: flex; /* Show the text buttons on PC */
-        align-items: center; 
-        gap: 10px; 
+    /* WE REMOVED .hamburger-menu { display: none; } FROM HERE */
+    .hamburger-menu { margin-left: 15px; } /* Add spacing on desktop */
+
+    .avatar-placeholder { order: 2; } 
+    .header-actions {
+        display: flex; align-items: center; gap: 10px; order: 3;
     }
-    
-    .hamburger-menu { 
-        display: none; /* Hide the hamburger menu on PC */
-    }
+    .header-actions .btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
+    .header-actions .btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
+    .header-actions .btn-login:hover { color: var(--gold); border-color: var(--gold); }
+    .header-actions .btn-signup { background: var(--gold); color: var(--black); border: 2px solid var(--gold); }
+    .header-actions .btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
+    .policy-banner { flex-direction: row; justify-content: center; }
+    .policy-buttons { margin-left: 20px; }
 }
 
 /* The container for BOTH suggestion boxes */
@@ -205,9 +209,32 @@
         .tabs-nav { display: inline-flex; position: relative; background-color: var(--dark-gray); border-radius: 25px; padding: 5px; white-space: nowrap; }
         .tab-button { background: none; border: none; color: var(--silver); font-size: 1em; font-weight: 600; padding: 10px 20px; flex: 1 0 auto; cursor: pointer; position: relative; z-index: 2; transition: color 0.4s ease; }
         /* By adding the parent nav's ID, this rule becomes more important */
-.tabs-nav .tab-button.active {
-    color: var(--black) !important; /* Adding !important is a final guarantee */
-    text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2);
+/* --- UNIFIED GOLDEN TAB BUTTONS --- */
+.tabs-nav button { 
+    background: none; 
+    border: none; 
+    color: var(--silver); 
+    font-size: 1.1em; 
+    padding: 10px 25px; /* Adjusted padding for pill shape */
+    cursor: pointer; 
+    position: relative; 
+    transition: all 0.3s ease; 
+    border-radius: 25px; /* Rounded edges for inactive tabs too */
+}
+.tabs-nav button:hover { 
+    color: var(--white); 
+}
+/* The Active Golden Pill */
+.tabs-nav button.active, .tabs-nav .tab-button.active { 
+    background-color: var(--gold) !important; 
+    color: var(--black) !important; 
+    font-weight: 700; 
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    text-shadow: none;
+}
+/* REMOVE the old underline style by making it display: none */
+.tabs-nav button.active::after { 
+    display: none !important; 
 }
         .tab-highlight {
             position: absolute; top: 5px; left: 0; height: calc(100% - 10px);
