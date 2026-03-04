@@ -65,6 +65,29 @@
         .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
         .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
         .header-actions { display: none; }
+/* --- Header Button Textures (Always Applied) --- */
+.header-actions .btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
+.header-actions .btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
+.header-actions .btn-login:hover { color: var(--gold); border-color: var(--gold); }
+.header-actions .btn-signup { background: var(--gold); color: var(--black); border: 2px solid var(--gold); }
+.header-actions .btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
+
+/* Notification Bell Styles */
+.nav-bell, .nav-bell-mobile { color: var(--silver); transition: color 0.3s ease; display: flex; align-items: center; }
+.nav-bell:hover, .nav-bell-mobile:hover { color: var(--gold); }
+.nav-bell { font-size: 1.5em; margin-right: 15px; }
+.nav-bell-mobile { font-size: 1.6em; margin-right: 15px; line-height: 0; }
+
+/* --- Mobile vs Desktop Visibility Logic --- */
+/* Default is Mobile view */
+.header-actions { display: none; } /* Hide desktop buttons on mobile */
+.header-mobile-actions { display: flex; align-items: center; order: 2; }
+
+/* Desktop View */
+@media (min-width: 1024px) {
+    .header-actions { display: flex; align-items: center; gap: 10px; order: 3; }
+    .header-mobile-actions { display: none; } /* Hide mobile icons on desktop */
+}
 
 /* The container for BOTH suggestion boxes */
 .search-suggestions, .search-history {

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
     
-    <!-- Browser Tab Logo -->
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
 
@@ -13,13 +12,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
-    <!-- Global stylesheet -->
     <link rel="stylesheet" href="/css/style.css">
 
-    <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
@@ -28,7 +24,6 @@
         <div class="container header-content">
             <a href="/" class="logo">GPL <span>Mods</span></a>
             
-            <!-- Animated search bar -->
             <div class="search-bar" id="animatedSearchBar">
                 <form action="/search" method="GET" class="search-form">
                     <input type="search" id="searchInput" name="q" placeholder="">
@@ -38,9 +33,15 @@
             </div>
             
             <!-- Desktop User Actions -->
-            <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
+            <div class="header-actions">
+                <a href="/updates" class="nav-bell" title="Site Updates">
+                    <i class="fas fa-bell"></i>
+                </a>
                 
                 <% if (user) { %>
+                    <a href="/profile" class="avatar-placeholder">
+                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+                    </a>
                     <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                     <a href="/logout" class="btn btn-signup">Logout</a>
                 <% } else { %>
@@ -51,23 +52,22 @@
             </div>
 
             <!-- Mobile User Actions -->
-            <div class="header-mobile-actions" style="display: flex; align-items: center; gap: 15px;">
+            <div class="header-mobile-actions">
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
                         <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                     </a>
                 <% } %>
                 
-                <!-- Mobile Bell -->
-                <a href="/updates" style="color: var(--silver); font-size: 1.6em; line-height: 0;">
+                <a href="/updates" class="nav-bell-mobile" title="Site Updates">
                     <i class="fas fa-bell"></i>
                 </a>
                 
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
-            </div>    
+            </div>
         </div> 
-
     </header> 
+
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
         <ul>
@@ -92,7 +92,6 @@
 
             <hr style="border-color: #333; margin: 20px 0;">
             
-            <!-- Sidebar Links -->
             <li><a href="/">Home</a></li>
             <li class="has-submenu">
                 <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
