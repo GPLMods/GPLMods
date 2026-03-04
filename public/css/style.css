@@ -347,8 +347,7 @@
     color: var(--black);
 }
 .platform-tag.android { background-color: var(--android-color, #A4C639); }
-.platform-tag.ios-ipa { background-color: var(--ios-color, #555); color: var(--white); }
-.platform-tag.ios-deb { background-color: #333; color: var(--white); }
+.platform-tag.ios { background-color: var(--ios-color, #555); color: var(--white); }
 .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: var(--white); }
 .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
 
