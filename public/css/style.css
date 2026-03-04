@@ -78,37 +78,60 @@
 .nav-bell:hover { color: var(--gold); }
 
 /* --- Unified Header Layout Logic --- */
-.header-right { 
-    display: flex; 
-    align-items: center; 
-    gap: 15px; 
-    order: 2; /* Keeps it on the top right on mobile */
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    order: 2; /* Mobile: Sits top right */
 }
 
-.desktop-only-buttons { 
-    display: none; /* Hide text buttons on mobile by default */
+/* Hide text buttons on mobile and tablets */
+.desktop-text-buttons {
+    display: none; 
 }
 
-.hamburger-menu { 
-    display: block; /* Show hamburger on mobile by default */
-    cursor: pointer; 
-    font-size: 2em; 
-    color: var(--silver); 
-    line-height: 1; 
+/* Ensure the Hamburger Menu is ALWAYS visible, on all devices */
+.hamburger-menu {
+    display: block !important; 
+    cursor: pointer;
+    font-size: 2em;
+    color: var(--silver);
+    line-height: 1;
+    margin-left: 5px;
+}
+.hamburger-menu:hover {
+    color: var(--gold);
 }
 
-/* --- Desktop View Overrides --- */
+/* Notification Bell Styles */
+.nav-bell {
+    color: var(--silver);
+    font-size: 1.6em;
+    line-height: 0;
+    transition: color 0.3s ease;
+}
+.nav-bell:hover {
+    color: var(--gold);
+}
+
+/* --- Responsive Layout Adjustments --- */
+@media (min-width: 768px) {
+    /* Tablet View */
+    .search-bar { order: 2; width: auto; max-width: 400px; }
+    .header-right-actions { order: 3; } /* Move to far right after search bar */
+}
+
 @media (min-width: 1024px) {
-    .search-bar { order: 2; flex-grow: 1; max-width: 500px; margin: 0 20px; }
-    .header-mobile-actions { order: 4; display: flex !important; } /* Ensure this shows */
+    /* Desktop View */
+    .search-bar { flex-grow: 1; max-width: 500px; margin: 0 20px; }
     
-    /* WE REMOVED .hamburger-menu { display: none; } FROM HERE */
-    .hamburger-menu { margin-left: 15px; } /* Add spacing on desktop */
-
-    .avatar-placeholder { order: 2; } 
-    .header-actions {
-        display: flex; align-items: center; gap: 10px; order: 3;
+    /* Reveal the text buttons next to the hamburger menu */
+    .desktop-text-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
+}
     .header-actions .btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
     .header-actions .btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
     .header-actions .btn-login:hover { color: var(--gold); border-color: var(--gold); }

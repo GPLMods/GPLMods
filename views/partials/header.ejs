@@ -32,23 +32,25 @@
                 <div id="searchHistory" class="search-history"></div>
             </div>
             
-            <!-- UNIFIED USER ACTIONS (Mobile & Desktop) -->
-            <div class="header-right">
+            <!-- ========================================== -->
+            <!-- UNIFIED USER ACTIONS (All Devices)         -->
+            <!-- ========================================== -->
+            <div class="header-right-actions">
                 
-                <!-- Common Notification Bell (Shows on both) -->
+                <!-- 1. Notification Bell (Always Visible) -->
                 <a href="/updates" class="nav-bell" title="Site Updates">
                     <i class="fas fa-bell"></i>
                 </a>
                 
-                <!-- Common Avatar (Shows on both IF logged in) -->
+                <!-- 2. User Avatar (Always Visible if Logged In) -->
                 <% if (user) { %>
                     <a href="/profile" class="avatar-placeholder">
                         <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                     </a>
                 <% } %>
                 
-                <!-- Desktop Text Buttons (Hidden on mobile) -->
-                <div class="desktop-only-buttons">
+                <!-- 3. Text Buttons (Hidden on Phones/Tablets, Visible on Desktop) -->
+                <div class="desktop-text-buttons">
                     <% if (user) { %>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
@@ -59,12 +61,13 @@
                     <% } %>
                 </div>
 
-                <!-- Hamburger Menu (Hidden on desktop) -->
+                <!-- 4. Hamburger Menu (Always Visible on all devices!) -->
                 <div class="hamburger-menu" id="hamburger">&#9776;</div>
                 
             </div>
+            <!-- ========================================== -->
         </div> 
-    </header> 
+    </header>
 
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
