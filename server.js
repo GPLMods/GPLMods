@@ -379,7 +379,8 @@ if (platform && platform !== 'all') {
             files: filesWithUrls,
             totalPages,
             currentPage,
-            currentFilters: { platform: platform || 'all', category: category || 'all', sort: sort || 'latest' }
+            // The problem is likely here:
+            currentFilters: { platform: platform || 'all', category: category || 'all', sort: sort || 'latest' } 
         });
     } catch (error) { res.status(500).render('pages/500'); }
 });
