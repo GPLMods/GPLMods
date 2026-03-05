@@ -291,7 +291,7 @@ app.get('/healthz', (req, res) => {
 app.get('/', async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
-        const categories =['android', 'ios', 'wordpress', 'windows'];
+        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
         await Promise.all(categories.map(async (cat) => {
@@ -347,8 +347,7 @@ app.get('/category', async (req, res) => {
         const queryFilter = { isLatestVersion: true };
 
         if (platform && platform !== 'all') {
-            queryFilter.category = platform.startsWith('ios') ? 'ios' : platform;
-        }
+    queryFilter.category = platform;
 
         const sortOptions = {};
         if (sort === 'popular') {

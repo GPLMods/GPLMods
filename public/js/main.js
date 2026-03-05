@@ -41,52 +41,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * ==================================================================================
- * 2. HOMEPAGE TAB NAVIGATION
+ * 2. HOMEPAGE 2-TIER TAB NAVIGATION
+ * Handles main tabs and iOS sub-tabs
  * ==================================================================================
  */
 function initializeHomepageTabs() {
     const mainTabNav = document.getElementById('main-tabs-nav');
-    if (!mainTabNav) return; // Exit if not on homepage
+    const iosSubTabsContainer = document.getElementById('ios-sub-tabs-container');
+    const iosTabNav = document.getElementById('ios-tabs-nav');
+
+    if (!mainTabNav) return;
 
     const allTabContents = document.querySelectorAll('.tab-content');
     const mainTabHighlight = document.getElementById('main-tab-highlight');
-    const tabButtons = mainTabNav.querySelectorAll('.tab-button');
+    const iosTabHighlight = document.getElementById('ios-tab-highlight');
 
-    function moveHighlight(targetTab) {
-        if (!targetTab || !mainTabHighlight) return;
+    // Helper to animate the golden pill
+    function moveHighlight(targetTab, highlightElement) {
+        if (!targetTab || !highlightElement) return;
         requestAnimationFrame(() => {
-            mainTabHighlight.style.width = `${targetTab.offsetWidth}px`;
-            mainTabHighlight.style.transform = `translateX(${targetTab.offsetLeft}px)`;
+            highlightElement.style.width = `${targetTab.offsetWidth}px`;
+            highlightElement.style.transform = `translateX(${targetTab.offsetLeft}px)`;
         });
     }
 
-    const initialActiveTab = mainTabNav.querySelector('.tab-button.active');
-    if (initialActiveTab) moveHighlight(initialActiveTab);
+    // Generic setup function for a tab row
+    function setupTabGroup(navElement, highlightElement, isMainGroup) {
+        if (!navElement) return;
+        const tabButtons = navElement.querySelectorAll('.tab-button');
+        const initialActiveTab = navElement.querySelector('.tab-button.active');
+        if (initialActiveTab) moveHighlight(initialActiveTab, highlightElement);
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTabId = button.dataset.tab;
-            
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            moveHighlight(button);
-            
-            allTabContents.forEach(content => {
-                if (content.id === `${targetTabId}-mods`) {
-                    content.classList.add('active');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTabId = button.dataset.tab;
+
+                // Update active classes
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                moveHighlight(button, highlightElement);
+
+                // Logic for Main Tabs vs Sub Tabs
+                if (isMainGroup) {
+                    if (targetTabId === 'ios') {
+                        // Open iOS sub-tabs, default to Jailed
+                        if (iosSubTabsContainer) iosSubTabsContainer.style.display = 'block';
+                        const defaultSubTab = iosTabNav.querySelector('[data-tab="ios-jailed"]');
+                        iosTabNav.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        defaultSubTab.classList.add('active');
+                        moveHighlight(defaultSubTab, iosTabHighlight);
+                        
+                        allTabContents.forEach(content => content.classList.remove('active'));
+                        document.getElementById('ios-jailed-mods').classList.add('active');
+                    } else {
+                        // Standard tab clicked, hide sub-tabs
+                        if (iosSubTabsContainer) iosSubTabsContainer.style.display = 'none';
+                        allTabContents.forEach(content => content.classList.remove('active'));
+                        const targetContent = document.getElementById(`${targetTabId}-mods`);
+                        if (targetContent) targetContent.classList.add('active');
+                    }
                 } else {
-                    content.classList.remove('active');
+                    // Sub-tab clicked (Jailed or Jailbroken)
+                    allTabContents.forEach(content => content.classList.remove('active'));
+                    const targetContent = document.getElementById(`${targetTabId}-mods`);
+                    if (targetContent) targetContent.classList.add('active');
                 }
-            });
-            
-            button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        });
-    });
 
+                button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            });
+        });
+    }
+
+    // Initialize both groups
+    setupTabGroup(mainTabNav, mainTabHighlight, true);
+    setupTabGroup(iosTabNav, iosTabHighlight, false);
+
+    // Keep highlights perfectly sized on window resize
     window.addEventListener('resize', () => {
-        const activeTab = mainTabNav.querySelector('.tab-button.active');
-        if (activeTab) moveHighlight(activeTab);
+        const activeMain = mainTabNav.querySelector('.tab-button.active');
+        if (activeMain) moveHighlight(activeMain, mainTabHighlight);
+        
+        if (iosTabNav && iosSubTabsContainer.style.display === 'block') {
+            const activeIos = iosTabNav.querySelector('.tab-button.active');
+            if (activeIos) moveHighlight(activeIos, iosTabHighlight);
+        }
     });
 }
 

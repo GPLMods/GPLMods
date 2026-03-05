@@ -370,7 +370,11 @@
     color: var(--black);
 }
 .platform-tag.android { background-color: var(--android-color, #A4C639); }
-.platform-tag.ios { background-color: var(--ios-color, #555); color: var(--white); }
+
+/* --- UPDATED IOS COLORS TO ORANGE --- */
+.platform-tag.ios-jailed, .platform-tag.ios-ipa { background-color: #FFFFFF; color: var(--black); } /* White */
+.platform-tag.ios-jailbroken, .platform-tag.ios-deb { background-color: #FF9800; color: var(--black); } /*Orange */
+
 .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: var(--white); }
 .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
 
