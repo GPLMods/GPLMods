@@ -375,13 +375,19 @@ if (platform && platform !== 'all') {
             return { ...file.toObject(), iconUrl };
         }));
 
-        res.render('pages/category', {
+res.render('pages/category', {
             files: filesWithUrls,
-            totalPages,
-            currentPage,
-            // The problem is likely here:
-            currentFilters: { platform: platform || 'all', category: category || 'all', sort: sort || 'latest' } 
+            totalPages: totalPages,
+            currentPage: currentPage,
+            
+            // THESE THREE LINES ARE THE CRITICAL FIX:
+            // They must NOT be wrapped inside a 'currentFilters' object.
+            currentPlatform: platform || 'all', 
+            currentCategory: category || 'all',
+            currentSort: sort || 'latest'
         });
+        // ===============================================================
+
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
