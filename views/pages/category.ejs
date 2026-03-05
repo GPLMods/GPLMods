@@ -1,0 +1,82 @@
+<%- include('../partials/header') %>
+
+<main>
+    <section class="page-header">
+        <div class="container">
+            <h1>Browse <span>All Mods</span></h1>
+            <p>Use the filters below to find the perfect mod for any platform.</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- The form action will reload the page with new query parameters -->
+        <form action="/category" method="GET" class="filter-section">
+            <div class="filter-group">
+                <label for="platform-filter">Platform</label>
+                <!-- The 'name' attribute is crucial for the form submission -->
+<select id="platform-filter" name="platform">
+    <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
+    <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
+    <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
+    <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
+    <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
+    <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
+</select>
+            </div>
+            <!-- Sub-category filter (placeholder for now) -->
+            <div class="filter-group">
+                <label for="category-filter">Category</label>
+                <select id="category-filter" name="category" disabled>
+                    <option value="all">All (Coming Soon)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sort-filter">Sort By</label>
+                <select id="sort-filter" name="sort">
+                    <option value="latest" <%= currentFilters.sort === 'latest' ? 'selected' : '' %>>Latest</option>
+                    <option value="popular" <%= currentFilters.sort === 'popular' ? 'selected' : '' %>>Popularity</option>
+                </select>
+            </div>
+            <button type="submit" class="filter-button">Filter</button>
+        </form>
+        
+        <!-- The mod grid is now built dynamically -->
+        <section class="mod-grid">
+            <% files.forEach(file => { %>
+                <a href="/mods/<%= file._id %>" class="mod-card">
+                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                    <div class="mod-card-content">
+                        <h3><%= file.name %></h3>
+                        <p><%= file.modDescription.substring(0, 50) %>...</p> <!-- Short description -->
+                        <div class="card-footer">
+                            <% if (file.category === 'android') { %>
+                                <span class="platform-tag android">Android</span>
+                            <% } else if (file.category === 'ios') { %>
+                                <span class="platform-tag ios-ipa">iOS</span>
+                            <% } else if (file.category === 'windows') { %>
+                                <span class="platform-tag windows">Windows</span>
+                            <% } else if (file.category === 'wordpress') { %>
+                                <span class="platform-tag wordpress">WordPress</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </a>
+            <% }) %>
+        </section>
+
+        <!-- Pagination is now built dynamically -->
+        <% if (totalPages > 1) { %>
+            <nav class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <!-- Construct link with existing filters preserved -->
+                    <a href="/category?page=<%= i %>&platform=<%= currentFilters.platform %>&sort=<%= currentFilters.sort %>" 
+                       class="<%= currentPage === i ? 'active' : '' %>">
+                       <%= i %>
+                    </a>
+                <% } %>
+            </nav>
+        <% } %>
+    </div>
+</main>
+    
+<%- include('../partials/footer') %>
