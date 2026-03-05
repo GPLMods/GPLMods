@@ -348,6 +348,7 @@ app.get('/category', async (req, res) => {
 
         if (platform && platform !== 'all') {
     queryFilter.category = platform;
+}
 
         const sortOptions = {};
         if (sort === 'popular') {
