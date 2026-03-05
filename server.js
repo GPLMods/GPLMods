@@ -1332,53 +1332,45 @@ app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
-app.get('/donate', (req, res) => res.render('pages/static/donate'));
-app.get('/membership', ensureAuthenticated, (req, res) => res.render('pages/membership'));
-app.post('/dmca-request', async (req, res) => {
-    try {
-        await new Dmca(req.body).save();
-        res.redirect('/dmca?success=Request submitted.');
-    } catch (e) { res.redirect('/dmca?error=Error.'); }
-});
 
-// Errors
-app.use((req, res) => res.status(404).render('pages/404'));
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('pages/500');
-});
-// --- NEW: DYNAMIC SITEMAP FOR SEO ---
+// ======== ADD THE BULLETPROOF SITEMAP HERE ========
 app.get('/sitemap.xml', async (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    
     try {
+        // 1. Set the correct XML header so browsers & Google know how to read it
+        res.set('Content-Type', 'text/xml');
+        
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-        // 1. Add Static Pages
+        // 2. Static Pages
         const staticPages = ['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy'];
         staticPages.forEach(page => {
             xml += `  <url>\n    <loc>${baseUrl}${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
         });
 
-        // 2. Add Dynamic Category Pages
-        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+        // 3. Category Pages
+        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
         categories.forEach(cat => {
              xml += `  <url>\n    <loc>${baseUrl}/category?platform=${cat}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
-        // 3. Add ALL Live Mods dynamically from the database
-        // FIX: We now look for showInSitemap (to allow admin overrides) 
-        // We use $ne: false so that OLD mods that don't even have this field yet are still included!
+        // 4. Live Mods (With fallback for missing/corrupted dates)
         const liveMods = await File.find({ 
             showInSitemap: { $ne: false }, 
             isLatestVersion: true 
         }).select('_id updatedAt');
 
         liveMods.forEach(mod => {
-            // Check if updatedAt exists to prevent crashes on very old, broken DB entries
-            const lastModDate = mod.updatedAt ? mod.updatedAt.toISOString() : new Date().toISOString();
+            let lastModDate;
+            try {
+                // Safely attempt to parse the date. If it fails, use the current date.
+                lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
+            } catch (e) {
+                lastModDate = new Date().toISOString(); 
+            }
+            
             xml += `  <url>\n    <loc>${baseUrl}/mods/${mod._id}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
         });
 
@@ -1387,10 +1379,24 @@ app.get('/sitemap.xml', async (req, res) => {
         
     } catch (error) {
         console.error("Sitemap generation error:", error);
-        res.status(500).end();
+        res.status(500).send('Error generating sitemap');
     }
 });
+// ==================================================
 
+app.post('/dmca-request', async (req, res) => {
+    try {
+        await new Dmca(req.body).save();
+        res.redirect('/dmca?success=Request submitted.');
+    } catch (e) { res.redirect('/dmca?error=Error.'); }
+});
+
+// Errors  <--- MAKES SURE THIS ERROR SECTION REMAINS AT THE VERY BOTTOM
+app.use((req, res) => res.status(404).render('pages/404'));
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('pages/500');
+});
 // ===============================================
 // 14. DATABASE CONNECTION & SERVER STARTUP
 // ===============================================
