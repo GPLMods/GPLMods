@@ -690,6 +690,9 @@ app.post('/verify-otp', async (req, res) => {
     }
 });
 
+app.get('/forgot-password', (req, res) => {
+    // This looks in views/pages/forgot-password.ejs
+    res.render('pages/forgot-password'); 
 // --- NEW Route to handle Resend Button ---
 app.post('/resend-otp', async (req, res) => {
     try {
