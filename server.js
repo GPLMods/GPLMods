@@ -346,9 +346,13 @@ app.get('/category', async (req, res) => {
         const currentPage = parseInt(page);
         const queryFilter = { isLatestVersion: true };
 
-        if (platform && platform !== 'all') {
-    queryFilter.category = platform;
-}
+if (platform && platform !== 'all') {
+            // FIX: Search for the exact platform name (e.g., 'ios-jailed')
+            queryFilter.category = platform;
+        }
+        
+        // Also, ensure we only show live mods in the category page!
+        queryFilter.status = 'live';
 
         const sortOptions = {};
         if (sort === 'popular') {

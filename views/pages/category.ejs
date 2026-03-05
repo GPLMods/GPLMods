@@ -14,14 +14,14 @@
             <div class="filter-group">
                 <label for="platform-filter">Platform</label>
                 <!-- The 'name' attribute is crucial for the form submission -->
-                <select id="platform-filter" name="platform">
-                    <option value="all" <%= currentFilters.platform === 'all' ? 'selected' : '' %>>All Platforms</option>
-                    <option value="android" <%= currentFilters.platform === 'android' ? 'selected' : '' %>>Android</option>
-                    <option value="ios" <%= currentFilters.platform === 'ios-Jailed' ? 'selected' : '' %>>IPA</option>
-                    <option value="ios" <%= currentFilters.platform === 'ios-jailbroken' ? 'selected' : '' %>>DEB</option>
-                    <option value="windows" <%= currentFilters.platform === 'windows' ? 'selected' : '' %>>Windows</option>
-                    <option value="wordpress" <%= currentFilters.platform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
-                </select>
+<select id="platform-filter" name="platform">
+    <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
+    <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
+    <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
+    <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
+    <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
+    <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
+</select>
             </div>
             <!-- Sub-category filter (placeholder for now) -->
             <div class="filter-group">
