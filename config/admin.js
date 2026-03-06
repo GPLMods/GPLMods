@@ -70,14 +70,14 @@ const adminJsOptions = {
                 listProperties:['name', 'uploader', 'status', 'showInSitemap', 'category'],
                 // Add showInSitemap to editProperties and showProperties
                 editProperties:[
-                    'name', 'version', 'developer', 'modDescription', 'officialDescription',
-                    'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+                    'name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription',
+                    'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                     'showInSitemap', // <--- ADDED HERE
                     'virusTotalId', 'virusTotalAnalysisId',
                     'iconKey', 'screenshotKeys' 
                 ],
                 showProperties:[
-                    'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
+                   'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
                     'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', // <--- ADDED HERE
                     'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys', 'createdAt', 'updatedAt'
                 ],
