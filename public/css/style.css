@@ -1439,14 +1439,48 @@
         .info-box h2 { font-size: 1.6em; margin-bottom: 10px; }
         .info-box p { margin-bottom: 10px; color: var(--silver); }
         .info-box ul { list-style: none; padding-left: 0; margin: 0; }
-.info-box ul li { 
-    position: relative; 
-    margin-bottom: 12px; 
-    color: var(--silver); 
-    display: flex;         /* Use flexbox to align animation and text */
-    align-items: flex-start;
-    gap: 10px;             /* Space between animation and text */
-    padding-left: 0;       /* Removed the old padding */
+/* --- Clean Feature Lists with Lottie Icons --- */
+.info-box .features-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0 0;
+}
+
+.info-box .features-list li {
+    display: flex;
+    align-items: flex-start; /* Crucial: Aligns the icon to the TOP of the text */
+    gap: 12px;
+    margin-bottom: 15px;
+    color: var(--silver);
+    padding-left: 0;
+}
+
+/* This wrapper holds the animation perfectly in place */
+.info-box .lottie-icon-wrapper {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px; /* Fine-tunes the vertical alignment with the first text line */
+}
+
+/* We make the player larger than the wrapper to crop out the empty space in the JSON file! */
+.info-box .lottie-icon-wrapper lottie-player {
+    width: 45px; 
+    height: 45px;
+    min-width: 45px;
+}
+
+.info-box .feature-text {
+    flex-grow: 1;
+    line-height: 1.6;
+}
+
+.info-box .feature-text strong {
+    color: var(--white);
+    font-weight: 600;
 }
 
         .app-description-content h2 { margin-top: 30px; margin-bottom: 15px; }

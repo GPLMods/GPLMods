@@ -146,52 +146,73 @@
                 <button class="tab-button" data-tab="comments">Comments</button>
             </div>
 
-            <!-- Description Tab -->
+<!-- Description Tab -->
             <div id="description" class="tab-content active">
+                
+                <!-- 1. Mod Information Box -->
                 <div class="info-box gold">
                     <h2>Mod Information</h2>
+                    
+                    <!-- General Description Paragraph -->
                     <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
+
+                    <!-- Animated Features List -->
                     <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
-                        <ul>
-                            <% file.modFeatures.split(/\r?\n/).forEach(feature => { if (feature.trim() !== '') { %>
-                                <li><%= feature %></li>
-                            <% }}) %>
-                        <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
-                        <ul>
-                            <% file.modFeatures.split(/\r?\n/).forEach(feature => { if (feature.trim() !== '') { %>
+                        <ul class="features-list">
+                            <% 
+                            file.modFeatures.split(/\r?\n/).forEach(feature => { 
+                                if (feature.trim() !== '') { 
+                                    // Splits the feature into a Bold Title and normal description
+                                    const parts = feature.split(/:(.*)/s);
+                                    const title = parts[0].trim();
+                                    const description = parts.length > 1 ? parts[1].trim() : '';
+                            %>
                                 <li>
-                                    <!-- LOTTIE TICK MARK ANIMATION -->
-                                    <lottie-player src="/animations/ticmark.json" background="transparent" speed="1" style="width: 24px; height: 24px; flex-shrink: 0;" loop autoplay></lottie-player>
-                                    <span style="margin-top: 2px;"><%= feature %></span>
+                                    <!-- Lottie Wrapper keeps it aligned to the top -->
+                                    <div class="lottie-icon-wrapper">
+                                        <lottie-player src="/animations/ticmark.json" background="transparent" speed="1" loop autoplay></lottie-player>
+                                    </div>
+                                    <div class="feature-text">
+                                        <% if (description) { %>
+                                            <strong><%= title %>:</strong> <span><%= description %></span>
+                                        <% } else { %>
+                                            <span><%= title %></span>
+                                        <% } %>
+                                    </div>
                                 </li>
                             <% }}) %>
                         </ul>
                     <% } %>
-                    <% } %>
                 </div>
 
+                <!-- 2. What's New Box -->
                 <% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
- <div class="info-box silver">
-    <h2>What's New</h2>
-    <ul>
-        <% file.whatsNew.split(/\r?\n/).forEach(updateLine => { if (updateLine.trim() !== '') { %>
-            <li>
-                <!-- LOTTIE DOT ANIMATION -->
-                <lottie-player src="/animations/dot.json" background="transparent" speed="1" style="width: 24px; height: 24px; flex-shrink: 0;" loop autoplay></lottie-player>
-                <span style="margin-top: 2px;"><%= updateLine.trim() %></span>
-            </li>
-        <% }}) %>
-    </ul>
-</div>
-<% } %>
-
-                <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
-                <div class="app-description-content">
-                    <h2>About This App/Game</h2>
-                    <!-- This will correctly render lists from official descriptions -->
-                    <%- file.officialDescription.replace(/\r?\n/g, '<br>') %>
+                <div class="info-box silver">
+                    <h2>What's New</h2>
+                    <ul class="features-list">
+                        <% file.whatsNew.split(/\r?\n/).forEach(updateLine => { if (updateLine.trim() !== '') { %>
+                            <li>
+                                <div class="lottie-icon-wrapper">
+                                    <!-- Using the dot animation here -->
+                                    <lottie-player src="/animations/dot.json" background="transparent" speed="1" loop autoplay></lottie-player>
+                                </div>
+                                <div class="feature-text">
+                                    <span><%= updateLine.trim() %></span>
+                                </div>
+                            </li>
+                        <% }}) %>
+                    </ul>
                 </div>
                 <% } %>
+
+                <!-- 3. Official Description -->
+                <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
+                <div class="app-description-content" style="margin-top: 2rem;">
+                    <h2>About This App/Game</h2>
+                    <p><%- file.officialDescription.replace(/\r?\n/g, '<br>') %></p>
+                </div>
+                <% } %>
+
             </div>
             
             <!-- Screenshots Tab -->
