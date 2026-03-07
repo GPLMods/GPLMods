@@ -23,8 +23,15 @@
 
             <% if (file.certification === 'certified') { %>
             <div class="safety-badge">
-                <span class="badge-icon">🛡️</span>
+                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" autoplay></lottie-player>
                 <span class="badge-text">100% Safe & Admin Certified</span>
+            </div>
+            <% } %>
+
+           <% if (file.certification === 'community-tested') { %>
+            <div class="safety-badge">
+                <lottie-player src="/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" autoplay></lottie-player>
+                <span class="badge-text">Highly Rated By Community</span>
             </div>
             <% } %>
             
