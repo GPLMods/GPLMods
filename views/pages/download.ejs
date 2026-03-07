@@ -23,14 +23,14 @@
 
             <% if (file.certification === 'certified') { %>
             <div class="safety-badge">
-                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" autoplay></lottie-player>
+                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">100% Safe & Admin Certified</span>
             </div>
             <% } %>
 
            <% if (file.certification === 'community-tested') { %>
             <div class="safety-badge">
-                <lottie-player src="/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" autoplay></lottie-player>
+                <lottie-player src="/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">Highly Rated By Community</span>
             </div>
             <% } %>
@@ -156,16 +156,34 @@
                             <% file.modFeatures.split(/\r?\n/).forEach(feature => { if (feature.trim() !== '') { %>
                                 <li><%= feature %></li>
                             <% }}) %>
+                        <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
+                        <ul>
+                            <% file.modFeatures.split(/\r?\n/).forEach(feature => { if (feature.trim() !== '') { %>
+                                <li>
+                                    <!-- LOTTIE TICK MARK ANIMATION -->
+                                    <lottie-player src="/animations/ticmark.json" background="transparent" speed="1" style="width: 24px; height: 24px; flex-shrink: 0;" loop autoplay></lottie-player>
+                                    <span style="margin-top: 2px;"><%= feature %></span>
+                                </li>
+                            <% }}) %>
                         </ul>
+                    <% } %>
                     <% } %>
                 </div>
 
                 <% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
-                <div class="info-box silver">
-                    <h2>What's New</h2>
-                    <p><%- file.whatsNew.replace(/\n/g, '<br>') %></p>
-                </div>
-                <% } %>
+ <div class="info-box silver">
+    <h2>What's New</h2>
+    <ul>
+        <% file.whatsNew.split(/\r?\n/).forEach(updateLine => { if (updateLine.trim() !== '') { %>
+            <li>
+                <!-- LOTTIE DOT ANIMATION -->
+                <lottie-player src="/animations/dot.json" background="transparent" speed="1" style="width: 24px; height: 24px; flex-shrink: 0;" loop autoplay></lottie-player>
+                <span style="margin-top: 2px;"><%= updateLine.trim() %></span>
+            </li>
+        <% }}) %>
+    </ul>
+</div>
+<% } %>
 
                 <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
                 <div class="app-description-content">

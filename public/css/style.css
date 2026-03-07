@@ -1438,10 +1438,16 @@
         .info-box.silver h2 { color: var(--silver); }
         .info-box h2 { font-size: 1.6em; margin-bottom: 10px; }
         .info-box p { margin-bottom: 10px; color: var(--silver); }
-        .info-box ul { list-style: none; padding-left: 0; }
-        .info-box ul li { padding-left: 25px; position: relative; margin-bottom: 8px; color: var(--silver); }
-        .info-box.gold ul li::before { content: '✔'; color: var(--gold); position: absolute; left: 0; font-weight: bold; }
-        .info-box.silver ul li::before { content: '•'; color: var(--silver); position: absolute; left: 0; font-weight: bold; font-size: 1.5em; line-height: 1; }
+        .info-box ul { list-style: none; padding-left: 0; margin: 0; }
+.info-box ul li { 
+    position: relative; 
+    margin-bottom: 12px; 
+    color: var(--silver); 
+    display: flex;         /* Use flexbox to align animation and text */
+    align-items: flex-start;
+    gap: 10px;             /* Space between animation and text */
+    padding-left: 0;       /* Removed the old padding */
+}
 
         .app-description-content h2 { margin-top: 30px; margin-bottom: 15px; }
         .app-description-content h3 { color: var(--white); font-size: 1.3em; margin-top: 25px; margin-bottom: 10px; }
