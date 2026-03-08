@@ -4,37 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GPL Mods</title>
+    
+    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
- <link rel="icon" type="image/png" href="/favicon.png">
- <link rel="apple-touch-icon" href="/favicon.png">
-    <!-- Add reCAPTCHA script -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    
+    <!-- ✅ ADDED: Global Stylesheet for Footer & Common Styles -->
+    <link rel="stylesheet" href="/css/style.css">
 
+    <!-- Add reCAPTCHA script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
     <style>
+        /* Local overrides for the Auth Page */
         :root {
-            --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
-            --white: #ffffff;
-            --gold: #FFD700;
-            --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
             --error: #ff4d4d;
             --success: #2ecc71;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* ✅ FIXED: Changed body layout so the footer stays at the bottom */
         body { 
             font-family: 'Poppins', sans-serif; 
             background-color: var(--black); 
             color: var(--white); 
-            height: 100vh;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+
+        /* ✅ FIXED: Created a wrapper to center the form without breaking the footer */
+        .auth-page-wrapper {
+            flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 40px 20px;
         }
 
         /* Form Container - Matches Sign Up */
@@ -101,54 +109,42 @@
         .divider::before { left: 0; }
         .divider::after { right: 0; }
 
-        /* Google Button - Matches Sign Up */
+        /* Custom Google Sign-In Button (Ghost Style) */
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 1.5rem;
+            background-color: transparent; 
+            border: 2px solid var(--silver); 
+            color: var(--silver);           
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-/* Custom Google Sign-In Button (Ghost Style)
--------------------------------------------------- */
-.google-signin-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 1.5rem;
-    
-    /* --- The "Ghost Button" Style --- */
-    background-color: transparent; /* Transparent background */
-    border: 2px solid var(--silver); /* Silver border */
-    color: var(--silver);           /* Silver text */
-    
-    border-radius: 8px;
-    font-size: 1.1em;
-    font-weight: 600;
-    font-family: 'Poppins', sans-serif;
-    
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
+        .google-signin-btn:hover {
+            background-color: var(--gold);
+            border-color: var(--gold);
+            color: var(--black); 
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
 
-/* --- Hover Effect: Fill with Gold --- */
-.google-signin-btn:hover {
-    background-color: var(--gold);
-    border-color: var(--gold);
-    color: var(--black); /* Black text on hover for contrast */
-    box-shadow: 0 0 15px var(--glow-gold);
-}
+        .google-signin-btn .google-icon {
+            width: 24px;
+            height: 24px;
+        }
 
-/* --- Specific Icon Styling --- */
-/* This selector is now more specific, so it won't affect footer icons */
-.google-signin-btn .google-icon {
-    width: 24px;
-    height: 24px;
-}
-
-/* Change icon color on hover to match the text */
-.google-signin-btn:hover .google-icon path {
-    fill: var(--black);
-}
+        .google-signin-btn:hover .google-icon path {
+            fill: var(--black);
+        }
 
         .form-switch { text-align: center; margin-top: 25px; color: var(--silver); font-size: 0.9em; }
         .form-switch a { color: var(--gold); text-decoration: none; font-weight: 600; }
@@ -162,67 +158,69 @@
         }
 
         @media (max-width: 480px) {
-            .auth-container { padding: 25px; border-radius: 0; height: 100vh; border: none; }
+            .auth-container { padding: 25px; border-radius: 0; border: none; box-shadow: none; }
+            .auth-page-wrapper { padding: 0; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
 
-    <div class="auth-container">
-        <!-- Changed index.html to / -->
-        <a href="/" class="logo-area">GPL <span>Mods</span></a>
-        
-        <section class="form-container">
-            <h2>Welcome Back</h2>
+    <!-- ✅ ADDED: Wrapper that pushes the footer to the bottom -->
+    <main class="auth-page-wrapper">
+        <div class="auth-container">
+            <a href="/" class="logo-area">GPL <span>Mods</span></a>
+            
+            <section class="form-container">
+                <h2>Welcome Back</h2>
 
-            <!-- EJS Dynamic Message Block -->
-            <% if (message) { %>
-                <p style="padding: 10px; background-color: #2b1a1a; border: 1px solid var(--gold); text-align: center; margin-bottom: 1rem; border-radius: 8px; font-size: 0.9em;">
-                    <%= message %>
-                </p>
-            <% } %>
+                <!-- EJS Dynamic Message Block -->
+                <% if (message) { %>
+                    <p style="padding: 10px; background-color: #2b1a1a; border: 1px solid var(--gold); text-align: center; margin-bottom: 1rem; border-radius: 8px; font-size: 0.9em; color: var(--gold);">
+                        <%= message %>
+                    </p>
+                <% } %>
 
-            <!-- Updated Form Attributes -->
-            <form id="login-form" action="/login" method="POST">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="e.g. youremail@example.com" required>
-                </div>
+                <!-- Updated Form Attributes -->
+                <form id="login-form" action="/login" method="POST">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="e.g. youremail@example.com" required>
+                    </div>
 
-                <div class="form-group">
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="********" required>
-    <!-- ======== ADD THIS NEW LINK ======== -->
-    <div style="text-align: right; margin-top: 8px;">
-        <a href="/forgot-password" style="color: var(--silver); font-size: 0.85em; text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">Forgot Password?</a>
-    </div>
-    <!-- =================================== -->
-</div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="********" required>
+                        <!-- Forgot Password Link -->
+                        <div style="text-align: right; margin-top: 8px;">
+                            <a href="/forgot-password" style="color: var(--silver); font-size: 0.85em; text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">Forgot Password?</a>
+                        </div>
+                    </div>
 
-                <!-- reCAPTCHA integration -->
-                <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
-                </div>
+                    <!-- reCAPTCHA integration -->
+                    <div class="form-group">
+                        <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
+                    </div>
 
-                <button type="submit" class="submit-button">Login</button>
-            </form>
+                    <button type="submit" class="submit-button">Login</button>
+                </form>
 
-            <div class="divider">or</div>
+                <div class="divider">or</div>
 
-            <!-- Google Login Link -->
-            <a href="/auth/google" class="google-signin-btn">
-    <!-- This SVG is a single shape that will inherit its color -->
-<svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,11.63 21.95,11.36 21.89,11.1H21.35Z"/>
-</svg>
-    <span>Continue with Google</span>
-</a>
+                <!-- Google Login Link -->
+                <a href="/auth/google" class="google-signin-btn">
+                    <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,11.63 21.95,11.36 21.89,11.1H21.35Z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </a>
 
-            <!-- Changed signup.html to /register -->
-            <p class="form-switch">Need an account? <a href="/register">Sign Up</a></p>
-        </section>
-    </div>
+                <p class="form-switch">Need an account? <a href="/register">Sign Up</a></p>
+            </section>
+        </div>
+    </main>
+
+    <!-- ✅ ADDED: Footer properly included at the bottom -->
+    <%- include('../partials/footer') %>
 
 </body>
 </html>
-<%- include('../partials/footer') %>
