@@ -57,6 +57,19 @@ function timeAgo(date) {
     return date.toLocaleDateString();
 }
 
+// --- NEW HELPER: FORMAT FILE SIZE DYNAMICALLY ---
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0 || !bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes =['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+// ------------------------------------------------
+
 // --- NEW SMART HELPER FOR IMAGES ---
 async function getSmartImageUrl(key) {
     if (!key) return '/images/default-avatar.png'; // Fallback
@@ -188,6 +201,7 @@ app.use(async (req, res, next) => {
 app.use((req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
+    res.locals.formatBytes = formatBytes; // <--- ADD THIS LINE
     next();
 });
 
@@ -1436,10 +1450,16 @@ let recentMessages =[];
 const startServer = async () => {
     try {
         // --- Step 1: Connect to the Database ---
-        await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true, 
-            useUnifiedTopology: true 
-        });
+        // Removed the deprecated URL parser warnings
+        await mongoose.connect(process.env.MONGO_URI);
+        
+        // =================================================================
+        // CRITICAL FIX FOR ADMINJS FILTER BUG:
+        // AdminJS looks for the old 'count' method which Mongoose removed.
+        // This line maps the old 'count' method to the new 'countDocuments' method.
+        // =================================================================
+        mongoose.Model.count = mongoose.Model.countDocuments;
+
         console.log('Successfully connected to MongoDB Atlas!');
 
         // --- Step 2: Only start the server AFTER the database is connected ---

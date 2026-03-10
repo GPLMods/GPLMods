@@ -36,7 +36,7 @@
             <% } %>
             
             <a href="/download-file/<%= file._id %>" class="download-button">
-                Download (<%= (file.fileSize / (1024 * 1024)).toFixed(1) %> MB)
+                Download (<%= formatBytes(file.fileSize) %>)
             </a>
             
             <!-- ============================ -->
@@ -229,17 +229,18 @@
             <div id="versions" class="tab-content">
                 <h2>Version History</h2>
                 <table class="versions-table">
-                    <thead><tr><th>Version</th><th>Date</th><th>Download</th></tr></thead>
-                    <tbody>
-                        <% versionHistory.forEach(version => { %>
-                            <tr>
-                                <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
-                                <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
-                                <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
+            <thead><tr><th>Version</th><th>Size</th><th>Date</th><th>Download</th></tr></thead>
+            <tbody>
+                <% versionHistory.forEach(version => { %>
+                    <tr>
+                        <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
+                        <td data-label="Size"><%= formatBytes(version.fileSize) %></td> <!-- ADDED THIS -->
+                        <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
+                        <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
             </div>
 
             <!-- Comments/Reviews Tab -->
