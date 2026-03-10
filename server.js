@@ -111,8 +111,6 @@ const uploadToB2 = async (file, folder) => {
 // 4. MIDDLEWARE
 // ===============================
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 
 // --- ADD CORS MIDDLEWARE HERE ---
 const allowedOrigins =[
@@ -196,6 +194,8 @@ app.use((req, res, next) => {
 // --- SETUP ADMINJS ---
 app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 // ===============================
 // 5. PASSPORT STRATEGIES & MULTER CONFIG
 // ===============================
@@ -404,6 +404,7 @@ app.get('/search', async (req, res) => {
         
         let searchQuery = {
             isLatestVersion: true,
+            status: 'live', // <--- THE FIX: Only search fully published mods
             $or:[
                 { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
@@ -572,7 +573,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
     // Add version processing logic here
 });
 
-// Download Action - UPDATED with presigned URL
+// Download Action - UPDATED for External Links & Presigned URLs
 app.get('/download-file/:id', async (req, res) => {
     try {
         const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
@@ -580,10 +581,17 @@ app.get('/download-file/:id', async (req, res) => {
             return res.status(404).render('pages/404');
         }
 
+        // --- 1. CHECK FOR EXTERNAL CLOUD LINK FIRST ---
+        if (file.externalDownloadUrl) {
+            // If the admin pasted a Mega/Drive/Dropbox link, redirect straight to it!
+            return res.redirect(file.externalDownloadUrl);
+        }
+
+        // --- 2. FALLBACK TO BACKBLAZE B2 ---
         const fileKey = file.fileKey || file.fileUrl; 
 
         if (!fileKey) {
-            console.error(`File with ID ${file._id} has no fileKey or fileUrl in the database.`);
+            console.error(`File with ID ${file._id} has no fileKey or external URL.`);
             return res.status(500).send("File record is incomplete and cannot be downloaded.");
         }
 
@@ -601,7 +609,6 @@ app.get('/download-file/:id', async (req, res) => {
         res.status(500).send("Could not generate download link.");
     }
 });
-
 
 // ===============================
 // 8. AUTH ROUTES
@@ -841,7 +848,13 @@ app.get('/users/:username', async (req, res) => {
                 user.signedAvatarUrl = '/images/default-avatar.png';
             }
 
-        const uploads = await File.find({ uploader: username, isLatestVersion: true }).sort({ createdAt: -1 });
+        // FIX: Added status: 'live' so drafts and pending mods are hidden
+        const uploads = await File.find({ 
+            uploader: username, 
+            isLatestVersion: true,
+            status: 'live' 
+        }).sort({ createdAt: -1 });
+        
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';

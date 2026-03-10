@@ -22,13 +22,11 @@ const getBrandedEmailHtml = (content) => `
                     
                     <!-- Header Area -->
                     <tr>
-                        <td align="center" style="padding: 35px 20px; background-color: #111111; border-bottom: 2px solid #FFD700;">
-                            <!-- Optional: If you want to use your actual logo image, uncomment the line below and replace the URL -->
-                            <!-- <img src="https://gplmods.webredirect.org/images/your-logo.png" alt="GPL Mods" style="height: 60px; display: block; margin-bottom: 10px;" /> -->
-                            
-                            <h1 style="margin: 0; color: #FFD700; font-size: 32px; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 15px rgba(255,215,0,0.3);">
-                                GPL Mods
-                            </h1>
+                        <td align="center" style="padding: 0; background-color: #111111; border-bottom: 2px solid #FFD700;">
+                            <!-- The Wider Image Banner -->
+                            <a href="https://gplmods.webredirect.org" target="_blank">
+                                <img src="https://gplmods.webredirect.org/images/email-banner.png" alt="GPL Mods" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;" />
+                            </a>
                         </td>
                     </tr>
                     

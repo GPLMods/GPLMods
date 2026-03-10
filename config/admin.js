@@ -64,33 +64,41 @@ const adminJsOptions = {
         // ---------------------------------
         // FILE (MOD) MANAGEMENT RESOURCE
         // ---------------------------------
-{
+        {
             resource: File,
             options: {
                 listProperties:['name', 'uploader', 'status', 'showInSitemap', 'category'],
-                // Add showInSitemap to editProperties and showProperties
                 editProperties:[
                     'name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription',
                     'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                    'showInSitemap', // <--- ADDED HERE
+                    'showInSitemap',
                     'virusTotalId', 'virusTotalAnalysisId',
-                    'iconKey', 'screenshotKeys' 
+                    'iconKey', 'screenshotKeys',
+                    // --- NEW FIELDS ADDED HERE ---
+                    'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename' 
                 ],
                 showProperties:[
-                   'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
-                    'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', // <--- ADDED HERE
-                    'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys', 'createdAt', 'updatedAt'
+                    'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
+                    'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
+                    'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', // Added here too
+                    'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt'
                 ],
-properties: {
-    modDescription: { type: 'richtext' },
-    officialDescription: { type: 'richtext' },
-    modFeatures: { type: 'textarea' }, // Use textarea so your line-breaks stay intact for the checkmark list
-    whatsNew: { type: 'textarea' },
+                properties: {
+                    modDescription: { type: 'richtext' },
+                    officialDescription: { type: 'richtext' },
+                    modFeatures: { type: 'textarea' }, 
+                    whatsNew: { type: 'textarea' },
+                    externalDownloadUrl: {
+                        description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc. (Leave fileKey blank if using this)'
+                    },
+                    fileKey: {
+                        description: 'The Backblaze B2 file path (Leave blank if using an external cloud link)'
+                    },
                     iconKey: {
                         description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.'
                     },
                     screenshotKeys: {
-                        isArray: true, // This creates an "Add New Item" button for multiple screenshots
+                        isArray: true, 
                         description: 'Paste direct image URLs (https://...). Click "Add new item" for multiple.'
                     },
                     rejectionReason: {
@@ -100,6 +108,11 @@ properties: {
                         }
                     }
                 },
+                actions: {
+                    new: { isAccessible: true },
+                    edit: { isAccessible: true },
+                    delete: { isAccessible: true } // Ensures Deletion is enabled
+                }
             },
         },
         // ---------------------------------

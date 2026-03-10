@@ -16,7 +16,12 @@ const FileSchema = new Schema({
     iconKey: { type: String, required: function() { return this.status !== 'processing'; } },
     screenshotKeys: { type: [String], required: function() { return this.status !== 'processing'; } },
     videoUrl: { type: String }, 
-    fileKey: { type: String, required: true }, // This is always required from Step 1
+    
+    // Make fileKey optional ONLY IF an external link is provided
+    fileKey: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; } }, 
+    
+    // --- ADD EXTERNAL LINK FIELD ---
+    externalDownloadUrl: { type: String, trim: true },
 
     // --- CATEGORIZATION ---
     category: { 
@@ -31,8 +36,9 @@ const FileSchema = new Schema({
     tags: { type: [String] },
 
     // --- FILE INFO ---
-    fileSize: { type: Number, required: true },
-    originalFilename: { type: String, required: true },
+    // Make these optional if using an external link
+    fileSize: { type: Number, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 0 },
+    originalFilename: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 'External File' },
     uploader: { type: String, default: "Anonymous" },
     developer: {
         type: String,
