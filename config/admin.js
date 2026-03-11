@@ -1,5 +1,4 @@
 const AdminJS = require('adminjs');
-const AdminJSExpress = require('@adminjs/express');
 const AdminJSMongoose = require('@adminjs/mongoose');
 const bcrypt = require('bcryptjs');
 
