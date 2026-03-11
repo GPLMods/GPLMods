@@ -17,7 +17,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "ejs": "^5.0.1",
-    "express": "^5.2.1",
+    "express": "^4.21.2",
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
@@ -34,6 +34,6 @@
     "tinymce": "^8.3.2"
   },
   "engines": {
-    "node": ">=v20.20.0 <22.0.0"
+    "node": ">=20.15.1 <22.0.0"
   }
 }
