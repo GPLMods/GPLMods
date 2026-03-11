@@ -203,7 +203,17 @@ const adminJsOptions = {
     },
 };
 
-const adminJs = new AdminJS(adminJsOptions);
-const adminRouter = AdminJSExpress.buildRouter(adminJs);
+// --- NEW: Wrap the router creation in an async function ---
+async function createAdminRouter() {
+    // This is the magic trick: Dynamically importing an ES Module inside a CommonJS file!
+    const AdminJSExpress = await import('@adminjs/express');
+    
+    const adminJs = new AdminJS(adminJsOptions);
+    
+    // Depending on how it imports, we grab the buildRouter function
+    const buildRouter = AdminJSExpress.buildRouter || AdminJSExpress.default.buildRouter;
+    
+    return buildRouter(adminJs);
+}
 
-module.exports = adminRouter;
+module.exports = createAdminRouter;

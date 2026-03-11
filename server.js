@@ -27,7 +27,6 @@ const FormData = require('form-data');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
-const adminRouter = require('./config/admin');
 
 // AWS SDK v3 Imports (Backblaze B2)
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -206,7 +205,6 @@ app.use((req, res, next) => {
 });
 
 // --- SETUP ADMINJS ---
-app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -1447,6 +1445,8 @@ app.use((err, req, res, next) => {
 // In-memory store for recent messages
 let recentMessages =[];
 
+const createAdminRouter = require('./config/admin');
+
 const startServer = async () => {
     try {
         // --- Step 1: Connect to the Database ---
@@ -1461,6 +1461,16 @@ const startServer = async () => {
         mongoose.Model.count = mongoose.Model.countDocuments;
 
         console.log('Successfully connected to MongoDB Atlas!');
+
+ // --- NEW Step 1.5: Build and mount the AdminJS Router ---
+        const adminRouter = await createAdminRouter();
+        // IMPORTANT: Mount it BEFORE express.json and express.urlencoded
+        app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
+        
+        // Re-apply body parsers for the rest of the app
+        app.use(express.urlencoded({ extended: true }));
+        app.use(express.json());
+        // --------------------------------------------------------
 
         // --- Step 2: Only start the server AFTER the database is connected ---
         const server = http.createServer(app);
