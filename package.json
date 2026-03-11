@@ -1,13 +1,7 @@
 {
-  "name": "GPL Mods",
-  "version": "1.0.0",
-  "engines": {
-    "node": "20.15.1"
-  },
-{
   "dependencies": {
     "@adminjs/design-system": "^4.1.1",
-    "@adminjs/express": "6.1.0",
+    "@adminjs/express": "^6.1.0",
     "@adminjs/mongoose": "^4.1.0",
     "@aws-sdk/client-s3": "^3.1006.0",
     "@aws-sdk/s3-request-presigner": "^3.1006.0",
@@ -20,13 +14,11 @@
     "cashfree-pg": "^5.1.0",
     "connect-mongo": "^6.0.0",
     "core-js": "^3.48.0",
-    "core.js": "^0.4.2",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "ejs": "^5.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "inflight": "^1.0.6",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
     "multer": "^2.1.1",
@@ -36,7 +28,6 @@
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "regenerator-runtime": "^0.14.1",
     "smtp2go-nodejs": "^0.3.6",
     "socket.io": "^4.8.3",
     "styled-components": "^6.3.11",
