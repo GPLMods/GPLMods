@@ -18,6 +18,10 @@ AdminJS.registerAdapter({
 
 const adminJsOptions = {
     rootPath: '/admin',
+// --- 1. LINK THE CUSTOM DASHBOARD ---
+    dashboard: {
+        component: AdminJS.bundle('../components/dashboard.jsx')
+    },
     // Define the order of resources in the sidebar
     resources: [
         // ---------------------------------
@@ -67,9 +71,9 @@ const adminJsOptions = {
         {
             resource: File,
             options: {
-                listProperties:['name', 'uploader', 'status', 'showInSitemap', 'category'],
+                listProperties:['name', 'fileSize', 'version', 'developer', 'uploader', 'status', 'certification', 'downloads', 'averageRating', 'showInSitemap', 'category', 'createdAt', 'updatedAt'],
                 editProperties:[
-                    'name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription',
+                    'name', 'version', 'uploader', 'developer', 'modDescription', 'modFeatures', 'officialDescription',
                     'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                     'showInSitemap',
                     'virusTotalId', 'virusTotalAnalysisId',
@@ -159,8 +163,44 @@ const adminJsOptions = {
         },
     ],
     branding: {
-        companyName: 'GPL Mods Aamin Panel',
+        companyName: 'GPL Mods Admin Panel',
+         logo: '/images/logo.png',
         softwareBrothers: false,
+        // --- CUSTOM GPL MODS THEME ---
+        theme: {
+            colors: {
+                // Primary Color (GPL Gold)
+                primary100: '#FFD700', 
+                primary80: '#e5c200', // Slightly darker gold for hovers
+                primary60: '#ccad00',
+                primary40: '#b29700',
+                primary20: '#4d4100', // Very dark gold/brown for subtle backgrounds
+                
+                // Backgrounds (GPL Black & Dark Gray)
+                bg: '#0a0a0a',        // Main background (Black)
+                surface: '#1a1a1a',   // Card/Box background (Dark Gray)
+                filterBg: '#111111',  // Filter sidebar background
+                hoverBg: '#2a2a2a',   // Hover state for table rows
+                
+                // Text & Borders (GPL White & Silver)
+                text: '#ffffff',      // Main text (White)
+                border: '#333333',    // Subtle borders
+                grey100: '#c0c0c0',   // Secondary text (GPL Silver)
+                grey80: '#999999',
+                grey60: '#666666',
+                grey40: '#333333',
+                grey20: '#1a1a1a',    // Darkest grey
+                
+                // Status Colors (From your CSS)
+                error: '#e53935',     // Red
+                success: '#43a047',   // Green
+                info: '#2196F3',      // Blue
+                
+                // Absolute colors
+                white: '#ffffff',
+                black: '#000000',
+            }
+        },
     },
 };
 
