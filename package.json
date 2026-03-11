@@ -1,4 +1,10 @@
 {
+  "name": "GPL Mods",
+  "version": "1.0.0",
+  "engines": {
+    "node": "20.15.1"
+  },
+{
   "dependencies": {
     "@adminjs/design-system": "^4.1.1",
     "@adminjs/express": "6.1.0",
