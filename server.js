@@ -13,7 +13,8 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const MongoStore = require('connect-mongo');
+const session = require('express-session');
+const MongoDBStore = require('connect-mongodb-session')(session);
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -164,14 +165,21 @@ const clientPromise = mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- Session ---
+const store = new MongoDBStore({
+    uri: process.env.MONGO_URI,
+    collection: 'sessions'
+});
+
+// Catch any database session errors so they don't crash the server
+store.on('error', function(error) {
+    console.error('Session Store Error:', error);
+});
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-key',
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-        clientPromise: clientPromise, // <--- THE FIX: Reuses Mongoose's modern driver!
-        collectionName: 'sessions'
-    }),
+    store: store, // Using the new MongoDBStore
     cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 7 days
 }));
 
@@ -1460,18 +1468,19 @@ const createAdminRouter = require('./config/admin');
 
 const startServer = async () => {
     try {
-        // --- Step 1: Wait for the database to connect via the shared promise ---
-        await clientPromise;
+        // --- Step 1: Connect to Database ---
+        await mongoose.connect(process.env.MONGO_URI);
+        mongoose.Model.count = mongoose.Model.countDocuments; // AdminJS Filter Fix
+        console.log('Successfully connected to MongoDB Atlas!');
 
-        // --- Step 1.5: Build and mount the AdminJS Router ---
-        const adminRouter = await createAdminRouter();
+        // --- Step 1.5: Build Admin Router ---
+        const adminRouter = await createAdminRouter(); // Using your dynamic import from config/admin.js
         app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
         
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());
-        // --------------------------------------------------------
 
-        // --- Step 2: Start the server ---
+        // --- Step 2: Start Server ---
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
@@ -1479,6 +1488,7 @@ const startServer = async () => {
                 methods: ["GET", "POST"]
             }
         });
+
 
         // Socket.IO logic
         io.on('connection', (socket) => {
@@ -1508,7 +1518,7 @@ const startServer = async () => {
         });
 
                 server.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT} and connected to the database.`);
+            console.log(`Server is running on port ${PORT}`);
         });
 
     } catch (error) {
@@ -1516,5 +1526,4 @@ const startServer = async () => {
     }
 };
 
-// --- Execution ---
 startServer();
