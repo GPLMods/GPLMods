@@ -13,7 +13,6 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
