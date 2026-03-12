@@ -203,16 +203,25 @@ const adminJsOptions = {
     },
 };
 
-// --- NEW: Wrap the router creation in an async function ---
+// --- UPDATED: DYNAMIC IMPORT FOR ADMINJS 7+ AND THEMES ---
 async function createAdminRouter() {
-    // This is the magic trick: Dynamically importing an ES Module inside a CommonJS file!
+    // 1. Dynamically import the Express adapter
     const AdminJSExpress = await import('@adminjs/express');
     
+    // 2. Dynamically import the new Themes package!
+    const { dark, light } = await import('@adminjs/themes');
+
+    // 3. Inject the themes into our options
+    adminJsOptions.defaultTheme = dark.id;
+    adminJsOptions.availableThemes = [dark, light];
+
+    // 4. Initialize AdminJS
     const adminJs = new AdminJS(adminJsOptions);
     
-    // Depending on how it imports, we grab the buildRouter function
+    // 5. Safely get the buildRouter function depending on how the package exported it
     const buildRouter = AdminJSExpress.buildRouter || AdminJSExpress.default.buildRouter;
     
+    // 6. Build and return the router
     return buildRouter(adminJs);
 }
 

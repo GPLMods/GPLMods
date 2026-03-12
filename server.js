@@ -152,13 +152,24 @@ app.use((req, res, next) => {
     next();
 });
 
+// =========================================================
+// NEW: CREATE A SHARED MONGOOSE PROMISE FOR THE WHOLE APP
+// =========================================================
+const clientPromise = mongoose.connect(process.env.MONGO_URI)
+    .then(m => {
+        mongoose.Model.count = mongoose.Model.countDocuments; // AdminJS Filter Fix
+        console.log('Successfully connected to MongoDB Atlas!');
+        return m.connection.getClient(); // Extract the raw, modern MongoDB client for the session store
+    })
+    .catch(err => console.error('MongoDB connection error:', err));
+
 // --- Session ---
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-key',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-        mongoUrl: process.env.MONGO_URI,
+        clientPromise: clientPromise, // <--- THE FIX: Reuses Mongoose's modern driver!
         collectionName: 'sessions'
     }),
     cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 7 days
@@ -1449,35 +1460,23 @@ const createAdminRouter = require('./config/admin');
 
 const startServer = async () => {
     try {
-        // --- Step 1: Connect to the Database ---
-        // Removed the deprecated URL parser warnings
-        await mongoose.connect(process.env.MONGO_URI);
-        
-        // =================================================================
-        // CRITICAL FIX FOR ADMINJS FILTER BUG:
-        // AdminJS looks for the old 'count' method which Mongoose removed.
-        // This line maps the old 'count' method to the new 'countDocuments' method.
-        // =================================================================
-        mongoose.Model.count = mongoose.Model.countDocuments;
+        // --- Step 1: Wait for the database to connect via the shared promise ---
+        await clientPromise;
 
-        console.log('Successfully connected to MongoDB Atlas!');
-
- // --- NEW Step 1.5: Build and mount the AdminJS Router ---
+        // --- Step 1.5: Build and mount the AdminJS Router ---
         const adminRouter = await createAdminRouter();
-        // IMPORTANT: Mount it BEFORE express.json and express.urlencoded
         app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
         
-        // Re-apply body parsers for the rest of the app
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());
         // --------------------------------------------------------
 
-        // --- Step 2: Only start the server AFTER the database is connected ---
+        // --- Step 2: Start the server ---
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
                 origin: allowedOrigins, 
-                methods:["GET", "POST"]
+                methods: ["GET", "POST"]
             }
         });
 
@@ -1508,12 +1507,12 @@ const startServer = async () => {
             });
         });
 
-        server.listen(PORT, () => {
+                server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT} and connected to the database.`);
         });
 
     } catch (error) {
-        console.error('Failed to connect to the database. Server is not starting.', error);
+        console.error('Server failed to start.', error);
     }
 };
 
