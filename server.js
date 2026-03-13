@@ -1458,25 +1458,16 @@ let recentMessages =[];
 
 const startServer = async () => {
     try {
-        // Wait for DB connection
         await clientPromise;
+        mongoose.Model.count = mongoose.Model.countDocuments; 
 
-        // --- CRITICAL ORDERING STARTS HERE ---
-
-        // 1. MOUNT ADMIN ROUTER FIRST
-        // AdminJS brings its own body parser (formidable). It must see the raw request.
         const adminRouter = await createAdminRouter();
         app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
         
-        // 2. MOUNT GLOBAL BODY PARSERS SECOND
-        // These are for your regular app routes (/upload, /login, etc.)
-        // If these are above AdminJS, they consume the stream and break formidable.
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());
 
-        // --- CRITICAL ORDERING ENDS HERE ---
-
-        // --- Step 2: Start Server ---
+        // --- DECLARED ONLY ONCE HERE ---
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
@@ -1484,29 +1475,11 @@ const startServer = async () => {
                 methods: ["GET", "POST"]
             }
         });
-
-// Error Handlers must remain at the very, very bottom
-        app.use((req, res) => res.status(404).render('pages/404'));
-        app.use((err, req, res, next) => {
-            console.error(err.stack);
-            res.status(500).render('pages/500');
-        });
-
-        const server = http.createServer(app);
-        const io = new Server(server, {
-            cors: {
-                origin: allowedOrigins, 
-                methods: ["GET", "POST"]
-            }
-        });
-
 
         // Socket.IO logic
         io.on('connection', (socket) => {
             console.log('A user connected to chat');
-
             socket.emit('chat history', recentMessages);
-
             socket.on('chat message', (msg) => {
                 const messageData = {
                     username: msg.username,
@@ -1514,20 +1487,26 @@ const startServer = async () => {
                     text: msg.text,
                     timestamp: new Date()
                 };
-
                 recentMessages.push(messageData);
                 if (recentMessages.length > 50) {
                     recentMessages.shift();
                 }
-
                 io.emit('chat message', messageData);
             });
-
             socket.on('disconnect', () => {
                 console.log('User disconnected from chat');
             });
         });
-                server.listen(PORT, () => {
+
+        // Error Handlers must remain at the very, very bottom
+        app.use((req, res) => res.status(404).render('pages/404'));
+        app.use((err, req, res, next) => {
+            console.error(err.stack);
+            res.status(500).render('pages/500');
+        });
+
+        // Finally, listen!
+        server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
 
