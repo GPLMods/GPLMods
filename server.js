@@ -120,16 +120,16 @@ const uploadToB2 = async (file, folder) => {
 };
 
 // ===============================
-// 4. MIDDLEWARE
+// 4. PRE-ADMIN MIDDLEWARE (Sessions & CORS)
 // ===============================
+// 1. Static Files (Safe to be early)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- ADD CORS MIDDLEWARE HERE ---
+// 2. CORS (Safe to be early)
 const allowedOrigins =[
     'http://localhost:3000',          
     'https://gplmods.webredirect.org'   
 ];
-
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
@@ -141,7 +141,7 @@ app.use(cors({
     }
 }));
 
-// --- Maintenance Mode ---
+// 3. Maintenance Mode (Must be before routes)
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE === 'on') {
         if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
@@ -152,24 +152,21 @@ app.use((req, res, next) => {
     next();
 });
 
-// =========================================================
-// NEW: CREATE A SHARED MONGOOSE PROMISE FOR THE WHOLE APP
-// =========================================================
+// 4. DATABASE CONNECTION PROMISE (Needed for session)
 const clientPromise = mongoose.connect(process.env.MONGO_URI)
     .then(m => {
-        mongoose.Model.count = mongoose.Model.countDocuments; // AdminJS Filter Fix
+        mongoose.Model.count = mongoose.Model.countDocuments; 
         console.log('Successfully connected to MongoDB Atlas!');
-        return m.connection.getClient(); // Extract the raw, modern MongoDB client for the session store
+        return m.connection.getClient(); 
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
-// --- Session ---
+// 5. SESSION MIDDLEWARE (Must be before Passport AND before AdminJS)
 const store = new MongoDBStore({
     uri: process.env.MONGO_URI,
     collection: 'sessions'
 });
 
-// Catch any database session errors so they don't crash the server
 store.on('error', function(error) {
     console.error('Session Store Error:', error);
 });
@@ -178,10 +175,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-key',
     resave: false,
     saveUninitialized: false,
-    store: store, // Using the new MongoDBStore
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // 7 days
+    store: store, 
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } 
 }));
 
+// 6. PASSPORT INIT (Must be after session, before AdminJS)
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -1450,30 +1448,50 @@ app.post('/dmca-request', async (req, res) => {
     } catch (e) { res.redirect('/dmca?error=Error.'); }
 });
 
-// ===============================================
-// 14. DATABASE CONNECTION & SERVER STARTUP
-// ===============================================
+// ===============================
+// 14. SERVER STARTUP & ADMIN ROUTER
+// ===============================
+const createAdminRouter = require('./config/admin');
 
 // In-memory store for recent messages
 let recentMessages =[];
 
-const createAdminRouter = require('./config/admin');
-
 const startServer = async () => {
     try {
-        // --- Step 1: Connect to Database ---
-        await mongoose.connect(process.env.MONGO_URI);
-        mongoose.Model.count = mongoose.Model.countDocuments; // AdminJS Filter Fix
-        console.log('Successfully connected to MongoDB Atlas!');
+        // Wait for DB connection
+        await clientPromise;
 
-        // --- Step 1.5: Build Admin Router ---
-        const adminRouter = await createAdminRouter(); // Using your dynamic import from config/admin.js
+        // --- CRITICAL ORDERING STARTS HERE ---
+
+        // 1. MOUNT ADMIN ROUTER FIRST
+        // AdminJS brings its own body parser (formidable). It must see the raw request.
+        const adminRouter = await createAdminRouter();
         app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
         
+        // 2. MOUNT GLOBAL BODY PARSERS SECOND
+        // These are for your regular app routes (/upload, /login, etc.)
+        // If these are above AdminJS, they consume the stream and break formidable.
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());
 
+        // --- CRITICAL ORDERING ENDS HERE ---
+
         // --- Step 2: Start Server ---
+        const server = http.createServer(app);
+        const io = new Server(server, {
+            cors: {
+                origin: allowedOrigins, 
+                methods: ["GET", "POST"]
+            }
+        });
+
+// Error Handlers must remain at the very, very bottom
+        app.use((req, res) => res.status(404).render('pages/404'));
+        app.use((err, req, res, next) => {
+            console.error(err.stack);
+            res.status(500).render('pages/500');
+        });
+
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
@@ -1509,13 +1527,6 @@ const startServer = async () => {
                 console.log('User disconnected from chat');
             });
         });
-
-// Errors  <--- MAKES SURE THIS ERROR SECTION REMAINS AT THE VERY BOTTOM
-app.use((req, res) => res.status(404).render('pages/404'));
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('pages/500');
-});
                 server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });

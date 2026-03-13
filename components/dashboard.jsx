@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, H2, Text, H5, Illustration } from '@adminjs/design-system';
+import { Box, H2, Text, H5 } from '@adminjs/design-system';
 
 const Dashboard = () => {
   return (
