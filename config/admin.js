@@ -1,5 +1,4 @@
 const AdminJS = require('adminjs');
-const AdminJSMongoose = require('@adminjs/mongoose');
 const bcrypt = require('bcryptjs');
 
 // Import all your models
@@ -203,25 +202,29 @@ const adminJsOptions = {
     },
 };
 
-// --- UPDATED: DYNAMIC IMPORT FOR ADMINJS 7+ AND THEMES ---
+// --- UPDATED ASYNC FUNCTION ---
 async function createAdminRouter() {
-    // 1. Dynamically import the Express adapter
+    // 1. Dynamically import the problematic ES Modules
     const AdminJSExpress = await import('@adminjs/express');
-    
-    // 2. Dynamically import the new Themes package!
+    const AdminJSMongoose = await import('@adminjs/mongoose'); // <-- ADD THIS
     const { dark, light } = await import('@adminjs/themes');
 
-    // 3. Inject the themes into our options
+    // 2. Register the Mongoose adapter (Moved from the top of the file to here!)
+    AdminJS.registerAdapter({
+        Database: AdminJSMongoose.Database,
+        Resource: AdminJSMongoose.Resource,
+    });
+
+    // 3. Inject themes
     adminJsOptions.defaultTheme = dark.id;
-    adminJsOptions.availableThemes = [dark, light];
+    adminJsOptions.availableThemes =[dark, light];
 
     // 4. Initialize AdminJS
     const adminJs = new AdminJS(adminJsOptions);
     
-    // 5. Safely get the buildRouter function depending on how the package exported it
+    // 5. Build Router
     const buildRouter = AdminJSExpress.buildRouter || AdminJSExpress.default.buildRouter;
     
-    // 6. Build and return the router
     return buildRouter(adminJs);
 }
 
