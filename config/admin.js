@@ -10,9 +10,11 @@ const Announcement = require('../models/announcement');
 
 async function createAdminRouter() {
     // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
-    // This perfectly bypasses all Node 20/22 strict ES Module errors!
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
+    
+    // AdminJS v7+ requires ComponentLoader instead of AdminJS.bundle
+    const { ComponentLoader } = AdminJSModule; 
 
     const AdminJSExpress = await import('@adminjs/express');
     const AdminJSMongoose = await import('@adminjs/mongoose');
@@ -24,13 +26,20 @@ async function createAdminRouter() {
         Resource: AdminJSMongoose.Resource,
     });
 
-    // --- 3. DEFINE ADMINJS OPTIONS ---
+    // --- 3. SETUP COMPONENT LOADER ---
+    const componentLoader = new ComponentLoader();
+    const Components = {
+        Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx')
+    };
+
+    // --- 4. DEFINE ADMINJS OPTIONS ---
     const adminJsOptions = {
         rootPath: '/admin',
+        componentLoader, // <-- CRITICAL: Pass the loader to AdminJS
         defaultTheme: dark.id,
         availableThemes: [dark, light],
         dashboard: {
-            component: AdminJS.bundle('../components/dashboard.jsx')
+            component: Components.Dashboard // <-- Use the loaded component here
         },
         branding: {
             companyName: 'GPL Mods',
@@ -117,14 +126,14 @@ async function createAdminRouter() {
             {
                 resource: Report,
                 options: {
-                    listProperties: ['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
+                    listProperties:['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
             },
             {
                 resource: Dmca,
                 options: {
-                    listProperties: ['fullName', 'infringingUrl', 'status', 'createdAt'],
+                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
             },
@@ -132,7 +141,7 @@ async function createAdminRouter() {
             {
                 resource: Announcement,
                 options: {
-                    listProperties: ['title', 'author', 'createdAt'],
+                    listProperties:['title', 'author', 'createdAt'],
                     editProperties: ['title', 'author', 'content'],
                     properties: { content: { type: 'richtext' } },
                 },
@@ -140,10 +149,10 @@ async function createAdminRouter() {
         ]
     };
 
-    // --- 4. INITIALIZE ADMINJS ---
+    // --- 5. INITIALIZE ADMINJS ---
     const adminJs = new AdminJS(adminJsOptions);
     
-    // --- 5. BUILD THE ROUTER ---
+    // --- 6. BUILD THE ROUTER ---
     const buildRouter = AdminJSExpress.buildRouter || AdminJSExpress.default.buildRouter;
     
     return buildRouter(adminJs);
