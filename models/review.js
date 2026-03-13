@@ -36,10 +36,11 @@ const ReviewSchema = new Schema({
     },
     // An array that stores the user IDs of everyone who voted on this review
     // to prevent duplicate voting
-    votedBy: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    }]
+    votedBy: {
+        type: [Schema.Types.ObjectId],
+        ref: 'User',
+        default:[]
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Review', ReviewSchema);

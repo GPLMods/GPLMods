@@ -45,10 +45,11 @@ profileImageKey: {
         type: Date,
         default: Date.now
     },
-    whitelist: [{
-        type: Schema.Types.ObjectId,
-        ref: 'File'
-    }],
+    whitelist: {
+        type: [Schema.Types.ObjectId],
+        ref: 'File',
+        default:[]
+    },
     isVerified: {
         type: Boolean,
         default: false

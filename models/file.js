@@ -58,10 +58,11 @@ const FileSchema = new Schema({
         default: null
     },
     // Array on the parent file linking to all its child versions
-    olderVersions: [{
-        type: Schema.Types.ObjectId,
-        ref: 'File'
-    }],
+olderVersions: {
+        type: [Schema.Types.ObjectId],
+        ref: 'File',
+        default:[]
+    },
     
     // --- TRACKING, STATS & RATINGS ---
     downloads: { type: Number, default: 0 },
