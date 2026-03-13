@@ -1450,12 +1450,6 @@ app.post('/dmca-request', async (req, res) => {
     } catch (e) { res.redirect('/dmca?error=Error.'); }
 });
 
-// Errors  <--- MAKES SURE THIS ERROR SECTION REMAINS AT THE VERY BOTTOM
-app.use((req, res) => res.status(404).render('pages/404'));
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('pages/500');
-});
 // ===============================================
 // 14. DATABASE CONNECTION & SERVER STARTUP
 // ===============================================
@@ -1516,6 +1510,12 @@ const startServer = async () => {
             });
         });
 
+// Errors  <--- MAKES SURE THIS ERROR SECTION REMAINS AT THE VERY BOTTOM
+app.use((req, res) => res.status(404).render('pages/404'));
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('pages/500');
+});
                 server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });

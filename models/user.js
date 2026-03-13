@@ -69,18 +69,16 @@ profileImageKey: {
     }
 }, { timestamps: true }); // <--- Schema closes here, followed by options
 
-// Pre-save hook to hash the password before saving a new user
-UserSchema.pre('save', async function(next) {
+// Modern Pre-save hook: No need for 'next' when using async/await!
+UserSchema.pre('save', async function() {
+    // If password is not modified, just return and let Mongoose continue
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
+    
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Method to compare candidate password with the stored hashed password
