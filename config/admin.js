@@ -13,7 +13,7 @@ async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     
-    // AdminJS v7+ requires ComponentLoader instead of AdminJS.bundle
+    // AdminJS v7+ requires ComponentLoader
     const { ComponentLoader } = AdminJSModule; 
 
     const AdminJSExpress = await import('@adminjs/express');
@@ -35,11 +35,11 @@ async function createAdminRouter() {
     // --- 4. DEFINE ADMINJS OPTIONS ---
     const adminJsOptions = {
         rootPath: '/admin',
-        componentLoader, // <-- CRITICAL: Pass the loader to AdminJS
+        componentLoader, 
         defaultTheme: dark.id,
         availableThemes: [dark, light],
         dashboard: {
-            component: Components.Dashboard // <-- Use the loaded component here
+            component: Components.Dashboard 
         },
         branding: {
             companyName: 'GPL Mods',
@@ -47,7 +47,9 @@ async function createAdminRouter() {
             softwareBrothers: false,
         },
         resources:[
+            // ---------------------------------
             // USER MANAGEMENT
+            // ---------------------------------
             {
                 resource: User,
                 options: {
@@ -56,6 +58,7 @@ async function createAdminRouter() {
                     editProperties:['username', 'email', 'role', 'isVerified', 'bio', 'newPassword'],
                     properties: {
                         password: { isVisible: false },
+                        whitelist: { isVisible: false }, // <--- CRASH FIX 1
                         newPassword: {
                             type: 'password',
                             label: 'New Password (leave blank to keep unchanged)',
@@ -75,7 +78,9 @@ async function createAdminRouter() {
                     },
                 },
             },
+            // ---------------------------------
             // FILE (MOD) MANAGEMENT
+            // ---------------------------------
             {
                 resource: File,
                 options: {
@@ -93,6 +98,8 @@ async function createAdminRouter() {
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt'
                     ],
                     properties: {
+                        olderVersions: { isVisible: false },   // <--- CRASH FIX 2
+                        votedOnStatusBy: { isVisible: false }, // <--- CRASH FIX 3
                         modDescription: { type: 'richtext' },
                         officialDescription: { type: 'richtext' },
                         modFeatures: { type: 'textarea' }, 
@@ -115,11 +122,16 @@ async function createAdminRouter() {
                     }
                 },
             },
+            // ---------------------------------
             // MODERATION RESOURCES
+            // ---------------------------------
             {
                 resource: Review,
                 options: {
                     listProperties:['username', 'rating', 'comment', 'file', 'createdAt'],
+                    properties: {
+                        votedBy: { isVisible: false } // <--- CRASH FIX 4
+                    },
                     actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
                 },
             },
@@ -137,7 +149,9 @@ async function createAdminRouter() {
                     editProperties: ['status'],
                 },
             },
+            // ---------------------------------
             // SITE CONTENT RESOURCE
+            // ---------------------------------
             {
                 resource: Announcement,
                 options: {
