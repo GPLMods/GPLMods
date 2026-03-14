@@ -128,9 +128,9 @@ async function createAdminRouter() {
             {
                 resource: File,
                 options: {
-                    listProperties:['name', 'uploader', 'status', 'showInSitemap', 'category'],
+                    listProperties:['name', 'fileSize', 'version', 'developer', 'uploader', 'status', 'createdAt', 'showInSitemap', 'category'],
                     editProperties:[
-                        'name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription',
+                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename' 
