@@ -26,72 +26,89 @@ async function createAdminRouter() {
 
     // --- 3. SETUP COMPONENT LOADER ---
     const componentLoader = new ComponentLoader();
+    
     const Components = {
-        Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx')
+        // 1. We ADD our custom dashboard page
+        Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx'),
+        
+        // 2. We OVERRIDE the default AdminJS components using the names from the repo you found!
+        SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
+        
+        // Example: If you wanted to override the "No Records" screen later, you would do:
+        // NoRecords: componentLoader.override('NoRecords', '../components/MyCustomNoRecords.jsx')
     };
 
       // ==========================================
-     // 4. THE ULTIMATE GPL MODS THEME
+    // 4. THE ULTIMATE GPL MODS THEME (OFFICIAL METHOD)
     // ==========================================
+    
     const gplModsTheme = {
+        // 1. SPREAD THE DARK THEME: This is the crucial official step.
+        // It securely copies the 'bundlePath' and 'stylePath' from the dark theme 
+        // so AdminJS knows exactly where to load the CSS and JS from.
+        ...dark, 
+        
         id: 'gplModsTheme',
         name: 'GPL Mods Premium',
         overrides: {
+            ...dark.overrides, // 2. Inherit existing dark mode structural overrides
             colors: {
-                // By spreading the 'dark' theme colors first, we ensure all un-specified 
-                // elements (like dropdowns and inputs) automatically get a dark background!
-                ...dark.overrides?.colors, 
+                ...dark.overrides?.colors, // 3. Inherit existing dark mode colors
 
                 // --- THE GOLD ACCENTS ---
-                primary100: '#FFD700', // GPL Gold
-                primary80: '#e5c200',  
+                primary100: '#FFD700', // GPL Gold (Buttons, Active links, Checkboxes)
+                primary80: '#e5c200',  // Hover states for Gold buttons
                 primary60: '#ccad00',  
                 primary40: '#b29700',  
-                primary20: '#332b00',  
+                primary20: '#332b00',  // Very dark gold/brown for subtle highlighted backgrounds
 
                 // --- THE BACKGROUNDS ---
-                bg: '#0a0a0a',         // GPL Black (Main background)
-                container: '#1a1a1a',  // GPL Dark Gray (Cards, Tables, Sidebar background)
-                white: '#1a1a1a',      // Fallback for container elements
+                bg: '#0a0a0a',         // GPL Black (The main page background behind everything)
+                container: '#1a1a1a',  // GPL Dark Gray (Makes the cards and sidebar dark)
+                white: '#1a1a1a',      // Fallback for containers/inputs
 
-                // --- TEXT & BORDERS ---
-                text: '#ffffff',       // GPL White
-                grey100: '#ffffff',    // Headings
-                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers)
-                grey60: '#a0a0a0',     
+                // --- TEXT & BORDERS (SILVER & WHITE) ---
+                text: '#ffffff',       // Standard body text (White)
+                grey100: '#ffffff',    // Main Headings (White)
+                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers, secondary text)
+                grey60: '#a0a0a0',     // Darker silver for muted text
                 grey40: '#444444',     // Dark borders for inputs
                 grey20: '#2a2a2a',     // Subtle background for Table Row hovers
                 border: '#333333',     // Main divider lines
 
                 // --- STATUS COLORS ---
                 errorLight: '#ffadad',
-                error: '#e53935',      // GPL Red
+                error: '#e53935',      // Red for delete buttons/errors
                 errorDark: '#b71c1c',
                 successLight: '#b0ffb0',
-                success: '#43a047',    // GPL Green
+                success: '#43a047',    // Green for success/live status
                 successDark: '#1b5e20',
                 infoLight: '#90caf9',
-                info: '#2196F3',       // GPL Blue
+                info: '#2196F3',       // Blue for info
                 infoDark: '#0d47a1',
             }
         }
     };
 
-    
     // ==========================================
     // 5. DEFINE ADMINJS OPTIONS
     // ==========================================
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
+        
+        // Use our new custom theme ID
         defaultTheme: 'gplModsTheme', 
-        availableThemes:[gplModsTheme, dark, light], 
+        
+        // Pass our custom theme into the available themes array
+        availableThemes: [gplModsTheme, dark, light], 
+        
         dashboard: {
             component: Components.Dashboard 
         },
         branding: {
             companyName: 'GPL Mods',
-            logo: '/images/logo.png',
+            logo: '/images/logo.png', // Ensure this matches your logo path
             softwareBrothers: false,
             withMadeWithLove: false, 
         },
