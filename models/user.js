@@ -23,6 +23,12 @@ const UserSchema = new Schema({
     googleId: {
         type: String
     },
+    githubId: {
+        type: String
+    },
+    microsoftId: {
+        type: String
+    },
     role: {
         type: String,
         enum: ['member', 'admin'],

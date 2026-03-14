@@ -128,15 +128,15 @@
         .divider::before { left: 0; }
         .divider::after { right: 0; }
 
-        /* Custom Google Sign-In Button */
-        .google-signin-btn {
+        /* Custom Social Sign-In Buttons (Ghost Style) */
+        .social-signin-btn {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
             width: 100%;
             padding: 12px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 12px; /* Reduced slightly to fit 3 buttons nicely */
             background-color: transparent; 
             border: 2px solid var(--silver); 
             color: var(--silver);           
@@ -149,20 +149,17 @@
             transition: all 0.3s ease;
         }
 
-        .google-signin-btn:hover {
+        .social-signin-btn:hover {
             background-color: var(--gold);
             border-color: var(--gold);
             color: var(--black); 
             box-shadow: 0 0 15px var(--glow-gold);
         }
 
-        .google-signin-btn .google-icon {
+        .social-signin-btn .social-icon {
             width: 24px;
             height: 24px;
-        }
-
-        .google-signin-btn:hover .google-icon path {
-            fill: var(--black);
+            fill: currentColor; /* This makes the SVG inherit the text color! */
         }
 
         .form-switch { text-align: center; margin-top: 25px; color: var(--silver); font-size: 0.9em; }
@@ -225,11 +222,28 @@
 
                 <div class="divider">or</div>
 
-                <a href="/auth/google" class="google-signin-btn">
-                    <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <!-- Google Login -->
+                <a href="/auth/google" class="social-signin-btn">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,11.63 21.95,11.36 21.89,11.1H21.35Z"/>
                     </svg>
                     <span>Continue with Google</span>
+                </a>
+
+                <!-- GitHub Login -->
+                <a href="/auth/github" class="social-signin-btn">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                    <span>Continue with GitHub</span>
+                </a>
+
+                <!-- Microsoft Login -->
+                <a href="/auth/microsoft" class="social-signin-btn">
+                    <svg class="social-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z"/>
+                    </svg>
+                    <span>Continue with Microsoft</span>
                 </a>
 
                 <p class="form-switch">Already have an account? <a href="/login">Login</a></p>

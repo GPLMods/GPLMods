@@ -11,32 +11,155 @@
     #messages .message-header { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
     #messages .username { font-weight: bold; color: var(--gold); }
     #messages .timestamp { font-size: 0.8em; color: var(--silver); }
-    #chat-form { position: fixed; bottom: 0; left: 0; right: 0; display: flex; padding: 10px; background-color: var(--dark-gray); border-top: 1px solid #333; }
-    #input { border: 1px solid #333; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin-right: 10px; background: var(--black); color:var(--white); }
-    .btn-primary { background: var(--gold); color: var(--black); border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+    
+    #chat-form { position: fixed; bottom: 0; left: 0; right: 0; display: flex; padding: 10px; background-color: var(--dark-gray); border-top: 1px solid #333; align-items: center; }
+    
+    /* --- NEW INPUT WRAPPER FOR EMOJI --- */
+    .input-wrapper {
+        position: relative;
+        flex-grow: 1;
+        margin-right: 10px;
+        display: flex;
+    }
+    #input { 
+        width: 100%;
+        border: 1px solid #333; 
+        padding: 0 2.5rem 0 1rem; /* Extra right padding to make room for emoji button */
+        height: 40px;
+        border-radius: 2rem; 
+        background: var(--black); 
+        color: var(--white); 
+        outline: none;
+        transition: border-color 0.3s;
+    }
+    #input:focus { border-color: var(--gold); }
+    
+    /* Custom Silver Emoji Button */
+    #emoji-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--silver);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        transition: color 0.3s, transform 0.2s;
+    }
+    #emoji-btn:hover { color: var(--gold); transform: translateY(-50%) scale(1.1); }
+    #emoji-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+    .btn-primary { background: var(--gold); color: var(--black); border: none; padding: 0 20px; height: 40px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+    .btn-primary:hover { transform: scale(1.05); }
+
+    /* Custom Styling for the Emoji Picker Menu */
+    emoji-picker {
+        position: fixed;
+        bottom: 70px;
+        right: 20px;
+        z-index: 1000;
+        display: none; /* Hidden by default */
+        box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        /* Dark Theme Variables */
+        --background: var(--dark-gray);
+        --border-color: #333;
+        --indicator-color: var(--gold);
+        --button-hover-background: #333;
+        --search-background: var(--black);
+        --search-focus-border-color: var(--gold);
+        --search-icon-color: var(--silver);
+        --text-color: var(--white);
+    }
+    emoji-picker.active {
+        display: block;
+        animation: popUp 0.2s ease-out forwards;
+    }
+    
+    @keyframes popUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Adjust picker for mobile devices */
+    @media (max-width: 768px) {
+        emoji-picker { width: calc(100% - 40px); right: 20px; left: 20px; }
+    }
 </style>
 
 <main class="container">
     <h2 style="margin-top: 1rem; text-align:center;">Community Chat</h2>
-    <ul id="messages"></ul> <!-- This will be populated by JavaScript -->
+    <ul id="messages"></ul>
 </main>
 
 <form id="chat-form" action="">
-    <input id="input" autocomplete="off" placeholder="Type a message..." /><button type="submit" class="btn-primary">Send</button>
+    <div class="input-wrapper">
+        <input id="input" autocomplete="off" placeholder="Type a message..." />
+        
+        <!-- The Silver Emoji Button inside the input -->
+        <button type="button" id="emoji-btn" title="Add Emoji">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S8.33 8 7.5 8 6 8.67 6 9.5 6.67 11 7.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H7.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+            </svg>
+        </button>
+    </div>
+    <button type="submit" class="btn-primary">Send</button>
 </form>
 
+<!-- The Emoji Picker Element -->
+<emoji-picker class="dark"></emoji-picker>
+
 <audio id="background-audio" loop></audio>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/main.js"></script>
+
+<!-- Import Lightweight Emoji Picker Web Component -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
 <script>
     const socket = io();
     const form = document.getElementById('chat-form');
     const input = document.getElementById('input');
     const messages = document.getElementById('messages');
+    
+    // Emoji Picker Selectors
+    const emojiBtn = document.getElementById('emoji-btn');
+    const picker = document.querySelector('emoji-picker');
+    
     const currentUser = {
         username: '<%- user.username %>',
         avatar: '<%- user.signedAvatarUrl %>' 
     };
+
+    // --- Toggle Emoji Picker ---
+    emojiBtn.addEventListener('click', () => {
+        picker.classList.toggle('active');
+    });
+
+    // --- Insert Emoji into Input ---
+    picker.addEventListener('emoji-click', event => {
+        // Get cursor position so emoji is inserted exactly where they are typing
+        const cursorPosition = input.selectionStart;
+        const textBefore = input.value.substring(0, cursorPosition);
+        const textAfter = input.value.substring(cursorPosition);
+        
+        input.value = textBefore + event.detail.unicode + textAfter;
+        
+        // Move cursor right after the newly inserted emoji
+        input.selectionStart = input.selectionEnd = cursorPosition + event.detail.unicode.length;
+        input.focus();
+    });
+
+    // --- Hide picker if clicked outside ---
+    document.addEventListener('click', (event) => {
+        if (!picker.contains(event.target) && !emojiBtn.contains(event.target)) {
+            picker.classList.remove('active');
+        }
+    });
 
     // --- Function to create and append a message element ---
     function appendMessage(msg) {

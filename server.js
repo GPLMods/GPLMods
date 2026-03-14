@@ -13,6 +13,8 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const GitHubStrategy = require('passport-github2').Strategy;
+const MicrosoftStrategy = require('passport-microsoft').Strategy;
 const MongoDBStore = require('connect-mongodb-session')(session);
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
@@ -277,6 +279,80 @@ async (accessToken, refreshToken, profile, done) => {
                 googleUserData.username = `${googleUserData.username}${Math.floor(Math.random() * 1000)}`;
             }
             user = await User.create(googleUserData);
+            done(null, user);
+        }
+    } catch (err) { done(err, null); }
+}));
+
+// --- GITHUB STRATEGY ---
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    callbackURL: process.env.BASE_URL 
+        ? `${process.env.BASE_URL}/auth/github/callback` 
+        : "https://gplmods.webredirect.org/auth/github/callback",
+    scope: ['user:email'] // Request email access
+},
+async (accessToken, refreshToken, profile, done) => {
+    // GitHub sometimes hides emails, so we provide a fallback
+    const email = (profile.emails && profile.emails.length > 0) ? profile.emails[0].value : `${profile.username}@github.com`;
+    
+    const githubUserData = {
+        githubId: profile.id,
+        username: profile.username || profile.displayName,
+        email: email,
+        profileImageKey: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : '',
+        isVerified: true
+    };
+
+    try {
+        let user = await User.findOne({ email: githubUserData.email });
+        if (user) {
+            user.githubId = githubUserData.githubId;
+            await user.save();
+            done(null, user);
+        } else {
+            const existingUsername = await User.findOne({ username: githubUserData.username });
+            if (existingUsername) {
+                githubUserData.username = `${githubUserData.username}${Math.floor(Math.random() * 1000)}`;
+            }
+            user = await User.create(githubUserData);
+            done(null, user);
+        }
+    } catch (err) { done(err, null); }
+}));
+
+// --- MICROSOFT STRATEGY ---
+passport.use(new MicrosoftStrategy({
+    clientID: process.env.MICROSOFT_CLIENT_ID,
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+    callbackURL: process.env.BASE_URL 
+        ? `${process.env.BASE_URL}/auth/microsoft/callback` 
+        : "https://gplmods.webredirect.org/auth/microsoft/callback",
+    scope: ['user.read']
+},
+async (accessToken, refreshToken, profile, done) => {
+    const email = (profile.emails && profile.emails.length > 0) ? profile.emails[0].value : profile.userPrincipalName;
+    
+    const microsoftUserData = {
+        microsoftId: profile.id,
+        username: profile.displayName.replace(/\s+/g, '') || `user_${profile.id}`, // Remove spaces from MS display names
+        email: email,
+        isVerified: true
+    };
+
+    try {
+        let user = await User.findOne({ email: microsoftUserData.email });
+        if (user) {
+            user.microsoftId = microsoftUserData.microsoftId;
+            await user.save();
+            done(null, user);
+        } else {
+            const existingUsername = await User.findOne({ username: microsoftUserData.username });
+            if (existingUsername) {
+                microsoftUserData.username = `${microsoftUserData.username}${Math.floor(Math.random() * 1000)}`;
+            }
+            user = await User.create(microsoftUserData);
             done(null, user);
         }
     } catch (err) { done(err, null); }
@@ -819,8 +895,17 @@ app.get('/logout', (req, res, next) => {
     req.logout(err => { if (err) return next(err); res.redirect('/'); });
 });
 
+// Google Routes (Existing)
 app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/profile'));
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
+
+// --- NEW GITHUB ROUTES ---
+app.get('/auth/github', passport.authenticate('github', { scope:[ 'user:email' ] }));
+app.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
+
+// --- NEW MICROSOFT ROUTES ---
+app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
+app.get('/auth/microsoft/callback', passport.authenticate('microsoft', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
 
 // ===============================
 // 9. PROFILE ROUTES
