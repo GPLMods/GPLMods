@@ -30,50 +30,54 @@ async function createAdminRouter() {
         Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx')
     };
 
-    // ==========================================
-    // 4. THE ULTIMATE GPL MODS THEME
+      // ==========================================
+     // 4. THE ULTIMATE GPL MODS THEME
     // ==========================================
     const gplModsTheme = {
         id: 'gplModsTheme',
         name: 'GPL Mods Premium',
         overrides: {
             colors: {
+                // By spreading the 'dark' theme colors first, we ensure all un-specified 
+                // elements (like dropdowns and inputs) automatically get a dark background!
+                ...dark.overrides?.colors, 
+
                 // --- THE GOLD ACCENTS ---
-                primary100: '#FFD700', // GPL Gold (Buttons, Active links, Checkboxes)
-                primary80: '#e5c200',  // Hover states for Gold buttons
+                primary100: '#FFD700', // GPL Gold
+                primary80: '#e5c200',  
                 primary60: '#ccad00',  
                 primary40: '#b29700',  
-                primary20: '#332b00',  // Very dark gold/brown for subtle highlighted backgrounds
+                primary20: '#332b00',  
 
                 // --- THE BACKGROUNDS ---
-                bg: '#0a0a0a',         // GPL Black (The main page background behind everything)
-                
-                // IMPORTANT: AdminJS uses "white" for the background of the Sidebar, Topbar, and all Cards/Tables!
-                white: '#1a1a1a',      // GPL Dark Gray (Makes the cards and sidebar dark)
+                bg: '#0a0a0a',         // GPL Black (Main background)
+                container: '#1a1a1a',  // GPL Dark Gray (Cards, Tables, Sidebar background)
+                white: '#1a1a1a',      // Fallback for container elements
 
-                // --- TEXT & BORDERS (SILVER & WHITE) ---
-                text: '#ffffff',       // Standard body text (White)
-                grey100: '#ffffff',    // Main Headings (White)
-                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers, secondary text)
-                grey60: '#a0a0a0',     // Darker silver for muted text
+                // --- TEXT & BORDERS ---
+                text: '#ffffff',       // GPL White
+                grey100: '#ffffff',    // Headings
+                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers)
+                grey60: '#a0a0a0',     
                 grey40: '#444444',     // Dark borders for inputs
                 grey20: '#2a2a2a',     // Subtle background for Table Row hovers
                 border: '#333333',     // Main divider lines
 
                 // --- STATUS COLORS ---
                 errorLight: '#ffadad',
-                error: '#e53935',      // Red for delete buttons/errors
+                error: '#e53935',      // GPL Red
                 errorDark: '#b71c1c',
                 successLight: '#b0ffb0',
-                success: '#43a047',    // Green for success/live status
+                success: '#43a047',    // GPL Green
                 successDark: '#1b5e20',
                 infoLight: '#90caf9',
-                info: '#2196F3',       // Blue for info
+                info: '#2196F3',       // GPL Blue
                 infoDark: '#0d47a1',
             }
         }
     };
 
+    
     // ==========================================
     // 5. DEFINE ADMINJS OPTIONS
     // ==========================================
@@ -81,14 +85,13 @@ async function createAdminRouter() {
         rootPath: '/admin',
         componentLoader, 
         defaultTheme: 'gplModsTheme', 
-        // Notice we still pass the 'dark' theme so AdminJS knows we are building on top of a dark mode foundation
-        availableThemes: [gplModsTheme, dark, light], 
+        availableThemes:[gplModsTheme, dark, light], 
         dashboard: {
             component: Components.Dashboard 
         },
         branding: {
             companyName: 'GPL Mods',
-            logo: '/images/logo.png', // Ensure this matches your logo path
+            logo: '/images/logo.png',
             softwareBrothers: false,
             withMadeWithLove: false, 
         },
