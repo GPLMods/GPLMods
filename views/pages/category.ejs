@@ -42,23 +42,43 @@
         </form>
         
         <!-- The mod grid is now built dynamically -->
+        <!-- The mod grid is now built dynamically -->
         <section class="mod-grid">
             <% files.forEach(file => { %>
-                <a href="/mods/<%= file._id %>" class="mod-card">
-                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
-                    <div class="mod-card-content">
-                        <h3><%= file.name %></h3>
-                        <p><%= file.modDescription.substring(0, 50) %>...</p> 
-                        <div class="card-footer">
-                            <% if (file.category === 'android') { %>
-                                <span class="platform-tag android">Android</span>
-                            <% } else if (file.category.includes('ios')) { %> <!-- FIX: Made this catch both ios-jailed & ios-jailbroken -->
-                                <span class="platform-tag ios-ipa">iOS</span>
-                            <% } else if (file.category === 'windows') { %>
-                                <span class="platform-tag windows">Windows</span>
-                            <% } else if (file.category === 'wordpress') { %>
-                                <span class="platform-tag wordpress">WordPress</span>
-                            <% } %>
+                <a href="/mods/<%= file._id %>" class="mod-card-link">
+                    <div class="mod-card">
+                        
+                        <!-- NEW: Certification Tag -->
+                        <% if (file.certification === 'certified') { %>
+                            <div class="app-feature-tag">✔ Certified</div>
+                        <% } else if (file.certification === 'community-tested') { %>
+                            <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+                        <% } %>
+                        
+                        <!-- NEW: Version Tag -->
+                        <div class="mod-type-tag"><%= file.version %></div>
+                        
+                        <!-- NEW: Image Container Logic -->
+                        <div class="mod-card-image">
+                            <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                        </div>
+                        
+                        <div class="mod-card-content">
+                            <h3><%= file.name %></h3>
+                            <p><%= file.modDescription.substring(0, 50) %>...</p> 
+                            
+                            <div class="rating" style="margin-bottom: 10px;">
+                                <div class="stars-outer">
+                                    <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                </div>
+                                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                            </div>
+
+                            <div class="card-footer">
+                                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </a>

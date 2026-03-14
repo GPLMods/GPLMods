@@ -45,12 +45,20 @@
                                 <!-- The Card is a DIV, not an 'A' tag -->
                                 <div class="mod-card">
                                     
+                                    <!-- Certification Tag -->
                                     <% if (file.certification === 'certified') { %>
                                         <div class="app-feature-tag">✔ Certified</div>
+                                    <% } else if (file.certification === 'community-tested') { %>
+                                        <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
                                     <% } %>
+                                    
+                                    <!-- Version Tag -->
                                     <div class="mod-type-tag"><%= file.version %></div>
                                     
-                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                                    <!-- NEW: Image Container Logic -->
+                                    <div class="mod-card-image">
+                                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                                    </div>
                                     
                                     <div class="mod-card-content">
                                         <!-- The link is placed on the title with the "full-card-link" class -->
@@ -63,6 +71,13 @@
                                                 <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
                                             </div>
                                             <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                        </div>
+                                        
+                                        <!-- NEW: Platform Tag -->
+                                        <div class="card-footer">
+                                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                                <%= file.category.toUpperCase().replace('-', ' ') %>
+                                            </span>
                                         </div>
                                     </div>
                                     
