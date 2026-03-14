@@ -31,27 +31,46 @@ async function createAdminRouter() {
     };
 
     // ==========================================
-    // 4. CUSTOM GPL MODS THEME
+    // 4. THE ULTIMATE GPL MODS THEME
     // ==========================================
-    // We take the official 'dark' theme and inject your website's exact colors!
     const gplModsTheme = {
-        ...dark,
         id: 'gplModsTheme',
-        name: 'GPL Mods Dark',
-        colors: {
-            ...dark.colors,
-            primary100: '#FFD700', // GPL Gold (Buttons, Highlights)
-            primary80: '#e5c200',  // Darker Gold for hover effects
-            primary60: '#ccad00',
-            primary40: '#b29700',
-            primary20: '#4d4100',
-            bg: '#0a0a0a',        // GPL Black (Main Background)
-            surface: '#1a1a1a',   // GPL Dark Gray (Cards, Sidebar)
-            filterBg: '#111111',  // Slightly darker gray for filters
-            hoverBg: '#2a2a2a',   // Table row hover
-            text: '#ffffff',      // GPL White Text
-            grey100: '#c0c0c0',   // GPL Silver Text
-            border: '#333333',    // Dark borders
+        name: 'GPL Mods Premium',
+        overrides: {
+            colors: {
+                // --- THE GOLD ACCENTS ---
+                primary100: '#FFD700', // GPL Gold (Buttons, Active links, Checkboxes)
+                primary80: '#e5c200',  // Hover states for Gold buttons
+                primary60: '#ccad00',  
+                primary40: '#b29700',  
+                primary20: '#332b00',  // Very dark gold/brown for subtle highlighted backgrounds
+
+                // --- THE BACKGROUNDS ---
+                bg: '#0a0a0a',         // GPL Black (The main page background behind everything)
+                
+                // IMPORTANT: AdminJS uses "white" for the background of the Sidebar, Topbar, and all Cards/Tables!
+                white: '#1a1a1a',      // GPL Dark Gray (Makes the cards and sidebar dark)
+
+                // --- TEXT & BORDERS (SILVER & WHITE) ---
+                text: '#ffffff',       // Standard body text (White)
+                grey100: '#ffffff',    // Main Headings (White)
+                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers, secondary text)
+                grey60: '#a0a0a0',     // Darker silver for muted text
+                grey40: '#444444',     // Dark borders for inputs
+                grey20: '#2a2a2a',     // Subtle background for Table Row hovers
+                border: '#333333',     // Main divider lines
+
+                // --- STATUS COLORS ---
+                errorLight: '#ffadad',
+                error: '#e53935',      // Red for delete buttons/errors
+                errorDark: '#b71c1c',
+                successLight: '#b0ffb0',
+                success: '#43a047',    // Green for success/live status
+                successDark: '#1b5e20',
+                infoLight: '#90caf9',
+                info: '#2196F3',       // Blue for info
+                infoDark: '#0d47a1',
+            }
         }
     };
 
@@ -61,16 +80,17 @@ async function createAdminRouter() {
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
-        defaultTheme: 'gplModsTheme', // Set your custom theme as default!
-        availableThemes: [gplModsTheme, light], // You can toggle between yours and light mode
+        defaultTheme: 'gplModsTheme', 
+        // Notice we still pass the 'dark' theme so AdminJS knows we are building on top of a dark mode foundation
+        availableThemes: [gplModsTheme, dark, light], 
         dashboard: {
             component: Components.Dashboard 
         },
         branding: {
             companyName: 'GPL Mods',
-            logo: '/images/logo.png',
+            logo: '/images/logo.png', // Ensure this matches your logo path
             softwareBrothers: false,
-            withMadeWithLove: false, // Hides the bottom AdminJS watermark
+            withMadeWithLove: false, 
         },
         resources:[
             // USER MANAGEMENT
@@ -86,8 +106,6 @@ async function createAdminRouter() {
                             type: 'password',
                             label: 'New Password (leave blank to keep unchanged)',
                         },
-                        // --- CRASH FIX: Explicitly define arrays to bypass Mongoose parser bug ---
-                        whitelist: { type: 'reference', isArray: true, isVisible: false },
                     },
                     actions: {
                         edit: {
@@ -128,18 +146,13 @@ async function createAdminRouter() {
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
                         iconKey: { description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.' },
+                        screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
                             isVisible: {
                                edit: (record) => record.params.status === 'rejected',
                                list: false, filter: false, show: true
                             }
-                        },
-                        // --- CRASH FIX: Explicitly define arrays to bypass Mongoose parser bug ---
-                        screenshotKeys: { type: 'string', isArray: true, description: 'Paste direct image URLs.' },
-                        platforms: { type: 'string', isArray: true },
-                        tags: { type: 'string', isArray: true },
-                        olderVersions: { type: 'reference', isArray: true, isVisible: false },
-                        votedOnStatusBy: { type: 'reference', isArray: true, isVisible: false },
+                        }
                     },
                     actions: {
                         new: { isAccessible: true },
@@ -153,10 +166,6 @@ async function createAdminRouter() {
                 resource: Review,
                 options: {
                     listProperties:['username', 'rating', 'comment', 'file', 'createdAt'],
-                    properties: {
-                        // --- CRASH FIX: Explicitly define arrays to bypass Mongoose parser bug ---
-                        votedBy: { type: 'reference', isArray: true, isVisible: false }
-                    },
                     actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
                 },
             },
