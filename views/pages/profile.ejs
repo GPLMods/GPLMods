@@ -15,10 +15,15 @@
                 <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section">
                     <div class="avatar-preview-wrapper">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
-                        <label for="avatar-input" class="avatar-edit-button">✏️</label>
+                        
+                        <!-- ✅ UPGRADE 1: Replaced Emoji with Custom SVG Icon -->
+                        <label for="avatar-input" class="avatar-edit-button" title="Change Avatar">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--black)">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                        </label>
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>
-                    <!-- The button to submit the avatar is now part of its form -->
                     <button type="submit" class="submit-button secondary-button" style="margin-bottom: 20px;">Save New Avatar</button>
                 </form>
 
@@ -72,18 +77,38 @@
             <section class="form-section danger-zone">
                 <h2>Danger Zone</h2>
                 <p>Deleting your account is a permanent action. All of your uploaded mods, comments, and personal data will be removed forever. This action cannot be undone.</p>
-                <form action="/account/delete" method="POST">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="preserve-mods" name="preserveMods" value="true">
-                        <label for="preserve-mods">Preserve my uploaded mods.</label>
+                <form action="/account/delete" method="POST" id="delete-account-form">
+                    
+                    <!-- ✅ UPGRADE 2: Sliding Switch Checkbox HTML -->
+                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                        <label class="switch">
+                            <input type="checkbox" id="preserve-mods" name="preserveMods" value="true">
+                            <span class="slider round"></span>
+                        </label>
+                        <label for="preserve-mods" style="margin-bottom: 0; cursor: pointer; color: var(--white);">Preserve my uploaded mods.</label>
                     </div>
-                     <p>If checked, your uploads will remain on the site and the author will be changed to "GPL Community". Otherwise, all your uploads will be deleted with your account.</p>
-                    <button type="submit" class="submit-button delete-button" id="delete-account-btn">Delete My Account</button>
+                    
+                    <p>If checked, your uploads will remain on the site and the author will be changed to "GPL Community". Otherwise, all your uploads will be deleted with your account.</p>
+                    <button type="submit" class="submit-button delete-button">Delete My Account</button>
                 </form>
             </section>
         </div>
     </div>
 </main>
+
+<!-- ✅ UPGRADE 3: Custom Delete Confirmation Modal -->
+<div id="delete-modal-container" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h2 style="color: var(--red); margin-bottom: 15px;">Delete Account?</h2>
+        <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
+            Are you absolutely sure you want to delete your account? This is a permanent action and cannot be undone.
+        </p>
+        <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="policy-button" id="confirmDeleteBtn" style="background-color: var(--red); color: var(--white); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-red);">Yes, Delete</button>
+            <button type="button" class="policy-button decline" id="cancelDeleteBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
+        </div>
+    </div>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -98,14 +123,34 @@
             }
         });
 
-        // --- Delete Account Confirmation ---
-        const deleteForm = document.querySelector('form[action="/account/delete"]');
-        if (deleteForm) {
+        // --- Custom Delete Account Modal Logic ---
+        const deleteForm = document.getElementById('delete-account-form');
+        const deleteModal = document.getElementById('delete-modal-container');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        if (deleteForm && deleteModal) {
+            // Intercept the form submission
             deleteForm.addEventListener('submit', function(e) {
-                const confirmation = confirm('Are you absolutely sure you want to delete your account? This is permanent.');
-                if (!confirmation) {
-                    e.preventDefault(); // Stop the form from submitting if user cancels
-                }
+                e.preventDefault(); // Stop the form from submitting immediately
+                deleteModal.style.display = 'flex';
+                // Small delay to allow display:flex to apply before adding the animation class
+                setTimeout(() => {
+                    deleteModal.classList.add('show');
+                }, 10);
+            });
+
+            // Cancel button hides the modal
+            cancelDeleteBtn.addEventListener('click', function() {
+                deleteModal.classList.remove('show');
+                setTimeout(() => {
+                    deleteModal.style.display = 'none';
+                }, 200); // Matches the CSS transition duration
+            });
+
+            // Confirm button actually submits the form
+            confirmDeleteBtn.addEventListener('click', function() {
+                deleteForm.submit(); 
             });
         }
     });

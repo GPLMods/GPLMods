@@ -1746,6 +1746,53 @@
             grid-column: 1 / -1; /* Span across both columns */
             border: 2px solid var(--red);
         }
+/* --- Sliding Switch Styles --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--silver);
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: var(--gold);
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            background-color: var(--black);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
         .danger-zone h2 { color: var(--red); border-bottom-color: var(--red); }
         .danger-zone p { color: var(--silver); margin-bottom: 20px; }
         .delete-button { background: var(--red); color: var(--white); box-shadow: 0 0 15px var(--glow-red); }
