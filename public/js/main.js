@@ -388,38 +388,67 @@ function initializePolicyBanner() {
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
+    // 1. Safety Check: If HTML is missing, exit gracefully
     if (!policyModal || !acceptBtn || !declineBtn) {
-        initializeMusicPlayer(); 
-        return;
+        return; 
     }
 
+    // 2. Check if already accepted
     if (localStorage.getItem('gplmods_policy_accepted') === 'true') {
-        initializeMusicPlayer(); 
-        return;
+        return; // Already accepted, do nothing
     }
 
-    policyModal.style.display = 'flex';
+    // 3. Check current page: Don't show if they are reading the policies!
+    const currentPath = window.location.pathname;
+    const isPolicyPage = currentPath === '/tos' || currentPath === '/privacy-policy';
 
+    // ✅ FIX: If they are on the policy page, hide the modal completely and exit the function.
+    if (isPolicyPage) {
+        policyModal.style.display = 'none';
+        return; 
+    }
+
+    // 4. Show the Modal (with animation)
+    // First, make it display: flex
+    policyModal.style.display = 'flex'; // ✅ FIX: Ensure it's set to flex before animating
+    policyModal.classList.add('show');
+    
+    // Then, a tiny delay before adding the active class to trigger the CSS transition
+    setTimeout(() => {
+        const contentBox = policyModal.querySelector('.policy-modal-content');
+        if (contentBox) contentBox.classList.add('active');
+    }, 10);
+
+    // 5. Handle Accept
     acceptBtn.addEventListener('click', () => {
         localStorage.setItem('gplmods_policy_accepted', 'true');
-        policyModal.style.display = 'none'; 
-        initializeMusicPlayer(); 
+        
+        // Animate out
+        const contentBox = policyModal.querySelector('.policy-modal-content');
+        if (contentBox) contentBox.classList.remove('active');
+        
+        setTimeout(() => {
+            policyModal.classList.remove('show');
+            policyModal.style.display = 'none'; // ✅ FIX: Actually hide it after animation
+        }, 300); // Wait for animation to finish before hiding
     }, { once: true });
 
+    // 6. Handle Decline
     declineBtn.addEventListener('click', () => {
         const contentBox = policyModal.querySelector('.policy-modal-content');
-        contentBox.innerHTML = `
-            <h2 style="color: var(--gold); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
-            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
-                To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy. Please refresh the page to see the policy banner again.
-            </p>
-            <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
-                Refresh Page
-            </button>
-        `;
+        if (contentBox) {
+            contentBox.innerHTML = `
+                <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
+                <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
+                    To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy.
+                </p>
+                <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
+                    Refresh Page
+                </button>
+            `;
+        }
     }, { once: true });
 }
-
 /**
  * ==================================================================================
  * 8. ROBUST SIDEBAR MUSIC PLAYER
