@@ -12,6 +12,7 @@
  * 7. Policy Acceptance Banner
  * 8. Robust Sidebar Music Player
  * 9. Smart Audio Handler (YouTube/Vimeo pauses BG music)
+ * 10. Notifications & PWA Install Banner
  * ==================================================================================
  */
 
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
         try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
         try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
+        try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
         try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
         
         console.log("All initializers finished.");
@@ -206,7 +208,7 @@ async function initializeSearchBar() {
     }
 
     // Dynamic typing animation setup
-    let searchTerms = ["Search for mods..."]; 
+    let searchTerms =["Search for mods..."]; 
     try {
         const response = await fetch('/api/trending-searches');
         if (response.ok) {
@@ -388,52 +390,36 @@ function initializePolicyBanner() {
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
-    // 1. Safety Check: If HTML is missing, exit gracefully
-    if (!policyModal || !acceptBtn || !declineBtn) {
-        return; 
-    }
+    if (!policyModal || !acceptBtn || !declineBtn) return; 
 
-    // 2. Check if already accepted
-    if (localStorage.getItem('gplmods_policy_accepted') === 'true') {
-        return; // Already accepted, do nothing
-    }
+    if (localStorage.getItem('gplmods_policy_accepted') === 'true') return; 
 
-    // 3. Check current page: Don't show if they are reading the policies!
     const currentPath = window.location.pathname;
     const isPolicyPage = currentPath === '/tos' || currentPath === '/privacy-policy';
 
-    // ✅ FIX: If they are on the policy page, hide the modal completely and exit the function.
     if (isPolicyPage) {
         policyModal.style.display = 'none';
         return; 
     }
 
-    // 4. Show the Modal (with animation)
-    // First, make it display: flex
-    policyModal.style.display = 'flex'; // ✅ FIX: Ensure it's set to flex before animating
+    policyModal.style.display = 'flex'; 
     policyModal.classList.add('show');
     
-    // Then, a tiny delay before adding the active class to trigger the CSS transition
     setTimeout(() => {
         const contentBox = policyModal.querySelector('.policy-modal-content');
         if (contentBox) contentBox.classList.add('active');
     }, 10);
 
-    // 5. Handle Accept
     acceptBtn.addEventListener('click', () => {
         localStorage.setItem('gplmods_policy_accepted', 'true');
-        
-        // Animate out
         const contentBox = policyModal.querySelector('.policy-modal-content');
         if (contentBox) contentBox.classList.remove('active');
-        
         setTimeout(() => {
             policyModal.classList.remove('show');
-            policyModal.style.display = 'none'; // ✅ FIX: Actually hide it after animation
-        }, 300); // Wait for animation to finish before hiding
+            policyModal.style.display = 'none'; 
+        }, 300); 
     }, { once: true });
 
-    // 6. Handle Decline
     declineBtn.addEventListener('click', () => {
         const contentBox = policyModal.querySelector('.policy-modal-content');
         if (contentBox) {
@@ -449,20 +435,19 @@ function initializePolicyBanner() {
         }
     }, { once: true });
 }
+
 /**
  * ==================================================================================
  * 8. ROBUST SIDEBAR MUSIC PLAYER
  * ==================================================================================
  */
 function initializeMusicPlayer() {
-    // --- 1. Find elements using the IDs from header.ejs ---
-    const audioPlayer = document.getElementById('background-audio'); // From footer.ejs
-    const playPauseBtn = document.getElementById('music-play-pause-btn'); // From header.ejs
-    const prevBtn = document.getElementById('music-prev-btn'); // From header.ejs
-    const nextBtn = document.getElementById('music-next-btn'); // From header.ejs
-    const trackNameDisplay = document.getElementById('music-track-name'); // From header.ejs
+    const audioPlayer = document.getElementById('background-audio'); 
+    const playPauseBtn = document.getElementById('music-play-pause-btn'); 
+    const prevBtn = document.getElementById('music-prev-btn'); 
+    const nextBtn = document.getElementById('music-next-btn'); 
+    const trackNameDisplay = document.getElementById('music-track-name'); 
 
-    // --- 2. Diagnostic Checks (The "Safe Kill Switch") ---
     let hasError = false;
     if (!audioPlayer) { console.error("Music Player: Missing <audio id='background-audio'>"); hasError = true; }
     if (!playPauseBtn) { console.warn("Music Player: Missing <button id='music-play-pause-btn'>"); hasError = true; }
@@ -470,16 +455,11 @@ function initializeMusicPlayer() {
     if (!nextBtn) { console.warn("Music Player: Missing <button id='music-next-btn'>"); hasError = true; }
     if (!trackNameDisplay) { console.warn("Music Player: Missing <span id='music-track-name'>"); hasError = true; }
 
-    if (hasError) {
-        console.error("Music player initialization aborted due to missing HTML elements.");
-        return; // Stop here if HTML is broken
-    }
+    if (hasError) return; 
 
-    // --- 3. Define SVG Icons ---
     const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
     const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
-    // --- 4. Define Playlist ---
     const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
@@ -493,7 +473,6 @@ function initializeMusicPlayer() {
     let trackIndex = 0;
     audioPlayer.volume = 0.25;
 
-    // --- 5. Core Functions ---
     function loadTrack(index) {
         const track = playlist[index];
         if (!track) return;
@@ -518,7 +497,6 @@ function initializeMusicPlayer() {
         localStorage.setItem('musicState', 'paused');
     }
     
-    // --- 6. Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
         if (audioPlayer.paused) {
             playTrack();
@@ -545,13 +523,11 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    // --- 7. Initialize Player State on Page Load (Advanced Resumption) ---
     const savedTrackIndex = localStorage.getItem('musicTrackIndex');
     if (savedTrackIndex && savedTrackIndex < playlist.length) {
         trackIndex = parseInt(savedTrackIndex, 10);
     }
     
-    // Load the track but DON'T play it yet
     const track = playlist[trackIndex];
     if (track) {
         audioPlayer.src = track.src;
@@ -561,30 +537,23 @@ function initializeMusicPlayer() {
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
-    // Ensure the button shows the correct icon initially based on saved state
     if (savedState === 'playing') {
         playPauseBtn.innerHTML = pauseIconSVG;
+        if (savedTime) audioPlayer.currentTime = parseFloat(savedTime);
         
-        if (savedTime) {
-            audioPlayer.currentTime = parseFloat(savedTime);
-        }
-        
-        // Attempt to play
         const playPromise = audioPlayer.play();
-        
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.warn("Browser blocked autoplay on new page load. Waiting for user interaction...");
-                // Autoplay blocked, revert UI to 'paused' state
                 playPauseBtn.innerHTML = playIconSVG; 
                 localStorage.setItem('musicState', 'paused');
             });
         }
     } else {
-        // Default state is paused
         playPauseBtn.innerHTML = playIconSVG; 
         audioPlayer.pause(); 
     }
+} // ✅ FIX: ADDED THE MISSING CLOSING BRACKET HERE!
 
 /**
  * ==================================================================================
@@ -609,5 +578,82 @@ function initializeSmartAudioHandler() {
                 backgroundAudio.dataset.wasPlaying = 'false'; 
             }
         });
+    });
+}
+
+/**
+ * ==================================================================================
+ * 10. NOTIFICATIONS & PWA INSTALL BANNER
+ * ==================================================================================
+ */
+function initializeNotificationsAndPWA() {
+    // --- 1. NOTIFICATION BADGE LOGIC (WITH NUMBERS) ---
+    const bellLink = document.getElementById('nav-bell-link');
+    const badge = document.getElementById('notification-badge');
+    
+    if (bellLink && badge) {
+        const currentTotalUpdates = parseInt(bellLink.getAttribute('data-total-updates') || '0', 10);
+        const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
+        const unreadCount = currentTotalUpdates - lastSeenTotal;
+        
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        }
+        
+        bellLink.addEventListener('click', () => {
+            localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
+        });
+    }
+
+    // --- 2. PWA INSTALL LOGIC ---
+    let deferredPrompt;
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('pwa-install');
+    const dismissBtn = document.getElementById('pwa-dismiss');
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => console.log('SW registered'))
+                .catch(err => console.log('SW failed: ', err));
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        const isDismissed = localStorage.getItem('pwaDismissed') === 'true';
+        
+        if (!isDismissed && pwaBanner) {
+            setTimeout(() => {
+                pwaBanner.classList.add('show');
+            }, 3000); 
+        }
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (pwaBanner) pwaBanner.classList.remove('show');
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            }
+        });
+    }
+
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+            if (pwaBanner) pwaBanner.classList.remove('show');
+            localStorage.setItem('pwaDismissed', 'true');
+            setTimeout(() => localStorage.removeItem('pwaDismissed'), 7 * 24 * 60 * 60 * 1000); 
+        });
+    }
+    
+    window.addEventListener('appinstalled', () => {
+        if (pwaBanner) pwaBanner.classList.remove('show');
+        deferredPrompt = null;
     });
 }
