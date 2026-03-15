@@ -1472,8 +1472,27 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         /* Voting System Styles */
         .voting-system { display: flex; align-items: center; gap: 10px; }
         .working-percentage { font-weight: bold; color: var(--gold); }
-        .vote-buttons button { background: var(--light-gray); border: none; color: var(--white); width: 28px; height: 28px; border-radius: 50%; font-size: 1em; cursor: pointer; transition: background-color 0.2s; }
-        .vote-buttons button:hover { background: #555; }
+        
+        /* ✅ FIX: Added proper Green and Red colors to the voting buttons */
+        .vote-buttons { display: flex; gap: 8px; }
+        .vote-buttons button { 
+            border: none; 
+            width: 30px; 
+            height: 30px; 
+            border-radius: 50%; 
+            font-size: 1.1em; 
+            font-weight: bold;
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .vote-btn-working { background-color: rgba(67, 160, 71, 0.15); color: var(--green); border: 1px solid var(--green); }
+        .vote-btn-working:hover { background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green); }
+        
+        .vote-btn-not-working { background-color: rgba(229, 57, 53, 0.15); color: var(--red); border: 1px solid var(--red); }
+        .vote-btn-not-working:hover { background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red); }
 
 
         /* Right Panel - Details & Tabs */
@@ -1511,7 +1530,7 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     padding-left: 0;
 }
 
-/* This wrapper holds the animation perfectly in place */
+/* ✅ FIX: This wrapper holds the animation perfectly in place */
 .info-box .lottie-icon-wrapper {
     width: 24px;
     height: 24px;
@@ -1519,16 +1538,15 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 1px; /* Fine-tunes the vertical alignment with the first text line */
+    margin-top: 2px; /* Fine-tunes the vertical alignment with the text */
 }
 
-/* We make the player larger than the wrapper to crop out the empty space in the JSON file! */
+/* ✅ FIX: We use 'transform: scale' to make the icon bigger without breaking the layout! */
 .info-box .lottie-icon-wrapper lottie-player {
-    width: 45px; 
-    height: 45px;
-    min-width: 45px;
+    width: 100%; 
+    height: 100%;
+    transform: scale(1.8); /* Scales up the animation visually */
 }
-
 .info-box .feature-text {
     flex-grow: 1;
     line-height: 1.6;
@@ -1892,11 +1910,12 @@ input[type="search"]::-webkit-search-cancel-button:hover {
 .tab-content p, 
 .app-description-content, 
 .info-box,
-.info-box p {
+.info-box p,
+.feature-text span {
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word; /* Forces long words/URLs to break and wrap */
-    white-space: pre-wrap;  /* Honors your line breaks (\n) but still wraps text to fit the screen */
+    /* ✅ FIX: Removed 'white-space: pre-wrap;' because it was turning HTML indentation into massive gaps! */
     max-width: 100%;
 }
 

@@ -121,13 +121,21 @@
                 <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
                 <li>Working?:
                     <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) : 'N/A'; %>
+                    <!-- ✅ FIX: Moved the % sign inside the logic so it doesn't show N/A% -->
+                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
                     <div class="voting-system">
-                        <span class="working-percentage"><%= workingPercentage %>%</span>
+                        <span class="working-percentage"><%= workingPercentage %></span>
                         <% if(user && !userHasVotedOnStatus) { %>
                         <div class="vote-buttons">
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="working"><button title="It works!">✓</button></form>
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;"><input type="hidden" name="voteType" value="not-working"><button title="It doesn't work!">X</button></form>
+                            <!-- ✅ FIX: Applied the new Green and Red button classes -->
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
+                                <input type="hidden" name="voteType" value="working">
+                                <button type="submit" class="vote-btn-working" title="It works!">✓</button>
+                            </form>
+                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
+                                <input type="hidden" name="voteType" value="not-working">
+                                <button type="submit" class="vote-btn-not-working" title="It doesn't work!">✗</button>
+                            </form>
                         </div>
                         <% } %>
                     </div>
