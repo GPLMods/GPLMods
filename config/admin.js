@@ -7,6 +7,7 @@ const Review = require('../models/review');
 const Report = require('../models/report');
 const Dmca = require('../models/dmca');
 const Announcement = require('../models/announcement');
+const UnbanRequest = require('../models/unbanRequest');
 
 async function createAdminRouter() {
     // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
@@ -115,11 +116,12 @@ async function createAdminRouter() {
         resources:[
             // USER MANAGEMENT
             {
-                resource: User,
-                options: {
-                    listProperties:['username', 'email', 'role', 'isVerified', 'lastSeen'],
-                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'createdAt', 'lastSeen', 'bio'],
-                    editProperties:['username', 'email', 'role', 'isVerified', 'bio', 'newPassword'],
+            resource: User,
+            options: {
+                // ✅ ADD 'isBanned' and 'banReason' to these arrays
+                listProperties: ['username', 'email', 'role', 'isBanned', 'lastSeen'],
+                showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
+                editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: {
@@ -196,13 +198,21 @@ async function createAdminRouter() {
                     editProperties: ['status'],
                 },
             },
-            {
-                resource: Dmca,
-                options: {
-                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
-                    editProperties: ['status'],
-                },
+             {
+            resource: Dmca,
+            options: {
+                listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
+                editProperties: ['status'],
             },
+        },
+        // --- ADD UNBAN REQUESTS HERE ---
+        {
+            resource: UnbanRequest,
+            options: {
+                listProperties: ['username', 'email', 'status', 'createdAt'],
+                editProperties:['status'],
+            },
+        },
             // SITE CONTENT RESOURCE
             {
                 resource: Announcement,

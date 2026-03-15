@@ -41,6 +41,7 @@ const Review = require('./models/review');
 const Report = require('./models/report');
 const Dmca = require('./models/dmca');
 const Announcement = require('./models/announcement');
+const UnbanRequest = require('./models/unbanRequest'); 
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -231,14 +232,27 @@ app.use(async (req, res, next) => {
         } catch (e) { 
             console.error("Error counting announcements:", e); 
         }
-    }
-    
+    }    
     // Pass the total count to the EJS templates
     res.locals.totalUpdatesCount = cachedTotalUpdates;
     
     next();
 });
 
+// --- NEW: BANNED USER TRAP MIDDLEWARE ---
+app.use((req, res, next) => {
+    // If the user is logged in AND they are banned
+    if (req.isAuthenticated() && req.user && req.user.isBanned) {
+        // The ONLY paths a banned user is allowed to access
+        const allowedPaths =['/banned', '/logout', '/unban-request'];
+        
+        if (!allowedPaths.includes(req.path)) {
+            // Redirect them to the banned page if they try to go anywhere else
+            return res.redirect('/banned');
+        }
+    }
+    next();
+});
 // --- SETUP ADMINJS ---
 
 app.use(express.urlencoded({ extended: true }));
@@ -1548,6 +1562,43 @@ app.post('/dmca-request', async (req, res) => {
         await new Dmca(req.body).save();
         res.redirect('/dmca?success=Request submitted.');
     } catch (e) { res.redirect('/dmca?error=Error.'); }
+});
+// --- BANNED PAGE ROUTE ---
+app.get('/banned', (req, res) => {
+    // If they aren't logged in, or aren't banned, send them home
+    if (!req.isAuthenticated() || !req.user.isBanned) {
+        return res.redirect('/');
+    }
+    res.render('pages/banned', { 
+        banReason: req.user.banReason || 'Violation of Terms of Service',
+        message: req.query.message,
+        error: req.query.error
+    });
+});
+
+// --- UNBAN REQUEST SUBMISSION ROUTE ---
+app.post('/unban-request', ensureAuthenticated, async (req, res) => {
+    if (!req.user.isBanned) return res.redirect('/');
+    
+    try {
+        // Check if they already have a pending request to prevent spam
+        const existingRequest = await UnbanRequest.findOne({ user: req.user._id, status: 'pending' });
+        if (existingRequest) {
+            return res.redirect('/banned?error=You already have a pending unban request. Please wait for an admin to review it.');
+        }
+
+        await new UnbanRequest({
+            user: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            appealMessage: req.body.appealMessage
+        }).save();
+
+        res.redirect('/banned?message=Your appeal has been submitted successfully. We will contact you via email.');
+    } catch (e) {
+        console.error("Unban Request Error:", e);
+        res.redirect('/banned?error=An error occurred while submitting your request.');
+    }
 });
 
 // ===============================

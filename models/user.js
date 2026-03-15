@@ -34,6 +34,15 @@ const UserSchema = new Schema({
         enum: ['member', 'admin'],
         default: 'member'
     },
+isBanned: {
+        type: Boolean,
+        default: false
+    },
+    banReason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     membership: {
         type: String,
         enum: ['free', 'premium'],
