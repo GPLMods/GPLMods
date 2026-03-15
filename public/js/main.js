@@ -444,21 +444,12 @@ function initializePolicyBanner() {
 function initializeMusicPlayer() {
     const audioPlayer = document.getElementById('background-audio'); 
     const playPauseBtn = document.getElementById('music-play-pause-btn'); 
+    const playPauseIcon = document.getElementById('play-pause-icon'); // The <i> tag
     const prevBtn = document.getElementById('music-prev-btn'); 
     const nextBtn = document.getElementById('music-next-btn'); 
     const trackNameDisplay = document.getElementById('music-track-name'); 
 
-    let hasError = false;
-    if (!audioPlayer) { console.error("Music Player: Missing <audio id='background-audio'>"); hasError = true; }
-    if (!playPauseBtn) { console.warn("Music Player: Missing <button id='music-play-pause-btn'>"); hasError = true; }
-    if (!prevBtn) { console.warn("Music Player: Missing <button id='music-prev-btn'>"); hasError = true; }
-    if (!nextBtn) { console.warn("Music Player: Missing <button id='music-next-btn'>"); hasError = true; }
-    if (!trackNameDisplay) { console.warn("Music Player: Missing <span id='music-track-name'>"); hasError = true; }
-
-    if (hasError) return; 
-
-    const playIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>`;
-    const pauseIconSVG = `<svg class="player-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
+    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) return; 
 
     const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
@@ -470,7 +461,10 @@ function initializeMusicPlayer() {
         { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
     ];
     
-    let trackIndex = 0;
+    // Safely get track index (fallback to 0 if invalid)
+    let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;
+    if (trackIndex < 0 || trackIndex >= playlist.length) trackIndex = 0;
+    
     audioPlayer.volume = 0.25;
 
     function loadTrack(index) {
@@ -481,9 +475,20 @@ function initializeMusicPlayer() {
         localStorage.setItem('musicTrackIndex', index);
     }
 
+    // Helper to swap FontAwesome icons
+    function updatePlayIcon(isPlaying) {
+        if (isPlaying) {
+            playPauseIcon.classList.remove('fa-play');
+            playPauseIcon.classList.add('fa-pause');
+        } else {
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+        }
+    }
+
     function playTrack() {
         audioPlayer.play().then(() => {
-            playPauseBtn.innerHTML = pauseIconSVG; 
+            updatePlayIcon(true);
             localStorage.setItem('musicState', 'playing');
         }).catch(e => {
             console.warn("Browser prevented autoplay.", e);
@@ -493,16 +498,13 @@ function initializeMusicPlayer() {
 
     function pauseTrack() {
         audioPlayer.pause();
-        playPauseBtn.innerHTML = playIconSVG; 
+        updatePlayIcon(false);
         localStorage.setItem('musicState', 'paused');
     }
     
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) {
-            playTrack();
-        } else {
-            pauseTrack();
-        }
+        if (audioPlayer.paused) playTrack();
+        else pauseTrack();
     });
 
     nextBtn.addEventListener('click', () => {
@@ -523,38 +525,29 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    const savedTrackIndex = localStorage.getItem('musicTrackIndex');
-    if (savedTrackIndex && savedTrackIndex < playlist.length) {
-        trackIndex = parseInt(savedTrackIndex, 10);
-    }
-    
-    const track = playlist[trackIndex];
-    if (track) {
-        audioPlayer.src = track.src;
-        trackNameDisplay.textContent = track.title;
-    }
+    // Initialize the first track
+    loadTrack(trackIndex);
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
-        playPauseBtn.innerHTML = pauseIconSVG;
+        updatePlayIcon(true);
         if (savedTime) audioPlayer.currentTime = parseFloat(savedTime);
         
         const playPromise = audioPlayer.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.warn("Browser blocked autoplay on new page load. Waiting for user interaction...");
-                playPauseBtn.innerHTML = playIconSVG; 
+                console.warn("Browser blocked autoplay on new page load.");
+                updatePlayIcon(false);
                 localStorage.setItem('musicState', 'paused');
             });
         }
     } else {
-        playPauseBtn.innerHTML = playIconSVG; 
+        updatePlayIcon(false);
         audioPlayer.pause(); 
     }
-} // ✅ FIX: ADDED THE MISSING CLOSING BRACKET HERE!
-
+}
 /**
  * ==================================================================================
  * 9. SMART AUDIO HANDLER
