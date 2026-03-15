@@ -550,38 +550,41 @@ function initializeMusicPlayer() {
     if (savedTrackIndex && savedTrackIndex < playlist.length) {
         trackIndex = parseInt(savedTrackIndex, 10);
     }
-    loadTrack(trackIndex);
+    
+    // Load the track but DON'T play it yet
+    const track = playlist[trackIndex];
+    if (track) {
+        audioPlayer.src = track.src;
+        trackNameDisplay.textContent = track.title;
+    }
 
     const savedState = localStorage.getItem('musicState');
     const savedTime = localStorage.getItem('musicCurrentTime');
 
+    // Ensure the button shows the correct icon initially based on saved state
     if (savedState === 'playing') {
+        playPauseBtn.innerHTML = pauseIconSVG;
+        
         if (savedTime) {
             audioPlayer.currentTime = parseFloat(savedTime);
         }
         
+        // Attempt to play
         const playPromise = audioPlayer.play();
         
         if (playPromise !== undefined) {
-            playPromise.then(_ => {
-                playPauseBtn.innerHTML = pauseIconSVG;
-            })
-            .catch(error => {
+            playPromise.catch(error => {
                 console.warn("Browser blocked autoplay on new page load. Waiting for user interaction...");
+                // Autoplay blocked, revert UI to 'paused' state
                 playPauseBtn.innerHTML = playIconSVG; 
-                
-                document.addEventListener('click', function resumeAudio() {
-                    audioPlayer.play().then(() => {
-                        playPauseBtn.innerHTML = pauseIconSVG;
-                    }).catch(e => console.error("Still couldn't play:", e));
-                    document.removeEventListener('click', resumeAudio);
-                }, { once: true }); 
+                localStorage.setItem('musicState', 'paused');
             });
         }
     } else {
-        pauseTrack(); 
+        // Default state is paused
+        playPauseBtn.innerHTML = playIconSVG; 
+        audioPlayer.pause(); 
     }
-}
 
 /**
  * ==================================================================================

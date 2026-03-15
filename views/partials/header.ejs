@@ -91,7 +91,8 @@
                     </button>
                     
                     <button id="music-play-pause-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; width:35px; fill:var(--silver); transition: fill 0.3s;">
-                        <!-- JS injects the icon here -->
+                        <!-- ✅ FIX: Added default Play SVG so it's never empty -->
+                        <svg class="player-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
                     </button>
                     
                     <button id="music-next-btn" title="Next Track" style="background:none; border:none; cursor:pointer; width:30px; fill:var(--silver); transition: fill 0.3s;">

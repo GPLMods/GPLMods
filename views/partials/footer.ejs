@@ -41,9 +41,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Hidden Audio Player for JS to control -->
-    <audio id="background-audio" loop></audio>
 
 <!-- ======== PWA INSTALL BANNER ======== -->
     <div id="pwa-install-banner" class="pwa-banner">
@@ -56,6 +53,9 @@
             <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
         </div>
     </div>
+
+<!-- Hidden Audio Player for JS to control -->
+    <audio id="background-audio" loop></audio>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -94,49 +94,72 @@
             const installBtn = document.getElementById('pwa-install');
             const dismissBtn = document.getElementById('pwa-dismiss');
 
-            // Register Service Worker
+            // Register Service Worker (Crucial for PWA)
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW failed: ', err));
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        })
+                        .catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
             }
 
-            // Intercept the browser's default install prompt
+            // Listen for the install prompt event
             window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault(); // Prevent the default mini-infobar
-                deferredPrompt = e; // Save the event
+                // Prevent Chrome 67 and earlier from automatically showing the prompt
+                e.preventDefault();
+                // Stash the event so it can be triggered later.
+                deferredPrompt = e;
                 
-                // If the user hasn't dismissed it recently, show our custom beautiful banner
-                if (localStorage.getItem('pwaDismissed') !== 'true') {
+                // Check if the user has dismissed it recently
+                const isDismissed = localStorage.getItem('pwaDismissed') === 'true';
+                
+                if (!isDismissed && pwaBanner) {
+                    // Show our custom banner after a short delay
                     setTimeout(() => {
                         pwaBanner.classList.add('show');
-                    }, 3000); // Wait 3 seconds after page load to show it
+                    }, 3000); 
                 }
             });
 
-            // When user clicks our custom Install button
-            installBtn.addEventListener('click', async () => {
-                pwaBanner.classList.remove('show');
-                if (deferredPrompt) {
-                    deferredPrompt.prompt(); // Show the native browser install prompt
-                    const { outcome } = await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                }
-            });
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (pwaBanner) pwaBanner.classList.remove('show');
+                    
+                    if (deferredPrompt) {
+                        // Show the native install prompt
+                        deferredPrompt.prompt();
+                        // Wait for the user to respond to the prompt
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`User response to the install prompt: ${outcome}`);
+                        // We've used the prompt, and can't use it again, throw it away
+                        deferredPrompt = null;
+                    }
+                });
+            }
 
-            // When user clicks Later
-            dismissBtn.addEventListener('click', () => {
-                pwaBanner.classList.remove('show');
-                // Hide it for 7 days so we don't annoy them
-                localStorage.setItem('pwaDismissed', 'true');
-                setTimeout(() => localStorage.removeItem('pwaDismissed'), 7 * 24 * 60 * 60 * 1000); 
-            });
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    if (pwaBanner) pwaBanner.classList.remove('show');
+                    // Hide it for 7 days
+                    localStorage.setItem('pwaDismissed', 'true');
+                    setTimeout(() => localStorage.removeItem('pwaDismissed'), 7 * 24 * 60 * 60 * 1000); 
+                });
+            }
             
             // Hide banner if successfully installed
             window.addEventListener('appinstalled', () => {
-                pwaBanner.classList.remove('show');
+                console.log('PWA was installed');
+                if (pwaBanner) pwaBanner.classList.remove('show');
+                deferredPrompt = null;
             });
-        });
-    </script>
+<script>
 
+<!-- Hidden Audio Player for JS to control -->
+    <audio id="background-audio" loop></audio>
     <!-- Your scripts -->
     <script src="/js/main.js"></script>
     <script src="//code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async></script>
