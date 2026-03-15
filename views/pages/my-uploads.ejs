@@ -247,8 +247,8 @@
                 itemToRemove = null;  // Reset
             }, 200); // Matches the CSS transition duration
         }
-      });
-   });
+        
+        // ✅ FIX: Removed the extra "});" that were crashing the script here!
 
         // --- Filter Tabs Logic ---
         const filterButtons = document.querySelectorAll('.filter-btn');

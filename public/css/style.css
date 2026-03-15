@@ -1470,8 +1470,11 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         .meta-link .arrow { margin-left: 5px; font-size: 1.1em; color: var(--gold); }
         
         /* Voting System Styles */
-        .voting-system { display: flex; align-items: center; gap: 10px; }
-        .working-percentage { font-weight: bold; color: var(--gold); }
+        /* ✅ FIX: Added flex-wrap: nowrap to keep items in a row */
+        .voting-system { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+        
+        /* ✅ FIX: Added white-space: nowrap so the number NEVER breaks into two lines */
+        .working-percentage { font-weight: bold; color: var(--gold); white-space: nowrap; font-size: 1.1em; }
         
         /* ✅ FIX: Added proper Green and Red colors to the voting buttons */
         .vote-buttons { display: flex; gap: 8px; }

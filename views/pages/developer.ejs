@@ -15,16 +15,26 @@
             <% if (files && files.length > 0) { %>
                 <% files.forEach(file => { %>
     
-                    <!-- UPDATED: Card Structure matching the Homepage perfectly -->
+                    <!-- UNIVERSAL MOD CARD -->
                     <div class="mod-card">
+                        
+                        <!-- Certification Tag -->
                         <% if (file.certification === 'certified') { %>
                             <div class="app-feature-tag">✔ Certified</div>
+                        <% } else if (file.certification === 'community-tested') { %>
+                            <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
                         <% } %>
+                        
+                        <!-- Version Tag -->
                         <div class="mod-type-tag"><%= file.version %></div>
                         
-                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                        <!-- NEW: Image Container Logic (Prevents Cropping) -->
+                        <div class="mod-card-image">
+                            <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                        </div>
                         
                         <div class="mod-card-content">
+                            <!-- The link is placed on the title with the "full-card-link" class -->
                             <h3>
                                 <a href="/mods/<%= file._id %>" class="full-card-link"><%= file.name %></a>
                             </h3>
@@ -35,7 +45,27 @@
                                 </div>
                                 <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
                             </div>
+                            
+                            <!-- NEW: Platform Tag -->
+                            <div class="card-footer">
+                                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                                </span>
+                            </div>
                         </div>
+                        
+                        <div class="download-overlay">
+                            <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
+                            <% if (user) { %>
+                                <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
+                                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
+                                        Add to Whitelist
+                                    </button>
+                                </form>
+                            <% } %>
+                        </div>
+                    </div>
+                    <!-- END UNIVERSAL MOD CARD -->
                         
                         <div class="download-overlay">
                             <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
