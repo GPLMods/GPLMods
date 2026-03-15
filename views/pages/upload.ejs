@@ -60,18 +60,50 @@
         font-size: 1.1em;
     }
     
-    /* Loading Spinner */
-    .loader-container { display: none; margin-top: 20px; }
-    .loader { 
-        margin: 0 auto; 
-        border: 4px solid #333; 
-        border-top: 4px solid var(--gold); 
-        border-radius: 50%; 
-        width: 40px; 
-        height: 40px; 
-        animation: spin 1s linear infinite; 
+    /* --- LIVE PROGRESS BAR STYLES --- */
+    .progress-wrapper {
+        display: none; /* Hidden initially */
+        margin-top: 25px;
+        text-align: left;
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .progress-container {
+        width: 100%;
+        background-color: var(--black);
+        border: 1px solid #444;
+        border-radius: 8px;
+        height: 25px;
+        overflow: hidden;
+        position: relative;
+    }
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: var(--gold);
+        transition: width 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--black);
+        font-weight: bold;
+        font-size: 0.85em;
+        white-space: nowrap;
+    }
+    .status-text {
+        color: var(--silver);
+        margin-top: 10px;
+        font-size: 0.95em;
+        text-align: center;
+    }
+    
+    /* Pulsing animation for when upload hits 100% and is processing */
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.6; }
+        100% { opacity: 1; }
+    }
+    .processing-pulse {
+        animation: pulse 1.5s infinite;
+    }
 </style>
 
 <div class="container">
@@ -79,7 +111,6 @@
         <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 2.2em;">Upload Mod File</h2>
         <p style="color: var(--silver); margin-bottom: 2.5rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe). It will be securely uploaded to the cloud and scanned for safety.</p>
         
-        <!-- Notice the action is now pointing to /upload-initial -->
         <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
             
             <div class="form-group">
@@ -93,10 +124,12 @@
                 <div id="file-name-display">No file selected</div>
             </div>
             
-            <!-- Loading Animation -->
-            <div class="loader-container" id="loaderContainer">
-                <div class="loader"></div>
-                <p style="color: var(--gold); margin-top: 15px;">Uploading to cloud & initiating safety scan...<br><span style="color: var(--silver); font-size: 0.85em;">Please do not close this page. Large files may take a minute.</span></p>
+            <!-- LIVE PROGRESS BAR UI -->
+            <div class="progress-wrapper" id="progressWrapper">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">0%</div>
+                </div>
+                <p class="status-text" id="statusText">Starting upload...</p>
             </div>
 
             <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
@@ -110,13 +143,21 @@
         const fileNameDisplay = document.getElementById('file-name-display');
         const form = document.getElementById('initialUploadForm');
         const submitBtn = document.getElementById('submitBtn');
-        const loaderContainer = document.getElementById('loaderContainer');
         const dropZone = document.getElementById('drop-zone');
+        
+        // Progress Bar Elements
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
 
         // Update UI when file is selected
         fileInput.addEventListener('change', function() {
             if (this.files && this.files.length > 0) {
-                fileNameDisplay.textContent = 'Ready to upload: ' + this.files[0].name;
+                // Use the formatBytes helper logic for frontend display
+                const fileSize = this.files[0].size;
+                const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
+                
+                fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
                 dropZone.style.borderColor = 'var(--gold)';
                 dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
             } else {
@@ -126,21 +167,76 @@
             }
         });
 
-        // Handle form submission and show loading state
+        // Handle form submission with AJAX for live progress
         form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent standard page reload submission
+
             if (fileInput.files.length === 0) {
-                e.preventDefault();
                 alert("Please select a file to upload first.");
                 return;
             }
             
-            // Disable the button to prevent double-clicks
+            // 1. Update UI to uploading state
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Processing...';
-            
-            // Show the loading spinner
-            loaderContainer.style.display = 'block';
+            submitBtn.innerHTML = 'Uploading...';
+            progressWrapper.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            progressBar.classList.remove('processing-pulse');
+            statusText.innerHTML = 'Uploading file to server...';
+
+            // 2. Prepare the data and the AJAX request
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', '/upload-initial', true);
+
+            // 3. Track Upload Progress
+            xhr.upload.addEventListener('progress', function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.textContent = percentComplete + '%';
+
+                    if (percentComplete === 100) {
+                        // File has reached the server, now waiting for B2 upload & VT scan
+                        progressBar.textContent = 'Processing...';
+                        progressBar.classList.add('processing-pulse');
+                        statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to cloud & initiating safety scan... Please wait.</span>';
+                    }
+                }
+            });
+
+            // 4. Handle Server Response
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    // Success! Because the backend uses res.redirect(), 
+                    // xhr.responseURL contains the final destination URL (/upload-details/...)
+                    window.location.href = xhr.responseURL; 
+                } else {
+                    // Handle Errors
+                    alert('Upload failed. Server responded with an error.');
+                    resetUI();
+                }
+            };
+
+            // 5. Handle Network Errors
+            xhr.onerror = function() {
+                alert('A network error occurred during the upload.');
+                resetUI();
+            };
+
+            // 6. Send the request
+            xhr.send(formData);
         });
+
+        function resetUI() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Upload & Continue';
+            progressWrapper.style.display = 'none';
+            progressBar.classList.remove('processing-pulse');
+        }
     });
 </script>
 

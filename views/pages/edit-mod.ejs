@@ -22,8 +22,9 @@
     .file-input-label { display: block; padding: 12px 20px; background: transparent; color: var(--gold); border: 2px solid var(--gold); border-radius: 8px; cursor: pointer; text-align: center; font-size: 1em; transition: all 0.3s ease; }
     .file-input-label:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
     
-    .preview-container { margin-top: 15px; border-radius: 8px; overflow: hidden; display: flex; gap: 10px; flex-wrap: wrap; background-color: var(--black); padding: 8px; border: 1px solid #333; }
-    .preview-container img { width: 120px; height: auto; aspect-ratio: 9/16; object-fit: cover; border-radius: 4px; }
+   .preview-container { margin-top: 15px; border-radius: 8px; background-color: var(--black); padding: 15px; border: 1px solid #333; display: none; }
+    #screenshotPreviewContainer { column-count: 2; column-gap: 15px; }
+    #screenshotPreviewContainer img { width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; break-inside: avoid; display: block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     
     .submit-button { display: block; width: 100%; background: var(--gold); color: var(--black); padding: 15px 20px; border-radius: 8px; font-size: 1.2em; font-weight: 700; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); margin-top: 20px; }
     .submit-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
@@ -136,7 +137,7 @@
                     </div>
                     
                     <!-- Show existing screenshots by default -->
-                    <div class="preview-container" id="screenshotPreviewContainer" style="<%= file.screenshotUrls.length > 0 ? 'display:flex;' : 'display:none;' %>">
+                    <div class="preview-container" id="screenshotPreviewContainer" style="<%= file.screenshotUrls.length > 0 ? 'display:block;' : 'display:none;' %>">
                         <% file.screenshotUrls.forEach(url => { %>
                             <img src="<%= url %>" alt="Current Screenshot">
                         <% }) %>
@@ -173,13 +174,13 @@
             }
         });
 
-        // Screenshot Preview
+       // Screenshot Preview
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
             screenshotPreviewContainer.innerHTML = ''; // Clear old ones
             
             if (files.length > 0) {
-                screenshotPreviewContainer.style.display = 'flex';
+                screenshotPreviewContainer.style.display = 'block'; // Changed from flex to block
                 screenshotFileNameSpan.textContent = files.length + ' new file(s) selected';
                 
                 Array.from(files).slice(0, 4).forEach(file => {
@@ -191,6 +192,8 @@
                     }
                     reader.readAsDataURL(file);
                 });
+            } else {
+                screenshotPreviewContainer.style.display = 'none';
             }
         });
 

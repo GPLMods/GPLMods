@@ -388,15 +388,12 @@
         });
 
         // --- Screenshot Preview & Name Logic ---
-        const screenshotsInput = document.getElementById('screenshots');
-        const screenshotFileNameSpan = document.getElementById('screenshotFileName');
-        const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
             screenshotPreviewContainer.innerHTML = '';
             
             if (files.length > 0) {
+                screenshotPreviewContainer.style.display = 'block'; // Show container
                 screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
                 
                 Array.from(files).slice(0, 4).forEach(file => {
@@ -409,25 +406,19 @@
                     reader.readAsDataURL(file);
                 });
             } else {
+                screenshotPreviewContainer.style.display = 'none'; // Hide container
                 screenshotFileNameSpan.textContent = 'No files selected';
             }
         });
 
         // --- Video Preview Logic ---
-        const videoUrlInput = document.getElementById('videoUrl');
-        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
-
-        function getYouTubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
         videoUrlInput.addEventListener('input', function() {
             const videoId = getYouTubeId(this.value);
             if (videoId) {
+                videoPreviewContainer.style.display = 'block'; // Show container
                 videoPreviewContainer.innerHTML = `<div class="video-preview-wrapper"><iframe src="//www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
             } else {
+                videoPreviewContainer.style.display = 'none'; // Hide container
                 videoPreviewContainer.innerHTML = '';
             }
         });

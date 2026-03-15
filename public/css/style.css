@@ -1187,21 +1187,31 @@
             text-align: center;
         }
 
-        /* Screenshot & Video Previews */
-        .preview-container {
-            margin-top: 15px;
-            border-radius: 8px;
-            overflow: hidden;
-            display: none; /* Hidden by default */
-            background-color: var(--black);
-            padding: 8px;
-            border: 1px solid #333;
-        }
-        .preview-container img {
-            width: 100%;
-            display: block;
-            border-radius: 4px;
-        }
+       /* Screenshot & Video Previews */
+    .preview-container {
+        margin-top: 15px;
+        background-color: var(--black);
+        padding: 15px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        display: none; /* Hidden until content is added */
+    }
+    
+    /* Masonry layout specifically for screenshots */
+    #screenshotPreviewContainer {
+        column-count: 2;
+        column-gap: 15px;
+    }
+    
+    #screenshotPreviewContainer img {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        break-inside: avoid; /* Prevents image from splitting across columns */
+        display: block;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
         .video-preview-wrapper {
             position: relative;
             padding-bottom: 56.25%; /* 16:9 aspect ratio */
