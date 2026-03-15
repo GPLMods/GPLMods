@@ -213,12 +213,29 @@ app.use(async (req, res, next) => {
     }
     next();
 });
+// --- Globals & Notification Cache ---
+let cachedTotalUpdates = 0;
+let lastUpdateCheck = 0;
 
-// --- Globals ---
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
-    res.locals.formatBytes = formatBytes; // <--- ADD THIS LINE
+    res.locals.formatBytes = formatBytes;
+    
+    // Check the total number of announcements every 5 minutes
+    if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
+        try {
+            // Count all documents in the Announcement collection
+            cachedTotalUpdates = await Announcement.countDocuments();
+            lastUpdateCheck = Date.now();
+        } catch (e) { 
+            console.error("Error counting announcements:", e); 
+        }
+    }
+    
+    // Pass the total count to the EJS templates
+    res.locals.totalUpdatesCount = cachedTotalUpdates;
+    
     next();
 });
 
