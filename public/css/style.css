@@ -64,6 +64,20 @@
         }
         .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
         .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
+        input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    /* Custom Silver SVG */
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c0c0'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") no-repeat center center;
+    background-size: contain;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+input[type="search"]::-webkit-search-cancel-button:hover {
+    opacity: 1;
+}
         .header-actions { display: none; }
 
 /* --- Header Button Textures (Always Applied) --- */
@@ -357,9 +371,12 @@
 
 /* 5. Stretched Link Trick (Crucial for the Whitelist Button!) */
 .full-card-link { color: inherit; text-decoration: none; }
+
+/* ✅ FIX: Disable the stretched link so it doesn't block clicks to the overlay buttons */
 .full-card-link::after {
-    content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1;
+    display: none !important; 
 }
+
 .download-overlay, .overlay-button, form { position: relative; z-index: 10; }
 
 /* 6. Tags */
@@ -395,12 +412,41 @@
         .stars-outer::before { content: "☆☆☆☆☆"; color: #555; }
         .stars-inner::before { content: "★★★★★"; color: var(--gold); }
         .rating-text { color: var(--silver); font-size: 0.9em; font-weight: 600; }
-        .download-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.98), transparent); text-align: center; padding: 20px; opacity: 0; transform: translateY(20%); transition: opacity 0.3s ease, transform 0.3s ease; display: flex; flex-direction: column; gap: 10px; justify-content: flex-end; height: 100%; z-index: 3; }
-        .mod-card:hover .download-overlay { opacity: 1; transform: translateY(0); }
-        .overlay-button { display: block; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9em; transition: all 0.3s ease; width: 100%; }
-        .overlay-btn-primary { background: var(--gold); color: var(--black); }
-        .overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
-        .overlay-button:hover { transform: scale(1.05); }
+        /* ✅ FIX: New Animated Partial Overlay */
+.download-overlay { 
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    /* Dark gradient that fades nicely into the card */
+    background: linear-gradient(to top, rgba(10,10,10,1) 50%, rgba(10,10,10,0.8) 80%, transparent); 
+    text-align: center; 
+    padding: 40px 15px 15px 15px; 
+    opacity: 0; 
+    transform: translateY(100%); /* Start fully pushed down out of view */
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Springy pop-up animation */
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    height: auto; /* Only cover the bottom portion */
+    z-index: 20; 
+    border-radius: 0 0 15px 15px;
+    pointer-events: none; /* Prevent blocking clicks when hidden */
+}
+
+/* Show overlay on hover (Desktop) OR when active class is added (Mobile Tap) */
+.mod-card:hover .download-overlay,
+.mod-card.active-overlay .download-overlay { 
+    opacity: 1; 
+    transform: translateY(0); 
+    pointer-events: auto; /* Enable clicks when visible */
+}
+
+.overlay-button { display: block; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9em; transition: all 0.3s ease; width: 100%; }
+.overlay-btn-primary { background: var(--gold); color: var(--black); }
+.overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
+.overlay-button:hover { transform: scale(1.05); }
 
 /* Sidebar Music Player
 -------------------------------------------------- */

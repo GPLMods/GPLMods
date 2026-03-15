@@ -114,5 +114,35 @@
         <a href="/upload" class="upload-button">Upload Your Mod</a>
     </section>
 </div>
+<!-- ✅ FIX: Click-to-Reveal Logic for Mod Cards -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modCards = document.querySelectorAll('.mod-card');
+        
+        modCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                // If the user is clicking the actual buttons inside the overlay, let it happen naturally
+                if (e.target.closest('.download-overlay') || e.target.closest('a.full-card-link')) {
+                    return;
+                }
+                
+                // Close any other open overlays first
+                modCards.forEach(c => {
+                    if (c !== this) c.classList.remove('active-overlay');
+                });
+
+                // Toggle the overlay on the clicked card
+                this.classList.toggle('active-overlay');
+            });
+        });
+
+        // Close overlays if the user clicks anywhere outside of a mod card
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.mod-card')) {
+                modCards.forEach(c => c.classList.remove('active-overlay'));
+            }
+        });
+    });
+</script>
 
 <%- include('../partials/footer') %>
