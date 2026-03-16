@@ -183,7 +183,7 @@ async function createAdminRouter() {
                             };
                         }
                     }
-                }
+                },
             // FILE (MOD) MANAGEMENT
             {
                 resource: File,
