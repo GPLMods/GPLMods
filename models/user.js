@@ -31,7 +31,7 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['member', 'admin'],
+        enum: ['member', 'distributor', 'admin'],
         default: 'member'
     },
 isBanned: {
@@ -68,6 +68,14 @@ profileImageKey: {
     isVerified: {
         type: Boolean,
         default: false
+    },
+// --- NEW FIELDS FOR DISTRIBUTORS ---
+    organizationName: { type: String },
+    socialLinks: {
+        telegram: { type: String },
+        discord: { type: String },
+        website: { type: String },
+        youtube: { type: String }
     },
     // --- NEW OTP FIELDS ---
     verificationOtp: {

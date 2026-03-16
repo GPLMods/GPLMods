@@ -26,7 +26,6 @@ const crypto = require('crypto');
 const cors = require('cors');
 const fs = require('fs');
 const FormData = require('form-data');
-const Request = require('./models/request');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
@@ -43,6 +42,8 @@ const Report = require('./models/report');
 const Dmca = require('./models/dmca');
 const Announcement = require('./models/announcement');
 const UnbanRequest = require('./models/unbanRequest'); 
+const DistributorApplication = require('./models/distributorApplication');
+const Request = require('./models/request');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -305,6 +306,68 @@ app.post('/request-mod', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error("Error submitting mod request:", error);
         res.redirect('/request-mod?error=An error occurred while submitting your request.');
+    }
+});
+// ===================================
+// DISTRIBUTOR PARTNERSHIP ROUTES
+// ===================================
+
+// GET: Show the application page
+app.get('/partnership', ensureAuthenticated, async (req, res) => {
+    // Check if they already applied
+    const existingApp = await DistributorApplication.findOne({ user: req.user._id });
+    
+    res.render('pages/partnership', {
+        existingApplication: existingApp,
+        message: req.query.message,
+        error: req.query.error
+    });
+});
+
+// POST: Handle the application submission
+app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
+    try {
+        // Prevent multiple applications
+        const existingApp = await DistributorApplication.findOne({ user: req.user._id });
+        if (existingApp) {
+            return res.redirect('/partnership?error=You have already submitted an application.');
+        }
+
+        const { 
+            organizationName, primaryDistributionPlatform, platformUrl, 
+            monetizationMethod, adminContactName, adminSocialLink,
+            socialTelegram, socialDiscord, socialWebsite, socialYoutube,
+            agreedToTerms
+        } = req.body;
+
+        if (!agreedToTerms) {
+            return res.redirect('/partnership?error=You must agree to the safety and distribution terms.');
+        }
+
+        const newApplication = new DistributorApplication({
+            user: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            organizationName,
+            primaryDistributionPlatform,
+            platformUrl,
+            monetizationMethod,
+            adminContactName,
+            adminSocialLink,
+            socialTelegram,
+            socialDiscord,
+            socialWebsite,
+            socialYoutube,
+            agreedToTerms: true
+        });
+
+        await newApplication.save();
+
+        res.redirect('/partnership?message=Application submitted successfully! Our team will review it shortly.');
+
+    } catch (error) {
+        console.error("Partnership Application Error:", error);
+        res.redirect('/partnership?error=An error occurred while submitting your application.');
     }
 });
 // --- SETUP ADMINJS ---
@@ -1164,10 +1227,52 @@ app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
 
+// --- UPDATED ROUTE: Handles both File Uploads and Distributor Links ---
 app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    
+    // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
+    // If the user is a distributor and they provided an externalUrl, skip file processing
+    if (req.user.role === 'distributor' && req.body.externalUrl) {
+        try {
+            const { externalUrl, originalFilename } = req.body;
+
+            // Create a "shell" file document for the external link
+            const newFile = new File({
+                uploader: req.user.username,
+                externalDownloadUrl: externalUrl, // Save the external link
+                originalFilename: originalFilename,
+                
+                // We use these placeholders to satisfy the Mongoose schema requirements
+                // because there is no actual file in our B2 bucket for this mod.
+                fileKey: 'external-link', 
+                fileSize: 0, 
+                
+                name: originalFilename, 
+                version: 'Draft',
+                category: 'android',         
+                platforms: [],
+                
+                status: 'processing' 
+            });
+            
+            await newFile.save();
+            
+            console.log(`Distributor ${req.user.username} created external link draft.`);
+            // Skip B2 upload and VirusTotal scan, go straight to details page
+            return res.redirect(`/upload-details/${newFile._id}`);
+
+        } catch (error) {
+            console.error("Distributor initial upload error:", error);
+            return res.status(500).render('pages/500');
+        }
+    }
+
+
+    // --- SCENARIO 2: STANDARD USER UPLOAD (Physical File Upload) ---
     if (!req.file) {
         return res.status(400).redirect('/upload?error=No file selected.');
     }
+    
     const tempFilePath = req.file.path;
     let newFile = null;
 
@@ -1186,7 +1291,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             name: req.file.originalname, 
             version: 'Draft',
             category: 'android',         
-            platforms:[],
+            platforms: [],
             
             status: 'processing' 
         });
@@ -1221,7 +1326,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         }
         res.status(500).render('pages/500');
     }
-});
+});;
 
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {

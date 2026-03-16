@@ -106,138 +106,161 @@
     }
 </style>
 
+<!-- Inside views/pages/upload.ejs -->
+
 <div class="container">
     <div class="upload-container">
         <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 2.2em;">Upload Mod File</h2>
-        <p style="color: var(--silver); margin-bottom: 2.5rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe). It will be securely uploaded to the cloud and scanned for safety.</p>
         
-        <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
+        <% if (user && user.role === 'distributor') { %>
+            <!-- ========================================== -->
+            <!-- DISTRIBUTOR UPLOAD FORM (External Links)   -->
+            <!-- ========================================== -->
+            <p style="color: var(--silver); margin-bottom: 2.5rem;">
+                <span style="color: var(--gold); font-weight: bold;">★ Distributor Account Active ★</span><br>
+                Step 1 of 2: Paste your monetized or external download link below.
+            </p>
             
-            <div class="form-group">
-                <label for="modFile" class="file-input-label" id="drop-zone">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
-                    Click to Choose File
-                </label>
-                <!-- Hidden file input -->
-                <input type="file" id="modFile" name="modFile" required style="display:none;">
-                
-                <div id="file-name-display">No file selected</div>
-            </div>
-            
-            <!-- LIVE PROGRESS BAR UI -->
-            <div class="progress-wrapper" id="progressWrapper">
-                <div class="progress-container">
-                    <div class="progress-bar" id="progressBar">0%</div>
+            <form action="/upload-initial" method="POST" id="distributorUploadForm">
+                <div class="form-group" style="text-align: left;">
+                    <label for="externalUrl" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">External Download Link*</label>
+                    <input type="url" id="externalUrl" name="externalUrl" required placeholder="https://linkvertise.com/..." style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none; transition: border-color 0.3s;">
                 </div>
-                <p class="status-text" id="statusText">Starting upload...</p>
-            </div>
+                
+                <div class="form-group" style="text-align: left; margin-top: 15px;">
+                    <label for="originalFilename" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">File Name (for display purposes)*</label>
+                    <input type="text" id="originalFilename" name="originalFilename" required placeholder="e.g., Minecraft_Mod_v1.2.apk" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none; transition: border-color 0.3s;">
+                </div>
 
-            <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
-        </form>
+                <button type="submit" class="submit-button" id="distributorSubmitBtn">Continue to Details</button>
+            </form>
+
+        <% } else { %>
+            <!-- ========================================== -->
+            <!-- STANDARD USER UPLOAD FORM (File Upload)    -->
+            <!-- ========================================== -->
+            <p style="color: var(--silver); margin-bottom: 2.5rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe). It will be securely uploaded to the cloud and scanned for safety.</p>
+            
+            <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
+                
+                <div class="form-group">
+                    <label for="modFile" class="file-input-label" id="drop-zone">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
+                        Click to Choose File
+                    </label>
+                    <input type="file" id="modFile" name="modFile" required style="display:none;">
+                    <div id="file-name-display">No file selected</div>
+                </div>
+                
+                <!-- LIVE PROGRESS BAR UI -->
+                <div class="progress-wrapper" id="progressWrapper">
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar">0%</div>
+                    </div>
+                    <p class="status-text" id="statusText">Starting upload...</p>
+                </div>
+
+                <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
+            </form>
+        <% } %>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Standard Upload Logic (Only runs if the form exists) ---
         const fileInput = document.getElementById('modFile');
         const fileNameDisplay = document.getElementById('file-name-display');
         const form = document.getElementById('initialUploadForm');
         const submitBtn = document.getElementById('submitBtn');
         const dropZone = document.getElementById('drop-zone');
-        
-        // Progress Bar Elements
         const progressWrapper = document.getElementById('progressWrapper');
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
-        // Update UI when file is selected
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files.length > 0) {
-                // Use the formatBytes helper logic for frontend display
-                const fileSize = this.files[0].size;
-                const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
-                
-                fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
-                dropZone.style.borderColor = 'var(--gold)';
-                dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
-            } else {
-                fileNameDisplay.textContent = 'No file selected';
-                dropZone.style.borderColor = 'var(--gold)';
-                dropZone.style.backgroundColor = 'transparent';
-            }
-        });
-
-        // Handle form submission with AJAX for live progress
-        form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent standard page reload submission
-
-            if (fileInput.files.length === 0) {
-                alert("Please select a file to upload first.");
-                return;
-            }
-            
-            // 1. Update UI to uploading state
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Uploading...';
-            progressWrapper.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-            progressBar.classList.remove('processing-pulse');
-            statusText.innerHTML = 'Uploading file to server...';
-
-            // 2. Prepare the data and the AJAX request
-            const formData = new FormData(form);
-            const xhr = new XMLHttpRequest();
-
-            xhr.open('POST', '/upload-initial', true);
-
-            // 3. Track Upload Progress
-            xhr.upload.addEventListener('progress', function(event) {
-                if (event.lengthComputable) {
-                    const percentComplete = Math.round((event.loaded / event.total) * 100);
-                    
-                    progressBar.style.width = percentComplete + '%';
-                    progressBar.textContent = percentComplete + '%';
-
-                    if (percentComplete === 100) {
-                        // File has reached the server, now waiting for B2 upload & VT scan
-                        progressBar.textContent = 'Processing...';
-                        progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to cloud & initiating safety scan... Please wait.</span>';
-                    }
+        if (fileInput && form) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    const fileSize = this.files[0].size;
+                    const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
+                    fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
+                    dropZone.style.borderColor = 'var(--gold)';
+                    dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
+                } else {
+                    fileNameDisplay.textContent = 'No file selected';
+                    dropZone.style.borderColor = 'var(--gold)';
+                    dropZone.style.backgroundColor = 'transparent';
                 }
             });
 
-            // 4. Handle Server Response
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 400) {
-                    // Success! Because the backend uses res.redirect(), 
-                    // xhr.responseURL contains the final destination URL (/upload-details/...)
-                    window.location.href = xhr.responseURL; 
-                } else {
-                    // Handle Errors
-                    alert('Upload failed. Server responded with an error.');
-                    resetUI();
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                if (fileInput.files.length === 0) {
+                    alert("Please select a file to upload first.");
+                    return;
                 }
-            };
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Uploading...';
+                progressWrapper.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.classList.remove('processing-pulse');
+                statusText.innerHTML = 'Uploading file to server...';
 
-            // 5. Handle Network Errors
-            xhr.onerror = function() {
-                alert('A network error occurred during the upload.');
-                resetUI();
-            };
+                const formData = new FormData(form);
+                const xhr = new XMLHttpRequest();
 
-            // 6. Send the request
-            xhr.send(formData);
-        });
+                xhr.open('POST', '/upload-initial', true);
 
-        function resetUI() {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Upload & Continue';
-            progressWrapper.style.display = 'none';
-            progressBar.classList.remove('processing-pulse');
+                xhr.upload.addEventListener('progress', function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percentComplete + '%';
+                        progressBar.textContent = percentComplete + '%';
+
+                        if (percentComplete === 100) {
+                            progressBar.textContent = 'Processing...';
+                            progressBar.classList.add('processing-pulse');
+                            statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to cloud & initiating safety scan... Please wait.</span>';
+                        }
+                    }
+                });
+
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        window.location.href = xhr.responseURL; 
+                    } else {
+                        alert('Upload failed. Server responded with an error.');
+                        resetUI();
+                    }
+                };
+
+                xhr.onerror = function() {
+                    alert('A network error occurred during the upload.');
+                    resetUI();
+                };
+
+                xhr.send(formData);
+            });
+
+            function resetUI() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Upload & Continue';
+                progressWrapper.style.display = 'none';
+                progressBar.classList.remove('processing-pulse');
+            }
+        }
+
+        // --- Distributor Upload Logic ---
+        const distForm = document.getElementById('distributorUploadForm');
+        const distSubmitBtn = document.getElementById('distributorSubmitBtn');
+        
+        if (distForm) {
+            distForm.addEventListener('submit', function() {
+                distSubmitBtn.disabled = true;
+                distSubmitBtn.textContent = 'Processing...';
+            });
         }
     });
 </script>
-
-<%- include('../partials/footer') %>

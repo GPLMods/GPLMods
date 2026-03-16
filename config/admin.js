@@ -9,9 +9,9 @@ const Dmca = require('../models/dmca');
 const Announcement = require('../models/announcement');
 const UnbanRequest = require('../models/unbanRequest');
 const Request = require('../models/request');
+const DistributorApplication = require('../models/distributorApplication');
 
 async function createAdminRouter() {
-    // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     const { ComponentLoader } = AdminJSModule; 
@@ -20,170 +20,85 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
-    // --- 2. REGISTER THE MONGOOSE ADAPTER ---
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
-    // --- 3. SETUP COMPONENT LOADER ---
     const componentLoader = new ComponentLoader();
     
     const Components = {
-        // 1. We ADD our custom dashboard page
         Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx'),
-        
-        // 2. We OVERRIDE the default AdminJS components using the names from the repo you found!
         SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
-        
-        // Example: If you wanted to override the "No Records" screen later, you would do:
-        // NoRecords: componentLoader.override('NoRecords', '../components/MyCustomNoRecords.jsx')
     };
 
-      // ==========================================
-    // 4. THE ULTIMATE GPL MODS THEME (OFFICIAL METHOD)
-    // ==========================================
-    
     const gplModsTheme = {
-        // 1. SPREAD THE DARK THEME: This is the crucial official step.
-        // It securely copies the 'bundlePath' and 'stylePath' from the dark theme 
-        // so AdminJS knows exactly where to load the CSS and JS from.
         ...dark, 
-        
         id: 'gplModsTheme',
         name: 'GPL Mods Premium',
         overrides: {
-            ...dark.overrides, // 2. Inherit existing dark mode structural overrides
+            ...dark.overrides, 
             colors: {
-                ...dark.overrides?.colors, // 3. Inherit existing dark mode colors
-
-                // --- THE GOLD ACCENTS ---
-                primary100: '#FFD700', // GPL Gold (Buttons, Active links, Checkboxes)
-                primary80: '#e5c200',  // Hover states for Gold buttons
+                ...dark.overrides?.colors, 
+                primary100: '#FFD700',
+                primary80: '#e5c200',  
                 primary60: '#ccad00',  
                 primary40: '#b29700',  
-                primary20: '#332b00',  // Very dark gold/brown for subtle highlighted backgrounds
-
-                // --- THE BACKGROUNDS ---
-                bg: '#0a0a0a',         // GPL Black (The main page background behind everything)
-                container: '#1a1a1a',  // GPL Dark Gray (Makes the cards and sidebar dark)
-                white: '#1a1a1a',      // Fallback for containers/inputs
-
-                // --- TEXT & BORDERS (SILVER & WHITE) ---
-                text: '#ffffff',       // Standard body text (White)
-                grey100: '#ffffff',    // Main Headings (White)
-                grey80: '#c0c0c0',     // GPL Silver (Subtitles, Table Headers, secondary text)
-                grey60: '#a0a0a0',     // Darker silver for muted text
-                grey40: '#444444',     // Dark borders for inputs
-                grey20: '#2a2a2a',     // Subtle background for Table Row hovers
-                border: '#333333',     // Main divider lines
-
-                // --- STATUS COLORS ---
+                primary20: '#332b00',  
+                bg: '#0a0a0a',         
+                container: '#1a1a1a',  
+                white: '#1a1a1a',      
+                text: '#ffffff',       
+                grey100: '#ffffff',    
+                grey80: '#c0c0c0',     
+                grey60: '#a0a0a0',     
+                grey40: '#444444',     
+                grey20: '#2a2a2a',     
+                border: '#333333',     
                 errorLight: '#ffadad',
-                error: '#e53935',      // Red for delete buttons/errors
+                error: '#e53935',      
                 errorDark: '#b71c1c',
                 successLight: '#b0ffb0',
-                success: '#43a047',    // Green for success/live status
+                success: '#43a047',    
                 successDark: '#1b5e20',
                 infoLight: '#90caf9',
-                info: '#2196F3',       // Blue for info
+                info: '#2196F3',       
                 infoDark: '#0d47a1',
             }
         }
     };
 
-    // ==========================================
-    // 5. DEFINE ADMINJS OPTIONS
-    // ==========================================
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
-        
-        // Use our new custom theme ID
         defaultTheme: 'gplModsTheme', 
-        
-        // Pass our custom theme into the available themes array
         availableThemes: [gplModsTheme, dark, light], 
-        
-        dashboard: {
-            component: Components.Dashboard 
-        },
+        dashboard: { component: Components.Dashboard },
         branding: {
             companyName: 'GPL Mods',
-            logo: '/images/logo.png', // Ensure this matches your logo path
+            logo: '/images/logo.png', 
             softwareBrothers: false,
             withMadeWithLove: false, 
         },
-        resources:[
+        resources: [
             // USER MANAGEMENT
             {
-            resource: User,
-            options: {
-                // ✅ ADD 'isBanned' and 'banReason' to these arrays
-                listProperties: ['username', 'email', 'role', 'isBanned', 'lastSeen'],
-                showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
-                editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
+                resource: User,
+                options: {
+                    listProperties: ['username', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
+                    editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
                     properties: {
                         password: { isVisible: false },
-                        newPassword: {
-                            type: 'password',
-                            label: 'New Password (leave blank to keep unchanged)',
-                        },
+                        newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
                     },
                     actions: {
-                    new: { isAccessible: true },
-                    edit: { isAccessible: true },
-                    delete: { isAccessible: true },
-                    
-                    // --- NEW: ADMIN TESTING ACTIONS ---
-                    
-                    viewOnSite: {
-                        actionType: 'record',
-                        icon: 'View',
-                        handler: async (request, response, context) => {
-                            return {
-                                record: context.record.toJSON(context.currentAdmin),
-                                // Redirects the admin to the frontend mod page
-                                redirectUrl: `/mods/${context.record.params._id}`
-                            };
-                        }
-                    },
-                    testDownload: {
-                        actionType: 'record',
-                        icon: 'Download',
-                        handler: async (request, response, context) => {
-                            return {
-                                record: context.record.toJSON(context.currentAdmin),
-                                // Triggers the download route
-                                redirectUrl: `/download-file/${context.record.params._id}`
-                            };
-                        }
-                    },
-                    viewVirusTotal: {
-                        actionType: 'record',
-                        icon: 'Shield',
-                        handler: async (request, response, context) => {
-                            const vtHash = context.record.params.virusTotalId || "";
-                            const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
-                            
-                            let vtUrl = `https://www.virustotal.com/`; // Fallback
-                            
-                            if (vtHash.length === 64) {
-                                vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
-                            } else if (vtAnalysis) {
-                                vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-                            } else if (vtHash) {
-                                vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
-                            }
-                            
-                            return {
-                                record: context.record.toJSON(context.currentAdmin),
-                                // Opens the VirusTotal report
-                                redirectUrl: vtUrl
-                            };
-                        }
+                        new: { isAccessible: true },
+                        edit: { isAccessible: true },
+                        delete: { isAccessible: true }
                     }
-                },
+                }
+            },
             // FILE (MOD) MANAGEMENT
             {
                 resource: File,
@@ -220,9 +135,83 @@ async function createAdminRouter() {
                     actions: {
                         new: { isAccessible: true },
                         edit: { isAccessible: true },
-                        delete: { isAccessible: true }
+                        delete: { isAccessible: true },
+                        viewOnSite: {
+                            actionType: 'record',
+                            icon: 'View',
+                            handler: async (request, response, context) => {
+                                return {
+                                    record: context.record.toJSON(context.currentAdmin),
+                                    redirectUrl: `/mods/${context.record.params._id}`
+                                };
+                            }
+                        },
+                        testDownload: {
+                            actionType: 'record',
+                            icon: 'Download',
+                            handler: async (request, response, context) => {
+                                return {
+                                    record: context.record.toJSON(context.currentAdmin),
+                                    redirectUrl: `/download-file/${context.record.params._id}`
+                                };
+                            }
+                        },
+                        viewVirusTotal: {
+                            actionType: 'record',
+                            icon: 'Shield',
+                            handler: async (request, response, context) => {
+                                const vtHash = context.record.params.virusTotalId || "";
+                                const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
+                                let vtUrl = `https://www.virustotal.com/`;
+                                if (vtHash.length === 64) {
+                                    vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
+                                } else if (vtAnalysis) {
+                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+                                } else if (vtHash) {
+                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                                }
+                                return {
+                                    record: context.record.toJSON(context.currentAdmin),
+                                    redirectUrl: vtUrl
+                                 };
+                            }
+                        }
                     }
                 },
+            },
+            // PARTNERSHIP APPLICATIONS
+            {
+                resource: DistributorApplication,
+                options: {
+                    listProperties: ['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
+                    showProperties:[
+                        'status', 'organizationName', 'username', 'email', 
+                        'primaryDistributionPlatform', 'platformUrl', 'monetizationMethod',
+                        'adminContactName', 'adminSocialLink', 
+                        'socialTelegram', 'socialDiscord', 'socialWebsite', 'socialYoutube',
+                        'adminNotes', 'createdAt'
+                    ],
+                    editProperties: ['status', 'adminNotes'],
+                    properties: { adminNotes: { type: 'textarea' } }
+                }
+            },
+            // USER REQUESTS
+            {
+                resource: Request,
+                options: {
+                    listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
+                    showProperties:[
+                        'requestType', 'appName', 'platform', 'requestedVersion', 
+                        'officialLink', 'existingModLink', 'modFeaturesRequested', 
+                        'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
+                    ],
+                    editProperties: ['status', 'adminNotes'],
+                    properties: {
+                        modFeaturesRequested: { type: 'textarea' },
+                        additionalNotes: { type: 'textarea' },
+                        adminNotes: { type: 'textarea' }
+                    }
+                }
             },
             // MODERATION RESOURCES
             {
@@ -239,60 +228,35 @@ async function createAdminRouter() {
                     editProperties: ['status'],
                 },
             },
-             {
-            resource: Dmca,
-            options: {
-                listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
-                editProperties: ['status'],
-            },
-        },
-        // --- ADD UNBAN REQUESTS HERE ---
-        {
-            resource: UnbanRequest,
-            options: {
-                listProperties: ['username', 'email', 'status', 'createdAt'],
-                editProperties:['status'],
-            },
-        },
-// ---------------------------------
-        // USER REQUESTS (MODS/UPDATES)
-        // ---------------------------------
-        {
-            resource: Request,
-            options: {
-                listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
-                showProperties:[
-                    'requestType', 'appName', 'platform', 'requestedVersion', 
-                    'officialLink', 'existingModLink', 'modFeaturesRequested', 
-                    'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
-                ],
-                editProperties: ['status', 'adminNotes'], // Admins only edit status and notes
-                properties: {
-                    modFeaturesRequested: { type: 'textarea' },
-                    additionalNotes: { type: 'textarea' },
-                    adminNotes: { type: 'textarea' }
+            {
+                resource: Dmca,
+                options: {
+                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
+                    editProperties: ['status'],
                 }
-            }
-        },
+            },
+            {
+                resource: UnbanRequest,
+                options: {
+                    listProperties: ['username', 'email', 'status', 'createdAt'],
+                    editProperties:['status'],
+                }
+            },
             // SITE CONTENT RESOURCE
             {
                 resource: Announcement,
                 options: {
-                    listProperties:['title', 'author', 'createdAt'],
+                    listProperties: ['title', 'author', 'createdAt'],
                     editProperties: ['title', 'author', 'content'],
                     properties: { content: { type: 'richtext' } },
                 },
-            },
-        ]
+            }
+        ] // <--- THIS BRACKET WAS MISSING IN YOUR OLD CODE
     };
 
-    // --- 6. INITIALIZE ADMINJS ---
     const adminJs = new AdminJS(adminJsOptions);
-    
-    // --- 7. BUILD THE ROUTER ---
-    const buildRouter = AdminJSExpress.buildRouter || AdminJSExpress.default.buildRouter;
-    
-    return buildRouter(adminJs);
+    const adminRouter = AdminJSExpress.buildRouter(adminJs);
+    return adminRouter;
 }
 
 module.exports = createAdminRouter;

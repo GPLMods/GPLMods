@@ -1,68 +1,250 @@
 <%- include('../partials/header') %>
 
 <style>
-    .membership-wrapper { max-width: 600px; margin: 60px auto; background-color: var(--dark-gray); padding: 50px 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border-top: 4px solid var(--gold); }
-    .membership-wrapper h1 { color: var(--white); font-size: 2.8em; margin-bottom: 15px; }
-    .membership-wrapper h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-    .membership-wrapper p { color: var(--silver); line-height: 1.8; font-size: 1.1em; margin-bottom: 40px; }
+    .membership-page { padding: 60px 20px; text-align: center; }
+    .membership-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
+    .membership-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .membership-header p { color: var(--silver); font-size: 1.1em; max-width: 700px; margin: 0 auto 40px auto; }
+
+    /* Currency Switcher */
+    .currency-selector { margin-bottom: 40px; display: inline-flex; align-items: center; gap: 10px; background: var(--dark-gray); padding: 10px 20px; border-radius: 25px; border: 1px solid #333; }
+    .currency-selector label { color: var(--silver); font-weight: 600; }
+    .currency-selector select { background: var(--black); color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; border-radius: 15px; outline: none; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; }
+
+    /* Pricing Grid */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; align-items: stretch; }
     
-    .premium-btn { 
-        width: 100%; display: block; background-color: var(--gold); color: var(--black); 
-        padding: 18px 20px; font-size: 1.3em; font-weight: 800; border-radius: 10px; 
-        border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); 
-        font-family: 'Poppins', sans-serif; text-transform: uppercase; letter-spacing: 1px;
+    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    /* Specific Card Styling */
+    .card-guest { border-top: 4px solid #555; }
+    .card-member { border-top: 4px solid var(--silver); }
+    .card-premium { border: 2px solid var(--gold); transform: scale(1.05); z-index: 10; box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); }
+    .card-distributor { border-top: 4px solid var(--blue); }
+
+    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); }
+
+    .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; }
+    .card-premium .tier-name { color: var(--gold); }
+    .tier-desc { color: var(--silver); font-size: 0.9em; min-height: 40px; margin-bottom: 20px; }
+    
+    .price-container { margin-bottom: 30px; }
+    .price { font-size: 2.5em; font-weight: 700; color: var(--white); display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .currency-symbol { font-size: 0.5em; color: var(--silver); align-self: flex-start; margin-top: 10px; }
+    .price-period { color: var(--silver); font-size: 0.4em; font-weight: normal; }
+
+    .feature-list { list-style: none; padding: 0; margin-bottom: 30px; text-align: left; flex-grow: 1; }
+    .feature-list li { color: var(--silver); margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95em; }
+    .feature-list li i { color: var(--green); margin-top: 4px; }
+    .feature-list li.missing i { color: #555; }
+    .feature-list li.missing { color: #666; text-decoration: line-through; }
+
+    /* Action Buttons */
+    .plan-btn { padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif;}
+    .btn-outline { background: transparent; border: 2px solid #555; color: var(--silver); }
+    .btn-outline:hover { border-color: var(--white); color: var(--white); }
+    
+    .btn-silver { background: transparent; border: 2px solid var(--silver); color: var(--silver); }
+    .btn-silver:hover { background: var(--silver); color: var(--black); box-shadow: 0 0 15px var(--glow-silver); }
+    
+    .btn-gold { background: var(--gold); color: var(--black); border: 2px solid var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
+    .btn-gold:hover { background: transparent; color: var(--gold); }
+
+    .btn-blue { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
+    .btn-blue:hover { background: var(--blue); color: var(--white); box-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
+
+    #payment-error-message { color: var(--red); margin-top: 15px; font-weight: bold; }
+
+    @media (max-width: 992px) {
+        .card-premium { transform: scale(1); }
     }
-    .premium-btn:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
 </style>
 
-<main class="container">
-    <div class="membership-wrapper">
-        <h1>Go <span>Premium!</span></h1>
-        <p>Unlock a completely ad-free experience, get access to lightning-fast ⚡ upload & download servers, and support the community.</p>
-        
-        <div id="payment-form">
-            <div id="error-message" style="color: var(--red); padding: 10px 0; min-height: 20px; font-weight: bold;"></div>
-
-            <button id="submit-button" class="premium-btn">
-                Purchase Lifetime ($10.00)
-            </button>
+<main class="membership-page">
+    <div class="container">
+        <div class="membership-header">
+            <h1>Choose Your <span>Experience</span></h1>
+            <p>Whether you're just browsing, an active community member, or a professional mod distributor, we have a plan for you.</p>
         </div>
-        <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><i class="fas fa-lock"></i> Secured by Cashfree Payments.</p>
+
+        <!-- Currency Switcher -->
+        <div class="currency-selector">
+            <label for="currency-select">Display prices in:</label>
+            <select id="currency-select">
+                <option value="INR" selected>₹ INR</option>
+                <option value="USD">$ USD</option>
+                <option value="EUR">€ EUR</option>
+                <option value="GBP">£ GBP</option>
+            </select>
+        </div>
+
+        <div class="pricing-grid">
+            
+            <!-- 1. GUEST -->
+            <div class="pricing-card card-guest">
+                <h2 class="tier-name">Guest</h2>
+                <p class="tier-desc">Perfect for casual browsing.</p>
+                <div class="price-container">
+                    <div class="price"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check"></i> Browse & Download Mods</li>
+                    <li><i class="fas fa-check"></i> View VirusTotal Scans</li>
+                    <li class="missing"><i class="fas fa-times"></i> Upload Mods</li>
+                    <li class="missing"><i class="fas fa-times"></i> Post Reviews & Comments</li>
+                    <li class="missing"><i class="fas fa-times"></i> Create a Whitelist</li>
+                </ul>
+                <% if (!user) { %>
+                    <button class="plan-btn btn-outline" disabled>Current Plan</button>
+                <% } else { %>
+                    <a href="/logout" class="plan-btn btn-outline">Log Out</a>
+                <% } %>
+            </div>
+
+            <!-- 2. MEMBER -->
+            <div class="pricing-card card-member">
+                <h2 class="tier-name">Member</h2>
+                <p class="tier-desc">Join the community and share your work.</p>
+                <div class="price-container">
+                    <div class="price"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check"></i> Browse & Download Mods</li>
+                    <li><i class="fas fa-check"></i> <strong>Upload Free Mods</strong></li>
+                    <li><i class="fas fa-check"></i> Post Reviews & Comments</li>
+                    <li><i class="fas fa-check"></i> Create a Whitelist</li>
+                    <li class="missing"><i class="fas fa-times"></i> Ad-Free Experience</li>
+                </ul>
+                <% if (!user) { %>
+                    <a href="/register" class="plan-btn btn-silver">Sign Up Free</a>
+                <% } else if (user.role === 'member' && user.membership === 'free') { %>
+                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Current Plan</button>
+                <% } else { %>
+                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Included</button>
+                <% } %>
+            </div>
+
+            <!-- 3. GPL MODS+ (PREMIUM) -->
+            <div class="pricing-card card-premium">
+                <div class="popular-badge">POPULAR</div>
+                <h2 class="tier-name">GPL Mods+</h2>
+                <p class="tier-desc">The ultimate, ad-free downloading experience.</p>
+                <div class="price-container">
+                    <div class="price"><span class="currency-symbol" data-currency>₹</span><span class="price-value" data-inr="850" data-usd="10.00" data-eur="9.00" data-gbp="8.00">850</span> <span class="price-period">/ lifetime</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check"></i> All Member Features</li>
+                    <li><i class="fas fa-check"></i> <strong>100% Ad-Free Experience</strong></li>
+                    <li><i class="fas fa-check"></i> <strong>Lightning Fast Downloads</strong></li>
+                    <li><i class="fas fa-check"></i> Priority Support</li>
+                    <li class="missing"><i class="fas fa-times"></i> Monetize Uploads</li>
+                </ul>
+                
+                <% if (!user) { %>
+                    <a href="/login?message=Please log in to purchase Premium." class="plan-btn btn-gold">Log in to Purchase</a>
+                <% } else if (user.membership === 'premium') { %>
+                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold);">You are Premium!</button>
+                <% } else { %>
+                    <!-- Only show purchase button if logged in and not already premium -->
+                    <button id="premium-purchase-btn" class="plan-btn btn-gold">Upgrade Now</button>
+                <% } %>
+                <div id="payment-error-message"></div>
+            </div>
+
+            <!-- 4. DISTRIBUTOR -->
+            <div class="pricing-card card-distributor">
+                <h2 class="tier-name" style="color: var(--blue);">Distributor</h2>
+                <p class="tier-desc">Partner with us to monetize your mods.</p>
+                <div class="price-container">
+                    <div class="price">Apply <span class="price-period">for access</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check"></i> All Member Features</li>
+                    <li><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise, etc.)</strong></li>
+                    <li><i class="fas fa-check"></i> Verified Organization Badge</li>
+                    <li><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
+                    <li><i class="fas fa-check"></i> Bypass B2 Upload & Scan Waits</li>
+                </ul>
+                <% if (!user) { %>
+                    <a href="/login?message=Please log in to apply for Partnership." class="plan-btn btn-blue">Log in to Apply</a>
+                <% } else if (user.role === 'distributor') { %>
+                    <button class="plan-btn btn-blue" disabled style="opacity: 0.5;">Active Partner</button>
+                <% } else { %>
+                    <a href="/partnership" class="plan-btn btn-blue">Apply for Partnership</a>
+                <% } %>
+            </div>
+
+        </div>
+        <p style="font-size: 0.9em; color: #666; margin-top: 40px;"><i class="fas fa-lock"></i> Payments secured by Cashfree.</p>
     </div>
 </main>
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const cashfree = new Cashfree();
-        const submitButton = document.getElementById('submit-button');
-        const errorMessage = document.getElementById('error-message');
+        // --- 1. Currency Switcher Logic ---
+        const currencySelect = document.getElementById('currency-select');
+        const priceValueElements = document.querySelectorAll('.price-value');
+        const currencySymbols = document.querySelectorAll('[data-currency]');
+        
+        const symbols = {
+            'INR': '₹',
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£'
+        };
 
-        submitButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            this.disabled = true;
-            const originalText = this.textContent;
-            this.textContent = 'Preparing Checkout...';
-            errorMessage.textContent = ''; 
+        currencySelect.addEventListener('change', function() {
+            const selectedCurrency = this.value;
+            
+            // Update Symbols
+            currencySymbols.forEach(el => {
+                el.textContent = symbols[selectedCurrency];
+            });
 
-            fetch('/create-membership-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.payment_session_id) {
-                    cashfree.checkout({ payment_session_id: data.payment_session_id, redirectTarget: "_self" });
-                } else {
-                    throw new Error(data.error || 'Server error.');
+            // Update Price Values
+            priceValueElements.forEach(el => {
+                // Fetch the price data attribute for the selected currency
+                const newPrice = el.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
+                if (newPrice) {
+                    el.textContent = newPrice;
                 }
-            })
-            .catch(err => {
-                errorMessage.textContent = 'Integration pending. Please try again later.';
-                this.disabled = false;
-                this.textContent = originalText;
             });
         });
+
+        // --- 2. Cashfree Payment Logic (Existing) ---
+        const cashfree = new Cashfree();
+        const submitButton = document.getElementById('premium-purchase-btn');
+        const errorMessage = document.getElementById('payment-error-message');
+
+        if (submitButton) {
+            submitButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                this.disabled = true;
+                const originalText = this.textContent;
+                this.textContent = 'Preparing Checkout...';
+                errorMessage.textContent = ''; 
+
+                fetch('/create-membership-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.payment_session_id) {
+                        cashfree.checkout({ payment_session_id: data.payment_session_id, redirectTarget: "_self" });
+                    } else {
+                        throw new Error(data.error || 'Server error.');
+                    }
+                })
+                .catch(err => {
+                    errorMessage.textContent = 'Integration pending. Please try again later.';
+                    this.disabled = false;
+                    this.textContent = originalText;
+                });
+            });
+        }
     });
 </script>
 

@@ -438,18 +438,20 @@ function initializePolicyBanner() {
 
 /**
  * ==================================================================================
- * 8. ROBUST SIDEBAR MUSIC PLAYER
+ * 8. ROBUST SIDEBAR MUSIC PLAYER (FIXED)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
     const audioPlayer = document.getElementById('background-audio'); 
     const playPauseBtn = document.getElementById('music-play-pause-btn'); 
-    const playPauseIcon = document.getElementById('play-pause-icon'); // The <i> tag
     const prevBtn = document.getElementById('music-prev-btn'); 
     const nextBtn = document.getElementById('music-next-btn'); 
     const trackNameDisplay = document.getElementById('music-track-name'); 
 
-    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) return; 
+    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
+        console.warn("Music Player HTML elements missing. Player disabled.");
+        return; 
+    }
 
     const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
@@ -461,9 +463,8 @@ function initializeMusicPlayer() {
         { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
     ];
     
-    // Safely get track index (fallback to 0 if invalid)
     let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;
-    if (trackIndex < 0 || trackIndex >= playlist.length) trackIndex = 0;
+    if (trackIndex >= playlist.length || trackIndex < 0) trackIndex = 0;
     
     audioPlayer.volume = 0.25;
 
@@ -475,20 +476,24 @@ function initializeMusicPlayer() {
         localStorage.setItem('musicTrackIndex', index);
     }
 
-    // Helper to swap FontAwesome icons
+    // ✅ FIX: Correctly toggle FontAwesome classes
     function updatePlayIcon(isPlaying) {
+        // We find the <i> tag inside the button
+        const icon = playPauseBtn.querySelector('i');
+        if (!icon) return;
+
         if (isPlaying) {
-            playPauseIcon.classList.remove('fa-play');
-            playPauseIcon.classList.add('fa-pause');
+            icon.className = 'fas fa-pause'; // Change to pause icon
+            playPauseBtn.title = "Pause Music";
         } else {
-            playPauseIcon.classList.remove('fa-pause');
-            playPauseIcon.classList.add('fa-play');
+            icon.className = 'fas fa-play'; // Change to play icon
+            playPauseBtn.title = "Play Music";
         }
     }
 
     function playTrack() {
         audioPlayer.play().then(() => {
-            updatePlayIcon(true);
+            updatePlayIcon(true); 
             localStorage.setItem('musicState', 'playing');
         }).catch(e => {
             console.warn("Browser prevented autoplay.", e);
@@ -498,13 +503,16 @@ function initializeMusicPlayer() {
 
     function pauseTrack() {
         audioPlayer.pause();
-        updatePlayIcon(false);
+        updatePlayIcon(false); 
         localStorage.setItem('musicState', 'paused');
     }
     
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) playTrack();
-        else pauseTrack();
+        if (audioPlayer.paused) {
+            playTrack();
+        } else {
+            pauseTrack();
+        }
     });
 
     nextBtn.addEventListener('click', () => {
@@ -525,26 +533,31 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    // Initialize the first track
+    // Initialize state
     loadTrack(trackIndex);
-
+    
+    // We set the initial icon state immediately
     const savedState = localStorage.getItem('musicState');
+    if (savedState === 'playing') {
+        updatePlayIcon(true);
+    } else {
+        updatePlayIcon(false);
+    }
+
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
-        updatePlayIcon(true);
         if (savedTime) audioPlayer.currentTime = parseFloat(savedTime);
         
         const playPromise = audioPlayer.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.warn("Browser blocked autoplay on new page load.");
-                updatePlayIcon(false);
+                updatePlayIcon(false); 
                 localStorage.setItem('musicState', 'paused');
             });
         }
     } else {
-        updatePlayIcon(false);
         audioPlayer.pause(); 
     }
 }
