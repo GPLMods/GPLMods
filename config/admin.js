@@ -254,18 +254,6 @@ async function createAdminRouter() {
                 editProperties:['status'],
             },
         },
-            // SITE CONTENT RESOURCE
-            {
-                resource: Announcement,
-                options: {
-                    listProperties:['title', 'author', 'createdAt'],
-                    editProperties: ['title', 'author', 'content'],
-                    properties: { content: { type: 'richtext' } },
-                },
-            },
-        ]
-    };
-
 // ---------------------------------
         // USER REQUESTS (MODS/UPDATES)
         // ---------------------------------
@@ -286,6 +274,17 @@ async function createAdminRouter() {
                 }
             }
         },
+            // SITE CONTENT RESOURCE
+            {
+                resource: Announcement,
+                options: {
+                    listProperties:['title', 'author', 'createdAt'],
+                    editProperties: ['title', 'author', 'content'],
+                    properties: { content: { type: 'richtext' } },
+                },
+            },
+        ]
+    };
 
     // --- 6. INITIALIZE ADMINJS ---
     const adminJs = new AdminJS(adminJsOptions);
