@@ -8,6 +8,7 @@ const Report = require('../models/report');
 const Dmca = require('../models/dmca');
 const Announcement = require('../models/announcement');
 const UnbanRequest = require('../models/unbanRequest');
+const Request = require('../models/request');
 
 async function createAdminRouter() {
     // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
@@ -130,19 +131,59 @@ async function createAdminRouter() {
                         },
                     },
                     actions: {
-                        edit: {
-                            before: async (request) => {
-                                const { newPassword, ...payload } = request.payload;
-                                if (newPassword && newPassword.length > 0) {
-                                    payload.password = await bcrypt.hash(newPassword, 10);
-                                }
-                                request.payload = payload;
-                                return request;
-                            },
-                        },
+                    new: { isAccessible: true },
+                    edit: { isAccessible: true },
+                    delete: { isAccessible: true },
+                    
+                    // --- NEW: ADMIN TESTING ACTIONS ---
+                    
+                    viewOnSite: {
+                        actionType: 'record',
+                        icon: 'View',
+                        handler: async (request, response, context) => {
+                            return {
+                                record: context.record.toJSON(context.currentAdmin),
+                                // Redirects the admin to the frontend mod page
+                                redirectUrl: `/mods/${context.record.params._id}`
+                            };
+                        }
                     },
-                },
-            },
+                    testDownload: {
+                        actionType: 'record',
+                        icon: 'Download',
+                        handler: async (request, response, context) => {
+                            return {
+                                record: context.record.toJSON(context.currentAdmin),
+                                // Triggers the download route
+                                redirectUrl: `/download-file/${context.record.params._id}`
+                            };
+                        }
+                    },
+                    viewVirusTotal: {
+                        actionType: 'record',
+                        icon: 'Shield',
+                        handler: async (request, response, context) => {
+                            const vtHash = context.record.params.virusTotalId || "";
+                            const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
+                            
+                            let vtUrl = `https://www.virustotal.com/`; // Fallback
+                            
+                            if (vtHash.length === 64) {
+                                vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
+                            } else if (vtAnalysis) {
+                                vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+                            } else if (vtHash) {
+                                vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                            }
+                            
+                            return {
+                                record: context.record.toJSON(context.currentAdmin),
+                                // Opens the VirusTotal report
+                                redirectUrl: vtUrl
+                            };
+                        }
+                    }
+                }
             // FILE (MOD) MANAGEMENT
             {
                 resource: File,
@@ -224,6 +265,27 @@ async function createAdminRouter() {
             },
         ]
     };
+
+// ---------------------------------
+        // USER REQUESTS (MODS/UPDATES)
+        // ---------------------------------
+        {
+            resource: Request,
+            options: {
+                listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
+                showProperties:[
+                    'requestType', 'appName', 'platform', 'requestedVersion', 
+                    'officialLink', 'existingModLink', 'modFeaturesRequested', 
+                    'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
+                ],
+                editProperties: ['status', 'adminNotes'], // Admins only edit status and notes
+                properties: {
+                    modFeaturesRequested: { type: 'textarea' },
+                    additionalNotes: { type: 'textarea' },
+                    adminNotes: { type: 'textarea' }
+                }
+            }
+        },
 
     // --- 6. INITIALIZE ADMINJS ---
     const adminJs = new AdminJS(adminJsOptions);

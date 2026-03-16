@@ -1,0 +1,172 @@
+<%- include('../partials/header') %>
+
+<style>
+    .request-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        padding: 3rem;
+        background-color: var(--dark-gray);
+        border-radius: 15px;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .request-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .request-header h1 {
+        font-size: 2.5em;
+        color: var(--white);
+    }
+    .request-header h1 span {
+        color: var(--gold);
+        text-shadow: 0 0 15px var(--glow-gold);
+    }
+    .request-header p {
+        color: var(--silver);
+        font-size: 1.1em;
+    }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        color: var(--white);
+        font-family: 'Poppins', sans-serif;
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .form-group textarea { min-height: 100px; resize: vertical; }
+    
+    .submit-btn {
+        width: 100%;
+        background-color: var(--gold);
+        color: var(--black);
+        padding: 15px;
+        font-size: 1.2em;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .submit-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 25px var(--glow-gold);
+    }
+
+    .alert-msg { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+    .alert-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
+    .alert-error { background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
+    
+    /* Hide the existing mod link field by default */
+    #existing-mod-group { display: none; }
+</style>
+
+<main class="container">
+    <div class="request-container">
+        <div class="request-header">
+            <h1>Request a <span>Mod</span></h1>
+            <p>Missing a game? Need an update? Let us know what you want to see on GPL Mods!</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert-msg alert-error"><%= error %></div>
+        <% } %>
+        <% if (typeof message !== 'undefined' && message) { %>
+            <div class="alert-msg alert-success"><%= message %></div>
+        <% } %>
+
+        <form action="/request-mod" method="POST">
+            
+            <div class="form-group">
+                <label for="requestType">What type of request is this?*</label>
+                <select id="requestType" name="requestType" required>
+                    <option value="" disabled selected>Select an option...</option>
+                    <option value="new-mod">I want a New Mod (Not on the site yet)</option>
+                    <option value="update">I need an Update for an existing mod</option>
+                    <option value="re-upload">A download link is broken (Re-upload needed)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="appName">App / Game Name*</label>
+                <input type="text" id="appName" name="appName" placeholder="e.g., Subway Surfers" required>
+            </div>
+
+            <div class="form-group">
+                <label for="platform">Platform*</label>
+                <select id="platform" name="platform" required>
+                    <option value="" disabled selected>Select platform...</option>
+                    <option value="android">Android</option>
+                    <option value="ios-jailed">iOS (Jailed / IPA)</option>
+                    <option value="ios-jailbroken">iOS (Jailbroken / DEB)</option>
+                    <option value="windows">Windows</option>
+                    <option value="wordpress">WordPress</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="officialLink">Official Link (Play Store, App Store, Steam, etc.)*</label>
+                <input type="url" id="officialLink" name="officialLink" placeholder="https://play.google.com/..." required>
+            </div>
+
+            <!-- This field only shows if they select Update or Re-upload -->
+            <div class="form-group" id="existing-mod-group">
+                <label for="existingModLink">Link to the existing mod on GPL Mods</label>
+                <input type="url" id="existingModLink" name="existingModLink" placeholder="https://gplmods.../mods/12345">
+            </div>
+
+            <div class="form-group">
+                <label for="requestedVersion">Specific Version Needed (Optional)</label>
+                <input type="text" id="requestedVersion" name="requestedVersion" placeholder="e.g., v3.14.2">
+            </div>
+
+            <div class="form-group">
+                <label for="modFeaturesRequested">What features do you want?*</label>
+                <textarea id="modFeaturesRequested" name="modFeaturesRequested" placeholder="e.g., Unlimited Coins, Premium Unlocked, No Ads..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="additionalNotes">Additional Notes (Optional)</label>
+                <textarea id="additionalNotes" name="additionalNotes" placeholder="Any other details we should know?"></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit Request</button>
+        </form>
+    </div>
+</main>
+
+<script>
+    // Simple script to show/hide the "Existing Mod Link" field based on the request type
+    document.addEventListener('DOMContentLoaded', () => {
+        const requestTypeSelect = document.getElementById('requestType');
+        const existingModGroup = document.getElementById('existing-mod-group');
+        const existingModInput = document.getElementById('existingModLink');
+
+        requestTypeSelect.addEventListener('change', function() {
+            if (this.value === 'update' || this.value === 're-upload') {
+                existingModGroup.style.display = 'block';
+                existingModInput.required = true; // Make it required if it's an update
+            } else {
+                existingModGroup.style.display = 'none';
+                existingModInput.required = false;
+                existingModInput.value = ''; // Clear it
+            }
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

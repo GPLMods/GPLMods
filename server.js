@@ -26,6 +26,7 @@ const crypto = require('crypto');
 const cors = require('cors');
 const fs = require('fs');
 const FormData = require('form-data');
+const Request = require('./models/request');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
@@ -252,6 +253,59 @@ app.use((req, res, next) => {
         }
     }
     next();
+});
+// ===================================
+// MOD REQUEST ROUTES
+// ===================================
+
+// GET: Show the request form
+app.get('/request-mod', ensureAuthenticated, (req, res) => {
+    res.render('pages/request-mod', {
+        message: req.query.message,
+        error: req.query.error
+    });
+});
+
+// POST: Handle the form submission
+app.post('/request-mod', ensureAuthenticated, async (req, res) => {
+    try {
+        const { 
+            requestType, appName, officialLink, existingModLink, 
+            platform, requestedVersion, modFeaturesRequested, additionalNotes 
+        } = req.body;
+
+        // Basic validation
+        if (!requestType || !appName || !officialLink || !platform || !modFeaturesRequested) {
+            return res.redirect('/request-mod?error=Please fill in all required fields.');
+        }
+
+        // Prevent spam: Check if this user already has 3 pending requests
+        const pendingCount = await Request.countDocuments({ user: req.user._id, status: 'pending' });
+        if (pendingCount >= 3) {
+            return res.redirect('/request-mod?error=You already have 3 pending requests. Please wait for them to be reviewed.');
+        }
+
+        const newRequest = new Request({
+            user: req.user._id,
+            username: req.user.username,
+            requestType,
+            appName,
+            officialLink,
+            existingModLink,
+            platform,
+            requestedVersion,
+            modFeaturesRequested,
+            additionalNotes
+        });
+
+        await newRequest.save();
+
+        res.redirect('/request-mod?message=Your request has been submitted successfully! Admins will review it soon.');
+
+    } catch (error) {
+        console.error("Error submitting mod request:", error);
+        res.redirect('/request-mod?error=An error occurred while submitting your request.');
+    }
 });
 // --- SETUP ADMINJS ---
 
@@ -594,6 +648,7 @@ app.get('/search', async (req, res) => {
 });
 
 // Single Mod Page
+// Single Mod Page
 app.get('/mods/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
@@ -601,6 +656,17 @@ app.get('/mods/:id', async (req, res) => {
 
         let currentFile = await File.findById(fileId);
         if (!currentFile) return res.status(404).send("File not found.");
+
+        // ======== ADD THIS SECURITY CHECK ========
+        // If the mod is NOT live, block access unless it's the Admin or the Uploader
+        if (currentFile.status !== 'live') {
+            const isUploader = req.user && req.user.username === currentFile.uploader;
+            const isAdmin = req.user && req.user.role === 'admin';
+            
+            if (!isUploader && !isAdmin) {
+                return res.status(403).render('pages/403'); // Show Forbidden page
+            }
+        }
 
         let versionHistory =[];
         if (currentFile.parentFile) {
