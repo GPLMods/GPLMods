@@ -1,0 +1,102 @@
+<%- include('../partials/header') %>
+
+<style>
+    .support-container { max-width: 800px; margin: 4rem auto; padding: 3rem; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .support-header { text-align: center; margin-bottom: 2rem; }
+    .support-header h1 { font-size: 2.5em; color: var(--white); }
+    .support-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .support-header p { color: var(--silver); font-size: 1.1em; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: all 0.3s ease; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+    .form-group textarea { min-height: 150px; resize: vertical; }
+    
+    .submit-btn { width: 100%; background-color: var(--gold); color: var(--black); padding: 15px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; box-shadow: 0 0 15px var(--glow-gold); }
+    .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
+
+    .alert-msg { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+    .alert-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
+    .alert-error { background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
+
+    /* Ticket History Styles */
+    .ticket-history { margin-top: 4rem; border-top: 1px solid #333; padding-top: 2rem; }
+    .ticket-history h2 { color: var(--white); margin-bottom: 1.5rem; }
+    .ticket-card { background-color: var(--black); border: 1px solid #333; border-radius: 10px; padding: 20px; margin-bottom: 15px; }
+    .ticket-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+    .ticket-subject { font-size: 1.2em; color: var(--gold); font-weight: 600; margin: 0; }
+    .ticket-category { font-size: 0.85em; color: var(--silver); background: #222; padding: 3px 10px; border-radius: 12px; }
+    
+    .status-badge { padding: 5px 12px; border-radius: 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
+    .status-open { background-color: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); }
+    .status-in-progress { background-color: rgba(33, 150, 243, 0.1); color: var(--blue); border: 1px solid var(--blue); }
+    .status-resolved, .status-closed { background-color: rgba(46, 204, 113, 0.1); color: var(--green); border: 1px solid var(--green); }
+</style>
+
+<main class="container">
+    <div class="request-container">
+        <div class="request-header">
+            <h1>Contact <span>Support</span></h1>
+            <p>Need help? Submit a ticket and our team will reply via your Notifications.</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert-msg alert-error"><%= error %></div>
+        <% } %>
+        <% if (typeof message !== 'undefined' && message) { %>
+            <div class="alert-msg alert-success"><%= message %></div>
+        <% } %>
+
+        <!-- Support Form -->
+        <form action="/support" method="POST">
+            <div class="form-group">
+                <label for="category">What do you need help with?*</label>
+                <select id="category" name="category" required>
+                    <option value="" disabled selected>Select a category...</option>
+                    <option value="account">Account / Login Issues</option>
+                    <option value="upload-issue">Problem Uploading a Mod</option>
+                    <option value="download-issue">Problem Downloading a Mod</option>
+                    <option value="billing">Billing / Premium Membership</option>
+                    <option value="bug-report">Report a Website Bug</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject*</label>
+                <input type="text" id="subject" name="subject" placeholder="Brief summary of the issue" required>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message Details*</label>
+                <textarea id="message" name="message" placeholder="Please provide as much detail as possible so we can help you quickly..." required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit Ticket</button>
+        </form>
+
+        <!-- Ticket History -->
+        <div class="ticket-history">
+            <h2>Your Recent Tickets</h2>
+            <% if (tickets && tickets.length > 0) { %>
+                <% tickets.forEach(ticket => { %>
+                    <div class="ticket-card">
+                        <div class="ticket-card-header">
+                            <span class="ticket-category"><%= ticket.category.toUpperCase().replace('-', ' ') %></span>
+                            <span class="status-badge status-<%= ticket.status %>"><%= ticket.status %></span>
+                        </div>
+                        <h3 class="ticket-subject"><%= ticket.subject %></h3>
+                        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 10px;">Submitted: <%= new Date(ticket.createdAt).toLocaleDateString() %></p>
+                        <p style="color: var(--white); font-size: 0.95em;"><%= ticket.message %></p>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p style="color: var(--silver); text-align: center; padding: 20px;">You have no active support tickets.</p>
+            <% } %>
+        </div>
+
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

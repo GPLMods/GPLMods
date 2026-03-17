@@ -44,6 +44,8 @@ const Announcement = require('./models/announcement');
 const UnbanRequest = require('./models/unbanRequest'); 
 const DistributorApplication = require('./models/distributorApplication');
 const Request = require('./models/request');
+const UserNotification = require('../models/userNotification');
+const SupportTicket = require('../models/supportTicket');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -225,18 +227,26 @@ app.use(async (req, res, next) => {
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes;
     
-    // Check the total number of announcements every 5 minutes
+    // 1. Check Global Announcements (Cached)
     if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
         try {
-            // Count all documents in the Announcement collection
             cachedTotalUpdates = await Announcement.countDocuments();
             lastUpdateCheck = Date.now();
-        } catch (e) { 
-            console.error("Error counting announcements:", e); 
-        }
-    }    
-    // Pass the total count to the EJS templates
+        } catch (e) { console.error("Error counting announcements:", e); }
+    }
     res.locals.totalUpdatesCount = cachedTotalUpdates;
+
+    // 2. Check Personal Unread Notifications (Real-time per user)
+    let unreadPersonalCount = 0;
+    if (req.isAuthenticated()) {
+        try {
+            unreadPersonalCount = await UserNotification.countDocuments({ 
+                user: req.user._id, 
+                isRead: false 
+            });
+        } catch (e) { console.error("Error counting personal notifications:", e); }
+    }
+    res.locals.unreadPersonalCount = unreadPersonalCount;
     
     next();
 });
@@ -254,6 +264,61 @@ app.use((req, res, next) => {
         }
     }
     next();
+});
+// ===================================
+// SUPPORT TICKET ROUTES
+// ===================================
+
+// GET: Show the support ticket form
+app.get('/support', ensureAuthenticated, async (req, res) => {
+    try {
+        // Fetch the user's past tickets so they can see the status
+        const myTickets = await SupportTicket.find({ user: req.user._id }).sort({ createdAt: -1 });
+        
+        res.render('pages/support', {
+            tickets: myTickets,
+            message: req.query.message,
+            error: req.query.error
+        });
+    } catch (error) {
+        console.error("Error loading support page:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// POST: Handle the ticket submission
+app.post('/support', ensureAuthenticated, async (req, res) => {
+    try {
+        const { subject, category, message } = req.body;
+
+        // Basic validation
+        if (!subject || !category || !message) {
+            return res.redirect('/support?error=Please fill in all required fields.');
+        }
+
+        // Prevent spam: Check if this user already has 3 open tickets
+        const openCount = await SupportTicket.countDocuments({ user: req.user._id, status: { $in: ['open', 'in-progress'] } });
+        if (openCount >= 3) {
+            return res.redirect('/support?error=You already have 3 open tickets. Please wait for them to be resolved.');
+        }
+
+        const newTicket = new SupportTicket({
+            user: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            subject,
+            category,
+            message
+        });
+
+        await newTicket.save();
+
+        res.redirect('/support?message=Your support ticket has been submitted. We will reply via your Notifications.');
+
+    } catch (error) {
+        console.error("Error submitting support ticket:", error);
+        res.redirect('/support?error=An error occurred while submitting your ticket.');
+    }
 });
 // ===================================
 // MOD REQUEST ROUTES
@@ -582,14 +647,32 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Updates / Announcements
+// Updates / Announcements Route
 app.get('/updates', async (req, res) => {
     try {
         const announcements = await Announcement.find().sort({ createdAt: -1 });
-        res.render('pages/updates', { announcements });
-    } catch (error) { res.status(500).render('pages/500'); }
-});
+        
+        let personalNotifications = [];
+        if (req.isAuthenticated()) {
+            // Fetch the user's notifications
+            personalNotifications = await UserNotification.find({ user: req.user._id }).sort({ createdAt: -1 });
+            
+            // Immediately mark them all as read in the background
+            await UserNotification.updateMany(
+                { user: req.user._id, isRead: false }, 
+                { $set: { isRead: true } }
+            );
+        }
 
+        res.render('pages/updates', { 
+            announcements: announcements,
+            personalNotifications: personalNotifications
+        });
+    } catch (error) { 
+        console.error("Updates page error:", error);
+        res.status(500).render('pages/500'); 
+    }
+});
 // Category / Filter
 app.get('/category', async (req, res) => {
     try {

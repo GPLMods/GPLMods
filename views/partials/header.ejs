@@ -43,11 +43,12 @@
             <!-- ========================================== -->
             <div class="header-right-actions">
                 
-                <!-- 1. Notification Bell (Always Visible) -->
-                <!-- We pass the total number of updates from the server -->
-                <a href="/updates" class="nav-bell" title="Site Updates" id="nav-bell-link" data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>">
+               <!-- 1. Notification Bell (Always Visible) -->
+                <!-- We pass BOTH counts to the frontend -->
+                <a href="/updates" class="nav-bell" title="Site Updates" id="nav-bell-link" 
+                   data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
+                   data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
                     <i class="fas fa-bell"></i>
-                    <!-- The Red Dot Badge (now ready to hold a number) -->
                     <span id="notification-badge" class="update-badge" style="display: none;"></span>
                 </a>
                 
@@ -122,6 +123,7 @@
                 <li><a href="/membership">Membership</a></li>
                 <li><a href="/about">About Us!</a></li>
                 <li><a href="/donate">Donate Us!</a></li>
+                <li><a href="/support">Support Tickets</a></li>
                 <li><a href="/logout">Logout</a></li>
             <% } else { %>
                 <li><a href="/upload">Upload A New Mod</a></li>

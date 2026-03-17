@@ -10,6 +10,7 @@ const Announcement = require('../models/announcement');
 const UnbanRequest = require('../models/unbanRequest');
 const Request = require('../models/request');
 const DistributorApplication = require('../models/distributorApplication');
+const SupportTicket = require('../models/supportTicket');
 
 async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
@@ -99,6 +100,38 @@ async function createAdminRouter() {
                     }
                 }
             },
+// ---------------------------------
+        // DIRECT USER NOTIFICATIONS
+        // ---------------------------------
+        {
+            resource: UserNotification,
+            options: {
+                listProperties: ['user', 'title', 'type', 'isRead', 'createdAt'],
+                showProperties: ['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
+                editProperties: ['user', 'title', 'message', 'type'], // Don't let admin edit 'isRead'
+                properties: {
+                    message: { type: 'textarea' }
+                }
+            }
+        },
+// ---------------------------------
+        // SUPPORT TICKETS
+        // ---------------------------------
+        {
+            resource: SupportTicket,
+            options: {
+                listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
+                showProperties: [
+                    'status', 'category', 'subject', 'message', 
+                    'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'
+                ],
+                editProperties: ['status', 'adminNotes'], // Admins only edit status and notes
+                properties: {
+                    message: { type: 'textarea' },
+                    adminNotes: { type: 'textarea' }
+                }
+            }
+        },
             // FILE (MOD) MANAGEMENT
             {
                 resource: File,

@@ -599,15 +599,22 @@ function initializeNotificationsAndPWA() {
     
     if (bellLink && badge) {
         const currentTotalUpdates = parseInt(bellLink.getAttribute('data-total-updates') || '0', 10);
+        const unreadPersonal = parseInt(bellLink.getAttribute('data-unread-personal') || '0', 10);
         const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
-        const unreadCount = currentTotalUpdates - lastSeenTotal;
         
-        if (unreadCount > 0) {
+        const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
+        
+        // Calculate total unread (Global + Personal)
+        const totalUnread = (unreadGlobalCount > 0 ? unreadGlobalCount : 0) + unreadPersonal;
+        
+        if (totalUnread > 0) {
             badge.style.display = 'flex';
-            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
         }
         
         bellLink.addEventListener('click', () => {
+            // We only clear the GLOBAL counter in local storage.
+            // Personal notifications must be marked 'read' in the database (handled on the /updates page).
             localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
         });
     }
