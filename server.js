@@ -1758,7 +1758,7 @@ app.get('/faq', (req, res) => res.render('pages/static/faq'));
 app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
-app.get('/about', (req, res) => res.render('pages/static/donate'));
+app.get('/donate', (req, res) => res.render('pages/static/donate'));
 app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
 
 // ======== ADD THE BULLETPROOF SITEMAP HERE ========
