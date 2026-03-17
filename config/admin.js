@@ -10,6 +10,7 @@ const Announcement = require('../models/announcement');
 const UnbanRequest = require('../models/unbanRequest');
 const Request = require('../models/request');
 const DistributorApplication = require('../models/distributorApplication');
+const UserNotification = require('../models/userNotification');
 const SupportTicket = require('../models/supportTicket');
 
 async function createAdminRouter() {
