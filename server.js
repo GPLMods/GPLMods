@@ -44,8 +44,8 @@ const Announcement = require('./models/announcement');
 const UnbanRequest = require('./models/unbanRequest'); 
 const DistributorApplication = require('./models/distributorApplication');
 const Request = require('./models/request');
-const UserNotification = require('../models/userNotification');
-const SupportTicket = require('../models/supportTicket');
+const UserNotification = require('./models/userNotification');
+const SupportTicket = require('./models/supportTicket');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
