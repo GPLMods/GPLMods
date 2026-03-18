@@ -585,6 +585,14 @@ function ensureAdmin(req, res, next) {
     if (req.user && req.user.role === 'admin') return next();
     res.status(403).render('pages/403');
 }
+
+// ✅ FIX 1: NEW HELPER TO PREVENT LOGGED-IN USERS FROM SEEING AUTH PAGES
+function redirectIfAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return res.redirect('/'); // Or redirect to '/profile'
+    }
+    next();
+}
 async function verifyRecaptcha(req, res, next) {
     const token = req.body['g-recaptcha-response'];
     if (!token) return res.status(400).send("Complete CAPTCHA verification.");
@@ -961,7 +969,8 @@ app.get('/download-file/:id', async (req, res) => {
 // 8. AUTH ROUTES
 // ===============================
 
-app.get('/login', (req, res) => {
+/ ✅ FIX 1: Added redirectIfAuthenticated
+app.get('/login', redirectIfAuthenticated, (req, res) => {
     res.render('pages/login', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
         message: req.query.message || null
@@ -969,8 +978,10 @@ app.get('/login', (req, res) => {
 });
 app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }));
 
-app.get('/register', (req, res) => res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, message: null }));
-
+// ✅ FIX 1: Added redirectIfAuthenticated
+app.get('/register', redirectIfAuthenticated, (req, res) => {
+    res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, message: null })
+});
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -1760,6 +1771,12 @@ app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 app.get('/donate', (req, res) => res.render('pages/static/donate'));
 app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
+app.get('/membership', (req, res) => {
+    // If you use Stripe/Cashfree keys in this view, pass them here
+    res.render('pages/membership', {
+        // e.g., stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
+});
 
 // ======== ADD THE BULLETPROOF SITEMAP HERE ========
 app.get('/sitemap.xml', async (req, res) => {

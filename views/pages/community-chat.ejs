@@ -165,38 +165,52 @@
     function appendMessage(msg) {
         const item = document.createElement('li');
         
+        // ======== NEW: Wrap avatar in a link to public profile ========
+        const avatarLink = document.createElement('a');
+        avatarLink.href = `/users/${msg.username}`; // Point to the public profile route
+        avatarLink.target = '_blank'; // Open in a new tab so they don't lose their chat place
+        avatarLink.title = `View ${msg.username}'s Profile`;
+        avatarLink.className = 'avatar-link'; // Added class for potential future styling
+        
         const avatarImg = document.createElement('img');
         avatarImg.src = msg.avatar;
         avatarImg.className = 'avatar';
         
+        avatarLink.appendChild(avatarImg);
+        // ===============================================================
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
 
         const headerDiv = document.createElement('div');
         headerDiv.className = 'message-header';
 
-        const usernameSpan = document.createElement('span');
-        usernameSpan.className = 'username';
-        usernameSpan.textContent = msg.username;
+        // ======== NEW: Wrap username in a link to public profile (Optional, but good UX) ========
+        const usernameLink = document.createElement('a');
+        usernameLink.href = `/users/${msg.username}`;
+        usernameLink.target = '_blank';
+        usernameLink.className = 'username';
+        usernameLink.textContent = msg.username;
+        usernameLink.style.textDecoration = 'none'; // Keep the username looking clean
 
         const timestampSpan = document.createElement('span');
         timestampSpan.className = 'timestamp';
-        // Format the timestamp to be readable
         timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         const textNode = document.createElement('span');
         textNode.textContent = msg.text;
 
-        headerDiv.appendChild(usernameSpan);
+        // Append the LINK instead of the SPAN
+        headerDiv.appendChild(usernameLink);
         headerDiv.appendChild(timestampSpan);
         contentDiv.appendChild(headerDiv);
         contentDiv.appendChild(textNode);
         
-        item.appendChild(avatarImg);
+        // Append the avatar LINK instead of just the image
+        item.appendChild(avatarLink);
         item.appendChild(contentDiv);
 
         messages.appendChild(item);
-        // Auto-scroll to the bottom
         messages.scrollTop = messages.scrollHeight;
     }
 

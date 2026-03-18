@@ -470,7 +470,10 @@ function initializeMusicPlayer() {
 
     function loadTrack(index) {
         const track = playlist[index];
-        if (!track) return;
+        if (!track) {
+             trackNameDisplay.textContent = "Select a track"; // ✅ FIX 5: Fallback text
+             return;
+        }
         audioPlayer.src = track.src;
         trackNameDisplay.textContent = track.title;
         localStorage.setItem('musicTrackIndex', index);
@@ -533,6 +536,7 @@ function initializeMusicPlayer() {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
+    
     // Initialize state
     loadTrack(trackIndex);
     
@@ -542,6 +546,7 @@ function initializeMusicPlayer() {
         updatePlayIcon(true);
     } else {
         updatePlayIcon(false);
+        trackNameDisplay.textContent = "Select a track"; // ✅ FIX 5: Ensure paused state shows this
     }
 
     const savedTime = localStorage.getItem('musicCurrentTime');
