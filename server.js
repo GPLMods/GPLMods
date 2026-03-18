@@ -969,7 +969,7 @@ app.get('/download-file/:id', async (req, res) => {
 // 8. AUTH ROUTES
 // ===============================
 
-/ ✅ FIX 1: Added redirectIfAuthenticated
+// ✅ FIX 1: Added redirectIfAuthenticated
 app.get('/login', redirectIfAuthenticated, (req, res) => {
     res.render('pages/login', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
@@ -1930,8 +1930,8 @@ const startServer = async () => {
             res.status(500).render('pages/500');
         });
 
-        // Finally, listen!
-        server.listen(PORT, () => {
+       // Finally, listen! Bind to 0.0.0.0 for Render compatibility
+        server.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
         });
 
