@@ -190,6 +190,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use((req, res, next) => {
+    res.locals.user = req.user || null;
+    next();
+});
+
 // --- User Last Seen Updater ---
 app.use(async (req, res, next) => {
     if (req.isAuthenticated()) {
