@@ -178,7 +178,8 @@
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
-        if (fileInput && form) {
+        // ✅ FIX: Only attach listeners if the Standard Form elements actually exist
+        if (fileInput && form && dropZone) {
             fileInput.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {
                     const fileSize = this.files[0].size;
@@ -250,13 +251,14 @@
                 progressWrapper.style.display = 'none';
                 progressBar.classList.remove('processing-pulse');
             }
-        }
+        } // End of Standard Upload Logic
 
-        // --- Distributor Upload Logic ---
+        // --- Distributor Upload Logic (Only runs if Distributor Form exists) ---
         const distForm = document.getElementById('distributorUploadForm');
         const distSubmitBtn = document.getElementById('distributorSubmitBtn');
         
-        if (distForm) {
+        // ✅ FIX: Only attach listeners if the Distributor elements exist
+        if (distForm && distSubmitBtn) {
             distForm.addEventListener('submit', function() {
                 distSubmitBtn.disabled = true;
                 distSubmitBtn.textContent = 'Processing...';

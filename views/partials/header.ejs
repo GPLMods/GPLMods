@@ -26,7 +26,7 @@
 </head>
 <body>
 
-    <header class="main-header">
+<header class="main-header">
         <div class="container header-content">
             <a href="/" class="logo">GPL <span>Mods</span></a>
             
@@ -38,9 +38,12 @@
                 <div id="searchHistory" class="search-history"></div>
             </div>
             
+            <!-- ========================================== -->
+            <!-- UNIFIED USER ACTIONS (All Devices)         -->
+            <!-- ========================================== -->
             <div class="header-right-actions">
                 
-               <!-- 1. Notification Bell (Always Visible) -->
+                <!-- 1. Notification Bell (Always Visible) -->
                 <a href="/updates" class="nav-bell" title="Site Updates" id="nav-bell-link" 
                    data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
                    data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
@@ -48,8 +51,7 @@
                     <span id="notification-badge" class="update-badge" style="display: none;"></span>
                 </a>
                 
-                <!-- ✅ FIX 2 & 3: Ensure this structure is intact! -->
-                <!-- Mobile Only Items -->
+                <!-- 2. Mobile Only Items -->
                 <div class="header-mobile-actions">
                     <% if (user) { %>
                         <a href="/profile" class="avatar-placeholder">
@@ -59,9 +61,13 @@
                     <div class="hamburger-menu" id="hamburger">&#9776;</div>
                 </div>
                 
-                <!-- Desktop Only Items -->
+                <!-- 3. Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
+                        <!-- Desktop Avatar -->
+                        <a href="/profile" style="margin-right: 15px; display: flex; align-items: center;">
+                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--silver);">
+                        </a>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
                     <% } else { %>
@@ -71,6 +77,8 @@
                     <% } %>
                 </div>
             </div>
+            <!-- ========================================== -->
+        </div> 
     </header>
 
     <!-- Mobile Sidebar Navigation -->

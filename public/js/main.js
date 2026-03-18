@@ -30,11 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try { initializeMobileMenu(); } catch (e) { console.error("Mobile Menu Error:", e); }
         try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:", e); }
         try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
-        try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
-        try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
-        try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
-        try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
-        
+      try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
+try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
+try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); } // <-- ADD THIS LINE
+try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
+try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
         console.log("All initializers finished.");
     };
 
@@ -448,10 +448,18 @@ function initializeMusicPlayer() {
     const nextBtn = document.getElementById('music-next-btn'); 
     const trackNameDisplay = document.getElementById('music-track-name'); 
 
-    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
-        console.warn("Music Player HTML elements missing. Player disabled.");
-        return; 
-    }
+    if (!audioPlayer) {
+    console.warn("Audio element not found — creating fallback #background-audio.");
+    audioPlayer = document.createElement('audio');
+    audioPlayer.id = 'background-audio';
+    audioPlayer.preload = 'auto';
+    document.body.appendChild(audioPlayer);
+}
+
+if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
+    console.warn("Music Player controls or display missing. Player disabled.");
+    return;
+}
 
     const playlist =[
         { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
