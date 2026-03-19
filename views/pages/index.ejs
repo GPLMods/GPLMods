@@ -1,145 +1,18 @@
 <%- include('../partials/header') %>
 
-<div class="container" id="mods-container">
-<!-- ======== MAIN CATAGORY TAB ======== -->
-    <div class="tabs-container">
-        <nav class="tabs-nav" id="main-tabs-nav">
-            <div class="tab-highlight" id="main-tab-highlight"></div>
-            <button class="tab-button active" data-tab="android">Android</button>
-            <button class="tab-button" data-tab="ios">iOS</button>
-            <button class="tab-button" data-tab="wordpress">WordPress</button>
-            <button class="tab-button" data-tab="windows">Windows</button>
-        </nav>
-    </div>
+<main class="container" style="padding-top: 100px; text-align: center;">
+    <h1>Homepage Test</h1>
+    <p>If you see your avatar in the header above, the backend is working perfectly!</p>
     
-    <!-- ======== ADD THIS NEW SUB-TABS BLOCK ======== -->
-    <!-- iOS Sub-Tabs (Hidden by default) -->
-    <div class="tabs-container sub-tabs-container" id="ios-sub-tabs-container" style="display: none; margin-top: -15px; margin-bottom: 25px;">
-        <nav class="tabs-nav" id="ios-tabs-nav" style="background-color: #111;">
-            <div class="tab-highlight" id="ios-tab-highlight"></div>
-            <button class="tab-button active" data-tab="ios-jailed">Jailed (IPA)</button>
-            <button class="tab-button" data-tab="ios-jailbroken">Jailbroken (DEB)</button>
-        </nav>
+    <div style="margin-top: 50px; padding: 20px; background: #222; border: 1px solid #444; border-radius: 10px;">
+        <h3>Debug Info:</h3>
+        <% if (user) { %>
+            <p style="color: #43a047;">User is LOGGED IN. Username: <%= user.username %></p>
+            <p>Avatar URL: <%= user.signedAvatarUrl %></p>
+        <% } else { %>
+            <p style="color: #e53935;">User is NOT logged in.</p>
+        <% } %>
     </div>
-    
-    <% if (typeof filesByCategory !== 'undefined' && Object.keys(filesByCategory).length > 0) { %>
-        <!-- Loop through each category provided from the backend -->
-        <% Object.keys(filesByCategory).forEach(category => { %>
-            <div id="<%= category %>-mods" class="tab-content <%= category === 'android' ? 'active' : '' %>">
-                
-                <!-- Loop through each sub-section for the category -->
-                <% Object.keys(filesByCategory[category]).forEach(section => { %>
-                    <section class="mod-section">
-                        <div class="section-header">
-                            <h2 class="section-title"><%= section.replace('-', ' ') %></h2>
-                            <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
-                        </div>
-                        
-                        <!-- The Horizontal Glide Container -->
-                        <div class="mod-carousel">
-                            <!-- Loop through the files in this section -->
-                            <% filesByCategory[category][section].forEach(file => { %>
-                                
-                                <!-- The Card is a DIV, not an 'A' tag -->
-                                <div class="mod-card">
-                                    
-                                    <!-- Certification Tag -->
-                                    <% if (file.certification === 'certified') { %>
-                                        <div class="app-feature-tag">✔ Certified</div>
-                                    <% } else if (file.certification === 'community-tested') { %>
-                                        <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
-                                    <% } %>
-                                    
-                                    <!-- Version Tag -->
-                                    <div class="mod-type-tag"><%= file.version %></div>
-                                    
-                                    <!-- NEW: Image Container Logic -->
-                                    <div class="mod-card-image">
-                                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
-                                    </div>
-                                    
-                                    <div class="mod-card-content">
-                                        <!-- The link is placed on the title with the "full-card-link" class -->
-                                        <h3>
-                                            <a href="/mods/<%= file._id %>" class="full-card-link"><%= file.name %></a>
-                                        </h3>
-                                        <p><%= file.developer %></p>
-                                        <div class="rating">
-                                            <div class="stars-outer">
-                                                <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
-                                            </div>
-                                            <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
-                                        </div>
-                                        
-                                        <!-- NEW: Platform Tag -->
-                                        <div class="card-footer">
-                                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                                                <%= file.category.toUpperCase().replace('-', ' ') %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="download-overlay">
-                                        <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
-                                        <% if (user) { %>
-                                            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
-                                                <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
-                                                    Add to Whitelist
-                                                </button>
-                                            </form>
-                                        <% } %>
-                                    </div>
-                                </div>
-                                
-                            <% }) %> <!-- Closes the files loop -->
-                        </div>
-                    </section>
-                <% }) %> <!-- Closes the section loop -->
+</main>
 
-            </div>
-        <% }) %> <!-- Closes the category loop -->
-    <% } else { %>
-        <!-- This block will display if filesByCategory is empty or not defined -->
-        <div class="no-results" style="padding: 3rem; text-align: center;">
-            <h2>Could not load mods.</h2>
-            <p>There was an error fetching content for the homepage. Please try again later.</p>
-        </div>
-    <% } %>
-
-    <section class="upload-section">
-        <h2>Have a Mod to Share?</h2>
-        <p>Contribute to GPL Mods by sharing and uploading your mods.</p>
-        <a href="/upload" class="upload-button">Upload Your Mod</a>
-    </section>
-</div>
-<!-- ✅ FIX: Click-to-Reveal Logic for Mod Cards -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const modCards = document.querySelectorAll('.mod-card');
-        
-        modCards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                // If the user is clicking the actual buttons inside the overlay, let it happen naturally
-                if (e.target.closest('.download-overlay') || e.target.closest('a.full-card-link')) {
-                    return;
-                }
-                
-                // Close any other open overlays first
-                modCards.forEach(c => {
-                    if (c !== this) c.classList.remove('active-overlay');
-                });
-
-                // Toggle the overlay on the clicked card
-                this.classList.toggle('active-overlay');
-            });
-        });
-
-        // Close overlays if the user clicks anywhere outside of a mod card
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.mod-card')) {
-                modCards.forEach(c => c.classList.remove('active-overlay'));
-            }
-        });
-    });
-</script>
 <%- include('../partials/footer') %>
