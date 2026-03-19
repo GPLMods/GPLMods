@@ -676,14 +676,13 @@ app.get('/', async (req, res) => {
                 );
             }
         }
-        res.render('pages/index', { filesByCategory });
+        res.render('pages/index', { 
+            filesByCategory: filesByCategory,
+            user: req.user // Force the user object into the template
+        });
+        
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
-        // ✅ DANGER: If this error block runs, it renders the 500 page.
-        // If it's failing silently here, your index page won't render correctly.
-        res.status(500).render('pages/500');
-    }
-});
 
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
