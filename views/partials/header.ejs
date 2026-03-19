@@ -7,18 +7,12 @@
     
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <!-- ✅ FIX: ADDED PWA MANIFEST LINKS HERE -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     
     <link rel="stylesheet" href="/css/style.css">
 
@@ -26,7 +20,7 @@
 </head>
 <body>
 
-<header class="main-header">
+    <header class="main-header">
         <div class="container header-content">
             <a href="/" class="logo">GPL <span>Mods</span></a>
             
@@ -44,30 +38,20 @@
             <div class="header-right-actions">
                 
                 <!-- 1. Notification Bell (Always Visible) -->
-                <a href="/updates" class="nav-bell" title="Site Updates" id="nav-bell-link" 
-                   data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
-                   data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
+                <a href="/updates" class="nav-bell" title="Site Updates">
                     <i class="fas fa-bell"></i>
-                    <span id="notification-badge" class="update-badge" style="display: none;"></span>
                 </a>
                 
-                <!-- 2. Mobile Only Items -->
-                <div class="header-mobile-actions">
-                    <% if (user) { %>
-                        <a href="/profile" class="avatar-placeholder">
-                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-                        </a>
-                    <% } %>
-                    <div class="hamburger-menu" id="hamburger">&#9776;</div>
-                </div>
+                <!-- 2. User Avatar (Always Visible if Logged In) -->
+                <% if (user) { %>
+                    <a href="/profile" class="avatar-placeholder">
+                        <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+                    </a>
+                <% } %>
                 
-                <!-- 3. Desktop Only Items -->
+                <!-- 3. Text Buttons (Hidden on Phones/Tablets, Visible on Desktop) -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
-                        <!-- Desktop Avatar -->
-                        <a href="/profile" style="margin-right: 15px; display: flex; align-items: center;">
-                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--silver);">
-                        </a>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
                     <% } else { %>
@@ -76,6 +60,10 @@
                         <a href="/register" class="btn btn-signup">Sign Up</a>
                     <% } %>
                 </div>
+
+                <!-- 4. Hamburger Menu (Always Visible on all devices!) -->
+                <div class="hamburger-menu" id="hamburger">&#9776;</div>
+                
             </div>
             <!-- ========================================== -->
         </div> 
@@ -86,20 +74,19 @@
         <ul>
             <!-- Sidebar Music Player -->
             <div class="music-player" style="text-align: center; padding-top: 10px;">
-                <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Loading track...</span>
+                <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Select a track</span>
                 
-                <!-- ✅ FIX: Switched to reliable FontAwesome Icons -->
-                <div class="music-controls" style="display: flex; justify-content: center; gap: 25px; align-items: center;">
-                    <button id="music-prev-btn" title="Previous Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; color: var(--silver); transition: color 0.3s;">
-                        <i class="fas fa-step-backward"></i>
+                <div class="music-controls" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
+                    <button id="music-prev-btn" title="Previous Track" style="background:none; border:none; cursor:pointer; width:30px; fill:var(--silver); transition: fill 0.3s;">
+                        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
                     </button>
                     
-                    <button id="music-play-pause-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; font-size: 2em; color: var(--silver); transition: color 0.3s;">
-                        <i class="fas fa-play" id="play-pause-icon"></i>
+                    <button id="music-play-pause-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; width:35px; fill:var(--silver); transition: fill 0.3s;">
+                        <!-- JS injects the icon here -->
                     </button>
                     
-                    <button id="music-next-btn" title="Next Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; color: var(--silver); transition: color 0.3s;">
-                        <i class="fas fa-step-forward"></i>
+                    <button id="music-next-btn" title="Next Track" style="background:none; border:none; cursor:pointer; width:30px; fill:var(--silver); transition: fill 0.3s;">
+                        <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zm-4.5 6l-8.5 6V6l8.5 6z"></path></svg>
                     </button>
                 </div>
             </div>
@@ -125,7 +112,6 @@
                 <li><a href="/membership">Membership</a></li>
                 <li><a href="/about">About Us!</a></li>
                 <li><a href="/donate">Donate Us!</a></li>
-                <li><a href="/support">Support Tickets</a></li>
                 <li><a href="/logout">Logout</a></li>
             <% } else { %>
                 <li><a href="/upload">Upload A New Mod</a></li>

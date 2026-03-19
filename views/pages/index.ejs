@@ -1,5 +1,4 @@
 <%- include('../partials/header') %>
-
 <section class="hero"></section>
 
 <div class="container" id="mods-container">
@@ -45,12 +44,20 @@
                                 <!-- The Card is a DIV, not an 'A' tag -->
                                 <div class="mod-card">
                                     
+                                    <!-- Certification Tag -->
                                     <% if (file.certification === 'certified') { %>
                                         <div class="app-feature-tag">✔ Certified</div>
+                                    <% } else if (file.certification === 'community-tested') { %>
+                                        <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
                                     <% } %>
+                                    
+                                    <!-- Version Tag -->
                                     <div class="mod-type-tag"><%= file.version %></div>
                                     
-                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="mod-card-image">
+                                    <!-- NEW: Image Container Logic -->
+                                    <div class="mod-card-image">
+                                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                                    </div>
                                     
                                     <div class="mod-card-content">
                                         <!-- The link is placed on the title with the "full-card-link" class -->
@@ -63,6 +70,13 @@
                                                 <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
                                             </div>
                                             <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                        </div>
+                                        
+                                        <!-- NEW: Platform Tag -->
+                                        <div class="card-footer">
+                                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                                <%= file.category.toUpperCase().replace('-', ' ') %>
+                                            </span>
                                         </div>
                                     </div>
                                     
@@ -99,5 +113,35 @@
         <a href="/upload" class="upload-button">Upload Your Mod</a>
     </section>
 </div>
+<!-- ✅ FIX: Click-to-Reveal Logic for Mod Cards -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modCards = document.querySelectorAll('.mod-card');
+        
+        modCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                // If the user is clicking the actual buttons inside the overlay, let it happen naturally
+                if (e.target.closest('.download-overlay') || e.target.closest('a.full-card-link')) {
+                    return;
+                }
+                
+                // Close any other open overlays first
+                modCards.forEach(c => {
+                    if (c !== this) c.classList.remove('active-overlay');
+                });
 
+                // Toggle the overlay on the clicked card
+                this.classList.toggle('active-overlay');
+            });
+        });
+
+        // Close overlays if the user clicks anywhere outside of a mod card
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.mod-card')) {
+                modCards.forEach(c => c.classList.remove('active-overlay'));
+            }
+        });
+    });
+</script>
+<script src="/js/main.js"></script>
 <%- include('../partials/footer') %>
