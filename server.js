@@ -183,7 +183,12 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     store: store, 
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } 
+    cookie: { 
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+        path: '/', // Ensure the cookie is sent for all paths
+        httpOnly: true, // Security best practice
+        // secure: process.env.NODE_ENV === 'production' // Uncomment this ONLY if you have HTTPS working locally too
+    } 
 }));
 
 // 6. PASSPORT INIT (Must be after session, before AdminJS)
@@ -674,6 +679,8 @@ app.get('/', async (req, res) => {
         res.render('pages/index', { filesByCategory });
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
+        // ✅ DANGER: If this error block runs, it renders the 500 page.
+        // If it's failing silently here, your index page won't render correctly.
         res.status(500).render('pages/500');
     }
 });
