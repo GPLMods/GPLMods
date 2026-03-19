@@ -1489,7 +1489,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         }
         res.status(500).render('pages/500');
     }
-});;
+});
 
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
