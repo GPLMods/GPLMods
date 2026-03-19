@@ -598,14 +598,32 @@ function redirectIfAuthenticated(req, res, next) {
     }
     next();
 }
+// --- UPDATED reCAPTCHA Middleware ---
 async function verifyRecaptcha(req, res, next) {
     const token = req.body['g-recaptcha-response'];
-    if (!token) return res.status(400).send("Complete CAPTCHA verification.");
+    
+    // Determine where the user came from so we can send them back to the right form
+    const returnUrl = req.path; // e.g., '/login' or '/register'
+
+    if (!token) {
+        // Redirect back with the error message
+        return res.redirect(`${returnUrl}?error=Please complete the "I'm not a robot" check.`);
+    }
+
     try {
         const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`);
-        if (response.data.success) return next();
-        res.status(400).send("CAPTCHA verification failed.");
-    } catch (e) { res.status(500).send("reCAPTCHA Error."); }
+        
+        if (response.data.success) {
+            return next(); // CAPTCHA passed, continue to login/register logic
+        }
+        
+        // CAPTCHA failed verification on Google's end
+        return res.redirect(`${returnUrl}?error=CAPTCHA verification failed. Please try again.`);
+
+    } catch (e) { 
+        console.error("reCAPTCHA API Error:", e);
+        return res.redirect(`${returnUrl}?error=A server error occurred during CAPTCHA verification.`);
+    }
 }
 
 // ===============================
@@ -1010,17 +1028,22 @@ app.get('/download-file/:id', async (req, res) => {
 // ===============================
 
 // ✅ FIX 1: Added redirectIfAuthenticated
-app.get('/login', redirectIfAuthenticated, (req, res) => {
+app.get('/login', (req, res) => {
     res.render('pages/login', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
-        message: req.query.message || null
+        message: req.query.message || null,
+        error: req.query.error || null // <--- ADD THIS
     });
 });
 app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }));
 
 // ✅ FIX 1: Added redirectIfAuthenticated
-app.get('/register', redirectIfAuthenticated, (req, res) => {
-    res.render('pages/register', { recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, message: null })
+app.get('/register', (req, res) => {
+    res.render('pages/register', { 
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, 
+        message: null,
+        error: req.query.error || null // <--- ADD THIS
+    });
 });
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
