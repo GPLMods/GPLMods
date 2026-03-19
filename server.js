@@ -647,10 +647,13 @@ app.get('/', async (req, res) => {
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
+        // 1. Fetch all the data
         await Promise.all(categories.map(async (cat) => {
-            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4);
-            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4);
-            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4);
+            // Using .lean() makes the query much faster and returns plain JS objects!
+            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
+            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
+            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4).lean();
+            
             filesByCategory[cat] = {
                 '100-Percent-Working': workingMods,
                 'Most-Popular': popularMods,
@@ -658,12 +661,15 @@ app.get('/', async (req, res) => {
             };
         }));
 
+        // 2. Process the Image URLs safely
         for (const category in filesByCategory) {
             for (const section in filesByCategory[category]) {
                 filesByCategory[category][section] = await Promise.all(
                     filesByCategory[category][section].map(async (file) => {
+                        
                         const key = file.iconUrl || file.iconKey;
                         let signedIconUrl = '/images/default-avatar.png';
+                        
                         if (key) {
                             try {
                                 signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -671,19 +677,23 @@ app.get('/', async (req, res) => {
                                 console.error(`Could not get signed URL for key: ${key}`, urlError);
                             }
                         }
-                        return { ...file.toObject(), iconUrl: signedIconUrl };
+                        
+                        // ✅ FIX: Because we used .lean() above, 'file' is already a plain object.
+                        // We DO NOT call .toObject() here. This prevents the crash!
+                        return { ...file, iconUrl: signedIconUrl };
                     })
                 );
             }
         }
-        res.render('pages/index', { 
-            filesByCategory: filesByCategory,
-            user: req.user // Force the user object into the template
-        });
+        
+        // 3. Render the page!
+        res.render('pages/index', { filesByCategory });
         
     } catch (error) {
-        console.error("Error fetching files for homepage:", error);
-
+        console.error("CRITICAL Error fetching files for homepage:", error);
+        res.status(500).render('pages/500');
+    }
+});
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
 // ===================================
