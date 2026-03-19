@@ -660,30 +660,65 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Updates / Announcements Route
-app.get('/updates', async (req, res) => {
+// ===================================
+// NOTIFICATION SYSTEM ROUTES
+// ===================================
+
+// 1. The Notification Hub (Category Selection)
+app.get('/notifications', ensureAuthenticated, async (req, res) => {
     try {
-        const announcements = await Announcement.find().sort({ createdAt: -1 });
+        // We need the counts to show the red badges on the category buttons
         
-        let personalNotifications = [];
-        if (req.isAuthenticated()) {
-            // Fetch the user's notifications
-            personalNotifications = await UserNotification.find({ user: req.user._id }).sort({ createdAt: -1 });
-            
-            // Immediately mark them all as read in the background
+        // Count unread personal messages
+        const unreadPersonalCount = await UserNotification.countDocuments({ 
+            user: req.user._id, 
+            isRead: false 
+        });
+
+        // For global updates, we rely on the same logic used in the header bell
+        // We get the total count from the DB and compare it to the user's localStorage later
+        const totalGlobalUpdates = await Announcement.countDocuments();
+
+        res.render('pages/notifications-hub', {
+            unreadPersonalCount: unreadPersonalCount,
+            totalGlobalUpdates: totalGlobalUpdates
+        });
+    } catch (error) {
+        console.error("Error loading notification hub:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 2. Site Updates List (Global Announcements)
+app.get('/notifications/site-updates', async (req, res) => {
+    try {
+        // Fetch all global announcements
+        const announcements = await Announcement.find().sort({ createdAt: -1 });
+        res.render('pages/updates', { announcements: announcements });
+    } catch (error) { 
+        console.error("Site Updates page error:", error);
+        res.status(500).render('pages/500'); 
+    }
+});
+
+// 3. Admin Responses List (Personal Direct Messages)
+app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) => {
+    try {
+        // Fetch only the logged-in user's personal notifications
+        const personalNotifications = await UserNotification.find({ user: req.user._id }).sort({ createdAt: -1 });
+        
+        // Mark them all as read since the user is now viewing them
+        if (personalNotifications.length > 0) {
             await UserNotification.updateMany(
                 { user: req.user._id, isRead: false }, 
                 { $set: { isRead: true } }
             );
         }
 
-        res.render('pages/updates', { 
-            announcements: announcements,
-            personalNotifications: personalNotifications
-        });
-    } catch (error) { 
-        console.error("Updates page error:", error);
-        res.status(500).render('pages/500'); 
+        res.render('pages/admin-messages', { personalNotifications: personalNotifications });
+    } catch (error) {
+        console.error("Admin Messages page error:", error);
+        res.status(500).render('pages/500');
     }
 });
 // Category / Filter

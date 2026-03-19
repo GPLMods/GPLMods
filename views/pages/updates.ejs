@@ -30,42 +30,6 @@
     <div class="updates-header">
         <h1>Site News & <span>Updates</span></h1>
     </div>
-
-    <!-- ======== NEW: PERSONAL NOTIFICATIONS SECTION ======== -->
-    <% if (user && personalNotifications && personalNotifications.length > 0) { %>
-        <h2 style="color: var(--white); margin-bottom: 20px; font-size: 1.5em; border-bottom: 1px solid #333; padding-bottom: 10px;">Your Notifications</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px;">
-            <% personalNotifications.forEach(notification => { %>
-                <% 
-                    // Determine border color based on type
-                    let borderColor = 'var(--silver)';
-                    let icon = 'fa-info-circle';
-                    if (notification.type === 'warning') { borderColor = 'var(--gold)'; icon = 'fa-exclamation-triangle'; }
-                    if (notification.type === 'error') { borderColor = 'var(--red)'; icon = 'fa-times-circle'; }
-                    if (notification.type === 'success') { borderColor = 'var(--green)'; icon = 'fa-check-circle'; }
-                %>
-                <div style="background-color: var(--dark-gray); padding: 20px; border-radius: 10px; border-left: 4px solid <%= borderColor %>; position: relative;">
-                    
-                    <!-- 'New' Badge for unread notifications -->
-                    <% if (!notification.isRead) { %>
-                        <span style="position: absolute; top: 15px; right: 15px; background: var(--red); color: var(--white); font-size: 0.7em; font-weight: bold; padding: 3px 8px; border-radius: 10px; text-transform: uppercase;">New</span>
-                    <% } %>
-
-                    <h3 style="color: var(--white); margin-bottom: 5px; font-size: 1.2em; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas <%= icon %>" style="color: <%= borderColor %>;"></i>
-                        <%= notification.title %>
-                    </h3>
-                    <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 10px;"><%= timeAgo(notification.createdAt) %></p>
-                    <p style="color: var(--silver); line-height: 1.5; margin: 0;"><%- notification.message.replace(/\n/g, '<br>') %></p>
-                </div>
-            <% }) %>
-        </div>
-    <% } %>
-    <!-- ===================================================== -->
-
-    <h2 style="color: var(--white); margin-bottom: 20px; font-size: 1.5em; border-bottom: 1px solid #333; padding-bottom: 10px;">Global Announcements</h2>
-    
     <div class="blog-grid">
         <% announcements.forEach((announcement, index) => { %>
             <!-- Your existing blog-card code remains the same -->

@@ -1,0 +1,65 @@
+<%- include('../partials/header') %>
+
+<style>
+    /* ... (You can reuse styles from updates.ejs here, like the header) ... */
+    .messages-container { max-width: 900px; margin: 0 auto 60px auto; }
+    .page-header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
+    .page-header h1 { font-size: 2.5em; color: var(--white); }
+    .page-header h1 span { color: var(--blue); text-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
+    
+    .msg-card { background-color: var(--dark-gray); padding: 25px; border-radius: 12px; margin-bottom: 20px; position: relative; border-left: 5px solid var(--silver); }
+    .msg-card.type-warning { border-left-color: var(--gold); }
+    .msg-card.type-error { border-left-color: var(--red); }
+    .msg-card.type-success { border-left-color: var(--green); }
+    
+    .msg-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+    .msg-icon { font-size: 1.5em; }
+    .msg-title { font-size: 1.3em; color: var(--white); margin: 0; flex-grow: 1; }
+    .msg-date { color: var(--silver); font-size: 0.85em; }
+    .msg-body { color: var(--silver); line-height: 1.6; font-size: 1.05em; }
+</style>
+
+<main>
+    <div class="page-header">
+        <div class="container">
+            <h1>Admin <span>Responses</span></h1>
+            <p style="color: var(--silver); margin-top: 10px;">Direct messages, support replies, and account notices.</p>
+        </div>
+    </div>
+
+    <div class="container messages-container">
+        <% if (personalNotifications && personalNotifications.length > 0) { %>
+            <% personalNotifications.forEach(notification => { %>
+                <% 
+                    let iconClass = 'fa-info-circle';
+                    let iconColor = 'var(--silver)';
+                    if (notification.type === 'warning') { iconClass = 'fa-exclamation-triangle'; iconColor = 'var(--gold)'; }
+                    if (notification.type === 'error') { iconClass = 'fa-times-circle'; iconColor = 'var(--red)'; }
+                    if (notification.type === 'success') { iconClass = 'fa-check-circle'; iconColor = 'var(--green)'; }
+                %>
+                <div class="msg-card type-<%= notification.type %>">
+                    <div class="msg-header">
+                        <i class="fas <%= iconClass %> msg-icon" style="color: <%= iconColor %>;"></i>
+                        <h2 class="msg-title"><%= notification.title %></h2>
+                        <span class="msg-date"><%= new Date(notification.createdAt).toLocaleDateString() %></span>
+                    </div>
+                    <div class="msg-body">
+                        <%- notification.message.replace(/\n/g, '<br>') %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div style="text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
+                <i class="fas fa-inbox" style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
+                <h2 style="color: var(--silver);">No Messages</h2>
+                <p style="color: #888;">You do not have any direct messages from the administration team.</p>
+            </div>
+        <% } %>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/notifications" class="btn btn-secondary">← Back to Hub</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

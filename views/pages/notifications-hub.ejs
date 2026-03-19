@@ -1,0 +1,178 @@
+<%- include('../partials/header') %>
+
+<style>
+    .hub-container { max-width: 800px; margin: 4rem auto; text-align: center; }
+    .hub-container h1 { font-size: 2.8em; color: var(--white); margin-bottom: 10px; }
+    .hub-container h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .hub-container p { color: var(--silver); font-size: 1.1em; margin-bottom: 3rem; }
+
+    .notification-categories {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .category-card {
+        background-color: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 15px;
+        padding: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--gold);
+        box-shadow: 0 10px 25px rgba(255, 215, 0, 0.1);
+    }
+
+    .category-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+    }
+
+    .category-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--black);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        color: var(--gold);
+        border: 2px solid #333;
+    }
+
+    .category-text h2 {
+        color: var(--white);
+        margin: 0 0 5px 0;
+        font-size: 1.5em;
+    }
+
+    .category-text p {
+        color: var(--silver);
+        margin: 0;
+        font-size: 0.95em;
+    }
+
+    .card-arrow {
+        color: var(--silver);
+        font-size: 1.5em;
+        transition: transform 0.3s;
+    }
+
+    .category-card:hover .card-arrow {
+        transform: translateX(5px);
+        color: var(--gold);
+    }
+
+    /* The Red Badge for Categories */
+    .cat-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background-color: var(--red);
+        color: var(--white);
+        font-weight: bold;
+        font-size: 0.85em;
+        padding: 4px 10px;
+        border-radius: 20px;
+        box-shadow: 0 0 10px var(--glow-red);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Hide the global badge initially, JS will show it if needed */
+    #global-badge { display: none; }
+</style>
+
+<main class="container">
+    <div class="hub-container">
+        <h1>Your <span>Notifications</span></h1>
+        <p>Select a category below to view your alerts and updates.</p>
+
+        <div class="notification-categories">
+            
+            <!-- Category 1: Admin Responses (Personal) -->
+            <a href="/notifications/admin-messages" class="category-card">
+                <div class="category-info">
+                    <div class="category-icon" style="color: var(--blue);">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <div class="category-text">
+                        <h2>Admin Responses</h2>
+                        <p>Direct messages, warnings, and support ticket replies.</p>
+                    </div>
+                </div>
+                
+                <!-- Server-side rendered badge for personal messages -->
+                <% if (unreadPersonalCount > 0) { %>
+                    <div class="cat-badge">
+                        <%= unreadPersonalCount > 9 ? '9+' : unreadPersonalCount %> New
+                    </div>
+                <% } else { %>
+                    <i class="fas fa-chevron-right card-arrow"></i>
+                <% } %>
+            </a>
+
+            <!-- Category 2: Site Updates (Global) -->
+            <!-- We pass the total updates count as a data attribute so JS can calculate unread -->
+            <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= totalGlobalUpdates %>">
+                <div class="category-info">
+                    <div class="category-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="category-text">
+                        <h2>Site Updates</h2>
+                        <p>Global announcements, new features, and patch notes.</p>
+                    </div>
+                </div>
+                
+                <!-- Client-side rendered badge for global updates -->
+                <div class="cat-badge" id="global-badge"></div>
+                <i class="fas fa-chevron-right card-arrow" id="global-arrow"></i>
+            </a>
+
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Logic to show the badge on the "Site Updates" card
+        const siteUpdatesCard = document.getElementById('site-updates-card');
+        const globalBadge = document.getElementById('global-badge');
+        const globalArrow = document.getElementById('global-arrow');
+
+        if (siteUpdatesCard && globalBadge) {
+            const currentTotalUpdates = parseInt(siteUpdatesCard.getAttribute('data-total-updates') || '0', 10);
+            const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
+            
+            const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
+
+            if (unreadGlobalCount > 0) {
+                // Show the badge, hide the arrow
+                globalBadge.textContent = (unreadGlobalCount > 9 ? '9+' : unreadGlobalCount) + ' New';
+                globalBadge.style.display = 'flex';
+                if (globalArrow) globalArrow.style.display = 'none';
+            }
+
+            // When they click the card, mark global updates as read in localStorage
+            siteUpdatesCard.addEventListener('click', () => {
+                localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
+            });
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>
