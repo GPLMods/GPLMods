@@ -146,6 +146,12 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         gap: 10px;
     }
 }
+/* Add near .hamburger-menu rules */
+.hamburger-menu.open {
+  color: var(--gold);
+  transform: scale(1.1); /* Slight pop effect */
+  transition: color 0.2s ease, transform 0.2s ease;
+}
     .header-actions .btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
     .header-actions .btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
     .header-actions .btn-login:hover { color: var(--gold); border-color: var(--gold); }

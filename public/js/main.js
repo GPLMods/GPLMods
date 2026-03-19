@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const runInitializers = async () => {
         try { initializeMobileMenu(); } catch (e) { console.error("Mobile Menu Error:", e); }
         try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:", e); }
-        try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
-      try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
+try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
+try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
 try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
 try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); } // <-- ADD THIS LINE
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
@@ -346,19 +346,48 @@ async function fetchAndDisplaySuggestions(query) {
 
 /**
  * ==================================================================================
- * 6. MOBILE NAVIGATION
+ * 6. ROBUST MOBILE NAVIGATION
  * ==================================================================================
  */
 function initializeMobileMenu() {
     const hamburger = document.getElementById('hamburger');
     const mobileNav = document.getElementById('mobileNav');
-    if (!hamburger || !mobileNav) return;
+    
+    if (!hamburger || !mobileNav) {
+        console.warn("Mobile menu elements not found.");
+        return;
+    }
 
-    hamburger.addEventListener('click', (event) => {
-        event.stopPropagation();
-        mobileNav.style.display = mobileNav.style.display === 'block' ? 'none' : 'block';
+    const openNav = () => {
+        mobileNav.style.display = 'block';
+        hamburger.classList.add('open');
+        hamburger.innerHTML = '&times;'; // Show an 'X' icon
+    };
+
+    const closeNav = () => {
+        mobileNav.style.display = 'none';
+        hamburger.classList.remove('open');
+        hamburger.innerHTML = '&#9776;'; // Show the hamburger icon
+    };
+
+    // Toggle on hamburger click
+    hamburger.addEventListener('click', (e) => {
+        e.stopPropagation(); // Stop the click from bubbling up to the document listener
+        if (mobileNav.style.display === 'block') {
+            closeNav();
+        } else {
+            openNav();
+        }
     });
 
+    // Close when a normal menu link is clicked
+    mobileNav.querySelectorAll('a').forEach(link => {
+        if (!link.classList.contains('collapsible-trigger')) {
+            link.addEventListener('click', closeNav);
+        }
+    });
+
+    // Handle collapsible sub-menus
     const collapsibleTriggers = mobileNav.querySelectorAll('.collapsible-trigger');
     collapsibleTriggers.forEach(trigger => {
         trigger.addEventListener('click', function(e) {
@@ -367,15 +396,19 @@ function initializeMobileMenu() {
         });
     });
 
-    mobileNav.querySelectorAll('a').forEach(link => {
-        if (!link.classList.contains('collapsible-trigger')) {
-            link.addEventListener('click', () => { mobileNav.style.display = 'none'; });
+    // Close when clicking outside the nav or hamburger
+    document.addEventListener('click', (event) => {
+        if (mobileNav.style.display === 'block' &&
+            !mobileNav.contains(event.target) &&
+            !hamburger.contains(event.target)) {
+            closeNav();
         }
     });
-
-    document.addEventListener('click', (event) => {
-        if (mobileNav.style.display === 'block' && !mobileNav.contains(event.target)) {
-            mobileNav.style.display = 'none';
+    
+    // Close safely on Escape key
+    document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && mobileNav.style.display === 'block') {
+            closeNav();
         }
     });
 }
