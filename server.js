@@ -1275,6 +1275,7 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 app.get('/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
+        
         // We populate 'following' and 'followers' so we can display their lists later
         const user = await User.findOne({ username: username })
             .populate('following', 'username profileImageKey role')
@@ -1282,17 +1283,19 @@ app.get('/users/:username', async (req, res) => {
 
         if (!user) return res.status(404).render('pages/404');
 
-            if (user.profileImageKey) {
-                try {
-                    user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                        Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
-                    }), { expiresIn: 3600 });
-                } catch (e) { user.signedAvatarUrl = '/images/default-avatar.png'; }
-            } else {
-                user.signedAvatarUrl = '/images/default-avatar.png';
+        if (user.profileImageKey) {
+            try {
+                user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
+                }), { expiresIn: 3600 });
+            } catch (e) { 
+                user.signedAvatarUrl = '/images/default-avatar.png'; 
             }
+        } else {
+            user.signedAvatarUrl = '/images/default-avatar.png';
+        }
 
-        // FIX: Added status: 'live' so drafts and pending mods are hidden
+        // Added status: 'live' so drafts and pending mods are hidden
         const uploads = await File.find({ 
             uploader: username, 
             isLatestVersion: true,
@@ -1305,8 +1308,23 @@ app.get('/users/:username', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
 
-        res.render('pages/public-profile', { profileUser: user, uploads: uploadsWithUrls });
-    } catch (error) { res.status(500).render('pages/500'); }
+        // --- NEW: Follow Logic Check ---
+        let isFollowing = false;
+        if (req.isAuthenticated()) {
+            // Check if the viewed user's ID exists in the logged-in user's 'following' array
+            isFollowing = req.user.following.includes(user._id);
+        }
+
+        res.render('pages/public-profile', { 
+            profileUser: user, 
+            uploads: uploadsWithUrls,
+            isFollowing: isFollowing // Pass this to EJS
+        });
+
+    } catch (error) { 
+        console.error("Public Profile Error:", error);
+        res.status(500).render('pages/500'); 
+    }
 });
 
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {

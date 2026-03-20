@@ -50,6 +50,7 @@
                 </div>
             </div>
         </header>
+
         <section class="profile-content">
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="overview">Overview</button>
@@ -123,9 +124,8 @@
                     <p><%= profileUser.username %> hasn't uploaded any mods yet.</p>
                 <% } %>
             </div>
-        </section>
-    </div>
-<!-- ======== NEW: Community Tab (Followers/Following) ======== -->
+
+            <!-- ======== NEW: Community Tab (Followers/Following) ======== -->
             <div id="community" class="tab-content">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
                     
@@ -176,6 +176,9 @@
 
                 </div>
             </div>
+
+        </section> <!-- Properly closing the profile-content section here -->
+    </div>
 </main>
 
 <script>
