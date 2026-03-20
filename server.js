@@ -699,30 +699,24 @@ app.get('/', async (req, res) => {
 // ===================================
 
 // 1. The Notification Hub (Category Selection)
+// Using lowercase 'app'
 app.get('/notifications', ensureAuthenticated, async (req, res) => {
     try {
-        // We need the counts to show the red badges on the category buttons
-        
-        // Count unread personal messages
-        const unreadPersonalCount = await UserNotification.countDocuments({ 
-            user: req.user._id, 
-            isRead: false 
-        });
-
-        // For global updates, we rely on the same logic used in the header bell
-        // We get the total count from the DB and compare it to the user's localStorage later
-        const totalGlobalUpdates = await Announcement.countDocuments();
+        // Optimization: Run both database queries at the same time
+        const [unreadPersonalCount, totalGlobalUpdates] = await Promise.all([
+            UserNotification.countDocuments({ user: req.user._id, isRead: false }),
+            Announcement.countDocuments()
+        ]);
 
         res.render('pages/notifications-hub', {
-            unreadPersonalCount: unreadPersonalCount,
-            totalGlobalUpdates: totalGlobalUpdates
+            unreadPersonalCount, // Shorthand for unreadPersonalCount: unreadPersonalCount
+            totalGlobalUpdates
         });
     } catch (error) {
         console.error("Error loading notification hub:", error);
         res.status(500).render('pages/500');
     }
 });
-
 // 2. Site Updates List (Global Announcements)
 app.get('/notifications/site-updates', async (req, res) => {
     try {
@@ -1279,10 +1273,14 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 });
 
 app.get('/users/:username', async (req, res) => {
-        try {
-            const username = req.params.username;
-            const user = await User.findOne({ username: username });
-            if (!user) return res.status(404).render('pages/404');
+    try {
+        const username = req.params.username;
+        // We populate 'following' and 'followers' so we can display their lists later
+        const user = await User.findOne({ username: username })
+            .populate('following', 'username profileImageKey role')
+            .populate('followers', 'username profileImageKey role');
+
+        if (!user) return res.status(404).render('pages/404');
 
             if (user.profileImageKey) {
                 try {
@@ -1356,7 +1354,42 @@ app.post('/account/update-profile-image', ensureAuthenticated, upload.single('pr
         });
     } catch (e) { next(e); }
 });
+// --- NEW: Follow Logic Check ---
+        let isFollowing = false;
+        if (req.isAuthenticated()) {
+            // Check if the viewed user's ID exists in the logged-in user's 'following' array
+            isFollowing = req.user.following.includes(user._id);
+        }
 
+        res.render('pages/public-profile', { 
+            profileUser: user, 
+            uploads: uploadsWithUrls,
+            isFollowing: isFollowing // Pass this to EJS
+        });
+
+    } catch (error) { 
+        console.error("Public Profile Error:", error);
+        res.status(500).render('pages/500'); 
+    }
+});
+// --- NEW: Follow Logic Check ---
+        let isFollowing = false;
+        if (req.isAuthenticated()) {
+            // Check if the viewed user's ID exists in the logged-in user's 'following' array
+            isFollowing = req.user.following.includes(user._id);
+        }
+
+        res.render('pages/public-profile', { 
+            profileUser: user, 
+            uploads: uploadsWithUrls,
+            isFollowing: isFollowing // Pass this to EJS
+        });
+
+    } catch (error) { 
+        console.error("Public Profile Error:", error);
+        res.status(500).render('pages/500'); 
+    }
+});
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
@@ -1839,6 +1872,46 @@ app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin,
 });
 
 app.get('/community-chat', ensureAuthenticated, (req, res) => res.render('pages/community-chat'));
+// ===================================
+// USER FOLLOW SYSTEM
+// ===================================
+app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
+    try {
+        const targetUserId = req.params.id;
+        const currentUserId = req.user._id;
+
+        // You cannot follow yourself
+        if (targetUserId === currentUserId.toString()) {
+            return res.redirect('back');
+        }
+
+        const targetUser = await User.findById(targetUserId);
+        if (!targetUser) return res.status(404).send("User not found.");
+
+        // Check if the current user is already following the target user
+        const isFollowing = req.user.following.includes(targetUserId);
+
+        if (isFollowing) {
+            // UNFOLLOW LOGIC
+            await User.findByIdAndUpdate(currentUserId, { $pull: { following: targetUserId } });
+            await User.findByIdAndUpdate(targetUserId, { $pull: { followers: currentUserId } });
+        } else {
+            // FOLLOW LOGIC
+            await User.findByIdAndUpdate(currentUserId, { $push: { following: targetUserId } });
+            await User.findByIdAndUpdate(targetUserId, { $push: { followers: currentUserId } });
+            
+            // Optional: Send a notification to the user that they got a new follower
+            // await new UserNotification({ user: targetUserId, title: "New Follower", message: `${req.user.username} started following you!`, type: 'info' }).save();
+        }
+
+        // Redirect back to the profile page they were just on
+        res.redirect(`/users/${targetUser.username}`);
+
+    } catch (error) {
+        console.error("Follow User Error:", error);
+        res.status(500).send("Server Error");
+    }
+});
 
 // ===============================
 // 13. STATIC PAGES

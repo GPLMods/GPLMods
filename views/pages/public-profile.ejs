@@ -14,33 +14,48 @@
             </div>
 
             <h1><%= profileUser.username %></h1>
-            <!-- Capitalize the role -->
             <p class="user-role"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
             
+            <!-- ======== NEW: FOLLOW BUTTON ======== -->
+            <% if (user && user._id.toString() !== profileUser._id.toString()) { %>
+                <form action="/users/<%= profileUser._id %>/follow" method="POST" style="margin-bottom: 20px;">
+                    <% if (isFollowing) { %>
+                        <button type="submit" class="btn btn-secondary" style="border-color: var(--silver); color: var(--silver);">Unfollow</button>
+                    <% } else { %>
+                        <button type="submit" class="btn btn-primary" style="box-shadow: 0 0 10px var(--glow-gold);">Follow</button>
+                    <% } %>
+                </form>
+            <% } else if (!user) { %>
+                <a href="/login" class="btn btn-secondary" style="margin-bottom: 20px; display: inline-block;">Login to Follow</a>
+            <% } %>
+
             <div class="profile-stats">
                 <div class="stat-item">
                     <div class="stat-number"><%= uploads.length %></div>
-                    <div class="stat-label">Total Mods Uploaded</div>
+                    <div class="stat-label">Uploads</div>
+                </div>
+                <!-- ======== NEW: FOLLOW STATS ======== -->
+                <div class="stat-item">
+                    <div class="stat-number"><%= profileUser.followers.length %></div>
+                    <div class="stat-label">Followers</div>
                 </div>
                 <div class="stat-item">
-                    <!-- Format the date to show 'Month Year' -->
-                    <div class="stat-number">
-                        <%= profileUser.createdAt.toLocaleString('default', { month: 'short' }) %> '<%= profileUser.createdAt.getFullYear().toString().substr(-2) %>
-                    </div>
-                    <div class="stat-label">Member Since</div>
+                    <div class="stat-number"><%= profileUser.following.length %></div>
+                    <div class="stat-label">Following</div>
                 </div>
-                <!-- Last Online Section -->
+                <!-- ==================================== -->
                 <div class="stat-item">
                     <div class="stat-number"><%= timeAgo(profileUser.lastSeen) %></div>
                     <div class="stat-label">Last Online</div>
                 </div>
             </div>
         </header>
-
         <section class="profile-content">
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="overview">Overview</button>
                 <button class="tab-button" data-tab="uploads">Uploads</button>
+                <!-- NEW TAB -->
+                <button class="tab-button" data-tab="community">Community</button>
             </div>
 
             <!-- Bio Tab -->
@@ -110,6 +125,57 @@
             </div>
         </section>
     </div>
+<!-- ======== NEW: Community Tab (Followers/Following) ======== -->
+            <div id="community" class="tab-content">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                    
+                    <!-- Followers List -->
+                    <div>
+                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Followers (<%= profileUser.followers.length %>)</h2>
+                        <% if (profileUser.followers.length > 0) { %>
+                            <ul style="list-style: none; padding: 0;">
+                                <% profileUser.followers.forEach(follower => { %>
+                                    <li style="margin-bottom: 15px;">
+                                        <a href="/users/<%= follower.username %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
+                                            <!-- Assuming you have a fallback for missing avatars in the UI -->
+                                            <img src="/images/default-avatar.png" style="width: 40px; height: 40px; border-radius: 50%;">
+                                            <div>
+                                                <strong style="display: block;"><%= follower.username %></strong>
+                                                <span style="font-size: 0.8em; color: var(--silver);"><%= follower.role %></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        <% } else { %>
+                            <p style="color: var(--silver);">No followers yet.</p>
+                        <% } %>
+                    </div>
+
+                    <!-- Following List -->
+                    <div>
+                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Following (<%= profileUser.following.length %>)</h2>
+                        <% if (profileUser.following.length > 0) { %>
+                            <ul style="list-style: none; padding: 0;">
+                                <% profileUser.following.forEach(followingUser => { %>
+                                    <li style="margin-bottom: 15px;">
+                                        <a href="/users/<%= followingUser.username %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
+                                            <img src="/images/default-avatar.png" style="width: 40px; height: 40px; border-radius: 50%;">
+                                            <div>
+                                                <strong style="display: block;"><%= followingUser.username %></strong>
+                                                <span style="font-size: 0.8em; color: var(--silver);"><%= followingUser.role %></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        <% } else { %>
+                            <p style="color: var(--silver);">Not following anyone yet.</p>
+                        <% } %>
+                    </div>
+
+                </div>
+            </div>
 </main>
 
 <script>

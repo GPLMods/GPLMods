@@ -65,6 +65,14 @@ profileImageKey: {
         ref: 'File',
         default:[]
     },
+   following: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    followers: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     isVerified: {
         type: Boolean,
         default: false
