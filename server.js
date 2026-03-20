@@ -1276,7 +1276,6 @@ app.get('/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
         
-        // We populate 'following' and 'followers' so we can display their lists later
         const user = await User.findOne({ username: username })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
@@ -1295,7 +1294,6 @@ app.get('/users/:username', async (req, res) => {
             user.signedAvatarUrl = '/images/default-avatar.png';
         }
 
-        // Added status: 'live' so drafts and pending mods are hidden
         const uploads = await File.find({ 
             uploader: username, 
             isLatestVersion: true,
@@ -1308,17 +1306,15 @@ app.get('/users/:username', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
 
-        // --- NEW: Follow Logic Check ---
         let isFollowing = false;
         if (req.isAuthenticated()) {
-            // Check if the viewed user's ID exists in the logged-in user's 'following' array
             isFollowing = req.user.following.includes(user._id);
         }
 
         res.render('pages/public-profile', { 
             profileUser: user, 
             uploads: uploadsWithUrls,
-            isFollowing: isFollowing // Pass this to EJS
+            isFollowing: isFollowing 
         });
 
     } catch (error) { 
