@@ -168,7 +168,7 @@ const clientPromise = mongoose.connect(process.env.MONGO_URI)
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
-// 5. SESSION MIDDLEWARE (Must be before Passport AND before AdminJS)
+// 5. SESSION MIDDLEWARE (Robust Configuration)
 const store = new MongoDBStore({
     uri: process.env.MONGO_URI,
     collection: 'sessions'
@@ -180,16 +180,36 @@ store.on('error', function(error) {
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-key',
-    resave: false,
-    saveUninitialized: false,
+    resave: false, 
+    saveUninitialized: false, // Don't create a session for a guest until they actually do something (like vote or search)
     store: store, 
     cookie: { 
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-        path: '/', // Ensure the cookie is sent for all paths
-        httpOnly: true, // Security best practice
-        // secure: process.env.NODE_ENV === 'production' // Uncomment this ONLY if you have HTTPS working locally too
+        // DEFAULT: 1 Hour for unregistered users/guests
+        maxAge: 1000 * 60 * 60 * 1, 
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies if on HTTPS
+        httpOnly: true,
+        sameSite: 'lax' // Protect against CSRF
     } 
 }));
+
+// --- DYNAMIC SESSION EXPIRATION MIDDLEWARE ---
+app.use((req, res, next) => {
+    if (req.session) {
+        if (req.isAuthenticated()) {
+            // IF LOGGED IN: Extend the session to 3 Days (259,200,000 ms)
+            // This happens on every request the logged-in user makes, 
+            // effectively keeping them logged in for 3 days from their last activity.
+            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 3;
+        } else {
+            // IF GUEST: Keep the session at 1 Hour (3,600,000 ms)
+            // Note: "Killing a session instantly on tab close" is handled by the browser 
+            // if maxAge is not set (a "session cookie"). However, we need maxAge for search history 
+            // to persist briefly. 1 hour is a good compromise for guests.
+            req.session.cookie.maxAge = 1000 * 60 * 60 * 1;
+        }
+    }
+    next();
+});
 
 // 6. PASSPORT INIT (Must be after session, before AdminJS)
 app.use(passport.initialize());
@@ -1100,15 +1120,30 @@ app.get('/login', (req, res) => {
         error: req.query.error || null // <--- ADD THIS
     });
 });
-app.post('/login', verifyRecaptcha, passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login' }));
+app.post('/login', verifyRecaptcha, (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if (err) return next(err);
+        
+        // If authentication fails, redirect back with the error message
+        if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
 
-// ✅ FIX 1: Added redirectIfAuthenticated
-app.get('/register', (req, res) => {
-    res.render('pages/register', { 
-        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, 
-        message: null,
-        error: req.query.error || null // <--- ADD THIS
-    });
+        // If authentication succeeds, log them in
+        req.logIn(user, (loginErr) => {
+            if (loginErr) return next(loginErr);
+            
+            // --- SECURITY FIX: Generate a brand new Session ID upon login ---
+            let tempSession = req.session.passport; // Save their passport data
+            req.session.regenerate((regenErr) => {
+                if (regenErr) console.error("Session Regen Error:", regenErr);
+                
+                req.session.passport = tempSession; // Restore the passport data to the new session
+                req.session.save((saveErr) => {
+                    if (saveErr) console.error("Session Save Error:", saveErr);
+                    res.redirect('/?message=Welcome back!');
+                });
+            });
+        });
+    })(req, res, next);
 });
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
@@ -1174,8 +1209,16 @@ app.post('/verify-otp', async (req, res) => {
         await user.save();
         
         req.login(user, (err) => {
-            if (err) return res.redirect('/login');
-            return res.redirect('/profile');
+            if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
+            
+            // --- SECURITY FIX: Generate a brand new Session ID upon verification/login ---
+            let tempSession = req.session.passport;
+            req.session.regenerate((regenErr) => {
+                req.session.passport = tempSession;
+                req.session.save(() => {
+                    return res.redirect('/profile?success=Account verified successfully!');
+                });
+            });
         });
 
     } catch (error) {
@@ -1274,7 +1317,27 @@ app.post('/reset-password/:token', async (req, res, next) => {
 });
 
 app.get('/logout', (req, res, next) => {
-    req.logout(err => { if (err) return next(err); res.redirect('/'); });
+    // 1. Log the user out of Passport
+    req.logout(err => { 
+        if (err) {
+            console.error("Logout Error:", err);
+            return next(err); 
+        } 
+        
+        // 2. Destroy the session in the MongoDB store
+        req.session.destroy((destroyErr) => {
+            if (destroyErr) {
+                console.error("Session Destruction Error:", destroyErr);
+            }
+            
+            // 3. Clear the cookie from the user's browser
+            // The name 'connect.sid' is the default cookie name used by express-session
+            res.clearCookie('connect.sid', { path: '/' });
+            
+            // 4. Redirect home
+            res.redirect('/?message=You have been successfully logged out.'); 
+        });
+    });
 });
 
 // Google Routes (Existing)
