@@ -12,11 +12,10 @@
             <!-- Profile Details Form -->
             <section class="form-section">
                 <h2>Profile Details</h2>
-                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section">
+                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section" id="avatar-form">
                     <div class="avatar-preview-wrapper">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
                         
-                        <!-- ✅ UPGRADE 1: Replaced Emoji with Custom SVG Icon -->
                         <label for="avatar-input" class="avatar-edit-button" title="Change Avatar">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--black)">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -24,7 +23,9 @@
                         </label>
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>
-                    <button type="submit" class="submit-button secondary-button" style="margin-bottom: 20px;">Save New Avatar</button>
+                    
+                    <!-- ✅ FIX: Added ID and set display to none initially -->
+                    <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
                 </form>
 
                 <h3 class="current-username"><%= user.username %></h3>
@@ -112,16 +113,35 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // --- Live Avatar Preview Logic ---
+           // --- Live Avatar Preview Logic ---
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
+        // ✅ FIX: Get the button and form elements
+        const saveAvatarBtn = document.getElementById('save-avatar-btn');
+        const avatarForm = document.getElementById('avatar-form');
+
         avatarInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => { avatarPreview.src = e.target.result; }
+                reader.onload = (e) => { 
+                    avatarPreview.src = e.target.result; 
+                    // ✅ FIX: Show the button once the image preview loads
+                    saveAvatarBtn.style.display = 'block'; 
+                }
                 reader.readAsDataURL(this.files[0]);
+            } else {
+                 // If they cancel the file selection, hide the button again
+                 saveAvatarBtn.style.display = 'none';
             }
         });
+        
+        // Prevent double submission
+        if(avatarForm) {
+            avatarForm.addEventListener('submit', function() {
+                 saveAvatarBtn.disabled = true;
+                 saveAvatarBtn.textContent = 'Uploading...';
+            });
+        }
 
         // --- Custom Delete Account Modal Logic ---
         const deleteForm = document.getElementById('delete-account-form');
