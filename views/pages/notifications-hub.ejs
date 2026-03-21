@@ -116,7 +116,8 @@
                 </div>
                 
                 <!-- Server-side rendered badge for personal messages -->
-                <% if (unreadPersonalCount > 0) { %>
+                <!-- ✅ FIX: Added typeof safety check -->
+                <% if (typeof unreadPersonalCount !== 'undefined' && unreadPersonalCount > 0) { %>
                     <div class="cat-badge">
                         <%= unreadPersonalCount > 9 ? '9+' : unreadPersonalCount %> New
                     </div>
@@ -126,8 +127,8 @@
             </a>
 
             <!-- Category 2: Site Updates (Global) -->
-            <!-- We pass the total updates count as a data attribute so JS can calculate unread -->
-            <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= totalGlobalUpdates %>">
+            <!-- ✅ FIX: Added fallback to 0 if variable is undefined -->
+            <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= typeof totalGlobalUpdates !== 'undefined' ? totalGlobalUpdates : 0 %>">
                 <div class="category-info">
                     <div class="category-icon">
                         <i class="fas fa-bullhorn"></i>
