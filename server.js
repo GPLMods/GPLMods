@@ -1873,9 +1873,134 @@ app.post('/unban-request', ensureAuthenticated, async (req, res) => {
         res.redirect('/banned?error=An error occurred while submitting your request.');
     }
 });
+// ===================================
+// 14. REQUEST A MOD ROUTES
+// ===================================
+app.get('/request-mod', ensureAuthenticated, (req, res) => {
+    res.render('pages/request-mod', {
+        message: req.query.message,
+        error: req.query.error
+    });
+});
+
+app.post('/request-mod', ensureAuthenticated, async (req, res) => {
+    try {
+        const { requestType, appName, officialLink, existingModLink, platform, requestedVersion, modFeaturesRequested, additionalNotes } = req.body;
+
+        if (!requestType || !appName || !officialLink || !platform || !modFeaturesRequested) {
+            return res.redirect('/request-mod?error=Please fill in all required fields.');
+        }
+
+        const pendingCount = await Request.countDocuments({ user: req.user._id, status: 'pending' });
+        if (pendingCount >= 3) {
+            return res.redirect('/request-mod?error=You already have 3 pending requests. Please wait for them to be reviewed.');
+        }
+
+        const newRequest = new Request({
+            user: req.user._id,
+            username: req.user.username,
+            requestType, appName, officialLink, existingModLink, platform, requestedVersion, modFeaturesRequested, additionalNotes
+        });
+
+        await newRequest.save();
+        res.redirect('/request-mod?message=Your request has been submitted successfully! Admins will review it soon.');
+    } catch (error) {
+        console.error("Error submitting mod request:", error);
+        res.redirect('/request-mod?error=An error occurred while submitting your request.');
+    }
+});
+
+// ===================================
+// 14.5 SUPPORT TICKET ROUTES
+// ===================================
+app.get('/support', ensureAuthenticated, async (req, res) => {
+    try {
+        const myTickets = await SupportTicket.find({ user: req.user._id }).sort({ createdAt: -1 });
+        res.render('pages/support', {
+            tickets: myTickets,
+            message: req.query.message,
+            error: req.query.error
+        });
+    } catch (error) {
+        console.error("Error loading support page:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/support', ensureAuthenticated, async (req, res) => {
+    try {
+        const { subject, category, message } = req.body;
+
+        if (!subject || !category || !message) {
+            return res.redirect('/support?error=Please fill in all required fields.');
+        }
+
+        const openCount = await SupportTicket.countDocuments({ user: req.user._id, status: { $in: ['open', 'in-progress'] } });
+        if (openCount >= 3) {
+            return res.redirect('/support?error=You already have 3 open tickets. Please wait for them to be resolved.');
+        }
+
+        const newTicket = new SupportTicket({
+            user: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            subject, category, message
+        });
+
+        await newTicket.save();
+        res.redirect('/support?message=Your support ticket has been submitted. We will reply via your Notifications.');
+    } catch (error) {
+        console.error("Error submitting support ticket:", error);
+        res.redirect('/support?error=An error occurred while submitting your ticket.');
+    }
+});
+// ===================================
+// 15. DISTRIBUTOR PARTNERSHIP ROUTES
+// ===================================
+app.get('/partnership', ensureAuthenticated, async (req, res) => {
+    try {
+        const existingApp = await DistributorApplication.findOne({ user: req.user._id });
+        res.render('pages/partnership', {
+            existingApplication: existingApp,
+            message: req.query.message,
+            error: req.query.error
+        });
+    } catch (error) {
+        console.error("Partnership load error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
+    try {
+        const existingApp = await DistributorApplication.findOne({ user: req.user._id });
+        if (existingApp) {
+            return res.redirect('/partnership?error=You have already submitted an application.');
+        }
+
+        const { organizationName, primaryDistributionPlatform, platformUrl, monetizationMethod, adminContactName, adminSocialLink, socialTelegram, socialDiscord, socialWebsite, socialYoutube, agreedToTerms } = req.body;
+
+        if (!agreedToTerms) {
+            return res.redirect('/partnership?error=You must agree to the safety and distribution terms.');
+        }
+
+        const newApplication = new DistributorApplication({
+            user: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            organizationName, primaryDistributionPlatform, platformUrl, monetizationMethod, adminContactName, adminSocialLink, socialTelegram, socialDiscord, socialWebsite, socialYoutube, agreedToTerms: true
+        });
+
+        await newApplication.save();
+        res.redirect('/partnership?message=Application submitted successfully! Our team will review it shortly.');
+    } catch (error) {
+        console.error("Partnership Application Error:", error);
+        res.redirect('/partnership?error=An error occurred while submitting your application.');
+    }
+});
 
 // ===============================
-// 14. SERVER STARTUP & ADMIN ROUTER
+// 16. SERVER STARTUP & ADMIN ROUTER
 // ===============================
 const createAdminRouter = require('./config/admin');
 
