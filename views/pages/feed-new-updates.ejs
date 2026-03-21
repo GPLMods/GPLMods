@@ -1,0 +1,76 @@
+<%- include('../partials/header') %>
+
+<main>
+    <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px;">
+        <div class="container">
+            <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">
+                <i class="fas fa-sync-alt" style="color: var(--gold); margin-right: 15px;"></i>Recent <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Updates</span>
+            </h1>
+            <p style="color: var(--silver); font-size: 1.1em;">Existing mods that received a new version within the last 24 hours.</p>
+        </div>
+    </section>
+
+    <div class="container" style="margin-top: 40px; margin-bottom: 60px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <a href="/notifications" class="btn btn-secondary" style="border-color: #333; color: var(--silver);">
+                <i class="fas fa-arrow-left"></i> Back to Hub
+            </a>
+            <span style="color: var(--silver); font-weight: bold;"><%= files.length %> Updates Today</span>
+        </div>
+
+        <% if (files && files.length > 0) { %>
+            <section class="mod-grid">
+                <% files.forEach(file => { %>
+                    <a href="/mods/<%= file._id %>" class="mod-card-link">
+                        <div class="mod-card" style="border-color: rgba(255, 215, 0, 0.2);">
+                            
+                            <% if (file.certification === 'certified') { %>
+                                <div class="app-feature-tag">✔ Certified</div>
+                            <% } else if (file.certification === 'community-tested') { %>
+                                <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+                            <% } %>
+                            
+                            <div class="mod-type-tag" style="background-color: var(--gold); color: var(--black);"><i class="fas fa-arrow-up" style="margin-right: 5px;"></i><%= file.version %></div>
+                            
+                            <div class="mod-card-image">
+                                <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                            </div>
+                            
+                            <div class="mod-card-content">
+                                <h3><%= file.name %></h3>
+                                
+                                <p style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                                    <span style="color: var(--silver); font-size: 0.85em;">Updated by: </span>
+                                    <strong style="color: var(--gold);"><%= file.uploader %></strong><br>
+                                    <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt) %></span>
+                                </p>
+                                
+                                <div class="rating" style="margin-bottom: 10px;">
+                                    <div class="stars-outer">
+                                        <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                    </div>
+                                    <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                </div>
+
+                                <div class="card-footer">
+                                    <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                        <%= file.category.toUpperCase().replace('-', ' ') %>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                <% }) %>
+            </section>
+        <% } else { %>
+            <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333;">
+                <i class="fas fa-history" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                <h2 style="color: var(--white); margin-bottom: 10px;">No Recent Updates</h2>
+                <p style="color: var(--silver); font-size: 1.1em;">It's quiet today. No existing mods have been updated in the last 24 hours.</p>
+            </div>
+        <% } %>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

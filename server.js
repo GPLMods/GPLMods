@@ -749,6 +749,61 @@ app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) =
         res.status(500).render('pages/500');
     }
 });
+// --- NEW: 24-Hour "New Uploads" Feed ---
+app.get('/notifications/new-uploads', async (req, res) => {
+    try {
+        // 1. Calculate the timestamp for 24 hours ago
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        // 2. Find files CREATED within the last 24 hours that are LIVE
+        const recentUploads = await File.find({
+            createdAt: { $gte: oneDayAgo },
+            status: 'live',
+            isLatestVersion: true
+        }).sort({ createdAt: -1 });
+
+        // 3. Get signed URLs for the icons (using our smart helper)
+        const uploadsWithUrls = await Promise.all(recentUploads.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        res.render('pages/feed-new-uploads', { files: uploadsWithUrls });
+
+    } catch (error) {
+        console.error("Error fetching new uploads feed:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- NEW: 24-Hour "New Updates" Feed ---
+app.get('/notifications/new-updates', async (req, res) => {
+    try {
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        // 1. Find files UPDATED within the last 24 hours that are LIVE
+        // We use updatedAt instead of createdAt for this feed
+        const recentUpdates = await File.find({
+            updatedAt: { $gte: oneDayAgo },
+            status: 'live',
+            isLatestVersion: true
+        }).sort({ updatedAt: -1 });
+
+        // 2. Get signed URLs for the icons
+        const updatesWithUrls = await Promise.all(recentUpdates.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        res.render('pages/feed-new-updates', { files: updatesWithUrls });
+
+    } catch (error) {
+        console.error("Error fetching new updates feed:", error);
+        res.status(500).render('pages/500');
+    }
+});
 // Category / Filter
 app.get('/category', async (req, res) => {
     try {

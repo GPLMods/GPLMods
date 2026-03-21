@@ -1,0 +1,79 @@
+<%- include('../partials/header') %>
+
+<main>
+    <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px;">
+        <div class="container">
+            <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">
+                <i class="fas fa-file-upload" style="color: var(--green); margin-right: 15px;"></i>New <span style="color: var(--green); text-shadow: 0 0 15px rgba(67, 160, 71, 0.5);">Uploads</span>
+            </h1>
+            <p style="color: var(--silver); font-size: 1.1em;">Fresh mods added to the platform within the last 24 hours.</p>
+        </div>
+    </section>
+
+    <div class="container" style="margin-top: 40px; margin-bottom: 60px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <a href="/notifications" class="btn btn-secondary" style="border-color: #333; color: var(--silver);">
+                <i class="fas fa-arrow-left"></i> Back to Hub
+            </a>
+            <span style="color: var(--silver); font-weight: bold;"><%= files.length %> New Uploads Today</span>
+        </div>
+
+        <% if (files && files.length > 0) { %>
+            <!-- Reusing the standard universal mod grid layout -->
+            <section class="mod-grid">
+                <% files.forEach(file => { %>
+                    <a href="/mods/<%= file._id %>" class="mod-card-link">
+                        <div class="mod-card">
+                            
+                            <% if (file.certification === 'certified') { %>
+                                <div class="app-feature-tag">✔ Certified</div>
+                            <% } else if (file.certification === 'community-tested') { %>
+                                <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+                            <% } %>
+                            
+                            <div class="mod-type-tag"><%= file.version %></div>
+                            
+                            <div class="mod-card-image">
+                                <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+                            </div>
+                            
+                            <div class="mod-card-content">
+                                <h3><%= file.name %></h3>
+                                
+                                <!-- NEW: Show Uploader Name and Time -->
+                                <p style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                                    <span style="color: var(--silver); font-size: 0.85em;">Uploaded by: </span>
+                                    <strong style="color: var(--gold);"><%= file.uploader %></strong><br>
+                                    <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.createdAt) %></span>
+                                </p>
+                                
+                                <div class="rating" style="margin-bottom: 10px;">
+                                    <div class="stars-outer">
+                                        <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                    </div>
+                                    <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                </div>
+
+                                <div class="card-footer">
+                                    <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                        <%= file.category.toUpperCase().replace('-', ' ') %>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                <% }) %>
+            </section>
+        <% } else { %>
+            <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333;">
+                <i class="fas fa-box-open" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                <h2 style="color: var(--white); margin-bottom: 10px;">No New Uploads Yet</h2>
+                <p style="color: var(--silver); font-size: 1.1em;">Check back later! Our community is always working on new content.</p>
+                <a href="/upload" class="btn btn-primary" style="margin-top: 20px; display: inline-block;">Upload a Mod</a>
+            </div>
+        <% } %>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>
