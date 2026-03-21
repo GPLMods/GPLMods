@@ -127,12 +127,17 @@ const uploadToB2 = async (file, folder) => {
 };
 
 // ===============================
-// 4. PRE-ADMIN MIDDLEWARE (Sessions & CORS)
+// 4. MIDDLEWARE & CONFIGURATION
 // ===============================
-// 1. Static Files (Safe to be early)
+
+// 1. Static Files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. CORS (Safe to be early)
+// 2. Parsers (Crucial for AdminJS and login forms)
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// 3. CORS
 const allowedOrigins =[
     'http://localhost:3000',          
     'https://gplmods.webredirect.org'   
@@ -148,10 +153,12 @@ app.use(cors({
     }
 }));
 
-// 3. Maintenance Mode (Must be before routes)
+// 4. Maintenance Mode
 app.use((req, res, next) => {
     if (process.env.MAINTENANCE_MODE === 'on') {
-        if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
+        // We can't check req.user yet because Passport hasn't run, 
+        // so we only allow access to the /admin login path itself
+        if (req.path.startsWith('/admin')) {
             return next();
         }
         return res.status(503).render('pages/maintenance');
@@ -159,7 +166,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 4. DATABASE CONNECTION PROMISE (Needed for session)
+// 5. DATABASE CONNECTION PROMISE (Needed for session & AdminJS)
 const clientPromise = mongoose.connect(process.env.MONGO_URI)
     .then(m => {
         mongoose.Model.count = mongoose.Model.countDocuments; 
@@ -168,8 +175,59 @@ const clientPromise = mongoose.connect(process.env.MONGO_URI)
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
-// 5. SESSION MIDDLEWARE (Must be before Passport AND before AdminJS)
-// --- The FINAL, CORRECT Signed Avatar URL Middleware ---
+// 6. SESSION MIDDLEWARE
+const store = new MongoDBStore({
+    uri: process.env.MONGO_URI,
+    collection: 'sessions'
+});
+
+store.on('error', function(error) {
+    console.error('Session Store Error:', error);
+});
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: store, 
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // Default 7 days
+}));
+
+// ===============================
+// 5. PASSPORT (AUTHENTICATION)
+// ===============================
+
+// 1. Initialize Passport (MUST come right after Session)
+app.use(passport.initialize());
+app.use(passport.session());
+
+// 2. Passport Serialization
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+    try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
+});
+
+// 3. Dynamic Session Expiration
+app.use((req, res, next) => {
+    if (req.session) {
+        if (req.isAuthenticated()) {
+            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 3; // 3 Days for logged-in users
+        } else {
+            req.session.cookie.maxAge = 1000 * 60 * 60 * 1; // 1 Hour for guests
+        }
+    }
+    next();
+});
+
+// 4. User Last Seen Updater
+app.use(async (req, res, next) => {
+    if (req.isAuthenticated()) {
+        User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
+    }
+    next();
+});
+
+// 5. Signed Avatar URL Generator
 app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user) {
         if (req.user.profileImageKey) {
@@ -189,232 +247,62 @@ app.use(async (req, res, next) => {
     }
     next();
 });
-// --- Globals & Notification Cache ---
-let cachedTotalUpdates = 0;
-let lastUpdateCheck = 0;
 
-app.use(async (req, res, next) => {
+// 6. Globals Middleware
+app.use((req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
-    res.locals.formatBytes = formatBytes;
+    res.locals.formatBytes = formatBytes; 
     
-    // 1. Check Global Announcements (Cached)
-    if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
-        try {
-            cachedTotalUpdates = await Announcement.countDocuments();
-            lastUpdateCheck = Date.now();
-        } catch (e) { console.error("Error counting announcements:", e); }
-    }
-    res.locals.totalUpdatesCount = cachedTotalUpdates;
-
-    // 2. Check Personal Unread Notifications (Real-time per user)
-    let unreadPersonalCount = 0;
-    if (req.isAuthenticated()) {
-        try {
-            unreadPersonalCount = await UserNotification.countDocuments({ 
-                user: req.user._id, 
-                isRead: false 
-            });
-        } catch (e) { console.error("Error counting personal notifications:", e); }
-    }
-    res.locals.unreadPersonalCount = unreadPersonalCount;
-    
+    // Default Notification globals (will be updated by the next middleware)
+    res.locals.totalUpdatesCount = 0;
+    res.locals.unreadPersonalCount = 0;
     next();
 });
 
-// --- NEW: BANNED USER TRAP MIDDLEWARE ---
+// 7. Banned User Trap
 app.use((req, res, next) => {
-    // If the user is logged in AND they are banned
     if (req.isAuthenticated() && req.user && req.user.isBanned) {
-        // The ONLY paths a banned user is allowed to access
         const allowedPaths =['/banned', '/logout', '/unban-request'];
-        
         if (!allowedPaths.includes(req.path)) {
-            // Redirect them to the banned page if they try to go anywhere else
             return res.redirect('/banned');
         }
     }
     next();
 });
-// ===================================
-// SUPPORT TICKET ROUTES
-// ===================================
 
-// GET: Show the support ticket form
-app.get('/support', ensureAuthenticated, async (req, res) => {
+// 8. Auth Helper Functions (Used by routes)
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) return next();
+    res.redirect('/login');
+}
+function ensureAdmin(req, res, next) {
+    if (req.user && req.user.role === 'admin') return next();
+    res.status(403).render('pages/403');
+}
+function redirectIfAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) return res.redirect('/'); 
+    next();
+}
+async function verifyRecaptcha(req, res, next) {
+    const token = req.body['g-recaptcha-response'];
+    const returnUrl = req.path;
+    if (!token) return res.redirect(`${returnUrl}?error=Please complete the "I'm not a robot" check.`);
     try {
-        // Fetch the user's past tickets so they can see the status
-        const myTickets = await SupportTicket.find({ user: req.user._id }).sort({ createdAt: -1 });
-        
-        res.render('pages/support', {
-            tickets: myTickets,
-            message: req.query.message,
-            error: req.query.error
-        });
-    } catch (error) {
-        console.error("Error loading support page:", error);
-        res.status(500).render('pages/500');
+        const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`);
+        if (response.data.success) return next();
+        return res.redirect(`${returnUrl}?error=CAPTCHA verification failed. Please try again.`);
+    } catch (e) { 
+        console.error("reCAPTCHA API Error:", e);
+        return res.redirect(`${returnUrl}?error=A server error occurred during CAPTCHA verification.`);
     }
-});
+}
 
-// POST: Handle the ticket submission
-app.post('/support', ensureAuthenticated, async (req, res) => {
-    try {
-        const { subject, category, message } = req.body;
-
-        // Basic validation
-        if (!subject || !category || !message) {
-            return res.redirect('/support?error=Please fill in all required fields.');
-        }
-
-        // Prevent spam: Check if this user already has 3 open tickets
-        const openCount = await SupportTicket.countDocuments({ user: req.user._id, status: { $in: ['open', 'in-progress'] } });
-        if (openCount >= 3) {
-            return res.redirect('/support?error=You already have 3 open tickets. Please wait for them to be resolved.');
-        }
-
-        const newTicket = new SupportTicket({
-            user: req.user._id,
-            username: req.user.username,
-            email: req.user.email,
-            subject,
-            category,
-            message
-        });
-
-        await newTicket.save();
-
-        res.redirect('/support?message=Your support ticket has been submitted. We will reply via your Notifications.');
-
-    } catch (error) {
-        console.error("Error submitting support ticket:", error);
-        res.redirect('/support?error=An error occurred while submitting your ticket.');
-    }
-});
-// ===================================
-// MOD REQUEST ROUTES
-// ===================================
-
-// GET: Show the request form
-app.get('/request-mod', ensureAuthenticated, (req, res) => {
-    res.render('pages/request-mod', {
-        message: req.query.message,
-        error: req.query.error
-    });
-});
-
-// POST: Handle the form submission
-app.post('/request-mod', ensureAuthenticated, async (req, res) => {
-    try {
-        const { 
-            requestType, appName, officialLink, existingModLink, 
-            platform, requestedVersion, modFeaturesRequested, additionalNotes 
-        } = req.body;
-
-        // Basic validation
-        if (!requestType || !appName || !officialLink || !platform || !modFeaturesRequested) {
-            return res.redirect('/request-mod?error=Please fill in all required fields.');
-        }
-
-        // Prevent spam: Check if this user already has 3 pending requests
-        const pendingCount = await Request.countDocuments({ user: req.user._id, status: 'pending' });
-        if (pendingCount >= 3) {
-            return res.redirect('/request-mod?error=You already have 3 pending requests. Please wait for them to be reviewed.');
-        }
-
-        const newRequest = new Request({
-            user: req.user._id,
-            username: req.user.username,
-            requestType,
-            appName,
-            officialLink,
-            existingModLink,
-            platform,
-            requestedVersion,
-            modFeaturesRequested,
-            additionalNotes
-        });
-
-        await newRequest.save();
-
-        res.redirect('/request-mod?message=Your request has been submitted successfully! Admins will review it soon.');
-
-    } catch (error) {
-        console.error("Error submitting mod request:", error);
-        res.redirect('/request-mod?error=An error occurred while submitting your request.');
-    }
-});
-// ===================================
-// DISTRIBUTOR PARTNERSHIP ROUTES
-// ===================================
-
-// GET: Show the application page
-app.get('/partnership', ensureAuthenticated, async (req, res) => {
-    // Check if they already applied
-    const existingApp = await DistributorApplication.findOne({ user: req.user._id });
-    
-    res.render('pages/partnership', {
-        existingApplication: existingApp,
-        message: req.query.message,
-        error: req.query.error
-    });
-});
-
-// POST: Handle the application submission
-app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
-    try {
-        // Prevent multiple applications
-        const existingApp = await DistributorApplication.findOne({ user: req.user._id });
-        if (existingApp) {
-            return res.redirect('/partnership?error=You have already submitted an application.');
-        }
-
-        const { 
-            organizationName, primaryDistributionPlatform, platformUrl, 
-            monetizationMethod, adminContactName, adminSocialLink,
-            socialTelegram, socialDiscord, socialWebsite, socialYoutube,
-            agreedToTerms
-        } = req.body;
-
-        if (!agreedToTerms) {
-            return res.redirect('/partnership?error=You must agree to the safety and distribution terms.');
-        }
-
-        const newApplication = new DistributorApplication({
-            user: req.user._id,
-            username: req.user.username,
-            email: req.user.email,
-            organizationName,
-            primaryDistributionPlatform,
-            platformUrl,
-            monetizationMethod,
-            adminContactName,
-            adminSocialLink,
-            socialTelegram,
-            socialDiscord,
-            socialWebsite,
-            socialYoutube,
-            agreedToTerms: true
-        });
-
-        await newApplication.save();
-
-        res.redirect('/partnership?message=Application submitted successfully! Our team will review it shortly.');
-
-    } catch (error) {
-        console.error("Partnership Application Error:", error);
-        res.redirect('/partnership?error=An error occurred while submitting your application.');
-    }
-});
-// --- SETUP ADMINJS ---
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 // ===============================
-// 5. PASSPORT STRATEGIES & MULTER CONFIG
+// 5.5 PASSPORT STRATEGIES & MULTER
 // ===============================
 
-// UPDATED Multer configuration to use disk storage
+// Multer config
 const diskStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = 'uploads/';
@@ -425,6 +313,7 @@ const diskStorage = multer.diskStorage({
 });
 const upload = multer({ storage: diskStorage });
 
+// Local Strategy
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
@@ -436,161 +325,60 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     } catch (e) { return done(e); }
 }));
 
+// Google Strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.BASE_URL
-        ? `${process.env.BASE_URL}/auth/google/callback`
-        : "https://gplmods.webredirect.org/auth/google/callback"
-},
-async (accessToken, refreshToken, profile, done) => {
-    const googleUserData = {
-        googleId: profile.id,
-        username: profile.displayName,
-        email: profile.emails[0].value,
-        isVerified: true
-    };
-
+    callbackURL: process.env.BASE_URL ? `${process.env.BASE_URL}/auth/google/callback` : "https://gplmods.webredirect.org/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+    const googleUserData = { googleId: profile.id, username: profile.displayName, email: profile.emails[0].value, isVerified: true };
     try {
         let user = await User.findOne({ email: googleUserData.email });
-        if (user) {
-            user.googleId = googleUserData.googleId;
-            await user.save();
-            done(null, user);
-        } else {
-            const existingUsername = await User.findOne({ username: googleUserData.username });
-            if (existingUsername) {
-                googleUserData.username = `${googleUserData.username}${Math.floor(Math.random() * 1000)}`;
-            }
-            user = await User.create(googleUserData);
-            done(null, user);
+        if (user) { user.googleId = googleUserData.googleId; await user.save(); done(null, user); } 
+        else {
+            if (await User.findOne({ username: googleUserData.username })) googleUserData.username += Math.floor(Math.random() * 1000);
+            user = await User.create(googleUserData); done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
 
-// --- GITHUB STRATEGY ---
+// GitHub Strategy
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.BASE_URL 
-        ? `${process.env.BASE_URL}/auth/github/callback` 
-        : "https://gplmods.webredirect.org/auth/github/callback",
-    scope: ['user:email'] // Request email access
-},
-async (accessToken, refreshToken, profile, done) => {
-    // GitHub sometimes hides emails, so we provide a fallback
+    callbackURL: process.env.BASE_URL ? `${process.env.BASE_URL}/auth/github/callback` : "https://gplmods.webredirect.org/auth/github/callback",
+    scope: ['user:email']
+}, async (accessToken, refreshToken, profile, done) => {
     const email = (profile.emails && profile.emails.length > 0) ? profile.emails[0].value : `${profile.username}@github.com`;
-    
-    const githubUserData = {
-        githubId: profile.id,
-        username: profile.username || profile.displayName,
-        email: email,
-        profileImageKey: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : '',
-        isVerified: true
-    };
-
+    const githubUserData = { githubId: profile.id, username: profile.username || profile.displayName, email: email, profileImageKey: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : '', isVerified: true };
     try {
         let user = await User.findOne({ email: githubUserData.email });
-        if (user) {
-            user.githubId = githubUserData.githubId;
-            await user.save();
-            done(null, user);
-        } else {
-            const existingUsername = await User.findOne({ username: githubUserData.username });
-            if (existingUsername) {
-                githubUserData.username = `${githubUserData.username}${Math.floor(Math.random() * 1000)}`;
-            }
-            user = await User.create(githubUserData);
-            done(null, user);
+        if (user) { user.githubId = githubUserData.githubId; await user.save(); done(null, user); } 
+        else {
+            if (await User.findOne({ username: githubUserData.username })) githubUserData.username += Math.floor(Math.random() * 1000);
+            user = await User.create(githubUserData); done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
 
-// --- MICROSOFT STRATEGY ---
+// Microsoft Strategy
 passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    callbackURL: process.env.BASE_URL 
-        ? `${process.env.BASE_URL}/auth/microsoft/callback` 
-        : "https://gplmods.webredirect.org/auth/microsoft/callback",
+    callbackURL: process.env.BASE_URL ? `${process.env.BASE_URL}/auth/microsoft/callback` : "https://gplmods.webredirect.org/auth/microsoft/callback",
     scope: ['user.read']
-},
-async (accessToken, refreshToken, profile, done) => {
+}, async (accessToken, refreshToken, profile, done) => {
     const email = (profile.emails && profile.emails.length > 0) ? profile.emails[0].value : profile.userPrincipalName;
-    
-    const microsoftUserData = {
-        microsoftId: profile.id,
-        username: profile.displayName.replace(/\s+/g, '') || `user_${profile.id}`, // Remove spaces from MS display names
-        email: email,
-        isVerified: true
-    };
-
+    const microsoftUserData = { microsoftId: profile.id, username: profile.displayName.replace(/\s+/g, '') || `user_${profile.id}`, email: email, isVerified: true };
     try {
         let user = await User.findOne({ email: microsoftUserData.email });
-        if (user) {
-            user.microsoftId = microsoftUserData.microsoftId;
-            await user.save();
-            done(null, user);
-        } else {
-            const existingUsername = await User.findOne({ username: microsoftUserData.username });
-            if (existingUsername) {
-                microsoftUserData.username = `${microsoftUserData.username}${Math.floor(Math.random() * 1000)}`;
-            }
-            user = await User.create(microsoftUserData);
-            done(null, user);
+        if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); } 
+        else {
+            if (await User.findOne({ username: microsoftUserData.username })) microsoftUserData.username += Math.floor(Math.random() * 1000);
+            user = await User.create(microsoftUserData); done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
-
-passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser(async (id, done) => {
-    try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
-});
-
-// Auth Helpers
-function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.redirect('/login');
-}
-function ensureAdmin(req, res, next) {
-    if (req.user && req.user.role === 'admin') return next();
-    res.status(403).render('pages/403');
-}
-
-// ✅ FIX 1: NEW HELPER TO PREVENT LOGGED-IN USERS FROM SEEING AUTH PAGES
-function redirectIfAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return res.redirect('/'); // Or redirect to '/profile'
-    }
-    next();
-}
-// --- UPDATED reCAPTCHA Middleware ---
-async function verifyRecaptcha(req, res, next) {
-    const token = req.body['g-recaptcha-response'];
-    
-    // Determine where the user came from so we can send them back to the right form
-    const returnUrl = req.path; // e.g., '/login' or '/register'
-
-    if (!token) {
-        // Redirect back with the error message
-        return res.redirect(`${returnUrl}?error=Please complete the "I'm not a robot" check.`);
-    }
-
-    try {
-        const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`);
-        
-        if (response.data.success) {
-            return next(); // CAPTCHA passed, continue to login/register logic
-        }
-        
-        // CAPTCHA failed verification on Google's end
-        return res.redirect(`${returnUrl}?error=CAPTCHA verification failed. Please try again.`);
-
-    } catch (e) { 
-        console.error("reCAPTCHA API Error:", e);
-        return res.redirect(`${returnUrl}?error=A server error occurred during CAPTCHA verification.`);
-    }
-}
 
 // ===============================
 // 6. PUBLIC ROUTES
