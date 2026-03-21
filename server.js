@@ -1340,16 +1340,38 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
     } catch (e) { res.status(500).redirect('/profile?error=Error.'); }
 });
 
+// --- POST: Update Profile Image ---
 app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => {
     try {
-        if (!req.file) return res.redirect('/profile?error=No file.');
+        // 1. Check if a file was actually uploaded
+        if (!req.file) {
+            return res.redirect('/profile?error=No image file was selected.');
+        }
+
+        // 2. Upload the new image to Backblaze B2
+        // We use 'avatars' as the folder name in B2
         const imageKey = await uploadToB2(req.file, 'avatars');
-        const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
+
+        // 3. Update the user's database record with the new image key
+        // We use { new: true } to get the updated document back immediately
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id, 
+            { profileImageKey: imageKey }, 
+            { new: true }
+        );
+
+        // 4. Manually re-serialize the user to update their session data
+        // This ensures the new avatar shows up in the header immediately without logging out
         req.login(updatedUser, (err) => {
             if (err) return next(err);
-            res.redirect('/profile?success=Image updated.');
+            res.redirect('/profile?success=Profile image updated successfully.');
         });
-    } catch (e) { next(e); }
+
+    } catch (error) { 
+        console.error("Error updating profile image:", error);
+        // Fallback to error handling middleware
+        next(error); 
+    }
 });
 // --- NEW: Follow Logic Check ---
         let isFollowing = false;
