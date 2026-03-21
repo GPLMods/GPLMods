@@ -44,7 +44,8 @@
             <div class="header-right-actions">
                 
                 <!-- 1. Notification Bell (Always Visible) -->
-                <a href="/updates" class="nav-bell" title="Site Updates" id="nav-bell-link" 
+                <!-- ✅ FIX: Changed href to /notifications -->
+                <a href="/notifications" class="nav-bell" title="Site Notifications" id="nav-bell-link" 
                    data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
                    data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
                     <i class="fas fa-bell"></i>
