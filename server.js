@@ -168,66 +168,7 @@ const clientPromise = mongoose.connect(process.env.MONGO_URI)
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
-// 5. SESSION MIDDLEWARE (Robust Configuration)
-const store = new MongoDBStore({
-    uri: process.env.MONGO_URI,
-    collection: 'sessions'
-});
-
-store.on('error', function(error) {
-    console.error('Session Store Error:', error);
-});
-
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
-    resave: false, 
-    saveUninitialized: false, // Don't create a session for a guest until they actually do something (like vote or search)
-    store: store, 
-    cookie: { 
-        // DEFAULT: 1 Hour for unregistered users/guests
-        maxAge: 1000 * 60 * 60 * 1, 
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies if on HTTPS
-        httpOnly: true,
-        sameSite: 'lax' // Protect against CSRF
-    } 
-}));
-
-// --- DYNAMIC SESSION EXPIRATION MIDDLEWARE ---
-app.use((req, res, next) => {
-    if (req.session) {
-        if (req.isAuthenticated()) {
-            // IF LOGGED IN: Extend the session to 3 Days (259,200,000 ms)
-            // This happens on every request the logged-in user makes, 
-            // effectively keeping them logged in for 3 days from their last activity.
-            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 3;
-        } else {
-            // IF GUEST: Keep the session at 1 Hour (3,600,000 ms)
-            // Note: "Killing a session instantly on tab close" is handled by the browser 
-            // if maxAge is not set (a "session cookie"). However, we need maxAge for search history 
-            // to persist briefly. 1 hour is a good compromise for guests.
-            req.session.cookie.maxAge = 1000 * 60 * 60 * 1;
-        }
-    }
-    next();
-});
-
-// 6. PASSPORT INIT (Must be after session, before AdminJS)
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.use((req, res, next) => {
-    res.locals.user = req.user || null;
-    next();
-});
-
-// --- User Last Seen Updater ---
-app.use(async (req, res, next) => {
-    if (req.isAuthenticated()) {
-        User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
-    }
-    next();
-});
-
+// 5. SESSION MIDDLEWARE (Must be before Passport AND before AdminJS)
 // --- The FINAL, CORRECT Signed Avatar URL Middleware ---
 app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user) {
