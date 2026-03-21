@@ -1306,23 +1306,6 @@ app.get('/users/:username', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
 
-        let isFollowing = false;
-        if (req.isAuthenticated()) {
-            isFollowing = req.user.following.includes(user._id);
-        }
-
-        res.render('pages/public-profile', { 
-            profileUser: user, 
-            uploads: uploadsWithUrls,
-            isFollowing: isFollowing 
-        });
-
-    } catch (error) { 
-        console.error("Public Profile Error:", error);
-        res.status(500).render('pages/500'); 
-    }
-});
-
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
         const { username, email, bio } = req.body;
@@ -1385,25 +1368,8 @@ app.post('/account/update-profile-image', ensureAuthenticated, upload.single('pr
         console.error("Public Profile Error:", error);
         res.status(500).render('pages/500'); 
     }
-});
-// --- NEW: Follow Logic Check ---
-        let isFollowing = false;
-        if (req.isAuthenticated()) {
-            // Check if the viewed user's ID exists in the logged-in user's 'following' array
-            isFollowing = req.user.following.includes(user._id);
-        }
+}); // <-- THIS IS THE END OF THE ROUTE. DO NOT PASTE ANYTHING ELSE HERE!
 
-        res.render('pages/public-profile', { 
-            profileUser: user, 
-            uploads: uploadsWithUrls,
-            isFollowing: isFollowing // Pass this to EJS
-        });
-
-    } catch (error) { 
-        console.error("Public Profile Error:", error);
-        res.status(500).render('pages/500'); 
-    }
-});
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
