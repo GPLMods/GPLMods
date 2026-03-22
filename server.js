@@ -444,22 +444,22 @@ app.get('/healthz', (req, res) => {
 });
 
 // Home
-// Home
-app.get('/', async (req, res) => {
-    // --- ✅ FIX: PREVENT AGGRESSIVE CACHING ---
-    // Tell browsers and CDNs NOT to cache this page.
-    // This forces the server to re-evaluate the session on every visit to the homepage.
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '-1');
-try {
+app.get('/', (req, res, next) => {
+    // --- ✅ FIX: ABSOLUTE CACHE PREVENTION ---
+    // This forces the browser to re-request the page every single time.
+    res.setHeader('Surrogate-Control', 'no-store');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+}, async (req, res) => {
+    try {
         const findQuery = { status: 'live', isLatestVersion: true };
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
         // 1. Fetch all the data
         await Promise.all(categories.map(async (cat) => {
-            // Using .lean() makes the query much faster and returns plain JS objects!
             const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
             const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
             const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4).lean();
@@ -476,10 +476,8 @@ try {
             for (const section in filesByCategory[category]) {
                 filesByCategory[category][section] = await Promise.all(
                     filesByCategory[category][section].map(async (file) => {
-                        
                         const key = file.iconUrl || file.iconKey;
                         let signedIconUrl = '/images/default-avatar.png';
-                        
                         if (key) {
                             try {
                                 signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -487,12 +485,20 @@ try {
                                 console.error(`Could not get signed URL for key: ${key}`, urlError);
                             }
                         }
-                        
                         return { ...file, iconUrl: signedIconUrl };
                     })
                 );
             }
         }
+        
+        // 3. Render the page!
+        res.render('pages/index', { filesByCategory });
+        
+    } catch (error) {
+        console.error("CRITICAL Error fetching files for homepage:", error);
+        res.status(500).render('pages/500');
+    }
+});
         
         // 3. Render the page!
         res.render('pages/index', { filesByCategory });
