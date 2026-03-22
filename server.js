@@ -1219,6 +1219,7 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
+// --- PUBLIC PROFILE ROUTE ---
 app.get('/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
@@ -1252,6 +1253,26 @@ app.get('/users/:username', async (req, res) => {
             const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
+
+        // --- Follow Logic Check ---
+        let isFollowing = false;
+        if (req.isAuthenticated()) {
+            isFollowing = req.user.following.includes(user._id);
+        }
+
+        res.render('pages/public-profile', { 
+            profileUser: user, 
+            uploads: uploadsWithUrls,
+            isFollowing: isFollowing 
+        });
+
+    } catch (error) { 
+        console.error("Public Profile Error:", error);
+        res.status(500).render('pages/500'); 
+    }
+}); 
+
+// --- ACCOUNT MANAGEMENT ROUTES ---
 
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
@@ -1287,88 +1308,37 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
     } catch (e) { res.status(500).redirect('/profile?error=Error.'); }
 });
 
-// --- POST: Update Profile Image (FIXED WITH MEMORY STORAGE) ---
-// Note: We use 'uploadAvatar' here instead of 'upload'
 app.post('/account/update-profile-image', ensureAuthenticated, uploadAvatar.single('profileImage'), async (req, res, next) => {
     try {
-        // 1. Check if a file was actually uploaded
-        if (!req.file) {
-            return res.redirect('/profile?error=No image file was selected.');
-        }
-
-        // 2. Safety check: Ensure it's actually an image
-        if (!req.file.mimetype.startsWith('image/')) {
-            return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
-        }
-
-        console.log(`Uploading avatar for user ${req.user.username}...`);
-
-        // 3. Upload the new image to Backblaze B2
-        // Since we used uploadAvatar, req.file.buffer exists in memory.
-        // uploadToB2 will see req.file.buffer and upload it directly.
-        const imageKey = await uploadToB2(req.file, 'avatars');
+        if (!req.file) return res.redirect('/profile?error=No image file was selected.');
+        if (!req.file.mimetype.startsWith('image/')) return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
         
-        console.log(`Avatar uploaded successfully to B2: ${imageKey}`);
-
-        // 4. Update the user's database record with the new image key
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id, 
-            { profileImageKey: imageKey }, 
-            { new: true }
-        );
-
-        // 5. Manually re-serialize the user to update their session data immediately
+        const imageKey = await uploadToB2(req.file, 'avatars');
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
+        
         req.login(updatedUser, (err) => {
-            if (err) {
-                console.error("Session refresh error after avatar upload:", err);
-                return next(err);
-            }
+            if (err) return next(err);
             res.redirect('/profile?success=Profile image updated successfully.');
         });
-
     } catch (error) { 
-        console.error("CRITICAL Error updating profile image:", error);
+        console.error("Error updating profile image:", error);
         res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try a different, smaller file.')); 
     }
 });
-// --- NEW: Follow Logic Check ---
-        let isFollowing = false;
-        if (req.isAuthenticated()) {
-            // Check if the viewed user's ID exists in the logged-in user's 'following' array
-            isFollowing = req.user.following.includes(user._id);
-        }
-
-        res.render('pages/public-profile', { 
-            profileUser: user, 
-            uploads: uploadsWithUrls,
-            isFollowing: isFollowing // Pass this to EJS
-        });
-
-    } catch (error) { 
-        console.error("Public Profile Error:", error);
-        res.status(500).render('pages/500'); 
-    }
-}); // <-- THIS IS THE END OF THE ROUTE. DO NOT PASTE ANYTHING ELSE HERE!
 
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
         
-        if (newPassword !== confirmPassword) {
-            return res.redirect('/profile?error=Passwords do not match.');
-        }
+        if (newPassword !== confirmPassword) return res.redirect('/profile?error=Passwords do not match.');
 
         const user = await User.findById(req.user.id);
 
-        // If they HAVE a password, verify the current one
         if (user.password) {
             const isMatch = await user.comparePassword(currentPassword);
             if (!isMatch) return res.redirect('/profile?error=Current password is incorrect.');
         } else {
-            // If they DONT have a password (Google login), ensure the bypass code was sent
-            if (currentPassword !== 'social_login_bypass') {
-                return res.redirect('/profile?error=Invalid password setup request.');
-            }
+            if (currentPassword !== 'social_login_bypass') return res.redirect('/profile?error=Invalid password setup request.');
         }
 
         user.password = newPassword;
@@ -1401,7 +1371,6 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
         });
     } catch (error) { res.status(500).render('pages/500'); }
 });
-
 
 // ===================================
 // 10. FILE UPLOAD & MANAGEMENT
