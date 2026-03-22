@@ -922,6 +922,13 @@ app.post('/login', verifyRecaptcha, (req, res, next) => {
         });
     })(req, res, next);
 });
+app.get('/register', redirectIfAuthenticated, (req, res) => {
+    res.render('pages/register', { 
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '', 
+        message: req.query.message || null,
+        error: req.query.error || null
+    });
+});
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
         const { username, email, password } = req.body;
