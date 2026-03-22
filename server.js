@@ -345,7 +345,11 @@ async function verifyRecaptcha(req, res, next) {
 // 5.5 PASSPORT STRATEGIES & MULTER
 // ===============================
 
-// Multer config
+// // ===============================
+// 5.5 PASSPORT STRATEGIES & MULTER
+// ===============================
+
+// 1. Disk Storage (For large Mod files)
 const diskStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = 'uploads/';
@@ -356,6 +360,13 @@ const diskStorage = multer.diskStorage({
 });
 const upload = multer({ storage: diskStorage });
 
+// 2. NEW: Memory Storage (Specifically for Avatars and small images)
+const memoryStorage = multer.memoryStorage();
+// Limit avatar uploads to 5MB to protect memory
+const uploadAvatar = multer({ 
+    storage: memoryStorage,
+    limits: { fileSize: 5 * 1024 * 1024 } 
+});
 // Local Strategy
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
@@ -1270,37 +1281,48 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
     } catch (e) { res.status(500).redirect('/profile?error=Error.'); }
 });
 
-// --- POST: Update Profile Image ---
-app.post('/account/update-profile-image', ensureAuthenticated, upload.single('profileImage'), async (req, res, next) => {
+// --- POST: Update Profile Image (FIXED WITH MEMORY STORAGE) ---
+// Note: We use 'uploadAvatar' here instead of 'upload'
+app.post('/account/update-profile-image', ensureAuthenticated, uploadAvatar.single('profileImage'), async (req, res, next) => {
     try {
         // 1. Check if a file was actually uploaded
         if (!req.file) {
             return res.redirect('/profile?error=No image file was selected.');
         }
 
-        // 2. Upload the new image to Backblaze B2
-        // We use 'avatars' as the folder name in B2
-        const imageKey = await uploadToB2(req.file, 'avatars');
+        // 2. Safety check: Ensure it's actually an image
+        if (!req.file.mimetype.startsWith('image/')) {
+            return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
+        }
 
-        // 3. Update the user's database record with the new image key
-        // We use { new: true } to get the updated document back immediately
+        console.log(`Uploading avatar for user ${req.user.username}...`);
+
+        // 3. Upload the new image to Backblaze B2
+        // Since we used uploadAvatar, req.file.buffer exists in memory.
+        // uploadToB2 will see req.file.buffer and upload it directly.
+        const imageKey = await uploadToB2(req.file, 'avatars');
+        
+        console.log(`Avatar uploaded successfully to B2: ${imageKey}`);
+
+        // 4. Update the user's database record with the new image key
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id, 
             { profileImageKey: imageKey }, 
             { new: true }
         );
 
-        // 4. Manually re-serialize the user to update their session data
-        // This ensures the new avatar shows up in the header immediately without logging out
+        // 5. Manually re-serialize the user to update their session data immediately
         req.login(updatedUser, (err) => {
-            if (err) return next(err);
+            if (err) {
+                console.error("Session refresh error after avatar upload:", err);
+                return next(err);
+            }
             res.redirect('/profile?success=Profile image updated successfully.');
         });
 
     } catch (error) { 
-        console.error("Error updating profile image:", error);
-        // Fallback to error handling middleware
-        next(error); 
+        console.error("CRITICAL Error updating profile image:", error);
+        res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try a different, smaller file.')); 
     }
 });
 // --- NEW: Follow Logic Check ---
