@@ -181,23 +181,22 @@
         <div class="auth-container">
             <a href="/" class="logo-area">GPL <span>Mods</span></a>
             
-            <section class="form-container">
+           <section class="form-container">
                 <h2>Create Account</h2>
 
-                <!-- EJS Dynamic Message Block -->
-                <% if (message) { %>
+                <!-- SUCCESS MESSAGE BLOCK -->
+                <% if (typeof message !== 'undefined' && message) { %>
                     <p style="padding: 10px; background-color: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; text-align: center; margin-bottom: 1rem; border-radius: 8px; font-size: 0.9em; color: #2ecc71; font-weight: bold;">
                         <%= message %>
                     </p>
                 <% } %>
 
-                <!-- ======== ADD THIS NEW ERROR BLOCK ======== -->
+                <!-- ERROR MESSAGE BLOCK -->
                 <% if (typeof error !== 'undefined' && error) { %>
                     <p style="padding: 10px; background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); text-align: center; margin-bottom: 1rem; border-radius: 8px; font-size: 0.9em; color: var(--red); font-weight: bold;">
                         <%= error %>
                     </p>
                 <% } %>
-                <!-- ========================================== -->
 
                 <form id="signup-form" action="/register" method="POST">
                     <div class="form-group">
