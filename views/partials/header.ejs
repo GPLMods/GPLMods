@@ -7,7 +7,6 @@
     
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <!-- ✅ FIX: ADDED PWA MANIFEST LINKS HERE -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0a0a0a">
     <link rel="apple-touch-icon" href="/images/icon-192x192.png">
@@ -44,7 +43,6 @@
             <div class="header-right-actions">
                 
                 <!-- 1. Notification Bell (Always Visible) -->
-                <!-- ✅ FIX: Changed href to /notifications -->
                 <a href="/notifications" class="nav-bell" title="Site Notifications" id="nav-bell-link" 
                    data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
                    data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
@@ -55,8 +53,8 @@
                 <!-- 2. Mobile Only Items -->
                 <div class="header-mobile-actions">
                     <% if (user) { %>
-                        <a href="/profile" class="avatar-placeholder">
-                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
+                        <a href="/profile" style="margin-right: 15px; display: flex; align-items: center;">
+                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--silver);">
                         </a>
                     <% } %>
                     <div class="hamburger-menu" id="hamburger">&#9776;</div>
@@ -78,7 +76,6 @@
                     <% } %>
                 </div>
             </div>
-            <!-- ========================================== -->
         </div> 
     </header>
 
