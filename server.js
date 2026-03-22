@@ -322,7 +322,9 @@ function ensureAdmin(req, res, next) {
     res.status(403).render('pages/403');
 }
 function redirectIfAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return res.redirect('/'); 
+    if (req.isAuthenticated()) {
+        return res.redirect('/'); 
+    }
     next();
 }
 async function verifyRecaptcha(req, res, next) {
@@ -1112,15 +1114,43 @@ app.get('/logout', (req, res, next) => {
 
 // Google Routes (Existing)
 app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
+// ✅ FIX: Force session save before redirecting to ensure cookies are set
+app.get('/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login' }), 
+    (req, res, next) => {
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error during Google login:', err);
+                return next(err);
+            }
+            res.redirect('/?message=Successfully logged in with Google!');
+        });
+    }
+);
 
 // --- NEW GITHUB ROUTES ---
 app.get('/auth/github', passport.authenticate('github', { scope:[ 'user:email' ] }));
-app.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
+app.get('/auth/github/callback', 
+    passport.authenticate('github', { failureRedirect: '/login' }), 
+    (req, res, next) => {
+        req.session.save((err) => {
+            if (err) return next(err);
+            res.redirect('/?message=Successfully logged in with GitHub!');
+        });
+    }
+);
 
 // --- NEW MICROSOFT ROUTES ---
 app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
-app.get('/auth/microsoft/callback', passport.authenticate('microsoft', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
+app.get('/auth/microsoft/callback', 
+    passport.authenticate('microsoft', { failureRedirect: '/login' }), 
+    (req, res, next) => {
+        req.session.save((err) => {
+            if (err) return next(err);
+            res.redirect('/?message=Successfully logged in with Microsoft!');
+        });
+    }
+);
 
 // ===============================
 // 9. PROFILE ROUTES
@@ -1257,7 +1287,8 @@ app.post('/account/update-profile-image', ensureAuthenticated, upload.single('pr
 
     } catch (error) { 
         console.error("Error updating profile image:", error);
-        res.redirect('/profile?error=' + encodeURIComponent(error.message)); 
+        // Fallback to error handling middleware
+        next(error); 
     }
 });
 // --- NEW: Follow Logic Check ---

@@ -207,18 +207,30 @@ input[type="search"]::-webkit-search-cancel-button:hover {
 }
         /* --- New Header Mobile Actions --- */
         .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
+        
+        /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
         .avatar-placeholder {
-            display: block; width: 35px; height: 35px;
+            display: block; 
+            width: 35px !important;  /* Force strict width */
+            height: 35px !important; /* Force strict height */
+            min-width: 35px; /* Prevent flexbox from shrinking it */
+            min-height: 35px; 
             border: 2px solid var(--silver);
-            background-color: transparent;
-            border-radius: 50%; cursor: pointer; text-decoration: none;
-            overflow: hidden;
+            background-color: var(--black); /* Fallback background */
+            border-radius: 50%; 
+            cursor: pointer; 
+            text-decoration: none;
+            overflow: hidden; /* Ensure image doesn't bleed outside the circle */
         }
+        
+        /* ✅ FIX: Ensure the image perfectly fills the container */
         .avatar-placeholder img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important; /* Crop perfectly to the circle */
+            display: block;
         }
+        
         .hamburger-menu { display: block; cursor: pointer; font-size: 2em; color: var(--silver); }
         
         /* --- Optimized Sidebar Navigation --- */
