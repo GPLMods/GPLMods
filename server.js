@@ -1270,7 +1270,7 @@ app.get('/users/:username', async (req, res) => {
         console.error("Public Profile Error:", error);
         res.status(500).render('pages/500'); 
     }
-}); 
+})
 
 // --- ACCOUNT MANAGEMENT ROUTES ---
 
