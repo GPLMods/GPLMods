@@ -433,8 +433,15 @@ app.get('/healthz', (req, res) => {
 });
 
 // Home
+// Home
 app.get('/', async (req, res) => {
-    try {
+    // --- ✅ FIX: PREVENT AGGRESSIVE CACHING ---
+    // Tell browsers and CDNs NOT to cache this page.
+    // This forces the server to re-evaluate the session on every visit to the homepage.
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '-1');
+try {
         const findQuery = { status: 'live', isLatestVersion: true };
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
@@ -470,8 +477,6 @@ app.get('/', async (req, res) => {
                             }
                         }
                         
-                        // ✅ FIX: Because we used .lean() above, 'file' is already a plain object.
-                        // We DO NOT call .toObject() here. This prevents the crash!
                         return { ...file, iconUrl: signedIconUrl };
                     })
                 );
