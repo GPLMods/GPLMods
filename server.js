@@ -113,7 +113,16 @@ const sanitizeFilename = (filename) => {
 };
 
 const uploadToB2 = async (file, folder) => {
-    const fileBuffer = file.buffer ? file.buffer : fs.readFileSync(file.path);
+    // Determine if the file is in memory (buffer) or on disk (path)
+    let fileBuffer;
+    if (file.buffer) {
+        fileBuffer = file.buffer;
+    } else if (file.path && fs.existsSync(file.path)) {
+        fileBuffer = fs.readFileSync(file.path);
+    } else {
+        throw new Error("File data not found in buffer or disk path.");
+    }
+
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
     const params = {
@@ -122,7 +131,13 @@ const uploadToB2 = async (file, folder) => {
         Body: fileBuffer,
         ContentType: file.mimetype
     };
+    
+    console.log(`Uploading ${fileName} to B2...`);
     await s3Client.send(new PutObjectCommand(params));
+    
+    // Clean up local temp file if it was used
+    if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    
     return fileName;
 };
 
@@ -248,16 +263,42 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// 6. Globals Middleware
-app.use((req, res, next) => {
+// 6. Globals & Notification Cache Middleware
+let cachedTotalUpdates = 0;
+let lastUpdateCheck = 0;
+
+app.use(async (req, res, next) => {
+    // MUST BE SET HERE so every EJS file knows if the user is logged in
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes; 
     
-    // Default Notification globals (will be updated by the next middleware)
-    res.locals.totalUpdatesCount = 0;
-    res.locals.unreadPersonalCount = 0;
-    next();
+    try {
+        // 1. Check Global Announcements
+        if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
+            cachedTotalUpdates = await Announcement.countDocuments();
+            lastUpdateCheck = Date.now();
+        }
+        res.locals.totalUpdatesCount = cachedTotalUpdates;
+
+        // 2. Check Personal Notifications
+        let unreadPersonalCount = 0;
+        if (req.isAuthenticated() && req.user) {
+            unreadPersonalCount = await UserNotification.countDocuments({ 
+                user: req.user._id, 
+                isRead: false 
+            });
+        }
+        res.locals.unreadPersonalCount = unreadPersonalCount;
+        
+        next();
+    } catch (e) {
+        console.error("Global Middleware Error:", e);
+        // Fallback to 0 so the page still loads even if DB fails
+        res.locals.totalUpdatesCount = cachedTotalUpdates;
+        res.locals.unreadPersonalCount = 0;
+        next();
+    }
 });
 
 // 7. Banned User Trap
@@ -1216,8 +1257,7 @@ app.post('/account/update-profile-image', ensureAuthenticated, upload.single('pr
 
     } catch (error) { 
         console.error("Error updating profile image:", error);
-        // Fallback to error handling middleware
-        next(error); 
+        res.redirect('/profile?error=' + encodeURIComponent(error.message)); 
     }
 });
 // --- NEW: Follow Logic Check ---
@@ -1242,14 +1282,32 @@ app.post('/account/update-profile-image', ensureAuthenticated, upload.single('pr
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
-        if (newPassword !== confirmPassword) return res.redirect('/profile?error=Mismatch.');
+        
+        if (newPassword !== confirmPassword) {
+            return res.redirect('/profile?error=Passwords do not match.');
+        }
+
         const user = await User.findById(req.user.id);
-        const isMatch = await user.comparePassword(currentPassword);
-        if (!isMatch) return res.redirect('/profile?error=Wrong password.');
+
+        // If they HAVE a password, verify the current one
+        if (user.password) {
+            const isMatch = await user.comparePassword(currentPassword);
+            if (!isMatch) return res.redirect('/profile?error=Current password is incorrect.');
+        } else {
+            // If they DONT have a password (Google login), ensure the bypass code was sent
+            if (currentPassword !== 'social_login_bypass') {
+                return res.redirect('/profile?error=Invalid password setup request.');
+            }
+        }
+
         user.password = newPassword;
         await user.save();
-        res.redirect('/profile?success=Password changed.');
-    } catch (e) { res.status(500).redirect('/profile?error=Error.'); }
+        res.redirect('/profile?success=Password updated successfully.');
+        
+    } catch (error) { 
+        console.error("Error changing password:", error);
+        res.redirect('/profile?error=' + encodeURIComponent(error.message)); 
+    }
 });
 
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {

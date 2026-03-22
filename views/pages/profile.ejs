@@ -56,22 +56,44 @@
 
             <!-- Change Password Form -->
             <section class="form-section">
-                <h2>Change Password</h2>
-                <form action="/account/change-password" method="POST">
-                    <div class="form-group">
-                        <label for="current-password">Current Password</label>
-                        <input type="password" id="current-password" name="currentPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">New Password</label>
-                        <input type="password" id="new-password" name="newPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm-password">Confirm New Password</label>
-                        <input type="password" id="confirm-password" name="confirmPassword" required>
-                    </div>
-                    <button type="submit" class="submit-button secondary-button">Update Password</button>
-                </form>
+                <!-- Check if the user has a password set -->
+                <% if (user.password) { %>
+                    <!-- User HAS a password (Normal Change) -->
+                    <h2>Change Password</h2>
+                    <form action="/account/change-password" method="POST">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" name="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" name="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm New Password</label>
+                            <input type="password" id="confirm-password" name="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="submit-button secondary-button">Update Password</button>
+                    </form>
+                <% } else { %>
+                    <!-- User DOES NOT have a password (e.g., Google Sign In) -->
+                    <h2>Set Local Password</h2>
+                    <p style="color: var(--silver); margin-bottom: 15px; font-size: 0.9em;">Since you signed up with a social account, you can set a password here to allow logging in with your email directly.</p>
+                    <form action="/account/change-password" method="POST">
+                        <!-- Notice we pass a dummy 'currentPassword' so the backend logic doesn't crash -->
+                        <input type="hidden" name="currentPassword" value="social_login_bypass">
+                        
+                        <div class="form-group">
+                            <label for="new-password">Set New Password</label>
+                            <input type="password" id="new-password" name="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" name="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="submit-button secondary-button">Set Password</button>
+                    </form>
+                <% } %>
             </section>
 
             <!-- Danger Zone for Deleting Account -->
