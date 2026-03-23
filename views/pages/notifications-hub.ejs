@@ -106,8 +106,9 @@
             <!-- Category 1: Admin Responses (Personal) -->
             <a href="/notifications/admin-messages" class="category-card">
                 <div class="category-info">
-                    <div class="category-icon" style="color: var(--blue);">
-                        <i class="fas fa-envelope-open-text"></i>
+                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
+                    <div class="category-icon" style="background: transparent; border: none;">
+                        <lottie-player src="/animations/massage.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
                     <div class="category-text">
                         <h2>Admin Responses</h2>
@@ -130,8 +131,9 @@
             <!-- ✅ FIX: Added fallback to 0 if variable is undefined -->
             <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= typeof totalGlobalUpdates !== 'undefined' ? totalGlobalUpdates : 0 %>">
                 <div class="category-info">
-                    <div class="category-icon">
-                        <i class="fas fa-bullhorn"></i>
+                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
+                    <div class="category-icon" style="background: transparent; border: none;">
+                        <lottie-player src="/animations/update.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
                     <div class="category-text">
                         <h2>Site Updates</h2>
@@ -149,8 +151,9 @@
 <!-- ======== NEW: Category 3: New Uploads (24h) ======== -->
             <a href="/notifications/new-uploads" class="category-card">
                 <div class="category-info">
-                    <div class="category-icon" style="color: var(--green);">
-                        <i class="fas fa-file-upload"></i>
+                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
+                    <div class="category-icon" style="background: transparent; border: none;">
+                        <lottie-player src="/animations/upload.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
                     <div class="category-text">
                         <h2>New Uploads (24h)</h2>
@@ -163,8 +166,9 @@
             <!-- ======== NEW: Category 4: New Updates (24h) ======== -->
             <a href="/notifications/new-updates" class="category-card">
                 <div class="category-info">
-                    <div class="category-icon" style="color: var(--gold);">
-                        <i class="fas fa-sync-alt"></i>
+                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
+                    <div class="category-icon" style="background: transparent; border: none;">
+                        <lottie-player src="/animations/upload.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
                     <div class="category-text">
                         <h2>Recent Updates (24h)</h2>
