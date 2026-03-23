@@ -133,11 +133,7 @@ const uploadToB2 = async (file, folder) => {
     };
     
     console.log(`Uploading ${fileName} to B2...`);
-    await s3Client.send(new PutObjectCommand(params));
-    
-    // Clean up local temp file if it was used
-    if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-    
+    await s3Client.send(new PutObjectCommand(params));            
     return fileName;
 };
 
@@ -345,10 +341,6 @@ async function verifyRecaptcha(req, res, next) {
 // 5.5 PASSPORT STRATEGIES & MULTER
 // ===============================
 
-// // ===============================
-// 5.5 PASSPORT STRATEGIES & MULTER
-// ===============================
-
 // 1. Disk Storage (For large Mod files)
 const diskStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -499,15 +491,7 @@ app.get('/', (req, res, next) => {
         res.status(500).render('pages/500');
     }
 });
-        
-        // 3. Render the page!
-        res.render('pages/index', { filesByCategory });
-        
-    } catch (error) {
-        console.error("CRITICAL Error fetching files for homepage:", error);
-        res.status(500).render('pages/500');
-    }
-});
+
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
 // ===================================
@@ -625,6 +609,8 @@ app.get('/category', async (req, res) => {
         const limit = 12;
         const currentPage = parseInt(page);
         const queryFilter = { isLatestVersion: true };
+        const currentPage = parseInt(page) || 1;
+
 
 if (platform && platform !== 'all') {
             // FIX: Search for the exact platform name (e.g., 'ios-jailed')
@@ -672,6 +658,12 @@ res.render('pages/category', {
 });
 
 // Search Route
+// Add this helper function at the top of your file or inside the search route:
+const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+
+// Then in your route:
+const query = escapeRegex(req.query.q || '');
+
 app.get('/search', async (req, res) => {
     try {
         const query = req.query.q || '';
