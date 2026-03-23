@@ -609,8 +609,6 @@ app.get('/category', async (req, res) => {
         const limit = 12;
         const currentPage = parseInt(page);
         const queryFilter = { isLatestVersion: true };
-
-
 if (platform && platform !== 'all') {
             // FIX: Search for the exact platform name (e.g., 'ios-jailed')
             queryFilter.category = platform;
@@ -650,32 +648,30 @@ res.render('pages/category', {
             currentPlatform: platform || 'all', 
             currentCategory: category || 'all',
             currentSort: sort || 'latest'
-        });
-        // ===============================================================
-
+        });  
     } catch (error) { res.status(500).render('pages/500'); }
 });
 
 // Search Route
-// Add this helper function at the top of your file or inside the search route:
+// Helper function to safely escape regex characters
 const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-
-// Then in your route:
-const query = escapeRegex(req.query.q || '');
 
 app.get('/search', async (req, res) => {
     try {
-        const query = req.query.q || '';
+        // ✅ FIX: The query parsing and escaping MUST happen inside the route!
+        const rawQuery = req.query.q || '';
+        const query = escapeRegex(rawQuery); // Escape it safely for the database
+        
         const platform = req.query.platform || 'all';
         const sort = req.query.sort || 'newest';
         const page = parseInt(req.query.page) || 1;
         const resultsPerPage = 12;
 
-        if (!query) return res.redirect('/');
+        if (!rawQuery) return res.redirect('/');
         
         let searchQuery = {
             isLatestVersion: true,
-            status: 'live', // <--- THE FIX: Only search fully published mods
+            status: 'live', 
             $or:[
                 { name: { $regex: query, $options: 'i' } },
                 { modDescription: { $regex: query, $options: 'i' } },
@@ -716,7 +712,7 @@ app.get('/search', async (req, res) => {
 
         res.render('pages/search', {
             results: resultsWithUrls, 
-            query: query,
+            query: rawQuery, // We pass the raw (unescaped) query back to the UI so it looks normal to the user!
             totalResults: totalResults,
             totalPages: totalPages,
             currentPage: page,
@@ -725,11 +721,11 @@ app.get('/search', async (req, res) => {
         });
 
     } catch (error) {
+        console.error("Search Error:", error);
         res.status(500).render('pages/500');
     }
 });
 
-// Single Mod Page
 // Single Mod Page
 app.get('/mods/:id', async (req, res) => {
     try {
