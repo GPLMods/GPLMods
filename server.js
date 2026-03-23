@@ -609,7 +609,6 @@ app.get('/category', async (req, res) => {
         const limit = 12;
         const currentPage = parseInt(page);
         const queryFilter = { isLatestVersion: true };
-        const currentPage = parseInt(page) || 1;
 
 
 if (platform && platform !== 'all') {
