@@ -1371,7 +1371,6 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
         });
     } catch (error) { res.status(500).render('pages/500'); }
 });
-
 // ===================================
 // 10. FILE UPLOAD & MANAGEMENT
 // ===================================
