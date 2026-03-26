@@ -670,7 +670,7 @@ function formatUptime(seconds) {
 }
 
 // Home
-app.get('/', (req, res, next) => {
+app.get('/', async (req, res, next) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
