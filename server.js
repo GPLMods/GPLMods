@@ -2550,12 +2550,18 @@ app.get('/partnership', ensureAuthenticated, async (req, res) => {
 
 app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
     try {
+        // Prevent multiple applications
         const existingApp = await DistributorApplication.findOne({ user: req.user._id });
         if (existingApp) {
             return res.redirect('/partnership?error=You have already submitted an application.');
         }
 
-        const { organizationName, primaryDistributionPlatform, platformUrl, monetizationMethod, adminContactName, adminSocialLink, socialTelegram, socialDiscord, socialWebsite, socialYoutube, agreedToTerms } = req.body;
+        const { 
+            organizationName, primaryDistributionPlatform, platformUrl, 
+            monetizationMethod, adminContactName, adminSocialLink,
+            socialTelegram, socialDiscord, socialWebsite, socialYoutube,
+            agreedToTerms
+        } = req.body;
 
         if (!agreedToTerms) {
             return res.redirect('/partnership?error=You must agree to the safety and distribution terms.');
@@ -2565,11 +2571,23 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
             user: req.user._id,
             username: req.user.username,
             email: req.user.email,
-            organizationName, primaryDistributionPlatform, platformUrl, monetizationMethod, adminContactName, adminSocialLink, socialTelegram, socialDiscord, socialWebsite, socialYoutube, agreedToTerms: true
+            organizationName,
+            primaryDistributionPlatform,
+            platformUrl,
+            monetizationMethod,
+            adminContactName,
+            adminSocialLink,
+            socialTelegram,
+            socialDiscord,
+            socialWebsite,
+            socialYoutube,
+            agreedToTerms: true
         });
 
         await newApplication.save();
+
         res.redirect('/partnership?message=Application submitted successfully! Our team will review it shortly.');
+
     } catch (error) {
         console.error("Partnership Application Error:", error);
         res.redirect('/partnership?error=An error occurred while submitting your application.');

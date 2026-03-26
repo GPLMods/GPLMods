@@ -321,7 +321,7 @@ async function createAdminRouter() {
             {
                 resource: Dmca,
                 options: {
-                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
+                    listProperties: ['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
             },
