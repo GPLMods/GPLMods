@@ -576,13 +576,98 @@ passport.use(new MicrosoftStrategy({
 }));
 
 // ===============================
-// 6. PUBLIC ROUTES
+// 6. PUBLIC & DIAGNOSTIC ROUTES
 // ===============================
 
-// Health Check Endpoint
-app.get('/healthz', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+// --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
+app.get('/healthz', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    
+    // 1. Gather Basic Server Info
+    const healthData = {
+        status: 'UP',
+        timestamp: new Date().toISOString(),
+        uptime: formatUptime(process.uptime()),
+        nodeVersion: process.version,
+        memoryUsage: process.memoryUsage(),
+        environment: process.env.NODE_ENV || 'development',
+        services: {
+            database: { status: 'UNKNOWN', details: null },
+            storage: { status: 'UNKNOWN', details: null },
+            virustotal: { status: 'UNKNOWN', details: null }
+        },
+        warnings: []
+    };
+
+    // 2. Check MongoDB Connection
+    try {
+        const dbState = mongoose.connection.readyState;
+        // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+        if (dbState === 1) {
+            healthData.services.database.status = 'CONNECTED';
+            healthData.services.database.details = `Connected to ${mongoose.connection.host}`;
+        } else {
+            healthData.services.database.status = 'DISCONNECTED';
+            healthData.warnings.push('MongoDB is currently disconnected.');
+            healthData.status = 'DEGRADED';
+        }
+    } catch (e) {
+        healthData.services.database.status = 'ERROR';
+        healthData.warnings.push(`MongoDB Error: ${e.message}`);
+        healthData.status = 'DEGRADED';
+    }
+
+    // 3. Check Backblaze B2 (S3 Client)
+    try {
+        // We perform a very lightweight operation: listing a single object (or just testing the credentials)
+        // If this throws an error, our B2 connection is broken.
+        const { ListObjectsV2Command } = require('@aws-sdk/client-s3');
+        const command = new ListObjectsV2Command({
+            Bucket: process.env.B2_BUCKET_NAME,
+            MaxKeys: 1 // Only ask for 1 item to make it fast
+        });
+        
+        await s3Client.send(command);
+        healthData.services.storage.status = 'CONNECTED';
+        healthData.services.storage.details = `Bucket: ${process.env.B2_BUCKET_NAME} | Region: ${process.env.B2_REGION}`;
+    } catch (e) {
+        healthData.services.storage.status = 'ERROR';
+        healthData.warnings.push(`Backblaze B2 Error: ${e.message}`);
+        healthData.status = 'DEGRADED';
+    }
+
+    // 4. Check VirusTotal API (Lightweight check)
+    try {
+        // Just checking if the API key is present and formatted correctly locally
+        if (!process.env.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY.length < 32) {
+            throw new Error("API Key is missing or invalid length.");
+        }
+        // To do a real live check, you could hit a safe VT endpoint, but that uses quota.
+        // Local validation is usually sufficient for a quick health check.
+        healthData.services.virustotal.status = 'CONFIGURED';
+        healthData.services.virustotal.details = 'API Key is present.';
+    } catch (e) {
+        healthData.services.virustotal.status = 'ERROR';
+        healthData.warnings.push(`VirusTotal Config Error: ${e.message}`);
+    }
+
+    // 5. Final Status Calculation
+    // If any warnings exist, the server is "DEGRADED", not "UP"
+    if (healthData.warnings.length > 0 && healthData.status === 'UP') {
+        healthData.status = 'DEGRADED';
+    }
+
+    // Instead of sending raw JSON, let's render a beautiful admin page!
+    res.render('pages/admin/healthz', { health: healthData });
 });
+
+// --- HELPER: Format Uptime ---
+function formatUptime(seconds) {
+    const d = Math.floor(seconds / (3600*24));
+    const h = Math.floor(seconds % (3600*24) / 3600);
+    const m = Math.floor(seconds % 3600 / 60);
+    const s = Math.floor(seconds % 60);
+    return `${d}d ${h}h ${m}m ${s}s`;
+}
 
 // Home
 app.get('/', (req, res, next) => {
