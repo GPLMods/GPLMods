@@ -26,7 +26,8 @@
                     <% } %>
                 </form>
             <% } else if (!user) { %>
-                <a href="/login" class="btn btn-secondary" style="margin-bottom: 20px; display: inline-block;">Login to Follow</a>
+                <!-- ✅ FIX 2: Styled the Login to Follow button -->
+                <a href="/login" class="btn" style="margin-bottom: 20px; display: inline-block; background: transparent; border: 2px solid var(--silver); color: var(--silver); padding: 10px 25px; border-radius: 20px;">Login to Follow</a>
             <% } %>
 
             <div class="profile-stats">

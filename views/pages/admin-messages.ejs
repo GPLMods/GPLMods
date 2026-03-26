@@ -20,8 +20,19 @@
 </style>
 
 <main>
-    <div class="page-header">
+    <div class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 40px; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center;">
         <div class="container">
+            
+            <!-- ======== CUSTOM LOTTIE INBOX ANIMATION (PLAY ONCE) ======== -->
+            <lottie-player 
+                src="/animations/massage.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.4));" 
+                loop autoplay>
+            </lottie-player>
+            <!-- ========================================================== -->
+
             <h1>Admin <span>Responses</span></h1>
             <p style="color: var(--silver); margin-top: 10px;">Direct messages, support replies, and account notices.</p>
         </div>
@@ -50,14 +61,25 @@
             <% }) %>
         <% } else { %>
             <div style="text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
-                <i class="fas fa-inbox" style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
+                <!-- ======== CUSTOM LOTTIE EMPTY INBOX ANIMATION (PLAY ONCE) ======== -->
+            <lottie-player 
+                src="/animations/inbox.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.4));" 
+                autoplay>
+            </lottie-player>
+            <!-- ========================================================== -->
                 <h2 style="color: var(--silver);">No Messages</h2>
                 <p style="color: #888;">You do not have any direct messages from the administration team.</p>
             </div>
         <% } %>
         
+        <!-- ✅ FIX 3: Styled the Back to Hub button to match the theme -->
         <div style="text-align: center; margin-top: 30px;">
-            <a href="/notifications" class="btn btn-secondary">← Back to Hub</a>
+            <a href="/notifications" class="btn" style="background: transparent; border: 2px solid #555; color: var(--silver); padding: 10px 25px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--white)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#555'; this.style.color='var(--silver)';">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back to Hub
+            </a>
         </div>
     </div>
 </main>

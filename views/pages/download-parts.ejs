@@ -1,0 +1,169 @@
+<%- include('../partials/header') %>
+
+<style>
+    .parts-page-container {
+        max-width: 900px;
+        margin: 4rem auto;
+    }
+    
+    /* Header Section */
+    .game-header {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        background-color: var(--dark-gray);
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .game-icon {
+        width: 120px;
+        height: 120px;
+        border-radius: 15px;
+        object-fit: cover;
+        border: 2px solid var(--gold);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .game-info h1 { color: var(--white); font-size: 2.2em; margin-bottom: 5px; }
+    .game-info p { color: var(--silver); margin: 0; font-size: 1.1em; }
+    .game-info .developer { color: var(--gold); font-weight: bold; }
+
+    /* The Links Section */
+    .download-links-section {
+        background-color: var(--black);
+        padding: 30px;
+        border-radius: 15px;
+        border: 1px solid var(--gold);
+        margin-bottom: 30px;
+    }
+    .download-links-section h2 { color: var(--gold); margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    
+    .parts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .part-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--dark-gray);
+        padding: 15px 20px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        transition: all 0.2s ease;
+    }
+    .part-item:hover {
+        border-color: var(--silver);
+        background-color: #222;
+    }
+    .part-name {
+        color: var(--white);
+        font-size: 1.2em;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .part-name i { color: var(--silver); }
+    
+    .part-btn {
+        background-color: var(--gold);
+        color: var(--black);
+        padding: 10px 25px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .part-btn:hover {
+        transform: scale(1.05);
+        background-color: #fff;
+    }
+
+    /* Instructions Section */
+    .instructions-section {
+        background-color: var(--dark-gray);
+        padding: 30px;
+        border-radius: 15px;
+        border: 1px solid #333;
+    }
+    .instructions-section h3 { color: var(--white); margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+    .instructions-content { color: var(--silver); line-height: 1.6; }
+    
+    /* Ensure rich text from admin panel looks good */
+    .instructions-content p { margin-bottom: 15px; }
+    .instructions-content ul, .instructions-content ol { margin-bottom: 15px; padding-left: 20px; }
+    .instructions-content strong { color: var(--gold); }
+
+    @media (max-width: 768px) {
+        .game-header { flex-direction: column; text-align: center; }
+        .part-item { flex-direction: column; gap: 15px; text-align: center; }
+        .part-btn { width: 100%; }
+    }
+</style>
+
+<main class="container">
+    <div class="parts-page-container">
+        
+        <a href="/mods/<%= file._id %>" style="color: var(--silver); text-decoration: none; display: inline-block; margin-bottom: 20px;">
+            <i class="fas fa-arrow-left"></i> Back to Mod Details
+        </a>
+
+        <!-- Header -->
+        <div class="game-header">
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="game-icon">
+            <div class="game-info">
+                <h1><%= file.name %></h1>
+                <p>Version: <%= file.version %> | Developer: <span class="developer"><%= file.developer %></span></p>
+                <p style="margin-top: 10px; font-size: 0.9em;">Total Parts: <%= file.downloadParts.length %></p>
+            </div>
+        </div>
+
+        <!-- Links List -->
+        <div class="download-links-section">
+            <h2>Download Links</h2>
+            <div class="parts-list">
+                <% file.downloadParts.forEach((part, index) => { %>
+                    <div class="part-item">
+                        <div class="part-name">
+                            <i class="fas fa-file-archive"></i>
+                            <%= part.partName %>
+                        </div>
+                        
+                        <!-- 
+                          We redirect external links directly.
+                          If you wanted to track clicks on parts, you could create a route 
+                          like /download-part/:fileId/:partIndex, but direct links are fine for external clouds.
+                        -->
+                        <a href="<%= part.partUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
+                            Download Part <%= index + 1 %>
+                        </a>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions-section">
+            <h3><i class="fas fa-tools" style="margin-right: 10px; color: var(--silver);"></i>Installation Instructions</h3>
+            <div class="instructions-content">
+                <% if (file.installationInstructions && file.installationInstructions.trim() !== '') { %>
+                    <%- file.installationInstructions %>
+                <% } else { %>
+                    <p>1. Download all the parts listed above into the same folder on your computer.</p>
+                    <p>2. Ensure you have extraction software installed (like WinRAR or 7-Zip).</p>
+                    <p>3. Right-click on <strong>Part 1</strong> and select "Extract Here".</p>
+                    <p>4. The software will automatically find and extract the remaining parts.</p>
+                    <p>5. Run the installer or game executable from the newly extracted folder.</p>
+                <% } %>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

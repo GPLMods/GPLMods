@@ -46,6 +46,8 @@ const DistributorApplication = require('./models/distributorApplication');
 const Request = require('./models/request');
 const UserNotification = require('./models/userNotification');
 const SupportTicket = require('./models/supportTicket');
+const cron = require('node-cron');
+const AutomatedCampaign = require('./models/automatedCampaign');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -56,6 +58,64 @@ const { Types } = mongoose;
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// ===============================
+// USERNAME & DISCRIMINATOR HELPERS
+// ===============================
+
+// 1. Reserved Names List (Lowercase for easy checking)
+const RESERVED_NAMES = [
+    'admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 
+    'moderator', 'system', 'staff', 'support', 'owner'
+];
+
+/**
+ * Checks if a requested username contains any reserved words.
+ * @param {string} requestedName - The name the user wants
+ * @returns {boolean} - True if the name is forbidden
+ */
+function isNameReserved(requestedName) {
+    const lowerName = requestedName.toLowerCase();
+    // Check if the requested name matches exactly, or contains a reserved word
+    return RESERVED_NAMES.some(reserved => lowerName === reserved || lowerName.includes(reserved));
+}
+
+/**
+ * Generates a unique username by appending a #number if the base name is taken.
+ * @param {string} baseName - The desired username (e.g., "Noob")
+ * @returns {string} - A guaranteed unique username (e.g., "Noob", "NooB#1", "Noob#2")
+ */
+async function generateUniqueUsername(baseName) {
+    // 1. Clean the base name (remove any existing # numbers the user might have typed)
+    const cleanBaseName = baseName.split('#')[0].trim();
+    
+    // 2. Check if the clean base name is completely available
+    const exactMatch = await User.findOne({ username: cleanBaseName });
+    if (!exactMatch) {
+        return cleanBaseName; // It's available! No # needed.
+    }
+
+    // 3. If taken, find the highest discriminator for this base name
+    // We search for usernames starting with "BaseName#"
+    const regex = new RegExp(`^${cleanBaseName}#(\\d+)$`, 'i');
+    const existingUsers = await User.find({ username: regex });
+
+    let maxDiscriminator = 0;
+
+    existingUsers.forEach(user => {
+        // Extract the number after the #
+        const match = user.username.match(regex);
+        if (match && match[1]) {
+            const currentNum = parseInt(match[1], 10);
+            if (currentNum > maxDiscriminator) {
+                maxDiscriminator = currentNum;
+            }
+        }
+    });
+
+    // 4. Return the base name + the next available number
+    return `${cleanBaseName}#${maxDiscriminator + 1}`;
+}
 
 // Helper: Format Date
 function timeAgo(date) {
@@ -164,16 +224,69 @@ app.use(cors({
     }
 }));
 
-// 4. Maintenance Mode
-app.use((req, res, next) => {
-    if (process.env.MAINTENANCE_MODE === 'on') {
-        // We can't check req.user yet because Passport hasn't run, 
-        // so we only allow access to the /admin login path itself
-        if (req.path.startsWith('/admin')) {
-            return next();
+// --- DYNAMIC SITE STATE ENGINE (Maintenance / Unavailable) ---
+let cachedSiteState = null;
+let lastStateCheck = 0;
+
+app.use(async (req, res, next) => {
+    // 1. Fetch the state from DB, but cache it for 30 seconds for blazing fast performance
+    if (Date.now() - lastStateCheck > 30 * 1000) {
+        try {
+            // Find or create the singleton state document
+            cachedSiteState = await SiteState.findOne({ singletonId: 'master-state' });
+            if (!cachedSiteState) {
+                cachedSiteState = await new SiteState().save();
+            }
+            lastStateCheck = Date.now();
+        } catch (e) {
+            console.error("Site State Engine Error:", e);
+            return next(); // Fail open if DB is unreachable
         }
-        return res.status(503).render('pages/maintenance');
     }
+
+    // 2. If the site is online, proceed normally
+    if (!cachedSiteState || cachedSiteState.status === 'online') {
+        return next();
+    }
+
+    // 3. Always allow access to the Admin Panel, regardless of state
+    if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
+        return next();
+    }
+
+    // 4. Determine if the current user matches the Target Audience for the lockdown
+    const isGuest = !req.isAuthenticated();
+    const isMember = req.isAuthenticated();
+    let isTargeted = false;
+
+    if (cachedSiteState.targetAudience === 'all-users') {
+        isTargeted = true;
+    } else if (cachedSiteState.targetAudience === 'guests-only' && isGuest) {
+        isTargeted = true;
+    } else if (cachedSiteState.targetAudience === 'members-only' && isMember) {
+        isTargeted = true;
+    } else if (cachedSiteState.targetAudience === 'specific-user' && isMember) {
+        if (req.user.username.toLowerCase() === cachedSiteState.targetUsername?.toLowerCase()) {
+            isTargeted = true;
+        }
+    }
+
+    // 5. If the user is targeted, show them the appropriate intercept page
+    if (isTargeted) {
+        if (cachedSiteState.status === 'maintenance') {
+            return res.status(503).render('pages/maintenance', {
+                title: cachedSiteState.maintenanceTitle,
+                message: cachedSiteState.maintenanceMessage
+            });
+        } else if (cachedSiteState.status === 'unavailable') {
+            return res.status(503).render('pages/unavailable', {
+                title: cachedSiteState.unavailableTitle,
+                message: cachedSiteState.unavailableMessage
+            });
+        }
+    }
+
+    // If they aren't targeted, let them through
     next();
 });
 
@@ -220,12 +333,12 @@ passport.deserializeUser(async (id, done) => {
 
 // 3. Dynamic Session Expiration
 app.use((req, res, next) => {
-    if (req.session) {
-        if (req.isAuthenticated()) {
-            req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 3; // 3 Days for logged-in users
-        } else {
-            req.session.cookie.maxAge = 1000 * 60 * 60 * 1; // 1 Hour for guests
-        }
+    if (req.isAuthenticated()) {
+        // Set a non-HTTPOnly cookie so Javascript can read it
+        res.cookie('gplmods_auth', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3, sameSite: 'Lax' });
+    } else {
+        // Clear it if they are not logged in
+        res.clearCookie('gplmods_auth');
     }
     next();
 });
@@ -382,8 +495,20 @@ passport.use(new GoogleStrategy({
         let user = await User.findOne({ email: googleUserData.email });
         if (user) { user.googleId = googleUserData.googleId; await user.save(); done(null, user); } 
         else {
-            if (await User.findOne({ username: googleUserData.username })) googleUserData.username += Math.floor(Math.random() * 1000);
-            user = await User.create(googleUserData); done(null, user);
+            // --- NEW: Security Check & Discriminator ---
+            let requestedName = googleUserData.username; // Or githubUserData.username, etc.
+            
+            // If their social name is reserved, give them a generic safe name
+            if (isNameReserved(requestedName)) {
+                requestedName = 'Member'; 
+            }
+
+            // Generate the unique # number
+            const uniqueUsername = await generateUniqueUsername(requestedName);
+            googleUserData.username = uniqueUsername; // Update the data object before creating
+
+            user = await User.create(googleUserData);
+            done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
@@ -401,8 +526,20 @@ passport.use(new GitHubStrategy({
         let user = await User.findOne({ email: githubUserData.email });
         if (user) { user.githubId = githubUserData.githubId; await user.save(); done(null, user); } 
         else {
-            if (await User.findOne({ username: githubUserData.username })) githubUserData.username += Math.floor(Math.random() * 1000);
-            user = await User.create(githubUserData); done(null, user);
+            // --- NEW: Security Check & Discriminator ---
+            let requestedName = githubUserData.username; // Or microsoftUserData.username, etc.
+            
+            // If their social name is reserved, give them a generic safe name
+            if (isNameReserved(requestedName)) {
+                requestedName = 'Member'; 
+            }
+
+            // Generate the unique # number
+            const uniqueUsername = await generateUniqueUsername(requestedName);
+            githubUserData.username = uniqueUsername; // Update the data object before creating
+
+            user = await User.create(githubUserData);
+            done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
@@ -420,8 +557,20 @@ passport.use(new MicrosoftStrategy({
         let user = await User.findOne({ email: microsoftUserData.email });
         if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); } 
         else {
-            if (await User.findOne({ username: microsoftUserData.username })) microsoftUserData.username += Math.floor(Math.random() * 1000);
-            user = await User.create(microsoftUserData); done(null, user);
+            // --- NEW: Security Check & Discriminator ---
+            let requestedName = microsoftUserData;  // Or googleUserData.username, etc.
+            
+            // If their social name is reserved, give them a generic safe name
+            if (isNameReserved(requestedName)) {
+                requestedName = 'Member'; 
+            }
+
+            // Generate the unique # number
+            const uniqueUsername = await generateUniqueUsername(requestedName);
+            microsoftUserData.username = uniqueUsername; // Update the data object before creating
+
+            user = await User.create(microsoftUserData);
+            done(null, user);
         }
     } catch (err) { done(err, null); }
 }));
@@ -437,14 +586,6 @@ app.get('/healthz', (req, res) => {
 
 // Home
 app.get('/', (req, res, next) => {
-    // --- ✅ FIX: ABSOLUTE CACHE PREVENTION ---
-    // This forces the browser to re-request the page every single time.
-    res.setHeader('Surrogate-Control', 'no-store');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    next();
-}, async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
@@ -495,21 +636,25 @@ app.get('/', (req, res, next) => {
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
 // ===================================
-
 // 1. The Notification Hub (Category Selection)
-// Using lowercase 'app'
 app.get('/notifications', ensureAuthenticated, async (req, res) => {
     try {
-        // Optimization: Run both database queries at the same time
-        const [unreadPersonalCount, totalGlobalUpdates] = await Promise.all([
-            UserNotification.countDocuments({ user: req.user._id, isRead: false }),
-            Announcement.countDocuments()
-        ]);
-
-        res.render('pages/notifications-hub', {
-            unreadPersonalCount, // Shorthand for unreadPersonalCount: unreadPersonalCount
-            totalGlobalUpdates
+        // 1. Count unread personal messages
+        const UserNotification = require('./models/userNotification');
+        const unreadPersonalCount = await UserNotification.countDocuments({ 
+            user: req.user._id, 
+            isRead: false 
         });
+
+        // 2. Count Total Global Announcements
+        const totalGlobalUpdates = await Announcement.countDocuments();
+
+        // ✅ FIX 6: Explicitly pass BOTH variables to the EJS template
+        res.render('pages/notifications-hub', {
+            unreadPersonalCount: unreadPersonalCount || 0,
+            totalGlobalUpdates: totalGlobalUpdates || 0
+        });
+
     } catch (error) {
         console.error("Error loading notification hub:", error);
         res.status(500).render('pages/500');
@@ -599,6 +744,44 @@ app.get('/notifications/new-updates', async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching new updates feed:", error);
+        res.status(500).render('pages/500');
+    }
+});
+// --- NEW: Personalized "Following" Feed ---
+app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
+    try {
+        // 1. Get the current user and populate their 'following' array 
+        // to get the actual usernames of the people they follow.
+        const userWithFollowing = await User.findById(req.user._id).populate('following', 'username');
+
+        if (!userWithFollowing || !userWithFollowing.following || userWithFollowing.following.length === 0) {
+            // If they aren't following anyone, render an empty page
+            return res.render('pages/feed-following', { files: [] });
+        }
+
+        // 2. Extract just the usernames into an array
+        const followedUsernames = userWithFollowing.following.map(u => u.username);
+
+        // 3. Find files where the 'uploader' is in our array of followed usernames
+        const followingMods = await File.find({
+            uploader: { $in: followedUsernames }, // The magic MongoDB operator!
+            status: 'live',
+            isLatestVersion: true
+        })
+        .sort({ updatedAt: -1 }) // Sort by most recently updated/uploaded
+        .limit(50); // Reasonable limit for a feed
+
+        // 4. Get signed URLs for the icons (using our smart helper)
+        const modsWithUrls = await Promise.all(followingMods.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        res.render('pages/feed-following', { files: modsWithUrls });
+
+    } catch (error) {
+        console.error("Error fetching following feed:", error);
         res.status(500).render('pages/500');
     }
 });
@@ -889,6 +1072,33 @@ app.get('/download-file/:id', async (req, res) => {
     }
 });
 
+// --- NEW: Multi-Part Download Page Route ---
+app.get('/mods/:id/parts', async (req, res) => {
+    try {
+        const fileId = req.params.id;
+        if (!Types.ObjectId.isValid(fileId)) return res.status(404).render('pages/404');
+
+        const file = await File.findById(fileId);
+        
+        if (!file || !file.isMultiPart) {
+            // If it's not a multi-part file, just send them back to the main mod page
+            return res.redirect(`/mods/${fileId}`);
+        }
+
+        // We still get a signed URL for the icon just to make the page look nice
+        const iconKey = file.iconUrl || file.iconKey;
+        const iconUrl = await getSmartImageUrl(iconKey);
+
+        res.render('pages/download-parts', { 
+            file: { ...file.toObject(), iconUrl }
+        });
+
+    } catch (e) {
+        console.error("Multi-part page error:", e);
+        res.status(500).render('pages/500');
+    }
+});
+
 // ===============================
 // 8. AUTH ROUTES
 // ===============================
@@ -939,11 +1149,21 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         if (!username || !email || !password) {
             return res.status(400).send("All fields are required.");
         }
+
+        // --- NEW: Security Check (Reserved Names) ---
+        if (isNameReserved(username)) {
+            return res.status(400).send("That username is reserved and cannot be used.");
+        }
+
         let user = await User.findOne({ email: email.toLowerCase() });
 
         if (user && user.isVerified) {
             return res.status(400).send("An account with this email already exists.");
         }
+
+        // --- NEW: Generate Unique Username (Discriminator) ---
+        // We do this BEFORE creating the new user object
+        const uniqueUsername = await generateUniqueUsername(username);
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 600000; 
@@ -951,9 +1171,11 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         if (user && !user.isVerified) {
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
+            // Update their requested username just in case they changed it
+            user.username = uniqueUsername; 
         } else {
             user = new User({
-                username,
+                username: uniqueUsername, // Use the generated name
                 email: email.toLowerCase(),
                 password,
                 verificationOtp: otp,
@@ -995,6 +1217,28 @@ app.post('/verify-otp', async (req, res) => {
         user.verificationOtp = undefined; 
         user.otpExpires = undefined;
         await user.save();
+// ======== NEW: AUTOMATED WELCOME MESSAGE ========
+        try {
+            const UserNotification = require('./models/userNotification');
+            
+            // Check if we already sent a welcome message (to prevent duplicates on re-verification)
+            const existingWelcome = await UserNotification.findOne({ 
+                user: user._id, 
+                title: 'Welcome to GPL Mods!' 
+            });
+
+            if (!existingWelcome) {
+                await new UserNotification({
+                    user: user._id,
+                    title: 'Welcome to GPL Mods!',
+                    message: `Hi ${user.username},\n\nWelcome to the community! We're thrilled to have you here. \n\nFeel free to explore our massive library of safe, working mods, or start uploading your own to build your reputation.\n\nIf you need any help, check out the FAQ or submit a Support Ticket.\n\nHappy Modding,\nThe GPL Community Team`,
+                    type: 'success' // Green icon
+                }).save();
+            }
+        } catch (notifErr) {
+            console.error("Failed to send automated welcome message:", notifErr);
+            // We don't want a notification failure to stop the login process
+        }
         
         req.login(user, (err) => {
             if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
@@ -1105,24 +1349,15 @@ app.post('/reset-password/:token', async (req, res, next) => {
 });
 
 app.get('/logout', (req, res, next) => {
-    // 1. Log the user out of Passport
     req.logout(err => { 
-        if (err) {
-            console.error("Logout Error:", err);
-            return next(err); 
-        } 
+        if (err) return next(err); 
         
-        // 2. Destroy the session in the MongoDB store
         req.session.destroy((destroyErr) => {
-            if (destroyErr) {
-                console.error("Session Destruction Error:", destroyErr);
-            }
-            
-            // 3. Clear the cookie from the user's browser
-            // The name 'connect.sid' is the default cookie name used by express-session
+            // Clear the session cookie
             res.clearCookie('connect.sid', { path: '/' });
+            // --- ✅ FIX: Clear our custom auth state cookie ---
+            res.clearCookie('gplmods_auth');
             
-            // 4. Redirect home
             res.redirect('/?message=You have been successfully logged out.'); 
         });
     });
@@ -1267,11 +1502,26 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
         const user = await User.findById(req.user.id);
         if (bio !== undefined) user.bio = bio;
 
+        // --- Handle Username Change ---
         if (username && username !== user.username) {
-            const existingUser = await User.findOne({ username });
-            if (existingUser) return res.redirect('/profile?error=Username taken.');
-            await File.updateMany({ uploader: user.username }, { uploader: username });
-            user.username = username;
+            
+            // 1. Security Check
+            if (isNameReserved(username)) {
+                 return res.redirect('/profile?error=That username is reserved and cannot be used.');
+            }
+
+            // 2. Generate the new, unique name (adds # if needed)
+            const newUniqueUsername = await generateUniqueUsername(username);
+
+            // 3. CRITICAL: Update the 'uploader' field on all their mods!
+            // We must do this BEFORE we change the user's name on their document
+            await File.updateMany(
+                { uploader: user.username }, // Find mods with the OLD name
+                { uploader: newUniqueUsername } // Change to the NEW name
+            );
+
+            // 4. Finally, update the user's document
+            user.username = newUniqueUsername;
         }
 
         if (email && email !== user.email) {
@@ -1365,39 +1615,78 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 app.get('/upload', ensureAuthenticated, (req, res) => {
     res.render('pages/upload');
 });
+// --- INITIAL UPLOAD ROUTE (SERVER-SIDE WITH LIMITS) ---
+app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    try {
+        // ======== DAILY UPLOAD LIMIT CHECK ========
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentUploadCount = await File.countDocuments({
+            uploader: req.user.username,
+            createdAt: { $gte: oneDayAgo }
+        });
+
+        let dailyLimit = 5;
+        if (req.user.role === 'distributor' || req.user.role === 'admin') dailyLimit = 50;
+
+        if (recentUploadCount >= dailyLimit) {
+            const UserNotification = require('./models/userNotification');
+            await new UserNotification({
+                user: req.user._id,
+                title: 'Daily Upload Limit Reached',
+                message: `You have reached your limit of ${dailyLimit} uploads in a 24-hour period. \n\nTo ensure quality and prevent spam, we limit how many mods can be submitted daily. Please wait 24 hours before uploading more content.`,
+                type: 'warning' 
+            }).save();
+
+            // Also clean up the temp file if multer uploaded one before we blocked them
+            if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+            return res.status(429).redirect('/upload?error=Daily upload limit reached. Please check your notifications for details.');
+        }
 
 // --- UPDATED ROUTE: Handles both File Uploads and Distributor Links ---
-app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
-    
-    // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
-    // If the user is a distributor and they provided an externalUrl, skip file processing
+// --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
     if (req.user.role === 'distributor' && req.body.externalUrl) {
         try {
             const { externalUrl, originalFilename } = req.body;
 
-            // Create a "shell" file document for the external link
             const newFile = new File({
                 uploader: req.user.username,
-                externalDownloadUrl: externalUrl, // Save the external link
+                externalDownloadUrl: externalUrl,
                 originalFilename: originalFilename,
-                
-                // We use these placeholders to satisfy the Mongoose schema requirements
-                // because there is no actual file in our B2 bucket for this mod.
                 fileKey: 'external-link', 
                 fileSize: 0, 
-                
                 name: originalFilename, 
                 version: 'Draft',
                 category: 'android',         
                 platforms: [],
-                
                 status: 'processing' 
             });
-            
             await newFile.save();
             
-            console.log(`Distributor ${req.user.username} created external link draft.`);
-            // Skip B2 upload and VirusTotal scan, go straight to details page
+            // --- NEW: VIRUSTOTAL v3 URL SCAN ---
+            console.log(`Starting VT URL scan for Distributor link: ${externalUrl}`);
+            (async () => {
+                try {
+                    // API v3 requires the URL to be form-urlencoded
+                    const urlParams = new URLSearchParams();
+                    urlParams.append('url', externalUrl);
+
+                    const vtUrlResponse = await axios.post('https://www.virustotal.com/api/v3/urls', urlParams, {
+                        headers: { 
+                            'x-apikey': process.env.VIRUSTOTAL_API_KEY,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    });
+                    
+                    const analysisId = vtUrlResponse.data.data.id;
+                    console.log(`VT URL Scan submitted. Analysis ID: ${analysisId}`);
+                    
+                    await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
+                } catch (vtError) {
+                    console.error("VT URL Scan Error:", vtError.response?.data || vtError.message);
+                }
+            })();
+            
             return res.redirect(`/upload-details/${newFile._id}`);
 
         } catch (error) {
@@ -1436,25 +1725,49 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         });
         await newFile.save();
         
+        // --- 3. VIRUSTOTAL v3 BACKGROUND SCAN ---
         console.log("Starting background VirusTotal scan...");
         (async () => {
             try {
+                // STEP A: Request an upload URL (Recommended for files > 32MB)
+                // For standard files, we can just POST to /api/v3/files
+                // We use the standard endpoint here, but if you expect huge mods,
+                // you should hit /api/v3/files/upload_url first.
+                
                 const vtFormData = new FormData();
                 vtFormData.append('file', fs.createReadStream(tempFilePath), req.file.originalname);
 
-                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
-                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
+                const vtSubmitResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
+                    headers: { 
+                        'x-apikey': process.env.VIRUSTOTAL_API_KEY, 
+                        ...vtFormData.getHeaders() 
+                    }
                 });
                 
-                const analysisId = vtResponse.data.data.id;
+                // This is the Analysis ID (looks like: MD5:UUID)
+                const analysisId = vtSubmitResponse.data.data.id;
+                console.log(`VT v3 Scan submitted for ${newFile._id}. Analysis ID: ${analysisId}`);
+                
+                // Immediately save the Analysis ID so the frontend can link to the "pending" page
                 await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
-                console.log(`VT Scan submitted for ${newFile._id}. Analysis ID: ${analysisId}`);
+
+                // --- ADVANCED: Polling for the final report ---
+                // In a true production app, you would use a job queue (like BullMQ or Redis) 
+                // to poll this. For this implementation, we will wait briefly, 
+                // but rely mostly on the webhook or the user clicking "Check Scan Status"
+                
+                // We don't want to hold up the server memory waiting 5 minutes for a scan.
+                // The frontend Download page already handles the "Pending" state beautifully!
+                
             } catch (vtError) {
                 console.error(`Background VT scan failed for ${newFile._id}:`, vtError.response?.data || vtError.message);
             } finally {
-                fs.unlinkSync(tempFilePath); 
+                // ALWAYS clean up the temp file
+                if (fs.existsSync(tempFilePath)) {
+                    fs.unlinkSync(tempFilePath); 
+                }
             }
-        })(); 
+        })();
 
         res.redirect(`/upload-details/${newFile._id}`);
 
@@ -1724,6 +2037,101 @@ app.get('/api/trending-searches', async (req, res) => {
     } catch (error) {
         console.error("API Trending Searches Error:", error);
         res.status(500).json({ error: 'Could not fetch trending searches.' });
+    }
+});
+
+// --- NEW: Username Availability & Suggestion API ---
+app.get('/api/check-username', async (req, res) => {
+    try {
+        const requestedName = req.query.username;
+
+        if (!requestedName || requestedName.trim().length < 3) {
+            return res.json({ available: false, message: 'Username too short' });
+        }
+
+        // 1. Check against reserved names
+        if (isNameReserved(requestedName)) {
+            return res.json({ 
+                available: false, 
+                message: 'This name is reserved.',
+                suggestions: [] 
+            });
+        }
+
+        // 2. Check if the exact name is taken
+        const exactMatch = await User.findOne({ 
+            username: { $regex: new RegExp(`^${requestedName}$`, 'i') } 
+        });
+
+        if (!exactMatch) {
+            return res.json({ available: true, message: 'Username is available!' });
+        }
+
+        // 3. If taken, generate suggestions using our existing helper logic
+        // We'll generate 3 options by appending random numbers or using the next available #
+        const suggestions = [];
+        
+        // Suggestion 1: The next logical # number (using our helper)
+        const nextNumberedName = await generateUniqueUsername(requestedName);
+        suggestions.push(nextNumberedName);
+
+        // Suggestion 2 & 3: Random suffixes for variety
+        suggestions.push(`${requestedName}${Math.floor(Math.random() * 999)}`);
+        suggestions.push(`${requestedName}_${Math.floor(Math.random() * 99)}`);
+
+        return res.json({
+            available: false,
+            message: 'Username is taken.',
+            suggestions: suggestions
+        });
+
+    } catch (error) {
+        console.error("API Username Check Error:", error);
+        res.status(500).json({ error: 'Server error during check.' });
+    }
+});
+
+// ===================================
+// 11.5  VIRUSTOTAL REFRESH ROUTE
+// ===================================
+app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const file = await File.findById(fileId);
+        
+        if (!file || !file.virusTotalAnalysisId) {
+            return res.status(404).json({ error: "No analysis ID found." });
+        }
+
+        // Check the status of the Analysis ID
+        const vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${file.virusTotalAnalysisId}`, {
+            headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+        });
+
+        const status = vtResponse.data.data.attributes.status;
+
+        if (status === 'completed') {
+            const stats = vtResponse.data.data.attributes.stats;
+            
+            // Extract the actual File Hash (SHA-256) from the analysis report
+            // This is useful for linking directly to the file report later
+            const itemHash = vtResponse.data.meta.file_info ? vtResponse.data.meta.file_info.sha256 : null;
+
+            await File.findByIdAndUpdate(fileId, {
+                virusTotalScanDate: new Date(),
+                virusTotalPositiveCount: stats.malicious + stats.suspicious,
+                virusTotalTotalScans: stats.harmless + stats.malicious + stats.suspicious + stats.undetected,
+                virusTotalId: itemHash // Save the true hash if available
+            });
+
+            return res.json({ status: 'completed', stats: stats });
+        } else {
+            return res.json({ status: status }); // 'queued' or 'in-progress'
+        }
+
+    } catch (error) {
+        console.error("VT Refresh Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to contact VirusTotal." });
     }
 });
 
@@ -2149,5 +2557,75 @@ const startServer = async () => {
         console.error('Server failed to start.', error);
     }
 };
+
+// ===================================
+// AUTOMATION ENGINE (CRON JOBS)
+// ===================================
+
+// This job runs every 1 minute
+cron.schedule('* * * * *', async () => {
+    try {
+        const now = new Date();
+
+        // 1. Find campaigns that are scheduled to run NOW (or were missed slightly)
+        const pendingCampaigns = await AutomatedCampaign.find({
+            status: 'scheduled',
+            scheduledDate: { $lte: now } // Date is less than or equal to right now
+        });
+
+        if (pendingCampaigns.length === 0) return; // Nothing to do
+
+        for (const campaign of pendingCampaigns) {
+            console.log(`Starting automated campaign: ${campaign.title}`);
+            
+            // Mark as processing so we don't accidentally run it twice
+            campaign.status = 'processing';
+            await campaign.save();
+
+            let targetUsers = [];
+
+            // 2. Determine the Target Audience based on the condition
+            if (campaign.targetGroup === 'all-users') {
+                targetUsers = await User.find({}).select('_id');
+            } 
+            else if (campaign.targetGroup === 'premium-only') {
+                targetUsers = await User.find({ membership: 'premium' }).select('_id');
+            }
+            else if (campaign.targetGroup === 'distributors-only') {
+                targetUsers = await User.find({ role: 'distributor' }).select('_id');
+            }
+            else if (campaign.targetGroup === 'android-uploaders') {
+                // Find distinct uploaders of android files
+                const uploaders = await File.distinct('uploader', { category: 'android' });
+                targetUsers = await User.find({ username: { $in: uploaders } }).select('_id');
+            }
+            // ... add more complex logic for 'ios-uploaders', etc.
+
+            // 3. Generate the individual notifications
+            const notificationsToInsert = targetUsers.map(user => ({
+                user: user._id,
+                title: campaign.notificationTitle,
+                message: campaign.notificationMessage,
+                type: campaign.notificationType,
+                isRead: false,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }));
+
+            // 4. Bulk insert for massive performance (sends 10,000s in seconds)
+            if (notificationsToInsert.length > 0) {
+                await UserNotification.insertMany(notificationsToInsert);
+            }
+
+            // 5. Mark campaign as completed
+            campaign.status = 'completed';
+            await campaign.save();
+            console.log(`Completed campaign: ${campaign.title}. Sent to ${targetUsers.length} users.`);
+        }
+
+    } catch (error) {
+        console.error("Cron Job Automation Error:", error);
+    }
+});
 
 startServer();

@@ -2,9 +2,13 @@
 
 <main>
     <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px;">
-        <div class="container">
+        <div class="container" style="display: flex; flex-direction: column; align-items: center;">
+            
+            <!-- ✅ UPGRADE: Custom Lottie Sync Animation in Header -->
+            <lottie-player src="/animations/sync.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--glow-gold));"autoplay></lottie-player>
+            
             <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">
-                <i class="fas fa-sync-alt" style="color: var(--gold); margin-right: 15px;"></i>Recent <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Updates</span>
+                Recent <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Updates</span>
             </h1>
             <p style="color: var(--silver); font-size: 1.1em;">Existing mods that received a new version within the last 24 hours.</p>
         </div>
@@ -65,7 +69,8 @@
             </section>
         <% } else { %>
             <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333;">
-                <i class="fas fa-history" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                <!-- ✅ UPGRADE: Custom Lottie History Animation-->
+            <lottie-player src="/animations/history.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--glow-gold));"autoplay></lottie-player>            
                 <h2 style="color: var(--white); margin-bottom: 10px;">No Recent Updates</h2>
                 <p style="color: var(--silver); font-size: 1.1em;">It's quiet today. No existing mods have been updated in the last 24 hours.</p>
             </div>

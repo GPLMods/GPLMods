@@ -509,6 +509,11 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     transform: scale(1.1);
 }
 
+/* ✅ FIX 1: Add a "click" press-down effect */
+.music-controls button:active {
+    transform: scale(0.9);
+}
+
         /* --- Policy Acceptance Banner --- */
         -banner {
             position: fixed; bottom: 0; left: 0; right: 0;

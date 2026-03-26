@@ -35,9 +35,21 @@
             </div>
             <% } %>
             
-            <a href="/download-file/<%= file._id %>" class="download-button">
-                Download (<%= formatBytes(file.fileSize) %>)
-            </a>
+            <!-- ======== DYNAMIC DOWNLOAD BUTTON ======== -->
+            <% if (file.isMultiPart) { %>
+                <!-- Redirects to the new Multi-Part page -->
+                <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
+                    <i class="fas fa-layer-group" style="margin-right: 10px;"></i>
+                    View Download Links
+                    <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
+                </a>
+            <% } else { %>
+                <!-- Standard Single-File Download -->
+                <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                    <i class="fas fa-download" style="margin-right: 10px;"></i>
+                    Download (<%= formatBytes(file.fileSize) %>)
+                </a>
+            <% } %>
             
             <!-- ============================ -->
             <!-- Updated Action Buttons Start -->
@@ -58,38 +70,44 @@
                     <a href="/login" class="action-btn">Login to Interact</a>
                 <% } %>
 
-<!-- ======== VIRUSTOTAL BUTTON FIX ======== -->
-        <% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
+<!-- ======== VIRUSTOTAL LOGIC ======== -->
+<% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
+    
+    <% if (file.virusTotalScanDate) { %>
+        <!-- The scan is COMPLETE. Show the results block! -->
+        <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+            <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                <i class="fas fa-shield-virus" style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
+                <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Security Scan</span>
+                <span style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                    <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
+                </span>
+            </div>
+            
             <% 
-                // Grab whichever IDs we have in the database
-                const vtHash = file.virusTotalId || "";
-                const vtAnalysis = file.virusTotalAnalysisId || "";
-                
-                let vtUrl = "";
-                let btnText = "Check File Safety";
-
-                // A true SHA-256 hash is exactly 64 characters long.
-                if (vtHash.length === 64) {
-                    // It's a real hash, use the direct file link
-                    vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
-                } 
-                else if (vtAnalysis) {
-                    // It's a temporary Analysis ID. VT will automatically redirect this to the final page!
-                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-                    btnText = "Check Scan Status";
-                } 
-                else {
-                    // Fallback: If an admin accidentally pasted the Base64 ID into the wrong box
-                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
-                    btnText = "Check Scan Status";
-                }
+               // Determine the correct URL. If we have the true hash (virusTotalId), use it.
+               // Otherwise, use the analysis ID.
+               const vtUrl = file.virusTotalId 
+                   ? `https://www.virustotal.com/gui/file/${file.virusTotalId}` 
+                   : `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
             %>
-            <a href="<%= vtUrl %>" target="_blank" class="action-btn">
-                <i class="fas fa-shield-alt"></i>
-                <%= btnText %>
-            </a>
-        <% } %>
-        <!-- ======================================= -->
+            <a href="<%= vtUrl %>" target="_blank" class="full-width-btn" style="text-align: center; display: block; margin-top: 10px; font-size: 0.85em; color: var(--silver); text-decoration: underline;">View Full Report</a>
+        </div>
+        
+    <% } else { %>
+        <!-- The scan is PENDING. Show the refresh button. -->
+        <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--gold);">
+            <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.5em;"></i>
+                <span style="font-weight: bold; color: var(--white);">Scan in Progress...</span>
+            </div>
+            <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary full-width-btn" style="margin-top: 10px; padding: 8px; border-color: var(--gold); color: var(--gold);">
+                <i class="fas fa-sync-alt"></i> Check Results Now
+            </button>
+        </div>
+    <% } %>
+<% } %>
+<!-- ======================================= -->
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="action-btn">
@@ -366,6 +384,30 @@
             }
         }
     });
+</script>
+
+<script>
+    async function refreshVTScan(fileId) {
+        try {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            btn.disabled = true;
+
+            const response = await fetch(`/api/refresh-vt-scan/${fileId}`, { method: 'POST' });
+            const data = await response.json();
+
+            if (data.status === 'completed') {
+                // Reload the page to show the new colorful badge!
+                window.location.reload();
+            } else {
+                alert('Scan is still ' + data.status + '. Please check back in a few minutes.');
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Results Now';
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert('Failed to check status.');
+        }
+    }
 </script>
 
 <%- include('../partials/footer') %>

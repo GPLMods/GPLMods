@@ -30,24 +30,48 @@
     <div class="updates-header">
         <h1>Site News & <span>Updates</span></h1>
     </div>
-    <div class="blog-grid">
-        <% announcements.forEach((announcement, index) => { %>
-            <!-- Your existing blog-card code remains the same -->
-            <div class="blog-card" onclick="openBlogModal(<%= index %>)">
-                <div class="blog-meta"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></div>
-                <h2 class="blog-title"><%= announcement.title %></h2>
-                <div class="blog-excerpt"><%- announcement.content %></div>
-                <span class="read-more">Read Full Update <i class="fas fa-arrow-right"></i></span>
-            </div>
-            
-            <!-- Hidden Data for Modal Injection -->
-            <div id="blog-data-<%= index %>" style="display:none;">
-                <span class="d-date"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></span>
-                <span class="d-title"><%= announcement.title %></span>
-                <div class="d-content"><%- announcement.content.replace(/\n/g, '<br>') %></div>
-            </div>
-        <% }) %>
+
+    <!-- ✅ FIX 5a: Added Back to Hub button -->
+    <div style="display: flex; justify-content: flex-start; margin-bottom: 30px;">
+        <a href="/notifications" class="btn" style="background: transparent; border: 2px solid #333; color: var(--silver); padding: 8px 20px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--silver)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#333'; this.style.color='var(--silver)';">
+            <i class="fas fa-arrow-left"></i> Back to Hub
+        </a>
     </div>
+
+    <!-- ✅ FIX 5b: Logic to handle empty announcements -->
+    <% if (announcements && announcements.length > 0) { %>
+        
+        <div class="blog-grid"> <!-- THIS IS THE GRID CONTAINER -->
+            
+            <% announcements.forEach((announcement, index) => { %>
+                <div class="blog-card" onclick="openBlogModal(<%= index %>)">
+                    <div class="blog-meta"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></div>
+                    <h2 class="blog-title"><%= announcement.title %></h2>
+                    <div class="blog-excerpt"><%- announcement.content %></div>
+                    <span class="read-more">Read Full Update <i class="fas fa-arrow-right"></i></span>
+                </div>
+                
+                <!-- Hidden Data for Modal Injection -->
+                <div id="blog-data-<%= index %>" style="display:none;">
+                    <span class="d-date"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></span>
+                    <span class="d-title"><%= announcement.title %></span>
+                    <div class="d-content"><%- announcement.content.replace(/\n/g, '<br>') %></div>
+                </div>
+            <% }) %>
+
+        </div> <!-- END OF GRID CONTAINER -->
+
+    <% } else { %>
+        
+        <!-- EMPTY STATE MESSAGE -->
+        <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin-bottom: 60px;">
+            <i class="fas fa-bullhorn" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+            <h2 style="color: var(--white); margin-bottom: 10px;">No Announcements Yet</h2>
+            <p style="color: var(--silver); font-size: 1.1em;">Everything is running smoothly. Check back later for site news and updates.</p>
+        </div>
+
+    <% } %>
+
 </main>
 
 <!-- The Reading Modal -->

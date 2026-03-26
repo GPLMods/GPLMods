@@ -172,6 +172,48 @@
             .auth-container { padding: 25px; border-radius: 0; border: none; box-shadow: none; }
             .auth-page-wrapper { padding: 0; align-items: flex-start; }
         }
+/* New Styles for Username Suggestions */
+        .username-feedback {
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: block;
+            min-height: 18px; /* Keep space even when empty */
+        }
+        .feedback-available { color: var(--success); }
+        .feedback-taken { color: var(--error); }
+        
+        .suggestion-box {
+            display: none;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed #444;
+        }
+        .suggestion-box p {
+            margin: 0 0 8px 0;
+            font-size: 0.85em;
+            color: var(--silver);
+        }
+        .suggestion-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .suggestion-tag {
+            background: var(--dark-gray);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .suggestion-tag:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
     </style>
 </head>
 <body>
@@ -199,10 +241,19 @@
                 <% } %>
 
                 <form id="signup-form" action="/register" method="POST">
+                    <!-- UPDATED Username Group -->
                     <div class="form-group">
                         <label for="username">Username</label>
-                        <input type="text" id="username" name="username" placeholder="e.g. YourName" required>
+                        <input type="text" id="username" name="username" placeholder="e.g. YourName" required autocomplete="off">
+                        
+                        <!-- NEW: Feedback and Suggestions -->
+                        <span id="username-msg" class="username-feedback"></span>
+                        <div id="suggestion-container" class="suggestion-box">
+                            <p>Try one of these instead:</p>
+                            <div id="suggestion-list" class="suggestion-tags"></div>
+                        </div>
                     </div>
+
 
                     <div class="form-group">
                         <label for="email">Email</label>
@@ -223,9 +274,15 @@
                         <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
                     </div>
 
+                    <!-- UPDATED: ReCAPTCHA and Terms -->
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
                     </div>
+                    
+                    <!-- NEW: Privacy Policy Link added -->
+                    <p style="font-size: 0.8em; color: var(--silver); text-align: center; margin-bottom: 15px;">
+                        By registering, you agree to our <a href="/tos" style="color: var(--gold);">Terms of Service</a> and <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a>.
+                    </p>
 
                     <button type="submit" class="submit-button">Sign Up</button>
                 </form>
@@ -280,6 +337,77 @@
                 strengthText.innerText = 'Strength: Strong';
                 strengthText.style.color = '#2ecc71';
             }
+        });
+// --- NEW: Live Username Suggestions Logic ---
+        const usernameInput = document.getElementById('username');
+        const usernameMsg = document.getElementById('username-msg');
+        const suggestionContainer = document.getElementById('suggestion-container');
+        const suggestionList = document.getElementById('suggestion-list');
+        const submitBtn = document.getElementById('register-submit-btn');
+        let typingTimer;
+
+        usernameInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            const val = this.value.trim();
+
+            // Reset UI
+            usernameMsg.textContent = '';
+            usernameMsg.className = 'username-feedback';
+            suggestionContainer.style.display = 'none';
+            suggestionList.innerHTML = '';
+            submitBtn.disabled = false; // Assume okay until checked
+
+            if (val.length < 3) {
+                if (val.length > 0) {
+                    usernameMsg.textContent = 'Username must be at least 3 characters.';
+                    usernameMsg.classList.add('feedback-taken');
+                    submitBtn.disabled = true;
+                }
+                return;
+            }
+
+            // Show checking status
+            usernameMsg.textContent = 'Checking availability...';
+            usernameMsg.style.color = 'var(--silver)';
+
+            // Wait 500ms after user stops typing before making the API call (debounce)
+            typingTimer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/check-username?username=${encodeURIComponent(val)}`);
+                    const data = await response.json();
+
+                    if (data.available) {
+                        usernameMsg.textContent = data.message;
+                        usernameMsg.classList.add('feedback-available');
+                        submitBtn.disabled = false;
+                    } else {
+                        usernameMsg.textContent = data.message;
+                        usernameMsg.classList.add('feedback-taken');
+                        // Optional: You could disable the button here, but our backend
+                        // generateUniqueUsername helper will automatically fix it anyway.
+                        // Letting them submit is fine, it will just append #1 automatically.
+
+                        if (data.suggestions && data.suggestions.length > 0) {
+                            suggestionContainer.style.display = 'block';
+                            data.suggestions.forEach(suggestion => {
+                                const tag = document.createElement('span');
+                                tag.className = 'suggestion-tag';
+                                tag.textContent = suggestion;
+                                // If they click a suggestion, fill the input and re-check
+                                tag.addEventListener('click', () => {
+                                    usernameInput.value = suggestion;
+                                    // Manually trigger the input event to re-validate
+                                    usernameInput.dispatchEvent(new Event('input'));
+                                });
+                                suggestionList.appendChild(tag);
+                            });
+                        }
+                    }
+                } catch (err) {
+                    usernameMsg.textContent = 'Error checking username.';
+                    usernameMsg.classList.add('feedback-taken');
+                }
+            }, 500); // 500ms delay
         });
     </script>
 

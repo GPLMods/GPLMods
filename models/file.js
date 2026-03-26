@@ -23,6 +23,20 @@ const FileSchema = new Schema({
     // --- ADD EXTERNAL LINK FIELD ---
     externalDownloadUrl: { type: String, trim: true },
 
+// --- NEW: MULTI-PART DOWNLOADS ---
+    isMultiPart: {
+        type: Boolean,
+        default: false
+    },
+    downloadParts: [{
+        partName: { type: String, required: true }, // e.g., "Part 1 (5GB)"
+        partUrl: { type: String, required: true }   // e.g., Google Drive link
+    }],
+    installationInstructions: {
+        type: String,
+        default: 'Extract all parts into the same folder and run the installer.'
+    },
+
     // --- CATEGORIZATION ---
     category: { 
         type: String, 

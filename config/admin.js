@@ -12,6 +12,8 @@ const Request = require('../models/request');
 const DistributorApplication = require('../models/distributorApplication');
 const UserNotification = require('../models/userNotification');
 const SupportTicket = require('../models/supportTicket');
+const AutomatedCampaign = require('../models/automatedCampaign');
+const SiteState = require('../models/siteState'); 
 
 async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
@@ -102,6 +104,36 @@ async function createAdminRouter() {
                 }
             },
 // ---------------------------------
+        // GLOBAL SITE CONTROLS
+        // ---------------------------------
+        {
+            resource: SiteState,
+            options: {
+                // Ensure only ONE record can ever exist
+                actions: {
+                    new: {
+                        isAccessible: async () => {
+                            const count = await SiteState.countDocuments();
+                            return count === 0; // Only allow "New" if no record exists
+                        }
+                    },
+                    delete: { isAccessible: false } // Never allow deletion of the master state
+                },
+                listProperties: ['status', 'targetAudience', 'updatedAt'],
+                editProperties: [
+                    'status', 'targetAudience', 'targetUsername', 
+                    'maintenanceTitle', 'maintenanceMessage', 
+                    'unavailableTitle', 'unavailableMessage'
+                ],
+                properties: {
+                    maintenanceMessage: { type: 'textarea' },
+                    unavailableMessage: { type: 'textarea' },
+                    targetUsername: {
+                        description: 'Only required if Target Audience is "specific-user". Enter their exact username.'
+                    }
+                }
+            },
+// ---------------------------------
         // DIRECT USER NOTIFICATIONS
         // ---------------------------------
         {
@@ -133,22 +165,35 @@ async function createAdminRouter() {
                 }
             }
         },
+{
+            resource: AutomatedCampaign,
+            options: {
+                listProperties: ['title', 'targetGroup', 'scheduledDate', 'status'],
+                properties: {
+                    notificationMessage: { type: 'textarea' }
+                }
+            }
+        },
             // FILE (MOD) MANAGEMENT
             {
-                resource: File,
-                options: {
-                    listProperties:['name', 'fileSize', 'version', 'developer', 'uploader', 'status', 'createdAt', 'showInSitemap', 'category'],
-                    editProperties:[
-                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
-                        'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
-                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename' 
-                    ],
+            resource: File,
+            options: {
+                listProperties:['name', 'fileSize', 'version', 'isMultiPart', 'status', 'category','isMultiPart', 'downloadParts', 'installationInstructions'],
+                editProperties:[
+                    'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
+                    'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+                    'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
+                    
+                    // --- THE DOWNLOAD LINKS SECTION ---
+                    'fileKey', 'fileSize', 'originalFilename',
+                    'externalDownloadUrl', 
+                    'isMultiPart', 'downloadParts', 'installationInstructions' // <-- ADDED THESE
+                ],
                     showProperties:[
                         'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename',
-                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt'
+                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt', 'isMultiPart', 'downloadParts', 'installationInstructions'
                     ],
                     properties: {
                         modDescription: { type: 'richtext' },
@@ -164,8 +209,19 @@ async function createAdminRouter() {
                                edit: (record) => record.params.status === 'rejected',
                                list: false, filter: false, show: true
                             }
-                        }
+                                            isMultiPart: {
+                        description: 'Check this box if the file is split into multiple download links.'
                     },
+                    downloadParts: {
+                        isArray: true,
+                        description: 'Add the individual links here (e.g., Part 1, Part 2). Only used if "Is Multi Part" is checked.'
+                    },
+                    installationInstructions: {
+                        type: 'richtext',
+                        description: 'Instructions for extracting and installing the multi-part file.'
+                    }
+                 }
+              },
                     actions: {
                         new: { isAccessible: true },
                         edit: { isAccessible: true },

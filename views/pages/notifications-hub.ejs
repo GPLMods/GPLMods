@@ -162,7 +162,19 @@
                 </div>
                 <i class="fas fa-chevron-right card-arrow"></i>
             </a>
-
+            <!-- ======== NEW: Category 3: Following Feed ======== -->
+            <a href="/notifications/following" class="category-card">
+                <div class="category-info">
+                    <div class="category-icon" style="color: var(--blue);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="category-text">
+                        <h2>Following Updates</h2>
+                        <p>Latest uploads and updates from members you follow.</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right card-arrow"></i>
+            </a>
             <!-- ======== NEW: Category 4: New Updates (24h) ======== -->
             <a href="/notifications/new-updates" class="category-card">
                 <div class="category-info">
@@ -189,13 +201,16 @@
         const globalArrow = document.getElementById('global-arrow');
 
         if (siteUpdatesCard && globalBadge) {
+            // Read the total updates from the server-rendered HTML attribute
             const currentTotalUpdates = parseInt(siteUpdatesCard.getAttribute('data-total-updates') || '0', 10);
+            
+            // Read what the user had seen previously from their browser storage
             const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
             
             const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
 
+            // ✅ FIX 6: If there are unread updates, display the badge
             if (unreadGlobalCount > 0) {
-                // Show the badge, hide the arrow
                 globalBadge.textContent = (unreadGlobalCount > 9 ? '9+' : unreadGlobalCount) + ' New';
                 globalBadge.style.display = 'flex';
                 if (globalArrow) globalArrow.style.display = 'none';
