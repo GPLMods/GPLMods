@@ -176,19 +176,16 @@ async function createAdminRouter() {
         },
             // FILE (MOD) MANAGEMENT
             {
-            resource: File,
-            options: {
-                listProperties:['name', 'fileSize', 'version', 'isMultiPart', 'status', 'category','isMultiPart', 'downloadParts', 'installationInstructions'],
-                editProperties:[
-                    'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
-                    'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                    'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
-                    
-                    // --- THE DOWNLOAD LINKS SECTION ---
-                    'fileKey', 'fileSize', 'originalFilename',
-                    'externalDownloadUrl', 
-                    'isMultiPart', 'downloadParts', 'installationInstructions' // <-- ADDED THESE
-                ],
+                resource: File,
+                options: {
+                    listProperties:['name', 'fileSize', 'version', 'isMultiPart', 'status', 'category','isMultiPart', 'downloadParts', 'installationInstructions'],
+                    editProperties:[
+                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
+                        'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
+                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 
+                        'isMultiPart', 'downloadParts', 'installationInstructions' 
+                    ],
                     showProperties:[
                         'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
@@ -209,19 +206,20 @@ async function createAdminRouter() {
                                edit: (record) => record.params.status === 'rejected',
                                list: false, filter: false, show: true
                             }
-                                            isMultiPart: {
-                        description: 'Check this box if the file is split into multiple download links.'
-                    },
-                    downloadParts: {
-                        isArray: true,
-                        description: 'Add the individual links here (e.g., Part 1, Part 2). Only used if "Is Multi Part" is checked.'
-                    },
-                    installationInstructions: {
-                        type: 'richtext',
-                        description: 'Instructions for extracting and installing the multi-part file.'
-                    }
-                 }
-              },
+                        }, // <--- FIX 1: Added missing brace and comma here
+                        isMultiPart: {
+                            description: 'Check this box if the file is split into multiple download links.'
+                        },
+                        downloadParts: {
+                            isArray: true,
+                            description: 'Add the individual links here (e.g., Part 1, Part 2). Only used if "Is Multi Part" is checked.'
+                        },
+                        installationInstructions: {
+                            type: 'richtext',
+                            description: 'Instructions for extracting and installing the multi-part file.'
+                        }
+                    }, 
+                    // <--- FIX 2: Actions are now safely inside the 'options' object
                     actions: {
                         new: { isAccessible: true },
                         edit: { isAccessible: true },
@@ -266,9 +264,10 @@ async function createAdminRouter() {
                                  };
                             }
                         }
-                    }
-                },
-            },
+                    } 
+                } // closes options
+            }, // closes File resource
+            // <--- FIX 3: Removed the extra dangling '},' that was here
             // PARTNERSHIP APPLICATIONS
             {
                 resource: DistributorApplication,
