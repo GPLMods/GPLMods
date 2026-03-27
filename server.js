@@ -1724,10 +1724,12 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
             // Also clean up the temp file if multer uploaded one before we blocked them
             if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-
             return res.status(429).redirect('/upload?error=Daily upload limit reached. Please check your notifications for details.');
         }
-
+    } catch (limitError) {
+        console.error("Upload limit check failed:", limitError);
+        return res.status(500).render('pages/500');
+    } // <--- ADD THIS CLOSING BLOCK HERE
 // --- UPDATED ROUTE: Handles both File Uploads and Distributor Links ---
 // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
     if (req.user.role === 'distributor' && req.body.externalUrl) {
