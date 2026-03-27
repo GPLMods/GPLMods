@@ -16,6 +16,7 @@ const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
 async function createAdminRouter() {
+    // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     const { ComponentLoader } = AdminJSModule; 
@@ -24,11 +25,13 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
+    // --- 2. REGISTER THE MONGOOSE ADAPTER ---
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
+    // --- 3. SETUP COMPONENT LOADER ---
     const componentLoader = new ComponentLoader();
     
     const Components = {
@@ -36,6 +39,9 @@ async function createAdminRouter() {
         SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
     };
 
+    // ==========================================
+    // 4. THE ULTIMATE GPL MODS THEME
+    // ==========================================
     const gplModsTheme = {
         ...dark, 
         id: 'gplModsTheme',
@@ -72,6 +78,9 @@ async function createAdminRouter() {
         }
     };
 
+    // ==========================================
+    // 5. DEFINE ADMINJS OPTIONS
+    // ==========================================
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
@@ -85,7 +94,9 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
         resources: [
+            // ---------------------------------
             // USER MANAGEMENT
+            // ---------------------------------
             {
                 resource: User,
                 options: {
@@ -94,7 +105,10 @@ async function createAdminRouter() {
                     editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
                     properties: {
                         password: { isVisible: false },
-                        newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
+                        newPassword: {
+                            type: 'password',
+                            label: 'New Password (leave blank to keep unchanged)',
+                        },
                     },
                     actions: {
                         new: { isAccessible: true },
@@ -103,82 +117,87 @@ async function createAdminRouter() {
                     }
                 }
             },
-// ---------------------------------
-        // GLOBAL SITE CONTROLS
-        // ---------------------------------
-        {
-            resource: SiteState,
-            options: {
-                // Ensure only ONE record can ever exist
-                actions: {
-                    new: {
-                        isAccessible: async () => {
-                            const count = await SiteState.countDocuments();
-                            return count === 0; // Only allow "New" if no record exists
-                        }
+            // ---------------------------------
+            // GLOBAL SITE CONTROLS
+            // ---------------------------------
+            {
+                resource: SiteState,
+                options: {
+                    actions: {
+                        new: {
+                            isAccessible: async () => {
+                                const count = await SiteState.countDocuments();
+                                return count === 0;
+                            }
+                        },
+                        delete: { isAccessible: false } 
                     },
-                    delete: { isAccessible: false } // Never allow deletion of the master state
-                },
-                listProperties: ['status', 'targetAudience', 'updatedAt'],
-                editProperties: [
-                    'status', 'targetAudience', 'targetUsername', 
-                    'maintenanceTitle', 'maintenanceMessage', 
-                    'unavailableTitle', 'unavailableMessage'
-                ],
-                properties: {
-                    maintenanceMessage: { type: 'textarea' },
-                    unavailableMessage: { type: 'textarea' },
-                    targetUsername: {
-                        description: 'Only required if Target Audience is "specific-user". Enter their exact username.'
+                    listProperties: ['status', 'targetAudience', 'updatedAt'],
+                    editProperties: [
+                        'status', 'targetAudience', 'targetUsername', 
+                        'maintenanceTitle', 'maintenanceMessage', 
+                        'unavailableTitle', 'unavailableMessage'
+                    ],
+                    properties: {
+                        maintenanceMessage: { type: 'textarea' },
+                        unavailableMessage: { type: 'textarea' },
+                        targetUsername: {
+                            description: 'Only required if Target Audience is "specific-user". Enter their exact username.'
+                        }
                     }
                 }
             },
-// ---------------------------------
-        // DIRECT USER NOTIFICATIONS
-        // ---------------------------------
-        {
-            resource: UserNotification,
-            options: {
-                listProperties: ['user', 'title', 'type', 'isRead', 'createdAt'],
-                showProperties: ['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
-                editProperties: ['user', 'title', 'message', 'type'], // Don't let admin edit 'isRead'
-                properties: {
-                    message: { type: 'textarea' }
+            // ---------------------------------
+            // DIRECT USER NOTIFICATIONS
+            // ---------------------------------
+            {
+                resource: UserNotification,
+                options: {
+                    listProperties: ['user', 'title', 'type', 'isRead', 'createdAt'],
+                    showProperties: ['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
+                    editProperties: ['user', 'title', 'message', 'type'], 
+                    properties: {
+                        message: { type: 'textarea' }
+                    }
                 }
-            }
-        },
-// ---------------------------------
-        // SUPPORT TICKETS
-        // ---------------------------------
-        {
-            resource: SupportTicket,
-            options: {
-                listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
-                showProperties: [
-                    'status', 'category', 'subject', 'message', 
-                    'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'
-                ],
-                editProperties: ['status', 'adminNotes'], // Admins only edit status and notes
-                properties: {
-                    message: { type: 'textarea' },
-                    adminNotes: { type: 'textarea' }
+            },
+            // ---------------------------------
+            // SUPPORT TICKETS
+            // ---------------------------------
+            {
+                resource: SupportTicket,
+                options: {
+                    listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
+                    showProperties: [
+                        'status', 'category', 'subject', 'message', 
+                        'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'
+                    ],
+                    editProperties: ['status', 'adminNotes'], 
+                    properties: {
+                        message: { type: 'textarea' },
+                        adminNotes: { type: 'textarea' }
+                    }
                 }
-            }
-        },
-{
-            resource: AutomatedCampaign,
-            options: {
-                listProperties: ['title', 'targetGroup', 'scheduledDate', 'status'],
-                properties: {
-                    notificationMessage: { type: 'textarea' }
+            },
+            // ---------------------------------
+            // AUTOMATED CAMPAIGNS
+            // ---------------------------------
+            {
+                resource: AutomatedCampaign,
+                options: {
+                    listProperties: ['title', 'targetGroup', 'scheduledDate', 'status'],
+                    properties: {
+                        notificationMessage: { type: 'textarea' }
+                    }
                 }
-            }
-        },
+            },
+            // ---------------------------------
             // FILE (MOD) MANAGEMENT
+            // ---------------------------------
             {
                 resource: File,
                 options: {
-                    listProperties:['name', 'fileSize', 'version', 'isMultiPart', 'status', 'category','isMultiPart', 'downloadParts', 'installationInstructions'],
+                    listProperties:['name', 'fileSize', 'version', 'isMultiPart', 'status', 'category'],
                     editProperties:[
                         'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
@@ -190,7 +209,8 @@ async function createAdminRouter() {
                         'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename',
-                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt', 'isMultiPart', 'downloadParts', 'installationInstructions'
+                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt', 
+                        'isMultiPart', 'downloadParts', 'installationInstructions'
                     ],
                     properties: {
                         modDescription: { type: 'richtext' },
@@ -206,7 +226,7 @@ async function createAdminRouter() {
                                edit: (record) => record.params.status === 'rejected',
                                list: false, filter: false, show: true
                             }
-                        }, // <--- FIX 1: Added missing brace and comma here
+                        },
                         isMultiPart: {
                             description: 'Check this box if the file is split into multiple download links.'
                         },
@@ -218,8 +238,7 @@ async function createAdminRouter() {
                             type: 'richtext',
                             description: 'Instructions for extracting and installing the multi-part file.'
                         }
-                    }, 
-                    // <--- FIX 2: Actions are now safely inside the 'options' object
+                    },
                     actions: {
                         new: { isAccessible: true },
                         edit: { isAccessible: true },
@@ -265,10 +284,11 @@ async function createAdminRouter() {
                             }
                         }
                     } 
-                } // closes options
-            }, // closes File resource
-            // <--- FIX 3: Removed the extra dangling '},' that was here
+                } 
+            }, 
+            // ---------------------------------
             // PARTNERSHIP APPLICATIONS
+            // ---------------------------------
             {
                 resource: DistributorApplication,
                 options: {
@@ -284,7 +304,9 @@ async function createAdminRouter() {
                     properties: { adminNotes: { type: 'textarea' } }
                 }
             },
-            // USER REQUESTS
+            // ---------------------------------
+            // USER REQUESTS (MODS/UPDATES)
+            // ---------------------------------
             {
                 resource: Request,
                 options: {
@@ -302,7 +324,9 @@ async function createAdminRouter() {
                     }
                 }
             },
+            // ---------------------------------
             // MODERATION RESOURCES
+            // ---------------------------------
             {
                 resource: Review,
                 options: {
@@ -331,7 +355,9 @@ async function createAdminRouter() {
                     editProperties:['status'],
                 }
             },
+            // ---------------------------------
             // SITE CONTENT RESOURCE
+            // ---------------------------------
             {
                 resource: Announcement,
                 options: {
@@ -340,7 +366,7 @@ async function createAdminRouter() {
                     properties: { content: { type: 'richtext' } },
                 },
             }
-        ] // <--- THIS BRACKET WAS MISSING IN YOUR OLD CODE
+        ] 
     };
 
     const adminJs = new AdminJS(adminJsOptions);
