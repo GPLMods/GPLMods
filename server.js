@@ -672,7 +672,7 @@ function formatUptime(seconds) {
     return `${d}d ${h}h ${m}m ${s}s`;
 }
 
-// --- UPDATED: The Root Route (Smart Caching) ---
+// --- UPDATED: The Root Home Route (Smart Caching) ---
 app.get('/', async (req, res) => {
     try {
         // 1. TELL CLOUDFLARE NOT TO CACHE IF THE USER IS LOGGED IN
@@ -723,24 +723,6 @@ app.get('/', async (req, res) => {
         res.status(500).render('pages/500');
     }
 });
-
-// 1. The Root Route (Heavily cached by Cloudflare for Guests)
-app.get('/', async (req, res) => {
-    // If a user happens to hit the root URL but they have a valid session cookie, 
-    // redirect them to the un-cached /home route immediately.
-    if (req.isAuthenticated()) {
-        return res.redirect('/home');
-    }
-    // Otherwise, render the homepage for the guest
-    await renderHomepage(req, res);
-});
-
-// 2. The Logged-In Route (Bypasses Cloudflare's strict root cache)
-app.get('/home', ensureAuthenticated, async (req, res) => {
-    // Render the exact same content, but on a URL that Cloudflare treats differently
-    await renderHomepage(req, res);
-});
-
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
 // ===================================
