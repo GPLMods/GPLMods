@@ -380,8 +380,6 @@ app.use(async (req, res, next) => {
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes; 
     res.locals.slugify = slugify;
-    next();
-});
     
     try {
         // 1. Check Global Announcements
@@ -401,13 +399,13 @@ app.use(async (req, res, next) => {
         }
         res.locals.unreadPersonalCount = unreadPersonalCount;
         
-        next();
+        next(); // Proceed to the next middleware/route
     } catch (e) {
         console.error("Global Middleware Error:", e);
         // Fallback to 0 so the page still loads even if DB fails
         res.locals.totalUpdatesCount = cachedTotalUpdates;
         res.locals.unreadPersonalCount = 0;
-        next();
+        next(); // Proceed even if there is an error
     }
 });
 
