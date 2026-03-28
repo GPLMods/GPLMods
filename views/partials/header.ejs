@@ -27,7 +27,13 @@
 
 <header class="main-header">
         <div class="container header-content">
-           <a href="/" class="logo">GPL <span>Mods</span></a>
+           <% if (user) { %>
+                <!-- Logged in users go to /home -->
+                <a href="/home" class="logo">GPL <span>Mods</span></a>
+            <% } else { %>
+                <!-- Guests go to / -->
+                <a href="/" class="logo">GPL <span>Mods</span></a>
+            <% } %>
             
             <div class="search-bar" id="animatedSearchBar">
                 <form action="/search" method="GET" class="search-form">

@@ -672,25 +672,9 @@ function formatUptime(seconds) {
     return `${d}d ${h}h ${m}m ${s}s`;
 }
 
-// --- UPDATED: The Root Home Route (Smart Caching) ---
-app.get('/', async (req, res) => {
+// --- NEW: Reusable Homepage Logic ---
+const renderHomepage = async (req, res) => {
     try {
-        // 1. TELL CLOUDFLARE NOT TO CACHE IF THE USER IS LOGGED IN
-        // The 'Vary: Cookie' header tells CDNs to keep separate caches based on cookies.
-        // We also use Cache-Control to ensure browsers don't hold onto stale states.
-        if (req.isAuthenticated()) {
-            res.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
-            res.set('Pragma', 'no-cache');
-            res.set('Expires', '-1');
-        } else {
-            // For guests, we CAN cache the page for a short time (e.g., 5 minutes)
-            // But we still tell Cloudflare to Vary by Cookie, so it doesn't serve 
-            // a guest cache to a logged-in user.
-            res.set('Cache-Control', 'public, max-age=300');
-            res.set('Vary', 'Cookie');
-        }
-
-        // 2. Fetch the data (Same logic as before)
         const findQuery = { status: 'live', isLatestVersion: true };
         const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
@@ -722,6 +706,23 @@ app.get('/', async (req, res) => {
         console.error("Error fetching files for homepage:", error);
         res.status(500).render('pages/500');
     }
+};
+
+// 1. The Root Route (Heavily cached by Cloudflare for Guests)
+app.get('/', async (req, res) => {
+    // If a user happens to hit the root URL but they have a valid session cookie, 
+    // redirect them to the un-cached /home route immediately.
+    if (req.isAuthenticated()) {
+        return res.redirect('/home');
+    }
+    // Otherwise, render the homepage for the guest
+    await renderHomepage(req, res);
+});
+
+// 2. The Logged-In Route (Bypasses Cloudflare's strict root cache)
+app.get('/home', ensureAuthenticated, async (req, res) => {
+    // Render the exact same content, but on a URL that Cloudflare treats differently
+    await renderHomepage(req, res);
 });
 // ===================================
 // NOTIFICATION SYSTEM ROUTES
@@ -1227,7 +1228,7 @@ app.post('/login', verifyRecaptcha, (req, res, next) => {
                 req.session.passport = tempSession; // Restore the passport data to the new session
                 req.session.save((saveErr) => {
                     if (saveErr) console.error("Session Save Error:", saveErr);
-                    res.redirect('/?message=Welcome back!');
+                    res.redirect('home/?message=Welcome back!');
                 });
             });
         });
@@ -1462,7 +1463,6 @@ app.get('/logout', (req, res, next) => {
 
 // Google Routes (Existing)
 app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
-// ✅ FIX: Force session save before redirecting to ensure cookies are set
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res, next) => {
         req.session.save((err) => {
@@ -1470,7 +1470,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
                 console.error('Session save error during Google login:', err);
                 return next(err);
             }
-            res.redirect('/?message=Welcome back! logined successfully with Google.');
+            res.redirect('home/?message=Welcome back! logined successfully with Google.');
         });
     }
 );
@@ -1482,7 +1482,7 @@ app.get('/auth/github/callback',
     (req, res, next) => {
         req.session.save((err) => {
             if (err) return next(err);
-            res.redirect('/?message=Welcome back! logined successfully with GitHub.');
+            res.redirect('home/?message=Welcome back! logined successfully with GitHub.');
         });
     }
 );
@@ -1494,7 +1494,7 @@ app.get('/auth/microsoft/callback',
     (req, res, next) => {
         req.session.save((err) => {
             if (err) return next(err);
-            res.redirect('/?message=Welcome back! logined successfully with Microsoft.');
+            res.redirect('home/?message=Welcome back! logined successfully with Microsoft.');
         });
     }
 );
