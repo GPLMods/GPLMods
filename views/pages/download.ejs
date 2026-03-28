@@ -126,14 +126,16 @@
                 <li>
                     Developer: 
                     <% if (file.developer && file.developer !== 'N/A') { %>
-                        <a href="/developer?name=<%= encodeURIComponent(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
+                        <!-- ✅ CHANGED: Now using slugify -->
+                        <a href="/developer?name=<%= slugify(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
                     <% } else { %>
                         <span>N/A</span>
                     <% } %>
                 </li>
                 <li>
                     Uploaded by: 
-                    <a href="/users/<%= file.uploader %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
+                    <!-- ✅ CHANGED: Now using slugify -->
+                    <a href="/users/<%= slugify(file.uploader) %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
                 </li>
                 <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
                 <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>

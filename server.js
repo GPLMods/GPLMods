@@ -31,7 +31,7 @@ const FormData = require('form-data');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
 
 // AWS SDK v3 Imports (Backblaze B2)
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3'); // <-- ADDED ListObjectsV2Command
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // Mongoose Models
@@ -153,7 +153,17 @@ async function getSmartImageUrl(key) {
         return '/images/default-avatar.png';
     }
 }
-// --------------------------------------
+
+// --- NEW HELPER: CREATE CLEAN URL SLUGS ---
+function slugify(text) {
+    if (!text) return '';
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')    // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+}
 
 // ===============================
 // 3. AWS S3 CLIENT (BACKBLAZE B2)
@@ -331,19 +341,7 @@ passport.deserializeUser(async (id, done) => {
     try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
 });
 
-// 3. Dynamic Session Expiration
-app.use((req, res, next) => {
-    if (req.isAuthenticated()) {
-        // Set a non-HTTPOnly cookie so Javascript can read it
-        res.cookie('gplmods_auth', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3, sameSite: 'Lax' });
-    } else {
-        // Clear it if they are not logged in
-        res.clearCookie('gplmods_auth');
-    }
-    next();
-});
-
-// 4. User Last Seen Updater
+// 3. User Last Seen Updater
 app.use(async (req, res, next) => {
     if (req.isAuthenticated()) {
         User.findByIdAndUpdate(req.user.id, { lastSeen: new Date() }).exec();
@@ -351,7 +349,7 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// 5. Signed Avatar URL Generator
+// 4 Signed Avatar URL Generator
 app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user) {
         if (req.user.profileImageKey) {
@@ -372,7 +370,7 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// 6. Globals & Notification Cache Middleware
+// 5. Globals & Notification Cache Middleware
 let cachedTotalUpdates = 0;
 let lastUpdateCheck = 0;
 
@@ -381,6 +379,9 @@ app.use(async (req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes; 
+    res.locals.slugify = slugify;
+    next();
+});
     
     try {
         // 1. Check Global Announcements
@@ -423,7 +424,11 @@ app.use((req, res, next) => {
 
 // 8. Auth Helper Functions (Used by routes)
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
+    if (req.isAuthenticated()) {
+        // ✅ NEW: Tell browser NEVER to cache protected pages
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
+    }
     res.redirect('/login');
 }
 function ensureAdmin(req, res, next) {
@@ -669,19 +674,33 @@ function formatUptime(seconds) {
     return `${d}d ${h}h ${m}m ${s}s`;
 }
 
-// Home
-app.get('/', async (req, res, next) => {
+// --- UPDATED: The Root Route (Smart Caching) ---
+app.get('/', async (req, res) => {
     try {
+        // 1. TELL CLOUDFLARE NOT TO CACHE IF THE USER IS LOGGED IN
+        // The 'Vary: Cookie' header tells CDNs to keep separate caches based on cookies.
+        // We also use Cache-Control to ensure browsers don't hold onto stale states.
+        if (req.isAuthenticated()) {
+            res.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '-1');
+        } else {
+            // For guests, we CAN cache the page for a short time (e.g., 5 minutes)
+            // But we still tell Cloudflare to Vary by Cookie, so it doesn't serve 
+            // a guest cache to a logged-in user.
+            res.set('Cache-Control', 'public, max-age=300');
+            res.set('Vary', 'Cookie');
+        }
+
+        // 2. Fetch the data (Same logic as before)
         const findQuery = { status: 'live', isLatestVersion: true };
-        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
+        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
-        // 1. Fetch all the data
         await Promise.all(categories.map(async (cat) => {
-            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
-            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
-            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4).lean();
-            
+            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4);
+            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4);
+            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4);
             filesByCategory[cat] = {
                 '100-Percent-Working': workingMods,
                 'Most-Popular': popularMods,
@@ -689,33 +708,39 @@ app.get('/', async (req, res, next) => {
             };
         }));
 
-        // 2. Process the Image URLs safely
         for (const category in filesByCategory) {
             for (const section in filesByCategory[category]) {
                 filesByCategory[category][section] = await Promise.all(
                     filesByCategory[category][section].map(async (file) => {
                         const key = file.iconUrl || file.iconKey;
-                        let signedIconUrl = '/images/default-avatar.png';
-                        if (key) {
-                            try {
-                                signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
-                            } catch (urlError) {
-                                console.error(`Could not get signed URL for key: ${key}`, urlError);
-                            }
-                        }
-                        return { ...file, iconUrl: signedIconUrl };
+                        const signedIconUrl = await getSmartImageUrl(key);
+                        return { ...file.toObject(), iconUrl: signedIconUrl };
                     })
                 );
             }
         }
-        
-        // 3. Render the page!
         res.render('pages/index', { filesByCategory });
-        
     } catch (error) {
-        console.error("CRITICAL Error fetching files for homepage:", error);
+        console.error("Error fetching files for homepage:", error);
         res.status(500).render('pages/500');
     }
+});
+
+// 1. The Root Route (Heavily cached by Cloudflare for Guests)
+app.get('/', async (req, res) => {
+    // If a user happens to hit the root URL but they have a valid session cookie, 
+    // redirect them to the un-cached /home route immediately.
+    if (req.isAuthenticated()) {
+        return res.redirect('/home');
+    }
+    // Otherwise, render the homepage for the guest
+    await renderHomepage(req, res);
+});
+
+// 2. The Logged-In Route (Bypasses Cloudflare's strict root cache)
+app.get('/home', ensureAuthenticated, async (req, res) => {
+    // Render the exact same content, but on a URL that Cloudflare treats differently
+    await renderHomepage(req, res);
 });
 
 // ===================================
@@ -1064,11 +1089,14 @@ app.get('/mods/:id', async (req, res) => {
 // --- UPDATED DEVELOPER PAGE ROUTE ---
 app.get('/developer', async (req, res) => {
     try {
-        const developerName = req.query.name;
-        if (!developerName || developerName.trim() === '') return res.redirect('/');
+        const developerSlug = req.query.name;
+        if (!developerSlug || developerSlug.trim() === '') return res.redirect('/');
         
+        // Create a RegEx to handle the slug
+        const searchPattern = new RegExp(developerSlug.replace(/-/g, '[-\\s]+'), 'i');
+
         const filesByDeveloper = await File.find({
-            developer: { $regex: developerName, $options: 'i' }, 
+            developer: searchPattern, 
             isLatestVersion: true,
             status: 'live'
         }).sort({ createdAt: -1 });
@@ -1085,9 +1113,13 @@ app.get('/developer', async (req, res) => {
             return { ...file.toObject(), iconUrl: signedIconUrl };
         }));
 
+        // Pass the actual original developer name to the template if files exist,
+        // otherwise pass the slug (or format it nicely)
+        const displayName = filesByDeveloper.length > 0 ? filesByDeveloper[0].developer : developerSlug.replace(/-/g, ' ');
+
         res.render('pages/developer', {
-            files: filesWithUrls, // Use the mapped array with real images
-            developerName: developerName
+            files: filesWithUrls, 
+            developerName: displayName // Pass the clean name
         });
 
     } catch (error) {
@@ -1451,15 +1483,14 @@ app.get('/logout', (req, res, next) => {
 // Google Routes (Existing)
 app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
 // ✅ FIX: Force session save before redirecting to ensure cookies are set
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }), 
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res, next) => {
         req.session.save((err) => {
             if (err) {
                 console.error('Session save error during Google login:', err);
                 return next(err);
             }
-            res.redirect('/?message=Successfully logged in with Google!');
+            res.redirect('/?message=Welcome back! logined successfully with Google.');
         });
     }
 );
@@ -1471,7 +1502,7 @@ app.get('/auth/github/callback',
     (req, res, next) => {
         req.session.save((err) => {
             if (err) return next(err);
-            res.redirect('/?message=Successfully logged in with GitHub!');
+            res.redirect('/?message=Welcome back! logined successfully with GitHub.');
         });
     }
 );
@@ -1483,7 +1514,7 @@ app.get('/auth/microsoft/callback',
     (req, res, next) => {
         req.session.save((err) => {
             if (err) return next(err);
-            res.redirect('/?message=Successfully logged in with Microsoft!');
+            res.redirect('/?message=Welcome back! logined successfully with Microsoft.');
         });
     }
 );
@@ -1529,9 +1560,14 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 // --- PUBLIC PROFILE ROUTE ---
 app.get('/users/:username', async (req, res) => {
     try {
-        const username = req.params.username;
+        const slug = req.params.username;
         
-        const user = await User.findOne({ username: username })
+        // 1. Create a RegEx that replaces dashes with a pattern that matches either a dash or a space
+        // This means looking for "john-doe" will match "John Doe" or "john-doe" in the DB.
+        const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
+
+        // 2. Search for the user using the RegEx
+        const user = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
 
@@ -1549,8 +1585,10 @@ app.get('/users/:username', async (req, res) => {
             user.signedAvatarUrl = '/images/default-avatar.png';
         }
 
+        
+        // 3. Search for uploads using the exact username we just found from the DB, NOT the slug
         const uploads = await File.find({ 
-            uploader: username, 
+            uploader: user.username, // Use the real, formatted name from the user document
             isLatestVersion: true,
             status: 'live' 
         }).sort({ createdAt: -1 });

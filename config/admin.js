@@ -15,8 +15,30 @@ const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+function extractVTId(input) {
+    if (!input) return "";
+    let cleanInput = input.trim();
+    
+    if (cleanInput.startsWith('http://') || cleanInput.startsWith('https://')) {
+        try {
+            const urlObj = new URL(cleanInput);
+            const pathParts = urlObj.pathname.split('/').filter(p => p !== '');
+            if (pathParts.length >= 2) {
+                return pathParts[pathParts.length - 1]; 
+            }
+        } catch (e) {
+            console.error("Invalid VT URL provided to AdminJS:", e);
+        }
+    }
+    return cleanInput;
+}
+
+
 async function createAdminRouter() {
-    // --- 1. DYNAMICALLY IMPORT ALL ESM PACKAGES ---
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     const { ComponentLoader } = AdminJSModule; 
@@ -25,13 +47,11 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
-    // --- 2. REGISTER THE MONGOOSE ADAPTER ---
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
-    // --- 3. SETUP COMPONENT LOADER ---
     const componentLoader = new ComponentLoader();
     
     const Components = {
@@ -39,9 +59,6 @@ async function createAdminRouter() {
         SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
     };
 
-    // ==========================================
-    // 4. THE ULTIMATE GPL MODS THEME
-    // ==========================================
     const gplModsTheme = {
         ...dark, 
         id: 'gplModsTheme',
@@ -78,15 +95,40 @@ async function createAdminRouter() {
         }
     };
 
-    // ==========================================
-    // 5. DEFINE ADMINJS OPTIONS
-    // ==========================================
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
         defaultTheme: 'gplModsTheme', 
         availableThemes: [gplModsTheme, dark, light], 
-        dashboard: { component: Components.Dashboard },
+        
+        // --- ADDED DASHBOARD CONFIGURATION HERE ---
+        dashboard: {
+            handler: async (request, response, context) => {
+                const totalUsers = await User.countDocuments();
+                const totalMods = await File.countDocuments({ isLatestVersion: true });
+                const totalDownloadsData = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
+                const totalDownloads = totalDownloadsData.length > 0 ? totalDownloadsData[0].total : 0;
+
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                
+                const uploadsByDay = await File.aggregate([
+                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                    { $group: { 
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, 
+                        count: { $sum: 1 } 
+                    }},
+                    { $sort: { _id: 1 } }
+                ]);
+
+                return {
+                    stats: { totalUsers, totalMods, totalDownloads },
+                    chartData: uploadsByDay
+                };
+            },
+            component: Components.Dashboard 
+        },
+        // ------------------------------------------
+
         branding: {
             companyName: 'GPL Mods',
             logo: '/images/logo.png', 
@@ -94,9 +136,7 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
         resources: [
-            // ---------------------------------
             // USER MANAGEMENT
-            // ---------------------------------
             {
                 resource: User,
                 options: {
@@ -112,14 +152,22 @@ async function createAdminRouter() {
                     },
                     actions: {
                         new: { isAccessible: true },
-                        edit: { isAccessible: true },
+                        edit: { 
+                            isAccessible: true,
+                            before: async (request) => {
+                                const { newPassword, ...payload } = request.payload;
+                                if (newPassword && newPassword.length > 0) {
+                                    payload.password = await bcrypt.hash(newPassword, 10);
+                                }
+                                request.payload = payload;
+                                return request;
+                            }
+                        },
                         delete: { isAccessible: true }
                     }
                 }
             },
-            // ---------------------------------
             // GLOBAL SITE CONTROLS
-            // ---------------------------------
             {
                 resource: SiteState,
                 options: {
@@ -147,9 +195,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-            // ---------------------------------
             // DIRECT USER NOTIFICATIONS
-            // ---------------------------------
             {
                 resource: UserNotification,
                 options: {
@@ -161,9 +207,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-            // ---------------------------------
             // SUPPORT TICKETS
-            // ---------------------------------
             {
                 resource: SupportTicket,
                 options: {
@@ -179,9 +223,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-            // ---------------------------------
             // AUTOMATED CAMPAIGNS
-            // ---------------------------------
             {
                 resource: AutomatedCampaign,
                 options: {
@@ -191,9 +233,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-            // ---------------------------------
             // FILE (MOD) MANAGEMENT
-            // ---------------------------------
             {
                 resource: File,
                 options: {
@@ -218,6 +258,7 @@ async function createAdminRouter() {
                         modFeatures: { type: 'textarea' }, 
                         whatsNew: { type: 'textarea' },
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
+                        virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
                         iconKey: { description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.' },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
@@ -240,9 +281,27 @@ async function createAdminRouter() {
                         }
                     },
                     actions: {
-                        new: { isAccessible: true },
-                        edit: { isAccessible: true },
+                        new: { 
+                            isAccessible: true,
+                            before: async (request) => {
+                                if (request.payload.virusTotalId) {
+                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                }
+                                return request;
+                            }
+                        },
+                        edit: { 
+                            isAccessible: true,
+                            before: async (request) => {
+                                if (request.payload.virusTotalId) {
+                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                }
+                                return request;
+                            }
+                        },
                         delete: { isAccessible: true },
+                        
+                        // Custom Actions
                         viewOnSite: {
                             actionType: 'record',
                             icon: 'View',
@@ -286,9 +345,7 @@ async function createAdminRouter() {
                     } 
                 } 
             }, 
-            // ---------------------------------
             // PARTNERSHIP APPLICATIONS
-            // ---------------------------------
             {
                 resource: DistributorApplication,
                 options: {
@@ -304,9 +361,7 @@ async function createAdminRouter() {
                     properties: { adminNotes: { type: 'textarea' } }
                 }
             },
-            // ---------------------------------
-            // USER REQUESTS (MODS/UPDATES)
-            // ---------------------------------
+            // USER REQUESTS
             {
                 resource: Request,
                 options: {
@@ -316,7 +371,7 @@ async function createAdminRouter() {
                         'officialLink', 'existingModLink', 'modFeaturesRequested', 
                         'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
                     ],
-                    editProperties: ['status', 'adminNotes'],
+                    editProperties: ['status', 'adminNotes'], 
                     properties: {
                         modFeaturesRequested: { type: 'textarea' },
                         additionalNotes: { type: 'textarea' },
@@ -324,9 +379,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-            // ---------------------------------
             // MODERATION RESOURCES
-            // ---------------------------------
             {
                 resource: Review,
                 options: {
@@ -344,7 +397,7 @@ async function createAdminRouter() {
             {
                 resource: Dmca,
                 options: {
-                    listProperties: ['fullName', 'infringingUrl', 'status', 'createdAt'],
+                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
             },
@@ -355,9 +408,7 @@ async function createAdminRouter() {
                     editProperties:['status'],
                 }
             },
-            // ---------------------------------
             // SITE CONTENT RESOURCE
-            // ---------------------------------
             {
                 resource: Announcement,
                 options: {

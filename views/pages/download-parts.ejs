@@ -118,7 +118,7 @@
             <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="game-icon">
             <div class="game-info">
                 <h1><%= file.name %></h1>
-                <p>Version: <%= file.version %> | Developer: <span class="developer"><%= file.developer %></span></p>
+                <p>Version: <%= file.version %> | Developer: <span class="developer"><%=slugify(file.developer) %></span></p>
                 <p style="margin-top: 10px; font-size: 0.9em;">Total Parts: <%= file.downloadParts.length %></p>
             </div>
         </div>

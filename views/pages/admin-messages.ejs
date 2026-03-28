@@ -1,7 +1,6 @@
 <%- include('../partials/header') %>
 
 <style>
-    /* ... (You can reuse styles from updates.ejs here, like the header) ... */
     .messages-container { max-width: 900px; margin: 0 auto 60px auto; }
     .page-header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
     .page-header h1 { font-size: 2.5em; color: var(--white); }
@@ -20,19 +19,8 @@
 </style>
 
 <main>
-    <div class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 40px; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center;">
+    <div class="page-header">
         <div class="container">
-            
-            <!-- ======== CUSTOM LOTTIE INBOX ANIMATION (PLAY ONCE) ======== -->
-            <lottie-player 
-                src="/animations/massage.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.4));" 
-                loop autoplay>
-            </lottie-player>
-            <!-- ========================================================== -->
-
             <h1>Admin <span>Responses</span></h1>
             <p style="color: var(--silver); margin-top: 10px;">Direct messages, support replies, and account notices.</p>
         </div>
@@ -66,8 +54,8 @@
                 src="/animations/inbox.json" 
                 background="transparent" 
                 speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.4));" 
-                autoplay>
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" 
+               autoplay>
             </lottie-player>
             <!-- ========================================================== -->
                 <h2 style="color: var(--silver);">No Messages</h2>

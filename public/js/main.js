@@ -24,12 +24,9 @@ console.log("GPL Mods main.js is loading...");
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM loaded. Running initializers...");
     
-    const runInitializers = async () => {
-        // --- ✅ NEW: BFCache Buster ---
-        // This ensures the page reloads if the user navigates "back" to a cached, logged-out version of the homepage.
-        try { handleBFCache(); } catch (e) { console.error("BFCache Error:", e); }
-        try { initializeMobileMenu(); } catch (e) { console.error("Mobile Menu Error:", e); }
-        try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:", e); }
+    const runInitializers = async () => {        
+try { initializeMobileMenu(); } catch (e) { console.error("Mobile Menu Error:", e); }
+try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:", e); }
 try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
 try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
 try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
@@ -715,50 +712,5 @@ function initializeNotificationsAndPWA() {
     window.addEventListener('appinstalled', () => {
         if (pwaBanner) pwaBanner.classList.remove('show');
         deferredPrompt = null;
-    });
-}
-/**
- * ==================================================================================
- * 11. CDN CACHE-BUSTER (Defeats Cloudflare/Render aggressive caching)
- * ==================================================================================
- */
-function handleBFCache() {
-    // Helper function to read a specific cookie
-    function getCookie(name) {
-        let value = "; " + document.cookie;
-        let parts = value.split("; " + name + "=");
-        if (parts.length === 2) return parts.pop().split(";").shift();
-        return null;
-    }
-
-    const isAuthCookieSet = getCookie('gplmods_auth') === 'true';
-    
-    // Look for the element that only exists when logged OUT
-    const loginButtonExists = document.querySelector('.btn-login[href="/login"]');
-    
-    // Look for the element that only exists when logged IN
-    const logoutButtonExists = document.querySelector('.btn-signup[href="/logout"]');
-
-    // SCENARIO 1: User is logged IN (has cookie), but Cloudflare served a logged-OUT page
-    if (isAuthCookieSet && loginButtonExists) {
-        console.warn("CDN served a stale logged-out cache. Forcing reload.");
-        // Append a random string to the URL to guarantee we bypass the CDN cache entirely
-        window.location.href = window.location.pathname + '?no_cache=' + new Date().getTime();
-        return;
-    }
-
-    // SCENARIO 2: User is logged OUT (no cookie), but Cloudflare served a logged-IN page
-    if (!isAuthCookieSet && logoutButtonExists) {
-        console.warn("CDN served a stale logged-in cache. Forcing reload.");
-        window.location.href = window.location.pathname + '?no_cache=' + new Date().getTime();
-        return;
-    }
-
-    // Handle standard browser Back/Forward Cache (BFCache) as well
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            console.log("Page loaded from BFCache. Forcing reload.");
-            window.location.reload();
-        }
     });
 }

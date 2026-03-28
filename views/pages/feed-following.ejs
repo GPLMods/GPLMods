@@ -44,7 +44,7 @@
                                 <p style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
                                     <span style="color: var(--silver); font-size: 0.85em;">By: </span>
                                     <!-- Highlight the followed user's name in Blue -->
-                                    <strong style="color: var(--blue);"><%= file.uploader %></strong><br>
+                                    <strong style="color: var(--blue);"><a href="/users/<%= file.uploader %>"><%= file.uploader %></a></strong><br>
                                     <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt) %></span>
                                 </p>
                                 

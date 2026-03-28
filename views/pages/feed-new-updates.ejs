@@ -2,13 +2,9 @@
 
 <main>
     <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px;">
-        <div class="container" style="display: flex; flex-direction: column; align-items: center;">
-            
-            <!-- ✅ UPGRADE: Custom Lottie Sync Animation in Header -->
-            <lottie-player src="/animations/sync.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--glow-gold));"autoplay></lottie-player>
-            
+        <div class="container">
             <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">
-                Recent <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Updates</span>
+                <i class="fas fa-sync-alt" style="color: var(--gold); margin-right: 15px;"></i>Recent <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Updates</span>
             </h1>
             <p style="color: var(--silver); font-size: 1.1em;">Existing mods that received a new version within the last 24 hours.</p>
         </div>
@@ -46,7 +42,7 @@
                                 
                                 <p style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
                                     <span style="color: var(--silver); font-size: 0.85em;">Updated by: </span>
-                                    <strong style="color: var(--gold);"><%= file.uploader %></strong><br>
+                                    <strong style="color: var(--gold);"><a href="/users/<%= slugify(file.uploader) %>"><%= file.uploader %></a></strong><br>
                                     <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt) %></span>
                                 </p>
                                 

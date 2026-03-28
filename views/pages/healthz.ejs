@@ -1,139 +1,85 @@
-<%- include('../../partials/header') %>
-
-<style>
-    .health-container { max-width: 900px; margin: 4rem auto; padding: 2rem; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+// --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
+app.get('/healthz', ensureAuthenticated, ensureAdmin, async (req, res) => {
     
-    .health-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-    .health-header h1 { color: var(--white); margin: 0; font-size: 2.2em; display: flex; align-items: center; gap: 15px; }
-    
-    /* Overall Status Badge */
-    .status-badge { padding: 8px 20px; border-radius: 25px; font-weight: bold; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px; }
-    .status-UP { background-color: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; }
-    .status-DEGRADED { background-color: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); }
-    .status-DOWN { background-color: rgba(229, 57, 53, 0.15); color: var(--red); border: 1px solid var(--red); }
+    // 1. Gather Basic Server Info
+    const healthData = {
+        status: 'UP',
+        timestamp: new Date().toISOString(),
+        uptime: formatUptime(process.uptime()),
+        nodeVersion: process.version,
+        memoryUsage: process.memoryUsage(),
+        environment: process.env.NODE_ENV || 'development',
+        services: {
+            database: { status: 'UNKNOWN', details: null },
+            storage: { status: 'UNKNOWN', details: null },
+            virustotal: { status: 'UNKNOWN', details: null }
+        },
+        warnings: []
+    };
 
-    /* Grid Layouts */
-    .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
-    
-    .info-card { background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; }
-    .info-card h3 { color: var(--silver); font-size: 0.9em; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
-    .info-card .value { color: var(--white); font-size: 1.4em; font-family: monospace; }
-    
-    /* Service Status List */
-    .service-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; }
-    .service-item { background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-    .service-name { font-size: 1.2em; color: var(--white); font-weight: bold; display: flex; align-items: center; gap: 10px; }
-    .service-details { color: var(--silver); font-size: 0.9em; font-family: monospace; }
-    
-    /* Indicator Dots */
-    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px currentColor; }
-    .dot-CONNECTED, .dot-CONFIGURED { background-color: #2ecc71; color: #2ecc71; }
-    .dot-DISCONNECTED, .dot-ERROR { background-color: var(--red); color: var(--red); }
-    .dot-UNKNOWN { background-color: var(--silver); color: var(--silver); }
+    try {
+        // 2. Check MongoDB Connection
+        try {
+            const dbState = mongoose.connection.readyState;
+            if (dbState === 1) {
+                healthData.services.database.status = 'CONNECTED';
+                healthData.services.database.details = `Connected to Atlas`;
+            } else {
+                healthData.services.database.status = 'DISCONNECTED';
+                healthData.warnings.push(`MongoDB state is: ${dbState}`);
+                healthData.status = 'DEGRADED';
+            }
+        } catch (dbErr) {
+            healthData.services.database.status = 'ERROR';
+            healthData.warnings.push(`MongoDB Error: ${dbErr.message}`);
+            healthData.status = 'DEGRADED';
+        }
 
-    /* Warnings Box */
-    .warnings-box { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); border-radius: 10px; padding: 20px; }
-    .warnings-box h3 { color: var(--red); margin-top: 0; display: flex; align-items: center; gap: 10px; }
-    .warnings-list { margin: 0; padding-left: 20px; color: #ffadad; font-family: monospace; }
-</style>
-
-<main class="container">
-    <div class="health-container">
-        
-        <div class="health-header">
-            <h1><i class="fas fa-server" style="color: var(--gold);"></i> System Diagnostics</h1>
-            <div class="status-badge status-<%= health.status %>">
-                System <%= health.status %>
-            </div>
-        </div>
-
-        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.3em;">Node.js Environment</h2>
-        <div class="system-grid">
-            <div class="info-card">
-                <h3>Server Uptime</h3>
-                <div class="value"><%= health.uptime %></div>
-            </div>
-            <div class="info-card">
-                <h3>Memory Usage (RSS)</h3>
-                <div class="value"><%= formatBytes(health.memoryUsage.rss) %></div>
-            </div>
-            <div class="info-card">
-                <h3>Node Version</h3>
-                <div class="value"><%= health.nodeVersion %></div>
-            </div>
-            <div class="info-card">
-                <h3>Environment</h3>
-                <div class="value" style="color: <%= health.environment === 'production' ? '#2ecc71' : 'var(--gold)' %>;"><%= health.environment.toUpperCase() %></div>
-            </div>
-        </div>
-
-        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.3em;">External Services</h2>
-        <div class="service-list">
+        // 3. Check Backblaze B2 (S3 Client)
+        try {
+            if (!s3Client) throw new Error("s3Client is not initialized.");
             
-            <!-- MongoDB Status -->
-            <div class="service-item">
-                <div>
-                    <div class="service-name">
-                        <i class="fas fa-database" style="color: #4DB33D; width: 25px;"></i> MongoDB Atlas
-                    </div>
-                    <div class="service-details"><%= health.services.database.details || 'No details available' %></div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
-                    <span class="dot dot-<%= health.services.database.status %>"></span>
-                    <%= health.services.database.status %>
-                </div>
-            </div>
+            const command = new ListObjectsV2Command({
+                Bucket: process.env.B2_BUCKET_NAME,
+                MaxKeys: 1
+            });
+            
+            // Use a short timeout so a hanging B2 connection doesn't freeze the page
+            const b2Promise = s3Client.send(command);
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("B2 Connection Timeout")), 5000));
+            
+            await Promise.race([b2Promise, timeoutPromise]);
+            
+            healthData.services.storage.status = 'CONNECTED';
+            healthData.services.storage.details = `Bucket: ${process.env.B2_BUCKET_NAME}`;
+        } catch (b2Err) {
+            healthData.services.storage.status = 'ERROR';
+            healthData.warnings.push(`Backblaze B2 Error: ${b2Err.message}`);
+            healthData.status = 'DEGRADED';
+        }
 
-            <!-- Backblaze B2 Status -->
-            <div class="service-item">
-                <div>
-                    <div class="service-name">
-                        <i class="fas fa-cloud" style="color: #0088cc; width: 25px;"></i> Backblaze B2
-                    </div>
-                    <div class="service-details"><%= health.services.storage.details || 'Connection check failed' %></div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
-                    <span class="dot dot-<%= health.services.storage.status %>"></span>
-                    <%= health.services.storage.status %>
-                </div>
-            </div>
+        // 4. Check VirusTotal API
+        try {
+            if (!process.env.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY.length < 32) {
+                throw new Error("API Key is missing or invalid.");
+            }
+            healthData.services.virustotal.status = 'CONFIGURED';
+            healthData.services.virustotal.details = 'API Key is present.';
+        } catch (vtErr) {
+            healthData.services.virustotal.status = 'ERROR';
+            healthData.warnings.push(`VirusTotal Error: ${vtErr.message}`);
+        }
 
-            <!-- VirusTotal Status -->
-            <div class="service-item">
-                <div>
-                    <div class="service-name">
-                        <i class="fas fa-shield-virus" style="color: var(--gold); width: 25px;"></i> VirusTotal API
-                    </div>
-                    <div class="service-details"><%= health.services.virustotal.details %></div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
-                    <span class="dot dot-<%= health.services.virustotal.status %>"></span>
-                    <%= health.services.virustotal.status %>
-                </div>
-            </div>
+        // 5. Final Status Calculation
+        if (healthData.warnings.length > 0 && healthData.status === 'UP') {
+            healthData.status = 'DEGRADED';
+        }
 
-        </div>
+        res.render('pages/admin/healthz', { health: healthData });
 
-        <!-- Render Warnings if they exist -->
-        <% if (health.warnings.length > 0) { %>
-            <div class="warnings-box">
-                <h3><i class="fas fa-exclamation-triangle"></i> System Warnings Detected (<%= health.warnings.length %>)</h3>
-                <ul class="warnings-list">
-                    <% health.warnings.forEach(warning => { %>
-                        <li><%= warning %></li>
-                    <% }) %>
-                </ul>
-            </div>
-        <% } %>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <button onclick="window.location.reload();" class="btn btn-secondary" style="background: transparent; border: 2px solid #555; color: var(--silver); padding: 10px 25px; border-radius: 20px; cursor: pointer;">
-                <i class="fas fa-sync-alt" style="margin-right: 8px;"></i> Refresh Diagnostics
-            </button>
-            <p style="color: #666; font-size: 0.8em; margin-top: 15px;">Last checked: <%= new Date(health.timestamp).toLocaleTimeString() %></p>
-        </div>
-
-    </div>
-</main>
-
-<%- include('../../partials/footer') %>
+    } catch (criticalError) {
+        // If the entire route crashes for an unforeseen reason, log it and send a generic 500
+        console.error("CRITICAL ERROR IN /HEALTHZ ROUTE:", criticalError);
+        res.status(500).send("Critical error loading health dashboard. Check server logs.");
+    }
+});

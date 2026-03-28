@@ -12,7 +12,16 @@
             <!-- Profile Details Form -->
             <section class="form-section">
                 <h2>Profile Details</h2>
-                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section">
+                
+                <!-- ✅ ADDED: The Missing Public Profile Link -->
+                <p style="text-align: center; font-size: 0.9em; color: var(--silver); margin-bottom: 20px;">
+                    Your public profile is available at:<br>
+                    <a href="/users/<%= slugify(user.username) %>" target="_blank" style="color: var(--gold); text-decoration: underline;">
+                        gplmods.webredirect.org/users/<%= slugify(user.username) %>
+                    </a>
+                </p>
+
+                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section" id="avatar-form">
                     <div class="avatar-preview-wrapper">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
                         
@@ -24,15 +33,14 @@
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>
                     
-                    <!-- ✅ FIX: Added ID and set display to none initially -->
                     <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
                 </form>
 
-                <h3 class="current-username"><%= user.username %></h3>
+                <h3 class="current-username" style="text-align: center;"><%= user.username %></h3>
                 <div class="profile-actions">
                     <a href="/my-uploads" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Mod Upload History</a>
-                    <a href="/users/<%= user.username %>" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Public User Profile</a>
-                    <!-- ✅ UPDATED: Changed from <a> to <button> and added ID -->
+                    <a href="/users/<%= slugify(user.username) %>" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Public User Profile</a>
+                    
                     <button type="button" id="logout-btn" class="submit-button" style="text-align: center; text-decoration: none; background: transparent; border: 2px solid var(--red); color: var(--red); box-shadow: none; margin-top: 10px; font-family: inherit; cursor: pointer;">
                         <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Log Out Securely
                     </button>
@@ -60,9 +68,7 @@
 
             <!-- Change Password Form -->
             <section class="form-section">
-                <!-- Check if the user has a password set -->
                 <% if (user.password) { %>
-                    <!-- User HAS a password (Normal Change) -->
                     <h2>Change Password</h2>
                     <form action="/account/change-password" method="POST">
                         <div class="form-group">
@@ -80,13 +86,10 @@
                         <button type="submit" class="submit-button secondary-button">Update Password</button>
                     </form>
                 <% } else { %>
-                    <!-- User DOES NOT have a password (e.g., Google Sign In) -->
                     <h2>Set Local Password</h2>
                     <p style="color: var(--silver); margin-bottom: 15px; font-size: 0.9em;">Since you signed up with a social account, you can set a password here to allow logging in with your email directly.</p>
                     <form action="/account/change-password" method="POST">
-                        <!-- Notice we pass a dummy 'currentPassword' so the backend logic doesn't crash -->
                         <input type="hidden" name="currentPassword" value="social_login_bypass">
-                        
                         <div class="form-group">
                             <label for="new-password">Set New Password</label>
                             <input type="password" id="new-password" name="newPassword" required>
@@ -106,7 +109,6 @@
                 <p>Deleting your account is a permanent action. All of your uploaded mods, comments, and personal data will be removed forever. This action cannot be undone.</p>
                 <form action="/account/delete" method="POST" id="delete-account-form">
                     
-                    <!-- ✅ UPGRADE 2: Sliding Switch Checkbox HTML -->
                     <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
                         <label class="switch">
                             <input type="checkbox" id="preserve-mods" name="preserveMods" value="true">
@@ -116,7 +118,9 @@
                     </div>
                     
                     <p>If checked, your uploads will remain on the site and the author will be changed to "GPL Community". Otherwise, all your uploads will be deleted with your account.</p>
-                    <button type="submit" class="submit-button delete-button">Delete My Account</button>
+                    
+                    <!-- Moved the button OUTSIDE the checkbox group -->
+                    <button type="submit" class="submit-button delete-button" style="margin-top: 20px;">Delete My Account</button>
                 </form>
             </section>
         </div>
@@ -135,15 +139,13 @@
         </p>
         
         <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-            <!-- The 'Confirm' button acts as a link to the actual /logout route -->
             <a href="/logout" class="policy-button" style="background-color: var(--gold); color: var(--black); padding: 10px 25px; border-radius: 20px; font-weight: bold; text-decoration: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-gold);">Yes, Log Out</a>
-            
             <button type="button" class="policy-button decline" id="cancelLogoutBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
         </div>
     </div>
 </div>
 
-<!-- ✅ UPGRADE 3: Custom Delete Confirmation Modal -->
+<!-- ======== CUSTOM DELETE MODAL ======== -->
 <div id="delete-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <h2 style="color: var(--red); margin-bottom: 15px;">Delete Account?</h2>
@@ -158,11 +160,12 @@
 </div>
 
 <script>
+    // ✅ FIX: ENTIRE SCRIPT IS NOW PROPERLY NESTED INSIDE ONE DOMContentLoaded FUNCTION
     document.addEventListener('DOMContentLoaded', function() {
-           // --- Live Avatar Preview Logic ---
+        
+        // --- 1. Live Avatar Preview Logic ---
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
-        // ✅ FIX: Get the button and form elements
         const saveAvatarBtn = document.getElementById('save-avatar-btn');
         const avatarForm = document.getElementById('avatar-form');
 
@@ -171,17 +174,14 @@
                 const reader = new FileReader();
                 reader.onload = (e) => { 
                     avatarPreview.src = e.target.result; 
-                    // ✅ FIX: Show the button once the image preview loads
                     saveAvatarBtn.style.display = 'block'; 
                 }
                 reader.readAsDataURL(this.files[0]);
             } else {
-                 // If they cancel the file selection, hide the button again
                  saveAvatarBtn.style.display = 'none';
             }
         });
         
-        // Prevent double submission
         if(avatarForm) {
             avatarForm.addEventListener('submit', function() {
                  saveAvatarBtn.disabled = true;
@@ -189,71 +189,53 @@
             });
         }
 
-        // --- Custom Delete Account Modal Logic ---
+        // --- 2. Custom Delete Account Modal Logic ---
         const deleteForm = document.getElementById('delete-account-form');
         const deleteModal = document.getElementById('delete-modal-container');
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
         const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 
         if (deleteForm && deleteModal) {
-            // Intercept the form submission
             deleteForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // Stop the form from submitting immediately
+                e.preventDefault(); 
                 deleteModal.style.display = 'flex';
-                // Small delay to allow display:flex to apply before adding the animation class
-                setTimeout(() => {
-                    deleteModal.classList.add('show');
-                }, 10);
+                setTimeout(() => { deleteModal.classList.add('show'); }, 10);
             });
 
-            // Cancel button hides the modal
             cancelDeleteBtn.addEventListener('click', function() {
                 deleteModal.classList.remove('show');
-                setTimeout(() => {
-                    deleteModal.style.display = 'none';
-                }, 200); // Matches the CSS transition duration
+                setTimeout(() => { deleteModal.style.display = 'none'; }, 200); 
             });
 
-            // Confirm button actually submits the form
             confirmDeleteBtn.addEventListener('click', function() {
                 deleteForm.submit(); 
             });
         }
-    });
 
-// --- CUSTOM LOGOUT MODAL LOGIC ---
+        // --- 3. CUSTOM LOGOUT MODAL LOGIC ---
         const logoutBtn = document.getElementById('logout-btn');
         const logoutModal = document.getElementById('logout-modal-container');
         const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
 
         if (logoutBtn && logoutModal) {
-            // 1. Open Modal when "Log Out Securely" is clicked
             logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default button behavior
-                
+                e.preventDefault(); 
                 logoutModal.style.display = 'flex';
-                // Small delay to allow display:flex to apply before adding the animation class
-                setTimeout(() => {
-                    logoutModal.classList.add('show');
-                }, 10);
+                setTimeout(() => { logoutModal.classList.add('show'); }, 10);
             });
 
-            // 2. Close Modal on "Cancel"
             cancelLogoutBtn.addEventListener('click', function() {
                 logoutModal.classList.remove('show');
-                setTimeout(() => {
-                    logoutModal.style.display = 'none';
-                }, 200); // Matches the CSS transition duration
+                setTimeout(() => { logoutModal.style.display = 'none'; }, 200);
             });
 
-            // 3. Close Modal if user clicks outside the content box (optional but good UX)
             window.addEventListener('click', function(event) {
-                if (event.target === logoutModal) {
-                    cancelLogoutBtn.click();
-                }
+                if (event.target === logoutModal) cancelLogoutBtn.click();
+                if (event.target === deleteModal) cancelDeleteBtn.click();
             });
         }
         
-    });
+    }); // <-- ✅ FIX: ONLY ONE CLOSING BRACKET NEEDED HERE
 </script>
+
 <%- include('../partials/footer') %>
