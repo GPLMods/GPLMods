@@ -18,7 +18,7 @@
             </a>
             <span style="color: var(--silver); font-weight: bold;"><%= files.length %> Updates Today</span>
         </div>
-
+>
         <% if (files && files.length > 0) { %>
             <section class="mod-grid">
                 <% files.forEach(file => { %>
@@ -65,8 +65,15 @@
             </section>
         <% } else { %>
             <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333;">
-                <!-- ✅ UPGRADE: Custom Lottie History Animation-->
-            <lottie-player src="/animations/history.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--glow-gold));"autoplay></lottie-player>            
+                <!-- ======== CUSTOM LOTTIE EMPTY INBOX ANIMATION (PLAY ONCE) ======== -->
+            <lottie-player 
+                src="/animations/history.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 0, 0.5));" 
+               autoplay
+            </lottie-player>
+            <!-- ========================================================== -->     
                 <h2 style="color: var(--white); margin-bottom: 10px;">No Recent Updates</h2>
                 <p style="color: var(--silver); font-size: 1.1em;">It's quiet today. No existing mods have been updated in the last 24 hours.</p>
             </div>

@@ -23,7 +23,7 @@
         <p class="error-message">Something went wrong on our end. Our team has been notified and we're working to fix it. Please try again in a little while.</p>
         
         <!-- Updated the link to point to the root of your site -->
-        <a href="/" class="home-button">Go to Homepage</a>
+        <a href="<%= user ? '/home' : '/' %>" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
     </main>
 
 </body>

@@ -1220,15 +1220,13 @@ app.post('/login', verifyRecaptcha, (req, res, next) => {
         req.logIn(user, (loginErr) => {
             if (loginErr) return next(loginErr);
             
-            // --- SECURITY FIX: Generate a brand new Session ID upon login ---
-            let tempSession = req.session.passport; // Save their passport data
+            let tempSession = req.session.passport;
             req.session.regenerate((regenErr) => {
-                if (regenErr) console.error("Session Regen Error:", regenErr);
-                
-                req.session.passport = tempSession; // Restore the passport data to the new session
+                req.session.passport = tempSession;
                 req.session.save((saveErr) => {
-                    if (saveErr) console.error("Session Save Error:", saveErr);
-                    res.redirect('home/?message=Welcome back!');
+                    // ✅ FIX: Set a readable cookie for the frontend CDN bypass
+                    res.cookie('is_logged_in', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3 }); // 3 days
+                    res.redirect('/home?message=Welcome back!');
                 });
             });
         });
@@ -1341,11 +1339,12 @@ app.post('/verify-otp', async (req, res) => {
         req.login(user, (err) => {
             if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
             
-            // --- SECURITY FIX: Generate a brand new Session ID upon verification/login ---
             let tempSession = req.session.passport;
             req.session.regenerate((regenErr) => {
                 req.session.passport = tempSession;
                 req.session.save(() => {
+                    // ✅ FIX: Set a readable cookie for the frontend CDN bypass
+                    res.cookie('is_logged_in', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3 });
                     return res.redirect('/profile?success=Account verified successfully!');
                 });
             });
@@ -1450,55 +1449,65 @@ app.get('/logout', (req, res, next) => {
     req.logout(err => { 
         if (err) return next(err); 
         
-        req.session.destroy((destroyErr) => {
-            // Clear the session cookie
+        req.session.destroy(() => {
             res.clearCookie('connect.sid', { path: '/' });
-            // --- ✅ FIX: Clear our custom auth state cookie ---
-            res.clearCookie('gplmods_auth');
-            
+            // ✅ FIX: Clear the readable cookie on logout
+            res.clearCookie('is_logged_in', { path: '/' }); 
             res.redirect('/?message=You have been successfully logged out.'); 
         });
     });
 });
 
-// Google Routes (Existing)
-app.get('/auth/google', passport.authenticate('google', { scope:['profile', 'email'] }));
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res, next) => {
-        req.session.save((err) => {
-            if (err) {
-                console.error('Session save error during Google login:', err);
-                return next(err);
-            }
-            res.redirect('home/?message=Welcome back! logined successfully with Google.');
+// --- GOOGLE ROUTES ---
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login' }), 
+    (req, res) => {
+        // ✅ FIX: Set the CDN bypass cookie on successful social login
+        res.cookie('is_logged_in', 'true', { 
+            maxAge: 1000 * 60 * 60 * 24 * 3, // 3 Days
+            path: '/', // Ensure it's available across the whole site
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies on HTTPS
+            sameSite: 'lax'
         });
+        res.redirect('/home');
     }
 );
 
-// --- NEW GITHUB ROUTES ---
-app.get('/auth/github', passport.authenticate('github', { scope:[ 'user:email' ] }));
+// --- GITHUB ROUTES ---
+app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
+
 app.get('/auth/github/callback', 
     passport.authenticate('github', { failureRedirect: '/login' }), 
-    (req, res, next) => {
-        req.session.save((err) => {
-            if (err) return next(err);
-            res.redirect('home/?message=Welcome back! logined successfully with GitHub.');
+    (req, res) => {
+        // ✅ FIX: Set the CDN bypass cookie on successful social login
+        res.cookie('is_logged_in', 'true', { 
+            maxAge: 1000 * 60 * 60 * 24 * 3, 
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         });
+        res.redirect('/home');
     }
 );
 
-// --- NEW MICROSOFT ROUTES ---
+// --- MICROSOFT ROUTES ---
 app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
+
 app.get('/auth/microsoft/callback', 
     passport.authenticate('microsoft', { failureRedirect: '/login' }), 
-    (req, res, next) => {
-        req.session.save((err) => {
-            if (err) return next(err);
-            res.redirect('home/?message=Welcome back! logined successfully with Microsoft.');
+    (req, res) => {
+        // ✅ FIX: Set the CDN bypass cookie on successful social login
+        res.cookie('is_logged_in', 'true', { 
+            maxAge: 1000 * 60 * 60 * 24 * 3, 
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         });
+        res.redirect('/home');
     }
 );
-
 // ===============================
 // 9. PROFILE ROUTES
 // ===============================

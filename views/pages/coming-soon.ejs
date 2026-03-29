@@ -54,7 +54,7 @@
             </div>
         </form>
 
-        <a href="/" class="home-link">Back to Homepage</a>
+        <a href="<%= user ? '/home' : '/' %>" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
     </main>
     
     <footer class="main-footer">

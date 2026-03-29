@@ -1,5 +1,18 @@
 <%-include('../partials/header')%>
 
+<!-- ✅ CDN BYPASS SCRIPT -->
+<!-- If Cloudflare serves this cached guest page to a logged-in user, 
+     this script instantly detects their login cookie and redirects them to /home -->
+<script>
+    // Check if the 'is_logged_in' cookie exists
+    if (document.cookie.split(';').some((item) => item.trim().startsWith('is_logged_in='))) {
+        // Only redirect if we are strictly on the root path '/' to prevent infinite loops
+        if (window.location.pathname === '/') {
+            window.location.replace('/home' + window.location.search); 
+        }
+    }
+</script>
+
 <div class="container" id="mods-container">
 <!-- ======== MAIN CATAGORY TAB ======== -->
     <div class="tabs-container">

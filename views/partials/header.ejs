@@ -110,7 +110,7 @@
 
             <hr style="border-color: #333; margin: 20px 0;">
             
-            <li><a href="/">Home</a></li>
+            <li><a href="<%= user ? '/home' : '/' %>">Home</a></li>
             <li class="has-submenu">
                 <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
                 <ul class="sub-menu">

@@ -27,7 +27,7 @@
         </p>
         
         <!-- Updated the link to point to the root of your site -->
-        <a href="/" class="home-button">Back to Home</a>
+        <a href="<%= user ? '/home' : '/' %>" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
     </main>
 
 </body>
