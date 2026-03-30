@@ -65,7 +65,15 @@
         
         <!-- EMPTY STATE MESSAGE -->
         <div style="text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin-bottom: 60px;">
-            <i class="fas fa-bullhorn" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+            <!-- ======== CUSTOM LOTTIE LOUD SPEAKER ANIMATION (PLAY ONCE) ======== -->
+            <lottie-player 
+                src="/animations/loud-speaker.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 0, 0.5));" 
+               autoplay>
+            </lottie-player>
+            <!-- ========================================================== -->
             <h2 style="color: var(--white); margin-bottom: 10px;">No Announcements Yet</h2>
             <p style="color: var(--silver); font-size: 1.1em;">Everything is running smoothly. Check back later for site news and updates.</p>
         </div>
