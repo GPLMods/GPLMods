@@ -138,7 +138,9 @@ async function createAdminRouter() {
         componentLoader, 
         defaultTheme: 'dark', // Force our modified dark theme
         availableThemes: [gplModsTheme, light], 
-        env: process.env.NODE_ENV || 'development', // Crucial for skipping bundler on Render
+        env: {
+            NODE_ENV: process.env.NODE_ENV || 'development'
+        }, // Crucial for skipping bundler on Render
         
         // --- DASHBOARD CONFIGURATION ---
         dashboard: { 
