@@ -591,7 +591,7 @@ passport.use(new MicrosoftStrategy({
 // ===============================
 
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
-app.get('admin/system', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
     
     // 1. Gather Basic Server Info
     const healthData = {

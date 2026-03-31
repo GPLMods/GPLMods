@@ -15,14 +15,10 @@ const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
+// Helper Function
 function extractVTId(input) {
     if (!input) return "";
     let cleanInput = input.trim();
-    
     if (cleanInput.startsWith('http://') || cleanInput.startsWith('https://')) {
         try {
             const urlObj = new URL(cleanInput);
@@ -36,7 +32,6 @@ function extractVTId(input) {
     }
     return cleanInput;
 }
-
 
 async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
@@ -54,14 +49,20 @@ async function createAdminRouter() {
 
     const componentLoader = new ComponentLoader();
     
+    // We register our custom components
     const Components = {
         Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx'),
         SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
     };
 
+    // ==========================================
+    // FIXED: THE ULTIMATE GPL MODS THEME
+    // ==========================================
+    // We merge our overrides directly into a copy of the dark theme object
+    // but keep the original ID so AdminJS finds the correct base static files.
     const gplModsTheme = {
-        ...dark, 
-        id: 'gplModsTheme',
+        ...dark,
+        id: 'dark', // Crucial Fix: Keep it 'dark' so the bundlePath resolves correctly
         name: 'GPL Mods Premium',
         overrides: {
             ...dark.overrides, 
@@ -98,37 +99,14 @@ async function createAdminRouter() {
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
-        defaultTheme: 'gplModsTheme', 
-        availableThemes: [gplModsTheme, dark, light], 
+        // Force the use of our modified theme
+        defaultTheme: 'dark', 
+        availableThemes: [gplModsTheme, light], 
         
-        // --- ADDED DASHBOARD CONFIGURATION HERE ---
-        dashboard: {
-            handler: async (request, response, context) => {
-                const totalUsers = await User.countDocuments();
-                const totalMods = await File.countDocuments({ isLatestVersion: true });
-                const totalDownloadsData = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
-                const totalDownloads = totalDownloadsData.length > 0 ? totalDownloadsData[0].total : 0;
-
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                
-                const uploadsByDay = await File.aggregate([
-                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
-                    { $group: { 
-                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, 
-                        count: { $sum: 1 } 
-                    }},
-                    { $sort: { _id: 1 } }
-                ]);
-
-                return {
-                    stats: { totalUsers, totalMods, totalDownloads },
-                    chartData: uploadsByDay
-                };
-            },
-            component: Components.Dashboard 
-        },
-        // ------------------------------------------
-
+        // This is important: Set the environment explicitly
+        env: process.env.NODE_ENV || 'development',
+        
+        dashboard: { component: Components.Dashboard },
         branding: {
             companyName: 'GPL Mods',
             logo: '/images/logo.png', 
@@ -136,7 +114,7 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
         resources: [
-            // USER MANAGEMENT
+             // USER MANAGEMENT
             {
                 resource: User,
                 options: {
@@ -301,7 +279,6 @@ async function createAdminRouter() {
                         },
                         delete: { isAccessible: true },
                         
-                        // Custom Actions
                         viewOnSite: {
                             actionType: 'record',
                             icon: 'View',
@@ -421,7 +398,11 @@ async function createAdminRouter() {
     };
 
     const adminJs = new AdminJS(adminJsOptions);
+    
+    // We let AdminJS build the router normally. 
+    // It will automatically handle bundling if necessary.
     const adminRouter = AdminJSExpress.buildRouter(adminJs);
+    
     return adminRouter;
 }
 
