@@ -518,18 +518,20 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
         localStorage.setItem('musicTrackIndex', index);
     }
 
-    // ✅ FIX: Correctly toggle FontAwesome classes
+    // ✅ FIX: Correctly toggle FontAwesome classes, even if the <i> tag itself was clicked
     function updatePlayIcon(isPlaying) {
-        // We find the <i> tag inside the button
-        const icon = playPauseBtn.querySelector('i');
+        // Find the icon by its specific ID to ensure we always get it
+        const icon = document.getElementById('play-pause-icon');
         if (!icon) return;
 
         if (isPlaying) {
             icon.className = 'fas fa-pause'; // Change to pause icon
             playPauseBtn.title = "Pause Music";
+            trackNameDisplay.textContent = playlist[trackIndex].title; // Show name when playing
         } else {
             icon.className = 'fas fa-play'; // Change to play icon
             playPauseBtn.title = "Play Music";
+            trackNameDisplay.textContent = "Paused"; // Show paused status
         }
     }
 

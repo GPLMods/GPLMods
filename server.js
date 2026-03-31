@@ -48,6 +48,7 @@ const UserNotification = require('./models/userNotification');
 const SupportTicket = require('./models/supportTicket');
 const cron = require('node-cron');
 const AutomatedCampaign = require('./models/automatedCampaign');
+const SiteState = require('./models/siteState');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -233,6 +234,13 @@ app.use(cors({
         return callback(null, true);
     }
 }));
+
+// --- NEW: PUBLIC HEALTH CHECK (For Render.com) ---
+// This MUST come before Maintenance Mode and Session/Auth
+app.get('/healthz', (req, res) => {
+    // A fast, lightweight response to tell Render the Node process is running.
+    res.status(200).send('OK'); 
+});
 
 // --- DYNAMIC SITE STATE ENGINE (Maintenance / Unavailable) ---
 let cachedSiteState = null;
@@ -583,7 +591,7 @@ passport.use(new MicrosoftStrategy({
 // ===============================
 
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
-app.get('/healthz', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('admin/system', ensureAuthenticated, ensureAdmin, async (req, res) => {
     
     // 1. Gather Basic Server Info
     const healthData = {

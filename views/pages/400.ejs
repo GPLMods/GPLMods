@@ -27,7 +27,8 @@
         </p>
         
         <!-- Updated the link to point to the root of your site -->
-        <a href="<%= user ? '/home' : '/' %>" class="btn btn-primary" style="margin-top: 2rem;">Go to Homepage</a>
+        <!-- ✅ FIX: Updated button classes and styles to match the golden theme -->
+<a href="<%= user ? '/home' : '/' %>" class="btn" style="margin-top: 2rem; display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Go to Homepage</a>
     </main>
 
 </body>
