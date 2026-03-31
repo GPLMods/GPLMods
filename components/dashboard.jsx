@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { ApiClient } from 'adminjs';
-import { Box, H2, Text, H5 } from '@adminjs/design-system'; 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Box, H2, Text, H5, Button, Icon } from '@adminjs/design-system'; 
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const api = new ApiClient();
+
+// Colors for the Pie Chart to match your platform themes
+const COLORS = ['#A4C639', '#FF9800', '#FFFFFF', '#0078D6', '#21759B']; 
 
 const Dashboard = () => {
     const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
+    const [theme, setTheme] = useState('dark');
 
     useEffect(() => {
         api.getPage({ pageName: 'Dashboard' }).then(res => {
@@ -17,86 +21,137 @@ const Dashboard = () => {
             console.error("Dashboard data fetch error:", err);
             setLoading(false);
         });
+        
+        // Check current AdminJS theme (basic implementation)
+        const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+        setTheme(currentTheme);
     }, []);
+
+    const toggleTheme = () => {
+        // AdminJS has a built-in theme switcher API, but it's complex to access from a custom component without Redux.
+        // A simple visual toggle for demonstration (requires full page reload in AdminJS usually)
+        alert("Theme toggling requires AdminJS Theme API integration. Defaulting to GPL Mods Premium Dark.");
+    };
 
     if (loading) {
         return <Box p="xl" style={{ textAlign: 'center', color: '#c0c0c0' }}><Text>Loading telemetry...</Text></Box>;
     }
 
-    // Safely process chart data
-    const chartData = (data.chartData || []).map(item => ({
-        name: item._id ? item._id.split('-').slice(1).join('/') : '', 
-        Uploads: item.count || 0
-    }));
+    const pieData = data.modsByPlatform || [];
 
     return (
-        <Box style={{ padding: '40px', backgroundColor: '#0a0a0a', minHeight: '100vh' }}>
+        <Box style={{ padding: '40px', backgroundColor: 'transparent', minHeight: '100vh' }}>
             
-            {/* Header Section with Status Link */}
-            <Box mb="xl" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
+            {/* Header Section */}
+            <Box mb="xl" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', borderBottom: '1px solid #333', paddingBottom: '20px' }}>
                 <Box style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <img src="/images/logo.png" alt="Logo" style={{ height: '60px' }} onError={(e) => e.target.style.display='none'} />
                     <Box>
-                        <H2 style={{ margin: 0, color: '#fff' }}>Platform <span style={{ color: '#FFD700' }}>Overview</span></H2>
+                        <H2 style={{ margin: 0, color: '#fff' }}>Command <span style={{ color: '#FFD700' }}>Center</span></H2>
                         <Text style={{ color: '#c0c0c0' }}>Real-time statistics and telemetry for GPL Mods.</Text>
                     </Box>
                 </Box>
                 
-                {/* NEW: Link to the Status Page */}
-                <a href="/status" style={{ 
-                    backgroundColor: 'transparent', 
-                    color: '#c0c0c0', 
-                    border: '2px solid #555', 
-                    padding: '10px 20px', 
-                    borderRadius: '25px', 
-                    textDecoration: 'none', 
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => { e.target.style.borderColor = '#FFD700'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={(e) => { e.target.style.borderColor = '#555'; e.target.style.color = '#c0c0c0'; }}
-                >
-                    View System Status ➜
-                </a>
+                <Box style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    {/* Return to Site Link */}
+                    <a href="/home" style={{ color: '#c0c0c0', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                        <Icon icon="ArrowLeft" /> Back to Website
+                    </a>
+                    
+                    <a href="/status" style={{ backgroundColor: 'transparent', color: '#FFD700', border: '2px solid #FFD700', padding: '8px 16px', borderRadius: '20px', textDecoration: 'none', fontWeight: 'bold', transition: 'all 0.3s ease' }}>
+                        System Status
+                    </a>
+                </Box>
             </Box>
 
-            {/* Top Stat Cards */}
+            {/* Clickable Stat Cards */}
             <Box flex flexDirection="row" flexWrap="wrap" style={{ gap: '20px', marginBottom: '40px' }}>
-                <Box p="lg" style={{ flex: '1', minWidth: '200px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #2196F3' }}>
-                    <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>Total Registered Users</Text>
-                    <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalUsers || 0}</H2>
-                </Box>
-                <Box p="lg" style={{ flex: '1', minWidth: '200px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #FFD700' }}>
-                    <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>Live Mods Database</Text>
-                    <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalMods || 0}</H2>
-                </Box>
+                
+                {/* Users Card - Links to User Resource */}
+                <a href="/admin/resources/User" style={{ textDecoration: 'none', flex: '1', minWidth: '200px' }}>
+                    <Box p="lg" style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #2196F3', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'none'}>
+                        <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="Users" /> Total Users</Text>
+                        <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalUsers || 0}</H2>
+                    </Box>
+                </a>
+
+                {/* Mods Card - Links to File Resource */}
+                <a href="/admin/resources/File" style={{ textDecoration: 'none', flex: '1', minWidth: '200px' }}>
+                    <Box p="lg" style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #FFD700', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'none'}>
+                        <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="FileCode" /> Live Mods</Text>
+                        <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalMods || 0}</H2>
+                    </Box>
+                </a>
+
+                {/* Downloads Card (Not linked, just a stat) */}
                 <Box p="lg" style={{ flex: '1', minWidth: '200px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #43a047' }}>
-                    <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>Total All-Time Downloads</Text>
+                    <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="Download" /> Total Downloads</Text>
                     <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalDownloads?.toLocaleString() || 0}</H2>
                 </Box>
+
             </Box>
 
-            {/* Chart Section */}
-            <Box p="xl" style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
-                <H5 style={{ color: '#fff', marginBottom: '20px' }}>Upload Activity (Last 7 Days)</H5>
-                <div style={{ width: '100%', height: 400 }}>
-                    {chartData.length > 0 ? (
-                        <ResponsiveContainer>
-                            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                <XAxis dataKey="name" stroke="#c0c0c0" />
-                                <YAxis stroke="#c0c0c0" allowDecimals={false} />
-                                <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #FFD700' }} />
-                                <Line type="monotone" dataKey="Uploads" stroke="#FFD700" strokeWidth={3} dot={{ r: 6, fill: '#0a0a0a', stroke: '#FFD700', strokeWidth: 2 }} activeDot={{ r: 8 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <Box flex alignItems="center" justifyContent="center" style={{ height: '100%', color: '#666' }}>
-                            <Text>No upload activity data available.</Text>
-                        </Box>
-                    )}
-                </div>
+            {/* Charts Section */}
+            <Box flex flexDirection="row" flexWrap="wrap" style={{ gap: '20px' }}>
+                
+                {/* Platform Distribution Pie Chart */}
+                <Box p="xl" style={{ flex: '1', minWidth: '300px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
+                    <H5 style={{ color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><Icon icon="ChartPieSlice" /> Mods by Platform</H5>
+                    
+                    <div style={{ width: '100%', height: 300 }}>
+                        {pieData.length > 0 ? (
+                            <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={100}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #FFD700', borderRadius: '8px', color: '#fff' }} itemStyle={{ color: '#fff' }} />
+                                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: '#c0c0c0' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <Box flex alignItems="center" justifyContent="center" style={{ height: '100%', color: '#666' }}>
+                                <Text>No platform data available.</Text>
+                            </Box>
+                        )}
+                    </div>
+                </Box>
+                
+                {/* Quick Actions Panel */}
+                <Box p="xl" style={{ flex: '1', minWidth: '300px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
+                    <H5 style={{ color: '#fff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><Icon icon="Lightning" /> Quick Actions</H5>
+                    
+                    <Box style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <a href="/admin/resources/Report" style={{ textDecoration: 'none' }}>
+                            <Button variant="primary" style={{ width: '100%', justifyContent: 'flex-start', gap: '10px' }}>
+                                <Icon icon="Flag" /> Review Pending Reports
+                            </Button>
+                        </a>
+                        <a href="/admin/resources/SupportTicket/actions/new" style={{ textDecoration: 'none' }}>
+                            <Button variant="secondary" style={{ width: '100%', justifyContent: 'flex-start', gap: '10px', borderColor: '#333' }}>
+                                <Icon icon="Ticket" /> Create Support Ticket
+                            </Button>
+                        </a>
+                        <a href="/admin/resources/AutomatedCampaign/actions/new" style={{ textDecoration: 'none' }}>
+                            <Button variant="secondary" style={{ width: '100%', justifyContent: 'flex-start', gap: '10px', borderColor: '#333' }}>
+                                <Icon icon="Robot" /> Schedule Notification Blast
+                            </Button>
+                        </a>
+                    </Box>
+                </Box>
+
             </Box>
+
         </Box>
     );
 };
