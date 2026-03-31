@@ -92,17 +92,17 @@
             <div class="music-player" style="text-align: center; padding-top: 10px;">
                 <span id="music-track-name" style="color: var(--silver); display: block; margin-bottom: 15px; font-weight: 600;">Loading track...</span>
                 
-                <!-- ✅ FIX: Switched to reliable FontAwesome Icons -->
                 <div class="music-controls" style="display: flex; justify-content: center; gap: 25px; align-items: center;">
-                    <button id="music-prev-btn" title="Previous Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; color: var(--silver); transition: color 0.3s;">
+                    <!-- ✅ FIX: Removed the inline "color: var(--silver)" so CSS can take over -->
+                    <button id="music-prev-btn" class="music-btn" title="Previous Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; transition: color 0.3s;">
                         <i class="fas fa-step-backward"></i>
                     </button>
                     
-                    <button id="music-play-pause-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; font-size: 2em; color: var(--silver); transition: color 0.3s;">
+                    <button id="music-play-pause-btn" class="music-btn" title="Play/Pause" style="background:none; border:none; cursor:pointer; font-size: 2em; transition: color 0.3s;">
                         <i class="fas fa-play" id="play-pause-icon"></i>
                     </button>
                     
-                    <button id="music-next-btn" title="Next Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; color: var(--silver); transition: color 0.3s;">
+                    <button id="music-next-btn" class="music-btn" title="Next Track" style="background:none; border:none; cursor:pointer; font-size: 1.5em; transition: color 0.3s;">
                         <i class="fas fa-step-forward"></i>
                     </button>
                 </div>

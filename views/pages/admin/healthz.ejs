@@ -33,8 +33,33 @@
 
     /* Warnings Box */
     .warnings-box { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); border-radius: 10px; padding: 20px; }
-    .warnings-box h3 { color: var(--red); margin-top: 0; display: flex; align-items: center; gap: 10px; }
+     .warnings-box h3 { color: var(--red); margin-top: 0; display: flex; align-items: center; gap: 10px; }
     .warnings-list { margin: 0; padding-left: 20px; color: #ffadad; font-family: monospace; }
+
+    /* ======== ADD THIS RESPONSIVE FIX ======== */
+    @media (max-width: 600px) {
+        .health-container {
+            padding: 1.5rem; /* Slightly smaller padding on mobile */
+            margin: 2rem auto;
+        }
+        
+        .health-header {
+            flex-direction: column; /* Stack the title and the badge vertically */
+            align-items: flex-start; /* Align them to the left */
+            gap: 15px; /* Add some space between them */
+        }
+        
+        .health-header h1 {
+            font-size: 1.8em; /* Make the title slightly smaller to fit better */
+        }
+        
+        /* Make the service items stack vertically on very small screens */
+        .service-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
 </style>
 
 <main class="container">
