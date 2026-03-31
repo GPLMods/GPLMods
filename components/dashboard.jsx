@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiClient } from 'adminjs';
-import { Box, H2, Text, H5, Badge, Icon } from '@adminjs/design-system';
+import { Box, H2, Text, H5 } from '@adminjs/design-system'; 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const api = new ApiClient();
