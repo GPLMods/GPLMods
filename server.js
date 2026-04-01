@@ -465,24 +465,18 @@ async function verifyRecaptcha(req, res, next) {
 // 5.5 PASSPORT STRATEGIES & MULTER
 // ===============================
 
-// ✅ STRICT MEMORY STORAGE: 
-// Required for live progress bars and direct-to-cloud streaming.
-// Do NOT use diskStorage for massive mod files!
+// ✅ FIX: STRICTLY USE RAM (MEMORY STORAGE)
 const memoryStorage = multer.memoryStorage();
 
-// Main Upload Config (For Mods - Enforces dynamic limits later)
+// Main Upload Config (For Mods - 20GB hard limit to prevent multer crash, actual limits enforced in route)
 const upload = multer({ 
-    storage: memoryStorage,
-    limits: { 
-        // A very high hard limit (e.g., 20GB) to prevent immediate multer crashes.
-        // We enforce the strict 300MB/1GB user limits inside the route logic.
-        fileSize: 20 * 1024 * 1024 * 1024 
-    } 
+    storage: memoryStorage, 
+    limits: { fileSize: 20 * 1024 * 1024 * 1024 } 
 });
 
 // Avatar Upload Config (Strict 5MB limit to protect RAM)
 const uploadAvatar = multer({ 
-    storage: memoryStorage,
+    storage: memoryStorage, 
     limits: { fileSize: 5 * 1024 * 1024 } 
 });
 // Local Strategy
@@ -1119,6 +1113,18 @@ app.get('/developer', async (req, res) => {
     }
 });
 
+// --- GET Add Version Page ---
+app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
+    try {
+        const parentFile = await File.findById(req.params.id);
+        if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
+            return res.status(403).render('pages/403');
+        }
+        res.render('pages/add-version', { parentFile: parentFile });
+    } catch (error) {
+        res.status(500).render('pages/500');
+    }
+});
 app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
     
     try {
@@ -1757,7 +1763,17 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
     } catch (e) { res.status(500).redirect('/profile?error=Error.'); }
 });
 
-app.post('/account/update-profile-image', ensureAuthenticated, uploadAvatar.single('profileImage'), async (req, res, next) => {
+// ✅ FIX: Added Multer error catching to prevent 500 errors if image is > 5MB
+app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) => {
+    uploadAvatar.single('profileImage')(req, res, function (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+            return res.redirect('/profile?error=Image is too large. Maximum size is 5MB.');
+        } else if (err) {
+            return res.redirect('/profile?error=An error occurred during upload.');
+        }
+        next();
+    });
+}, async (req, res, next) => {
     try {
         if (!req.file) return res.redirect('/profile?error=No image file was selected.');
         if (!req.file.mimetype.startsWith('image/')) return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
@@ -1771,7 +1787,7 @@ app.post('/account/update-profile-image', ensureAuthenticated, uploadAvatar.sing
         });
     } catch (error) { 
         console.error("Error updating profile image:", error);
-        res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try a different, smaller file.')); 
+        res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try again.')); 
     }
 });
 
