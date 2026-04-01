@@ -1,145 +1,88 @@
-<%- include('../partials/header') %>
-
-<style>
-    .upload-container { 
-        max-width: 700px; 
-        margin: 4rem auto; 
-        padding: 3rem 2rem; 
-        background-color: var(--dark-gray); 
-        border-radius: 12px; 
-        text-align: center;
-        border: 1px solid #333;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .file-input-label { 
-        display: inline-block; 
-        padding: 15px 30px; 
-        background: transparent; 
-        color: var(--gold); 
-        border: 2px dashed var(--gold); 
-        border-radius: 8px; 
-        cursor: pointer; 
-        transition: all 0.3s ease; 
-        font-size: 1.2em; 
-        margin-bottom: 1rem; 
-        width: 100%;
-    }
-    .file-input-label:hover { 
-        background: rgba(255, 215, 0, 0.1); 
-    }
-    .submit-button { 
-        display: block; 
-        width: 100%; 
-        background: var(--gold); 
-        color: var(--black); 
-        padding: 15px 20px; 
-        border-radius: 8px; 
-        font-weight: 700; 
-        font-size: 1.2em; 
-        border: none; 
-        cursor: pointer; 
-        transition: all 0.3s ease; 
-        box-shadow: 0 0 15px var(--glow-gold); 
-        margin-top: 2rem; 
-    }
-    .submit-button:hover { 
-        transform: translateY(-2px); 
-        box-shadow: 0 0 25px var(--glow-gold);
-    }
-    .submit-button:disabled { 
-        background-color: #555; 
-        color: #aaa; 
-        cursor: not-allowed; 
-        box-shadow: none; 
-        transform: none; 
-    }
-    #file-name-display { 
-        margin-top: 15px; 
-        color: var(--white); 
-        font-weight: 600; 
-        font-size: 1.1em;
-    }
-    
-    /* --- LIVE PROGRESS BAR STYLES --- */
-    .progress-wrapper {
-        display: none; /* Hidden initially */
-        margin-top: 25px;
-        text-align: left;
-    }
-    .progress-container {
-        width: 100%;
-        background-color: var(--black);
-        border: 1px solid #444;
-        border-radius: 8px;
-        height: 25px;
-        overflow: hidden;
-        position: relative;
-    }
-    .progress-bar {
-        height: 100%;
-        width: 0%;
-        background-color: var(--gold);
-        transition: width 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--black);
-        font-weight: bold;
-        font-size: 0.85em;
-        white-space: nowrap;
-    }
-    .status-text {
-        color: var(--silver);
-        margin-top: 10px;
-        font-size: 0.95em;
-        text-align: center;
-    }
-    
-    /* Pulsing animation for when upload hits 100% and is processing */
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
-    }
-    .processing-pulse {
-        animation: pulse 1.5s infinite;
-    }
-</style>
-
-<!-- Inside views/pages/upload.ejs -->
-
 <div class="container">
     <div class="upload-container">
         <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 2.2em;">Upload Mod File</h2>
         
-        <% if (user && user.role === 'distributor') { %>
+        <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
             <!-- ========================================== -->
-            <!-- DISTRIBUTOR UPLOAD FORM (External Links)   -->
+            <!-- DISTRIBUTOR / ADMIN UPLOAD FORM            -->
             <!-- ========================================== -->
-            <p style="color: var(--silver); margin-bottom: 2.5rem;">
-                <span style="color: var(--gold); font-weight: bold;">★ Distributor Account Active ★</span><br>
-                Step 1 of 2: Paste your monetized or external download link below.
+            <p style="color: var(--silver); margin-bottom: 1.5rem;">
+                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Account Active ★</span><br>
+                Step 1 of 2: Choose your upload method below.
             </p>
             
+            <!-- Toggle Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
+                <button type="button" class="btn btn-primary" id="btn-show-link" style="flex: 1; padding: 10px;">Paste External Link(s)</button>
+                <button type="button" class="btn btn-secondary" id="btn-show-file" style="flex: 1; padding: 10px;">Upload to Cloud</button>
+            </div>
+
+            <!-- OPTION A: External Link(s) Form -->
             <form action="/upload-initial" method="POST" id="distributorUploadForm">
-                <div class="form-group" style="text-align: left;">
+                
+                <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                    <label style="color: var(--silver); font-weight: 600; display: block;">
+                        <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true" style="width: auto; margin-right: 10px;">
+                        This mod requires multiple download links (Multi-Part)
+                    </label>
+                </div>
+
+                <!-- Single Link Input (Default) -->
+                <div id="single-link-group" class="form-group" style="text-align: left;">
                     <label for="externalUrl" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">External Download Link*</label>
-                    <input type="url" id="externalUrl" name="externalUrl" required placeholder="https://linkvertise.com/..." style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none; transition: border-color 0.3s;">
+                    <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
                 </div>
                 
+                <!-- Multi-Part Link Inputs (Hidden initially) -->
+                <div id="multi-link-group" class="form-group" style="text-align: left; display: none;">
+                    <label style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">Add Download Parts (Min 2)*</label>
+                    <div id="parts-container">
+                        <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;">
+                        <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;">
+                    </div>
+                    <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em; margin-top: 5px;">+ Add Another Part</button>
+                </div>
+
                 <div class="form-group" style="text-align: left; margin-top: 15px;">
                     <label for="originalFilename" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">File Name (for display purposes)*</label>
-                    <input type="text" id="originalFilename" name="originalFilename" required placeholder="e.g., Minecraft_Mod_v1.2.apk" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none; transition: border-color 0.3s;">
+                    <input type="text" id="originalFilename" name="originalFilename" required placeholder="e.g., Minecraft_Mod_v1.2.apk" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
                 </div>
 
                 <button type="submit" class="submit-button" id="distributorSubmitBtn">Continue to Details</button>
+            </form>
+            
+            <!-- OPTION B: Standard File Upload Form (Hidden initially for distributors) -->
+            <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm" style="display: none;">
+                <p style="color: var(--silver); margin-bottom: 1.5rem; font-size: 0.9em;">Max File Size: Unlimited</p>
+                <div class="form-group">
+                    <label for="modFile" class="file-input-label" id="drop-zone">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
+                        Click to Choose File
+                    </label>
+                    <input type="file" id="modFile" name="modFile" required style="display:none;">
+                    <div id="file-name-display">No file selected</div>
+                </div>
+                
+                <div class="progress-wrapper" id="progressWrapper">
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar">0%</div>
+                    </div>
+                    <p class="status-text" id="statusText">Starting upload...</p>
+                </div>
+                <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
             </form>
 
         <% } else { %>
             <!-- ========================================== -->
             <!-- STANDARD USER UPLOAD FORM (File Upload)    -->
             <!-- ========================================== -->
-            <p style="color: var(--silver); margin-bottom: 2.5rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe). It will be securely uploaded to the cloud and scanned for safety.</p>
+            <% 
+                // Display the correct limit text
+                let limitText = "300 MB";
+                if (user && user.membership === 'premium') limitText = "1 GB";
+            %>
+            <p style="color: var(--silver); margin-bottom: 1rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe).</p>
+            <p style="color: var(--gold); font-weight: bold; margin-bottom: 2rem;">Max File Size: <%= limitText %></p>
             
             <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
                 
@@ -148,7 +91,9 @@
                         <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                         Click to Choose File
                     </label>
-                    <input type="file" id="modFile" name="modFile" required style="display:none;">
+                    <!-- Add data attribute to pass limit to JS -->
+                    <input type="file" id="modFile" name="modFile" required style="display:none;" 
+                           data-limit="<%= (user && user.membership === 'premium') ? 1073741824 : 314572800 %>">
                     <div id="file-name-display">No file selected</div>
                 </div>
                 
@@ -168,7 +113,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Standard Upload Logic (Only runs if the form exists) ---
+        // --- 1. Role-Based Size Limit Check & Live Progress Bar ---
         const fileInput = document.getElementById('modFile');
         const fileNameDisplay = document.getElementById('file-name-display');
         const form = document.getElementById('initialUploadForm');
@@ -178,13 +123,26 @@
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
-        // ✅ FIX: Only attach listeners if the Standard Form elements actually exist
         if (fileInput && form && dropZone) {
             fileInput.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {
-                    const fileSize = this.files[0].size;
+                    const file = this.files[0];
+                    const fileSize = file.size;
                     const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
-                    fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
+                    
+                    // Check File Size Limit
+                    const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
+                    
+                    if (fileSize > maxLimit) {
+                        alert(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}. Please upgrade your membership to upload larger files.`);
+                        this.value = ''; // Clear the input
+                        fileNameDisplay.textContent = 'No file selected';
+                        dropZone.style.borderColor = 'var(--red)';
+                        dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
+                        return;
+                    }
+
+                    fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
                     dropZone.style.borderColor = 'var(--gold)';
                     dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
                 } else {
@@ -194,6 +152,7 @@
                 }
             });
 
+            // AJAX Form Submission for TRUE Live Progress
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
                 if (fileInput.files.length === 0) {
@@ -214,6 +173,7 @@
 
                 xhr.open('POST', '/upload-initial', true);
 
+                // This event tracks the actual stream of bytes leaving the browser
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
                         const percentComplete = Math.round((event.loaded / event.total) * 100);
@@ -232,7 +192,7 @@
                     if (xhr.status >= 200 && xhr.status < 400) {
                         window.location.href = xhr.responseURL; 
                     } else {
-                        alert('Upload failed. Server responded with an error.');
+                        alert('Upload failed. Server responded with an error or file is too large.');
                         resetUI();
                     }
                 };
@@ -251,19 +211,65 @@
                 progressWrapper.style.display = 'none';
                 progressBar.classList.remove('processing-pulse');
             }
-        } // End of Standard Upload Logic
+        }
 
-        // --- Distributor Upload Logic (Only runs if Distributor Form exists) ---
-        const distForm = document.getElementById('distributorUploadForm');
-        const distSubmitBtn = document.getElementById('distributorSubmitBtn');
+        // --- 2. Distributor Form Toggles ---
+        const btnShowLink = document.getElementById('btn-show-link');
+        const btnShowFile = document.getElementById('btn-show-file');
+        const distLinkLib = document.getElementById('distributorUploadForm');
+        const distFileLib = document.getElementById('initialUploadForm');
         
-        // ✅ FIX: Only attach listeners if the Distributor elements exist
-        if (distForm && distSubmitBtn) {
-            distForm.addEventListener('submit', function() {
-                distSubmitBtn.disabled = true;
-                distSubmitBtn.textContent = 'Processing...';
+        if (btnShowLink && btnShowFile && distLinkLib && distFileLib) {
+            btnShowLink.addEventListener('click', () => {
+                btnShowLink.classList.replace('btn-secondary', 'btn-primary');
+                btnShowFile.classList.replace('btn-primary', 'btn-secondary');
+                distLinkLib.style.display = 'block';
+                distFileLib.style.display = 'none';
+            });
+            
+            btnShowFile.addEventListener('click', () => {
+                btnShowFile.classList.replace('btn-secondary', 'btn-primary');
+                btnShowLink.classList.replace('btn-primary', 'btn-secondary');
+                distFileLib.style.display = 'block';
+                distLinkLib.style.display = 'none';
+            });
+        }
+
+        // --- 3. Distributor Multi-Part Link Logic ---
+        const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
+        const singleLinkGroup = document.getElementById('single-link-group');
+        const multiLinkGroup = document.getElementById('multi-link-group');
+        const addPartBtn = document.getElementById('add-part-btn');
+        const partsContainer = document.getElementById('parts-container');
+        const singleInput = document.getElementById('externalUrl');
+
+        if (multiPartCheckbox) {
+            multiPartCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    singleLinkGroup.style.display = 'none';
+                    singleInput.required = false;
+                    multiLinkGroup.style.display = 'block';
+                    // Make the first two part inputs required
+                    partsContainer.querySelectorAll('input').forEach(i => i.required = true);
+                } else {
+                    singleLinkGroup.style.display = 'block';
+                    singleInput.required = true;
+                    multiLinkGroup.style.display = 'none';
+                    partsContainer.querySelectorAll('input').forEach(i => i.required = false);
+                }
+            });
+
+            let partCount = 2;
+            addPartBtn.addEventListener('click', () => {
+                partCount++;
+                const newInput = document.createElement('input');
+                newInput.type = 'url';
+                newInput.name = 'partUrls[]';
+                newInput.placeholder = `Part ${partCount} URL...`;
+                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;';
+                newInput.required = true;
+                partsContainer.appendChild(newInput);
             });
         }
     });
 </script>
-<%- include('../partials/footer') %>

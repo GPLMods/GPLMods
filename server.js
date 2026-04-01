@@ -465,20 +465,22 @@ async function verifyRecaptcha(req, res, next) {
 // 5.5 PASSPORT STRATEGIES & MULTER
 // ===============================
 
-// 1. Disk Storage (For large Mod files)
-const diskStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = 'uploads/';
-        fs.mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage: diskStorage });
-
-// 2. NEW: Memory Storage (Specifically for Avatars and small images)
+// ✅ STRICT MEMORY STORAGE: 
+// Required for live progress bars and direct-to-cloud streaming.
+// Do NOT use diskStorage for massive mod files!
 const memoryStorage = multer.memoryStorage();
-// Limit avatar uploads to 5MB to protect memory
+
+// Main Upload Config (For Mods - Enforces dynamic limits later)
+const upload = multer({ 
+    storage: memoryStorage,
+    limits: { 
+        // A very high hard limit (e.g., 20GB) to prevent immediate multer crashes.
+        // We enforce the strict 300MB/1GB user limits inside the route logic.
+        fileSize: 20 * 1024 * 1024 * 1024 
+    } 
+});
+
+// Avatar Upload Config (Strict 5MB limit to protect RAM)
 const uploadAvatar = multer({ 
     storage: memoryStorage,
     limits: { fileSize: 5 * 1024 * 1024 } 
@@ -1117,30 +1119,120 @@ app.get('/developer', async (req, res) => {
     }
 });
 
-// ===============================================
-// 7. FILE VERSIONING ROUTES
-// ===============================================
-
-app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
+app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+    
     try {
-        const parentFile = await File.findById(req.params.id);
+        if (!req.file) {
+            return res.status(400).send("No file uploaded.");
+        }
 
-        if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
+        const parentFileId = req.params.id;
+        const previousVersion = await File.findById(parentFileId);
+
+        // Security check: Must be uploader or admin
+        const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
+        const isAdmin = req.user.role === 'admin';
+        if (!isUploader && !isAdmin) {
             return res.status(403).render('pages/403');
         }
 
-        res.render('pages/add-version', { parentFile: parentFile });
+        // --- NEW: Strict Backend File Size Check (Same as main upload) ---
+        const fileSize = req.file.size;
+        const isPremium = req.user.membership === 'premium';
+        const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
+        
+        const limit300MB = 314572800;
+        const limit1GB = 1073741824;
 
+        if (!isAdminOrDist) {
+            if (!isPremium && fileSize > limit300MB) {
+                return res.status(413).send('File exceeds your 300MB limit. Please upgrade to Premium.');
+            }
+            if (isPremium && fileSize > limit1GB) {
+                 return res.status(413).send('File exceeds the 1GB Premium limit.');
+            }
+        }
+        // -----------------------------------------------------------------
+
+        
+        // 1. Upload to Backblaze B2 (Using the memory buffer directly)
+        console.log("Uploading new version to B2 from memory buffer...");
+        // req.file now contains the buffer because we switched to memoryStorage
+        const newFileKey = await uploadToB2(req.file, 'mods'); 
+        console.log("Upload to B2 complete.");
+
+        // 2. Create the NEW file document
+        const newVersion = new File({
+            // Copy visual details from the previous version
+            name: previousVersion.name,
+            developer: previousVersion.developer,
+            iconKey: previousVersion.iconKey,
+            screenshotKeys: previousVersion.screenshotKeys,
+            modDescription: previousVersion.modDescription,
+            officialDescription: previousVersion.officialDescription,
+            modFeatures: previousVersion.modFeatures,
+            category: previousVersion.category,
+            platforms: previousVersion.platforms,
+            tags: previousVersion.tags,
+            uploader: req.user.username, // Set uploader to the current user (in case an admin updates it)
+            
+            // New details from the form
+            version: req.body.softwareVersion,
+            whatsNew: req.body.whatsNew,
+            fileKey: newFileKey,
+            fileSize: req.file.size,
+            originalFilename: req.file.originalname,
+            
+            // Link to the past
+            isLatestVersion: false, 
+            parentFile: parentFileId,
+            
+            // Instantly live, no need for re-approval on updates (adjust if you prefer!)
+            status: 'live' 
+        });
+        
+        await newVersion.save();
+        
+        // 3. Update the OLD version to link to the new one
+        await File.findByIdAndUpdate(parentFileId, {
+            $push: { olderVersions: newVersion._id },
+            isLatestVersion: false // Mark the old file as no longer the main one
+        });
+
+        // 4. Mark the NEW version as the latest
+        newVersion.isLatestVersion = true;
+        await newVersion.save();
+        
+        // --- Optional: Background VirusTotal Scan (Memory Safe) ---
+        (async () => {
+            try {
+                console.log(`Starting VT Scan for new version ${newVersion._id}...`);
+                const vtFormData = new FormData();
+                
+                // IMPORTANT: Pass the buffer directly to Axios! No fs.createReadStream needed.
+                vtFormData.append('file', req.file.buffer, req.file.originalname);
+                
+                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
+                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
+                });
+                
+                const analysisId = vtResponse.data.data.id;
+                await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
+                console.log(`VT Scan submitted for new version. Analysis ID: ${analysisId}`);
+            } catch (vtError) {
+                console.error(`VT scan failed for new version ${newVersion._id}:`, vtError.response?.data || vtError.message);
+            } 
+            // No finally block with fs.unlinkSync needed because memory is cleared automatically!
+        })(); 
+
+        // 5. Success! Redirect to the newly created mod page
+        res.redirect(`/mods/${newVersion._id}`);
+        
     } catch (error) {
-        console.error('Error loading the add-version page:', error);
-        res.status(500).render('pages/500');
+        console.error("Error adding new version:", error);
+        res.status(500).render('pages/500'); // Better to show the custom 500 page
     }
 });
-
-app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
-    // Add version processing logic here
-});
-
 // Download Action - UPDATED for External Links & Presigned URLs
 app.get('/download-file/:id', async (req, res) => {
     try {

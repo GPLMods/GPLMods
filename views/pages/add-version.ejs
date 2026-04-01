@@ -1,36 +1,213 @@
 <%- include('../partials/header') %>
 
-<style> /* Reusing some styles from upload.ejs */
-    .upload-form-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: var(--dark-gray); border: 1px solid var(--light-grey); border-radius: 8px; }
-    .form-group { margin-bottom: 1.5rem; }
-    .form-group label { display: block; margin-bottom: .5rem; font-weight: bold; }
-    .form-group input { width: 100%; padding: 10px; background-color: var(--black); border: 1px solid var(--light-grey); border-radius: 4px; color: var(--white); font-size: 1rem; }
+<style>
+    /* Reusing the beautiful Upload page styles */
+    .upload-container { 
+        max-width: 700px; 
+        margin: 4rem auto; 
+        padding: 3rem 2rem; 
+        background-color: var(--dark-gray); 
+        border-radius: 12px; 
+        text-align: center;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .form-group {
+        text-align: left;
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--silver);
+    }
+    .form-group input[type="text"], .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        color: var(--white);
+        font-size: 1em;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s ease;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    /* The custom file input button */
+    .file-input-label { 
+        display: inline-block; 
+        padding: 15px 30px; 
+        background: transparent; 
+        color: var(--gold); 
+        border: 2px dashed var(--gold); 
+        border-radius: 8px; 
+        cursor: pointer; 
+        transition: all 0.3s ease; 
+        font-size: 1.2em; 
+        margin-bottom: 1rem; 
+        width: 100%;
+        text-align: center;
+    }
+    .file-input-label:hover { background: rgba(255, 215, 0, 0.1); }
+    #file-name-display { margin-top: 5px; color: var(--white); font-weight: 600; font-size: 1.1em; text-align: center; }
+    
+    .submit-button { 
+        display: block; width: 100%; background: var(--gold); color: var(--black); 
+        padding: 15px 20px; border-radius: 8px; font-weight: 700; font-size: 1.2em; 
+        border: none; cursor: pointer; transition: all 0.3s ease; 
+        box-shadow: 0 0 15px var(--glow-gold); margin-top: 2rem; 
+    }
+    .submit-button:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--glow-gold); }
+    .submit-button:disabled { background-color: #555; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
+    
+    /* --- LIVE PROGRESS BAR STYLES --- */
+    .progress-wrapper { display: none; margin-top: 25px; text-align: left; }
+    .progress-container { width: 100%; background-color: var(--black); border: 1px solid #444; border-radius: 8px; height: 25px; overflow: hidden; position: relative; }
+    .progress-bar { height: 100%; width: 0%; background-color: var(--gold); transition: width 0.2s ease; display: flex; align-items: center; justify-content: center; color: var(--black); font-weight: bold; font-size: 0.85em; white-space: nowrap; }
+    .status-text { color: var(--silver); margin-top: 10px; font-size: 0.95em; text-align: center; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+    .processing-pulse { animation: pulse 1.5s infinite; }
 </style>
 
 <div class="container">
-    <div class="upload-form-container">
-        <h2>Add New Version for: <span style="color:var(--gold);"><%= parentFile.name %></span></h2>
-        <p style="color:var(--silver);">Uploading a new version will make this new file the primary download.</p>
-
-        <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data">
+    <div class="upload-container">
+        <h2 style="color: var(--white); margin-bottom: 10px; font-size: 2.2em;">Update <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);"><%= parentFile.name %></span></h2>
+        <p style="color: var(--silver); margin-bottom: 2.5rem;">Uploading a new version will make this file the primary download.</p>
+        
+        <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="addVersionForm">
+            
             <div class="form-group">
                 <label for="softwareVersion">New Version Number*</label>
-                <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required>
+                <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
             </div>
 
-            <div class="form-group">
-                <label for="modFile">New Mod File* (.zip, .rar, .exe, etc.)</label>
-                <input type="file" id="modFile" name="modFile" required>
-            </div>
-            
             <div class="form-group">
                 <label for="whatsNew">What's New in this Version? (Optional)</label>
                 <textarea id="whatsNew" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px;">Upload New Version</button>
+            <div class="form-group" style="margin-top: 30px;">
+                <label style="text-align: center;">New Mod File* (.zip, .apk, .exe)</label>
+                <label for="modFile" class="file-input-label" id="drop-zone">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
+                    Click to Choose File
+                </label>
+                <input type="file" id="modFile" name="modFile" required style="display:none;">
+                <div id="file-name-display">No file selected</div>
+            </div>
+            
+            <!-- LIVE PROGRESS BAR UI -->
+            <div class="progress-wrapper" id="progressWrapper">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">0%</div>
+                </div>
+                <p class="status-text" id="statusText">Starting upload...</p>
+            </div>
+
+            <button type="submit" class="submit-button" id="submitBtn">Upload New Version</button>
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('modFile');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const form = document.getElementById('addVersionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const dropZone = document.getElementById('drop-zone');
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+
+        // 1. UI Update on File Select
+        if (fileInput && form) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    const fileSize = this.files[0].size;
+                    const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
+                    fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
+                    dropZone.style.borderColor = 'var(--gold)';
+                    dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
+                } else {
+                    fileNameDisplay.textContent = 'No file selected';
+                    dropZone.style.borderColor = 'var(--gold)';
+                    dropZone.style.backgroundColor = 'transparent';
+                }
+            });
+
+            // 2. AJAX Form Submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                if (fileInput.files.length === 0) {
+                    alert("Please select a file to upload first.");
+                    return;
+                }
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Uploading...';
+                progressWrapper.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.classList.remove('processing-pulse');
+                statusText.innerHTML = 'Uploading file to server...';
+
+                const formData = new FormData(form);
+                const xhr = new XMLHttpRequest();
+
+                // Target the correct Add Version route
+                xhr.open('POST', `/mods/<%= parentFile._id %>/add-version`, true);
+
+                xhr.upload.addEventListener('progress', function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percentComplete + '%';
+                        progressBar.textContent = percentComplete + '%';
+
+                        if (percentComplete === 100) {
+                            progressBar.textContent = 'Processing...';
+                            progressBar.classList.add('processing-pulse');
+                            statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to cloud storage... Please wait.</span>';
+                        }
+                    }
+                });
+
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        // Success! Redirect to the new file page
+                        window.location.href = xhr.responseURL; 
+                    } else {
+                        alert('Upload failed. Server responded with an error.');
+                        resetUI();
+                    }
+                };
+
+                xhr.onerror = function() {
+                    alert('A network error occurred during the upload.');
+                    resetUI();
+                };
+
+                xhr.send(formData);
+            });
+
+            function resetUI() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Upload New Version';
+                progressWrapper.style.display = 'none';
+                progressBar.classList.remove('processing-pulse');
+            }
+        }
+    });
+</script>
 
 <%- include('../partials/footer') %>
