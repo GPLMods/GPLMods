@@ -1,8 +1,6 @@
 const bcrypt = require('bcryptjs');
 
-// ==========================================
-// 1. IMPORT ALL MONGOOSE MODELS
-// ==========================================
+// Import all your models
 const User = require('../models/user');
 const File = require('../models/file');
 const Review = require('../models/review');
@@ -17,61 +15,20 @@ const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
-// ==========================================
-// 2. HELPER FUNCTIONS
-// ==========================================
-
-/**
- * Extracts the raw ID/Hash from a full VirusTotal URL.
- */
 function extractVTId(input) {
     if (!input) return "";
     let cleanInput = input.trim();
-    
-    // If it's a full URL, try to extract the ID/Hash
     if (cleanInput.startsWith('http://') || cleanInput.startsWith('https://')) {
         try {
             const urlObj = new URL(cleanInput);
             const pathParts = urlObj.pathname.split('/').filter(p => p !== '');
-            
-            // VT URLs usually look like: /gui/file/<HASH> or /gui/file-analysis/<ID>
-            if (pathParts.length >= 2) {
-                // The ID is almost always the last part of the path
-                return pathParts[pathParts.length - 1]; 
-            }
-        } catch (e) {
-            console.error("Invalid VT URL provided to AdminJS:", e);
-        }
+            if (pathParts.length >= 2) return pathParts[pathParts.length - 1]; 
+        } catch (e) {}
     }
-    // If it's not a URL, or extraction failed, return what they typed
     return cleanInput;
 }
 
-/**
- * Constructs a fully qualified public URL for a Backblaze B2 key.
- * This assumes your bucket is public and uses the S3-compatible API.
- */
-function getPublicB2Url(key) {
-    if (!key) return '';
-    // If it's already a full URL (like an external link or Google avatar), return it
-    if (key.startsWith('http://') || key.startsWith('https://')) return key;
-    
-    // Clean up the endpoint string (remove https:// if present)
-    let endpoint = process.env.B2_ENDPOINT || 's3.us-west-004.backblazeb2.com';
-    endpoint = endpoint.replace('https://', '').replace('http://', '');
-    
-    const bucket = process.env.B2_BUCKET_NAME || 'gpl-cloud';
-    
-    // Standard public S3/B2 URL format: https://bucketname.endpoint/key
-    return `https://${bucket}.${endpoint}/${key}`;
-}
-
-// ==========================================
-// 3. MAIN ROUTER GENERATOR
-// ==========================================
 async function createAdminRouter() {
-    
-    // --- DYNAMICALLY IMPORT ESM PACKAGES ---
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     const { ComponentLoader } = AdminJSModule; 
@@ -80,84 +37,63 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
-    // --- REGISTER MONGOOSE ADAPTER ---
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
-    // --- SETUP CUSTOM REACT COMPONENTS ---
     const componentLoader = new ComponentLoader();
+    
+    // --- LOAD ALL CUSTOM COMPONENTS HERE ---
     const Components = {
         Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx'),
-        SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx')
+        SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx'),
+        ImagePreview: componentLoader.add('ImagePreview', '../components/ImagePreview.jsx'),
+        ActionRedirect: componentLoader.add('ActionRedirect', '../components/ActionRedirect.jsx') // <-- ADDED
     };
 
-    // --- DEFINE CUSTOM THEME (GPL Mods Premium) ---
     const gplModsTheme = {
         ...dark,
-        id: 'dark', // CRITICAL: Keep ID 'dark' so AdminJS finds the base CSS/JS bundle
+        id: 'dark', 
         name: 'GPL Mods Premium',
         overrides: {
             ...dark.overrides, 
             colors: {
                 ...dark.overrides?.colors, 
-                primary100: '#FFD700', // Gold
-                primary80: '#e5c200',  
-                primary60: '#ccad00',  
-                primary40: '#b29700',  
-                primary20: '#332b00',  
-                bg: '#0a0a0a',         // Black
-                container: '#1a1a1a',  // Dark Gray
-                white: '#1a1a1a',      
-                text: '#ffffff',       // White
-                grey100: '#ffffff',    
-                grey80: '#c0c0c0',     // Silver
-                grey60: '#a0a0a0',     
-                grey40: '#444444',     
-                grey20: '#2a2a2a',     
-                border: '#333333',     
-                errorLight: '#ffadad',
-                error: '#e53935',      // Red
-                errorDark: '#b71c1c',
-                successLight: '#b0ffb0',
-                success: '#43a047',    // Green
-                successDark: '#1b5e20',
-                infoLight: '#90caf9',
-                info: '#2196F3',       // Blue
-                infoDark: '#0d47a1',
+                primary100: '#FFD700', primary80: '#e5c200', primary60: '#ccad00', primary40: '#b29700', primary20: '#332b00',  
+                bg: '#0a0a0a', container: '#1a1a1a', white: '#1a1a1a', text: '#ffffff', grey100: '#ffffff',    
+                grey80: '#c0c0c0', grey60: '#a0a0a0', grey40: '#444444', grey20: '#2a2a2a', border: '#333333',     
+                errorLight: '#ffadad', error: '#e53935', errorDark: '#b71c1c', successLight: '#b0ffb0', success: '#43a047',    
+                successDark: '#1b5e20', infoLight: '#90caf9', info: '#2196F3', infoDark: '#0d47a1',
             }
         }
     };
 
-    // ==========================================
-    // 4. DEFINE ADMINJS OPTIONS & RESOURCES
-    // ==========================================
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader, 
-        defaultTheme: 'dark', // Force our modified dark theme
+        defaultTheme: 'dark', 
         availableThemes: [gplModsTheme, light], 
         env: {
             NODE_ENV: process.env.NODE_ENV || 'development'
-        }, // Crucial for skipping bundler on Render
+        }, 
         
-        // --- DASHBOARD CONFIGURATION ---
+        // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
             component: Components.Dashboard,
-            // Handler to fetch data for the custom React dashboard charts
-            handler: async (request, response, context) => {
+            handler: async () => {
                 const totalUsers = await User.countDocuments();
                 const totalMods = await File.countDocuments({ isLatestVersion: true });
                 const totalDownloadsData = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
                 const totalDownloads = totalDownloadsData.length > 0 ? totalDownloadsData[0].total : 0;
                 
+                // Data for Pie Chart
                 const modsByPlatform = await File.aggregate([
                     { $match: { isLatestVersion: true } },
                     { $group: { _id: "$category", count: { $sum: 1 } } }
                 ]);
 
-                // Aggregate uploads per day for the last 7 days
+                // Data for Line Chart (Last 7 Days)
                 const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                 const uploadsByDay = await File.aggregate([
                     { $match: { createdAt: { $gte: sevenDaysAgo } } },
@@ -167,7 +103,7 @@ async function createAdminRouter() {
 
                 return {
                     stats: { totalUsers, totalMods, totalDownloads },
-                    modsByPlatform: modsByPlatform.map(p => ({ name: p._id, value: p.count })),
+                    modsByPlatform: modsByPlatform.map(p => ({ name: p._id || 'unknown', value: p.count })),
                     chartData: uploadsByDay
                 };
             }
@@ -180,11 +116,8 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
 
-        // --- RESOURCE CONFIGURATIONS ---
         resources: [
-            // ---------------------------------
-            // USER MANAGEMENT
-            // ---------------------------------
+                  // USER MANAGEMENT
             {
                 resource: User,
                 options: {
@@ -195,13 +128,14 @@ async function createAdminRouter() {
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
-                        // We use a custom object here so we can render raw HTML in the 'after' hook
+                        // ✅ FIX: Use ImagePreview for avatars, but only on list/show
                         profileImageKey: {
                             components: {
-                                list: AdminJSModule.ComponentLoader.defaultComponents.Text,
-                                show: AdminJSModule.ComponentLoader.defaultComponents.Text
+                                list: Components.ImagePreview,
+                                show: Components.ImagePreview,
                             },
-                            custom: { isHtml: true } 
+                            // Ensure it's hidden on the edit form if you don't want them editing the raw key
+                            isVisible: { edit: false, filter: false, list: true, show: true } 
                         }
                     },
                     actions: {
@@ -217,41 +151,12 @@ async function createAdminRouter() {
                                 return request;
                             }
                         },
-                        delete: { isAccessible: true },
-                        
-                        // --- HOOKS TO RENDER HTML IMAGES IN LIST/SHOW VIEWS ---
-                        list: {
-                            after: async (response) => {
-                                if (response.records) {
-                                    response.records.forEach(record => {
-                                        const key = record.params.profileImageKey;
-                                        if (key) {
-                                            const url = getPublicB2Url(key);
-                                            record.params.profileImageKey = `<img src="${url}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #FFD700;" alt="Avatar" />`;
-                                        } else {
-                                            record.params.profileImageKey = `<div style="width: 40px; height: 40px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; color: #888; font-size: 10px;">N/A</div>`;
-                                        }
-                                    });
-                                }
-                                return response;
-                            }
-                        },
-                        show: {
-                            after: async (response) => {
-                                if (response.record && response.record.params.profileImageKey) {
-                                    const url = getPublicB2Url(response.record.params.profileImageKey);
-                                    response.record.params.profileImageKey = `<img src="${url}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid #FFD700;" alt="Avatar" />`;
-                                }
-                                return response;
-                            }
-                        }
+                        delete: { isAccessible: true }
                     }
                 }
             },
             
-            // ---------------------------------
             // FILE (MOD) MANAGEMENT
-            // ---------------------------------
             {
                 resource: File,
                 options: {
@@ -260,7 +165,9 @@ async function createAdminRouter() {
                     editProperties:[
                         'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'iconKey', 'screenshotKeys',
+                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
+                        'iconKey', // Ensure this is in editProperties so it can be edited
+                        'screenshotKeys',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 
                         'isMultiPart', 'downloadParts', 'installationInstructions' 
                     ],
@@ -279,15 +186,19 @@ async function createAdminRouter() {
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
-                        iconKey: { 
-                            description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.',
-                            custom: { isHtml: true } // Crucial for HTML rendering
-                        },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
                             isVisible: {
                                edit: (record) => record.params.status === 'rejected',
                                list: false, filter: false, show: true
+                            }
+                        },
+                       iconKey: { 
+                            description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.',
+                            // ✅ FIX: Use ImagePreview, but allow standard text input on Edit
+                            components: {
+                                list: Components.ImagePreview,
+                                show: Components.ImagePreview,
                             }
                         },
                         isMultiPart: { description: 'Check this box if the file is split into multiple download links.' },
@@ -298,103 +209,72 @@ async function createAdminRouter() {
                         new: { 
                             isAccessible: true,
                             before: async (request) => {
-                                // Smart VT Link Extraction
-                                if (request.payload.virusTotalId) {
-                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
-                                }
+                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
                                 return request;
                             }
                         },
                         edit: { 
                             isAccessible: true,
                             before: async (request) => {
-                                // Smart VT Link Extraction
-                                if (request.payload.virusTotalId) {
-                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
-                                }
+                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
                                 return request;
                             }
                         },
                         delete: { isAccessible: true },
                         
-                        // --- HOOKS TO RENDER HTML IMAGES IN LIST/SHOW VIEWS ---
-                        list: {
-                            after: async (response) => {
-                                if (response.records) {
-                                    response.records.forEach(record => {
-                                        const key = record.params.iconKey || record.params.iconUrl;
-                                        if (key) {
-                                            const url = getPublicB2Url(key);
-                                            record.params.iconKey = `<img src="${url}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: contain; background: #1a1a1a; padding: 2px; border: 1px solid #333;" alt="Icon" />`;
-                                        } else {
-                                            record.params.iconKey = `<div style="width: 50px; height: 50px; border-radius: 8px; background: #333; display: flex; align-items: center; justify-content: center; color: #888; font-size: 10px;">N/A</div>`;
-                                        }
-                                    });
-                                }
-                                return response;
-                            }
-                        },
-                        show: {
-                            after: async (response) => {
-                                if (response.record && (response.record.params.iconKey || response.record.params.iconUrl)) {
-                                    const url = getPublicB2Url(response.record.params.iconKey || response.record.params.iconUrl);
-                                    response.record.params.iconKey = `<img src="${url}" style="max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: contain; background: #1a1a1a; padding: 10px; border: 1px solid #333;" alt="Icon" />`;
-                                }
-                                return response;
-                            }
-                        },
-
-                        // --- CUSTOM ACTIONS ---
+                        // ✅ FIX: Update Custom Actions to use the Redirect Component
                         viewOnSite: {
                             actionType: 'record',
                             icon: 'View',
+                            component: Components.ActionRedirect, // <--- ADD THIS
                             handler: async (request, response, context) => {
+                                // We pass the redirect URL inside the record params so the component can read it
+                                const updatedRecord = context.record.toJSON(context.currentAdmin);
+                                updatedRecord.params.redirectUrl = `/mods/${context.record.params._id}`;
                                 return {
-                                    record: context.record.toJSON(context.currentAdmin),
-                                    notice: { message: 'Opening mod page...', type: 'success' },
-                                    redirectUrl: `/mods/${context.record.params._id}`
+                                    record: updatedRecord,
+                                    notice: { message: 'Opening mod page...', type: 'success' }
                                 };
                             }
                         },
                         testDownload: {
                             actionType: 'record',
                             icon: 'Download',
+                            component: Components.ActionRedirect, // <--- ADD THIS
                             handler: async (request, response, context) => {
+                                const updatedRecord = context.record.toJSON(context.currentAdmin);
+                                updatedRecord.params.redirectUrl = `/download-file/${context.record.params._id}`;
                                 return {
-                                    record: context.record.toJSON(context.currentAdmin),
-                                    notice: { message: 'Initiating test download...', type: 'success' },
-                                    redirectUrl: `/download-file/${context.record.params._id}`
+                                    record: updatedRecord,
+                                    notice: { message: 'Initiating test download...', type: 'success' }
                                 };
                             }
                         },
                         viewVirusTotal: {
                             actionType: 'record',
                             icon: 'Shield',
+                            component: Components.ActionRedirect, // <--- ADD THIS
                             handler: async (request, response, context) => {
                                 const vtHash = context.record.params.virusTotalId || "";
                                 const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
                                 let vtUrl = `https://www.virustotal.com/`;
-                                if (vtHash.length === 64) {
-                                    vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
-                                } else if (vtAnalysis) {
-                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-                                } else if (vtHash) {
-                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
-                                }
+                                if (vtHash.length === 64) vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
+                                else if (vtAnalysis) vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+                                else if (vtHash) vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                                
+                                const updatedRecord = context.record.toJSON(context.currentAdmin);
+                                updatedRecord.params.redirectUrl = vtUrl;
+                                
                                 return {
-                                    record: context.record.toJSON(context.currentAdmin),
-                                    notice: { message: 'Opening VirusTotal report...', type: 'success' },
-                                    redirectUrl: vtUrl
+                                    record: updatedRecord,
+                                    notice: { message: 'Opening VirusTotal report...', type: 'success' }
                                  };
                             }
                         }
                     } 
                 } 
             }, 
-
-            // ---------------------------------
             // GLOBAL SITE CONTROLS
-            // ---------------------------------
             {
                 resource: SiteState,
                 options: {
@@ -421,10 +301,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-
-            // ---------------------------------
             // DIRECT USER NOTIFICATIONS
-            // ---------------------------------
             {
                 resource: UserNotification,
                 options: {
@@ -435,10 +312,7 @@ async function createAdminRouter() {
                     properties: { message: { type: 'textarea' } }
                 }
             },
-
-            // ---------------------------------
             // SUPPORT TICKETS
-            // ---------------------------------
             {
                 resource: SupportTicket,
                 options: {
@@ -449,10 +323,7 @@ async function createAdminRouter() {
                     properties: { message: { type: 'textarea' }, adminNotes: { type: 'textarea' } }
                 }
             },
-
-            // ---------------------------------
             // AUTOMATED CAMPAIGNS
-            // ---------------------------------
             {
                 resource: AutomatedCampaign,
                 options: {
@@ -461,10 +332,7 @@ async function createAdminRouter() {
                     properties: { notificationMessage: { type: 'textarea' } }
                 }
             },
-
-            // ---------------------------------
             // PARTNERSHIP APPLICATIONS
-            // ---------------------------------
             {
                 resource: DistributorApplication,
                 options: {
@@ -481,14 +349,11 @@ async function createAdminRouter() {
                     properties: { adminNotes: { type: 'textarea' } }
                 }
             },
-
-            // ---------------------------------
-            // USER REQUESTS (MODS/UPDATES)
-            // ---------------------------------
+            // USER REQUESTS
             {
                 resource: Request,
                 options: {
-                    navigation: { icon: 'Target' }, // Better icon for requests
+                    navigation: { icon: 'Target' }, 
                     listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
                     showProperties:[
                         'requestType', 'appName', 'platform', 'requestedVersion', 
@@ -503,10 +368,7 @@ async function createAdminRouter() {
                     }
                 }
             },
-
-            // ---------------------------------
             // MODERATION RESOURCES
-            // ---------------------------------
             {
                 resource: Review,
                 options: {
@@ -539,10 +401,7 @@ async function createAdminRouter() {
                     editProperties:['status'],
                 }
             },
-
-            // ---------------------------------
             // SITE CONTENT RESOURCE
-            // ---------------------------------
             {
                 resource: Announcement,
                 options: {
