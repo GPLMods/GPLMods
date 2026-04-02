@@ -6,6 +6,13 @@ const FileSchema = new Schema({
     // These are NOT required during the initial 'processing' step, 
     // but they ARE required once the user submits the final form.
     name: { type: String, required: function() { return this.status !== 'processing'; } },
+ // --- NEW: THE URL SLUG ---
+    slug: { 
+        type: String, 
+        lowercase: true,
+        trim: true,
+        // It's not required during initial 'processing'
+    },
     version: { type: String, required: function() { return this.status !== 'processing'; } },
     modDescription: { type: String, required: function() { return this.status !== 'processing'; } },
     modFeatures: { type: String, required: function() { return this.status !== 'processing'; } },

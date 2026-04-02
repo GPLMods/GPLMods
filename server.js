@@ -26,6 +26,7 @@ const crypto = require('crypto');
 const cors = require('cors');
 const fs = require('fs');
 const FormData = require('form-data');
+const { Upload } = require("@aws-sdk/lib-storage");
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
@@ -165,6 +166,48 @@ function slugify(text) {
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
 }
+// --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
+// Handles files up to 650MB automatically
+async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
+    try {
+        const vtFormData = new FormData();
+        vtFormData.append('file', fileBuffer, originalName);
+        
+        const THIRTY_TWO_MB = 32 * 1024 * 1024;
+        let uploadEndpoint = 'https://www.virustotal.com/api/v3/files';
+
+        // If the file is > 32MB, we MUST request a special upload URL first
+        if (fileSize > THIRTY_TWO_MB) {
+            console.log(`File is > 32MB (${formatBytes(fileSize)}). Requesting special VT upload URL...`);
+            const urlResponse = await axios.get('https://www.virustotal.com/api/v3/files/upload_url', {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
+            uploadEndpoint = urlResponse.data.data; // This is the special, one-time URL
+            console.log("Special VT upload URL acquired.");
+        }
+
+        console.log(`Submitting file to VirusTotal endpoint: ${uploadEndpoint.substring(0, 50)}...`);
+        
+        // Now, perform the actual upload (using either the standard URL or the special one)
+        const vtResponse = await axios.post(uploadEndpoint, vtFormData, {
+            headers: { 
+                'x-apikey': process.env.VIRUSTOTAL_API_KEY, 
+                ...vtFormData.getHeaders() 
+            },
+            // Prevent axios from timing out on large uploads (e.g., 600MB might take a while)
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+            timeout: 300000 // 5 minutes timeout for VT upload
+        });
+        
+        // Return the Analysis ID
+        return vtResponse.data.data.id;
+
+    } catch (vtError) {
+        console.error("VirusTotal Submission Error:", vtError.response?.data || vtError.message);
+        throw vtError; // Re-throw to be caught by the calling function
+    }
+}
 
 // ===============================
 // 3. AWS S3 CLIENT (BACKBLAZE B2)
@@ -183,31 +226,46 @@ const sanitizeFilename = (filename) => {
     return withDashes.replace(/[^a-zA-Z0-9.-_]/g, '');
 };
 
-const uploadToB2 = async (file, folder) => {
-    // Determine if the file is in memory (buffer) or on disk (path)
+// --- UPDATED HELPER: Tracks B2 Upload Progress ---
+const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
     let fileBuffer;
-    if (file.buffer) {
-        fileBuffer = file.buffer;
-    } else if (file.path && fs.existsSync(file.path)) {
-        fileBuffer = fs.readFileSync(file.path);
-    } else {
-        throw new Error("File data not found in buffer or disk path.");
-    }
+    if (file.buffer) fileBuffer = file.buffer;
+    else if (file.path && fs.existsSync(file.path)) fileBuffer = fs.readFileSync(file.path);
+    else throw new Error("File data not found.");
 
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
-    const params = {
-        Bucket: process.env.B2_BUCKET_NAME,
-        Key: fileName,
-        Body: fileBuffer,
-        ContentType: file.mimetype
-    };
     
     console.log(`Uploading ${fileName} to B2...`);
-    await s3Client.send(new PutObjectCommand(params));            
+    
+    // Use lib-storage for chunked uploads and live progress tracking
+    const parallelUploads3 = new Upload({
+        client: s3Client,
+        params: { Bucket: process.env.B2_BUCKET_NAME, Key: fileName, Body: fileBuffer, ContentType: file.mimetype },
+        partSize: 5 * 1024 * 1024, // Uploads in 5MB chunks (faster!)
+        queueSize: 4 
+    });
+
+    parallelUploads3.on("httpUploadProgress", (progress) => {
+        if (progress.total) {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            console.log(`B2 Upload Progress: ${percent}%`);
+            
+            // If we have an active Socket connection, pipe it to the frontend!
+            if (io && uploadId) {
+                io.emit(`b2_progress_${uploadId}`, {
+                    percent: percent,
+                    loaded: (progress.loaded / (1024 * 1024)).toFixed(2),
+                    total: (progress.total / (1024 * 1024)).toFixed(2)
+                });
+            }
+        }
+    });
+
+    await parallelUploads3.done();
+    console.log(`Finished uploading ${fileName} to B2.`);
     return fileName;
 };
-
 // ===============================
 // 4. MIDDLEWARE & CONFIGURATION
 // ===============================
@@ -1005,22 +1063,46 @@ app.get('/search', async (req, res) => {
 });
 
 // Single Mod Page
-app.get('/mods/:id', async (req, res) => {
+// --- NEW: SEO-Friendly Single Mod Page Route ---
+// Example: /android/roblox
+app.get('/:category/:slug', async (req, res, next) => {
     try {
-        const fileId = req.params.id;
-        if (!Types.ObjectId.isValid(fileId)) return res.status(404).send("File not found.");
+        const category = req.params.category;
+        const slug = req.params.slug;
 
-        let currentFile = await File.findById(fileId);
-        if (!currentFile) return res.status(404).send("File not found.");
+        // 1. Safety Check: Ignore system routes that might accidentally trigger this
+        const reservedPaths = ['api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations'];
+        if (reservedPaths.includes(category)) {
+            return next(); // Let Express keep looking for other routes (like 404)
+        }
 
-        // ======== ADD THIS SECURITY CHECK ========
-        // If the mod is NOT live, block access unless it's the Admin or the Uploader
+        // 2. Find the file by Category AND Slug
+        let currentFile = await File.findOne({ 
+            category: category, 
+            slug: slug,
+            isLatestVersion: true // Only the main page uses the slug
+        });
+
+        if (!currentFile) {
+            // FALLBACK: If someone uses an old ID link (e.g., from an old bookmark)
+            // we check if the slug parameter is actually a valid MongoDB ID.
+            if (Types.ObjectId.isValid(slug)) {
+                currentFile = await File.findById(slug);
+                // If we found it by ID, redirect them to the new SEO URL!
+                if (currentFile && currentFile.slug) {
+                    return res.redirect(301, `/${currentFile.category}/${currentFile.slug}`);
+                }
+            }
+            return res.status(404).render('pages/404');
+        }
+
+        
+        // Security Check for Drafts/Pending
         if (currentFile.status !== 'live') {
             const isUploader = req.user && req.user.username === currentFile.uploader;
             const isAdmin = req.user && req.user.role === 'admin';
-            
             if (!isUploader && !isAdmin) {
-                return res.status(403).render('pages/403'); // Show Forbidden page
+                return res.status(403).render('pages/403'); 
             }
         }
 
@@ -1128,21 +1210,73 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
 app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
     
     try {
-        if (!req.file) {
-            return res.status(400).send("No file uploaded.");
-        }
-
         const parentFileId = req.params.id;
         const previousVersion = await File.findById(parentFileId);
 
         // Security check: Must be uploader or admin
-        const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
+        const isUploader = previousVersion && req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
         const isAdmin = req.user.role === 'admin';
-        if (!isUploader && !isAdmin) {
+        if (!previousVersion || (!isUploader && !isAdmin)) {
             return res.status(403).render('pages/403');
         }
 
-        // --- NEW: Strict Backend File Size Check (Same as main upload) ---
+        // --- SCENARIO 1: EXTERNAL LINK / MULTI-PART (Distributor/Admin) ---
+        if ((req.user.role === 'distributor' || req.user.role === 'admin') && (req.body.externalUrl || req.body.isMultiPart)) {
+            const { externalUrl, softwareVersion, whatsNew, isMultiPart, partUrls } = req.body;
+            
+            const newVersion = new File({
+                name: previousVersion.name,
+                developer: previousVersion.developer,
+                iconKey: previousVersion.iconKey,
+                screenshotKeys: previousVersion.screenshotKeys,
+                modDescription: previousVersion.modDescription,
+                officialDescription: previousVersion.officialDescription,
+                modFeatures: previousVersion.modFeatures,
+                category: previousVersion.category,
+                platforms: previousVersion.platforms,
+                tags: previousVersion.tags,
+                uploader: req.user.username,
+                originalFilename: previousVersion.originalFilename || previousVersion.name, 
+                
+                version: softwareVersion,
+                whatsNew: whatsNew,
+                fileKey: 'external-link',
+                fileSize: 0,
+                isLatestVersion: false, 
+                parentFile: parentFileId,
+                status: 'live' 
+            });
+
+            if (isMultiPart === 'true' && partUrls && partUrls.length >= 2) {
+                newVersion.isMultiPart = true;
+                const cleanParts = partUrls.filter(url => url.trim() !== '');
+                newVersion.downloadParts = cleanParts.map((url, index) => ({
+                    partName: `Part ${index + 1}`,
+                    partUrl: url
+                }));
+            } else {
+                newVersion.externalDownloadUrl = externalUrl;
+            }
+
+            await newVersion.save();
+            
+            // Link parent and set latest
+            await File.findByIdAndUpdate(parentFileId, {
+                $push: { olderVersions: newVersion._id },
+                isLatestVersion: false
+            });
+            newVersion.isLatestVersion = true;
+            await newVersion.save();
+
+            return res.redirect(`/mods/${newVersion._id}`);
+        }
+
+        // --- SCENARIO 2: PHYSICAL FILE UPLOAD ---
+        if (!req.file) {
+            return res.status(400).send("No file uploaded.");
+        }
+
+        // Strict Backend File Size Check
         const fileSize = req.file.size;
         const isPremium = req.user.membership === 'premium';
         const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
@@ -1158,18 +1292,17 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                  return res.status(413).send('File exceeds the 1GB Premium limit.');
             }
         }
-        // -----------------------------------------------------------------
 
-        
-        // 1. Upload to Backblaze B2 (Using the memory buffer directly)
+        // 1. Upload to Backblaze B2 (From Memory)
         console.log("Uploading new version to B2 from memory buffer...");
-        // req.file now contains the buffer because we switched to memoryStorage
+       // --- ADD THESE TWO LINES ---
+        const io = req.app.get('io');
+        const uploadId = req.body.uploadId;
         const newFileKey = await uploadToB2(req.file, 'mods'); 
         console.log("Upload to B2 complete.");
 
         // 2. Create the NEW file document
         const newVersion = new File({
-            // Copy visual details from the previous version
             name: previousVersion.name,
             developer: previousVersion.developer,
             iconKey: previousVersion.iconKey,
@@ -1180,63 +1313,53 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             category: previousVersion.category,
             platforms: previousVersion.platforms,
             tags: previousVersion.tags,
-            uploader: req.user.username, // Set uploader to the current user (in case an admin updates it)
+            uploader: req.user.username,
             
-            // New details from the form
             version: req.body.softwareVersion,
             whatsNew: req.body.whatsNew,
             fileKey: newFileKey,
             fileSize: req.file.size,
             originalFilename: req.file.originalname,
             
-            // Link to the past
             isLatestVersion: false, 
             parentFile: parentFileId,
-            
-            // Instantly live, no need for re-approval on updates (adjust if you prefer!)
             status: 'live' 
         });
         
         await newVersion.save();
         
-        // 3. Update the OLD version to link to the new one
+        // 3. Update the OLD version
         await File.findByIdAndUpdate(parentFileId, {
             $push: { olderVersions: newVersion._id },
-            isLatestVersion: false // Mark the old file as no longer the main one
+            isLatestVersion: false
         });
 
-        // 4. Mark the NEW version as the latest
+        // 4. Mark NEW as latest
         newVersion.isLatestVersion = true;
         await newVersion.save();
         
-        // --- Optional: Background VirusTotal Scan (Memory Safe) ---
+        // --- Background VirusTotal Scan ---
+        // --- Background VirusTotal Scan (SMART ENGINE) ---
         (async () => {
             try {
                 console.log(`Starting VT Scan for new version ${newVersion._id}...`);
-                const vtFormData = new FormData();
                 
-                // IMPORTANT: Pass the buffer directly to Axios! No fs.createReadStream needed.
-                vtFormData.append('file', req.file.buffer, req.file.originalname);
+                // Call our new, smart helper function
+                const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
                 
-                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
-                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
-                });
-                
-                const analysisId = vtResponse.data.data.id;
                 await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
                 console.log(`VT Scan submitted for new version. Analysis ID: ${analysisId}`);
-            } catch (vtError) {
-                console.error(`VT scan failed for new version ${newVersion._id}:`, vtError.response?.data || vtError.message);
+                
+            } catch (error) {
+                console.error(`VT scan failed for new version ${newVersion._id}.`);
             } 
-            // No finally block with fs.unlinkSync needed because memory is cleared automatically!
-        })(); 
-
-        // 5. Success! Redirect to the newly created mod page
+        })();
+        // 5. Success! Redirect
         res.redirect(`/mods/${newVersion._id}`);
         
     } catch (error) {
         console.error("Error adding new version:", error);
-        res.status(500).render('pages/500'); // Better to show the custom 500 page
+        res.status(500).render('pages/500');
     }
 });
 // Download Action - UPDATED for External Links & Presigned URLs
@@ -1936,6 +2059,9 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
     try {
         console.log("Uploading main file to B2...");
+        // --- ADD THESE TWO LINES ---
+        const io = req.app.get('io');
+        const uploadId = req.body.uploadId; 
         const fileForB2 = { path: tempFilePath, originalname: req.file.originalname, mimetype: req.file.mimetype };
         const fileKey = await uploadToB2(fileForB2, 'mods');
         console.log("Upload to B2 complete.");
@@ -1955,49 +2081,22 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         });
         await newFile.save();
         
-        // --- 3. VIRUSTOTAL v3 BACKGROUND SCAN ---
-        console.log("Starting background VirusTotal scan...");
+                // --- 3. VIRUSTOTAL v3 BACKGROUND SCAN (SMART ENGINE) ---
         (async () => {
             try {
-                // STEP A: Request an upload URL (Recommended for files > 32MB)
-                // For standard files, we can just POST to /api/v3/files
-                // We use the standard endpoint here, but if you expect huge mods,
-                // you should hit /api/v3/files/upload_url first.
+                console.log(`Starting VT Scan for new file ${newFile._id}...`);
                 
-                const vtFormData = new FormData();
-                vtFormData.append('file', fs.createReadStream(tempFilePath), req.file.originalname);
-
-                const vtSubmitResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
-                    headers: { 
-                        'x-apikey': process.env.VIRUSTOTAL_API_KEY, 
-                        ...vtFormData.getHeaders() 
-                    }
-                });
+                // Call our new, smart helper function
+                const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
                 
-                // This is the Analysis ID (looks like: MD5:UUID)
-                const analysisId = vtSubmitResponse.data.data.id;
-                console.log(`VT v3 Scan submitted for ${newFile._id}. Analysis ID: ${analysisId}`);
-                
-                // Immediately save the Analysis ID so the frontend can link to the "pending" page
+                // Save the resulting Analysis ID to the database
                 await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
-
-                // --- ADVANCED: Polling for the final report ---
-                // In a true production app, you would use a job queue (like BullMQ or Redis) 
-                // to poll this. For this implementation, we will wait briefly, 
-                // but rely mostly on the webhook or the user clicking "Check Scan Status"
+                console.log(`VT Scan submitted successfully. Analysis ID: ${analysisId}`);
                 
-                // We don't want to hold up the server memory waiting 5 minutes for a scan.
-                // The frontend Download page already handles the "Pending" state beautifully!
-                
-            } catch (vtError) {
-                console.error(`Background VT scan failed for ${newFile._id}:`, vtError.response?.data || vtError.message);
-            } finally {
-                // ALWAYS clean up the temp file
-                if (fs.existsSync(tempFilePath)) {
-                    fs.unlinkSync(tempFilePath); 
-                }
-            }
-        })();
+            } catch (error) {
+                console.error(`Background VT scan failed for ${newFile._id}.`);
+            } 
+        })(); 
 
         res.redirect(`/upload-details/${newFile._id}`);
 
@@ -2190,10 +2289,29 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
         if (screenshots) screenshots.forEach(f => fs.unlinkSync(f.path));
 
-        const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) :[];
+        const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : [];
+
+        // ======== NEW: GENERATE UNIQUE SLUG ========
+        let baseSlug = slugify(formData.modName);
+        let finalSlug = baseSlug;
+        let slugCounter = 1;
+
+        // Check if a file with this slug already exists IN THIS CATEGORY
+        // We only care about the latest version being unique
+        while (await File.findOne({ 
+            slug: finalSlug, 
+            category: formData.modPlatform, // E.g., 'android'
+            isLatestVersion: true,
+            _id: { $ne: fileId } // Exclude the current file we are updating
+        })) {
+            finalSlug = `${baseSlug}-${slugCounter}`;
+            slugCounter++;
+        }
+        // ===========================================
 
         await File.findByIdAndUpdate(fileId, {
-            name: formData.modName,                 
+            name: formData.modName,
+            slug: finalSlug, // <--- SAVE THE SLUG
             version: formData.modVersion,           
             developer: formData.developerName || 'N/A',
             modDescription: formData.modDescription,
@@ -2202,7 +2320,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             officialDescription: formData.officialDescription,
             videoUrl: formData.videoUrl,
             category: formData.modPlatform,         
-            platforms: formData.modCategory ? [formData.modCategory] :[],
+            platforms: formData.modCategory ? [formData.modCategory] : [],
             tags: processedTags,
             iconKey: iconKey,
             screenshotKeys: screenshotKeys,
@@ -2877,3 +2995,9 @@ cron.schedule('* * * * *', async () => {
 });
 
 startServer();
+       // --- DECLARED ONLY ONCE HERE ---
+        const server = http.createServer(app);
+        const io = new Server(server, {
+            cors: { origin: allowedOrigins, methods:["GET", "POST"] }
+        });
+                app.set('io', io); // <--- ADD THIS LINE TO MAKE SOCKET GLOBALLY ACCESSIBLE

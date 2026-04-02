@@ -36,7 +36,7 @@
                         <div class="mod-card-content">
                             <!-- The link is placed on the title with the "full-card-link" class -->
                             <h3>
-                                <a href="/mods/<%= file._id %>" class="full-card-link"><%= file.name %></a>
+                                <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= file.name %></a>
                             </h3>
                             <p><%= file.developer %></p>
                             <div class="rating">

@@ -103,6 +103,71 @@
                 <% } %>
             </section>
 
+ <!-- ======== NEW: WHITELIST / FAVORITES SECTION ======== -->
+            <section class="form-section" style="grid-column: 1 / -1; padding-bottom: 40px;">
+                <h2>Your Whitelist</h2>
+                <p style="color: var(--silver); margin-bottom: 20px;">Mods you have saved for later.</p>
+                
+                <% if (user.whitelist && user.whitelist.length > 0) { %>
+                    <!-- Reusing the horizontal carousel from the homepage -->
+                    <div class="mod-carousel" style="padding-bottom: 20px;">
+                        <% user.whitelist.forEach(file => { %>
+                            
+                            <div class="mod-card" style="flex: 0 0 250px; max-width: 250px;">
+                                
+                                <% if (file.certification === 'certified') { %>
+                                    <div class="app-feature-tag">✔ Certified</div>
+                                <% } else if (file.certification === 'community-tested') { %>
+                                    <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+                                <% } %>
+                                
+                                <div class="mod-type-tag"><%= file.version %></div>
+                                
+                                <div class="mod-card-image">
+                                    <!-- Use a fallback if the smart URL didn't resolve -->
+                                    <img src="<%= file.iconUrl || '/images/default-avatar.png' %>" alt="<%= file.name %>">
+                                </div>
+                                
+                                <div class="mod-card-content">
+                                    <h3>
+                                        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= file.name %></a>
+                                    </h3>
+                                    <p><%= file.developer %></p>
+                                    <div class="rating">
+                                        <div class="stars-outer">
+                                            <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                                        </div>
+                                        <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+                                    </div>
+                                    
+                                    <div class="card-footer">
+                                        <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                            <%= file.category.toUpperCase().replace('-', ' ') %>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="download-overlay">
+                                    <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
+                                    <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
+                                        <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit; color: var(--red); border-color: var(--red);">
+                                            Remove from Whitelist
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed #444;">
+                        <i class="fas fa-heart-broken" style="font-size: 3em; color: #555; margin-bottom: 15px;"></i>
+                        <h3 style="color: var(--silver);">Your Whitelist is Empty</h3>
+                        <p style="color: #777; font-size: 0.9em;">Explore the site and click "Add to Whitelist" on any mod to save it here!</p>
+                    </div>
+                <% } %>
+            </section>
+
             <!-- Danger Zone for Deleting Account -->
             <section class="form-section danger-zone">
                 <h2>Danger Zone</h2>

@@ -22,7 +22,7 @@
         <% if (files && files.length > 0) { %>
             <section class="mod-grid">
                 <% files.forEach(file => { %>
-                    <a href="/mods/<%= file._id %>" class="mod-card-link">
+                    <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="mod-card-link">
                         <div class="mod-card" style="border-color: rgba(255, 215, 0, 0.2);">
                             
                             <% if (file.certification === 'certified') { %>

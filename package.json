@@ -1,9 +1,37 @@
 {
+  "name": "gpl-mods",
+  "version": "2.5.0",
+  "description": "An Open-Source Platform to destribute software, games etc for different platforms.",
+  "keywords": [
+    "gpl-mods",
+    "mods",
+    "software",
+    "games",
+    "open-source",
+    "platform",
+    "modefied"
+  ],
+  "homepage": "https://gplmods.webredirect.org",
+  "bugs": {
+    "url": "https://discord.gg/frBQ2zTu7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GPLMods/GPLMods.git"
+  },
+  "license": "MPL-2.0",
+  "author": "GPL Mods",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "@adminjs/express": "^6.1.1",
     "@adminjs/mongoose": "^4.1.0",
     "@adminjs/themes": "^1.0.1",
     "@aws-sdk/client-s3": "^3.598.0",
+    "@aws-sdk/lib-storage": "^3.1022.0",
     "@aws-sdk/s3-request-presigner": "^3.975.0",
     "adminjs": "^7.8.17",
     "axios": "^1.6.7",
@@ -32,7 +60,5 @@
     "socket.io": "^4.8.3",
     "styled-components": "^5.3.11"
   },
-  "scripts": {
-    "start": "node server.js"
-  }
+  "devDependencies": {}
 }

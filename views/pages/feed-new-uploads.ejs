@@ -23,7 +23,7 @@
             <!-- Reusing the standard universal mod grid layout -->
             <section class="mod-grid">
                 <% files.forEach(file => { %>
-                    <a href="/mods/<%= file._id %>" class="mod-card-link">
+                   <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="mod-card-link">
                         <div class="mod-card">
                             
                             <% if (file.certification === 'certified') { %>

@@ -15,19 +15,39 @@ const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
+// --- UPDATED HELPER: Smart VirusTotal URL Extractor ---
 function extractVTId(input) {
     if (!input) return "";
     let cleanInput = input.trim();
+    
     if (cleanInput.startsWith('http://') || cleanInput.startsWith('https://')) {
         try {
             const urlObj = new URL(cleanInput);
             const pathParts = urlObj.pathname.split('/').filter(p => p !== '');
-            if (pathParts.length >= 2) return pathParts[pathParts.length - 1]; 
-        } catch (e) {}
+            
+            // Look for 'file' or 'file-analysis' in the path
+            const fileIndex = pathParts.indexOf('file');
+            const analysisIndex = pathParts.indexOf('file-analysis');
+            
+            // If we found 'file' or 'file-analysis', the ID is the VERY NEXT part of the path
+            if (fileIndex !== -1 && pathParts.length > fileIndex + 1) {
+                return pathParts[fileIndex + 1];
+            } else if (analysisIndex !== -1 && pathParts.length > analysisIndex + 1) {
+                return pathParts[analysisIndex + 1];
+            }
+            
+            // Fallback: If the URL structure is weird, but we know it's VT, try to find a 64-char hash
+            const hashMatch = cleanInput.match(/[a-fA-F0-9]{64}/);
+            if (hashMatch) return hashMatch[0];
+
+        } catch (e) {
+            console.error("Invalid VT URL provided to AdminJS:", e);
+        }
     }
+    
+    // If it's not a URL, check if they just pasted a 64-character hash or Base64 ID directly
     return cleanInput;
 }
-
 async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;

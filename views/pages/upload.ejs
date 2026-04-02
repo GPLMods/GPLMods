@@ -71,13 +71,14 @@
             </div>
 
             <!-- External Link Form -->
-            <form action="/upload-initial" method="POST" id="distributorUploadForm">
-                <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                    <label style="color: var(--silver); font-weight: 600; display: block; cursor: pointer;">
-                        <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true" style="width: auto; margin-right: 10px;">
-                        This mod requires multiple download links (Multi-Part)
-                    </label>
-                </div>
+             <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
+                            <span class="slider round"></span>
+                        </label>
+                        <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">This mod requires multiple download links (Multi-Part)</label>
+                    </div>
 
                 <div id="single-link-group" class="form-group">
                     <label for="externalUrl">External Download Link*</label>
@@ -148,7 +149,7 @@
         <% } %>
     </div>
 </div>
-
+<script src="/socket.io/socket.io.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- 1. Role-Based Size Limit Check & Live Progress Bar ---
@@ -183,6 +184,7 @@
                 }
             });
 
+            // AJAX Form Submission for TRUE End-to-End Live Progress
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
                 if (fileInput.files.length === 0) return alert("Please select a file.");
@@ -193,22 +195,45 @@
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 progressBar.classList.remove('processing-pulse');
-                statusText.innerHTML = 'Uploading file to server memory...';
+                statusText.innerHTML = 'Uploading file to server...';
 
                 const formData = new FormData(form);
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload-initial', true);
+                
+                // --- NEW: Create a unique ID for this specific upload ---
+                const uploadId = 'up_' + Date.now();
+                formData.append('uploadId', uploadId);
 
+                // --- NEW: Connect to Socket.IO to listen for Backend B2 progress ---
+                const socket = io();
+                socket.on(`b2_progress_${uploadId}`, (data) => {
+                    // Map the 0-100% B2 progress to the 50-100% of our bar
+                    const totalPercent = 50 + Math.round(data.percent / 2);
+                    progressBar.style.width = totalPercent + '%';
+                    progressBar.textContent = totalPercent + '%';
+                    statusText.innerHTML = `Transferring to Cloud Storage: ${data.loaded} MB / ${data.total} MB...`;
+                    
+                    if (data.percent === 100) {
+                        progressBar.classList.add('processing-pulse');
+                        statusText.innerHTML = 'Scan & Finalizing... Almost done!';
+                    }
+                });
+
+                const xhr = new XMLHttpRequest();
+                
+        // Dynamically grab the correct route from the form's action attribute
+                xhr.open('POST', form.action, true);
+
+                // This event tracks the Browser -> Server RAM upload (Mapped to 0-50%)
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        const percentComplete = Math.round((event.loaded / event.total) * 50);
                         progressBar.style.width = percentComplete + '%';
                         progressBar.textContent = percentComplete + '%';
 
-                        if (percentComplete === 100) {
-                            progressBar.textContent = 'Processing...';
-                            progressBar.classList.add('processing-pulse');
-                            statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to Cloud & scanning... Please wait.</span>';
+                        if (percentComplete === 50) {
+                            statusText.innerHTML = 'Securing file in memory... connecting to cloud.';
+                        } else {
+                            statusText.innerHTML = `Uploading to Server RAM: ${percentComplete * 2}%`;
                         }
                     }
                 });
@@ -217,7 +242,7 @@
                     if (xhr.status >= 200 && xhr.status < 400) {
                         window.location.href = xhr.responseURL; 
                     } else {
-                        alert('Upload failed. The file may exceed server RAM limits.');
+                        alert('Upload failed. Server error or file too large.');
                         resetUI();
                     }
                 };

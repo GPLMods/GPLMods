@@ -37,7 +37,7 @@
             <section class="mod-grid" id="search-results-grid">
                 <!-- EJS Loop to dynamically create mod cards -->
                 <% results.forEach(file => { %>
-                    <a href="/mods/<%= file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
+                    <a href="/<%= file.category %>/<%= file.slug || file._id %>"  class="mod-card-link" data-platform="<%= file.category %>">
                         <div class="mod-card">
                             
                             <!-- NEW: Certification Tag -->

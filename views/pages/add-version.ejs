@@ -118,7 +118,7 @@
         </form>
     </div>
 </div>
-
+<script src="/socket.io/socket.io.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const fileInput = document.getElementById('modFile');
@@ -146,13 +146,10 @@
                 }
             });
 
-            // 2. AJAX Form Submission
+            // AJAX Form Submission for TRUE End-to-End Live Progress
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
-                if (fileInput.files.length === 0) {
-                    alert("Please select a file to upload first.");
-                    return;
-                }
+                if (fileInput.files.length === 0) return alert("Please select a file.");
                 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = 'Uploading...';
@@ -163,34 +160,58 @@
                 statusText.innerHTML = 'Uploading file to server...';
 
                 const formData = new FormData(form);
+                
+                // --- NEW: Create a unique ID for this specific upload ---
+                const uploadId = 'up_' + Date.now();
+                formData.append('uploadId', uploadId);
+
+                // --- NEW: Connect to Socket.IO to listen for Backend B2 progress ---
+                const socket = io();
+                socket.on(`b2_progress_${uploadId}`, (data) => {
+                    // Map the 0-100% B2 progress to the 50-100% of our bar
+                    const totalPercent = 50 + Math.round(data.percent / 2);
+                    progressBar.style.width = totalPercent + '%';
+                    progressBar.textContent = totalPercent + '%';
+                    statusText.innerHTML = `Transferring to Cloud Storage: ${data.loaded} MB / ${data.total} MB...`;
+                    
+                    if (data.percent === 100) {
+                        progressBar.classList.add('processing-pulse');
+                        statusText.innerHTML = 'Scan & Finalizing... Almost done!';
+                    }
+                });
+
                 const xhr = new XMLHttpRequest();
+                
+                // Dynamically grab the correct route from the form's action attribute
+                xhr.open('POST', form.action, true);
 
-                // Target the correct Add Version route
-                xhr.open('POST', `/mods/<%= parentFile._id %>/add-version`, true);
-
+                // This event tracks the Browser -> Server RAM upload (Mapped to 0-50%)
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        const percentComplete = Math.round((event.loaded / event.total) * 50);
                         progressBar.style.width = percentComplete + '%';
                         progressBar.textContent = percentComplete + '%';
 
-                        if (percentComplete === 100) {
-                            progressBar.textContent = 'Processing...';
-                            progressBar.classList.add('processing-pulse');
-                            statusText.innerHTML = 'Upload complete! <br><span style="color: var(--gold);">Transferring to cloud storage... Please wait.</span>';
+                        if (percentComplete === 50) {
+                            statusText.innerHTML = 'Securing file in memory... connecting to cloud.';
+                        } else {
+                            statusText.innerHTML = `Uploading to Server RAM: ${percentComplete * 2}%`;
                         }
                     }
                 });
 
                 xhr.onload = function() {
                     if (xhr.status >= 200 && xhr.status < 400) {
-                        // Success! Redirect to the new file page
                         window.location.href = xhr.responseURL; 
                     } else {
-                        alert('Upload failed. Server responded with an error.');
+                        alert('Upload failed. Server error or file too large.');
                         resetUI();
                     }
                 };
+
+                xhr.onerror = function() { alert('A network error occurred.'); resetUI(); };
+                xhr.send(formData);
+            });
 
                 xhr.onerror = function() {
                     alert('A network error occurred during the upload.');
