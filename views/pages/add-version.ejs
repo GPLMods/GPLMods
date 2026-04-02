@@ -22,7 +22,7 @@
         font-weight: 600;
         color: var(--silver);
     }
-    .form-group input[type="text"], .form-group textarea {
+    .form-group input[type="text"], .form-group input[type="url"], .form-group textarea {
         width: 100%;
         padding: 12px 15px;
         border-radius: 8px;
@@ -77,6 +77,16 @@
     .status-text { color: var(--silver); margin-top: 10px; font-size: 0.95em; text-align: center; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     .processing-pulse { animation: pulse 1.5s infinite; }
+
+    /* --- SLIDING SWITCH STYLES --- */
+    .switch { position: relative; display: inline-block; width: 50px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; margin: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: var(--silver); transition: .4s; }
+    input:checked + .slider { background-color: var(--gold); }
+    input:checked + .slider:before { transform: translateX(24px); background-color: var(--black); }
+    .slider.round { border-radius: 34px; }
+    .slider.round:before { border-radius: 50%; }
 </style>
 
 <div class="container">
@@ -84,7 +94,71 @@
         <h2 style="color: var(--white); margin-bottom: 10px; font-size: 2.2em;">Update <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);"><%= parentFile.name %></span></h2>
         <p style="color: var(--silver); margin-bottom: 2.5rem;">Uploading a new version will make this file the primary download.</p>
         
-        <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="addVersionForm">
+        <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
+            <!-- ========================================== -->
+            <!-- DISTRIBUTOR / ADMIN UPLOAD FORM            -->
+            <!-- ========================================== -->
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
+                <button type="button" class="btn btn-primary" id="btn-show-link" style="flex: 1; padding: 10px;">Paste External Link(s)</button>
+                <button type="button" class="btn btn-secondary" id="btn-show-file" style="flex: 1; padding: 10px;">Upload to Cloud</button>
+            </div>
+
+            <!-- OPTION A: External Link(s) Form -->
+            <form action="/mods/<%= parentFile._id %>/add-version" method="POST" id="distributorUploadForm">
+                
+                <div class="form-group">
+                    <label for="softwareVersionDist">New Version Number*</label>
+                    <input type="text" id="softwareVersionDist" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="whatsNewDist">What's New in this Version? (Optional)</label>
+                    <textarea id="whatsNewDist" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
+                </div>
+
+                <!-- NEW: Sliding Switch for Multi-Part -->
+                <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                    <label class="switch">
+                        <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
+                        <span class="slider round"></span>
+                    </label>
+                    <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: normal;">This update requires multiple download links (Multi-Part)</label>
+                </div>
+
+                <!-- Single Link Input (Default) -->
+                <div id="single-link-group" class="form-group" style="text-align: left;">
+                    <label for="externalUrl">External Download Link*</label>
+                    <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." required>
+                </div>
+                
+                <!-- Multi-Part Link Inputs (Hidden initially) -->
+                <div id="multi-link-group" class="form-group" style="text-align: left; display: none;">
+                    <label>Add Download Parts (Min 2)*</label>
+                    <div id="parts-container">
+                        <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;">
+                        <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;">
+                    </div>
+                    <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em; margin-top: 5px;">+ Add Another Part</button>
+                </div>
+
+                <!-- Hidden inputs to pass data the server expects for external links -->
+                <input type="hidden" name="originalFilename" value="<%= parentFile.name %>">
+
+                <button type="submit" class="submit-button" id="distributorSubmitBtn">Publish New Version</button>
+            </form>
+        <% } %>
+
+        <!-- ========================================== -->
+        <!-- STANDARD USER UPLOAD FORM (File Upload)    -->
+        <!-- ========================================== -->
+        <% 
+            let limitText = "300 MB";
+            if (user && user.membership === 'premium') limitText = "1 GB";
+            // Set display to none if the user is a distributor, since they see the link form first
+            let formDisplay = (user && (user.role === 'distributor' || user.role === 'admin')) ? 'none' : 'block';
+        %>
+        
+        <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="addVersionForm" style="display: <%= formDisplay %>;">
             
             <div class="form-group">
                 <label for="softwareVersion">New Version Number*</label>
@@ -98,11 +172,13 @@
 
             <div class="form-group" style="margin-top: 30px;">
                 <label style="text-align: center;">New Mod File* (.zip, .apk, .exe)</label>
+                <p style="color: var(--gold); font-weight: bold; margin-bottom: 10px; font-size: 0.85em; text-align: center;">Max File Size: <%= limitText %></p>
                 <label for="modFile" class="file-input-label" id="drop-zone">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                     Click to Choose File
                 </label>
-                <input type="file" id="modFile" name="modFile" required style="display:none;">
+                <input type="file" id="modFile" name="modFile" required style="display:none;"
+                       data-limit="<%= (user && user.membership === 'premium') ? 1073741824 : 314572800 %>">
                 <div id="file-name-display">No file selected</div>
             </div>
             
@@ -116,11 +192,15 @@
 
             <button type="submit" class="submit-button" id="submitBtn">Upload New Version</button>
         </form>
+
     </div>
 </div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- 1. Standard Upload Logic & Advanced Progress Bar ---
         const fileInput = document.getElementById('modFile');
         const fileNameDisplay = document.getElementById('file-name-display');
         const form = document.getElementById('addVersionForm');
@@ -130,13 +210,25 @@
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
-        // 1. UI Update on File Select
-        if (fileInput && form) {
+        if (fileInput && form && dropZone) {
             fileInput.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {
-                    const fileSize = this.files[0].size;
+                    const file = this.files[0];
+                    const fileSize = file.size;
                     const sizeInMB = (fileSize / (1024 * 1024)).toFixed(2);
-                    fileNameDisplay.textContent = `Ready: ${this.files[0].name} (${sizeInMB} MB)`;
+                    
+                    const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
+                    
+                    if (fileSize > maxLimit) {
+                        alert(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}. Please upgrade your membership to upload larger files.`);
+                        this.value = ''; 
+                        fileNameDisplay.textContent = 'No file selected';
+                        dropZone.style.borderColor = 'var(--red)';
+                        dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
+                        return;
+                    }
+
+                    fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
                     dropZone.style.borderColor = 'var(--gold)';
                     dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
                 } else {
@@ -146,7 +238,6 @@
                 }
             });
 
-            // AJAX Form Submission for TRUE End-to-End Live Progress
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
                 if (fileInput.files.length === 0) return alert("Please select a file.");
@@ -161,14 +252,12 @@
 
                 const formData = new FormData(form);
                 
-                // --- NEW: Create a unique ID for this specific upload ---
+                // Advanced Server Tracking
                 const uploadId = 'up_' + Date.now();
                 formData.append('uploadId', uploadId);
 
-                // --- NEW: Connect to Socket.IO to listen for Backend B2 progress ---
                 const socket = io();
                 socket.on(`b2_progress_${uploadId}`, (data) => {
-                    // Map the 0-100% B2 progress to the 50-100% of our bar
                     const totalPercent = 50 + Math.round(data.percent / 2);
                     progressBar.style.width = totalPercent + '%';
                     progressBar.textContent = totalPercent + '%';
@@ -176,16 +265,13 @@
                     
                     if (data.percent === 100) {
                         progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Scan & Finalizing... Almost done!';
+                        statusText.innerHTML = 'Finalizing... Almost done!';
                     }
                 });
 
                 const xhr = new XMLHttpRequest();
-                
-                // Dynamically grab the correct route from the form's action attribute
                 xhr.open('POST', form.action, true);
 
-                // This event tracks the Browser -> Server RAM upload (Mapped to 0-50%)
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
                         const percentComplete = Math.round((event.loaded / event.total) * 50);
@@ -193,9 +279,9 @@
                         progressBar.textContent = percentComplete + '%';
 
                         if (percentComplete === 50) {
-                            statusText.innerHTML = 'Securing file in memory... connecting to cloud.';
+                            statusText.innerHTML = 'Securing file... connecting to cloud.';
                         } else {
-                            statusText.innerHTML = `Uploading to Server RAM: ${percentComplete * 2}%`;
+                            statusText.innerHTML = `Uploading to Server: ${percentComplete * 2}%`;
                         }
                     }
                 });
@@ -213,20 +299,78 @@
                 xhr.send(formData);
             });
 
-                xhr.onerror = function() {
-                    alert('A network error occurred during the upload.');
-                    resetUI();
-                };
-
-                xhr.send(formData);
-            });
-
             function resetUI() {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Upload New Version';
                 progressWrapper.style.display = 'none';
                 progressBar.classList.remove('processing-pulse');
             }
+        } // End Standard Upload Logic
+
+        // --- 2. Distributor Form Toggles & Logic ---
+        const btnShowLink = document.getElementById('btn-show-link');
+        const btnShowFile = document.getElementById('btn-show-file');
+        const distForm = document.getElementById('distributorUploadForm');
+        const standardForm = document.getElementById('addVersionForm'); // We use standard form if they toggle
+        
+        if (btnShowLink && btnShowFile && distForm && standardForm) {
+            btnShowLink.addEventListener('click', () => {
+                btnShowLink.classList.replace('btn-secondary', 'btn-primary');
+                btnShowFile.classList.replace('btn-primary', 'btn-secondary');
+                distForm.style.display = 'block';
+                standardForm.style.display = 'none';
+            });
+            
+            btnShowFile.addEventListener('click', () => {
+                btnShowFile.classList.replace('btn-secondary', 'btn-primary');
+                btnShowLink.classList.replace('btn-primary', 'btn-secondary');
+                standardForm.style.display = 'block';
+                distForm.style.display = 'none';
+            });
+        }
+
+        const distSubmitBtn = document.getElementById('distributorSubmitBtn');
+        if (distForm && distSubmitBtn) {
+            distForm.addEventListener('submit', function() {
+                distSubmitBtn.disabled = true;
+                distSubmitBtn.textContent = 'Processing...';
+            });
+        }
+
+        // --- 3. Distributor Multi-Part Sliding Switch Logic ---
+        const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
+        const singleLinkGroup = document.getElementById('single-link-group');
+        const multiLinkGroup = document.getElementById('multi-link-group');
+        const addPartBtn = document.getElementById('add-part-btn');
+        const partsContainer = document.getElementById('parts-container');
+        const singleInput = document.getElementById('externalUrl');
+
+        if (multiPartCheckbox) {
+            multiPartCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    singleLinkGroup.style.display = 'none';
+                    singleInput.required = false;
+                    multiLinkGroup.style.display = 'block';
+                    partsContainer.querySelectorAll('input').forEach(i => i.required = true);
+                } else {
+                    singleLinkGroup.style.display = 'block';
+                    singleInput.required = true;
+                    multiLinkGroup.style.display = 'none';
+                    partsContainer.querySelectorAll('input').forEach(i => i.required = false);
+                }
+            });
+
+            let partCount = 2;
+            addPartBtn.addEventListener('click', () => {
+                partCount++;
+                const newInput = document.createElement('input');
+                newInput.type = 'url';
+                newInput.name = 'partUrls[]';
+                newInput.placeholder = `Part ${partCount} URL...`;
+                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333;';
+                newInput.required = true;
+                partsContainer.appendChild(newInput);
+            });
         }
     });
 </script>
