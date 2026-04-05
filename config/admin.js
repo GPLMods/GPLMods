@@ -2,7 +2,7 @@
 const bcrypt = require('bcryptjs');
 
 // 1. IMPORT THE SINGLETON LOADER
-const { componentLoader, Components } = require('../components/index');
+const { componentLoader, Components } = require('../components/loader');
 
 // Import all your models
 const User = require('../models/user');
