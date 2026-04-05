@@ -4,7 +4,7 @@ import * as AdminJSMongoose from '@adminjs/mongoose';
 import { dark, light } from '@adminjs/themes';
 
 // 1. Import the singleton loader
-import loaderModule from './components/index.js'; 
+import loaderModule from './components/loader.js'; 
 const { componentLoader, Components } = loaderModule;
 
 console.log('AdminJS Bundler: Starting setup...');
@@ -49,9 +49,9 @@ const admin = new AdminJS({
         withMadeWithLove: false, 
     },
     resources: [], // Empty for bundling
-    env: {
-        NODE_ENV: 'production' // Force Webpack to bundle and minify
-    }
+    if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 });
 
 console.log('AdminJS Bundler: Executing build process...');
