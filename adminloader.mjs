@@ -49,9 +49,9 @@ const admin = new AdminJS({
         withMadeWithLove: false, 
     },
     resources: [], // Empty for bundling
-    if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
-}
+    env: {
+        NODE_ENV: 'production' // Force Webpack to bundle and minify
+    }
 });
 
 console.log('AdminJS Bundler: Executing build process...');
