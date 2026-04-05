@@ -1,4 +1,8 @@
+// config/admin.js
 const bcrypt = require('bcryptjs');
+
+// 1. IMPORT THE SINGLETON LOADER
+const { componentLoader, Components } = require('../components/index');
 
 // Import all your models
 const User = require('../models/user');
@@ -15,63 +19,44 @@ const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 
-// --- UPDATED HELPER: Smart VirusTotal URL Extractor ---
+// --- Helper Function ---
 function extractVTId(input) {
     if (!input) return "";
     let cleanInput = input.trim();
-    
     if (cleanInput.startsWith('http://') || cleanInput.startsWith('https://')) {
         try {
             const urlObj = new URL(cleanInput);
             const pathParts = urlObj.pathname.split('/').filter(p => p !== '');
-            
-            // Look for 'file' or 'file-analysis' in the path
             const fileIndex = pathParts.indexOf('file');
             const analysisIndex = pathParts.indexOf('file-analysis');
-            
-            // If we found 'file' or 'file-analysis', the ID is the VERY NEXT part of the path
-            if (fileIndex !== -1 && pathParts.length > fileIndex + 1) {
-                return pathParts[fileIndex + 1];
-            } else if (analysisIndex !== -1 && pathParts.length > analysisIndex + 1) {
-                return pathParts[analysisIndex + 1];
-            }
-            
-            // Fallback: If the URL structure is weird, but we know it's VT, try to find a 64-char hash
+            if (fileIndex !== -1 && pathParts.length > fileIndex + 1) return pathParts[fileIndex + 1];
+            else if (analysisIndex !== -1 && pathParts.length > analysisIndex + 1) return pathParts[analysisIndex + 1];
             const hashMatch = cleanInput.match(/[a-fA-F0-9]{64}/);
             if (hashMatch) return hashMatch[0];
-
-        } catch (e) {
-            console.error("Invalid VT URL provided to AdminJS:", e);
-        }
+        } catch (e) { console.error("Invalid VT URL:", e); }
     }
-    
-    // If it's not a URL, check if they just pasted a 64-character hash or Base64 ID directly
     return cleanInput;
 }
+
+// 2. EXPORT AN ASYNC FACTORY FUNCTION
+// We must use dynamic imports because AdminJS v7 is ESM only.
 async function createAdminRouter() {
+    
+    // Import ESM modules dynamically
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
-    const { ComponentLoader } = AdminJSModule; 
-
+    
     const AdminJSExpress = await import('@adminjs/express');
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
+    // Register Adapter
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
-    const componentLoader = new ComponentLoader();
-    
-    // --- LOAD ALL CUSTOM COMPONENTS HERE ---
-    const Components = {
-        Dashboard: componentLoader.add('Dashboard', '../components/dashboard.jsx'),
-        SidebarBranding: componentLoader.override('SidebarBranding', '../components/SidebarBranding.jsx'),
-        ImagePreview: componentLoader.add('ImagePreview', '../components/ImagePreview.jsx'),
-        ActionRedirect: componentLoader.add('ActionRedirect', '../components/ActionRedirect.jsx') // <-- ADDED
-    };
-
+    // Define Theme
     const gplModsTheme = {
         ...dark,
         id: 'dark', 
@@ -89,40 +74,80 @@ async function createAdminRouter() {
         }
     };
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Configure AdminJS
     const adminJsOptions = {
         rootPath: '/admin',
-        componentLoader, 
+        // ✅ CRITICAL: Pass the imported singleton loader here
+        componentLoader: componentLoader, 
+        
         defaultTheme: 'dark', 
         availableThemes: [gplModsTheme, light], 
-        env: {
-            NODE_ENV: process.env.NODE_ENV || 'development'
-        }, 
         
+        // Setup Assets (Tell AdminJS where to find the pre-built files in production)
+        env: { isProduction: isProduction },
+        assets: {
+            styles: isProduction ? ['/.adminjs/bundle.css'] : [],
+            scripts: isProduction ? ['/.adminjs/bundle.js'] : []
+        },
         // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
             component: Components.Dashboard,
             handler: async () => {
+                // --- 1. Define Timeframes ---
+                const now = new Date();
+                const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                
+                // Optional: Compare to last month for growth percentages
+                const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+                // --- 2. Calculate All-Time Totals ---
                 const totalUsers = await User.countDocuments();
-                const totalMods = await File.countDocuments({ isLatestVersion: true });
+                const totalMods = await File.countDocuments({ isLatestVersion: true, status: 'live' });
+                
+                // Total Downloads (All-Time)
                 const totalDownloadsData = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
                 const totalDownloads = totalDownloadsData.length > 0 ? totalDownloadsData[0].total : 0;
-                
-                // Data for Pie Chart
+
+                // --- 3. Calculate "This Month" Metrics ---
+                const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfThisMonth } });
+                const newModsThisMonth = await File.countDocuments({ 
+                    createdAt: { $gte: startOfThisMonth }, 
+                    isLatestVersion: true, 
+                    status: 'live' 
+                });
+
+                // To get "New Downloads This Month", we need a separate tracking collection, 
+                // but since we only store a single 'downloads' integer right now, we can approximate 
+                // by tracking new file uploads vs total files, or just show total downloads for now.
+                // A true "downloads this month" requires a separate DownloadHistory model.
+                // For now, we will show "New Users" and "New Mods".
+
+                // --- 4. Data for Pie Chart (Platform Distribution) ---
                 const modsByPlatform = await File.aggregate([
-                    { $match: { isLatestVersion: true } },
+                    { $match: { isLatestVersion: true, status: 'live' } },
                     { $group: { _id: "$category", count: { $sum: 1 } } }
                 ]);
 
-                // Data for Line Chart (Last 7 Days)
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                // --- 5. Data for Line Chart (Last 30 Days of Uploads) ---
+                // We expand this from 7 days to 30 days for a better view
+                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
                 const uploadsByDay = await File.aggregate([
-                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                    { $match: { createdAt: { $gte: thirtyDaysAgo }, isLatestVersion: true } },
                     { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
                     { $sort: { _id: 1 } }
                 ]);
 
                 return {
-                    stats: { totalUsers, totalMods, totalDownloads },
+                    stats: { 
+                        totalUsers, 
+                        newUsersThisMonth,
+                        totalMods, 
+                        newModsThisMonth,
+                        totalDownloads 
+                    },
                     modsByPlatform: modsByPlatform.map(p => ({ name: p._id || 'unknown', value: p.count })),
                     chartData: uploadsByDay
                 };
@@ -148,13 +173,13 @@ async function createAdminRouter() {
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
-                        // ✅ FIX: Use ImagePreview for avatars, but only on list/show
+                        // ✅ FIX: Use ImagePreview for avatars
                         profileImageKey: {
                             components: {
                                 list: Components.ImagePreview,
                                 show: Components.ImagePreview,
                             },
-                            // Ensure it's hidden on the edit form if you don't want them editing the raw key
+                            // Ensure it's hidden on the edit form if you don't want them editing the raw key manually
                             isVisible: { edit: false, filter: false, list: true, show: true } 
                         }
                     },
@@ -178,31 +203,36 @@ async function createAdminRouter() {
             
             // FILE (MOD) MANAGEMENT
             {
-                resource: File,
+                 resource: File,
                 options: {
                     navigation: { icon: 'FileCode' },
-                    listProperties:['iconKey', 'name', 'fileSize', 'version', 'isMultiPart', 'status', 'category'],
-                    editProperties:[
-                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription',
+                    // ✅ NEW: Added 'isVariant' to the list view
+                    listProperties: ['iconKey', 'name', 'fileSize', 'version', 'isVariant', 'status', 'category'],
+                    editProperties: [
+                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
-                        'iconKey', // Ensure this is in editProperties so it can be edited
-                        'screenshotKeys',
+                        'iconKey', 'screenshotKeys', 'videoUrl',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 
-                        'isMultiPart', 'downloadParts', 'installationInstructions' 
+                        'isMultiPart', 'downloadParts', 'installationInstructions',
+                        // ✅ NEW: Added Variant fields to edit view
+                        'isVariant', 'masterFile'
                     ],
-                    showProperties:[
+                    showProperties: [
                         'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename',
-                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'createdAt', 'updatedAt', 
-                        'isMultiPart', 'downloadParts', 'installationInstructions'
+                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
+                        'isMultiPart', 'downloadParts', 'installationInstructions',
+                        // ✅ NEW: Added Variant fields to show view
+                        'isVariant', 'masterFile'
                     ],
                     properties: {
                         modDescription: { type: 'richtext' },
                         officialDescription: { type: 'richtext' },
                         modFeatures: { type: 'textarea' }, 
                         whatsNew: { type: 'textarea' },
+                        importantNote: { type: 'textarea' }, // Ensure the new field is here too
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
@@ -213,9 +243,9 @@ async function createAdminRouter() {
                                list: false, filter: false, show: true
                             }
                         },
-                       iconKey: { 
+                        iconKey: { 
                             description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.',
-                            // ✅ FIX: Use ImagePreview, but allow standard text input on Edit
+                            // ✅ FIX: Use ImagePreview for mod icons
                             components: {
                                 list: Components.ImagePreview,
                                 show: Components.ImagePreview,
@@ -223,7 +253,23 @@ async function createAdminRouter() {
                         },
                         isMultiPart: { description: 'Check this box if the file is split into multiple download links.' },
                         downloadParts: { isArray: true, description: 'Add the individual links here.' },
-                        installationInstructions: { type: 'richtext', description: 'Instructions for extracting.' }
+                        installationInstructions: { type: 'richtext', description: 'Instructions for extracting.' },
+                        
+                        // ======== NEW: VARIANT LOGIC FOR ADMINJS ========
+                        isVariant: {
+                            // Make it a visually distinct pill/badge in the list view
+                            components: {
+                                // ✅ FIX: Use the pre-loaded component from the singleton!
+                                list: Components.VariantBadge, 
+                            },
+                            // Prevent admins from accidentally un-checking it and breaking the DB structure
+                            isDisabled: true 
+                        },
+                        masterFile: {
+                            description: 'If this is a Variant, this is the ID of the original Master App it belongs to.',
+                            isDisabled: true // Prevent admins from re-assigning a variant to a different master file
+                        }
+                        // ================================================
                     },
                     actions: {
                         new: { 
@@ -435,7 +481,12 @@ async function createAdminRouter() {
     };
 
     const adminJs = new AdminJS(adminJsOptions);
+    
+    // In v7+, buildRouter expects the AdminJS instance. 
+    // We don't need to pass a pre-configured router if we aren't using custom auth middleware *inside* AdminJS.
+    // Since you use ensureAuthenticated from Express, this standard buildRouter is perfect.
     const adminRouter = AdminJSExpress.buildRouter(adminJs);
+    
     return adminRouter;
 }
 

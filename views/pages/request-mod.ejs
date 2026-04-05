@@ -90,14 +90,26 @@
 
         <form action="/request-mod" method="POST">
             
+           <!-- Request Type Dropdown -->
             <div class="form-group">
-                <label for="requestType">What type of request is this?*</label>
-                <select id="requestType" name="requestType" required>
+                <label>What type of request is this?*</label>
+                <select id="requestType" name="requestType" required style="display: none;">
                     <option value="" disabled selected>Select an option...</option>
                     <option value="new-mod">I want a New Mod (Not on the site yet)</option>
                     <option value="update">I need an Update for an existing mod</option>
                     <option value="re-upload">A download link is broken (Re-upload needed)</option>
                 </select>
+                <div class="custom-select-wrapper">
+                    <div class="custom-select">
+                        <span class="selected-text">Select an option...</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="new-mod">I want a New Mod (Not on the site yet)</div>
+                        <div class="custom-option" data-value="update">I need an Update for an existing mod</div>
+                        <div class="custom-option" data-value="re-upload">A download link is broken (Re-upload needed)</div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -105,9 +117,10 @@
                 <input type="text" id="appName" name="appName" placeholder="e.g., Subway Surfers" required>
             </div>
 
+            <!-- Platform Dropdown -->
             <div class="form-group">
-                <label for="platform">Platform*</label>
-                <select id="platform" name="platform" required>
+                <label>Platform*</label>
+                <select id="platform" name="platform" required style="display: none;">
                     <option value="" disabled selected>Select platform...</option>
                     <option value="android">Android</option>
                     <option value="ios-jailed">iOS (Jailed / IPA)</option>
@@ -116,6 +129,20 @@
                     <option value="wordpress">WordPress</option>
                     <option value="other">Other</option>
                 </select>
+                <div class="custom-select-wrapper">
+                    <div class="custom-select">
+                        <span class="selected-text">Select platform...</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="android">Android</div>
+                        <div class="custom-option" data-value="ios-jailed">iOS (Jailed / IPA)</div>
+                        <div class="custom-option" data-value="ios-jailbroken">iOS (Jailbroken / DEB)</div>
+                        <div class="custom-option" data-value="windows">Windows</div>
+                        <div class="custom-option" data-value="wordpress">WordPress</div>
+                        <div class="custom-option" data-value="other">Other</div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">

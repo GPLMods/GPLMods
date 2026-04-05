@@ -11,6 +11,12 @@
     .currency-selector label { color: var(--silver); font-weight: 600; }
     .currency-selector select { background: var(--black); color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; border-radius: 15px; outline: none; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; }
 
+    /* Duration Switcher (Monthly / Yearly / Lifetime) */
+    .duration-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+    .duration-btn { background: transparent; color: var(--silver); border: 2px solid #444; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: 'Poppins', sans-serif; }
+    .duration-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .duration-btn.active { background: var(--gold); color: var(--black); border-color: var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
+
     /* Pricing Grid */
     .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; align-items: stretch; }
     
@@ -24,12 +30,13 @@
     .card-distributor { border-top: 4px solid var(--blue); }
 
     .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); }
+    .save-badge { background: var(--green); color: var(--white); font-size: 0.7em; padding: 3px 8px; border-radius: 10px; margin-left: 10px; vertical-align: middle; }
 
-    .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; }
+    .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
     .card-premium .tier-name { color: var(--gold); }
     .tier-desc { color: var(--silver); font-size: 0.9em; min-height: 40px; margin-bottom: 20px; }
     
-    .price-container { margin-bottom: 30px; }
+    .price-container { margin-bottom: 30px; min-height: 55px; display: flex; align-items: center; justify-content: center; }
     .price { font-size: 2.5em; font-weight: 700; color: var(--white); display: flex; align-items: center; justify-content: center; gap: 5px; }
     .currency-symbol { font-size: 0.5em; color: var(--silver); align-self: flex-start; margin-top: 10px; }
     .price-period { color: var(--silver); font-size: 0.4em; font-weight: normal; }
@@ -43,7 +50,6 @@
     /* Action Buttons */
     .plan-btn { padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif;}
     .btn-outline { background: transparent; border: 2px solid #555; color: var(--silver); }
-    .btn-outline:hover { border-color: var(--white); color: var(--white); }
     
     .btn-silver { background: transparent; border: 2px solid var(--silver); color: var(--silver); }
     .btn-silver:hover { background: var(--silver); color: var(--black); box-shadow: 0 0 15px var(--glow-silver); }
@@ -54,10 +60,19 @@
     .btn-blue { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
     .btn-blue:hover { background: var(--blue); color: var(--white); box-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
 
+    /* Guarantee Box */
+    .guarantee-box { margin-top: 50px; background: rgba(0,0,0,0.3); border: 1px dashed var(--silver); padding: 20px; border-radius: 15px; display: inline-flex; align-items: center; gap: 20px; text-align: left; max-width: 800px; }
+    .guarantee-icon { font-size: 3em; color: var(--gold); }
+    .guarantee-text h4 { color: var(--white); margin: 0 0 5px 0; }
+    .guarantee-text p { color: var(--silver); margin: 0; font-size: 0.9em; line-height: 1.5; }
+    .guarantee-text a { color: var(--gold); text-decoration: none; font-weight: bold; }
+    .guarantee-text a:hover { text-decoration: underline; }
+
     #payment-error-message { color: var(--red); margin-top: 15px; font-weight: bold; }
 
     @media (max-width: 992px) {
         .card-premium { transform: scale(1); }
+        .guarantee-box { flex-direction: column; text-align: center; }
     }
 </style>
 
@@ -79,6 +94,14 @@
             </select>
         </div>
 
+        <!-- Duration Switcher -->
+        <div class="duration-selector">
+            <button class="duration-btn active" data-duration="monthly">Monthly</button>
+            <button class="duration-btn" data-duration="6months">6 Months <span class="save-badge">Save 15%</span></button>
+            <button class="duration-btn" data-duration="yearly">Yearly <span class="save-badge">Save 30%</span></button>
+            <button class="duration-btn" data-duration="lifetime">Lifetime Deal</button>
+        </div>
+
         <div class="pricing-grid">
             
             <!-- 1. GUEST -->
@@ -95,10 +118,11 @@
                     <li class="missing"><i class="fas fa-times"></i> Post Reviews & Comments</li>
                     <li class="missing"><i class="fas fa-times"></i> Create a Whitelist</li>
                 </ul>
+                <!-- FIX: Guest tier now prompts login/signup instead of saying "Current Plan" or "Logout" -->
                 <% if (!user) { %>
-                    <button class="plan-btn btn-outline" disabled>Current Plan</button>
+                    <button class="plan-btn btn-outline" disabled style="opacity: 0.5;">Your Current Status</button>
                 <% } else { %>
-                    <a href="/logout" class="plan-btn btn-outline">Log Out</a>
+                    <button class="plan-btn btn-outline" disabled style="opacity: 0.2;">Not Applicable</button>
                 <% } %>
             </div>
 
@@ -119,7 +143,7 @@
                 <% if (!user) { %>
                     <a href="/register" class="plan-btn btn-silver">Sign Up Free</a>
                 <% } else if (user.role === 'member' && user.membership === 'free') { %>
-                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Current Plan</button>
+                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Your Current Plan</button>
                 <% } else { %>
                     <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Included</button>
                 <% } %>
@@ -127,12 +151,25 @@
 
             <!-- 3. GPL MODS+ (PREMIUM) -->
             <div class="pricing-card card-premium">
-                <div class="popular-badge">POPULAR</div>
+                <div class="popular-badge">PREMIUM</div>
                 <h2 class="tier-name">GPL Mods+</h2>
                 <p class="tier-desc">The ultimate, ad-free downloading experience.</p>
+                
                 <div class="price-container">
-                    <div class="price"><span class="currency-symbol" data-currency>₹</span><span class="price-value" data-inr="850" data-usd="10.00" data-eur="9.00" data-gbp="8.00">850</span> <span class="price-period">/ lifetime</span></div>
+                    <div class="price">
+                        <span class="currency-symbol" data-currency>₹</span>
+                        <!-- DYNAMIC PRICE VALUES -->
+                        <span class="price-value" id="premium-price"
+                              data-monthly-inr="99" data-monthly-usd="2.00" data-monthly-eur="1.80" data-monthly-gbp="1.50"
+                              data-6months-inr="499" data-6months-usd="10.00" data-6months-eur="9.00" data-6months-gbp="8.00"
+                              data-yearly-inr="899" data-yearly-usd="18.00" data-yearly-eur="16.00" data-yearly-gbp="14.00"
+                              data-lifetime-inr="2499" data-lifetime-usd="35.00" data-lifetime-eur="32.00" data-lifetime-gbp="28.00">
+                              99
+                        </span> 
+                        <span class="price-period" id="premium-period">/ month</span>
+                    </div>
                 </div>
+
                 <ul class="feature-list">
                     <li><i class="fas fa-check"></i> All Member Features</li>
                     <li><i class="fas fa-check"></i> <strong>100% Ad-Free Experience</strong></li>
@@ -144,9 +181,8 @@
                 <% if (!user) { %>
                     <a href="/login?message=Please log in to purchase Premium." class="plan-btn btn-gold">Log in to Purchase</a>
                 <% } else if (user.membership === 'premium') { %>
-                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold);">You are Premium!</button>
+                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold); border-color: var(--gold);">You are Premium!</button>
                 <% } else { %>
-                    <!-- Only show purchase button if logged in and not already premium -->
                     <button id="premium-purchase-btn" class="plan-btn btn-gold">Upgrade Now</button>
                 <% } %>
                 <div id="payment-error-message"></div>
@@ -161,7 +197,7 @@
                 </div>
                 <ul class="feature-list">
                     <li><i class="fas fa-check"></i> All Member Features</li>
-                    <li><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise, etc.)</strong></li>
+                    <li><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise)</strong></li>
                     <li><i class="fas fa-check"></i> Verified Organization Badge</li>
                     <li><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
                     <li><i class="fas fa-check"></i> Bypass B2 Upload & Scan Waits</li>
@@ -176,6 +212,16 @@
             </div>
 
         </div>
+
+        <!-- NEW: 7-Day Guarantee Box -->
+        <div class="guarantee-box">
+            <i class="fas fa-shield-check guarantee-icon"></i>
+            <div class="guarantee-text">
+                <h4>7-Day Money-Back Guarantee</h4>
+                <p>We stand behind the quality of GPL Mods+. If you aren't completely satisfied with your premium experience, contact support within 7 days of your purchase for a full refund. No questions asked. Please read our full <a href="/refund-policy">Refund Policy</a> for details.</p>
+            </div>
+        </div>
+
         <p style="font-size: 0.9em; color: #666; margin-top: 40px;"><i class="fas fa-lock"></i> Payments secured by Cashfree.</p>
     </div>
 </main>
@@ -183,37 +229,61 @@
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Currency Switcher Logic ---
+        // --- State Variables ---
+        let currentCurrency = 'INR';
+        let currentDuration = 'monthly';
+
+        // --- Elements ---
         const currencySelect = document.getElementById('currency-select');
-        const priceValueElements = document.querySelectorAll('.price-value');
+        const durationBtns = document.querySelectorAll('.duration-btn');
         const currencySymbols = document.querySelectorAll('[data-currency]');
         
-        const symbols = {
-            'INR': '₹',
-            'USD': '$',
-            'EUR': '€',
-            'GBP': '£'
-        };
+        const premiumPriceEl = document.getElementById('premium-price');
+        const premiumPeriodEl = document.getElementById('premium-period');
 
-        currencySelect.addEventListener('change', function() {
-            const selectedCurrency = this.value;
+        const symbols = { 'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£' };
+        const periods = { 'monthly': '/ month', '6months': '/ 6 months', 'yearly': '/ year', 'lifetime': '/ lifetime' };
+
+        // --- Update UI Function ---
+        function updatePricingUI() {
+            // Update Currency Symbols
+            currencySymbols.forEach(el => el.textContent = symbols[currentCurrency]);
+
+            // Construct the data attribute string (e.g., 'data-monthly-inr')
+            const dataAttr = `data-${currentDuration}-${currentCurrency.toLowerCase()}`;
             
-            // Update Symbols
-            currencySymbols.forEach(el => {
-                el.textContent = symbols[selectedCurrency];
-            });
+            // Update the price value
+            const newPrice = premiumPriceEl.getAttribute(dataAttr);
+            if (newPrice) {
+                premiumPriceEl.textContent = newPrice;
+            }
 
-            // Update Price Values
-            priceValueElements.forEach(el => {
-                // Fetch the price data attribute for the selected currency
-                const newPrice = el.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
-                if (newPrice) {
-                    el.textContent = newPrice;
-                }
+            // Update the period text
+            premiumPeriodEl.textContent = periods[currentDuration];
+        }
+
+        // --- Event Listeners ---
+        currencySelect.addEventListener('change', function() {
+            currentCurrency = this.value;
+            updatePricingUI();
+        });
+
+        durationBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                durationBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update state and UI
+                currentDuration = this.getAttribute('data-duration');
+                updatePricingUI();
             });
         });
 
-        // --- 2. Cashfree Payment Logic (Existing) ---
+        // Initialize UI on load
+        updatePricingUI();
+
+        // --- Cashfree Payment Logic (Placeholder for future) ---
         const cashfree = new Cashfree();
         const submitButton = document.getElementById('premium-purchase-btn');
         const errorMessage = document.getElementById('payment-error-message');
@@ -226,9 +296,11 @@
                 this.textContent = 'Preparing Checkout...';
                 errorMessage.textContent = ''; 
 
+                // In the future, you will send currentDuration and currentCurrency to your backend here
                 fetch('/create-membership-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: currentDuration, currency: currentCurrency })
                 })
                 .then(res => res.json())
                 .then(data => {

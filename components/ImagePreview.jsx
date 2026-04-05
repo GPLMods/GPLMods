@@ -12,8 +12,23 @@ const ImagePreview = (props) => {
     // Helper to safely build the URL
     const getSmartUrl = (key) => {
         if (key.startsWith('http')) return key;
-        // Use the exact B2 URL structure you provided
-        return `https://f003.backblazeb2.com/file/gpl-cloud/${key}`;
+        
+        // If it's a B2 key, we need a public URL. 
+        // Since AdminJS components run in the browser, they don't have access to your server's s3Client.
+        // For a fully secure private bucket, you would need an API route like /api/admin/signed-url?key=...
+        // However, if your bucket is public (or has a public CDN in front of it like Cloudflare), 
+        // you can just construct the URL here:
+        
+        // REPLACEME: If your bucket is public, put the base URL here.
+        // Example: return `https://f003.backblazeb2.com/file/your-bucket-name/${key}`;
+        
+        // If your bucket is strictly private and you MUST use signed URLs, 
+        // this component becomes an async fetch component (more complex). 
+        // For now, let's assume you have a public endpoint or we just show the key.
+        
+        // For demonstration, we will try to construct a standard B2 URL.
+        // You MUST update 'your-bucket-name' and 'f00X' to match your actual B2 info.
+        return `https://f003.backblazeb2.com/file/gpl-cloud/${key}`; 
     };
 
     const imageUrl = getSmartUrl(value);
@@ -27,7 +42,7 @@ const ImagePreview = (props) => {
                     maxWidth: '50px', 
                     maxHeight: '50px', 
                     borderRadius: '8px',
-                    objectFit: 'contain', // Changed to contain so icons aren't cropped
+                    objectFit: 'cover',
                     backgroundColor: '#1a1a1a',
                     border: '1px solid #333'
                 }} 

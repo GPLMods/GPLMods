@@ -266,12 +266,15 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
     console.log(`Finished uploading ${fileName} to B2.`);
     return fileName;
 };
-// ===============================
-// 4. MIDDLEWARE & CONFIGURATION
-// ===============================
 
-// 1. Static Files
+// ===============================
+// 4. PRE-ADMIN MIDDLEWARE
+// ===============================
+// 1. Static Files (Safe to be early)
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ NEW: Serve the pre-built AdminJS assets!
+app.use('/.adminjs', express.static(path.join(__dirname, '.adminjs')));
 
 // 2. Parsers (Crucial for AdminJS and login forms)
 app.use(express.urlencoded({ extended: true }));
@@ -297,7 +300,7 @@ app.use(cors({
 // This MUST come before Maintenance Mode and Session/Auth
 app.get('/healthz', (req, res) => {
     // A fast, lightweight response to tell Render the Node process is running.
-    res.status(200).send('OK'); 
+    res.status(200).send('Live! Server is running properly no issues were found.'); 
 });
 
 // --- DYNAMIC SITE STATE ENGINE (Maintenance / Unavailable) ---
@@ -938,29 +941,39 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
         res.status(500).render('pages/500');
     }
 });
-// Category / Filter
+// Category / Filter Route
 app.get('/category', async (req, res) => {
     try {
-        const { platform, category, sort, page = 1 } = req.query;
+        // Grab the queries from the URL (e.g., /category?platform=android&subCategory=game-action)
+        const { platform, subCategory, sort, page = 1 } = req.query;
         const limit = 12;
         const currentPage = parseInt(page);
-        const queryFilter = { isLatestVersion: true };
-if (platform && platform !== 'all') {
-            // FIX: Search for the exact platform name (e.g., 'ios-jailed')
+        
+        // Base query: Only show live, latest version mods
+        const queryFilter = { isLatestVersion: true, status: 'live' };
+
+        // 1. Filter by Main Platform
+        if (platform && platform !== 'all') {
             queryFilter.category = platform;
         }
-        
-        // Also, ensure we only show live mods in the category page!
-        queryFilter.status = 'live';
 
-        const sortOptions = {};
-        if (sort === 'popular') {
-            sortOptions.whitelistCount = -1;
-            sortOptions.downloads = -1;
-        } else {
-            sortOptions.createdAt = -1;
+        // 2. NEW: Filter by Sub-Category
+        if (subCategory && subCategory !== 'all') {
+            // Because we store platforms as an array (e.g., ['game-action']), 
+            // we use the $in operator to find mods that have this sub-category.
+            queryFilter.platforms = { $in: [subCategory] };
         }
 
+        // 3. Sorting Logic
+        const sortOptions = {};
+        if (sort === 'popular') {
+            sortOptions.downloads = -1; // Sort by most downloads
+            sortOptions.averageRating = -1; // Then by rating
+        } else {
+            sortOptions.createdAt = -1; // Default: Newest first
+        }
+
+        // 4. Pagination & Fetching
         const totalMods = await File.countDocuments(queryFilter);
         const totalPages = Math.ceil(totalMods / limit);
         const files = await File.find(queryFilter)
@@ -968,24 +981,28 @@ if (platform && platform !== 'all') {
             .skip((currentPage - 1) * limit)
             .limit(limit);
 
+        // 5. Get Signed URLs for images
         const filesWithUrls = await Promise.all(files.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';
+            const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-avatar.png';
             return { ...file.toObject(), iconUrl };
         }));
 
-res.render('pages/category', {
+        res.render('pages/category', {
             files: filesWithUrls,
             totalPages: totalPages,
             currentPage: currentPage,
             
-            // THESE THREE LINES ARE THE CRITICAL FIX:
-            // They must NOT be wrapped inside a 'currentFilters' object.
+            // Pass the current filters back to the frontend so the dropdowns stay selected
             currentPlatform: platform || 'all', 
-            currentCategory: category || 'all',
+            currentSubCategory: subCategory || 'all', // NEW
             currentSort: sort || 'latest'
-        });  
-    } catch (error) { res.status(500).render('pages/500'); }
+        });
+
+    } catch (error) { 
+        console.error("Category Route Error:", error);
+        res.status(500).render('pages/500'); 
+    }
 });
 
 // Search Route
@@ -994,11 +1011,12 @@ const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
 app.get('/search', async (req, res) => {
     try {
-        // ✅ FIX: The query parsing and escaping MUST happen inside the route!
         const rawQuery = req.query.q || '';
-        const query = escapeRegex(rawQuery); // Escape it safely for the database
+        const query = escapeRegex(rawQuery); 
         
+        // --- NEW: Grab subCategory from the URL query ---
         const platform = req.query.platform || 'all';
+        const subCategory = req.query.subCategory || 'all'; 
         const sort = req.query.sort || 'newest';
         const page = parseInt(req.query.page) || 1;
         const resultsPerPage = 12;
@@ -1016,8 +1034,17 @@ app.get('/search', async (req, res) => {
             ]
         };
 
-        if (platform !== 'all') searchQuery.category = platform;
+        // 1. Filter by Platform
+        if (platform && platform !== 'all') {
+            searchQuery.category = platform;
+        }
 
+        // 2. --- NEW: Filter by Sub-Category ---
+        if (subCategory && subCategory !== 'all') {
+            searchQuery.platforms = { $in: [subCategory] };
+        }
+
+        // 3. Sorting Logic
         let sortQuery = {};
         switch (sort) {
             case 'downloads': sortQuery = { downloads: -1 }; break;
@@ -1048,11 +1075,14 @@ app.get('/search', async (req, res) => {
 
         res.render('pages/search', {
             results: resultsWithUrls, 
-            query: rawQuery, // We pass the raw (unescaped) query back to the UI so it looks normal to the user!
+            query: rawQuery, 
             totalResults: totalResults,
             totalPages: totalPages,
             currentPage: page,
+            
+            // --- Pass ALL current filters back to the EJS template ---
             currentPlatform: platform,
+            currentSubCategory: subCategory, // <--- ADDED THIS
             currentSort: sort
         });
 
@@ -1063,93 +1093,138 @@ app.get('/search', async (req, res) => {
 });
 
 // Single Mod Page
-// --- NEW: SEO-Friendly Single Mod Page Route ---
-// Example: /android/roblox
+// --- BUG 1 FIX A: BACKWARD COMPATIBILITY REDIRECT ---
+// This catches any old /mods/12345 links (like from your homepage or old bookmarks)
+// and instantly forwards them to the new SEO-friendly slug route!
+app.get('/mods/:id', async (req, res, next) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return next(); // If it really doesn't exist, proceed to 404
+        
+        // Redirect to the new format: /android/roblox
+        return res.redirect(301, `/${file.category}/${file.slug || file._id}`);
+    } catch (error) {
+        next();
+    }
+});
+
+// --- ADVANCED: SEO-Friendly "Umbrella" Mod Page Route ---
 app.get('/:category/:slug', async (req, res, next) => {
     try {
-        const category = req.params.category;
-        const slug = req.params.slug;
+        const category = req.params.category.toLowerCase();
+        const slug = req.params.slug.toLowerCase();
+        const variantId = req.query.variant;
 
-        // 1. Safety Check: Ignore system routes that might accidentally trigger this
-        const reservedPaths = ['api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations'];
-        if (reservedPaths.includes(category)) {
-            return next(); // Let Express keep looking for other routes (like 404)
-        }
+        // 1. Prevent this route from capturing system URLs
+        const reservedPaths =['api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 'developer', 'support', 'donate', 'partnership', 'home', 'healthz'];
+        if (reservedPaths.includes(category)) return next(); 
 
-        // 2. Find the file by Category AND Slug
-        let currentFile = await File.findOne({ 
+        let masterFile = null;
+
+        // 2. PRIMARY SEARCH: Try to find by exact slug
+        masterFile = await File.findOne({ 
             category: category, 
             slug: slug,
-            isLatestVersion: true // Only the main page uses the slug
-        });
+            isLatestVersion: true,
+            isVariant: { $ne: true } // ✅ FIX: Safely catches old mods where this field doesn't exist yet!
+        }).populate('variants');
 
-        if (!currentFile) {
-            // FALLBACK: If someone uses an old ID link (e.g., from an old bookmark)
-            // we check if the slug parameter is actually a valid MongoDB ID.
-            if (Types.ObjectId.isValid(slug)) {
-                currentFile = await File.findById(slug);
-                // If we found it by ID, redirect them to the new SEO URL!
-                if (currentFile && currentFile.slug) {
-                    return res.redirect(301, `/${currentFile.category}/${currentFile.slug}`);
-                }
-            }
+        // 3. FALLBACK SEARCH: If exact slug fails (e.g. old mods without a slug in DB), 
+        // use RegEx to search the original 'name' field by turning dashes back into spaces.
+        if (!masterFile) {
+            const nameSearchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
+            masterFile = await File.findOne({
+                category: category,
+                name: nameSearchPattern,
+                isLatestVersion: true,
+                isVariant: { $ne: true } // ✅ FIX: Safely catches old mods here too!
+            }).populate('variants');
+        }
+
+        // 4. If STILL not found, throw 404
+        if (!masterFile) {
             return res.status(404).render('pages/404');
         }
 
-        
-        // Security Check for Drafts/Pending
-        if (currentFile.status !== 'live') {
-            const isUploader = req.user && req.user.username === currentFile.uploader;
+        // --- Security Check for Drafts/Pending ---
+        if (masterFile.status !== 'live') {
+            const isUploader = req.user && req.user.username === masterFile.uploader;
             const isAdmin = req.user && req.user.role === 'admin';
-            if (!isUploader && !isAdmin) {
-                return res.status(403).render('pages/403'); 
+            if (!isUploader && !isAdmin) return res.status(403).render('pages/403'); 
+        }
+
+        let displayFile = masterFile; 
+        let isViewingVariant = false;
+
+        if (variantId && Types.ObjectId.isValid(variantId)) {
+            const requestedVariant = masterFile.variants.find(v => v._id.toString() === variantId && v.status === 'live');
+            if (requestedVariant) {
+                // Swap Master data for Variant data seamlessly
+                displayFile = {
+                    ...(masterFile.toObject ? masterFile.toObject() : masterFile),
+                    _id: requestedVariant._id,
+                    version: requestedVariant.version,
+                    uploader: requestedVariant.uploader,
+                    developer: requestedVariant.developer,
+                    modDescription: requestedVariant.modDescription,
+                    modFeatures: requestedVariant.modFeatures,
+                    whatsNew: requestedVariant.whatsNew,
+                    importantNote: requestedVariant.importantNote,
+                    fileSize: requestedVariant.fileSize,
+                    downloads: requestedVariant.downloads,
+                    averageRating: requestedVariant.averageRating,
+                    workingVoteCount: requestedVariant.workingVoteCount,
+                    notWorkingVoteCount: requestedVariant.notWorkingVoteCount,
+                    createdAt: requestedVariant.createdAt,
+                    updatedAt: requestedVariant.updatedAt,
+                    virusTotalAnalysisId: requestedVariant.virusTotalAnalysisId,
+                    virusTotalId: requestedVariant.virusTotalId,
+                    virusTotalScanDate: requestedVariant.virusTotalScanDate,
+                    virusTotalPositiveCount: requestedVariant.virusTotalPositiveCount,
+                    virusTotalTotalScans: requestedVariant.virusTotalTotalScans
+                };
+                isViewingVariant = true;
             }
         }
 
-        let versionHistory =[];
-        if (currentFile.parentFile) {
-            let headFile = await File.findById(currentFile.parentFile).populate('olderVersions');
-            versionHistory =[headFile, ...headFile.olderVersions.slice().reverse()];
-            currentFile = headFile;
-        } else {
-            await currentFile.populate('olderVersions');
-            versionHistory =[currentFile, ...currentFile.olderVersions.slice().reverse()];
-        }
-
-        const iconKey = currentFile.iconUrl || currentFile.iconKey;
+        const iconKey = masterFile.iconUrl || masterFile.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
         
-        const screenKeys = (currentFile.screenshotUrls && currentFile.screenshotUrls.length > 0)
-            ? currentFile.screenshotUrls
-            : (currentFile.screenshotKeys ||[]);
-            
+        const screenKeys = (masterFile.screenshotUrls && masterFile.screenshotUrls.length > 0)
+            ? masterFile.screenshotUrls : (masterFile.screenshotKeys ||[]);
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
-        const reviews = await Review.find({ file: currentFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
-
+        const reviews = await Review.find({ file: displayFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
         const reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
-                try {
-                    avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: review.user.profileImageKey }), { expiresIn: 3600 });
-                } catch (e) { console.error("Could not get signed URL for reviewer avatar."); }
+                try { avatarUrl = await getSmartImageUrl(review.user.profileImageKey); } catch (e) {}
             }
             return { ...review.toObject(), user: { ...review.user.toObject(), signedAvatarUrl: avatarUrl } };
         }));
 
-        const userHasWhitelisted = req.user ? req.user.whitelist.includes(currentFile._id) : false;
-        const userHasVotedOnStatus = req.user ? currentFile.votedOnStatusBy.includes(req.user._id) : false;
+        let versionHistory =[];
+        let fileForHistory = await File.findById(displayFile._id).populate('olderVersions');
+        if (fileForHistory) {
+            versionHistory = [fileForHistory, ...fileForHistory.olderVersions.slice().reverse()];
+        }
+
+        const userHasWhitelisted = req.user ? req.user.whitelist.includes(displayFile._id) : false;
+        const userHasVotedOnStatus = req.user ? displayFile.votedOnStatusBy.includes(req.user._id) : false;
 
         res.render('pages/download', {
-            file: { ...currentFile.toObject(), iconUrl, screenshotUrls },
+            file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
+            masterFile: masterFile,
+            isViewingVariant: isViewingVariant,
             versionHistory,
             reviews: reviewsWithAvatars,
             userHasWhitelisted,
             userHasVotedOnStatus
         });
+
     } catch (e) {
-        console.error("Error on /mods/:id route:", e);
-        res.status(500).send("Server error.");
+        console.error("Error on /:category/:slug route:", e);
+        res.status(500).render('pages/500');
     }
 });
 
@@ -1749,10 +1824,22 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
         const userObj = userWithWhitelist.toObject();
         userObj.signedAvatarUrl = req.user.signedAvatarUrl; 
 
+        // ✅ BUG 2 FIX: Generate Secure Smart URLs for all Whitelisted Mods!
+        if (userObj.whitelist && userObj.whitelist.length > 0) {
+            userObj.whitelist = await Promise.all(userObj.whitelist.map(async (file) => {
+                const iconKey = file.iconUrl || file.iconKey;
+                const iconUrl = await getSmartImageUrl(iconKey); // Fetch the secure B2 URL
+                return { ...file, iconUrl }; // Attach it to the object
+            }));
+        }
+
         const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
         
         res.render('pages/profile', { user: userObj, uploads: userUploads });
-    } catch (e) { res.status(500).send('Profile fetch error.'); }
+    } catch (e) { 
+        console.error('Profile fetch error:', e);
+        res.status(500).send('Profile fetch error.'); 
+    }
 });
 
 // My Uploads Route
@@ -2272,62 +2359,115 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const { softwareIcon, screenshots } = req.files;
         const formData = req.body; 
 
-        if (!softwareIcon || !screenshots) {
-            return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required.`);
+        // --- 1. THE VARIANT CHECK ---
+        const existingMasterFile = await File.findOne({
+            name: { $regex: new RegExp(`^${formData.modName}$`, 'i') }, 
+            category: formData.modPlatform,
+            isLatestVersion: true,
+            status: 'live',
+            _id: { $ne: fileId } 
+        });
+
+        let isVariant = false;
+        let masterFileId = null;
+
+        if (existingMasterFile) {
+            console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant.`);
+            isVariant = true;
+            masterFileId = existingMasterFile._id;
+            
+            // ✅ FIX: We only delete the ICON. We keep the Variant's Screenshots!
+            if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
+        } else {
+            if (!softwareIcon || !screenshots) {
+                return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required for new mods.`);
+            }
         }
 
         let iconKey = null;
-        if (softwareIcon && softwareIcon.length > 0) {
-            iconKey = await uploadToB2(softwareIcon[0], 'icons');
-        }
-        
-        let screenshotKeys =[];
-        if (screenshots && screenshots.length > 0) {
-            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
-        }
-
-        if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
-        if (screenshots) screenshots.forEach(f => fs.unlinkSync(f.path));
-
+        let screenshotKeys = [];
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : [];
 
-        // ======== NEW: GENERATE UNIQUE SLUG ========
-        let baseSlug = slugify(formData.modName);
-        let finalSlug = baseSlug;
-        let slugCounter = 1;
-
-        // Check if a file with this slug already exists IN THIS CATEGORY
-        // We only care about the latest version being unique
-        while (await File.findOne({ 
-            slug: finalSlug, 
-            category: formData.modPlatform, // E.g., 'android'
-            isLatestVersion: true,
-            _id: { $ne: fileId } // Exclude the current file we are updating
-        })) {
-            finalSlug = `${baseSlug}-${slugCounter}`;
-            slugCounter++;
+        // --- 2. PROCESS IMAGES ---
+        
+        // A. Only process the Icon if it's a Master File
+        if (!isVariant && softwareIcon && softwareIcon.length > 0) {
+            iconKey = await uploadToB2(softwareIcon[0], 'icons');
+            fs.unlinkSync(softwareIcon[0].path);
         }
-        // ===========================================
+        
+        // B. ALWAYS process Screenshots (Both Master and Variant get their own)
+        if (screenshots && screenshots.length > 0) {
+            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+            screenshots.forEach(f => fs.unlinkSync(f.path));
+        }
 
-        await File.findByIdAndUpdate(fileId, {
-            name: formData.modName,
-            slug: finalSlug, // <--- SAVE THE SLUG
-            version: formData.modVersion,           
-            developer: formData.developerName || 'N/A',
-            modDescription: formData.modDescription,
-            modFeatures: formData.modFeatures,
-            whatsNew: formData.whatsNew,
-            officialDescription: formData.officialDescription,
-            videoUrl: formData.videoUrl,
-            category: formData.modPlatform,         
-            platforms: formData.modCategory ? [formData.modCategory] : [],
-            tags: processedTags,
-            iconKey: iconKey,
-            screenshotKeys: screenshotKeys,
-            status: 'pending' 
-        });
+        // --- 3. GENERATE SLUG (Only for Master files) ---
+        let finalSlug = null;
+        if (!isVariant) {
+            let baseSlug = slugify(formData.modName);
+            finalSlug = baseSlug;
+            let slugCounter = 1;
+            while (await File.findOne({ slug: finalSlug, category: formData.modPlatform, isLatestVersion: true, _id: { $ne: fileId } })) {
+                finalSlug = `${baseSlug}-${slugCounter}`;
+                slugCounter++;
+            }
+        }
 
-        res.redirect('/my-uploads?success=Upload complete and submitted for review!');
+        // --- 4. SAVE THE DATABASE RECORD ---
+        if (isVariant) {
+            await File.findByIdAndUpdate(fileId, {
+                name: formData.modName, 
+                version: formData.modVersion,
+                modDescription: formData.modDescription,
+                modFeatures: formData.modFeatures,
+                whatsNew: formData.whatsNew,
+                importantNote: formData.importantNote,
+                developer: formData.developerName || 'N/A',
+                
+                // ✅ FIX: Save the Variant's unique media!
+                screenshotKeys: screenshotKeys,
+                videoUrl: formData.videoUrl, 
+                
+                category: formData.modPlatform,
+                isVariant: true,
+                masterFile: masterFileId,
+                isLatestVersion: false, 
+                status: 'pending' 
+            });
+
+            // Link the new Variant to the Master File
+            await File.findByIdAndUpdate(masterFileId, {
+                $push: { variants: fileId }
+            });
+
+            // Redirect them to their uploads page so they can see it's pending
+            res.redirect('/my-uploads?message=Your variant has been submitted for review!');
+        } else {
+            // Save as a brand new Master File
+            await File.findByIdAndUpdate(fileId, {
+                name: formData.modName,                 
+                slug: finalSlug, 
+                version: formData.modVersion,           
+                developer: formData.developerName || 'N/A',
+                modDescription: formData.modDescription,
+                modFeatures: formData.modFeatures,
+                whatsNew: formData.whatsNew,
+                officialDescription: formData.officialDescription,
+                importantNote: formData.importantNote, // <--- NEW FIELD
+                videoUrl: formData.videoUrl,
+                category: formData.modPlatform,         
+                platforms: formData.modCategory ? [formData.modCategory] : [],
+                tags: processedTags,
+                iconKey: iconKey,
+                screenshotKeys: screenshotKeys,
+                
+                isVariant: false,
+                status: 'pending' 
+            });
+
+            res.redirect('/my-uploads?success=Upload complete and submitted for review!');
+        }
 
     } catch (error) {
         console.error("Finalize upload error:", error);
@@ -2610,6 +2750,7 @@ app.get('/faq', (req, res) => res.render('pages/static/faq'));
 app.get('/tos', (req, res) => res.render('pages/static/tos'));
 app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
+app.get('/refund-policy', (req, res) => res.render('pages/static/refund-policy'));
 app.get('/donate', (req, res) => res.render('pages/static/donate'));
 app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
 app.get('/membership', (req, res) => {

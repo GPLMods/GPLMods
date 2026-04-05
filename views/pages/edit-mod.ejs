@@ -33,9 +33,22 @@
     .status-banner.rejected { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); }
 </style>
 
-<div class="container">
+    <div class="container">
     <div class="upload-form-container">
-        <h2>Edit <span><%= file.name %></span></h2>
+        
+        <!-- ✅ FIX: Dynamic Title -->
+        <h2>
+            Edit 
+            <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">
+                <%= file.isVariant ? 'Variant: ' : 'Mod: ' %><%= file.name %>
+            </span>
+        </h2>
+        
+        <% if (file.isVariant) { %>
+            <div class="status-banner" style="background-color: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); color: var(--blue);">
+                <i class="fas fa-info-circle"></i> You are editing a Variant of an existing app. The App Icon, Official Description, and Tags are managed by the original uploader.
+            </div>
+        <% } %>
         
         <% if (file.status === 'rejected' && file.rejectionReason) { %>
             <div class="status-banner rejected">
@@ -49,8 +62,9 @@
             <fieldset class="form-section">
                 <legend>Core Details</legend>
 
-                <div class="icon-upload-container">
-                    <label>Mod Icon</label>
+                    <% if (!file.isVariant) { %>
+                    <div class="icon-upload-container">
+                        <label>Mod Icon</label>
                     <div class="icon-preview" id="iconPreviewBox">
                         <img id="iconImage" src="<%= file.iconUrl %>" alt="Icon Preview" style="display:block;">
                     </div>
@@ -63,7 +77,8 @@
 
                 <div class="form-group">
                     <label for="modName">Mod Name*</label>
-                    <input type="text" id="modName" name="modName" value="<%= file.name %>" required>
+                    <!-- If it's a variant, they shouldn't change the base name! Make it readonly -->
+                    <input type="text" id="modName" name="modName" value="<%= file.name %>" <%= file.isVariant ? 'readonly style="opacity:0.7; cursor:not-allowed;"' : 'required' %>>
                 </div>
 
                 <div class="form-group">
@@ -109,9 +124,17 @@
                     <textarea id="modFeatures" name="modFeatures" required><%= file.modFeatures %></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="officialDescription">Official Description (Optional)</label>
-                    <textarea id="officialDescription" name="officialDescription"><%= file.officialDescription %></textarea>
+                <!-- ✅ FIX: Only show Official Description if it is NOT a variant -->
+                <% if (!file.isVariant) { %>
+                    <div class="form-group">
+                        <label for="officialDescription">Official Description (Optional)</label>
+                        <textarea id="officialDescription" name="officialDescription"><%= file.officialDescription %></textarea>
+                    </div>
+                <% } %>
+
+             <div class="form-group">
+                    <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
+                    <textarea id="importantNote" name="importantNote" placeholder="e.g., Turn off Wi-Fi before opening the game, extract the OBB file to Android/obb, etc."><%= file.importantNote %></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -122,10 +145,13 @@
 
             <fieldset class="form-section">
                 <legend>Media & Metadata</legend>
-                <div class="form-group">
-                    <label for="tags">Tags (Optional, comma-separated)</label>
-                    <input type="text" id="tags" name="tags" value="<%= file.tags ? file.tags.join(', ') : '' %>">
-                </div>
+                <!-- ✅ FIX: Only show Tags if it is NOT a variant -->
+                <% if (!file.isVariant) { %>
+                    <div class="form-group">
+                        <label for="tags">Tags (Optional, comma-separated)</label>
+                        <input type="text" id="tags" name="tags" value="<%= file.tags ? file.tags.join(', ') : '' %>">
+                    </div>
+                <% } %>
 
                 <div class="form-group">
                     <label>Mod Screenshots (Upload to replace existing)</label>

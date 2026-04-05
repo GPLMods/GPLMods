@@ -18,6 +18,11 @@ const FileSchema = new Schema({
     modFeatures: { type: String, required: function() { return this.status !== 'processing'; } },
     officialDescription: { type: String },
     whatsNew: { type: String },
+// --- NEW: IMPORTANT NOTE FIELD ---
+    importantNote: { 
+        type: String,
+        trim: true
+    },
     
     // --- STORAGE KEYS (S3/Cloud) ---
     iconKey: { type: String, required: function() { return this.status !== 'processing'; } },
@@ -67,23 +72,37 @@ const FileSchema = new Schema({
         default: 'N/A' // Name of the original creator/developer
     },
 
-    // --- VERSION CONTROL SYSTEM ---
+    // --- VERSION & VARIANT CONTROL SYSTEM ---
     isLatestVersion: {
         type: Boolean,
         default: true
     },
-    // Links a new version to its original "parent" entry
     parentFile: {
         type: Schema.Types.ObjectId,
         ref: 'File',
         default: null
     },
-    // Array on the parent file linking to all its child versions
-olderVersions: {
-        type: [Schema.Types.ObjectId],
-        ref: 'File',
-        default:[]
+    olderVersions: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
+    
+    // --- NEW: VARIANT SYSTEM ---
+    isVariant: {
+        type: Boolean,
+        default: false
     },
+    // The "Master" file that holds the main description and icon
+    masterFile: {
+        type: Schema.Types.ObjectId,
+        ref: 'File',
+        default: null
+    },
+    // An array on the Master file linking to all its alternative variants
+    variants: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
     
     // --- TRACKING, STATS & RATINGS ---
     downloads: { type: Number, default: 0 },

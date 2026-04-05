@@ -66,30 +66,50 @@ const Dashboard = () => {
             {/* Clickable Stat Cards */}
             <Box flex flexDirection="row" flexWrap="wrap" style={{ gap: '20px', marginBottom: '40px' }}>
                 
-                {/* Users Card - Links to User Resource */}
+                {/* Users Card */}
                 <a href="/admin/resources/User" style={{ textDecoration: 'none', flex: '1', minWidth: '200px' }}>
                     <Box p="lg" style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #2196F3', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'none'}>
                         <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="Users" /> Total Users</Text>
-                        <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalUsers || 0}</H2>
+                        <H2 style={{ color: '#fff', margin: 0, display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                            {data.stats?.totalUsers?.toLocaleString() || 0}
+                        </H2>
+                        {/* ✅ NEW: "This Month" Metric */}
+                        <Text style={{ color: '#43a047', fontSize: '14px', marginTop: '5px', fontWeight: 'bold' }}>
+                            <Icon icon="TrendUp" style={{ marginRight: '4px' }} /> 
+                            +{data.stats?.newUsersThisMonth?.toLocaleString() || 0} this month
+                        </Text>
                     </Box>
                 </a>
 
-                {/* Mods Card - Links to File Resource */}
+                {/* Mods Card */}
                 <a href="/admin/resources/File" style={{ textDecoration: 'none', flex: '1', minWidth: '200px' }}>
                     <Box p="lg" style={{ backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #FFD700', transition: 'transform 0.2s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'none'}>
-                        <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="FileCode" /> Live Mods</Text>
-                        <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalMods || 0}</H2>
+                        <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="FileCode" /> Total Live Mods</Text>
+                        <H2 style={{ color: '#fff', margin: 0 }}>
+                            {data.stats?.totalMods?.toLocaleString() || 0}
+                        </H2>
+                        {/* ✅ NEW: "This Month" Metric */}
+                        <Text style={{ color: '#FFD700', fontSize: '14px', marginTop: '5px', fontWeight: 'bold' }}>
+                            <Icon icon="Plus" style={{ marginRight: '4px' }} /> 
+                            +{data.stats?.newModsThisMonth?.toLocaleString() || 0} this month
+                        </Text>
                     </Box>
                 </a>
 
-                {/* Downloads Card (Not linked, just a stat) */}
+                {/* Downloads Card */}
                 <Box p="lg" style={{ flex: '1', minWidth: '200px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333', borderLeft: '4px solid #43a047' }}>
                     <Text style={{ color: '#c0c0c0', textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}><Icon icon="Download" /> Total Downloads</Text>
-                    <H2 style={{ color: '#fff', margin: 0 }}>{data.stats?.totalDownloads?.toLocaleString() || 0}</H2>
+                    <H2 style={{ color: '#fff', margin: 0 }}>
+                        {data.stats?.totalDownloads?.toLocaleString() || 0}
+                    </H2>
+                    {/* Note: Tracking exact downloads per month requires a separate historical DB collection. 
+                        We keep this as a grand total for now. */}
+                    <Text style={{ color: '#c0c0c0', fontSize: '12px', marginTop: '5px' }}>
+                        All-time download count
+                    </Text>
                 </Box>
 
             </Box>
-
             {/* Charts Section */}
             <Box flex flexDirection="row" flexWrap="wrap" style={{ gap: '20px' }}>
                 

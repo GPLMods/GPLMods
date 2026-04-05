@@ -1,0 +1,125 @@
+<%- include('../../partials/header') %>
+
+<style>
+    /* Reusing the standard static page container styles */
+    .static-page-container { 
+        max-width: 900px; 
+        margin: 4rem auto; 
+        padding: 3rem; 
+        background-color: var(--dark-gray); 
+        border-radius: 15px; 
+        border: 1px solid #333; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    .static-page-container h1 { 
+        color: var(--white); 
+        font-size: 2.8em; 
+        margin-bottom: 10px; 
+        text-align: center;
+    }
+    .static-page-container h1 span { 
+        color: var(--gold); 
+        text-shadow: 0 0 15px var(--glow-gold); 
+    }
+    .static-page-container > p { 
+        text-align: center; 
+        color: var(--silver); 
+        font-size: 1.1em; 
+        margin-bottom: 3rem; 
+    }
+
+    .policy-content h2 { 
+        color: var(--gold); 
+        font-size: 1.6em; 
+        margin-top: 2rem; 
+        margin-bottom: 1rem; 
+        border-bottom: 1px solid #333; 
+        padding-bottom: 10px; 
+    }
+    .policy-content h3 {
+        color: var(--white);
+        font-size: 1.2em;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .policy-content p { 
+        color: var(--silver); 
+        line-height: 1.7; 
+        margin-bottom: 1rem; 
+    }
+    .policy-content ul { 
+        color: var(--silver); 
+        line-height: 1.7; 
+        margin-bottom: 1.5rem; 
+        padding-left: 20px; 
+    }
+    .policy-content li { 
+        margin-bottom: 10px; 
+    }
+    .policy-content strong { 
+        color: var(--white); 
+    }
+
+    /* Info Box */
+    .info-box {
+        background-color: rgba(255, 215, 0, 0.1);
+        border-left: 4px solid var(--gold);
+        padding: 20px;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+    .info-box p {
+        margin: 0;
+        color: var(--white);
+    }
+</style>
+
+<main class="container">
+    <div class="static-page-container">
+        <h1>Refund <span>Policy</span></h1>
+        <p>Last Updated: <%= new Date().toLocaleDateString() %></p>
+
+        <div class="policy-content">
+            <p>At GPL Mods, we want you to be completely satisfied with your GPL Mods+ Premium Membership. We offer a transparent, tiered refund policy based on the length of time since your purchase and the type of membership you selected.</p>
+
+            <h2>1. Subscription Memberships (Monthly, 6-Month, Yearly)</h2>
+            <p>For our time-based subscription plans, the following refund schedule applies from the exact time and date of your initial transaction:</p>
+            <ul>
+                <li><strong>Within 7 Days (100% Refund):</strong> If you request a refund within the first 7 days (168 hours) of your purchase, you are eligible for a full, 100% refund to your original payment method. No questions asked.</li>
+                <li><strong>Days 8 through 14 (80% Refund):</strong> If you request a refund between day 8 and day 14 of your subscription, you are eligible for an 80% refund of the purchase price.</li>
+                <li><strong>After 14 Days (No Refund):</strong> Once 14 days (336 hours) have passed since your transaction, your purchase becomes strictly non-refundable for the remainder of the billing cycle.</li>
+            </ul>
+
+            <h2>2. Lifetime Membership</h2>
+            <p>Due to the nature of a permanent, lifetime unlock, our refund policy for the Lifetime Membership differs slightly:</p>
+            <ul>
+                <li><strong>Within 7 Days (100% Refund):</strong> You are eligible for a full, 100% refund if requested within the first 7 days of purchase.</li>
+                <li><strong>After 7 Days (95% Refund):</strong> If you request a refund at any point after the initial 7-day period, you will receive a 95% refund of the purchase price. The remaining 5% covers non-recoverable payment processing and administrative fees.</li>
+            </ul>
+
+            <h2>3. Re-Subscription Cooldown</h2>
+            <p>To prevent abuse of our refund and premium systems, a "cooldown" period is enforced following any successful refund.</p>
+            <div class="info-box">
+                <p><strong><i class="fas fa-info-circle" style="margin-right: 10px;"></i>Cooldown Rule:</strong> Once a refund has been processed and your account is downgraded, you will not be permitted to purchase a new GPL Mods+ Membership until exactly <strong>3 days (72 hours)</strong> have passed from the time the refund was issued.</p>
+            </div>
+
+            <h2>4. Distributor Partnerships</h2>
+            <p>Please note that application fees or payments associated with the <strong>Mods Distributor Partnership</strong> are strictly non-refundable under any circumstances, as detailed in the Distributor Agreement.</p>
+
+            <h2>5. Donations</h2>
+            <p>Voluntary donations made through our /donate page are highly appreciated but are strictly non-refundable.</p>
+
+            <h2>6. How to Request a Refund</h2>
+            <p>To initiate a refund request, you must be logged into your account.</p>
+            <ol>
+                <li>Navigate to the <a href="/support" style="color: var(--gold); text-decoration: underline;">Support Tickets</a> page.</li>
+                <li>Select <strong>"Billing / Premium Membership"</strong> as the category.</li>
+                <li>Include the word "Refund" in your subject line.</li>
+                <li>Submit the ticket. Our team will review the timestamp of your request against your purchase date and process the applicable refund amount.</li>
+            </ol>
+            <p><em>Please allow up to 5-10 business days for the funds to appear back on your original payment method after we have confirmed the refund.</em></p>
+        </div>
+    </div>
+</main>
+
+<%- include('../../partials/footer') %>

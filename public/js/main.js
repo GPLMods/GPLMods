@@ -33,6 +33,7 @@ try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error
 try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); } // <-- ADD THIS LINE
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
+try { initializeCustomDropdowns(); } catch (e) { console.error("Dropdown Error:", e); }
         console.log("All initializers finished.");
     };
 
@@ -493,13 +494,14 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
 }
 
     const playlist =[
-        { title: 'CJ Whoopty', src: '/audio/bgm-1.mp3' },
+        { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
+        { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
         { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
-        { title: 'NCS 2', src: '/audio/bgm-3.mp3' },
+        { title: 'Heroes Tonight', src: '/audio/bgm-3.mp3' },
         { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
-        { title: 'NCS 4', src: '/audio/bgm-5.mp3' },
-        { title: 'NCS 5', src: '/audio/bgm-6.mp3' },
-        { title: 'NCS 6', src: '/audio/bgm-7.mp3' },
+        { title: 'Royalty', src: '/audio/bgm-5.mp3' },
+        { title: 'Mortals', src: '/audio/bgm-6.mp3' },
+        { title: 'On & On', src: '/audio/bgm-7.mp3' },
     ];
     
     let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;

@@ -1,4 +1,88 @@
 <%- include('../partials/header') %>
+<style>
+    /* Filter Section Container */
+    .filter-section {
+        background-color: var(--dark-gray);
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 40px;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto; /* Note: Search page has 5 columns because of the text input */
+        gap: 20px;
+        align-items: center;
+        border: 1px solid #333;
+    }
+    .filter-group { display: flex; flex-direction: column; position: relative; }
+    .filter-group label { color: var(--silver); font-size: 0.9em; margin-bottom: 8px; font-weight: 600; }
+    
+    /* Custom Select Wrapper */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background-color: var(--black);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .selected-text { color: var(--white); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
+    
+    /* Custom Options Dropdown */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #1a1a1a;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    /* Individual Options */
+    .custom-option {
+        padding: 12px 15px;
+        color: var(--silver);
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
+    
+    .filter-button { background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 8px; border: none; font-size: 1em; font-weight: bold; cursor: pointer; align-self: end; height: 46px; transition: transform 0.2s; }
+    .filter-button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
+
+    /* Responsive */
+    @media (max-width: 992px) { .filter-section { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 768px) { .filter-section { grid-template-columns: 1fr; } .filter-button { width: 100%; margin-top: 10px; } }
+</style>
 
 <main>
     <section class="page-header">
@@ -8,29 +92,95 @@
     </section>
 
     <div class="container">
-        <section class="filter-section">
-            <div class="filter-controls">
-                <label for="platform-filter">Platform:</label>
-                <select id="platform-filter" name="platform">
-                    <option value="all">All Platforms</option>
-                    <option value="windows">Windows</option>
-                    <option value="android">Android</option>
-                    <option value="ios-jailed">IPA</option>
-                    <option value="ios-jailbroken">DEB</option>
-                    <option value="wordpress">WordPress</option>
-                </select>
-                <label for="sort-filter">Sort by:</label>
-                <select id="sort-filter" name="sort">
-                    <option value="newest">Newest</option>
-                    <option value="downloads">Most Downloads</option>
-                    <option value="rating">Highest Rating</option>
-                </select>
-            </div>
-            <div class="results-count">
-                <!-- Will be updated by JS -->
+        
+        <!-- ============================================== -->
+        <!-- THE NEW CUSTOM FILTER FORM (Matches Category Page) -->
+        <!-- ============================================== -->
+        <form action="/search" method="GET" class="filter-section" id="searchFilterForm" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 20px; align-items: center; background-color: var(--dark-gray); padding: 25px; border-radius: 15px; margin-bottom: 40px;">
+            
+            <!-- Hidden input to pass the search query along with the filters -->
+            <input type="hidden" name="q" value="<%= query %>">
+
+            <div class="results-count" style="grid-column: 1 / -1; margin-bottom: 10px;">
                 <span>Showing <%= results.length %> of <%= totalResults %> results</span>
             </div>
-        </section>
+
+            <!-- 1. PLATFORM DROPDOWN -->
+            <div class="filter-group" style="display: flex; flex-direction: column;">
+                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Platform</label>
+                <!-- Hidden Native Select -->
+                <select id="platform" name="platform" style="display: none;">
+                    <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
+                    <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
+                    <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
+                    <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
+                    <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
+                    <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
+                </select>
+                <!-- Custom UI Wrapper -->
+                <div class="custom-select-wrapper" id="wrapper-platform">
+                    <div class="custom-select">
+                        <span class="selected-text">All Platforms</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="all">All Platforms</div>
+                        <div class="custom-option" data-value="windows">Windows</div>
+                        <div class="custom-option" data-value="android">Android</div>
+                        <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                        <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                        <div class="custom-option" data-value="wordpress">WordPress</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 2. SUB-CATEGORY DROPDOWN (Dynamic) -->
+            <div class="filter-group" style="display: flex; flex-direction: column;">
+                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Category</label>
+                <!-- Hidden Native Select -->
+                <select id="subCategory" name="subCategory" style="display: none;">
+                    <option value="all" <%= currentSubCategory === 'all' ? 'selected' : '' %>>All Categories</option>
+                    <!-- Options populated by JS -->
+                </select>
+                <!-- Custom UI Wrapper -->
+                <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>" id="wrapper-subCategory">
+                    <div class="custom-select" style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
+                        <span class="selected-text">All Categories</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options" id="options-subCategory">
+                        <div class="custom-option" data-value="all">All Categories</div>
+                        <!-- Options populated by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3. SORT DROPDOWN -->
+            <div class="filter-group" style="display: flex; flex-direction: column;">
+                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Sort By</label>
+                <!-- Hidden Native Select -->
+                <select id="sort" name="sort" style="display: none;">
+                    <option value="newest" <%= currentSort === 'newest' ? 'selected' : '' %>>Newest</option>
+                    <option value="downloads" <%= currentSort === 'downloads' ? 'selected' : '' %>>Most Downloads</option>
+                    <option value="rating" <%= currentSort === 'rating' ? 'selected' : '' %>>Highest Rating</option>
+                </select>
+                <!-- Custom UI Wrapper -->
+                <div class="custom-select-wrapper" id="wrapper-sort">
+                    <div class="custom-select">
+                        <span class="selected-text">Newest</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="newest">Newest</div>
+                        <div class="custom-option" data-value="downloads">Most Downloads</div>
+                        <div class="custom-option" data-value="rating">Highest Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="filter-button" style="background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; border: none; font-size: 1em; font-weight: 600; cursor: pointer; align-self: end; height: 48px; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
+        </form>
+        <!-- ============================================== -->
 
         <!-- Only show the grid if there are results -->
         <% if(results.length > 0) { %>
@@ -40,17 +190,17 @@
                     <a href="/<%= file.category %>/<%= file.slug || file._id %>"  class="mod-card-link" data-platform="<%= file.category %>">
                         <div class="mod-card">
                             
-                            <!-- NEW: Certification Tag -->
+                            <!-- Certification Tag -->
                             <% if (file.certification === 'certified') { %>
                                 <div class="app-feature-tag">✔ Certified</div>
                             <% } else if (file.certification === 'community-tested') { %>
                                 <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
                             <% } %>
                             
-                            <!-- NEW: Version Tag -->
+                            <!-- Version Tag -->
                             <div class="mod-type-tag"><%= file.version %></div>
                             
-                            <!-- NEW: Image Container Logic -->
+                            <!-- Image Container Logic -->
                             <div class="mod-card-image">
                                 <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
                             </div>
@@ -59,14 +209,14 @@
                                 <h3><%= file.name %></h3>
                                 <p><%= file.modDescription.substring(0, 50) %>...</p> 
                                 
-                                <div class="rating">
+                                <div class="rating" style="margin-bottom: 10px;">
                                     <div class="stars-outer">
                                         <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
                                     </div>
                                     <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
                                 </div>
 
-                                <!-- NEW: Platform Tag -->
+                                <!-- Platform Tag -->
                                 <div class="card-footer">
                                     <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
                                         <%= file.category.toUpperCase().replace('-', ' ') %>
@@ -83,42 +233,177 @@
         <% if(results.length === 0) { %>
             <section class="no-results" id="no-results-message">
                 <h2>No Mods Found</h2>
-                <p>We couldn't find any mods matching your search. Please try a different keyword.</p>
+                <p>We couldn't find any mods matching your search. Please try a different keyword or adjust your filters.</p>
             </section>
         <% } %>
 
-        <!-- Pagination (dynamically generated) -->
-        <nav class="pagination">
-            <% for(let i = 1; i <= totalPages; i++) { %>
-                <a href="/search?q=<%= query %>&page=<%= i %>" class="<%= currentPage === i ? 'active' : '' %>">
-                    <%= i %>
-                </a>
-            <% } %>
-        </nav>
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+            <nav class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <!-- UPDATED PAGINATION LINK to include subCategory -->
+                    <a href="/search?q=<%= query %>&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
+                       class="<%= currentPage === i ? 'active' : '' %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+            </nav>
+        <% } %>
     </div>
 </main>
 
+<!-- ============================================== -->
+<!-- JAVASCRIPT FOR CUSTOM DROPDOWNS & LOGIC        -->
+<!-- ============================================== -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const platformFilter = document.getElementById('platform-filter');
-        const sortFilter = document.getElementById('sort-filter');
+    document.addEventListener('DOMContentLoaded', () => {
         
-        // Pre-select the dropdowns based on the current URL
-        platformFilter.value = '<%= currentPlatform %>';
-        sortFilter.value = '<%= currentSort %>';
+        // 1. Data mapping for sub-categories
+        const categoriesByPlatform = {
+            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+        };
 
-        function applyFilters() {
-            const platform = platformFilter.value;
-            const sort = sortFilter.value;
-            const query = '<%= query %>';
-            
-            // Construct the new URL with the selected filters
-            // We reset to page=1 whenever a filter is changed
-            window.location.href = `/search?q=${encodeURIComponent(query)}&platform=${platform}&sort=${sort}&page=1`;
+        // 2. Setup a specific Custom Dropdown
+        function setupCustomSelect(wrapperId, nativeSelectId) {
+            const wrapper = document.getElementById(wrapperId);
+            const nativeSelect = document.getElementById(nativeSelectId);
+            if (!wrapper || !nativeSelect) return;
+
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            // Initialize: Set visible text to match the currently selected option in the hidden native select
+            const initialSelectedOption = nativeSelect.options[nativeSelect.selectedIndex];
+            if (initialSelectedOption) {
+                selectedText.textContent = initialSelectedOption.text;
+                selectedText.style.color = 'var(--white)';
+            }
+
+            // Click to open/close
+            customSelect.addEventListener('click', (e) => {
+                if (wrapper.classList.contains('disabled')) return;
+                
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            // Delegate click events for options
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+
+                const value = optionEl.getAttribute('data-value');
+                const text = optionEl.textContent;
+
+                selectedText.textContent = text;
+                nativeSelect.value = value;
+                nativeSelect.dispatchEvent(new Event('change'));
+
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
         }
+
+        // 3. Initialize all three dropdowns
+        setupCustomSelect('wrapper-platform', 'platform');
+        setupCustomSelect('wrapper-subCategory', 'subCategory');
+        setupCustomSelect('wrapper-sort', 'sort');
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
+
+        // 4. DYNAMIC LOGIC: When Platform changes, update Sub-Categories
+        const platformSelect = document.getElementById('platform');
+        const subCategorySelect = document.getElementById('subCategory');
+        const subCategoryWrapper = document.getElementById('wrapper-subCategory');
+        const subCategoryOptionsContainer = document.getElementById('options-subCategory');
+        const subCategorySelectedText = subCategoryWrapper.querySelector('.selected-text');
+        const subCategoryCustomSelectBox = subCategoryWrapper.querySelector('.custom-select');
+
+        const currentSubCategoryVal = '<%= currentSubCategory %>';
+
+        function updateSubCategories() {
+            const selectedPlatform = platformSelect.value;
+            
+            subCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+            subCategoryOptionsContainer.innerHTML = '<div class="custom-option" data-value="all">All Categories</div>';
+
+            if (selectedPlatform === 'all') {
+                subCategoryWrapper.classList.add('disabled');
+                subCategoryCustomSelectBox.style.opacity = '0.5';
+                subCategoryCustomSelectBox.style.cursor = 'not-allowed';
+                subCategorySelectedText.textContent = 'All Categories';
+                subCategorySelect.value = 'all';
+            } else {
+                subCategoryWrapper.classList.remove('disabled');
+                subCategoryCustomSelectBox.style.opacity = '1';
+                subCategoryCustomSelectBox.style.cursor = 'pointer';
+
+                const categories = categoriesByPlatform[selectedPlatform] || [];
+                
+                categories.forEach(catName => {
+                    const catValue = catName.toLowerCase().replace(/ /g, '-');
+                    
+                    const nativeOpt = document.createElement('option');
+                    nativeOpt.value = catValue;
+                    nativeOpt.text = catName;
+                    
+                    const customOpt = document.createElement('div');
+                    customOpt.className = 'custom-option';
+                    customOpt.setAttribute('data-value', catValue);
+                    customOpt.textContent = catName;
+
+                    if (catValue === currentSubCategoryVal) {
+                        nativeOpt.selected = true;
+                        customOpt.classList.add('selected');
+                        subCategorySelectedText.textContent = catName;
+                    }
+
+                    subCategorySelect.appendChild(nativeOpt);
+                    subCategoryOptionsContainer.appendChild(customOpt);
+                });
+            }
+        }
+
+        updateSubCategories();
+
+        platformSelect.addEventListener('change', () => {
+            subCategorySelect.value = 'all';
+            subCategorySelectedText.textContent = 'All Categories';
+            updateSubCategories();
+        });
         
-        platformFilter.addEventListener('change', applyFilters);
-        sortFilter.addEventListener('change', applyFilters);
+        const filterForm = document.getElementById('searchFilterForm');
+        const filterBtn = filterForm.querySelector('.filter-button');
+        filterForm.addEventListener('submit', () => {
+            filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            filterBtn.style.opacity = '0.8';
+        });
+
+        // Make it responsive for mobile (Matches the category page media queries)
+        const style = document.createElement('style');
+        style.textContent = `
+            @media (max-width: 992px) {
+                #searchFilterForm { grid-template-columns: 1fr 1fr !important; }
+                .results-count { grid-column: 1 / -1; }
+            }
+            @media (max-width: 768px) {
+                #searchFilterForm { grid-template-columns: 1fr !important; }
+                .filter-button { width: 100%; margin-top: 10px; }
+            }
+        `;
+        document.head.appendChild(style);
     });
 </script>
 

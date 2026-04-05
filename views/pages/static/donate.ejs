@@ -6,29 +6,59 @@
     .donate-wrapper h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .donate-wrapper p { color: var(--silver); line-height: 1.8; font-size: 1.1em; margin-bottom: 30px; }
     
-    /* --- NEW: Currency Switcher Styles --- */
+    /* Currency Switcher */
     .currency-selector { margin-bottom: 30px; display: inline-flex; align-items: center; gap: 10px; background: var(--black); padding: 10px 20px; border-radius: 25px; border: 1px solid #333; }
     .currency-selector label { color: var(--silver); font-weight: 600; font-size: 0.9em; }
     .currency-selector select { background: transparent; color: var(--gold); border: none; outline: none; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; font-size: 1em; }
-    /* ------------------------------------- */
 
-    .donation-options { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    /* Preset Donation Buttons */
+    .donation-options { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
     .donation-btn { 
         background-color: transparent; border: 2px solid var(--gold); color: var(--gold); 
         padding: 15px 30px; font-size: 1.4em; font-weight: 700; border-radius: 10px; 
-        cursor: pointer; transition: all 0.3s ease; min-width: 140px; font-family: 'Poppins', sans-serif;
+        cursor: pointer; transition: all 0.3s ease; min-width: 130px; font-family: 'Poppins', sans-serif;
     }
-    .donation-btn:hover { background-color: var(--gold); color: var(--black); box-shadow: 0 0 20px var(--glow-gold); transform: translateY(-5px); }
+    .donation-btn:hover, .donation-btn.selected { background-color: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); transform: translateY(-3px); }
+
+    /* Custom Amount Input */
+    .custom-amount-wrapper { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .custom-input-group { position: relative; width: 100%; max-width: 300px; display: flex; align-items: center; }
+    .custom-input-symbol { position: absolute; left: 20px; font-size: 1.5em; font-weight: bold; color: var(--silver); }
+    .custom-amount-input { 
+        width: 100%; padding: 15px 15px 15px 45px; font-size: 1.5em; font-weight: bold; color: var(--white); 
+        background-color: var(--black); border: 2px solid #444; border-radius: 10px; outline: none; transition: border-color 0.3s;
+        font-family: 'Poppins', sans-serif;
+    }
+    .custom-amount-input:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+    
+    /* Hide number input arrows */
+    .custom-amount-input::-webkit-outer-spin-button, .custom-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .custom-amount-input[type=number] { -moz-appearance: textfield; }
+
+    /* Submit Button */
+    .final-donate-btn { 
+        width: 100%; max-width: 300px; margin: 0 auto 20px auto; display: block;
+        background-color: var(--gold); color: var(--black); padding: 18px; 
+        font-size: 1.2em; font-weight: 800; border: none; border-radius: 10px; 
+        cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); text-transform: uppercase; letter-spacing: 1px;
+    }
+    .final-donate-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); background-color: #fff; }
+    .final-donate-btn:disabled { background-color: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    /* Terms */
+    .terms-box { background: rgba(0,0,0,0.3); border: 1px dashed #444; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 0.85em; color: var(--silver); line-height: 1.5; }
+    .terms-box i { color: var(--red); margin-right: 5px; }
+
 </style>
 
 <main class="container">
     <div class="donate-wrapper">
         <h1>Support <span>GPL Mods</span></h1>
         <p>
-            If you find this site useful, please consider making a small donation. Your support helps cover our heavy server costs, maintenance, and allows us to continue building new features for the community!
+            If you find this site useful, please consider making a donation. Your support helps cover our heavy server costs and allows us to continue building new features for the community!
         </p>
 
-        <!-- ======== NEW: Currency Switcher HTML ======== -->
+        <!-- Currency Switcher -->
         <div class="currency-selector">
             <label for="currency-select">Currency:</label>
             <select id="currency-select">
@@ -38,99 +68,197 @@
                 <option value="GBP">£ GBP</option>
             </select>
         </div>
-        <!-- ============================================== -->
 
+        <!-- Preset Buttons -->
         <div id="donation-form" class="donation-options">
-            <!-- 
-                We use data attributes to store the raw value for each currency.
-                The 'data-amount' is the value sent to the server (we'll standardize on sending the base unit, e.g., cents/paise, or let the server handle conversion if preferred. For this UI, we just update the display text).
-            -->
-            <button class="donation-btn" data-inr="400" data-usd="5" data-eur="4.50" data-gbp="4">
-                <span class="currency-symbol">₹</span><span class="price-value">400</span>
+            <button type="button" class="donation-btn" data-inr="500" data-usd="6" data-eur="5.50" data-gbp="5">
+                <span class="currency-symbol">₹</span><span class="price-value">500</span>
             </button>
-            <button class="donation-btn" data-inr="850" data-usd="10" data-eur="9" data-gbp="8">
-                <span class="currency-symbol">₹</span><span class="price-value">850</span>
+            <button type="button" class="donation-btn selected" data-inr="1000" data-usd="12" data-eur="11" data-gbp="10">
+                <span class="currency-symbol">₹</span><span class="price-value">1000</span>
             </button>
-            <button class="donation-btn" data-inr="1700" data-usd="20" data-eur="18" data-gbp="16">
-                <span class="currency-symbol">₹</span><span class="price-value">1700</span>
+            <button type="button" class="donation-btn" data-inr="2000" data-usd="24" data-eur="22" data-gbp="20">
+                <span class="currency-symbol">₹</span><span class="price-value">2000</span>
             </button>
         </div>
+
+        <!-- Custom Amount Input -->
+        <p style="color: var(--silver); margin-bottom: 10px; font-weight: bold;">Or enter a custom amount:</p>
+        <div class="custom-amount-wrapper">
+            <div class="custom-input-group">
+                <span class="custom-input-symbol" id="input-currency-symbol">₹</span>
+                <input type="number" id="custom-amount" class="custom-amount-input" value="1000" min="500" max="5000">
+            </div>
+        </div>
         
-        <p id="error-message" style="color: var(--red); margin-top: 15px; font-weight: bold;"></p>
-        <p style="font-size: 0.9em; color: #666; margin-top: 20px;"><i class="fas fa-lock"></i> Payments are securely processed by Cashfree.</p>
+        <p id="limit-message" style="color: var(--silver); font-size: 0.85em; margin-bottom: 25px;">
+            Limits: <span id="min-limit-text">₹500</span> - <span id="max-limit-text">₹5000</span>
+        </p>
+
+        <!-- Submit Button -->
+        <button id="final-donate-btn" class="final-donate-btn">
+            Donate <span id="btn-currency-symbol">₹</span><span id="btn-amount-value">1000</span>
+        </button>
+
+        <p id="error-message" style="color: var(--red); font-weight: bold; min-height: 20px;"></p>
+        
+        <!-- Terms and Security -->
+        <div class="terms-box">
+            <p>
+                <i class="fas fa-exclamation-triangle"></i> <strong>Important Notice:</strong> All donations are made voluntarily to support the GPL Mods platform. <strong>Donations are strictly non-refundable.</strong> By proceeding with this payment, you agree that you will not issue a chargeback or request a refund for this transaction. Please read our <a href="/refund-policy" style="color: var(--gold); text-decoration: underline; font-weight: bold;">Refund Policy</a> for more details.
+            </p>
+        </div>
+        <p style="font-size: 0.85em; color: #666; margin-top: 15px;"><i class="fas fa-lock"></i> Payments are securely processed by Cashfree.</p>
     </div>
 </main>
 
-<!-- Note: For production Cashfree SDK, ensure you use the correct script URL provided by Cashfree docs if it differs from the sandbox one -->
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Currency Switcher Logic ---
+        // --- 1. Element Selection ---
         const currencySelect = document.getElementById('currency-select');
         const donationButtons = document.querySelectorAll('.donation-btn');
+        const customInput = document.getElementById('custom-amount');
+        const inputSymbol = document.getElementById('input-currency-symbol');
+        const finalDonateBtn = document.getElementById('final-donate-btn');
+        const btnSymbol = document.getElementById('btn-currency-symbol');
+        const btnAmountValue = document.getElementById('btn-amount-value');
+        const minLimitText = document.getElementById('min-limit-text');
+        const maxLimitText = document.getElementById('max-limit-text');
+        const errorMessage = document.getElementById('error-message');
         
-        const symbols = {
-            'INR': '₹',
-            'USD': '$',
-            'EUR': '€',
-            'GBP': '£'
+        // --- 2. Configuration & Limits ---
+        // We define limits based on the currency so the rules make sense globally
+        const limits = {
+            'INR': { min: 500, max: 5000, symbol: '₹' },
+            'USD': { min: 5, max: 100, symbol: '$' },
+            'EUR': { min: 5, max: 100, symbol: '€' },
+            'GBP': { min: 5, max: 100, symbol: '£' }
         };
 
+        // Helper to update the limits text and input restrictions
+        function updateLimits(currency) {
+            const rules = limits[currency];
+            customInput.min = rules.min;
+            customInput.max = rules.max;
+            minLimitText.textContent = rules.symbol + rules.min;
+            maxLimitText.textContent = rules.symbol + rules.max;
+        }
+
+        // Helper to sync the big yellow button with the current input value
+        function syncFinalButton() {
+            let val = parseFloat(customInput.value);
+            const currency = currencySelect.value;
+            const rules = limits[currency];
+
+            if (isNaN(val)) val = 0;
+            
+            btnSymbol.textContent = rules.symbol;
+            btnAmountValue.textContent = val;
+
+            // Basic frontend validation to disable the button if out of bounds
+            if (val < rules.min || val > rules.max) {
+                finalDonateBtn.disabled = true;
+                errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
+            } else {
+                finalDonateBtn.disabled = false;
+                errorMessage.textContent = "";
+            }
+        }
+
+        // --- 3. Event Listeners ---
+
+        // A. Currency Switcher
         currencySelect.addEventListener('change', function() {
             const selectedCurrency = this.value;
-            const symbol = symbols[selectedCurrency];
+            const rules = limits[selectedCurrency];
 
+            // Update preset button symbols and values
             donationButtons.forEach(btn => {
-                // Update the symbol
-                btn.querySelector('.currency-symbol').textContent = symbol;
-                // Fetch and update the price value based on the selected currency
+                btn.querySelector('.currency-symbol').textContent = rules.symbol;
                 const newPrice = btn.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
-                if (newPrice) {
-                    btn.querySelector('.price-value').textContent = newPrice;
-                }
+                if (newPrice) btn.querySelector('.price-value').textContent = newPrice;
+            });
+
+            // Update the input symbol and limits
+            inputSymbol.textContent = rules.symbol;
+            updateLimits(selectedCurrency);
+
+            // Automatically select the middle button's value as the new default
+            const middleBtnVal = document.querySelector('.donation-btn.selected').getAttribute(`data-${selectedCurrency.toLowerCase()}`);
+            customInput.value = middleBtnVal;
+
+            syncFinalButton();
+        });
+
+        // B. Preset Buttons Click
+        donationButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove 'selected' class from all buttons
+                donationButtons.forEach(btn => btn.classList.remove('selected'));
+                // Add 'selected' class to clicked button
+                this.classList.add('selected');
+                
+                // Update the custom input with this button's value
+                const currency = currencySelect.value;
+                const value = this.getAttribute(`data-${currency.toLowerCase()}`);
+                customInput.value = value;
+                
+                syncFinalButton();
             });
         });
 
-        // --- 2. Cashfree Payment Logic ---
+        // C. Custom Input Typing
+        customInput.addEventListener('input', function() {
+            // Unselect preset buttons because the user is typing a custom amount
+            donationButtons.forEach(btn => btn.classList.remove('selected'));
+            syncFinalButton();
+        });
+
+        // --- 4. Initialization ---
+        // Run once on load to set the initial state correctly
+        updateLimits('INR');
+        syncFinalButton();
+
+        // --- 5. Cashfree Payment Logic ---
         const cashfree = Cashfree({ mode: "sandbox" }); // Change to production later
-        const errorMessage = document.getElementById('error-message');
 
-        donationButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Get the *currently displayed* price value and currency to send to the server
-                const amount = this.querySelector('.price-value').textContent;
-                const currency = currencySelect.value;
-                const originalHTML = this.innerHTML;
+        finalDonateBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Get final values
+            const amount = parseFloat(customInput.value);
+            const currency = currencySelect.value;
+            const rules = limits[currency];
 
-                errorMessage.textContent = ""; 
-                this.disabled = true;
-                this.textContent = "Wait...";
-                this.style.backgroundColor = "var(--gold)";
-                this.style.color = "var(--black)";
+            // Double check limits before sending to server
+            if (isNaN(amount) || amount < rules.min || amount > rules.max) {
+                errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
+                return;
+            }
 
-                // Important: Your backend route '/create-cashfree-order' will need to be updated
-                // to handle the 'currency' field in addition to 'amount' if you want Cashfree
-                // to process the transaction in different currencies.
-                fetch('/create-cashfree-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: amount, currency: currency })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.payment_session_id) {
-                        cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
-                    } else {
-                        throw new Error(data.error || 'Could not create payment order.');
-                    }
-                })
-                .catch(err => {
-                    errorMessage.textContent = 'Integration pending or server error.';
-                    this.disabled = false;
-                    this.innerHTML = originalHTML;
-                    this.style.backgroundColor = "transparent";
-                    this.style.color = "var(--gold)";
-                });
+            this.disabled = true;
+            const originalHTML = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+            errorMessage.textContent = ''; 
+
+            fetch('/create-cashfree-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amount, currency: currency })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.payment_session_id) {
+                    cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
+                } else {
+                    throw new Error(data.error || 'Server error.');
+                }
+            })
+            .catch(err => {
+                errorMessage.textContent = 'Integration pending or server error.';
+                this.disabled = false;
+                this.innerHTML = originalHTML;
             });
         });
     });

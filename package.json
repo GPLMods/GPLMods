@@ -24,7 +24,9 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "node adminloader.mjs",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "@adminjs/express": "^6.1.1",
@@ -59,6 +61,5 @@
     "smtp2go-nodejs": "^0.3.6",
     "socket.io": "^4.8.3",
     "styled-components": "^5.3.11"
-  },
-  "devDependencies": {}
+  }
 }

@@ -1,42 +1,131 @@
 <%- include('../partials/header') %>
 
 <style>
-    .support-container { max-width: 800px; margin: 4rem auto; padding: 3rem; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .support-header { text-align: center; margin-bottom: 2rem; }
-    .support-header h1 { font-size: 2.5em; color: var(--white); }
+    .support-page-container { 
+        max-width: 800px; 
+        margin: 4rem auto; 
+        padding: 3rem; 
+        background-color: var(--dark-gray); 
+        border-radius: 15px; 
+        border: 1px solid #333; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    .support-header { text-align: center; margin-bottom: 3rem; }
+    .support-header h1 { font-size: 2.8em; color: var(--white); margin-bottom: 10px; }
     .support-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .support-header p { color: var(--silver); font-size: 1.1em; }
     
-    .form-group { margin-bottom: 20px; }
+    .form-group { margin-bottom: 25px; position: relative; }
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: all 0.3s ease; }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
-    .form-group textarea { min-height: 150px; resize: vertical; }
+    .form-group input, .form-group textarea { 
+        width: 100%; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border: 1px solid #333; 
+        background-color: var(--black); 
+        color: var(--white); 
+        font-family: 'Poppins', sans-serif; 
+        font-size: 1em; 
+        transition: all 0.3s ease; 
+        outline: none;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+    .form-group textarea { min-height: 180px; resize: vertical; }
     
-    .submit-btn { width: 100%; background-color: var(--gold); color: var(--black); padding: 15px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; box-shadow: 0 0 15px var(--glow-gold); }
+    .submit-btn { width: 100%; background-color: var(--gold); color: var(--black); padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; box-shadow: 0 0 15px var(--glow-gold); text-transform: uppercase; letter-spacing: 1px; }
     .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
 
-    .alert-msg { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+    .alert-msg { padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: bold; text-align: center; }
     .alert-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
     .alert-error { background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
 
+    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background-color: var(--black);
+        border: 1px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--silver);
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    /* When the dropdown is open */
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    /* The dropdown menu */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        z-index: 100;
+        display: none; /* Hidden by default */
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        display: block; /* Shown when open */
+    }
+    .custom-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        color: var(--white);
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background-color: var(--black); color: var(--gold); }
+    .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
+    /* ------------------------------------------- */
+
     /* Ticket History Styles */
-    .ticket-history { margin-top: 4rem; border-top: 1px solid #333; padding-top: 2rem; }
-    .ticket-history h2 { color: var(--white); margin-bottom: 1.5rem; }
-    .ticket-card { background-color: var(--black); border: 1px solid #333; border-radius: 10px; padding: 20px; margin-bottom: 15px; }
-    .ticket-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-    .ticket-subject { font-size: 1.2em; color: var(--gold); font-weight: 600; margin: 0; }
-    .ticket-category { font-size: 0.85em; color: var(--silver); background: #222; padding: 3px 10px; border-radius: 12px; }
+    .ticket-history { margin-top: 5rem; border-top: 1px solid #333; padding-top: 3rem; }
+    .ticket-history h2 { color: var(--white); margin-bottom: 2rem; font-size: 2em; }
+    .ticket-card { background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 25px; margin-bottom: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+    .ticket-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-color: #444; }
+    .ticket-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 15px; }
+    .ticket-subject { font-size: 1.3em; color: var(--gold); font-weight: 600; margin: 0; }
+    .ticket-category { font-size: 0.85em; color: var(--silver); background: #222; padding: 5px 12px; border-radius: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    .status-badge { padding: 5px 12px; border-radius: 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
+    .status-badge { padding: 6px 15px; border-radius: 15px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-open { background-color: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); }
     .status-in-progress { background-color: rgba(33, 150, 243, 0.1); color: var(--blue); border: 1px solid var(--blue); }
     .status-resolved, .status-closed { background-color: rgba(46, 204, 113, 0.1); color: var(--green); border: 1px solid var(--green); }
+
+    @media (max-width: 768px) {
+        .support-page-container { padding: 2rem 1.5rem; margin: 2rem auto; }
+        .support-header h1 { font-size: 2.2em; }
+        .ticket-card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .status-badge { align-self: flex-start; }
+    }
 </style>
 
 <main class="container">
-    <div class="request-container">
-        <div class="request-header">
+    <div class="support-page-container">
+        <div class="support-header">
             <h1>Contact <span>Support</span></h1>
             <p>Need help? Submit a ticket and our team will reply via your Notifications.</p>
         </div>
@@ -49,10 +138,13 @@
         <% } %>
 
         <!-- Support Form -->
-        <form action="/support" method="POST">
+        <form action="/support" method="POST" id="supportForm">
+            
             <div class="form-group">
-                <label for="category">What do you need help with?*</label>
-                <select id="category" name="category" required>
+                <label>What do you need help with?*</label>
+                
+                <!-- 1. The Hidden Native Select (Used to actually submit the data to the backend) -->
+                <select id="category" name="category" required style="display: none;">
                     <option value="" disabled selected>Select a category...</option>
                     <option value="account">Account / Login Issues</option>
                     <option value="upload-issue">Problem Uploading a Mod</option>
@@ -61,11 +153,27 @@
                     <option value="bug-report">Report a Website Bug</option>
                     <option value="other">Other</option>
                 </select>
+
+                <!-- 2. The Custom Interactive UI -->
+                <div class="custom-select-wrapper">
+                    <div class="custom-select">
+                        <span class="selected-text">Select a category...</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="account">Account / Login Issues</div>
+                        <div class="custom-option" data-value="upload-issue">Problem Uploading a Mod</div>
+                        <div class="custom-option" data-value="download-issue">Problem Downloading a Mod</div>
+                        <div class="custom-option" data-value="billing">Billing / Premium Membership</div>
+                        <div class="custom-option" data-value="bug-report">Report a Website Bug</div>
+                        <div class="custom-option" data-value="other">Other</div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="subject">Subject*</label>
-                <input type="text" id="subject" name="subject" placeholder="Brief summary of the issue" required>
+                <input type="text" id="subject" name="subject" placeholder="Brief summary of the issue" required autocomplete="off">
             </div>
 
             <div class="form-group">
@@ -73,7 +181,7 @@
                 <textarea id="message" name="message" placeholder="Please provide as much detail as possible so we can help you quickly..." required></textarea>
             </div>
 
-            <button type="submit" class="submit-btn">Submit Ticket</button>
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Ticket</button>
         </form>
 
         <!-- Ticket History -->
@@ -83,20 +191,104 @@
                 <% tickets.forEach(ticket => { %>
                     <div class="ticket-card">
                         <div class="ticket-card-header">
-                            <span class="ticket-category"><%= ticket.category.toUpperCase().replace('-', ' ') %></span>
+                            <span class="ticket-category"><i class="fas fa-tag" style="margin-right: 5px;"></i><%= ticket.category.toUpperCase().replace('-', ' ') %></span>
                             <span class="status-badge status-<%= ticket.status %>"><%= ticket.status %></span>
                         </div>
                         <h3 class="ticket-subject"><%= ticket.subject %></h3>
-                        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 10px;">Submitted: <%= new Date(ticket.createdAt).toLocaleDateString() %></p>
-                        <p style="color: var(--white); font-size: 0.95em;"><%= ticket.message %></p>
+                        <p style="color: var(--silver); font-size: 0.85em; margin: 10px 0 15px 0;">
+                            <i class="far fa-calendar-alt" style="margin-right: 5px;"></i>Submitted: <%= new Date(ticket.createdAt).toLocaleDateString() %>
+                        </p>
+                        <p style="color: var(--white); font-size: 0.95em; line-height: 1.6; margin: 0;"><%- ticket.message.replace(/\n/g, '<br>') %></p>
                     </div>
                 <% }) %>
             <% } else { %>
-                <p style="color: var(--silver); text-align: center; padding: 20px;">You have no active support tickets.</p>
+                <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed #444;">
+                    <i class="fas fa-ticket-alt" style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
+                    <h3 style="color: var(--silver); margin: 0;">No Active Tickets</h3>
+                    <p style="color: #777; font-size: 0.9em; margin-top: 10px;">You haven't submitted any support requests yet.</p>
+                </div>
             <% } %>
         </div>
 
     </div>
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ✅ NEW: CUSTOM SELECT JAVASCRIPT LOGIC ---
+        const wrapper = document.querySelector('.custom-select-wrapper');
+        const customSelect = wrapper.querySelector('.custom-select');
+        const selectedText = wrapper.querySelector('.selected-text');
+        const optionsContainer = wrapper.querySelector('.custom-options');
+        const options = wrapper.querySelectorAll('.custom-option');
+        const nativeSelect = document.getElementById('category'); // The hidden real select
+
+        if (wrapper && customSelect && nativeSelect) {
+            // 1. Toggle dropdown open/close when clicking the main box
+            customSelect.addEventListener('click', function() {
+                wrapper.classList.toggle('open');
+                // Reset error styling if it was triggered
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            });
+
+            // 2. Handle clicking an option
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    const text = this.textContent;
+
+                    // Update UI text
+                    selectedText.textContent = text;
+                    selectedText.style.color = 'var(--white)'; // Highlight selected text
+
+                    // Update the hidden native select value (so the form submits correctly)
+                    nativeSelect.value = value;
+
+                    // Manage selected state styling
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // Close the dropdown
+                    wrapper.classList.remove('open');
+                });
+            });
+
+            // 3. Close dropdown when clicking anywhere outside of it
+            document.addEventListener('click', function(e) {
+                if (!wrapper.contains(e.target)) {
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+        // ----------------------------------------------
+
+
+        // --- Existing Form Submission Logic ---
+        const form = document.getElementById('supportForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                // Validate that the user actually chose an option from the custom dropdown
+                if (!nativeSelect.value) {
+                    e.preventDefault(); // Stop submission
+                    alert('Please select a support category from the dropdown menu.');
+                    
+                    // Highlight the dropdown in red to show the error
+                    if (customSelect) {
+                        customSelect.style.borderColor = 'var(--red)';
+                        customSelect.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                    }
+                } else {
+                    // If valid, disable the button and show a loading spinner
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.7';
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Submitting...';
+                }
+            });
+        }
+    });
+</script>
 
 <%- include('../partials/footer') %>

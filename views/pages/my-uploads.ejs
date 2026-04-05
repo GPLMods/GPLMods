@@ -80,7 +80,13 @@
                         </div>
                         <div class="mod-card-content">
                             <div class="item-title">
-                                <h3><%= file.name %></h3>
+                                <h3 style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <%= file.name %>
+                                    <!-- ✅ NEW: Show Variant Badge -->
+                                    <% if (file.isVariant) { %>
+                                        <span style="background-color: var(--blue); color: var(--white); font-size: 0.55em; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">Variant</span>
+                                    <% } %>
+                                </h3>
                                 <!-- CUSTOM COLOR PLATFORM TAG -->
                                 <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
                                     <%= file.category.toUpperCase().replace('-', ' ') %>
@@ -121,16 +127,30 @@
                                 </span>
                                 
                                 <div class="item-actions">
+                                    
+                                    <!-- 1. VIEW BUTTON (Only if live) -->
                                     <% if (file.status === 'live') { %>
-                                        <a href="/mods/<%= file._id %>" class="view-btn">View</a>
+                                        <!-- Uses the SEO slug fallback -->
+                                        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="view-btn">View</a>
+                                        
+                                        <!-- 2. NEW: UPDATE MOD BUTTON (Only if live) -->
+                                        <a href="/mods/<%= file._id %>/add-version" class="edit-resubmit-btn" style="border-color: var(--green); color: var(--green);">
+                                            <i class="fas fa-arrow-up" style="margin-right: 5px;"></i>Update Mod
+                                        </a>
                                     <% } %>
                                     
-                                    <!-- EDIT BUTTON -->
-                                    <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
-                                        <%= file.status === 'rejected' ? 'Edit & Resubmit' : 'Edit' %>
+                                    <!-- 3. EDIT INFO BUTTON -->
+                                     <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
+                                        <% if (file.status === 'rejected') { %>
+                                            Fix & Resubmit
+                                        <% } else if (file.isVariant) { %>
+                                            Edit Info
+                                        <% } else { %>
+                                            Edit Info
+                                        <% } %>
                                     </a>
                                     
-                                    <!-- DELETE BUTTON (Uses data-id to tell JS which mod to delete) -->
+                                    <!-- 4. DELETE BUTTON -->
                                     <button class="delete-btn" data-id="<%= file._id %>">Delete</button>
                                 </div>
                             </div>

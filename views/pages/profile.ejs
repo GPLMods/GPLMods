@@ -124,8 +124,7 @@
                                 <div class="mod-type-tag"><%= file.version %></div>
                                 
                                 <div class="mod-card-image">
-                                    <!-- Use a fallback if the smart URL didn't resolve -->
-                                    <img src="<%= file.iconUrl || '/images/default-avatar.png' %>" alt="<%= file.name %>">
+                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
                                 </div>
                                 
                                 <div class="mod-card-content">
@@ -161,7 +160,15 @@
                     </div>
                 <% } else { %>
                     <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed #444;">
-                        <i class="fas fa-heart-broken" style="font-size: 3em; color: #555; margin-bottom: 15px;"></i>
+                        <!-- ======== CUSTOM LOTTIE BROKEN HEART ANIMATION ======== -->
+            <lottie-player 
+                src="/animations/broken-heart.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 0, 0.5));" 
+               loop autoplay>
+            </lottie-player>
+            <!-- ========================================================== -->
                         <h3 style="color: var(--silver);">Your Whitelist is Empty</h3>
                         <p style="color: #777; font-size: 0.9em;">Explore the site and click "Add to Whitelist" on any mod to save it here!</p>
                     </div>
@@ -300,7 +307,7 @@
             });
         }
         
-    }); // <-- ✅ FIX: ONLY ONE CLOSING BRACKET NEEDED HERE
+    });
 </script>
 
 <%- include('../partials/footer') %>

@@ -167,6 +167,36 @@
         <!-- Right Details Panel -->
         <!-- ============================ -->
         <section class="details-panel">
+            
+            <!-- ======== NEW: VARIANTS SELECTOR ======== -->
+            <% if (masterFile.variants && masterFile.variants.filter(v => v.status === 'live').length > 0) { %>
+                <div style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                    <h3 style="color: var(--gold); margin-bottom: 15px; font-size: 1.2em;">
+                        <i class="fas fa-layer-group" style="margin-right: 10px;"></i>Available Mod Variants
+                    </h3>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <!-- Button for the Main (Master) Mod -->
+                        <a href="/<%= masterFile.category %>/<%= masterFile.slug %>" 
+                           class="btn <%= !isViewingVariant ? 'btn-primary' : 'btn-secondary' %>" 
+                           style="border-color: <%= !isViewingVariant ? 'var(--gold)' : '#555' %>; padding: 8px 15px; border-radius: 8px;">
+                           <%= masterFile.uploader %>'s Mod (Main)
+                        </a>
+
+                        <!-- Buttons for each Live Variant -->
+                        <% masterFile.variants.forEach(variant => { %>
+                            <% if (variant.status === 'live') { %>
+                                <a href="/<%= masterFile.category %>/<%= masterFile.slug %>?variant=<%= variant._id %>" 
+                                   class="btn <%= (file._id.toString() === variant._id.toString()) ? 'btn-primary' : 'btn-secondary' %>" 
+                                   style="border-color: <%= (file._id.toString() === variant._id.toString()) ? 'var(--gold)' : '#555' %>; padding: 8px 15px; border-radius: 8px;">
+                                   <%= variant.uploader %>'s Mod
+                                </a>
+                            <% } %>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+            <!-- ======================================== -->
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="description">Description</button>
                 <button class="tab-button" data-tab="screenshots">Screenshots</button>
@@ -240,8 +270,15 @@
                     <p><%- file.officialDescription.replace(/\r?\n/g, '<br>') %></p>
                 </div>
                 <% } %>
-
             </div>
+               <!-- ======== NEW: IMPORTANT NOTE BOX ======== -->
+                <% if (file.importantNote && file.importantNote.trim() !== '') { %>
+                <div class="info-box" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
+                    <h2 style="color: var(--red);"><i class="fas fa-exclamation-circle" style="margin-right: 10px;"></i>Important Note</h2>
+                    <p style="color: var(--white); font-weight: bold;"><%- file.importantNote.replace(/\n/g, '<br>') %></p>
+                </div>
+                <% } %>
+                <!-- ========================================= -->
             
             <!-- Screenshots Tab -->
             <div id="screenshots" class="tab-content">
@@ -253,22 +290,50 @@
                 </div>
             </div>
             
-            <!-- Versions Tab -->
+            <!-- Versions & Variants Tab -->
             <div id="versions" class="tab-content">
+                
+                <!-- Section 1: Previous Versions (Same Uploader) -->
                 <h2>Version History</h2>
-                <table class="versions-table">
-            <thead><tr><th>Version</th><th>Size</th><th>Date</th><th>Download</th></tr></thead>
-            <tbody>
-                <% versionHistory.forEach(version => { %>
-                    <tr>
-                        <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
-                        <td data-label="Size"><%= formatBytes(version.fileSize) %></td> <!-- ADDED THIS -->
-                        <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
-                        <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
-                    </tr>
-                <% }) %>
-            </tbody>
-        </table>
+                <table class="versions-table" style="margin-bottom: 40px;">
+                    <thead><tr><th>Version</th><th>Size</th><th>Date</th><th>Download</th></tr></thead>
+                    <tbody>
+                        <% versionHistory.forEach(version => { %>
+                            <tr>
+                                <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
+                                <td data-label="Size"><%= formatBytes(version.fileSize) %></td>
+                                <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
+                                <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+
+                <!-- Section 2: Alternative Variants (Different Uploaders/Distributors) -->
+                <% if (file.variants && file.variants.length > 0) { %>
+                    <h2 style="color: var(--blue);">Alternative Variants</h2>
+                    <p style="color: var(--silver); margin-bottom: 20px;">Other versions or mods for this app uploaded by the community.</p>
+                    
+                    <table class="versions-table">
+                        <thead><tr><th>Version</th><th>Uploaded By</th><th>Size</th><th>Download</th></tr></thead>
+                        <tbody>
+                            <% file.variants.forEach(variant => { %>
+                                <!-- Only show variants that are 'live' -->
+                                <% if (variant.status === 'live') { %>
+                                    <tr>
+                                        <td data-label="Version"><%= variant.version %></td>
+                                        <td data-label="Uploader">
+                                            <a href="/users/<%= slugify(variant.uploader) %>" style="color: var(--silver);"><%= variant.uploader %></a>
+                                        </td>
+                                        <td data-label="Size"><%= formatBytes(variant.fileSize) %></td>
+                                        <td data-label="Link"><a href="/download-file/<%= variant._id %>">Download</a></td>
+                                    </tr>
+                                <% } %>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } %>
+
             </div>
 
             <!-- Comments/Reviews Tab -->
