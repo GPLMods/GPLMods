@@ -496,9 +496,9 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
     const playlist =[
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
-        { title: 'NCS 1', src: '/audio/bgm-2.mp3' },
+        { title: 'Nekozilla', src: '/audio/bgm-2.mp3' },
         { title: 'Heroes Tonight', src: '/audio/bgm-3.mp3' },
-        { title: 'NCS 3', src: '/audio/bgm-4.mp3' },
+        { title: 'Dreams', src: '/audio/bgm-4.mp3' },
         { title: 'Royalty', src: '/audio/bgm-5.mp3' },
         { title: 'Mortals', src: '/audio/bgm-6.mp3' },
         { title: 'On & On', src: '/audio/bgm-7.mp3' },

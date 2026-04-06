@@ -7,6 +7,10 @@
     .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .page-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
     .upload-cta-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
+/* ======== NEW: Green Update Button Styles ======== */
+    .item-actions .update-btn { border-color: rgba(67, 160, 71, 0.5); color: var(--green); }
+    .item-actions .update-btn:hover { background-color: var(--green); color: var(--white); border-color: var(--green); box-shadow: 0 0 10px rgba(67, 160, 71, 0.5); }
+    /* ================================================= */
     .upload-cta-button:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
     .filter-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
     .filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 10px 20px; border: 1px solid var(--dark-gray); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-size: 0.9em; font-family: inherit; }
@@ -134,7 +138,8 @@
                                         <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="view-btn">View</a>
                                         
                                         <!-- 2. NEW: UPDATE MOD BUTTON (Only if live) -->
-                                        <a href="/mods/<%= file._id %>/add-version" class="edit-resubmit-btn" style="border-color: var(--green); color: var(--green);">
+                                        <!-- ✅ FIX: Changed class to 'update-btn' and removed inline styles -->
+                                        <a href="/mods/<%= file._id %>/add-version" class="update-btn">
                                             <i class="fas fa-arrow-up" style="margin-right: 5px;"></i>Update Mod
                                         </a>
                                     <% } %>

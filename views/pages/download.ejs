@@ -2,6 +2,68 @@
 
 <style>
     /* Most styles are now in global style.css, but we can keep page-specific ones here */
+    
+    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS FOR REPORT MODAL --- */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px; /* Matched the padding of the original textarea/select */
+        background-color: var(--black);
+        border: 1px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--silver);
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    /* When the dropdown is open */
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    /* The dropdown menu */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        z-index: 100;
+        display: none; /* Hidden by default */
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        display: block; /* Shown when open */
+    }
+    .custom-option {
+        padding: 10px 15px;
+        cursor: pointer;
+        color: var(--white);
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background-color: var(--black); color: var(--gold); }
+    .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
+    /* ------------------------------------------- */
 </style>
 
 <main class="container">
@@ -169,7 +231,7 @@
         <section class="details-panel">
             
             <!-- ======== NEW: VARIANTS SELECTOR ======== -->
-            <% if (masterFile.variants && masterFile.variants.filter(v => v.status === 'live').length > 0) { %>
+            <% if (typeof masterFile !== 'undefined' && masterFile.variants && masterFile.variants.filter(v => v.status === 'live').length > 0) { %>
                 <div style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
                     <h3 style="color: var(--gold); margin-bottom: 15px; font-size: 1.2em;">
                         <i class="fas fa-layer-group" style="margin-right: 10px;"></i>Available Mod Variants
@@ -209,7 +271,7 @@
                 
                 <!-- 1. Mod Information Box -->
                 <div class="info-box gold">
-                    <h2>Mod Information</h2>
+                    <h2>Mod Information:</h2>
                     
                     <!-- General Description Paragraph -->
                     <p><%- file.modDescription.replace(/\n/g, '<br>') %></p>
@@ -242,11 +304,48 @@
                         </ul>
                     <% } %>
                 </div>
-
+<!-- ======== NEW: IMPORTANT NOTE BOX (ANIMATED LIST) ======== -->
+                <% if (file.importantNote && file.importantNote.trim() !== '') { %>
+                <div class="info-box" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
+                    <h2 style="color: var(--red);">Important Note:</h2>
+                    
+                    <!-- We reuse the features-list class for perfect alignment -->
+                    <ul class="features-list">
+                        <% 
+                        file.importantNote.split(/\r?\n/).forEach(noteLine => { 
+                            // Only render the line if it isn't completely empty
+                            if (noteLine.trim() !== '') { 
+                                // Optional: Allow Bold titles using the "Title: Description" format, just like mod features
+                                const parts = noteLine.split(/:(.*)/s);
+                                const title = parts[0].trim();
+                                const description = parts.length > 1 ? parts[1].trim() : '';
+                        %>
+                            <li>
+                                <!-- The Red Lottie Arrow Wrapper -->
+                                <div class="lottie-icon-wrapper" style="margin-top: 0px; width: 20px; height: 20px;">
+                                    <lottie-player src="/animations/arrow.json" background="transparent" speed="1" loop autoplay style="transform: scale(1.5);"></lottie-player>
+                                </div>
+                                
+                                <div class="feature-text" style="color: var(--white); font-weight: 500;">
+                                    <% if (description) { %>
+                                        <!-- If they used a colon, bold the first part -->
+                                        <strong style="color: var(--red);"><%= title %>:</strong> <span><%= description %></span>
+                                    <% } else { %>
+                                        <!-- Standard full sentence -->
+                                        <span><%= title %></span>
+                                    <% } %>
+                                </div>
+                            </li>
+                        <% }}) %>
+                    </ul>
+                </div>
+                <% } %>
+                <!-- ========================================= -->
+            
                 <!-- 2. What's New Box -->
                 <% if (file.whatsNew && file.whatsNew.trim() !== '') { %>
                 <div class="info-box silver">
-                    <h2>What's New</h2>
+                    <h2>What's New:</h2>
                     <ul class="features-list">
                         <% file.whatsNew.split(/\r?\n/).forEach(updateLine => { if (updateLine.trim() !== '') { %>
                             <li>
@@ -271,15 +370,6 @@
                 </div>
                 <% } %>
             </div>
-               <!-- ======== NEW: IMPORTANT NOTE BOX ======== -->
-                <% if (file.importantNote && file.importantNote.trim() !== '') { %>
-                <div class="info-box" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
-                    <h2 style="color: var(--red);"><i class="fas fa-exclamation-circle" style="margin-right: 10px;"></i>Important Note</h2>
-                    <p style="color: var(--white); font-weight: bold;"><%- file.importantNote.replace(/\n/g, '<br>') %></p>
-                </div>
-                <% } %>
-                <!-- ========================================= -->
-            
             <!-- Screenshots Tab -->
             <div id="screenshots" class="tab-content">
                 <h2>Screenshots</h2>
@@ -301,39 +391,13 @@
                         <% versionHistory.forEach(version => { %>
                             <tr>
                                 <td data-label="Version"><%= version.version %> <% if(version._id.equals(file._id)) { %>(Latest)<% } %></td>
-                                <td data-label="Size"><%= formatBytes(version.fileSize) %></td>
+                                <td data-label="Size"><%= formatBytes(version.fileSize) %></td> <!-- ADDED THIS -->
                                 <td data-label="Date"><%= new Date(version.createdAt).toLocaleDateString() %></td>
                                 <td data-label="Link"><a href="/download-file/<%= version._id %>">Download</a></td>
                             </tr>
                         <% }) %>
                     </tbody>
                 </table>
-
-                <!-- Section 2: Alternative Variants (Different Uploaders/Distributors) -->
-                <% if (file.variants && file.variants.length > 0) { %>
-                    <h2 style="color: var(--blue);">Alternative Variants</h2>
-                    <p style="color: var(--silver); margin-bottom: 20px;">Other versions or mods for this app uploaded by the community.</p>
-                    
-                    <table class="versions-table">
-                        <thead><tr><th>Version</th><th>Uploaded By</th><th>Size</th><th>Download</th></tr></thead>
-                        <tbody>
-                            <% file.variants.forEach(variant => { %>
-                                <!-- Only show variants that are 'live' -->
-                                <% if (variant.status === 'live') { %>
-                                    <tr>
-                                        <td data-label="Version"><%= variant.version %></td>
-                                        <td data-label="Uploader">
-                                            <a href="/users/<%= slugify(variant.uploader) %>" style="color: var(--silver);"><%= variant.uploader %></a>
-                                        </td>
-                                        <td data-label="Size"><%= formatBytes(variant.fileSize) %></td>
-                                        <td data-label="Link"><a href="/download-file/<%= variant._id %>">Download</a></td>
-                                    </tr>
-                                <% } %>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                <% } %>
-
             </div>
 
             <!-- Comments/Reviews Tab -->
@@ -393,10 +457,13 @@
         
         <h3 style="color: var(--gold); margin-bottom: 20px; font-size: 1.5em;">Report "<%= file.name %>"</h3>
         
-        <form action="/files/<%= file._id %>/report" method="POST">
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label for="reason" style="display: block; margin-bottom: 8px; color: var(--silver);">Reason for reporting*</label>
-                <select name="reason" id="reason" required>
+        <form action="/files/<%= file._id %>/report" method="POST" id="reportForm">
+            
+            <div class="form-group" style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; margin-bottom: 8px; color: var(--silver);">Reason for reporting*</label>
+                
+                <!-- 1. The Hidden Native Select -->
+                <select name="reason" id="reason" required style="display: none;">
                     <option value="" disabled selected>Select a reason...</option>
                     <option value="malware">Contains malware/virus</option>
                     <option value="broken-file">File is broken or does not work</option>
@@ -404,20 +471,36 @@
                     <option value="copyright">Copyright infringement</option>
                     <option value="other">Other</option>
                 </select>
+
+                <!-- 2. The Custom Interactive UI -->
+                <div class="custom-select-wrapper" id="wrapper-report-reason">
+                    <div class="custom-select">
+                        <span class="selected-text">Select a reason...</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="malware">Contains malware/virus</div>
+                        <div class="custom-option" data-value="broken-file">File is broken or does not work</div>
+                        <div class="custom-option" data-value="incorrect-info">Description or screenshots are incorrect</div>
+                        <div class="custom-option" data-value="copyright">Copyright infringement</div>
+                        <div class="custom-option" data-value="other">Other</div>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group" style="margin-bottom: 20px;">
+            <div class="form-group" style="margin-bottom: 20px; text-align: left;">
                 <label for="additionalComments" style="display: block; margin-bottom: 8px; color: var(--silver);">Additional Comments (Optional)</label>
-                <textarea name="additionalComments" id="additionalComments" placeholder="Please provide more details..."></textarea>
+                <textarea name="additionalComments" id="additionalComments" placeholder="Please provide more details..." style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: all 0.3s ease; min-height: 100px; resize: vertical;"></textarea>
             </div>
             
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Submit Report</button>
+            <button type="submit" class="btn btn-primary" id="submitReportBtn" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 8px; font-weight: 700; background: var(--gold); color: var(--black); border: none; cursor: pointer; transition: all 0.3s ease;">Submit Report</button>
         </form>
     </div>
 </div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Tab Functionality
+        // --- 1. Tab Functionality ---
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
         tabButtons.forEach(button => {
@@ -430,7 +513,7 @@
             });
         });
 
-        // Report Modal JS Logic
+        // --- 2. Report Modal Logic ---
         const modal = document.getElementById('reportModal');
         const btn = document.getElementById('reportModalBtn');
         const span = document.querySelector('.close-modal');
@@ -448,6 +531,75 @@
         window.onclick = function(event) {
             if (event.target == modal) {
                 if (modal) modal.style.display = 'none';
+            }
+        }
+
+        // --- 3. CUSTOM SELECT JAVASCRIPT LOGIC (For Report Modal) ---
+        const wrapper = document.getElementById('wrapper-report-reason');
+        if (wrapper) {
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+            const options = wrapper.querySelectorAll('.custom-option');
+            const nativeSelect = document.getElementById('reason'); // The hidden real select
+
+            // Toggle dropdown open/close
+            customSelect.addEventListener('click', function(e) {
+                wrapper.classList.toggle('open');
+                this.style.borderColor = ''; // Reset error styling
+                this.style.boxShadow = '';
+                e.stopPropagation();
+            });
+
+            // Handle clicking an option
+            options.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const text = this.textContent;
+
+                    // Update UI text
+                    selectedText.textContent = text;
+                    selectedText.style.color = 'var(--white)'; // Highlight selected text
+
+                    // Update the hidden native select value
+                    nativeSelect.value = value;
+
+                    // Manage selected state styling
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // Close the dropdown
+                    wrapper.classList.remove('open');
+                    e.stopPropagation();
+                });
+            });
+
+            // Close dropdown when clicking anywhere outside of it
+            document.addEventListener('click', function(e) {
+                if (!wrapper.contains(e.target)) {
+                    wrapper.classList.remove('open');
+                }
+            });
+
+            // Form validation before submit
+            const reportForm = document.getElementById('reportForm');
+            const submitReportBtn = document.getElementById('submitReportBtn');
+
+            if (reportForm) {
+                reportForm.addEventListener('submit', (e) => {
+                    if (!nativeSelect.value) {
+                        e.preventDefault(); 
+                        alert('Please select a reason for reporting from the dropdown menu.');
+                        if (customSelect) {
+                            customSelect.style.borderColor = 'var(--red)';
+                            customSelect.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                        }
+                    } else {
+                        submitReportBtn.disabled = true;
+                        submitReportBtn.style.opacity = '0.7';
+                        submitReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Submitting...';
+                    }
+                });
             }
         }
     });

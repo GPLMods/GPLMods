@@ -1116,8 +1116,15 @@ app.get('/:category/:slug', async (req, res, next) => {
         const variantId = req.query.variant;
 
         // 1. Prevent this route from capturing system URLs
-        const reservedPaths =['api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 'developer', 'support', 'donate', 'partnership', 'home', 'healthz'];
-        if (reservedPaths.includes(category)) return next(); 
+        // 1. Prevent this route from capturing system URLs
+        const reservedPaths =[
+            'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
+            'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
+            'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
+            'download-file', 'upload-details', 'reset-password' // <--- ✅ ADDED THESE 3
+        ];
+        
+        if (reservedPaths.includes(category)) return next();
 
         let masterFile = null;
 
@@ -2320,11 +2327,12 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.modDescription = formData.modDescription || file.modDescription;
         file.modFeatures = formData.modFeatures || file.modFeatures;
         file.whatsNew = formData.whatsNew || file.whatsNew;
-        file.officialDescription = formData.officialDescription || file.officialDescription;
+        file.officialDescription = formData.officialDescription || file.officialDescription;        
+        // ✅ FIX: Added importantNote to the save logic
+        file.importantNote = formData.importantNote || file.importantNote;        
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.tags = processedTags;
-
         if (formData.modCategory) {
             file.platforms = [formData.modCategory];
         }
