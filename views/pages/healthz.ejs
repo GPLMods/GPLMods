@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPL Mods - System Status</title>
+    <!-- We load the fonts and icons, but we keep the CSS inline for maximum speed and reliability -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --green: #43a047;
+            --red: #e53935;
+            --silver: #c0c0c0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--black);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .status-container {
+            background-color: var(--dark-gray);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* A subtle top border based on the status */
+            border-top: 4px solid <%= isHealthy ? 'var(--green)' : 'var(--red)' %>;
+        }
+        .logo {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--gold);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 30px;
+        }
+        .logo span { color: var(--silver); }
+        
+        .status-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            color: <%= isHealthy ? 'var(--green)' : 'var(--red)' %>;
+            /* Add a soft glow based on status */
+            filter: drop-shadow(0 0 15px <%= isHealthy ? 'rgba(67, 160, 71, 0.4)' : 'rgba(229, 57, 53, 0.4)' %>);
+        }
+
+        .status-title {
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: var(--white);
+        }
+        
+        .status-message {
+            color: var(--silver);
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .home-btn {
+            display: inline-block;
+            background-color: var(--gold);
+            color: var(--black);
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        .home-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-container">
+        <a href="/" class="logo">GPL <span>Mods</span></a>
+        
+        <% if (isHealthy) { %>
+            <i class="fas fa-check-circle status-icon"></i>
+            <h1 class="status-title">All Systems Operational</h1>
+            <p class="status-message">
+                Live working fine. The GPL Mods servers are currently running without any issues.
+            </p>
+        <% } else { %>
+            <i class="fas fa-exclamation-triangle status-icon"></i>
+            <h1 class="status-title">System Degradation</h1>
+            <p class="status-message">
+                Error detected. Some services may be unavailable. Our team has been notified.
+            </p>
+        <% } %>
+
+        <a href="/" class="home-btn">Return to Homepage</a>
+    </div>
+
+</body>
+</html>

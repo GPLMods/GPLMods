@@ -234,19 +234,41 @@
                 
                 const result = await response.json();
                 
-                if (result.success) {
+                                if (result.success) {
                     closeModal(); // Hide the modal
                     
-                    // Trigger the beautiful fade out animation on the card
+                    // ✅ FIX: The Ultimate Smooth Collapse Animation
                     if (itemToRemove) {
-                        itemToRemove.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                        // 1. Get the current exact height of the card before we start messing with it
+                        const currentHeight = itemToRemove.offsetHeight;
+                        
+                        // 2. Explicitly set the height in pixels so we can transition it to 0
+                        itemToRemove.style.height = currentHeight + 'px';
+                        
+                        // Force a browser reflow so it registers the explicit height
+                        itemToRemove.offsetHeight; 
+
+                        // 3. Set up the transition for ALL properties we want to animate
+                        // We animate opacity fast (0.3s), and the layout collapse slightly slower (0.5s) for a natural feel
+                        itemToRemove.style.transition = 'opacity 0.3s ease, transform 0.3s ease, height 0.5s ease 0.2s, padding 0.5s ease 0.2s, margin 0.5s ease 0.2s, border 0.5s ease 0.2s';
+                        
+                        // 4. Start the fade out and shrink
                         itemToRemove.style.opacity = '0';
                         itemToRemove.style.transform = 'scale(0.9)';
                         
-                        // Remove from DOM after animation
+                        // 5. Start the layout collapse (the height, margins, and padding go to 0)
+                        itemToRemove.style.height = '0px';
+                        itemToRemove.style.paddingTop = '0px';
+                        itemToRemove.style.paddingBottom = '0px';
+                        itemToRemove.style.marginTop = '0px';
+                        itemToRemove.style.marginBottom = '0px';
+                        itemToRemove.style.borderWidth = '0px';
+                        itemToRemove.style.overflow = 'hidden'; // Essential: prevents content from spilling out as it shrinks
+                        
+                        // 6. Remove the element from the DOM completely AFTER all animations finish (0.5s + 0.2s delay = ~700ms)
                         setTimeout(() => {
                             itemToRemove.remove();
-                        }, 500);
+                        }, 700); 
                     }
                 } else {
                     alert('Failed to delete the mod. Please try again later.');

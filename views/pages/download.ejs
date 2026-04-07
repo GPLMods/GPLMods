@@ -497,6 +497,21 @@
         </form>
     </div>
 </div>
+<!-- ======== NEW: CUSTOM VIRUSTOTAL STATUS MODAL ======== -->
+<div id="vt-status-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <i class="fas fa-search-dollar" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
+        <h2 id="vt-modal-title" style="color: var(--gold); margin-bottom: 15px;">Scan Status</h2>
+        
+        <p id="vt-modal-message" style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            <!-- Message injected by JS -->
+        </p>
+        
+        <button type="button" class="btn btn-primary" onclick="closeVtModal()" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">Okay</button>
+    </div>
+</div>
+<!-- ===================================================== -->
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -606,25 +621,70 @@
 </script>
 
 <script>
+    // Helper to close the custom VT modal
+    function closeVtModal() {
+        const modal = document.getElementById('vt-status-modal');
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    }
+
+    // Helper to open the custom VT modal with a specific message
+    function showVtModal(title, message, isError = false) {
+        const modal = document.getElementById('vt-status-modal');
+        const titleEl = document.getElementById('vt-modal-title');
+        const messageEl = document.getElementById('vt-modal-message');
+        const iconEl = modal.querySelector('i');
+        
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        
+        if (isError) {
+            titleEl.style.color = 'var(--red)';
+            modal.querySelector('.policy-modal-content').style.borderTopColor = 'var(--red)';
+            iconEl.className = 'fas fa-exclamation-triangle';
+            iconEl.style.color = 'var(--red)';
+        } else {
+            titleEl.style.color = 'var(--gold)';
+            modal.querySelector('.policy-modal-content').style.borderTopColor = 'var(--gold)';
+            iconEl.className = 'fas fa-search-dollar';
+            iconEl.style.color = 'var(--gold)';
+        }
+
+        modal.style.display = 'flex';
+        setTimeout(() => { modal.classList.add('show'); }, 10);
+    }
+
+    // The main refresh function
     async function refreshVTScan(fileId) {
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML; // Save the original icon and text
+        
         try {
-            const btn = event.currentTarget;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
             btn.disabled = true;
 
             const response = await fetch(`/api/refresh-vt-scan/${fileId}`, { method: 'POST' });
             const data = await response.json();
 
-            if (data.status === 'completed') {
-                // Reload the page to show the new colorful badge!
+            if (response.ok && data.status === 'completed') {
+                // Success! Reload the page to show the new colorful badge!
                 window.location.reload();
+            } else if (response.ok) {
+                // Still queued or processing
+                showVtModal('Scan in Progress', `The scan is currently: ${data.status.toUpperCase()}. VirusTotal is analyzing the file. Please check back in a minute or two.`);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             } else {
-                alert('Scan is still ' + data.status + '. Please check back in a few minutes.');
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Results Now';
+                // The server returned a 404 or 500 error (e.g., bad ID)
+                showVtModal('Error', data.error || 'An unknown error occurred.', true);
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
-            alert('Failed to check status.');
+            // Network error
+            showVtModal('Network Error', 'Failed to connect to the server. Please check your connection and try again.', true);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     }
 </script>

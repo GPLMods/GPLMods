@@ -71,7 +71,8 @@
             </div>
 
             <!-- External Link Form -->
-             <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+            <form action="/upload-initial" method="POST" id="distributorUploadForm">
+                <div class="form-group" style="text-align: left; margin-bottom: 15px;">
                     <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
                         <label class="switch">
                             <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
@@ -79,6 +80,7 @@
                         </label>
                         <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">This mod requires multiple download links (Multi-Part)</label>
                     </div>
+                </div>
 
                 <div id="single-link-group" class="form-group">
                     <label for="externalUrl">External Download Link*</label>
@@ -149,8 +151,32 @@
         <% } %>
     </div>
 </div>
+
+<!-- ======== NEW: CUSTOM ERROR MODAL ======== -->
+<div id="error-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <i class="fas fa-exclamation-triangle" style="font-size: 3em; color: var(--red); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Upload Error</h2>
+        <p id="error-modal-msg" style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;"></p>
+        <button type="button" class="btn btn-primary" onclick="closeErrorModal()" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1.1em; background-color: var(--red); border: none; cursor: pointer; color: white;">Okay</button>
+    </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    // --- Helper to control the Error Modal ---
+    function showErrorModal(message) {
+        document.getElementById('error-modal-msg').textContent = message;
+        const modal = document.getElementById('error-modal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+    function closeErrorModal() {
+        const modal = document.getElementById('error-modal');
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 200);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // --- 1. Role-Based Size Limit Check & Live Progress Bar ---
         const fileInput = document.getElementById('modFile');
@@ -170,7 +196,8 @@
                     const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
                     
                     if (file.size > maxLimit) {
-                        alert(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
+                        // ✅ FIX: Using the Custom Modal instead of alert()
+                        showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
                         this.value = ''; 
                         fileNameDisplay.textContent = 'No file selected';
                         dropZone.style.borderColor = 'var(--red)';
@@ -187,7 +214,10 @@
             // AJAX Form Submission for TRUE End-to-End Live Progress
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
-                if (fileInput.files.length === 0) return alert("Please select a file.");
+                if (fileInput.files.length === 0) {
+                    // ✅ FIX: Using the Custom Modal instead of alert()
+                    return showErrorModal("Please select a file to upload first.");
+                }
                 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = 'Uploading...';
@@ -199,14 +229,11 @@
 
                 const formData = new FormData(form);
                 
-                // --- NEW: Create a unique ID for this specific upload ---
                 const uploadId = 'up_' + Date.now();
                 formData.append('uploadId', uploadId);
 
-                // --- NEW: Connect to Socket.IO to listen for Backend B2 progress ---
                 const socket = io();
                 socket.on(`b2_progress_${uploadId}`, (data) => {
-                    // Map the 0-100% B2 progress to the 50-100% of our bar
                     const totalPercent = 50 + Math.round(data.percent / 2);
                     progressBar.style.width = totalPercent + '%';
                     progressBar.textContent = totalPercent + '%';
@@ -219,11 +246,8 @@
                 });
 
                 const xhr = new XMLHttpRequest();
-                
-        // Dynamically grab the correct route from the form's action attribute
                 xhr.open('POST', form.action, true);
 
-                // This event tracks the Browser -> Server RAM upload (Mapped to 0-50%)
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
                         const percentComplete = Math.round((event.loaded / event.total) * 50);
@@ -242,12 +266,22 @@
                     if (xhr.status >= 200 && xhr.status < 400) {
                         window.location.href = xhr.responseURL; 
                     } else {
-                        alert('Upload failed. Server error or file too large.');
+                        // ✅ FIX: Enhanced error handling using the Custom Modal
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            showErrorModal(res.message || 'Upload failed.');
+                        } catch(e) {
+                            showErrorModal(`Server error (${xhr.status}). The file might be too large or the connection was lost.`);
+                        }
                         resetUI();
                     }
                 };
 
-                xhr.onerror = function() { alert('A network error occurred.'); resetUI(); };
+                xhr.onerror = function() { 
+                    // ✅ FIX: Using the Custom Modal
+                    showErrorModal('A network error occurred. Please check your internet connection.'); 
+                    resetUI(); 
+                };
                 xhr.send(formData);
             });
 
@@ -309,7 +343,7 @@
                 newInput.type = 'url';
                 newInput.name = 'partUrls[]';
                 newInput.placeholder = `Part ${partCount} URL...`;
-                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;';
+                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;';
                 newInput.required = true;
                 partsContainer.appendChild(newInput);
             });

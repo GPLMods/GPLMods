@@ -1,12 +1,12 @@
 AdminJS.UserComponents = {}
 AdminJS.env.isProduction = false
-import Dashboard from '../../../data/user/0/com.rk.xededitor/local/home/web/components/dashboard'
+import Dashboard from '../components/dashboard'
 AdminJS.UserComponents.Dashboard = Dashboard
-import SidebarBranding from '../../../data/user/0/com.rk.xededitor/local/home/web/components/SidebarBranding'
+import SidebarBranding from '../components/SidebarBranding'
 AdminJS.UserComponents.SidebarBranding = SidebarBranding
-import ActionRedirect from '../../../data/user/0/com.rk.xededitor/local/home/web/components/ActionRedirect'
+import ActionRedirect from '../components/ActionRedirect'
 AdminJS.UserComponents.ActionRedirect = ActionRedirect
-import VariantBadge from '../../../data/user/0/com.rk.xededitor/local/home/web/components/VariantBadge'
+import VariantBadge from '../components/VariantBadge'
 AdminJS.UserComponents.VariantBadge = VariantBadge
-import ImagePreview from '../../../data/user/0/com.rk.xededitor/local/home/web/components/ImagePreview'
+import ImagePreview from '../components/ImagePreview'
 AdminJS.UserComponents.ImagePreview = ImagePreview

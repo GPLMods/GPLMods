@@ -2,6 +2,8 @@
 const bcrypt = require('bcryptjs');
 
 // 1. IMPORT THE SINGLETON LOADER
+// --- ✅ FIX 1: ADD THIS LINE TO IMPORT THE AWS SDK ---
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { componentLoader, Components } = require('../components/loader');
 
 // Import all your models
@@ -37,7 +39,25 @@ function extractVTId(input) {
     }
     return cleanInput;
 }
+// --- NEW: B2 Delete Helper for AdminJS ---
+const s3ClientAdmin = new S3Client({
+    endpoint: `https://${process.env.B2_ENDPOINT}`,
+    region: process.env.B2_REGION,
+    credentials: {
+        accessKeyId: process.env.B2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
+    }
+});
 
+const deleteFromB2Admin = async (fileKey) => {
+    if (!fileKey || fileKey === 'external-link') return;
+    try {
+        await s3ClientAdmin.send(new DeleteObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: fileKey }));
+        console.log(`AdminJS deleted ${fileKey} from B2.`);
+    } catch (error) {
+        console.error(`AdminJS failed to delete ${fileKey}:`, error.message);
+    }
+};
 // 2. EXPORT AN ASYNC FACTORY FUNCTION
 // We must use dynamic imports because AdminJS v7 is ESM only.
 async function createAdminRouter() {
@@ -286,7 +306,41 @@ async function createAdminRouter() {
                                 return request;
                             }
                         },
-                        delete: { isAccessible: true },
+                                                // --- UPDATED: Admin Delete Mod Action (Deletes from Cloud too) ---
+                        delete: { 
+                            isAccessible: true,
+                            before: async (request, context) => {
+                                // 1. We must fetch the record BEFORE it gets deleted to get the keys
+                                const recordId = request.params.recordId;
+                                const fileToDelete = await File.findById(recordId).populate('olderVersions');
+                                
+                                if (fileToDelete) {
+                                    // 2. Delete main files from B2
+                                    await deleteFromB2Admin(fileToDelete.fileKey);
+                                    await deleteFromB2Admin(fileToDelete.iconKey);
+                                    if (fileToDelete.screenshotKeys) {
+                                        for (const key of fileToDelete.screenshotKeys) {
+                                            await deleteFromB2Admin(key);
+                                        }
+                                    }
+                                    
+                                    // 3. Delete older versions from B2 and DB
+                                    if (fileToDelete.olderVersions) {
+                                        for (const oldV of fileToDelete.olderVersions) {
+                                            await deleteFromB2Admin(oldV.fileKey);
+                                            await File.findByIdAndDelete(oldV._id);
+                                        }
+                                    }
+                                    
+                                    // 4. Clean up related Reviews and Reports
+                                    await Review.deleteMany({ file: recordId });
+                                    await Report.updateMany({ file: recordId }, { status: 'resolved' });
+                                }
+                                
+                                // 5. Return the request so AdminJS can proceed with deleting the main DB record
+                                return request;
+                            }
+                        },
                         
                         // ✅ FIX: Update Custom Actions to use the Redirect Component
                         viewOnSite: {

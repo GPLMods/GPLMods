@@ -5,6 +5,21 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+// --- ✅ FIX 2: OVERRIDE SYSTEM DNS TO USE GOOGLE DNS (8.8.8.8) ---
+// This is crucial for environments that fail to resolve MongoDB Atlas SRV records.
+const dns = require('dns');
+
+// Force Node.js to use Google's public DNS servers
+dns.setServers([
+    '8.8.8.8',
+    '8.8.4.4',
+    // IPv6 fallbacks (optional but good practice)
+    '2001:4860:4860::8888',
+    '2001:4860:4860::8844'
+]);
+
+console.log(`[DNS] Custom DNS Resolvers configured: ${dns.getServers().join(', ')}`);
+
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -32,7 +47,8 @@ const { Upload } = require("@aws-sdk/lib-storage");
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
 
 // AWS SDK v3 Imports (Backblaze B2)
-const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3'); // <-- ADDED ListObjectsV2Command
+// Add DeleteObjectCommand to this list
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // Mongoose Models
@@ -296,11 +312,25 @@ app.use(cors({
     }
 }));
 
-// --- NEW: PUBLIC HEALTH CHECK (For Render.com) ---
+// --- NEW: PUBLIC HEALTH CHECK & STATUS PAGE ---
 // This MUST come before Maintenance Mode and Session/Auth
 app.get('/healthz', (req, res) => {
-    // A fast, lightweight response to tell Render the Node process is running.
-    res.status(200).send('Live! Server is running properly no issues were found.'); 
+    
+    // We do a very fast check to see if Mongoose is connected.
+    // 1 = connected. Anything else (0, 2, 3, 99) means there's an issue.
+    const isDatabaseConnected = mongoose.connection.readyState === 1;
+    
+    // You can add more checks here later if needed (e.g., checking B2)
+    const isHealthy = isDatabaseConnected;
+
+    // Render relies on the HTTP Status Code (200 = Good, 503 = Bad)
+    // We send the correct code, AND render our beautiful UI
+    if (isHealthy) {
+        res.status(200).render('pages/healthz', { isHealthy: true });
+    } else {
+        // 503 Service Unavailable
+        res.status(503).render('pages/healthz', { isHealthy: false });
+    }
 });
 
 // --- DYNAMIC SITE STATE ENGINE (Maintenance / Unavailable) ---
@@ -1296,17 +1326,18 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         const previousVersion = await File.findById(parentFileId);
 
         // Security check: Must be uploader or admin
-        const isUploader = previousVersion && req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
+        const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
         const isAdmin = req.user.role === 'admin';
-        if (!previousVersion || (!isUploader && !isAdmin)) {
-            return res.status(403).render('pages/403');
+        if (!isUploader && !isAdmin) {
+            return res.status(403).json({ success: false, message: "Forbidden: You don't have permission to edit this mod." });
         }
 
-        // --- SCENARIO 1: EXTERNAL LINK / MULTI-PART (Distributor/Admin) ---
+        // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link / Multi-Part) ---
         if ((req.user.role === 'distributor' || req.user.role === 'admin') && (req.body.externalUrl || req.body.isMultiPart)) {
-            const { externalUrl, softwareVersion, whatsNew, isMultiPart, partUrls } = req.body;
+            const { externalUrl, isMultiPart, partUrls, softwareVersion, whatsNew, originalFilename } = req.body;
             
             const newVersion = new File({
+                // Copy details from previous
                 name: previousVersion.name,
                 developer: previousVersion.developer,
                 iconKey: previousVersion.iconKey,
@@ -1318,12 +1349,14 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                 platforms: previousVersion.platforms,
                 tags: previousVersion.tags,
                 uploader: req.user.username,
-                originalFilename: previousVersion.originalFilename || previousVersion.name, 
                 
+                // New details
                 version: softwareVersion,
                 whatsNew: whatsNew,
-                fileKey: 'external-link',
-                fileSize: 0,
+                originalFilename: originalFilename || previousVersion.originalFilename,
+                fileKey: 'external-link', 
+                fileSize: 0, 
+                
                 isLatestVersion: false, 
                 parentFile: parentFileId,
                 status: 'live' 
@@ -1339,10 +1372,8 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             } else {
                 newVersion.externalDownloadUrl = externalUrl;
             }
-
-            await newVersion.save();
             
-            // Link parent and set latest
+            await newVersion.save();
             await File.findByIdAndUpdate(parentFileId, {
                 $push: { olderVersions: newVersion._id },
                 isLatestVersion: false
@@ -1350,15 +1381,16 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             newVersion.isLatestVersion = true;
             await newVersion.save();
 
-            return res.redirect(`/mods/${newVersion._id}`);
+            // We use JSON here so the frontend AJAX knows what to do
+            return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
         }
 
-        // --- SCENARIO 2: PHYSICAL FILE UPLOAD ---
+
+        // --- SCENARIO 2: STANDARD UPLOAD (Physical File) ---
         if (!req.file) {
-            return res.status(400).send("No file uploaded.");
+            return res.status(400).json({ success: false, message: "No file uploaded." });
         }
 
-        // Strict Backend File Size Check
         const fileSize = req.file.size;
         const isPremium = req.user.membership === 'premium';
         const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
@@ -1368,22 +1400,26 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
 
         if (!isAdminOrDist) {
             if (!isPremium && fileSize > limit300MB) {
-                return res.status(413).send('File exceeds your 300MB limit. Please upgrade to Premium.');
+                return res.status(413).json({ success: false, message: "File exceeds your 300MB limit. Please upgrade to Premium." });
             }
             if (isPremium && fileSize > limit1GB) {
-                 return res.status(413).send('File exceeds the 1GB Premium limit.');
+                 return res.status(413).json({ success: false, message: "File exceeds the 1GB Premium limit." });
             }
         }
 
-        // 1. Upload to Backblaze B2 (From Memory)
-        console.log("Uploading new version to B2 from memory buffer...");
-       // --- ADD THESE TWO LINES ---
-        const io = req.app.get('io');
+        // Add Socket.IO reporting for B2 upload progress
         const uploadId = req.body.uploadId;
+        const io = req.app.get('socketio'); // Assuming you attach `io` to your Express app!
+        
+        // Custom uploadToB2 with progress tracking (inline for this specific route)
+        // Note: For a true live bar here, you need to modify your uploadToB2 helper to accept the 'io' object and 'uploadId'
+        // For now, we will do a basic upload and rely on the frontend 50% jump.
+        
+        console.log("Uploading new version to B2 from memory buffer...");
         const newFileKey = await uploadToB2(req.file, 'mods'); 
         console.log("Upload to B2 complete.");
 
-        // 2. Create the NEW file document
+        // Create new record
         const newVersion = new File({
             name: previousVersion.name,
             developer: previousVersion.developer,
@@ -1396,13 +1432,11 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             platforms: previousVersion.platforms,
             tags: previousVersion.tags,
             uploader: req.user.username,
-            
             version: req.body.softwareVersion,
             whatsNew: req.body.whatsNew,
             fileKey: newFileKey,
             fileSize: req.file.size,
             originalFilename: req.file.originalname,
-            
             isLatestVersion: false, 
             parentFile: parentFileId,
             status: 'live' 
@@ -1410,40 +1444,55 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         
         await newVersion.save();
         
-        // 3. Update the OLD version
+        // Update linkage
         await File.findByIdAndUpdate(parentFileId, {
             $push: { olderVersions: newVersion._id },
-            isLatestVersion: false
+            isLatestVersion: false 
         });
 
-        // 4. Mark NEW as latest
         newVersion.isLatestVersion = true;
         await newVersion.save();
         
-        // --- Background VirusTotal Scan ---
-        // --- Background VirusTotal Scan (SMART ENGINE) ---
+        // Background VT Scan
         (async () => {
             try {
-                console.log(`Starting VT Scan for new version ${newVersion._id}...`);
-                
-                // Call our new, smart helper function
-                const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
-                
+                const vtFormData = new FormData();
+                vtFormData.append('file', req.file.buffer, req.file.originalname);
+                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
+                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
+                });
+                const analysisId = vtResponse.data.data.id;
                 await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
-                console.log(`VT Scan submitted for new version. Analysis ID: ${analysisId}`);
-                
-            } catch (error) {
-                console.error(`VT scan failed for new version ${newVersion._id}.`);
+            } catch (vtError) {
+                console.error(`VT scan failed for new version:`, vtError.message);
             } 
-        })();
-        // 5. Success! Redirect
-        res.redirect(`/mods/${newVersion._id}`);
+        })(); 
+
+        // ✅ FIX: Reply with JSON so the AJAX script can redirect cleanly
+        return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
         
     } catch (error) {
         console.error("Error adding new version:", error);
-        res.status(500).render('pages/500');
+        res.status(500).json({ success: false, message: "A server error occurred during upload." });
     }
 });
+// --- NEW: HELPER TO DELETE FILES FROM BACKBLAZE B2 ---
+const deleteFromB2 = async (fileKey) => {
+    if (!fileKey || fileKey === 'external-link') return; // Don't try to delete empty or external links
+
+    try {
+        const params = {
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: fileKey
+        };
+        console.log(`Deleting ${fileKey} from B2...`);
+        await s3Client.send(new DeleteObjectCommand(params));
+        console.log(`Successfully deleted ${fileKey} from B2.`);
+    } catch (error) {
+        // We log the error but don't crash the server. If a file is already gone, that's okay.
+        console.error(`Failed to delete ${fileKey} from B2:`, error.message);
+    }
+};
 // Download Action - UPDATED for External Links & Presigned URLs
 app.get('/download-file/:id', async (req, res) => {
     try {
@@ -2248,23 +2297,44 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- NEW: User Delete Mod Route ---
+// --- UPDATED: User Delete Mod Route (Deletes from DB AND Cloud) ---
 app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.id;
-        const file = await File.findById(fileId);
+        // Populate older versions so we can delete their files too!
+        const file = await File.findById(fileId).populate('olderVersions');
 
         // Security check: Make sure the file exists and the logged-in user owns it
         if (!file || file.uploader !== req.user.username) {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
-        // Delete the file and its associated reviews/reports from the database
+        // --- 1. DELETE FILES FROM BACKBLAZE B2 ---
+        
+        // A. Delete main file, icon, and screenshots
+        await deleteFromB2(file.fileKey);
+        await deleteFromB2(file.iconKey);
+        if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+            for (const key of file.screenshotKeys) {
+                await deleteFromB2(key);
+            }
+        }
+
+        // B. Delete all older versions from B2 and the Database
+        if (file.olderVersions && file.olderVersions.length > 0) {
+            for (const oldVersion of file.olderVersions) {
+                await deleteFromB2(oldVersion.fileKey);
+                // Icons and screenshots are shared with the parent, so we only need to delete the main fileKey
+                await File.findByIdAndDelete(oldVersion._id); 
+            }
+        }
+
+        // --- 2. DELETE FROM DATABASE ---
         await File.findByIdAndDelete(fileId);
         await Review.deleteMany({ file: fileId });
         await Report.updateMany({ file: fileId }, { status: 'resolved' });
 
-        res.json({ success: true, message: 'Mod deleted successfully.' });
+        res.json({ success: true, message: 'Mod and all associated files deleted successfully.' });
     } catch (error) {
         console.error("Error deleting mod:", error);
         res.status(500).json({ success: false });
@@ -2588,49 +2658,76 @@ app.get('/api/check-username', async (req, res) => {
 });
 
 // ===================================
-// 11.5  VIRUSTOTAL REFRESH ROUTE
+// 11.5  VIRUSTOTAL REFRESH ROUTE (SMART FIX)
 // ===================================
 app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
     try {
         const fileId = req.params.fileId;
         const file = await File.findById(fileId);
         
-        if (!file || !file.virusTotalAnalysisId) {
-            return res.status(404).json({ error: "No analysis ID found." });
+        // Check both ID fields
+        const vtId = file.virusTotalAnalysisId || file.virusTotalId;
+        
+        if (!file || !vtId) {
+            return res.status(404).json({ error: "No VirusTotal ID found for this file." });
         }
 
-        // Check the status of the Analysis ID
-        const vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${file.virusTotalAnalysisId}`, {
-            headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
-        });
+        let vtResponse;
+        let isCompleted = false;
+        let stats = null;
+        let trueHash = null;
 
-        const status = vtResponse.data.data.attributes.status;
-
-        if (status === 'completed') {
-            const stats = vtResponse.data.data.attributes.stats;
+        // --- SMART CHECK: Is it a File Hash (64 chars) or an Analysis ID (contains '-')? ---
+        if (vtId.length === 64 && !vtId.includes('-')) {
+            // It's a direct FILE HASH. The scan is already done. We just need the final report.
+            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
             
-            // Extract the actual File Hash (SHA-256) from the analysis report
-            // This is useful for linking directly to the file report later
-            const itemHash = vtResponse.data.meta.file_info ? vtResponse.data.meta.file_info.sha256 : null;
+            // If the file exists, the scan is inherently completed
+            isCompleted = true;
+            stats = vtResponse.data.data.attributes.last_analysis_stats;
+            trueHash = vtId; // We already have the true hash
 
+        } else {
+            // It's an ANALYSIS ID. We need to check if the background scan is finished.
+            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, {
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+            });
+
+            if (vtResponse.data.data.attributes.status === 'completed') {
+                isCompleted = true;
+                stats = vtResponse.data.data.attributes.stats;
+                trueHash = vtResponse.data.meta.file_info ? vtResponse.data.meta.file_info.sha256 : null;
+            }
+        }
+
+        // --- UPDATE DATABASE IF COMPLETED ---
+        if (isCompleted && stats) {
             await File.findByIdAndUpdate(fileId, {
-                virusTotalScanDate: new Date(),
+                virusTotalScanDate: new Date(), // This makes the frontend switch to "Completed"
                 virusTotalPositiveCount: stats.malicious + stats.suspicious,
                 virusTotalTotalScans: stats.harmless + stats.malicious + stats.suspicious + stats.undetected,
-                virusTotalId: itemHash // Save the true hash if available
+                virusTotalId: trueHash // Save the true hash so we link directly to the file next time
             });
 
             return res.json({ status: 'completed', stats: stats });
         } else {
-            return res.json({ status: status }); // 'queued' or 'in-progress'
+            // It's still an analysis ID, and it's still 'queued' or 'in-progress'
+            return res.json({ status: vtResponse.data.data.attributes.status || 'pending' }); 
         }
 
     } catch (error) {
         console.error("VT Refresh Error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to contact VirusTotal." });
+        
+        // If VT says "Not Found", it's a bad ID.
+        if (error.response && error.response.status === 404) {
+             return res.status(404).json({ error: "VirusTotal could not find a report for this ID." });
+        }
+        
+        res.status(500).json({ error: "Failed to contact VirusTotal API." });
     }
 });
-
 
 // ===============================
 // 12. SOCIAL & ADMIN INTERACTION
