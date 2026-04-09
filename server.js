@@ -243,11 +243,13 @@ const sanitizeFilename = (filename) => {
 };
 
 // --- UPDATED HELPER: Tracks B2 Upload Progress ---
+
 const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
-    let fileBuffer;
-    if (file.buffer) fileBuffer = file.buffer;
-    else if (file.path && fs.existsSync(file.path)) fileBuffer = fs.readFileSync(file.path);
-    else throw new Error("File data not found.");
+    
+    // ✅ FIX: We only expect a buffer now because we switched to memoryStorage
+    if (!file || !file.buffer) {
+        throw new Error("File data (buffer) not found.");
+    }
 
     const sanitizedFilename = sanitizeFilename(file.originalname);
     const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
@@ -257,7 +259,12 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
     // Use lib-storage for chunked uploads and live progress tracking
     const parallelUploads3 = new Upload({
         client: s3Client,
-        params: { Bucket: process.env.B2_BUCKET_NAME, Key: fileName, Body: fileBuffer, ContentType: file.mimetype },
+        params: { 
+            Bucket: process.env.B2_BUCKET_NAME, 
+            Key: fileName, 
+            Body: file.buffer, // Use the buffer directly
+            ContentType: file.mimetype 
+        },
         partSize: 5 * 1024 * 1024, // Uploads in 5MB chunks (faster!)
         queueSize: 4 
     });
@@ -265,7 +272,6 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
     parallelUploads3.on("httpUploadProgress", (progress) => {
         if (progress.total) {
             const percent = Math.round((progress.loaded / progress.total) * 100);
-            console.log(`B2 Upload Progress: ${percent}%`);
             
             // If we have an active Socket connection, pipe it to the frontend!
             if (io && uploadId) {
@@ -557,6 +563,8 @@ async function verifyRecaptcha(req, res, next) {
 // ===============================
 
 // ✅ FIX: STRICTLY USE RAM (MEMORY STORAGE)
+// We must use memoryStorage so the file streams directly to our code,
+// allowing the XMLHttpRequest upload progress bar to be accurate!
 const memoryStorage = multer.memoryStorage();
 
 // Main Upload Config (For Mods - 20GB hard limit to prevent multer crash, actual limits enforced in route)
@@ -2131,16 +2139,21 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 type: 'warning' 
             }).save();
 
-            // Also clean up the temp file if multer uploaded one before we blocked them
             if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
             return res.status(429).redirect('/upload?error=Daily upload limit reached. Please check your notifications for details.');
         }
+
+    // ========================================================
+    // ✅ FIX: YOU MUST ADD THIS CLOSING BLOCK HERE!
+    // This closes the 'try' block that started at the top of the route.
     } catch (limitError) {
         console.error("Upload limit check failed:", limitError);
         return res.status(500).render('pages/500');
-    } // <--- ADD THIS CLOSING BLOCK HERE
-// --- UPDATED ROUTE: Handles both File Uploads and Distributor Links ---
-// --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
+    }
+    // ========================================================
+
+
+    // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
     if (req.user.role === 'distributor' && req.body.externalUrl) {
         try {
             const { externalUrl, originalFilename } = req.body;
@@ -2197,45 +2210,54 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         return res.status(400).redirect('/upload?error=No file selected.');
     }
     
-    const tempFilePath = req.file.path;
-    let newFile = null;
+    const fileSize = req.file.size;
+    const isPremium = req.user.membership === 'premium';
+    const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
+    
+    const limit300MB = 314572800;
+    const limit1GB = 1073741824;
+
+    if (!isAdminOrDist) {
+        if (!isPremium && fileSize > limit300MB) {
+            return res.status(413).redirect('/upload?error=File exceeds your 300MB limit. Please upgrade to Premium.');
+        }
+        if (isPremium && fileSize > limit1GB) {
+             return res.status(413).redirect('/upload?error=File exceeds the 1GB Premium limit.');
+        }
+    }
 
     try {
-        console.log("Uploading main file to B2...");
-        // --- ADD THESE TWO LINES ---
+        console.log("Uploading main file to B2 from memory buffer...");
+        
         const io = req.app.get('io');
         const uploadId = req.body.uploadId; 
-        const fileForB2 = { path: tempFilePath, originalname: req.file.originalname, mimetype: req.file.mimetype };
-        const fileKey = await uploadToB2(fileForB2, 'mods');
+        
+        // ✅ CRITICAL FIX: Pass the 'io' object and 'uploadId' into the helper!
+        // This is what makes the Socket.IO progress bar work!
+        const fileKey = await uploadToB2(req.file, 'mods', io, uploadId);
+        
         console.log("Upload to B2 complete.");
 
-        newFile = new File({
+        const newFile = new File({
             uploader: req.user.username,
             fileKey: fileKey,
             originalFilename: req.file.originalname,
             fileSize: req.file.size,
-            
             name: req.file.originalname, 
             version: 'Draft',
             category: 'android',         
             platforms: [],
-            
             status: 'processing' 
         });
         await newFile.save();
         
-                // --- 3. VIRUSTOTAL v3 BACKGROUND SCAN (SMART ENGINE) ---
+        // --- VIRUSTOTAL SCAN ---
         (async () => {
             try {
                 console.log(`Starting VT Scan for new file ${newFile._id}...`);
-                
-                // Call our new, smart helper function
                 const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
-                
-                // Save the resulting Analysis ID to the database
                 await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
                 console.log(`VT Scan submitted successfully. Analysis ID: ${analysisId}`);
-                
             } catch (error) {
                 console.error(`Background VT scan failed for ${newFile._id}.`);
             } 
@@ -2245,12 +2267,9 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
     } catch (error) {
         console.error("Initial upload error:", error);
-        if (fs.existsSync(tempFilePath)) {
-            fs.unlinkSync(tempFilePath);
-        }
         res.status(500).render('pages/500');
     }
-});
+}); // <--- ADD THIS CLOSING BRACE AND PARENTHESIS HERE
 
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
@@ -2453,9 +2472,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant.`);
             isVariant = true;
             masterFileId = existingMasterFile._id;
-            
-            // ✅ FIX: We only delete the ICON. We keep the Variant's Screenshots!
-            if (softwareIcon && softwareIcon[0]) fs.unlinkSync(softwareIcon[0].path);
+            // No unlinkSync needed here anymore!
         } else {
             if (!softwareIcon || !screenshots) {
                 return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required for new mods.`);
@@ -2471,13 +2488,13 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // A. Only process the Icon if it's a Master File
         if (!isVariant && softwareIcon && softwareIcon.length > 0) {
             iconKey = await uploadToB2(softwareIcon[0], 'icons');
-            fs.unlinkSync(softwareIcon[0].path);
+            // ✅ FIX: REMOVED fs.unlinkSync(softwareIcon[0].path);
         }
         
         // B. ALWAYS process Screenshots (Both Master and Variant get their own)
         if (screenshots && screenshots.length > 0) {
             screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
-            screenshots.forEach(f => fs.unlinkSync(f.path));
+            // ✅ FIX: REMOVED screenshots.forEach(f => fs.unlinkSync(f.path));
         }
 
         // --- 3. GENERATE SLUG (Only for Master files) ---
@@ -2502,11 +2519,8 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 whatsNew: formData.whatsNew,
                 importantNote: formData.importantNote,
                 developer: formData.developerName || 'N/A',
-                
-                // ✅ FIX: Save the Variant's unique media!
                 screenshotKeys: screenshotKeys,
                 videoUrl: formData.videoUrl, 
-                
                 category: formData.modPlatform,
                 isVariant: true,
                 masterFile: masterFileId,
@@ -2514,15 +2528,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 status: 'pending' 
             });
 
-            // Link the new Variant to the Master File
             await File.findByIdAndUpdate(masterFileId, {
                 $push: { variants: fileId }
             });
 
-            // Redirect them to their uploads page so they can see it's pending
             res.redirect('/my-uploads?message=Your variant has been submitted for review!');
         } else {
-            // Save as a brand new Master File
             await File.findByIdAndUpdate(fileId, {
                 name: formData.modName,                 
                 slug: finalSlug, 
@@ -2532,14 +2543,13 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 modFeatures: formData.modFeatures,
                 whatsNew: formData.whatsNew,
                 officialDescription: formData.officialDescription,
-                importantNote: formData.importantNote, // <--- NEW FIELD
+                importantNote: formData.importantNote,
                 videoUrl: formData.videoUrl,
                 category: formData.modPlatform,         
                 platforms: formData.modCategory ? [formData.modCategory] : [],
                 tags: processedTags,
                 iconKey: iconKey,
                 screenshotKeys: screenshotKeys,
-                
                 isVariant: false,
                 status: 'pending' 
             });
@@ -2679,18 +2689,38 @@ app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
 
         // --- SMART CHECK: Is it a File Hash (64 chars) or an Analysis ID (contains '-')? ---
         if (vtId.length === 64 && !vtId.includes('-')) {
-            // It's a direct FILE HASH. The scan is already done. We just need the final report.
-            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, {
-                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
-            });
+            // It's a direct FILE HASH or URL HASH. 
+            // We don't know which one yet, but the scan is definitely done.
+            // Since we already have the ID, we don't need to fetch the full report just to get the stats
+            // if we already have them in the DB.
+            if (file.virusTotalScanDate) {
+                return res.json({ status: 'completed', stats: { malicious: file.virusTotalPositiveCount } });
+            }
             
-            // If the file exists, the scan is inherently completed
+            // If we don't have stats but we have a hash, we must try to fetch them.
+            // We will assume it's a file first. If that 404s, we assume it's a URL.
+            try {
+                vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, {
+                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+                });
+            } catch (err) {
+                if (err.response && err.response.status === 404) {
+                    // Try URL endpoint instead
+                    vtResponse = await axios.get(`https://www.virustotal.com/api/v3/urls/${vtId}`, {
+                        headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+                    });
+                } else {
+                    throw err; // Real error
+                }
+            }
+            
             isCompleted = true;
             stats = vtResponse.data.data.attributes.last_analysis_stats;
-            trueHash = vtId; // We already have the true hash
+            trueHash = vtId; 
 
         } else {
-            // It's an ANALYSIS ID. We need to check if the background scan is finished.
+            // It's an ANALYSIS ID (e.g., from a recent upload or external link submission).
+            // We need to check if the background scan is finished.
             vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, {
                 headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
             });
@@ -2698,17 +2728,33 @@ app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
             if (vtResponse.data.data.attributes.status === 'completed') {
                 isCompleted = true;
                 stats = vtResponse.data.data.attributes.stats;
-                trueHash = vtResponse.data.meta.file_info ? vtResponse.data.meta.file_info.sha256 : null;
+                
+                // ✅ FIX: Determine if this was a FILE analysis or a URL analysis
+                const type = vtResponse.data.meta?.file_info ? 'file' : 'url';
+
+                if (type === 'file') {
+                    // Extract the actual File Hash (SHA-256)
+                    trueHash = vtResponse.data.meta.file_info.sha256;
+                } else {
+                    // For URLs, VT provides a URL Identifier (which is just a hash of the URL)
+                    // We can extract this from the item_id in the analysis report.
+                    // The analysis ID looks like: u-HASH-TIMESTAMP. We want the HASH.
+                    const parts = vtId.split('-');
+                    if (parts.length >= 2) {
+                        trueHash = parts[1]; // The SHA256 of the URL
+                    }
+                }
             }
         }
 
         // --- UPDATE DATABASE IF COMPLETED ---
         if (isCompleted && stats) {
             await File.findByIdAndUpdate(fileId, {
-                virusTotalScanDate: new Date(), // This makes the frontend switch to "Completed"
+                virusTotalScanDate: new Date(), 
                 virusTotalPositiveCount: stats.malicious + stats.suspicious,
                 virusTotalTotalScans: stats.harmless + stats.malicious + stats.suspicious + stats.undetected,
-                virusTotalId: trueHash // Save the true hash so we link directly to the file next time
+                // Save the true hash (file or URL) so we link directly to the report next time
+                virusTotalId: trueHash || vtId 
             });
 
             return res.json({ status: 'completed', stats: stats });
@@ -2720,7 +2766,6 @@ app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
     } catch (error) {
         console.error("VT Refresh Error:", error.response?.data || error.message);
         
-        // If VT says "Not Found", it's a bad ID.
         if (error.response && error.response.status === 404) {
              return res.status(404).json({ error: "VirusTotal could not find a report for this ID." });
         }
@@ -3130,6 +3175,9 @@ const startServer = async () => {
                 methods: ["GET", "POST"]
             }
         });
+        
+        // ✅ CRITICAL FIX: Make Socket.IO globally accessible HERE, inside the function!
+        app.set('io', io); 
 
         // Socket.IO logic
         io.on('connection', (socket) => {
@@ -3160,7 +3208,7 @@ const startServer = async () => {
             res.status(500).render('pages/500');
         });
 
-       // Finally, listen! Bind to 0.0.0.0 for Render compatibility
+        // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
         });
@@ -3168,7 +3216,7 @@ const startServer = async () => {
     } catch (error) {
         console.error('Server failed to start.', error);
     }
-};
+}; // <-- This correctly closes the startServer() function
 
 // ===================================
 // AUTOMATION ENGINE (CRON JOBS)
@@ -3179,41 +3227,33 @@ cron.schedule('* * * * *', async () => {
     try {
         const now = new Date();
 
-        // 1. Find campaigns that are scheduled to run NOW (or were missed slightly)
+        // 1. Find campaigns that are scheduled to run NOW
         const pendingCampaigns = await AutomatedCampaign.find({
             status: 'scheduled',
-            scheduledDate: { $lte: now } // Date is less than or equal to right now
+            scheduledDate: { $lte: now }
         });
 
-        if (pendingCampaigns.length === 0) return; // Nothing to do
+        if (pendingCampaigns.length === 0) return;
 
         for (const campaign of pendingCampaigns) {
             console.log(`Starting automated campaign: ${campaign.title}`);
             
-            // Mark as processing so we don't accidentally run it twice
             campaign.status = 'processing';
             await campaign.save();
 
             let targetUsers = [];
 
-            // 2. Determine the Target Audience based on the condition
             if (campaign.targetGroup === 'all-users') {
                 targetUsers = await User.find({}).select('_id');
-            } 
-            else if (campaign.targetGroup === 'premium-only') {
+            } else if (campaign.targetGroup === 'premium-only') {
                 targetUsers = await User.find({ membership: 'premium' }).select('_id');
-            }
-            else if (campaign.targetGroup === 'distributors-only') {
+            } else if (campaign.targetGroup === 'distributors-only') {
                 targetUsers = await User.find({ role: 'distributor' }).select('_id');
-            }
-            else if (campaign.targetGroup === 'android-uploaders') {
-                // Find distinct uploaders of android files
+            } else if (campaign.targetGroup === 'android-uploaders') {
                 const uploaders = await File.distinct('uploader', { category: 'android' });
                 targetUsers = await User.find({ username: { $in: uploaders } }).select('_id');
             }
-            // ... add more complex logic for 'ios-uploaders', etc.
 
-            // 3. Generate the individual notifications
             const notificationsToInsert = targetUsers.map(user => ({
                 user: user._id,
                 title: campaign.notificationTitle,
@@ -3224,12 +3264,10 @@ cron.schedule('* * * * *', async () => {
                 updatedAt: new Date()
             }));
 
-            // 4. Bulk insert for massive performance (sends 10,000s in seconds)
             if (notificationsToInsert.length > 0) {
                 await UserNotification.insertMany(notificationsToInsert);
             }
 
-            // 5. Mark campaign as completed
             campaign.status = 'completed';
             await campaign.save();
             console.log(`Completed campaign: ${campaign.title}. Sent to ${targetUsers.length} users.`);
@@ -3240,10 +3278,7 @@ cron.schedule('* * * * *', async () => {
     }
 });
 
-startServer();
-       // --- DECLARED ONLY ONCE HERE ---
-        const server = http.createServer(app);
-        const io = new Server(server, {
-            cors: { origin: allowedOrigins, methods:["GET", "POST"] }
-        });
-                app.set('io', io); // <--- ADD THIS LINE TO MAKE SOCKET GLOBALLY ACCESSIBLE
+// ✅ START THE SERVER
+startServer(); 
+
+// 🛑 MAKE SURE THERE IS ABSOLUTELY NO CODE BELOW THIS LINE! 🛑

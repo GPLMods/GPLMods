@@ -1930,23 +1930,6 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     border-radius: 8px;
     font-weight: 700;
 }
-/* --- Fix for Long Text Breaking the Download Page Layout --- */
-.details-panel {
-    max-width: 100%;
-    overflow: hidden; /* Prevents the panel from expanding off-screen */
-}
-
-.tab-content p, 
-.app-description-content, 
-.info-box,
-.info-box p,
-.feature-text span {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    word-break: break-word; /* Forces long words/URLs to break and wrap */
-    /* ✅ FIX: Removed 'white-space: pre-wrap;' because it was turning HTML indentation into massive gaps! */
-    max-width: 100%;
-}
 
 /* ==========================================================================
    UNIFIED MOD CARD STYLES (Applies to Index, Category, Search, Profile)

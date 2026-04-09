@@ -1,5 +1,9 @@
 <%- include('../partials/header') %>
 
+<!-- ✅ ADD QUILL.JS STYLES AND SCRIPT -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
 <style>
     /* Your custom theme styles are now integrated */
     :root {
@@ -213,6 +217,44 @@
     .submit-button:hover {
         opacity: 0.9;
     }
+    /* --- ✅ FIX: Force Quill Editors to be responsive on mobile --- */
+    .ql-toolbar, .ql-container {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .ql-editor {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        max-width: 100% !important;
+        padding: 12px 10px !important; 
+    }
+    
+    .upload-form-container {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Custom styles to make Quill match our dark theme */
+    .ql-toolbar.ql-snow {
+        background-color: #333;
+        border-color: #444;
+        border-radius: 8px 8px 0 0;
+    }
+    .ql-container.ql-snow {
+        background-color: var(--black);
+        border-color: #444;
+        border-radius: 0 0 8px 8px;
+        color: var(--white);
+        font-family: 'Poppins', sans-serif;
+        font-size: 1em;
+        min-height: 250px; /* Taller editors! */
+    }
+    .ql-editor.ql-blank::before { color: #888; }
+    .ql-snow .ql-stroke { stroke: var(--silver); }
+    .ql-snow .ql-fill { fill: var(--silver); }
+    .ql-snow .ql-picker { color: var(--silver); }
 </style>
 
 <div class="container">
@@ -283,27 +325,32 @@
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" placeholder="Describe what makes this mod unique..." required></textarea>
+                    <textarea id="modDescription" name="modDescription" style="display:none;" required></textarea>
+                    <div id="editor-modDescription"></div>
                 </div>
 
                 <div class="form-group">
-                    <label for="modFeatures">Mod Features One Frature Per Line By Line*</label>
-                    <textarea id="modFeatures" name="modFeatures" placeholder="Describe the modifications (e.g., Unlimited Coins, God Mode, Prenium etc)" required></textarea>
+                    <label for="modFeatures">Mod Features* (One per line)</label>
+                    <textarea id="modFeatures" name="modFeatures" style="display:none;" required></textarea>
+                    <div id="editor-modFeatures"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="officialDescription">Official Description (Optional)</label>
-                    <textarea id="officialDescription" name="officialDescription" placeholder="Provide the original description of the software from the official source, like the Play Store, Appstore or developer's website."></textarea>
+                    <textarea id="officialDescription" name="officialDescription" style="display:none;"></textarea>
+                    <div id="editor-officialDescription"></div>
                 </div>
 
                  <div class="form-group">
                     <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
-                    <textarea id="importantNote" name="importantNote" placeholder="e.g., Turn off Wi-Fi before opening the game, extract the OBB file to Android/obb, etc."></textarea>
+                    <textarea id="importantNote" name="importantNote" style="display:none;"></textarea>
+                    <div id="editor-importantNote"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="whatsNew">What's New (Optional)</label>
-                    <textarea id="whatsNew" name="whatsNew" placeholder="What's new in this version?"></textarea>
+                    <textarea id="whatsNew" name="whatsNew" style="display:none;"></textarea>
+                    <div id="editor-whatsNew"></div>
                 </div>
             </fieldset>
 
@@ -447,11 +494,59 @@
         const preSelectedPlatform = "<%= defaultPlatform %>";
         if (preSelectedPlatform) {
             platformSelect.value = preSelectedPlatform;
-            // Manually trigger the 'change' event so the Category dropdown unlocks and populates
             const event = new Event('change');
             platformSelect.dispatchEvent(event);
         }
-    });
+
+        // ==========================================
+        // QUILL RICH TEXT EDITORS 
+        // ==========================================
+        const toolbarOptions = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['clean'] 
+        ];
+
+        // Safe initialization wrapper
+        function initQuill(selector) {
+            const el = document.querySelector(selector);
+            if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
+            return null;
+        }
+
+        const quillDesc = initQuill('#editor-modDescription');
+        const quillFeat = initQuill('#editor-modFeatures');
+        const quillOff = initQuill('#editor-officialDescription');
+        const quillNew = initQuill('#editor-whatsNew');
+        const quillNote = initQuill('#editor-importantNote');
+
+        // Sync HTML before submit
+        const uploadForm = document.querySelector('form[action^="/upload-finalize"]');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(event) {
+                
+                // Screenshot validation
+                const screenFiles = screenshotsInput.files;
+                if (screenFiles.length < 1) {
+                    alert('Error: You must upload at least one screenshot.');
+                    event.preventDefault(); 
+                    return;
+                }
+                if (screenFiles.length > 4) {
+                    alert('Error: You cannot upload more than 4 screenshots.');
+                    event.preventDefault(); 
+                    return;
+                }
+
+                // Sync Quill data to hidden textareas
+                if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
+                if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
+                if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
+                if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
+                if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+            });
+        }
+    }); // <--- DOMContentLoaded Closes Here
 </script>
 
 <%- include('../partials/footer') %>

@@ -195,7 +195,7 @@
                             
                             <div class="mod-card-content">
                                 <h3><%= file.name %></h3>
-                                <p><%= file.modDescription.substring(0, 50) %>...</p> 
+                                <p><%= file.modDescription.replace(/<[^>]*>?/gm, '').substring(0, 50) %>...</p>
                                 
                                 <div class="rating" style="margin-bottom: 10px;">
                                     <div class="stars-outer">
