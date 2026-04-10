@@ -40,9 +40,19 @@ const FileSchema = new Schema({
         type: Boolean,
         default: false
     },
+        // --- NEW: MULTI-PART DOWNLOADS ---
+    isMultiPart: {
+        type: Boolean,
+        default: false
+    },
     downloadParts: [{
-        partName: { type: String, required: true }, // e.g., "Part 1 (5GB)"
-        partUrl: { type: String, required: true }   // e.g., Google Drive link
+        partName: { type: String, required: true }, 
+        partUrl: { type: String, required: true },
+        // --- ADD THESE NEW FIELDS FOR EACH PART ---
+        partVirusTotalId: { type: String, trim: true }, // The Hash or Analysis ID
+        partVirusTotalScanDate: { type: Date },
+        partVirusTotalPositiveCount: { type: Number, default: 0 },
+        partVirusTotalTotalScans: { type: Number, default: 0 }
     }],
     installationInstructions: {
         type: String,

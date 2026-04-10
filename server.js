@@ -1909,8 +1909,12 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
 // My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
-        const userUploads = await File.find({ uploader: req.user.username }).sort({ createdAt: -1 });
+        // 1. Fetch the user's uploads and populate the older versions
+        const userUploads = await File.find({ uploader: req.user.username })
+                                      .sort({ createdAt: -1 })
+                                      .populate('olderVersions', 'version fileSize createdAt'); 
         
+        // 2. Map through the uploads to generate signed image URLs
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-avatar.png';
@@ -1919,13 +1923,21 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
                     signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
                 } catch (urlError) {}
             }
-            return { ...file.toObject(), iconUrl: signedIconUrl };
+            
+            // ✅ FIX: Manually attach the olderVersions array to the new plain object
+            const plainFile = file.toObject();
+            plainFile.iconUrl = signedIconUrl;
+            plainFile.olderVersions = file.olderVersions || []; // Ensure it's an array
+            
+            return plainFile;
         }));
 
         res.render('pages/my-uploads', { uploads: uploadsWithUrls }); 
-    } catch (error) { res.status(500).render('pages/500'); }
+    } catch (error) { 
+        console.error("My Uploads Error:", error);
+        res.status(500).render('pages/500'); 
+    }
 });
-
 // --- PUBLIC PROFILE ROUTE ---
 app.get('/users/:username', async (req, res) => {
     try {
@@ -2166,8 +2178,11 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 fileSize: 0, 
                 name: originalFilename, 
                 version: 'Draft',
-                category: 'android',         
+                
+                // ✅ FIX: Set category to empty string instead of 'android'
+                category: '',         
                 platforms: [],
+                
                 status: 'processing' 
             });
             await newFile.save();
@@ -2245,8 +2260,11 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             fileSize: req.file.size,
             name: req.file.originalname, 
             version: 'Draft',
-            category: 'android',         
+            
+            // ✅ FIX: Set category to empty string instead of 'android'
+            category: '',         
             platforms: [],
+            
             status: 'processing' 
         });
         await newFile.save();
@@ -2359,6 +2377,69 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ success: false });
     }
 });
+// --- NEW: User Delete Specific Old Version ---
+app.post('/mods/:id/delete-version/:versionId', ensureAuthenticated, async (req, res) => {
+    try {
+        const { id, versionId } = req.params;
+        const masterFile = await File.findById(id).populate('olderVersions');
+
+        // Security check
+        if (!masterFile || masterFile.uploader !== req.user.username) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Find the version to delete
+        const versionToDelete = masterFile.olderVersions.find(v => v._id.toString() === versionId);
+        if (!versionToDelete) {
+            return res.status(404).json({ success: false, message: 'Version not found.' });
+        }
+
+        // 1. Delete from B2
+        await deleteFromB2(versionToDelete.fileKey);
+
+        // 2. Remove from Master File's array
+        await File.findByIdAndUpdate(id, { $pull: { olderVersions: versionId } });
+
+        // 3. Delete the version document
+        await File.findByIdAndDelete(versionId);
+
+        res.json({ success: true, message: 'Version deleted successfully.' });
+    } catch (error) {
+        console.error("Error deleting version:", error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// --- NEW: User Delete ALL Old Versions ---
+app.post('/mods/:id/delete-all-versions', ensureAuthenticated, async (req, res) => {
+    try {
+        const fileId = req.params.id;
+        const masterFile = await File.findById(fileId).populate('olderVersions');
+
+        // Security check
+        if (!masterFile || masterFile.uploader !== req.user.username) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        if (masterFile.olderVersions && masterFile.olderVersions.length > 0) {
+            for (const oldVersion of masterFile.olderVersions) {
+                // 1. Delete from B2
+                await deleteFromB2(oldVersion.fileKey);
+                // 2. Delete the version document
+                await File.findByIdAndDelete(oldVersion._id); 
+            }
+            
+            // 3. Clear the array on the Master File
+            masterFile.olderVersions = [];
+            await masterFile.save();
+        }
+
+        res.json({ success: true, message: 'All older versions deleted successfully.' });
+    } catch (error) {
+        console.error("Error deleting all versions:", error);
+        res.status(500).json({ success: false });
+    }
+});
 
 // --- GET Edit Mod Route ---
 app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
@@ -2383,7 +2464,6 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- POST Edit Mod Route ---
 app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
@@ -2397,6 +2477,9 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         const formData = req.body;
         const { softwareIcon, screenshots } = req.files || {};
+        
+        // ✅ NEW: Determine if saving as draft or submitting
+        const actionType = formData.actionType || 'submit';
 
         // 1. Update images ONLY IF new ones were uploaded
         if (softwareIcon && softwareIcon.length > 0) {
@@ -2426,14 +2509,28 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.platforms = [formData.modCategory];
         }
 
-        // 4. IMPORTANT: If the mod was rejected, switch it back to pending for re-review!
-        if (file.status === 'rejected') {
-            file.status = 'pending';
-            file.rejectionReason = ''; // Clear the old rejection reason
+// 4. IMPORTANT: Status Logic
+        if (actionType === 'draft') {
+            // If they saved a draft, change the status to processing, taking it offline
+            file.status = 'processing'; 
+        } else {
+            // If they clicked Submit...
+            if (file.status === 'rejected' || file.status === 'processing') {
+                // If it was rejected or a draft, send it to the admin queue
+                file.status = 'pending';
+                file.rejectionReason = ''; // Clear old reason
+            }
+            // If it was already 'live', it stays 'live'. 
+            // (Unless you want ALL edits to go through admin review again, in which case set it to 'pending')
         }
 
         await file.save();
-        res.redirect('/my-uploads');
+        
+        if (actionType === 'draft') {
+             res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is now hidden from the public until you submit it.`);
+        } else {
+             res.redirect('/my-uploads?success=Mod updated successfully!');
+        }
 
     } catch (error) {
         console.error("Error updating mod:", error);
@@ -2453,8 +2550,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             return res.status(403).render('pages/403');
         }
 
-        const { softwareIcon, screenshots } = req.files;
+        const { softwareIcon, screenshots } = req.files || {}; // Default to empty object if no files
         const formData = req.body; 
+        
+        // ✅ NEW: Determine what the user wants to do (Save Draft vs Submit)
+        const actionType = formData.actionType || 'submit'; // 'draft' or 'submit'
 
         // --- 1. THE VARIANT CHECK ---
         const existingMasterFile = await File.findOne({
@@ -2479,27 +2579,34 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
         }
 
-        let iconKey = null;
-        let screenshotKeys = [];
+        let iconKey = fileToUpdate.iconKey; // Keep existing if not updating
+        let screenshotKeys = fileToUpdate.screenshotKeys || [];
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : [];
 
-        // --- 2. PROCESS IMAGES ---
-        
-        // A. Only process the Icon if it's a Master File
+        // --- PROCESS IMAGES ---
         if (!isVariant && softwareIcon && softwareIcon.length > 0) {
             iconKey = await uploadToB2(softwareIcon[0], 'icons');
-            // ✅ FIX: REMOVED fs.unlinkSync(softwareIcon[0].path);
         }
-        
-        // B. ALWAYS process Screenshots (Both Master and Variant get their own)
         if (screenshots && screenshots.length > 0) {
             screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
-            // ✅ FIX: REMOVED screenshots.forEach(f => fs.unlinkSync(f.path));
         }
 
-        // --- 3. GENERATE SLUG (Only for Master files) ---
-        let finalSlug = null;
-        if (!isVariant) {
+        // --- VALIDATION FOR SUBMISSION ONLY ---
+        // If they are submitting for review, enforce required fields.
+        // If they are just saving a draft, allow missing fields.
+        if (actionType === 'submit') {
+            if (!isVariant && !iconKey) {
+                return res.redirect(`/upload-details/${fileId}?error=An icon is required to submit the mod.`);
+            }
+            if (!formData.modPlatform || !formData.modCategory) {
+                return res.redirect(`/upload-details/${fileId}?error=Platform and Category are required to submit.`);
+            }
+            // Add any other strict requirements here
+        }
+
+        // --- GENERATE SLUG ---
+        let finalSlug = fileToUpdate.slug; // Keep existing slug if saving a draft
+        if (!isVariant && actionType === 'submit' && !finalSlug) {
             let baseSlug = slugify(formData.modName);
             finalSlug = baseSlug;
             let slugCounter = 1;
@@ -2509,51 +2616,54 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
         }
 
-        // --- 4. SAVE THE DATABASE RECORD ---
+        // --- SET FINAL STATUS ---
+        // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
+        // but doesn't show up in the Admin's "Pending Review" queue yet.
+        const finalStatus = actionType === 'draft' ? 'processing' : 'pending';
+
+        // --- SAVE TO DATABASE ---
+        const updateData = {
+            name: formData.modName || fileToUpdate.name, 
+            version: formData.modVersion || fileToUpdate.version,
+            modDescription: formData.modDescription,
+            modFeatures: formData.modFeatures,
+            whatsNew: formData.whatsNew,
+            importantNote: formData.importantNote,
+            developer: formData.developerName || 'N/A',
+            screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
+            videoUrl: formData.videoUrl, 
+            
+            // Update categories if provided, otherwise keep existing (which might be empty string)
+            category: formData.modPlatform || fileToUpdate.category,
+            platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
+            
+            status: finalStatus // 'processing' (draft) or 'pending' (submitted)
+        };
+
         if (isVariant) {
-            await File.findByIdAndUpdate(fileId, {
-                name: formData.modName, 
-                version: formData.modVersion,
-                modDescription: formData.modDescription,
-                modFeatures: formData.modFeatures,
-                whatsNew: formData.whatsNew,
-                importantNote: formData.importantNote,
-                developer: formData.developerName || 'N/A',
-                screenshotKeys: screenshotKeys,
-                videoUrl: formData.videoUrl, 
-                category: formData.modPlatform,
-                isVariant: true,
-                masterFile: masterFileId,
-                isLatestVersion: false, 
-                status: 'pending' 
-            });
-
-            await File.findByIdAndUpdate(masterFileId, {
-                $push: { variants: fileId }
-            });
-
-            res.redirect('/my-uploads?message=Your variant has been submitted for review!');
+            updateData.isVariant = true;
+            updateData.masterFile = masterFileId;
+            updateData.isLatestVersion = false;
+            
+            await File.findByIdAndUpdate(fileId, updateData);
+            
+            // Only link to master if submitting for real
+            if (actionType === 'submit') {
+                await File.findByIdAndUpdate(masterFileId, { $push: { variants: fileId } });
+            }
         } else {
-            await File.findByIdAndUpdate(fileId, {
-                name: formData.modName,                 
-                slug: finalSlug, 
-                version: formData.modVersion,           
-                developer: formData.developerName || 'N/A',
-                modDescription: formData.modDescription,
-                modFeatures: formData.modFeatures,
-                whatsNew: formData.whatsNew,
-                officialDescription: formData.officialDescription,
-                importantNote: formData.importantNote,
-                videoUrl: formData.videoUrl,
-                category: formData.modPlatform,         
-                platforms: formData.modCategory ? [formData.modCategory] : [],
-                tags: processedTags,
-                iconKey: iconKey,
-                screenshotKeys: screenshotKeys,
-                isVariant: false,
-                status: 'pending' 
-            });
+            updateData.slug = finalSlug;
+            updateData.tags = processedTags;
+            updateData.iconKey = iconKey;
+            updateData.isVariant = false;
+            
+            await File.findByIdAndUpdate(fileId, updateData);
+        }
 
+        // --- REDIRECT BASED ON ACTION ---
+        if (actionType === 'draft') {
+            res.redirect(`/upload-details/${fileId}?success=Draft saved successfully! You can return to finish it later.`);
+        } else {
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -2770,6 +2880,80 @@ app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
              return res.status(404).json({ error: "VirusTotal could not find a report for this ID." });
         }
         
+        res.status(500).json({ error: "Failed to contact VirusTotal API." });
+    }
+});
+// ===================================
+// 11.6 VIRUSTOTAL REFRESH ROUTE (MULTI-PART)
+// ===================================
+app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
+    try {
+        const { fileId, partId } = req.params;
+        const file = await File.findById(fileId);
+        
+        if (!file || !file.downloadParts || file.downloadParts.length === 0) {
+            return res.status(404).json({ error: "File or parts not found." });
+        }
+
+        // Find the specific part within the array
+        const part = file.downloadParts.id(partId);
+        
+        if (!part || !part.partVirusTotalId) {
+             return res.status(404).json({ error: "No VirusTotal ID found for this part." });
+        }
+
+        const vtId = part.partVirusTotalId;
+        let vtResponse;
+        let isCompleted = false;
+        let stats = null;
+        let trueHash = null;
+
+        // --- SMART CHECK (Same logic as main file refresh) ---
+        if (vtId.length === 64 && !vtId.includes('-')) {
+            if (part.partVirusTotalScanDate) {
+                return res.json({ status: 'completed', stats: { malicious: part.partVirusTotalPositiveCount } });
+            }
+            try {
+                vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
+            } catch (err) {
+                if (err.response && err.response.status === 404) {
+                    vtResponse = await axios.get(`https://www.virustotal.com/api/v3/urls/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
+                } else { throw err; }
+            }
+            isCompleted = true;
+            stats = vtResponse.data.data.attributes.last_analysis_stats;
+            trueHash = vtId; 
+        } else {
+            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
+            if (vtResponse.data.data.attributes.status === 'completed') {
+                isCompleted = true;
+                stats = vtResponse.data.data.attributes.stats;
+                const type = vtResponse.data.meta?.file_info ? 'file' : 'url';
+                if (type === 'file') {
+                    trueHash = vtResponse.data.meta.file_info.sha256;
+                } else {
+                    const parts = vtId.split('-');
+                    if (parts.length >= 2) trueHash = parts[1];
+                }
+            }
+        }
+
+        // --- UPDATE DATABASE IF COMPLETED ---
+        if (isCompleted && stats) {
+            part.partVirusTotalScanDate = new Date();
+            part.partVirusTotalPositiveCount = stats.malicious + stats.suspicious;
+            part.partVirusTotalTotalScans = stats.harmless + stats.malicious + stats.suspicious + stats.undetected;
+            part.partVirusTotalId = trueHash || vtId;
+            
+            await file.save(); // Save the parent document to save the nested array changes
+
+            return res.json({ status: 'completed', stats: stats });
+        } else {
+            return res.json({ status: vtResponse.data.data.attributes.status || 'pending' }); 
+        }
+
+    } catch (error) {
+        console.error("VT Part Refresh Error:", error.response?.data || error.message);
         res.status(500).json({ error: "Failed to contact VirusTotal API." });
     }
 });

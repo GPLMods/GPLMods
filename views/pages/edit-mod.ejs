@@ -227,8 +227,55 @@
                 </div>
             </fieldset>
             
-            <button type="submit" class="submit-button">Save Changes</button>
+                        <!-- ======== ADD THIS HIDDEN INPUT ======== -->
+            <!-- JavaScript will change this value based on which button is clicked -->
+            <input type="hidden" name="actionType" id="actionType" value="submit">
+
+            <div class="button-group" style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="button" class="btn btn-secondary" id="saveDraftBtn" style="flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; border-color: #555; color: var(--silver); background: transparent;">Save as Draft</button>
+                
+                <button type="button" class="submit-button" id="submitModBtn" style="flex: 2; margin-top: 0;">
+                    <%= file.status === 'rejected' ? 'Resubmit for Review' : 'Save & Publish Changes' %>
+                </button>
+            </div>
         </form>
+    </div>
+</div>
+
+<!-- ======== CONFIRMATION MODALS ======== -->
+
+<!-- Submit Confirmation Modal -->
+<div id="submit-confirm-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <i class="fas fa-paper-plane" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Submit Changes?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Are you sure you want to submit these changes? 
+            <% if (file.status === 'rejected') { %>
+                This will send the mod back to the admin queue for re-review.
+            <% } else { %>
+                These updates will be visible immediately.
+            <% } %>
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="btn btn-primary" id="confirmSubmitBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: var(--gold); color: var(--black); border: none; cursor: pointer;">Yes, Submit</button>
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('submit-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid var(--silver); color: var(--silver); cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Draft Confirmation Modal -->
+<div id="draft-confirm-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--silver); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <i class="fas fa-save" style="font-size: 3em; color: var(--silver); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Save Draft?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Your progress will be saved, but the mod will be marked as a Draft and taken offline until you submit it.
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="btn btn-primary" id="confirmDraftBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: var(--silver); color: var(--black); border: none; cursor: pointer;">Save Draft</button>
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('draft-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid #555; color: var(--silver); cursor: pointer;">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -356,7 +403,76 @@
                 if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
                 if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
                 if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+                    // ==========================================
+        // BUTTON & MODAL LOGIC
+        // ==========================================
+        const saveDraftBtn = document.getElementById('saveDraftBtn');
+        const submitModBtn = document.getElementById('submitModBtn');
+        const actionTypeInput = document.getElementById('actionType');
+        const mainForm = document.getElementById('details-form');
+
+        const draftModal = document.getElementById('draft-confirm-modal');
+        const submitModal = document.getElementById('submit-confirm-modal');
+        const confirmDraftBtn = document.getElementById('confirmDraftBtn');
+        const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+
+        // Helper to sync Quill data before any submission
+        function syncQuillData() {
+            if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
+            if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
+            if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
+            if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
+            if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+        }
+
+        // 1. Open Modals
+        if (saveDraftBtn) {
+            saveDraftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                draftModal.style.display = 'flex';
+                setTimeout(() => draftModal.classList.add('show'), 10);
             });
+        }
+
+        if (submitModBtn) {
+            submitModBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Basic HTML5 validation check before showing modal
+                if (!mainForm.checkValidity()) {
+                    mainForm.reportValidity();
+                    return;
+                }
+                submitModal.style.display = 'flex';
+                setTimeout(() => submitModal.classList.add('show'), 10);
+            });
+        }
+
+        // 2. Handle Confirmations
+        if (confirmDraftBtn) {
+            confirmDraftBtn.addEventListener('click', () => {
+                actionTypeInput.value = 'draft'; // Tell backend this is a draft
+                syncQuillData();
+                mainForm.submit(); 
+            });
+        }
+
+        if (confirmSubmitBtn) {
+            confirmSubmitBtn.addEventListener('click', () => {
+                actionTypeInput.value = 'submit'; // Tell backend this is a real submission
+                syncQuillData();
+                confirmSubmitBtn.textContent = 'Submitting...';
+                confirmSubmitBtn.disabled = true;
+                mainForm.submit(); 
+            });
+        }
+
+        // Helper function for the inline onclick handlers
+        window.closeConfirmModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 200);
+            }
         }
     }); // <--- DOMContentLoaded Closes Here
 </script>

@@ -1,20 +1,27 @@
 // adminloader.mjs
+
+// 1. Imports
+import 'dotenv/config'; // Load environment variables first
+import mongoose from 'mongoose';
+import dns from 'dns/promises';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import AdminJS from 'adminjs';
 import * as AdminJSMongoose from '@adminjs/mongoose';
 import { dark, light } from '@adminjs/themes';
 
-// 1. Import the singleton loader
-import loaderModule from './components/loader.js'; 
+import loaderModule from './components/loader.js';
 const { componentLoader, Components } = loaderModule;
 
-console.log('AdminJS Bundler: Starting setup...');
+// Utility for getting __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-AdminJS.registerAdapter({
-    Database: AdminJSMongoose.Database,
-    Resource: AdminJSMongoose.Resource,
-});
-
-// 2. Define the exact same theme
+// ==========================================
+// THEME CONFIGURATION (Must match server.js)
+// ==========================================
 const gplModsTheme = {
     ...dark,
     id: 'dark', 
@@ -32,39 +39,107 @@ const gplModsTheme = {
     }
 };
 
-console.log('AdminJS Bundler: Configuring AdminJS instance...');
+// ==========================================
+// MAIN BUILDER FUNCTION
+// ==========================================
+async function runAdminBuilder() {
+    console.log('\n==================================================');
+    console.log('🚀 INITIALIZING ADMINJS PRE-BUILD SEQUENCE');
+    console.log('==================================================\n');
 
-// 3. Initialize the "Dummy" AdminJS instance for building
-const admin = new AdminJS({
-    componentLoader, // Pass the singleton!
-    defaultTheme: 'dark', 
-    availableThemes: [gplModsTheme, light], 
-    dashboard: {
-        component: Components.Dashboard
-    },
-    branding: {
-        companyName: 'GPL Mods',
-        logo: '/images/logo.png', 
-        softwareBrothers: false,
-        withMadeWithLove: false, 
-    },
-    resources: [], // Empty for bundling
-    env: {
-        NODE_ENV: 'production' // Force Webpack to bundle and minify
+    // --- STEP 1: Network Check ---
+    process.stdout.write('⏳ Checking network connectivity (Google DNS)... ');
+    try {
+        await dns.resolve('8.8.8.8');
+        console.log('✅ Online');
+    } catch (e) {
+        console.log('❌ Offline');
+        console.error('CRITICAL: No internet connection detected. Build aborted.');
+        process.exit(1);
     }
-});
 
-console.log('AdminJS Bundler: Executing build process...');
+    // --- STEP 2: Database Check ---
+    process.stdout.write('⏳ Checking MongoDB Atlas connection... ');
+    if (!process.env.MONGO_URI) {
+        console.log('❌ Failed');
+        console.error('CRITICAL: MONGO_URI environment variable is missing.');
+        process.exit(1);
+    }
+    
+    try {
+        await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+        console.log('✅ Connected');
+        await mongoose.disconnect(); // Disconnect immediately, we only needed a ping
+    } catch (e) {
+        console.log('❌ Failed');
+        console.error('CRITICAL: Could not connect to database. Check credentials and IP whitelist.');
+        console.error(e.message);
+        process.exit(1);
+    }
 
-// 4. Build it
-admin.initialize().then(() => {
-    console.log('==================================================');
-    console.log('✅ AdminJS Bundler: Build finished successfully!');
-    console.log('✅ Assets saved to the .adminjs/ folder.');
-    console.log('==================================================');
-    process.exit(0); 
-}).catch(err => {
-    console.error('❌ AdminJS Bundler Error: Failed to compile components.');
-    console.error(err);
-    process.exit(1); 
-});
+    // --- STEP 3: Cache Check ---
+    process.stdout.write('⏳ Checking for existing AdminJS build cache... ');
+    const bundlePath = path.join(__dirname, '.adminjs', 'bundle.js');
+    
+    try {
+        await fs.access(bundlePath);
+        // If fs.access succeeds, the file exists!
+        console.log('✅ Cache Found');
+        console.log('\n✨ .adminjs folder is present and complete.');
+        console.log('✨ Skipping build process to save deployment time.\n');
+        
+        console.log('==================================================');
+        console.log('✅ PRE-BUILD SEQUENCE FINISHED SUCCESSFULLY');
+        console.log('==================================================\n');
+        process.exit(0);
+        
+    } catch (e) {
+        // If fs.access throws an error, the file doesn't exist
+        console.log('ℹ️ No Cache Found (or incomplete)');
+        console.log('\n⚙️ Starting AdminJS Webpack Build Process. This may take a moment...\n');
+    }
+
+    // --- STEP 4: Execute Build ---
+    try {
+        AdminJS.registerAdapter({
+            Database: AdminJSMongoose.Database,
+            Resource: AdminJSMongoose.Resource,
+        });
+
+        const admin = new AdminJS({
+            componentLoader,
+            defaultTheme: 'dark', 
+            availableThemes: [gplModsTheme, light], 
+            dashboard: { component: Components.Dashboard },
+            branding: {
+                companyName: 'GPL Mods',
+                logo: '/images/logo.png', 
+                softwareBrothers: false,
+                withMadeWithLove: false, 
+            },
+            resources: [], // Empty for bundling
+            env: {
+                NODE_ENV: 'production' // Force minification
+            }
+        });
+
+        // The initialize() method is what actually triggers Webpack to build the assets
+        await admin.initialize();
+
+        console.log('\n==================================================');
+        console.log('✅ BUILD COMPLETE: Admin components successfully created!');
+        console.log('✅ Assets saved to the .adminjs/ directory.');
+        console.log('==================================================\n');
+        process.exit(0);
+
+    } catch (err) {
+        console.error('\n==================================================');
+        console.error('❌ BUILD FAILED: Error compiling AdminJS components.');
+        console.error('==================================================\n');
+        console.error(err);
+        process.exit(1);
+    }
+}
+
+// Execute the script
+runAdminBuilder();

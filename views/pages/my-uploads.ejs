@@ -92,8 +92,8 @@
                                     <% } %>
                                 </h3>
                                 <!-- CUSTOM COLOR PLATFORM TAG -->
-                                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
-                                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                                <span class="platform-tag <%= file.category ? file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') : 'na' %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap; <%= !file.category ? 'background-color: var(--gold); color: var(--black);' : '' %>">
+                                    <%= file.category ? file.category.toUpperCase().replace('-', ' ') : 'N/A (DRAFT)' %>
                                 </span>
                             </div>
                             
@@ -130,54 +130,79 @@
                                     <%= file.status === 'processing' ? 'Processing...' : file.status %>
                                 </span>
                                 
+                                                            <div class="item-status-actions">
+                                <!-- 1. THE STATUS BADGE -->
+                                <% if (file.status === 'processing') { %>
+                                    <!-- It's a Draft -->
+                                    <span class="status-badge" style="background-color: var(--silver); color: var(--black);">
+                                        DRAFT
+                                    </span>
+                                <% } else { %>
+                                    <!-- It's Pending, Live, or Rejected -->
+                                    <span class="status-badge status-<%= file.status %>">
+                                        <%= file.status %>
+                                    </span>
+                                <% } %>
+                                
                                 <div class="item-actions">
                                     
-                                    <!-- 1. VIEW BUTTON (Only if live) -->
+                                    <!-- 2. VIEW BUTTON (Only if live) -->
                                     <% if (file.status === 'live') { %>
-                                        <!-- Uses the SEO slug fallback -->
                                         <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="view-btn">View</a>
                                         
-                                        <!-- 2. NEW: UPDATE MOD BUTTON (Only if live) -->
-                                        <!-- ✅ FIX: Changed class to 'update-btn' and removed inline styles -->
+                                        <!-- UPDATE MOD BUTTON (Only if live) -->
                                         <a href="/mods/<%= file._id %>/add-version" class="update-btn">
                                             <i class="fas fa-arrow-up" style="margin-right: 5px;"></i>Update Mod
                                         </a>
                                     <% } %>
                                     
-                                    <!-- 3. EDIT INFO BUTTON -->
-                                     <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
-                                        <% if (file.status === 'rejected') { %>
-                                            Fix & Resubmit
-                                        <% } else if (file.isVariant) { %>
-                                            Edit Info
-                                        <% } else { %>
-                                            Edit Info
-                                        <% } %>
-                                    </a>
+                                    <!-- 3. DYNAMIC EDIT BUTTON -->
+                                    <% if (file.status === 'processing') { %>
+                                        <!-- If it's a draft, they need to finish the initial upload details -->
+                                        <a href="/upload-details/<%= file._id %>" class="edit-resubmit-btn" style="border-color: var(--gold); color: var(--gold);">
+                                            <i class="fas fa-pencil-alt" style="margin-right: 5px;"></i>Finish Draft
+                                        </a>
+                                    <% } else { %>
+                                        <!-- If it's live, pending, or rejected, they use the standard Edit Mod form -->
+                                        <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
+                                            <% if (file.status === 'rejected') { %>
+                                                <i class="fas fa-tools" style="margin-right: 5px;"></i>Fix & Resubmit
+                                            <% } else if (file.isVariant) { %>
+                                                Edit Variant
+                                            <% } else { %>
+                                                Edit Info
+                                            <% } %>
+                                        </a>
+                                    <% } %>
+
+                                    <!-- 4. MANAGE VERSIONS BUTTON (Only if old versions exist) -->
+                                    <% if (file.olderVersions && file.olderVersions.length > 0) { %>
+                                        <button type="button" class="btn btn-secondary manage-versions-btn" 
+                                                data-id="<%= file._id %>" 
+                                                data-versions="<%= JSON.stringify(file.olderVersions) %>"
+                                                style="border-color: var(--silver); color: var(--silver);">
+                                            Manage Old Versions (<%= file.olderVersions.length %>)
+                                        </button>
+                                    <% } %>
                                     
-                                    <!-- 4. DELETE BUTTON -->
-                                    <button class="delete-btn" data-id="<%= file._id %>">Delete</button>
+                                    <!-- 5. DELETE BUTTON -->
+                                    <button class="delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                <% }) %>
-            <% } else { %>
-                <p style="text-align: center; width: 100%; color: var(--silver); grid-column: 1 / -1; padding: 40px;">
-                    You haven't uploaded any mods yet.
-                </p>
-            <% } %>
-        </div>
-    </div>
 </main>
 
-<!-- ======== CUSTOM DELETE MODAL ======== -->
+<!-- ======== CUSTOM DELETE MODAL (REUSABLE) ======== -->
 <div id="delete-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <h2 style="color: var(--red); margin-bottom: 15px;">Delete Mod?</h2>
-        <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
+        
+        <!-- ✅ FIX: Added IDs so we can change the text dynamically -->
+        <h2 id="delete-modal-title" style="color: var(--red); margin-bottom: 15px;">Delete Mod?</h2>
+        <p id="delete-modal-text" style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
             Are you absolutely sure you want to delete this mod? This is a permanent action and cannot be undone.
         </p>
+        
         <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
             <button type="button" class="policy-button" id="confirmDeleteBtn" style="background-color: var(--red); color: var(--white); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-red);">Yes, Delete</button>
             <button type="button" class="policy-button decline" id="cancelDeleteBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
@@ -185,119 +210,35 @@
     </div>
 </div>
 <!-- ===================================== -->
+<!-- ======== CUSTOM MANAGE VERSIONS MODAL ======== -->
+<div id="versions-modal-container" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; border-top: 3px solid var(--blue); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--blue); margin: 0;">Manage Old Versions</h2>
+            <span class="close-versions-modal" style="color: var(--silver); font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        </div>
+
+        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
+            Deleting old versions frees up server space. The current, active version will <strong style="color:var(--white);">not</strong> be affected.
+        </p>
+
+        <div id="versions-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+            <!-- JS will populate this list -->
+        </div>
+
+        <div style="border-top: 1px solid #333; padding-top: 20px; text-align: center;">
+            <button type="button" id="deleteAllVersionsBtn" class="btn btn-secondary" style="background-color: transparent; color: var(--red); border: 2px solid var(--red); padding: 10px 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-trash-alt"></i> Delete ALL Old Versions
+            </button>
+        </div>
+    </div>
+</div>
+<!-- ============================================== -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
-        // --- LIVE DELETE FUNCTIONALITY WITH CUSTOM MODAL ---
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        const deleteModal = document.getElementById('delete-modal-container');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-        
-        let modIdToDelete = null; // Store the ID of the mod we are about to delete
-        let itemToRemove = null;  // Store the DOM element we want to animate out
-
-        // 1. Open Modal when a delete button is clicked
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function(event) {
-                modIdToDelete = this.dataset.id; // Save the ID
-                itemToRemove = this.closest('.upload-item'); // Save the card element
-                
-                deleteModal.style.display = 'flex';
-                // Small delay to allow display:flex to apply before adding the animation class
-                setTimeout(() => {
-                    deleteModal.classList.add('show');
-                }, 10);
-            });
-        });
-
-        // 2. Close Modal on Cancel
-        cancelDeleteBtn.addEventListener('click', function() {
-            closeModal();
-        });
-
-        // 3. Perform Deletion on Confirm
-        confirmDeleteBtn.addEventListener('click', async function() {
-            if (!modIdToDelete) return;
-
-            // Disable button and show loading state (optional but good UX)
-            const originalText = confirmDeleteBtn.textContent;
-            confirmDeleteBtn.textContent = 'Deleting...';
-            confirmDeleteBtn.disabled = true;
-
-            try {
-                // Send a POST request to our backend route
-                const response = await fetch(`/mods/${modIdToDelete}/delete`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const result = await response.json();
-                
-                                if (result.success) {
-                    closeModal(); // Hide the modal
-                    
-                    // ✅ FIX: The Ultimate Smooth Collapse Animation
-                    if (itemToRemove) {
-                        // 1. Get the current exact height of the card before we start messing with it
-                        const currentHeight = itemToRemove.offsetHeight;
-                        
-                        // 2. Explicitly set the height in pixels so we can transition it to 0
-                        itemToRemove.style.height = currentHeight + 'px';
-                        
-                        // Force a browser reflow so it registers the explicit height
-                        itemToRemove.offsetHeight; 
-
-                        // 3. Set up the transition for ALL properties we want to animate
-                        // We animate opacity fast (0.3s), and the layout collapse slightly slower (0.5s) for a natural feel
-                        itemToRemove.style.transition = 'opacity 0.3s ease, transform 0.3s ease, height 0.5s ease 0.2s, padding 0.5s ease 0.2s, margin 0.5s ease 0.2s, border 0.5s ease 0.2s';
-                        
-                        // 4. Start the fade out and shrink
-                        itemToRemove.style.opacity = '0';
-                        itemToRemove.style.transform = 'scale(0.9)';
-                        
-                        // 5. Start the layout collapse (the height, margins, and padding go to 0)
-                        itemToRemove.style.height = '0px';
-                        itemToRemove.style.paddingTop = '0px';
-                        itemToRemove.style.paddingBottom = '0px';
-                        itemToRemove.style.marginTop = '0px';
-                        itemToRemove.style.marginBottom = '0px';
-                        itemToRemove.style.borderWidth = '0px';
-                        itemToRemove.style.overflow = 'hidden'; // Essential: prevents content from spilling out as it shrinks
-                        
-                        // 6. Remove the element from the DOM completely AFTER all animations finish (0.5s + 0.2s delay = ~700ms)
-                        setTimeout(() => {
-                            itemToRemove.remove();
-                        }, 700); 
-                    }
-                } else {
-                    alert('Failed to delete the mod. Please try again later.');
-                    closeModal();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the mod.');
-                closeModal();
-            } finally {
-                // Reset button state
-                confirmDeleteBtn.textContent = originalText;
-                confirmDeleteBtn.disabled = false;
-            }
-        });
-
-        // Helper function to close the modal smoothly
-        function closeModal() {
-            deleteModal.classList.remove('show');
-            setTimeout(() => {
-                deleteModal.style.display = 'none';
-                modIdToDelete = null; // Reset
-                itemToRemove = null;  // Reset
-            }, 200); // Matches the CSS transition duration
-        }
-        
-        // ✅ FIX: Removed the extra "});" that were crashing the script here!
-
-        // --- Filter Tabs Logic ---
+        // --- 1. FILTER TABS LOGIC ---
         const filterButtons = document.querySelectorAll('.filter-btn');
         const uploadItems = document.querySelectorAll('.upload-item');
 
@@ -305,9 +246,7 @@
             button.addEventListener('click', function() {
                 filterButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-
                 const category = this.dataset.category;
-
                 uploadItems.forEach(item => {
                     if (category === 'all' || item.dataset.category.includes(category)) {
                         item.style.display = 'flex'; 
@@ -317,6 +256,219 @@
                 });
             });
         });
+
+        // --- 2. MODAL ELEMENTS ---
+        const deleteModal = document.getElementById('delete-modal-container');
+        const deleteModalTitle = document.getElementById('delete-modal-title');
+        const deleteModalText = document.getElementById('delete-modal-text');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        
+        const versionsModal = document.getElementById('versions-modal-container');
+        const closeVersionsBtn = document.querySelector('.close-versions-modal');
+        const versionsListContainer = document.getElementById('versions-list-container');
+        
+        // State variables to remember what we are trying to delete
+        let deleteActionType = null; // 'full-mod', 'single-version', or 'all-versions'
+        let targetModId = null;
+        let targetVersionId = null;
+        let elementToAnimate = null; // The card or row to remove from the screen
+        let versionRowElement = null; // The specific row in the versions modal
+
+        // --- 3. HELPER FUNCTIONS ---
+        function showDeleteModal(title, text) {
+            deleteModalTitle.textContent = title;
+            deleteModalText.textContent = text;
+            deleteModal.style.display = 'flex';
+            setTimeout(() => deleteModal.classList.add('show'), 10);
+        }
+
+        function closeDeleteModal() {
+            deleteModal.classList.remove('show');
+            setTimeout(() => {
+                deleteModal.style.display = 'none';
+                // Reset state
+                deleteActionType = null;
+                targetModId = null;
+                targetVersionId = null;
+                elementToAnimate = null;
+                versionRowElement = null;
+                confirmDeleteBtn.textContent = 'Yes, Delete';
+                confirmDeleteBtn.disabled = false;
+            }, 200);
+        }
+
+        function animateAndRemove(element, onComplete) {
+            if (!element) return onComplete && onComplete();
+            const currentHeight = element.offsetHeight;
+            element.style.height = currentHeight + 'px';
+            element.offsetHeight; // force reflow
+            element.style.transition = 'opacity 0.3s ease, transform 0.3s ease, height 0.5s ease 0.2s, padding 0.5s ease 0.2s, margin 0.5s ease 0.2s, border 0.5s ease 0.2s';
+            element.style.opacity = '0';
+            element.style.transform = 'scale(0.9)';
+            element.style.height = '0px';
+            element.style.paddingTop = '0px';
+            element.style.paddingBottom = '0px';
+            element.style.marginTop = '0px';
+            element.style.marginBottom = '0px';
+            element.style.borderWidth = '0px';
+            element.style.overflow = 'hidden';
+            setTimeout(() => {
+                element.remove();
+                if (onComplete) onComplete();
+            }, 700);
+        }
+
+        // --- 4. ATTACH LISTENERS ---
+
+                // A. Clicking "Delete" on a main Mod Card
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Read the data attributes we set on the button
+                deleteActionType = 'full-mod';
+                targetModId = this.dataset.id;
+                const modStatus = this.dataset.status; // NEW: Get the status
+                
+                elementToAnimate = this.closest('.upload-item');
+                
+                // Dynamically change the text based on if it's a draft or a real mod
+                if (modStatus === 'processing') {
+                    showDeleteModal(
+                        'Discard Draft?', 
+                        'Are you sure you want to delete this draft? The uploaded file will be permanently removed from the server.'
+                    );
+                } else {
+                    showDeleteModal(
+                        'Delete Mod?', 
+                        'Are you absolutely sure you want to delete this entire mod? This includes all files, images, and reviews. This is permanent.'
+                    );
+                }
+            });
+        });
+
+        // B. Clicking "Cancel" inside the red modal
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+        // C. Clicking "Manage Old Versions" to open the Blue Modal
+        document.querySelectorAll('.manage-versions-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const modId = this.dataset.id;
+                const versions = JSON.parse(this.dataset.versions);
+                
+                // Build the list HTML
+                versionsListContainer.innerHTML = '';
+                versions.forEach(v => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px; transition: all 0.3s ease;';
+                    div.innerHTML = `
+                        <div>
+                            <strong style="color: var(--gold); display: block;">v${v.version}</strong>
+                            <span style="color: var(--silver); font-size: 0.85em;">Uploaded: ${new Date(v.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <button class="btn btn-secondary delete-single-version-btn" data-mod-id="${modId}" data-version-id="${v._id}" style="padding: 5px 15px; font-size: 0.85em; border-color: var(--red); color: var(--red);">Delete</button>
+                    `;
+                    versionsListContainer.appendChild(div);
+                });
+
+                // Attach listener to the new "Delete ALL" button inside the blue modal
+                const deleteAllBtn = document.getElementById('deleteAllVersionsBtn');
+                // We clone and replace the button to remove old event listeners from previous clicks
+                const newDeleteAllBtn = deleteAllBtn.cloneNode(true);
+                deleteAllBtn.parentNode.replaceChild(newDeleteAllBtn, deleteAllBtn);
+                
+                newDeleteAllBtn.addEventListener('click', () => {
+                    deleteActionType = 'all-versions';
+                    targetModId = modId;
+                    // Close the blue modal, open the red confirmation modal
+                    versionsModal.classList.remove('show');
+                    setTimeout(() => {
+                        versionsModal.style.display = 'none';
+                        showDeleteModal(
+                            'Delete ALL Old Versions?', 
+                            'This will permanently delete all historical files to save space. The current LIVE version will remain safe. Proceed?'
+                        );
+                    }, 200);
+                });
+
+                // Attach listeners to the individual "Delete" buttons in the list
+                document.querySelectorAll('.delete-single-version-btn').forEach(delBtn => {
+                    delBtn.addEventListener('click', function() {
+                        deleteActionType = 'single-version';
+                        targetModId = this.dataset.modId;
+                        targetVersionId = this.dataset.versionId;
+                        versionRowElement = this.closest('div'); // The row in the list
+                        
+                        // Close blue modal, open red confirmation modal
+                        versionsModal.classList.remove('show');
+                        setTimeout(() => {
+                            versionsModal.style.display = 'none';
+                            showDeleteModal(
+                                'Delete This Version?', 
+                                'Are you sure you want to permanently delete this specific older version of the mod?'
+                            );
+                        }, 200);
+                    });
+                });
+
+                versionsModal.style.display = 'flex';
+                setTimeout(() => versionsModal.classList.add('show'), 10);
+            });
+        });
+
+        // Close the Blue "Manage Versions" modal
+        if(closeVersionsBtn) {
+            closeVersionsBtn.addEventListener('click', () => {
+                versionsModal.classList.remove('show');
+                setTimeout(() => { versionsModal.style.display = 'none'; }, 200); 
+            });
+        }
+
+        // --- 5. THE MASTER CONFIRMATION HANDLER ---
+        confirmDeleteBtn.addEventListener('click', async function() {
+            if (!deleteActionType || !targetModId) return;
+
+            confirmDeleteBtn.textContent = 'Deleting...';
+            confirmDeleteBtn.disabled = true;
+
+            let apiUrl = '';
+            
+            // Determine which route to hit based on what the user clicked
+            if (deleteActionType === 'full-mod') {
+                apiUrl = `/mods/${targetModId}/delete`;
+            } else if (deleteActionType === 'single-version') {
+                apiUrl = `/mods/${targetModId}/delete-version/${targetVersionId}`;
+            } else if (deleteActionType === 'all-versions') {
+                apiUrl = `/mods/${targetModId}/delete-all-versions`;
+            }
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeDeleteModal(); 
+                    
+                    if (deleteActionType === 'full-mod') {
+                        // Animate the whole mod card away
+                        animateAndRemove(elementToAnimate);
+                    } else if (deleteActionType === 'all-versions' || deleteActionType === 'single-version') {
+                        // Deleting versions changes the data payload of the "Manage" button, 
+                        // so a full page reload is the safest way to ensure the UI stays in sync.
+                        setTimeout(() => window.location.reload(), 300);
+                    }
+                } else {
+                    alert(result.message || 'Failed to delete. Please try again later.');
+                    closeDeleteModal();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('A network error occurred.');
+                closeDeleteModal();
+            }
+        });
+
     });
 </script>
 

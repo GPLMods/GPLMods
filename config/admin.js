@@ -271,9 +271,21 @@ async function createAdminRouter() {
                                 show: Components.ImagePreview,
                             }
                         },
-                        isMultiPart: { description: 'Check this box if the file is split into multiple download links.' },
-                        downloadParts: { isArray: true, description: 'Add the individual links here.' },
-                        installationInstructions: { type: 'richtext', description: 'Instructions for extracting.' },
+                                                isMultiPart: {
+                            description: 'Check this box if the file is split into multiple download links.'
+                        },
+                        downloadParts: {
+                            isArray: true,
+                            description: 'Add the individual links here (e.g., Part 1, Part 2).'
+                        },
+                        // Tell AdminJS about the new nested field
+                        'downloadParts.partVirusTotalId': {
+                            description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash for THIS SPECIFIC PART.'
+                        },
+                        // Hide the raw stats from the edit form to keep it clean
+                        'downloadParts.partVirusTotalScanDate': { isVisible: { edit: false, show: true, list: false } },
+                        'downloadParts.partVirusTotalPositiveCount': { isVisible: { edit: false, show: true, list: false } },
+                        'downloadParts.partVirusTotalTotalScans': { isVisible: { edit: false, show: true, list: false } },
                         
                         // ======== NEW: VARIANT LOGIC FOR ADMINJS ========
                         isVariant: {
@@ -295,14 +307,34 @@ async function createAdminRouter() {
                         new: { 
                             isAccessible: true,
                             before: async (request) => {
-                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                // 1. Clean the main VT ID
+                                if (request.payload.virusTotalId) {
+                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                }
+                                
+                                // 2. Clean ALL the multi-part VT IDs
+                                // AdminJS sends arrays as flat objects: {'downloadParts.0.partVirusTotalId': '...', 'downloadParts.1...': '...'}
+                                Object.keys(request.payload).forEach(key => {
+                                    if (key.startsWith('downloadParts.') && key.endsWith('.partVirusTotalId')) {
+                                        request.payload[key] = extractVTId(request.payload[key]);
+                                    }
+                                });
+                                
                                 return request;
                             }
                         },
                         edit: { 
                             isAccessible: true,
                             before: async (request) => {
-                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                // (Copy the exact same logic from 'new.before' here)
+                                if (request.payload.virusTotalId) {
+                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
+                                }
+                                Object.keys(request.payload).forEach(key => {
+                                    if (key.startsWith('downloadParts.') && key.endsWith('.partVirusTotalId')) {
+                                        request.payload[key] = extractVTId(request.payload[key]);
+                                    }
+                                });
                                 return request;
                             }
                         },

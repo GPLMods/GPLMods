@@ -127,26 +127,56 @@
         <div class="download-links-section">
             <h2>Download Links</h2>
             <div class="parts-list">
-                <% file.downloadParts.forEach((part, index) => { %>
-                    <div class="part-item">
-                        <div class="part-name">
-                            <i class="fas fa-file-archive"></i>
-                            <%= part.partName %>
+                                <% file.downloadParts.forEach((part, index) => { %>
+                    <div class="part-item" style="flex-direction: column; align-items: stretch;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="part-name">
+                                <i class="fas fa-file-archive"></i>
+                                <%= part.partName %>
+                            </div>
+                            
+                            <a href="<%= part.partUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
+                                Download
+                            </a>
                         </div>
                         
-                        <!-- 
-                          We redirect external links directly.
-                          If you wanted to track clicks on parts, you could create a route 
-                          like /download-part/:fileId/:partIndex, but direct links are fine for external clouds.
-                        -->
-                        <a href="<%= part.partUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
-                            Download Part <%= index + 1 %>
-                        </a>
+                        <!-- ======== VIRUSTOTAL LOGIC FOR PARTS ======== -->
+                        <% if (part.partVirusTotalId) { %>
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display: flex; align-items: center; justify-content: space-between;">
+                                
+                                <% if (part.partVirusTotalScanDate) { %>
+                                    <!-- SCAN COMPLETE -->
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fas fa-shield-virus" style="color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.2em;"></i>
+                                        <span style="color: var(--silver); font-size: 0.9em;">Security Scan:</span>
+                                        <strong style="color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                                            <%= part.partVirusTotalPositiveCount %> / <%= part.partVirusTotalTotalScans %>
+                                        </strong>
+                                    </div>
+                                    
+                                    <% 
+                                       const vtUrl = part.partVirusTotalId.length === 64 
+                                            ? `https://www.virustotal.com/gui/url/${part.partVirusTotalId}`
+                                            : `https://www.virustotal.com/gui/file-analysis/${part.partVirusTotalId}`;
+                                    %>
+                                    <a href="<%= vtUrl %>" target="_blank" style="color: var(--silver); font-size: 0.85em; text-decoration: underline;">View Report</a>
+                                
+                                <% } else { %>
+                                    <!-- SCAN PENDING -->
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
+                                        <span style="color: var(--silver); font-size: 0.9em;">Scan Pending...</span>
+                                    </div>
+                                    <button onclick="refreshPartVTScan('<%= file._id %>', '<%= part._id %>')" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8em; border-color: var(--gold); color: var(--gold);">
+                                        <i class="fas fa-sync-alt"></i> Check Status
+                                    </button>
+                                <% } %>
+                            </div>
+                        <% } %>
+                        <!-- ============================================ -->
                     </div>
                 <% }) %>
-            </div>
-        </div>
-
         <!-- Instructions -->
         <div class="instructions-section">
             <h3><i class="fas fa-tools" style="margin-right: 10px; color: var(--silver);"></i>Installation Instructions</h3>
@@ -165,5 +195,27 @@
 
     </div>
 </main>
+<script>
+    async function refreshPartVTScan(fileId, partId) {
+        try {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            btn.disabled = true;
+
+            const response = await fetch(`/api/refresh-vt-scan/${fileId}/part/${partId}`, { method: 'POST' });
+            const data = await response.json();
+
+            if (data.status === 'completed') {
+                window.location.reload();
+            } else {
+                alert('Scan is still ' + data.status + '. Please check back later.');
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Status';
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert('Failed to check status.');
+        }
+    }
+</script>
 
 <%- include('../partials/footer') %>

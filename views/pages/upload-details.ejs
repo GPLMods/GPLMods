@@ -196,7 +196,28 @@
         width: 100%;
         height: 100%;
     }
-
+.button-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    
+    .draft-button {
+        background: transparent;
+        color: var(--silver);
+        border: 2px solid #555;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1; /* Takes half the space */
+    }
+    .draft-button:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
     /* Submit Button */
     .submit-button {
         display: block;
@@ -212,7 +233,8 @@
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 0 15px var(--glow-gold);
-        margin-top: 20px;
+        margin-top: 0;
+        flex: 2;
     }
     .submit-button:hover {
         opacity: 0.9;
@@ -378,10 +400,62 @@
                 </div>
             </fieldset>
             
-            <button type="submit" class="submit-button">Submit Mod for Review</button>
+            <!-- ======== ADD THIS HIDDEN INPUT ======== -->
+            <!-- JavaScript will change this value based on which button is clicked -->
+            <input type="hidden" name="actionType" id="actionType" value="submit">
+
+            <div class="button-group">
+                <button type="button" class="draft-button" id="saveDraftBtn">Save Draft</button>
+                <button type="button" class="submit-button" id="submitModBtn">Submit Mod for Review</button>
+            </div>
         </form>
     </div>
 </div>
+
+<!-- ======== CONFIRMATION MODALS ======== -->
+
+<!-- Submit Confirmation Modal -->
+<div id="submit-confirm-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <i class="fas fa-paper-plane" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Submit Mod?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Are you sure you want to submit this mod for review? You will not be able to edit the core details again until an admin approves or rejects it.
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="btn btn-primary" id="confirmSubmitBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: var(--gold); color: var(--black); border: none; cursor: pointer;">Yes, Submit</button>
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('submit-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid var(--silver); color: var(--silver); cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Draft Confirmation Modal -->
+<div id="draft-confirm-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--silver); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <i class="fas fa-save" style="font-size: 3em; color: var(--silver); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Save Draft?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Your progress will be saved. You can return to this page later from your "My Uploads" dashboard to finish and submit the mod.
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="btn btn-primary" id="confirmDraftBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: var(--silver); color: var(--black); border: none; cursor: pointer;">Save Draft</button>
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('draft-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid #555; color: var(--silver); cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Status Message Alert Box (Catches ?success= or ?error= from URL) -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) {
+            alert(urlParams.get('success')); // You can replace this with your custom error modal logic!
+        }
+        if (urlParams.has('error')) {
+            alert("Error: " + urlParams.get('error'));
+        }
+    });
+</script>
 
 <!-- All the interactive JavaScript from the original file -->
 <script>
@@ -496,6 +570,87 @@
             platformSelect.value = preSelectedPlatform;
             const event = new Event('change');
             platformSelect.dispatchEvent(event);
+        }
+ // ==========================================
+        // BUTTON & MODAL LOGIC
+        // ==========================================
+        const saveDraftBtn = document.getElementById('saveDraftBtn');
+        const submitModBtn = document.getElementById('submitModBtn');
+        const actionTypeInput = document.getElementById('actionType');
+        const mainForm = document.querySelector('form[action^="/upload-finalize"]');
+
+        const draftModal = document.getElementById('draft-confirm-modal');
+        const submitModal = document.getElementById('submit-confirm-modal');
+        const confirmDraftBtn = document.getElementById('confirmDraftBtn');
+        const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+
+        // Helper to sync Quill data before any submission
+        function syncQuillData() {
+            if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
+            if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
+            if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
+            if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
+            if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+        }
+
+        // 1. Open Modals
+        if (saveDraftBtn) {
+            saveDraftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                draftModal.style.display = 'flex';
+                setTimeout(() => draftModal.classList.add('show'), 10);
+            });
+        }
+
+        if (submitModBtn) {
+            submitModBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Basic HTML5 validation check before showing modal
+                if (!mainForm.checkValidity()) {
+                    mainForm.reportValidity();
+                    return;
+                }
+                submitModal.style.display = 'flex';
+                setTimeout(() => submitModal.classList.add('show'), 10);
+            });
+        }
+
+        // 2. Handle Confirmations
+        if (confirmDraftBtn) {
+            confirmDraftBtn.addEventListener('click', () => {
+                actionTypeInput.value = 'draft'; // Tell the backend this is a draft
+                syncQuillData();
+                mainForm.submit(); // Actually submit the form
+            });
+        }
+
+        if (confirmSubmitBtn) {
+            confirmSubmitBtn.addEventListener('click', () => {
+                actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
+                
+                // Final screenshot validation check
+                const screenFiles = document.getElementById('screenshots').files;
+                // If it's a new upload (not editing a draft that already has screens), enforce the rule
+                const hasExistingScreens = document.getElementById('screenshotPreviewContainer').style.display === 'block';
+                
+                if (!hasExistingScreens && screenFiles.length < 1) {
+                    alert('Error: You must upload at least one screenshot to submit.');
+                    closeConfirmModal('submit-confirm-modal');
+                    return;
+                }
+                
+                syncQuillData();
+                confirmSubmitBtn.textContent = 'Submitting...';
+                confirmSubmitBtn.disabled = true;
+                mainForm.submit(); // Actually submit the form
+            });
+        }
+
+        // Helper function (must be global or attached to window if called from onclick="" in HTML)
+        window.closeConfirmModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 200);
         }
 
         // ==========================================
