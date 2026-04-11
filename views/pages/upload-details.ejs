@@ -447,24 +447,57 @@
 <!-- Status Message Alert Box (Catches ?success= or ?error= from URL) -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('success')) {
-            alert(urlParams.get('success')); // You can replace this with your custom error modal logic!
-        }
-        if (urlParams.has('error')) {
-            alert("Error: " + urlParams.get('error'));
-        }
-    });
-</script>
+// --- Helper to control the Error Modal ---
+// (We keep this outside DOMContentLoaded so it's globally available)
+function showErrorModal(message) {
+    // Assuming you have the error modal HTML on this page like you do on upload.ejs
+    const errorMsgEl = document.getElementById('error-modal-msg');
+    const modal = document.getElementById('error-modal');
+    if (errorMsgEl && modal) {
+        errorMsgEl.textContent = message;
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    } else {
+        // Fallback to standard alert if custom modal HTML isn't present
+        alert(message); 
+    }
+}
 
-<!-- All the interactive JavaScript from the original file -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Icon Preview Logic ---
-        const modIcon = document.getElementById('modIcon');
-        const iconImage = document.getElementById('iconImage');
-        const iconPlaceholder = document.getElementById('iconPlaceholder');
+function closeErrorModal() {
+    const modal = document.getElementById('error-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 200);
+    }
+}
 
+// Helper function for the inline onclick handlers on the confirmation modals
+window.closeConfirmModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 200);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ==========================================
+    // 1. UI ELEMENTS & BASIC LOGIC
+    // ==========================================
+    const modIcon = document.getElementById('modIcon');
+    const iconImage = document.getElementById('iconImage');
+    const iconPlaceholder = document.getElementById('iconPlaceholder');
+    const screenshotsInput = document.getElementById('screenshots');
+    const screenshotFileNameSpan = document.getElementById('screenshotFileName');
+    const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
+    const platformSelect = document.getElementById('modPlatform');
+    const categorySelect = document.getElementById('modCategory');
+    const videoUrlInput = document.getElementById('videoUrl');
+    const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+
+    // Live icon preview
+    if (modIcon) {
         modIcon.addEventListener('change', function() {
             const file = this.files[0];
             if (file) {
@@ -477,49 +510,57 @@
                 reader.readAsDataURL(file);
             }
         });
+    }
 
-        // --- Dynamic Category Dropdown Logic ---
-        const platformSelect = document.getElementById('modPlatform');
-        const categorySelect = document.getElementById('modCategory');
+    // Dynamic Category Dropdown Logic
+    const categoriesByPlatform = {
+        android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+        windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+        wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+    };
 
-        const categoriesByPlatform = {
-            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
-        };
+    function populateCategories() {
+        const selectedPlatform = platformSelect.value;
+        const categories = categoriesByPlatform[selectedPlatform] || [];
+        categorySelect.innerHTML = '';
+        if (categories.length > 0) {
+            categorySelect.disabled = false;
+            let defaultOption = document.createElement('option');
+            defaultOption.text = 'Select a category...';
+            defaultOption.value = '';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            categorySelect.add(defaultOption);
+            categories.forEach(function(category) {
+                let option = document.createElement('option');
+                option.text = category;
+                option.value = category.toLowerCase().replace(/ /g, '-');
+                categorySelect.add(option);
+            });
+        } else {
+            categorySelect.disabled = true;
+        }
+    }
 
-        platformSelect.addEventListener('change', function() {
-            const selectedPlatform = this.value;
-            const categories = categoriesByPlatform[selectedPlatform] || [];
-            categorySelect.innerHTML = '';
-            if (categories.length > 0) {
-                categorySelect.disabled = false;
-                let defaultOption = document.createElement('option');
-                defaultOption.text = 'Select a category...';
-                defaultOption.value = '';
-                defaultOption.disabled = true;
-                defaultOption.selected = true;
-                categorySelect.add(defaultOption);
-                categories.forEach(function(category) {
-                    let option = document.createElement('option');
-                    option.text = category;
-                    option.value = category.toLowerCase().replace(/ /g, '-');
-                    categorySelect.add(option);
-                });
-            } else {
-                categorySelect.disabled = true;
-            }
-        });
+    platformSelect.addEventListener('change', populateCategories);
 
-        // --- Screenshot Preview & Name Logic ---
+    // Auto-Select Platform based on Smart Guess
+    const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
+    if (preSelectedPlatform) {
+        platformSelect.value = preSelectedPlatform;
+        populateCategories(); // Call the function directly to populate subcategories
+    }
+
+    // Screenshot Preview Logic
+    if (screenshotsInput) {
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
             screenshotPreviewContainer.innerHTML = '';
             
             if (files.length > 0) {
-                screenshotPreviewContainer.style.display = 'block'; // Show container
+                screenshotPreviewContainer.style.display = 'block'; 
                 screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
                 
                 Array.from(files).slice(0, 4).forEach(file => {
@@ -532,176 +573,138 @@
                     reader.readAsDataURL(file);
                 });
             } else {
-                screenshotPreviewContainer.style.display = 'none'; // Hide container
+                screenshotPreviewContainer.style.display = 'none'; 
                 screenshotFileNameSpan.textContent = 'No files selected';
             }
         });
+    }
 
-        // --- Video Preview Logic ---
+    // Video Preview Logic
+    function getYouTubeId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    if (videoUrlInput) {
         videoUrlInput.addEventListener('input', function() {
             const videoId = getYouTubeId(this.value);
             if (videoId) {
-                videoPreviewContainer.style.display = 'block'; // Show container
+                videoPreviewContainer.style.display = 'block'; 
                 videoPreviewContainer.innerHTML = `<div class="video-preview-wrapper"><iframe src="//www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
             } else {
-                videoPreviewContainer.style.display = 'none'; // Hide container
+                videoPreviewContainer.style.display = 'none'; 
                 videoPreviewContainer.innerHTML = '';
             }
         });
+    }
 
-        // --- Screenshot Validation on Form Submit ---
-        const uploadForm = document.querySelector('form');
-        uploadForm.addEventListener('submit', function(event) {
-            const screenFiles = screenshotsInput.files;
-            if (screenFiles.length < 1) {
-                alert('Error: You must upload at least one screenshot.');
-                event.preventDefault(); // Stop submission
-                return;
-            }
-            if (screenFiles.length > 4) {
-                alert('Error: You cannot upload more than 4 screenshots. You have selected ' + screenFiles.length + '.');
-                event.preventDefault(); // Stop submission
-                return;
-            }
+    // ==========================================
+    // 2. QUILL RICH TEXT EDITORS 
+    // ==========================================
+    const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['clean'] 
+    ];
+
+    function initQuill(selector) {
+        const el = document.querySelector(selector);
+        if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        return null;
+    }
+
+    // Initialize all editors AT THE TOP so the sync function knows about them
+    const quillDesc = initQuill('#editor-modDescription');
+    const quillFeat = initQuill('#editor-modFeatures');
+    const quillOff = initQuill('#editor-officialDescription');
+    const quillNew = initQuill('#editor-whatsNew');
+    const quillNote = initQuill('#editor-importantNote');
+
+    // Helper to sync Quill data before any submission
+    function syncQuillData() {
+        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
+        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
+        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
+        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
+        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+    }
+
+
+    // ==========================================
+    // 3. DRAFT & SUBMIT BUTTON / MODAL LOGIC
+    // ==========================================
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const submitModBtn = document.getElementById('submitModBtn');
+    const actionTypeInput = document.getElementById('actionType');
+    // Find the main form by its action attribute
+    const mainForm = document.querySelector('form[action^="/upload-finalize"]');
+
+    const draftModal = document.getElementById('draft-confirm-modal');
+    const submitModal = document.getElementById('submit-confirm-modal');
+    const confirmDraftBtn = document.getElementById('confirmDraftBtn');
+    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+
+    // 1. Open Modals
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            draftModal.style.display = 'flex';
+            setTimeout(() => draftModal.classList.add('show'), 10);
         });
-// --- Auto-Select Platform based on Smart Guess ---
-        const preSelectedPlatform = "<%= defaultPlatform %>";
-        if (preSelectedPlatform) {
-            platformSelect.value = preSelectedPlatform;
-            const event = new Event('change');
-            platformSelect.dispatchEvent(event);
-        }
- // ==========================================
-        // BUTTON & MODAL LOGIC
-        // ==========================================
-        const saveDraftBtn = document.getElementById('saveDraftBtn');
-        const submitModBtn = document.getElementById('submitModBtn');
-        const actionTypeInput = document.getElementById('actionType');
-        const mainForm = document.querySelector('form[action^="/upload-finalize"]');
+    }
 
-        const draftModal = document.getElementById('draft-confirm-modal');
-        const submitModal = document.getElementById('submit-confirm-modal');
-        const confirmDraftBtn = document.getElementById('confirmDraftBtn');
-        const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+    if (submitModBtn && mainForm) {
+        submitModBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Standard HTML5 validation check
+            if (!mainForm.checkValidity()) {
+                mainForm.reportValidity();
+                return;
+            }
 
-        // Helper to sync Quill data before any submission
-        function syncQuillData() {
-            if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-            if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-            if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-            if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-            if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
-        }
+            submitModal.style.display = 'flex';
+            setTimeout(() => submitModal.classList.add('show'), 10);
+        });
+    }
 
-        // 1. Open Modals
-        if (saveDraftBtn) {
-            saveDraftBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                draftModal.style.display = 'flex';
-                setTimeout(() => draftModal.classList.add('show'), 10);
-            });
-        }
+    // 2. Handle Confirmations
+    if (confirmDraftBtn && mainForm) {
+        confirmDraftBtn.addEventListener('click', () => {
+            actionTypeInput.value = 'draft'; // Tell the backend this is a draft
+            syncQuillData(); // Move text from rich editors to hidden textareas
+            mainForm.submit(); // Actually submit the form
+        });
+    }
 
-        if (submitModBtn) {
-            submitModBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Basic HTML5 validation check before showing modal
-                if (!mainForm.checkValidity()) {
-                    mainForm.reportValidity();
-                    return;
-                }
-                submitModal.style.display = 'flex';
-                setTimeout(() => submitModal.classList.add('show'), 10);
-            });
-        }
+    if (confirmSubmitBtn && mainForm) {
+        confirmSubmitBtn.addEventListener('click', () => {
+            
+            // Final custom validation check for Screenshots
+            if (screenshotsInput && screenshotsInput.files.length < 1) {
+                showErrorModal('Error: You must upload at least one screenshot to submit the mod.');
+                closeConfirmModal('submit-confirm-modal');
+                return;
+            }
+            if (screenshotsInput && screenshotsInput.files.length > 4) {
+                showErrorModal(`Error: Maximum 4 screenshots allowed. You selected ${screenshotsInput.files.length}.`);
+                closeConfirmModal('submit-confirm-modal');
+                return;
+            }
 
-        // 2. Handle Confirmations
-        if (confirmDraftBtn) {
-            confirmDraftBtn.addEventListener('click', () => {
-                actionTypeInput.value = 'draft'; // Tell the backend this is a draft
-                syncQuillData();
-                mainForm.submit(); // Actually submit the form
-            });
-        }
+            actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
+            syncQuillData(); // Move text from rich editors to hidden textareas
+            
+            // Disable button to prevent double-clicks
+            confirmSubmitBtn.textContent = 'Submitting...';
+            confirmSubmitBtn.disabled = true;
+            
+            mainForm.submit(); // Actually submit the form
+        });
+    }
 
-        if (confirmSubmitBtn) {
-            confirmSubmitBtn.addEventListener('click', () => {
-                actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
-                
-                // Final screenshot validation check
-                const screenFiles = document.getElementById('screenshots').files;
-                // If it's a new upload (not editing a draft that already has screens), enforce the rule
-                const hasExistingScreens = document.getElementById('screenshotPreviewContainer').style.display === 'block';
-                
-                if (!hasExistingScreens && screenFiles.length < 1) {
-                    alert('Error: You must upload at least one screenshot to submit.');
-                    closeConfirmModal('submit-confirm-modal');
-                    return;
-                }
-                
-                syncQuillData();
-                confirmSubmitBtn.textContent = 'Submitting...';
-                confirmSubmitBtn.disabled = true;
-                mainForm.submit(); // Actually submit the form
-            });
-        }
-
-        // Helper function (must be global or attached to window if called from onclick="" in HTML)
-        window.closeConfirmModal = function(modalId) {
-            const modal = document.getElementById(modalId);
-            modal.classList.remove('show');
-            setTimeout(() => modal.style.display = 'none', 200);
-        }
-
-        // ==========================================
-        // QUILL RICH TEXT EDITORS 
-        // ==========================================
-        const toolbarOptions = [
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['clean'] 
-        ];
-
-        // Safe initialization wrapper
-        function initQuill(selector) {
-            const el = document.querySelector(selector);
-            if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
-            return null;
-        }
-
-        const quillDesc = initQuill('#editor-modDescription');
-        const quillFeat = initQuill('#editor-modFeatures');
-        const quillOff = initQuill('#editor-officialDescription');
-        const quillNew = initQuill('#editor-whatsNew');
-        const quillNote = initQuill('#editor-importantNote');
-
-        // Sync HTML before submit
-        const uploadForm = document.querySelector('form[action^="/upload-finalize"]');
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', function(event) {
-                
-                // Screenshot validation
-                const screenFiles = screenshotsInput.files;
-                if (screenFiles.length < 1) {
-                    alert('Error: You must upload at least one screenshot.');
-                    event.preventDefault(); 
-                    return;
-                }
-                if (screenFiles.length > 4) {
-                    alert('Error: You cannot upload more than 4 screenshots.');
-                    event.preventDefault(); 
-                    return;
-                }
-
-                // Sync Quill data to hidden textareas
-                if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-                if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-                if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-                if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-                if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
-            });
-        }
-    }); // <--- DOMContentLoaded Closes Here
+}); // <--- DOMContentLoaded Closes Here
 </script>
 
 <%- include('../partials/footer') %>

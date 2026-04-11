@@ -125,12 +125,9 @@
                                 <% } %>
                             </div>
 
+                                                        <!-- THE STATUS BADGE AND ACTION BUTTONS -->
                             <div class="item-status-actions">
-                                <span class="status-badge status-<%= file.status %>">
-                                    <%= file.status === 'processing' ? 'Processing...' : file.status %>
-                                </span>
                                 
-                                                            <div class="item-status-actions">
                                 <!-- 1. THE STATUS BADGE -->
                                 <% if (file.status === 'processing') { %>
                                     <!-- It's a Draft -->
@@ -144,9 +141,10 @@
                                     </span>
                                 <% } %>
                                 
+                                <!-- 2. THE ACTION BUTTONS -->
                                 <div class="item-actions">
                                     
-                                    <!-- 2. VIEW BUTTON (Only if live) -->
+                                    <!-- VIEW BUTTON (Only if live) -->
                                     <% if (file.status === 'live') { %>
                                         <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="view-btn">View</a>
                                         
@@ -156,7 +154,7 @@
                                         </a>
                                     <% } %>
                                     
-                                    <!-- 3. DYNAMIC EDIT BUTTON -->
+                                    <!-- DYNAMIC EDIT BUTTON -->
                                     <% if (file.status === 'processing') { %>
                                         <!-- If it's a draft, they need to finish the initial upload details -->
                                         <a href="/upload-details/<%= file._id %>" class="edit-resubmit-btn" style="border-color: var(--gold); color: var(--gold);">
@@ -175,7 +173,7 @@
                                         </a>
                                     <% } %>
 
-                                    <!-- 4. MANAGE VERSIONS BUTTON (Only if old versions exist) -->
+                                    <!-- MANAGE VERSIONS BUTTON (Only if old versions exist) -->
                                     <% if (file.olderVersions && file.olderVersions.length > 0) { %>
                                         <button type="button" class="btn btn-secondary manage-versions-btn" 
                                                 data-id="<%= file._id %>" 
@@ -185,14 +183,26 @@
                                         </button>
                                     <% } %>
                                     
-                                    <!-- 5. DELETE BUTTON -->
+                                    <!-- DELETE BUTTON -->
                                     <button class="delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
-</main>
+                            <!-- END OF STATUS AND ACTIONS -->
 
+                        </div> <!-- Closes .mod-card-content -->
+                    </div> <!-- Closes .upload-item -->
+                <% }) %>
+            <% } else { %>
+                <!-- Show this if they have no uploads -->
+                <p style="text-align: center; width: 100%; color: var(--silver); grid-column: 1 / -1; padding: 40px;">
+                    You haven't uploaded any mods yet.
+                </p>
+            <% } %> <!-- ✅ THIS WAS THE MISSING CLOSING TAG! -->
+        </div> <!-- Closes .uploads-list -->
+    </div> <!-- Closes .container -->
+</main>
 <!-- ======== CUSTOM DELETE MODAL (REUSABLE) ======== -->
 <div id="delete-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">

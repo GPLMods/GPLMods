@@ -2180,7 +2180,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 version: 'Draft',
                 
                 // ✅ FIX: Set category to empty string instead of 'android'
-                category: '',         
+                category: 'n/a',         
                 platforms: [],
                 
                 status: 'processing' 
@@ -2262,7 +2262,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             version: 'Draft',
             
             // ✅ FIX: Set category to empty string instead of 'android'
-            category: '',         
+            category: 'n/a',         
             platforms: [],
             
             status: 'processing' 

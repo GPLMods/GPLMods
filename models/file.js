@@ -63,7 +63,7 @@ const FileSchema = new Schema({
     category: { 
         type: String, 
         required: function() { return this.status !== 'processing'; }, 
-        enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress'] 
+        enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] 
     },
     subCategory: { 
         type: String 

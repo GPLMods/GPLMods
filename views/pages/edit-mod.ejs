@@ -281,26 +281,41 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const modIcon = document.getElementById('modIcon');
-        const iconImage = document.getElementById('iconImage');
-        const screenshotsInput = document.getElementById('screenshots');
-        const screenshotFileNameSpan = document.getElementById('screenshotFileName');
-        const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-        const platformSelect = document.getElementById('modPlatform');
-        const categorySelect = document.getElementById('modCategory');
+        // Global helper function for the inline onclick handlers on the confirmation modals
+window.closeConfirmModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 200);
+    }
+};
 
-        // Live icon preview
-        if (modIcon) {
-            modIcon.addEventListener('change', function() {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => { iconImage.src = e.target.result; }
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-        }
+document.addEventListener('DOMContentLoaded', function() {
 
-       // Screenshot Preview
+    // ==========================================
+    // 1. UI ELEMENTS & BASIC LOGIC
+    // ==========================================
+    const modIcon = document.getElementById('modIcon');
+    const iconImage = document.getElementById('iconImage');
+    const screenshotsInput = document.getElementById('screenshots');
+    const screenshotFileNameSpan = document.getElementById('screenshotFileName');
+    const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
+    const platformSelect = document.getElementById('modPlatform');
+    const categorySelect = document.getElementById('modCategory');
+
+    // Live icon preview
+    if (modIcon) {
+        modIcon.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { iconImage.src = e.target.result; }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+
+    // Screenshot Preview
+    if (screenshotsInput) {
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
             screenshotPreviewContainer.innerHTML = ''; 
@@ -322,159 +337,148 @@
                 screenshotPreviewContainer.style.display = 'none';
             }
         });
+    }
 
-        // Category Dropdown Logic
-        const categoriesByPlatform = {
-            android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailbroken':['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-            windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-            wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
-        };
+    // Category Dropdown Logic
+    const categoriesByPlatform = {
+        android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailbroken':['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+        windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+        wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+    };
 
-        function populateCategories() {
-            const selectedPlatform = platformSelect.value;
-            const categories = categoriesByPlatform[selectedPlatform] ||[];
-            const currentCategory = "<%= file.platforms[0] || '' %>"; 
+    function populateCategories() {
+        const selectedPlatform = platformSelect.value;
+        const categories = categoriesByPlatform[selectedPlatform] ||[];
+        const currentCategory = "<%= file.platforms[0] || '' %>"; 
 
-            categorySelect.innerHTML = ''; 
+        categorySelect.innerHTML = ''; 
 
-            if (categories.length > 0) {
-                categorySelect.disabled = false;
-                let defaultOption = document.createElement('option');
-                defaultOption.text = 'Select a category...';
-                defaultOption.value = '';
-                defaultOption.disabled = true;
+        if (categories.length > 0) {
+            categorySelect.disabled = false;
+            let defaultOption = document.createElement('option');
+            defaultOption.text = 'Select a category...';
+            defaultOption.value = '';
+            defaultOption.disabled = true;
+            
+            if (!currentCategory) defaultOption.selected = true;
+            categorySelect.add(defaultOption);
+
+            categories.forEach(function(category) {
+                let option = document.createElement('option');
+                option.text = category;
+                const catValue = category.toLowerCase().replace(/ /g, '-');
+                option.value = catValue;
                 
-                if (!currentCategory) defaultOption.selected = true;
-                categorySelect.add(defaultOption);
-
-                categories.forEach(function(category) {
-                    let option = document.createElement('option');
-                    option.text = category;
-                    const catValue = category.toLowerCase().replace(/ /g, '-');
-                    option.value = catValue;
-                    
-                    if (catValue === currentCategory) {
-                        option.selected = true;
-                    }
-                    categorySelect.add(option);
-                });
-            } else {
-                categorySelect.disabled = true;
-                let defaultOption = document.createElement('option');
-                defaultOption.text = 'Select a platform first...';
-                defaultOption.value = '';
-                categorySelect.add(defaultOption);
-            }
-        }
-
-        populateCategories();
-        platformSelect.addEventListener('change', populateCategories);
-
-        // ==========================================
-        // QUILL RICH TEXT EDITORS (Moved INSIDE DOMContentLoaded!)
-        // ==========================================
-        const toolbarOptions = [
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['clean'] 
-        ];
-
-        // Safe initialization wrapper
-        function initQuill(selector) {
-            const el = document.querySelector(selector);
-            if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
-            return null;
-        }
-
-        const quillDesc = initQuill('#editor-modDescription');
-        const quillFeat = initQuill('#editor-modFeatures');
-        const quillOff = initQuill('#editor-officialDescription');
-        const quillNew = initQuill('#editor-whatsNew');
-        const quillNote = initQuill('#editor-importantNote'); // ✅ NEW: Added Important Note
-
-        // Sync HTML before submit
-        const editForm = document.getElementById('details-form');
-        if (editForm) {
-            editForm.addEventListener('submit', function() {
-                if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-                if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-                if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-                if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-                if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
-                    // ==========================================
-        // BUTTON & MODAL LOGIC
-        // ==========================================
-        const saveDraftBtn = document.getElementById('saveDraftBtn');
-        const submitModBtn = document.getElementById('submitModBtn');
-        const actionTypeInput = document.getElementById('actionType');
-        const mainForm = document.getElementById('details-form');
-
-        const draftModal = document.getElementById('draft-confirm-modal');
-        const submitModal = document.getElementById('submit-confirm-modal');
-        const confirmDraftBtn = document.getElementById('confirmDraftBtn');
-        const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
-
-        // Helper to sync Quill data before any submission
-        function syncQuillData() {
-            if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-            if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-            if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-            if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-            if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
-        }
-
-        // 1. Open Modals
-        if (saveDraftBtn) {
-            saveDraftBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                draftModal.style.display = 'flex';
-                setTimeout(() => draftModal.classList.add('show'), 10);
-            });
-        }
-
-        if (submitModBtn) {
-            submitModBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Basic HTML5 validation check before showing modal
-                if (!mainForm.checkValidity()) {
-                    mainForm.reportValidity();
-                    return;
+                if (catValue === currentCategory) {
+                    option.selected = true;
                 }
-                submitModal.style.display = 'flex';
-                setTimeout(() => submitModal.classList.add('show'), 10);
+                categorySelect.add(option);
             });
+        } else {
+            categorySelect.disabled = true;
+            let defaultOption = document.createElement('option');
+            defaultOption.text = 'Select a platform first...';
+            defaultOption.value = '';
+            categorySelect.add(defaultOption);
         }
+    }
 
-        // 2. Handle Confirmations
-        if (confirmDraftBtn) {
-            confirmDraftBtn.addEventListener('click', () => {
-                actionTypeInput.value = 'draft'; // Tell backend this is a draft
-                syncQuillData();
-                mainForm.submit(); 
-            });
-        }
+    populateCategories();
+    if (platformSelect) {
+        platformSelect.addEventListener('change', populateCategories);
+    }
 
-        if (confirmSubmitBtn) {
-            confirmSubmitBtn.addEventListener('click', () => {
-                actionTypeInput.value = 'submit'; // Tell backend this is a real submission
-                syncQuillData();
-                confirmSubmitBtn.textContent = 'Submitting...';
-                confirmSubmitBtn.disabled = true;
-                mainForm.submit(); 
-            });
-        }
+    // ==========================================
+    // 2. QUILL RICH TEXT EDITORS 
+    // ==========================================
+    const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['clean'] 
+    ];
 
-        // Helper function for the inline onclick handlers
-        window.closeConfirmModal = function(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('show');
-                setTimeout(() => modal.style.display = 'none', 200);
+    // Safe initialization wrapper
+    function initQuill(selector) {
+        const el = document.querySelector(selector);
+        if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        return null;
+    }
+
+    const quillDesc = initQuill('#editor-modDescription');
+    const quillFeat = initQuill('#editor-modFeatures');
+    const quillOff = initQuill('#editor-officialDescription');
+    const quillNew = initQuill('#editor-whatsNew');
+    const quillNote = initQuill('#editor-importantNote');
+
+    // Helper to sync Quill data before any submission
+    function syncQuillData() {
+        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
+        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
+        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
+        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
+        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+    }
+
+    // ==========================================
+    // 3. BUTTON & MODAL LOGIC
+    // ==========================================
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const submitModBtn = document.getElementById('submitModBtn');
+    const actionTypeInput = document.getElementById('actionType');
+    const mainForm = document.getElementById('details-form');
+
+    const draftModal = document.getElementById('draft-confirm-modal');
+    const submitModal = document.getElementById('submit-confirm-modal');
+    const confirmDraftBtn = document.getElementById('confirmDraftBtn');
+    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+
+    // 1. Open Modals
+    if (saveDraftBtn && draftModal) {
+        saveDraftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            draftModal.style.display = 'flex';
+            setTimeout(() => draftModal.classList.add('show'), 10);
+        });
+    }
+
+    if (submitModBtn && mainForm && submitModal) {
+        submitModBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Basic HTML5 validation check before showing modal
+            if (!mainForm.checkValidity()) {
+                mainForm.reportValidity();
+                return;
             }
-        }
-    }); // <--- DOMContentLoaded Closes Here
+            submitModal.style.display = 'flex';
+            setTimeout(() => submitModal.classList.add('show'), 10);
+        });
+    }
+
+    // 2. Handle Confirmations
+    if (confirmDraftBtn && mainForm) {
+        confirmDraftBtn.addEventListener('click', () => {
+            actionTypeInput.value = 'draft'; // Tell backend this is a draft
+            syncQuillData(); // Sync the rich text
+            mainForm.submit(); // Submit the form
+        });
+    }
+
+    if (confirmSubmitBtn && mainForm) {
+        confirmSubmitBtn.addEventListener('click', () => {
+            actionTypeInput.value = 'submit'; // Tell backend this is a real submission
+            syncQuillData(); // Sync the rich text
+            
+            // Visual feedback
+            confirmSubmitBtn.textContent = 'Submitting...';
+            confirmSubmitBtn.disabled = true;
+            
+            mainForm.submit(); // Submit the form
+        });
+    }
+
+}); // <--- END OF DOMContentLoaded
 </script>
 
 <%- include('../partials/footer') %>
