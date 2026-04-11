@@ -290,8 +290,10 @@
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', form.action, true);
 
+                // --- 1. The Progress Tracking (Fixed) ---
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
+                        // The file uploading to YOUR server (RAM) is the first 50%
                         const percentComplete = Math.round((event.loaded / event.total) * 50);
                         progressBar.style.width = percentComplete + '%';
                         progressBar.textContent = percentComplete + '%';
@@ -304,35 +306,46 @@
                     }
                 });
 
+                // --- 2. The Success/Redirect Handler (Fixed) ---
                 xhr.onload = function() {
-                    // ✅ FIX: Look for success explicitly
                     if (xhr.status >= 200 && xhr.status < 400) {
+                        // ✅ FIX: Force the browser to parse the response as JSON
                         try {
                             const res = JSON.parse(xhr.responseText);
+                            
                             if (res.success && res.redirectUrl) {
-                                window.location.href = res.redirectUrl;
+                                // IMPORTANT: We must redirect to the NEW URL provided by the server!
+                                window.location.href = res.redirectUrl; 
                             } else {
-                                showErrorModal(res.message || 'Server error occurred.');
+                                showErrorModal(res.message || 'Upload finished, but server did not provide a redirect URL.');
                                 resetUI();
                             }
                         } catch(e) {
-                            // If it's not JSON, it might have been a direct res.redirect from Express
-                            window.location.href = xhr.responseURL;
+                            // If JSON parsing fails completely, the server might have crashed
+                            // or returned an HTML error page instead of JSON.
+                            console.error("Failed to parse server response:", xhr.responseText);
+                            showErrorModal('Server returned an unexpected response. Please check your uploads dashboard.');
+                            resetUI();
                         }
                     } else {
+                        // Server returned a 400 or 500 error code
                         try {
                             const res = JSON.parse(xhr.responseText);
                             showErrorModal(res.message || 'Upload failed.');
                         } catch(e) {
-                            showErrorModal(`Server responded with an error (${xhr.status}). The file might be too large.`);
+                            showErrorModal(`Server error (${xhr.status}). The file might be too large.`);
                         }
                         resetUI();
                     }
                 };
 
-                xhr.onerror = function() { showErrorModal('A network error occurred.'); resetUI(); };
+                xhr.onerror = function() { 
+                    showErrorModal('A network error occurred. Please check your internet connection.'); 
+                    resetUI(); 
+                };
+                
+                // 3. Finally, send the data!
                 xhr.send(formData);
-            });
 
             function resetUI() {
                 submitBtn.disabled = false;

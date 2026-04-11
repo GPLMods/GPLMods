@@ -446,29 +446,11 @@
 
 <!-- Status Message Alert Box (Catches ?success= or ?error= from URL) -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
 // --- Helper to control the Error Modal ---
 // (We keep this outside DOMContentLoaded so it's globally available)
 function showErrorModal(message) {
-    // Assuming you have the error modal HTML on this page like you do on upload.ejs
-    const errorMsgEl = document.getElementById('error-modal-msg');
-    const modal = document.getElementById('error-modal');
-    if (errorMsgEl && modal) {
-        errorMsgEl.textContent = message;
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('show'), 10);
-    } else {
-        // Fallback to standard alert if custom modal HTML isn't present
-        alert(message); 
-    }
-}
-
-function closeErrorModal() {
-    const modal = document.getElementById('error-modal');
-    if (modal) {
-        modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 200);
-    }
+    // Basic fallback alert since you don't have a custom error modal defined in the HTML above
+    alert(message); 
 }
 
 // Helper function for the inline onclick handlers on the confirmation modals
@@ -476,10 +458,11 @@ window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 200);
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
     }
 }
 
+// ONE single DOMContentLoaded listener for the whole page
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
@@ -505,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.onload = function(e) {
                     iconImage.src = e.target.result;
                     iconImage.style.display = 'block';
-                    iconPlaceholder.style.display = 'none';
+                    if(iconPlaceholder) iconPlaceholder.style.display = 'none';
                 }
                 reader.readAsDataURL(file);
             }
@@ -522,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function populateCategories() {
+        if (!platformSelect || !categorySelect) return;
         const selectedPlatform = platformSelect.value;
         const categories = categoriesByPlatform[selectedPlatform] || [];
         categorySelect.innerHTML = '';
@@ -544,37 +528,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    platformSelect.addEventListener('change', populateCategories);
-
-    // Auto-Select Platform based on Smart Guess
-    const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
-    if (preSelectedPlatform) {
-        platformSelect.value = preSelectedPlatform;
-        populateCategories(); // Call the function directly to populate subcategories
+    if (platformSelect) {
+        platformSelect.addEventListener('change', populateCategories);
+        // Auto-Select Platform based on Smart Guess
+        const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
+        if (preSelectedPlatform) {
+            platformSelect.value = preSelectedPlatform;
+            populateCategories(); // Call the function directly to populate subcategories
+        }
     }
 
     // Screenshot Preview Logic
     if (screenshotsInput) {
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
-            screenshotPreviewContainer.innerHTML = '';
+            if (screenshotPreviewContainer) screenshotPreviewContainer.innerHTML = '';
             
             if (files.length > 0) {
-                screenshotPreviewContainer.style.display = 'block'; 
-                screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
+                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'block'; 
+                if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
                 
                 Array.from(files).slice(0, 4).forEach(file => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const img = document.createElement('img');
                         img.src = e.target.result;
-                        screenshotPreviewContainer.appendChild(img);
+                        if (screenshotPreviewContainer) screenshotPreviewContainer.appendChild(img);
                     }
                     reader.readAsDataURL(file);
                 });
             } else {
-                screenshotPreviewContainer.style.display = 'none'; 
-                screenshotFileNameSpan.textContent = 'No files selected';
+                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'none'; 
+                if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = 'No files selected';
             }
         });
     }
@@ -586,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    if (videoUrlInput) {
+    if (videoUrlInput && videoPreviewContainer) {
         videoUrlInput.addEventListener('input', function() {
             const videoId = getYouTubeId(this.value);
             if (videoId) {
@@ -602,26 +587,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. QUILL RICH TEXT EDITORS 
     // ==========================================
+    // We MUST ensure the DOM elements exist before telling Quill to hook into them.
     const toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         ['clean'] 
     ];
 
-    function initQuill(selector) {
-        const el = document.querySelector(selector);
-        if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        return null;
+    let quillDesc, quillFeat, quillOff, quillNew, quillNote;
+
+    // Only initialize if the element is actually on the page
+    if (document.getElementById('editor-modDescription')) {
+        quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-modFeatures')) {
+        quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-officialDescription')) {
+        quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-whatsNew')) {
+        quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-importantNote')) {
+        quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
     }
 
-    // Initialize all editors AT THE TOP so the sync function knows about them
-    const quillDesc = initQuill('#editor-modDescription');
-    const quillFeat = initQuill('#editor-modFeatures');
-    const quillOff = initQuill('#editor-officialDescription');
-    const quillNew = initQuill('#editor-whatsNew');
-    const quillNote = initQuill('#editor-importantNote');
-
-    // Helper to sync Quill data before any submission
+    // Helper to sync Quill data to hidden textareas before submission
     function syncQuillData() {
         if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
         if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
@@ -637,7 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
-    // Find the main form by its action attribute
+    
+    // Find the main form (Selects any form where the action starts with /upload-finalize)
     const mainForm = document.querySelector('form[action^="/upload-finalize"]');
 
     const draftModal = document.getElementById('draft-confirm-modal');
@@ -646,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
     // 1. Open Modals
-    if (saveDraftBtn) {
+    if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
             draftModal.style.display = 'flex';
@@ -654,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (submitModBtn && mainForm) {
+    if (submitModBtn && mainForm && submitModal) {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             
@@ -672,8 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Handle Confirmations
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
-            actionTypeInput.value = 'draft'; // Tell the backend this is a draft
-            syncQuillData(); // Move text from rich editors to hidden textareas
+            if(actionTypeInput) actionTypeInput.value = 'draft'; // Tell the backend this is a draft
+            syncQuillData(); // Sync Quill to textareas
             mainForm.submit(); // Actually submit the form
         });
     }
@@ -693,8 +686,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
-            syncQuillData(); // Move text from rich editors to hidden textareas
+            if(actionTypeInput) actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
+            syncQuillData(); // Sync Quill to textareas
             
             // Disable button to prevent double-clicks
             confirmSubmitBtn.textContent = 'Submitting...';

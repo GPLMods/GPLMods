@@ -26,7 +26,7 @@
     .file-input-label { display: block; padding: 12px 20px; background: transparent; color: var(--gold); border: 2px solid var(--gold); border-radius: 8px; cursor: pointer; text-align: center; font-size: 1em; transition: all 0.3s ease; }
     .file-input-label:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
     
-   .preview-container { margin-top: 15px; border-radius: 8px; background-color: var(--black); padding: 15px; border: 1px solid #333; display: none; }
+    .preview-container { margin-top: 15px; border-radius: 8px; background-color: var(--black); padding: 15px; border: 1px solid #333; display: none; }
     #screenshotPreviewContainer { column-count: 2; column-gap: 15px; }
     #screenshotPreviewContainer img { width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; break-inside: avoid; display: block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     
@@ -36,7 +36,7 @@
     .status-banner { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
     .status-banner.rejected { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); }
 
-/* Custom styles to make Quill match our dark theme */
+    /* Custom styles to make Quill match our dark theme */
     .ql-toolbar.ql-snow {
         background-color: #333;
         border-color: #444;
@@ -49,38 +49,34 @@
         color: var(--white);
         font-family: 'Poppins', sans-serif;
         font-size: 1em;
-        min-height: 250px; /* ✅ FIX: Made editors taller! */
+        min-height: 250px;
     }
     .ql-editor.ql-blank::before { color: #888; }
     .ql-snow .ql-stroke { stroke: var(--silver); }
     .ql-snow .ql-fill { fill: var(--silver); }
     .ql-snow .ql-picker { color: var(--silver); }
-/* --- ✅ FIX: Force Quill Editors to be responsive on mobile --- */
+    
+    /* --- Force Quill Editors to be responsive on mobile --- */
     .ql-toolbar, .ql-container {
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
-    
-    /* Ensure long URLs or unbreakable text inside the editor don't push it wide */
     .ql-editor {
         word-wrap: break-word !important;
         overflow-wrap: break-word !important;
         word-break: break-word !important;
         max-width: 100% !important;
-        padding: 12px 10px !important; /* Slightly smaller padding for mobile */
+        padding: 12px 10px !important;
     }
-    
-    /* Ensure the form container itself doesn't overflow */
     .upload-form-container {
         max-width: 100%;
         overflow-x: hidden;
     }
 </style>
 
-    <div class="container">
+<div class="container">
     <div class="upload-form-container">
         
-        <!-- ✅ FIX: Dynamic Title -->
         <h2>
             Edit 
             <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">
@@ -113,16 +109,14 @@
                         <img id="iconImage" src="<%= file.iconUrl %>" alt="Icon Preview" style="display:block;">
                     </div>
                     <div style="max-width: 250px; text-align: center;">
-                        <!-- Note: REQUIRED is removed! They only upload if they want to change it -->
                         <input type="file" id="modIcon" name="softwareIcon" accept="image/*">
                         <label for="modIcon" class="file-input-label">Change Icon (Optional)</label>
                     </div>
                 </div>
-                <% } %> <!-- ✅ THIS WAS THE MISSING CLOSING TAG THAT CAUSED THE ERROR! -->
+                <% } %>
 
                 <div class="form-group">
                     <label for="modName">Mod Name*</label>
-                    <!-- If it's a variant, they shouldn't change the base name! Make it readonly -->
                     <input type="text" id="modName" name="modName" value="<%= file.name %>" <%= file.isVariant ? 'readonly style="opacity:0.7; cursor:not-allowed;"' : 'required' %>>
                 </div>
 
@@ -145,7 +139,6 @@
                 <div class="form-group">
                     <label for="modCategory">Sub-Category*</label>
                     <select id="modCategory" name="modCategory" required>
-                        <!-- Options will be populated by JS -->
                         <option value="<%= file.platforms[0] || '' %>" selected><%= file.platforms[0] || 'Select category...' %></option>
                     </select>
                 </div>
@@ -161,9 +154,7 @@
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
-                    <!-- Hide the actual input that gets sent to the server -->
                     <textarea id="modDescription" name="modDescription" style="display:none;" required><%- file.modDescription %></textarea>
-                    <!-- This is the div Quill will turn into an editor -->
                     <div id="editor-modDescription"><%- file.modDescription %></div>
                 </div>
 
@@ -174,21 +165,20 @@
                 </div>
 
                 <% if (!file.isVariant) { %>
-                    <div class="form-group">
+                <div class="form-group">
                     <label for="officialDescription">Official Description (Optional)</label>
                     <textarea id="officialDescription" name="officialDescription" style="display:none;"><%- file.officialDescription %></textarea>
                     <div id="editor-officialDescription"><%- file.officialDescription %></div>
                 </div>
                 <% } %>
 
-                                <!-- ✅ FIX: Converted Important Note to Quill Editor -->
                 <div class="form-group">
                     <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"><%- file.importantNote %></textarea>
                     <div id="editor-importantNote"><%- file.importantNote %></div>
                 </div>
                 
-              <div class="form-group">
+                <div class="form-group">
                     <label for="whatsNew">What's New (Optional)</label>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file.whatsNew %></textarea>
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
@@ -227,8 +217,6 @@
                 </div>
             </fieldset>
             
-                        <!-- ======== ADD THIS HIDDEN INPUT ======== -->
-            <!-- JavaScript will change this value based on which button is clicked -->
             <input type="hidden" name="actionType" id="actionType" value="submit">
 
             <div class="button-group" style="display: flex; gap: 15px; margin-top: 30px;">
@@ -280,16 +268,16 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Global helper function for the inline onclick handlers on the confirmation modals
+// --- Global Helper Function (Must be outside DOMContentLoaded) ---
 window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 200);
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
     }
 };
 
+// --- SINGLE DOMContentLoaded LISTENER ---
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==========================================
@@ -399,20 +387,20 @@ document.addEventListener('DOMContentLoaded', function() {
         ['clean'] 
     ];
 
-    // Safe initialization wrapper
     function initQuill(selector) {
         const el = document.querySelector(selector);
         if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
         return null;
     }
 
+    // Initialize the editors
     const quillDesc = initQuill('#editor-modDescription');
     const quillFeat = initQuill('#editor-modFeatures');
     const quillOff = initQuill('#editor-officialDescription');
     const quillNew = initQuill('#editor-whatsNew');
     const quillNote = initQuill('#editor-importantNote');
 
-    // Helper to sync Quill data before any submission
+    // Helper to sync Quill data to hidden textareas
     function syncQuillData() {
         if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
         if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
@@ -434,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmDraftBtn = document.getElementById('confirmDraftBtn');
     const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-    // 1. Open Modals
+    // Open Modals
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -446,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (submitModBtn && mainForm && submitModal) {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Basic HTML5 validation check before showing modal
+            // HTML5 validation
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
                 return;
@@ -456,25 +444,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 2. Handle Confirmations
+    // Confirm Draft
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
-            actionTypeInput.value = 'draft'; // Tell backend this is a draft
-            syncQuillData(); // Sync the rich text
-            mainForm.submit(); // Submit the form
+            if(actionTypeInput) actionTypeInput.value = 'draft'; 
+            syncQuillData(); // Get text from Quill
+            mainForm.submit(); 
         });
     }
 
+    // Confirm Submit
     if (confirmSubmitBtn && mainForm) {
         confirmSubmitBtn.addEventListener('click', () => {
-            actionTypeInput.value = 'submit'; // Tell backend this is a real submission
-            syncQuillData(); // Sync the rich text
+            if(actionTypeInput) actionTypeInput.value = 'submit'; 
+            syncQuillData(); // Get text from Quill
             
-            // Visual feedback
+            // UI Feedback
             confirmSubmitBtn.textContent = 'Submitting...';
             confirmSubmitBtn.disabled = true;
             
-            mainForm.submit(); // Submit the form
+            mainForm.submit(); 
         });
     }
 

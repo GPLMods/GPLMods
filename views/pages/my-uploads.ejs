@@ -92,7 +92,7 @@
                                     <% } %>
                                 </h3>
                                 <!-- CUSTOM COLOR PLATFORM TAG -->
-                                <span class="platform-tag <%= file.category ? file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') : 'na' %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap; <%= !file.category ? 'background-color: var(--gold); color: var(--black);' : '' %>">
+                                <span class="platform-tag <%= file.category ? file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') : 'n/a' %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap; <%= !file.category ? 'background-color: var(--gold); color: var(--black);' : '' %>">
                                     <%= file.category ? file.category.toUpperCase().replace('-', ' ') : 'N/A (DRAFT)' %>
                                 </span>
                             </div>
