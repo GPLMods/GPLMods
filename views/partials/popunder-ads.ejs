@@ -1,0 +1,40 @@
+<!-- views/partials/popunder-ads.ejs -->
+<% if (showAds) { %>
+    <!-- 
+      1. Paste the HilltopAds main JavaScript library tag here. 
+      It usually looks like <script src="https://..."></script> 
+    -->
+          <script>
+(function(zt){
+var d = document,
+    s = d.createElement('script'),
+    l = d.scripts[d.scripts.length - 1];
+s.settings = zt || {};
+s.src = "\/\/defensivegrand.com\/cmD\/9X6.bK2Z5glkSbW\/QT9SNnjTkY1HMZTPcC4\/N\/Sj0n2-OfTHUAxNN\/zHgb5l";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 2. Define the elements that should trigger the pop-under when clicked
+            const triggerElements = document.querySelectorAll('.mod-card-link, .download-button, .part-btn');
+            
+            triggerElements.forEach(el => {
+                el.addEventListener('click', (e) => {
+                    // 3. Call the HilltopAds function here.
+                    // Look at their documentation. They usually provide a function you can call manually.
+                    // Example (Replace with actual Hilltop function):
+                    // if (typeof window.hilltopShowPopunder === 'function') {
+                    //     window.hilltopShowPopunder();
+                    // }
+                    
+                    console.log("Ad Trigger: User clicked a targeted element.");
+                    // The link will continue to work normally, but the pop-under script will have been triggered.
+                });
+            });
+        });
+    </script>
+<% } %>

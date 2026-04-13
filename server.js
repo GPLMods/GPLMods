@@ -66,6 +66,7 @@ const SupportTicket = require('./models/supportTicket');
 const cron = require('node-cron');
 const AutomatedCampaign = require('./models/automatedCampaign');
 const SiteState = require('./models/siteState');
+const Subscriber = require('./models/subscriber');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -480,21 +481,37 @@ let cachedTotalUpdates = 0;
 let lastUpdateCheck = 0;
 
 app.use(async (req, res, next) => {
-    // MUST BE SET HERE so every EJS file knows if the user is logged in
+    // 1. Basic Helpers
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes; 
     res.locals.slugify = slugify;
+
+    // 2. ======== AD DELIVERY LOGIC ========
+    let shouldShowAds = true; // Default to true (Guests see ads)
     
+    if (req.isAuthenticated() && req.user) {
+        const role = req.user.role;
+        const membership = req.user.membership;
+        // Exempt Admins, Distributors, and Premium users
+        if (role === 'admin' || role === 'distributor' || membership === 'premium') {
+            shouldShowAds = false; 
+        }
+    }
+    // Pass the boolean to EVERY EJS template
+    res.locals.showAds = shouldShowAds;
+    // ========================================
+
+    // 3. ======== NOTIFICATIONS LOGIC ========
     try {
-        // 1. Check Global Announcements
+        // Check Global Announcements (Cached every 5 mins)
         if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
             cachedTotalUpdates = await Announcement.countDocuments();
             lastUpdateCheck = Date.now();
         }
         res.locals.totalUpdatesCount = cachedTotalUpdates;
 
-        // 2. Check Personal Notifications
+        // Check Personal Notifications (Real-time per user)
         let unreadPersonalCount = 0;
         if (req.isAuthenticated() && req.user) {
             unreadPersonalCount = await UserNotification.countDocuments({ 
@@ -504,15 +521,20 @@ app.use(async (req, res, next) => {
         }
         res.locals.unreadPersonalCount = unreadPersonalCount;
         
-        next(); // Proceed to the next middleware/route
+        // Everything succeeded, move to the next route
+        next(); 
+
     } catch (e) {
         console.error("Global Middleware Error:", e);
         // Fallback to 0 so the page still loads even if DB fails
         res.locals.totalUpdatesCount = cachedTotalUpdates;
         res.locals.unreadPersonalCount = 0;
-        next(); // Proceed even if there is an error
+        
+        // Still move to the next route even if notifications failed to load
+        next(); 
     }
 });
+// --- End of Globals Middleware ---
 
 // 7. Banned User Trap
 app.use((req, res, next) => {
@@ -2774,6 +2796,50 @@ app.get('/api/check-username', async (req, res) => {
     } catch (error) {
         console.error("API Username Check Error:", error);
         res.status(500).json({ error: 'Server error during check.' });
+    }
+});
+
+// --- NEW: Newsletter Subscription API ---
+app.post('/api/subscribe', async (req, res) => {
+    try {
+        const { email, source } = req.body;
+
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ error: 'Please provide a valid email address.' });
+        }
+
+        // Check if they are already subscribed
+        let subscriber = await Subscriber.findOne({ email: email.toLowerCase() });
+
+        if (subscriber) {
+            if (subscriber.isSubscribed) {
+                return res.status(400).json({ error: 'You are already subscribed to our newsletter!' });
+            } else {
+                // If they previously unsubscribed, resubscribe them
+                subscriber.isSubscribed = true;
+                subscriber.subscribedAt = Date.now();
+                await subscriber.save();
+                return res.json({ message: 'Welcome back! You have been successfully re-subscribed.' });
+            }
+        }
+
+        // Create a new subscriber
+        const newSubscriber = new Subscriber({
+            email: email.toLowerCase(),
+            source: source || 'popup',
+            user: req.user ? req.user._id : null // Link account if logged in
+        });
+
+        await newSubscriber.save();
+        
+        // Optional: Send a "Welcome to the Newsletter" confirmation email here using your mailer utility
+        // await sendNewsletterWelcomeEmail(newSubscriber.email);
+
+        res.json({ message: 'Thank you for subscribing! Check your inbox for the latest updates.' });
+
+    } catch (error) {
+        console.error("Newsletter Subscription Error:", error);
+        res.status(500).json({ error: 'Server error. Please try again later.' });
     }
 });
 

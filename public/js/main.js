@@ -33,7 +33,6 @@ try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error
 try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); } // <-- ADD THIS LINE
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
-try { initializeCustomDropdowns(); } catch (e) { console.error("Dropdown Error:", e); }
         console.log("All initializers finished.");
     };
 
@@ -651,8 +650,6 @@ function initializeNotificationsAndPWA() {
         const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
         
         const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
-        
-        // Calculate total unread (Global + Personal)
         const totalUnread = (unreadGlobalCount > 0 ? unreadGlobalCount : 0) + unreadPersonal;
         
         if (totalUnread > 0) {
@@ -661,45 +658,55 @@ function initializeNotificationsAndPWA() {
         }
         
         bellLink.addEventListener('click', () => {
-            // We only clear the GLOBAL counter in local storage.
-            // Personal notifications must be marked 'read' in the database (handled on the /updates page).
             localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
         });
     }
 
-    // --- 2. PWA INSTALL LOGIC ---
+    // --- 2. ROBUST PWA INSTALL LOGIC ---
     let deferredPrompt;
     const pwaBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('pwa-install');
     const dismissBtn = document.getElementById('pwa-dismiss');
 
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
-                .then(registration => console.log('SW registered'))
-                .catch(err => console.log('SW failed: ', err));
+                .then(reg => console.log('SW registered successfully.'))
+                .catch(err => console.error('SW registration failed: ', err));
         });
     }
 
+    // Listen for the Chrome Install Prompt Event
     window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
         e.preventDefault();
+        // Stash the event so it can be triggered later.
         deferredPrompt = e;
         
+        // Check if user dismissed it recently
         const isDismissed = localStorage.getItem('pwaDismissed') === 'true';
         
         if (!isDismissed && pwaBanner) {
+            // Show the banner much faster (1 second instead of 3)
             setTimeout(() => {
                 pwaBanner.classList.add('show');
-            }, 3000); 
+            }, 1000); 
         }
     });
 
     if (installBtn) {
         installBtn.addEventListener('click', async () => {
+            // Hide the banner immediately
             if (pwaBanner) pwaBanner.classList.remove('show');
+            
             if (deferredPrompt) {
+                // Show the native browser install prompt
                 deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
                 const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to install prompt: ${outcome}`);
+                // We've used the prompt, and can't use it again
                 deferredPrompt = null;
             }
         });
@@ -708,13 +715,17 @@ function initializeNotificationsAndPWA() {
     if (dismissBtn) {
         dismissBtn.addEventListener('click', () => {
             if (pwaBanner) pwaBanner.classList.remove('show');
+            // Hide it for 7 days
             localStorage.setItem('pwaDismissed', 'true');
             setTimeout(() => localStorage.removeItem('pwaDismissed'), 7 * 24 * 60 * 60 * 1000); 
         });
     }
     
+    // Hide banner forever if successfully installed
     window.addEventListener('appinstalled', () => {
+        console.log('PWA was installed successfully!');
         if (pwaBanner) pwaBanner.classList.remove('show');
+        localStorage.setItem('pwaDismissed', 'true'); // Ensure it doesn't pop up again
         deferredPrompt = null;
     });
 }

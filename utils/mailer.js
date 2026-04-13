@@ -1,4 +1,7 @@
 const axios = require('axios');
+const Subscriber = require('../models/subscriber');
+const User = require('../models/user');
+const NewsletterCampaign = require('../models/newsletterCampaign');
 
 /**
  * ============================================================================
@@ -137,5 +140,130 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
 
     } catch (error) {
         console.error("SMTP2GO Password Reset Error:", error.response ? error.response.data : error.message);
+    }
+};
+/**
+ * Background process to handle sending mass emails safely.
+ */
+exports.processNewsletterCampaign = async (campaignId) => {
+    try {
+        const campaign = await NewsletterCampaign.findById(campaignId);
+        if (!campaign || campaign.status !== 'sending') return;
+
+        console.log(`[NEWSLETTER] Starting campaign: ${campaign.subject}`);
+
+        // 1. Gather the Audience
+        let targetEmails = [];
+        
+        if (campaign.audience === 'test-admin-only') {
+            // Find all admins and send to them
+            const admins = await User.find({ role: 'admin' });
+            targetEmails = admins.map(admin => admin.email);
+        } 
+        else if (campaign.audience === 'all-subscribers') {
+            const subs = await Subscriber.find({ isSubscribed: true });
+            targetEmails = subs.map(sub => sub.email);
+        }
+        else if (campaign.audience === 'premium-only') {
+            const premiumUsers = await User.find({ membership: 'premium' });
+            targetEmails = premiumUsers.map(user => user.email);
+        }
+        // Add other audience logic as needed...
+
+        if (targetEmails.length === 0) {
+            campaign.status = 'failed';
+            campaign.adminNotes = 'No valid email addresses found for the selected audience.';
+            await campaign.save();
+            return;
+        }
+
+        // 2. Select the Template and Build the HTML
+        let emailHtml = '';
+        const baseStyle = `font-family: 'Arial', sans-serif; background-color: #0a0a0a; color: #f5f5f5; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; border-top: 4px solid #FFD700;`;
+        const btnStyle = `display: inline-block; background-color: #FFD700; color: #0a0a0a; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 25px; margin-top: 20px;`;
+
+        if (campaign.template === 'new-mod-alert') {
+            emailHtml = `
+                <div style="${baseStyle}">
+                    <h2 style="color: #FFD700; text-align: center;">🚀 New Mod Alert!</h2>
+                    <div style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                        ${campaign.content}
+                    </div>
+                    ${campaign.callToActionUrl ? `<div style="text-align: center;"><a href="${campaign.callToActionUrl}" style="${btnStyle}">${campaign.callToActionText}</a></div>` : ''}
+                </div>
+            `;
+        } 
+        else if (campaign.template === 'special-announcement') {
+            emailHtml = `
+                <div style="${baseStyle} border-top-color: #2196F3;">
+                    <h2 style="color: #2196F3; text-align: center;">📢 Important Announcement</h2>
+                    <div style="font-size: 16px; line-height: 1.6; margin-bottom: 20px; background: #1a1a1a; padding: 20px; border-radius: 8px; border-left: 3px solid #2196F3;">
+                        ${campaign.content}
+                    </div>
+                    ${campaign.callToActionUrl ? `<div style="text-align: center;"><a href="${campaign.callToActionUrl}" style="${btnStyle}">${campaign.callToActionText}</a></div>` : ''}
+                </div>
+            `;
+        }
+        else { // standard-update
+            emailHtml = `
+                <div style="${baseStyle}">
+                    <h2 style="color: #ffffff; text-align: center;">GPL Mods Update</h2>
+                    <div style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                        ${campaign.content}
+                    </div>
+                    ${campaign.callToActionUrl ? `<div style="text-align: center;"><a href="${campaign.callToActionUrl}" style="${btnStyle}">${campaign.callToActionText}</a></div>` : ''}
+                </div>
+            `;
+        }
+
+        // Add an Unsubscribe footer
+        const unsubscribeUrl = `https://gplmods.webredirect.org/unsubscribe`; // You would build this route later
+        emailHtml += `
+            <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; font-size: 12px; color: #888;">
+                You received this because you subscribed to updates from GPL Mods.<br>
+                <a href="${unsubscribeUrl}" style="color: #888; text-decoration: underline;">Unsubscribe</a>
+            </div>
+        `;
+
+        // 3. Send the Emails in Batches (to respect SMTP limits)
+        let successCount = 0;
+        
+        // NOTE: For massive lists (10k+), you MUST use an email provider's "Bulk/List Send" API endpoint,
+        // rather than looping and sending individually like this. 
+        // For SMTP2GO with smaller lists (a few hundred), this loop is okay.
+        for (const email of targetEmails) {
+            try {
+                const msg = {
+                    sender: process.env.EMAIL_FROM,
+                    to: [email],
+                    subject: campaign.subject,
+                    html_body: emailHtml,
+                    text_body: `GPL Mods Update:\n\n${campaign.content.replace(/<[^>]+>/g, '')}\n\n${campaign.callToActionUrl || ''}`
+                };
+                
+                await s2g.send(msg, options);
+                successCount++;
+                
+                // Small delay to prevent rate-limiting (e.g., 50ms)
+                await new Promise(resolve => setTimeout(resolve, 50)); 
+                
+            } catch (sendErr) {
+                console.error(`Failed to send newsletter to ${email}:`, sendErr);
+            }
+        }
+
+        // 4. Update the campaign status
+        campaign.status = 'sent';
+        campaign.sentCount = successCount;
+        await campaign.save();
+
+        console.log(`[NEWSLETTER] Campaign finished. Sent ${successCount}/${targetEmails.length} emails.`);
+
+    } catch (error) {
+        console.error("[NEWSLETTER] Critical error processing campaign:", error);
+        // Attempt to mark as failed
+        try {
+            await NewsletterCampaign.findByIdAndUpdate(campaignId, { status: 'failed', adminNotes: error.message });
+        } catch (e) {}
     }
 };

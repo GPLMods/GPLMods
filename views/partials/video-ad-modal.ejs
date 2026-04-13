@@ -1,0 +1,81 @@
+<!-- Only render this HTML/JS if the user is supposed to see ads -->
+<% if (typeof showAds !== 'undefined' && showAds) { %>
+
+    <!-- ======== VIDEO AD MODAL ======== -->
+    <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.9); z-index: 10000;">
+        <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 450px; border-top: 4px solid var(--blue); box-shadow: 0 10px 40px rgba(33, 150, 243, 0.4);">
+            
+            <i class="fas fa-play-circle" style="font-size: 4em; color: var(--blue); margin-bottom: 20px;"></i>
+            <h2 style="color: var(--white); margin-bottom: 15px;">Support GPL Mods</h2>
+            <p style="color: var(--silver); margin-bottom: 25px; line-height: 1.6; font-size: 1.1em;">
+                Please watch a short sponsor video to help keep our servers running and our mods free for everyone.
+            </p>
+            
+            <!-- 
+                1. The button opens the HilltopAds Direct Video Link in a new tab.
+                2. REPLACE the href below with your actual HilltopAds URL!
+            -->
+            <a href="https://defensivegrand.com/dlm.Fyz-dkGhNtvxZGGaUh/TeQmU9AubZ/UYl-kvPjTVYV5/NdTHEb3pO/TgMwtONXjVku1PMuT/cG5oN-wk" target="_blank" class="btn btn-primary" id="watch-video-btn" style="background: var(--blue); color: var(--white); padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 1.1em; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(33, 150, 243, 0.5); width: 100%; transition: all 0.3s;">
+                Watch Short Video
+            </a>
+
+            <!-- The Skip button, initially hidden and disabled -->
+            <button id="skip-video-btn" class="btn btn-secondary" style="display: none; width: 100%; margin-top: 15px; padding: 12px; border-radius: 20px; font-weight: bold; cursor: not-allowed; opacity: 0.5;">
+                Skip in <span id="skip-timer">30</span>s
+            </button>
+            
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const videoModal = document.getElementById('video-ad-modal');
+            const watchBtn = document.getElementById('watch-video-btn');
+            const skipBtn = document.getElementById('skip-video-btn');
+            const skipTimerSpan = document.getElementById('skip-timer');
+            
+            // Safety check
+            if (!videoModal || !watchBtn || !skipBtn || !skipTimerSpan) return;
+
+            // 1. Show the modal smoothly after the page loads
+            setTimeout(() => { 
+                videoModal.classList.add('show'); 
+                document.body.style.overflow = 'hidden'; // Stop background scrolling
+            }, 500);
+
+            // 2. When they click to watch the video
+            watchBtn.addEventListener('click', () => {
+                
+                // Hide the "Watch" button, show the "Skip" button
+                watchBtn.style.display = 'none';
+                skipBtn.style.display = 'block';
+
+                let timeLeft = 30; // 30 seconds delay
+
+                // 3. Start the countdown timer
+                const timerInterval = setInterval(() => {
+                    timeLeft--;
+                    skipTimerSpan.textContent = timeLeft;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        // The 30 seconds are up! Enable the skip button.
+                        skipBtn.innerHTML = 'Close & Continue to Site';
+                        skipBtn.style.cursor = 'pointer';
+                        skipBtn.style.opacity = '1';
+                        skipBtn.style.borderColor = 'var(--silver)';
+                        skipBtn.style.color = 'var(--white)';
+                        skipBtn.disabled = false;
+                        
+                        // 4. When they click the enabled Skip button, hide the modal
+                        skipBtn.addEventListener('click', () => {
+                            videoModal.classList.remove('show');
+                            document.body.style.overflow = 'auto'; // Restore scrolling
+                            setTimeout(() => { videoModal.style.display = 'none'; }, 300);
+                        }, { once: true }); // Ensure this listener only fires once
+                    }
+                }, 1000); // Run every 1 second (1000ms)
+            });
+        });
+    </script>
+<% } %>

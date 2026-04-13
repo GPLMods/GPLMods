@@ -20,6 +20,8 @@ const UserNotification = require('../models/userNotification');
 const SupportTicket = require('../models/supportTicket');
 const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
+const Subscriber = require('../models/subscriber');
+const NewsletterCampaign = require('../models/newsletterCampaign');
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -453,6 +455,51 @@ async function createAdminRouter() {
                     }
                 }
             },
+                    // ---------------------------------
+        // NEWSLETTER & MARKETING
+        // ---------------------------------
+        {
+            resource: Subscriber,
+            options: {
+                listProperties: ['email', 'isSubscribed', 'source', 'createdAt'],
+                // Admins shouldn't really edit subscribers manually, maybe just delete or toggle status
+            }
+        },
+        {
+            resource: NewsletterCampaign,
+            options: {
+                listProperties: ['subject', 'audience', 'template', 'status', 'sentCount', 'createdAt'],
+                showProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status', 'sentCount', 'createdAt'],
+                editProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status'],
+                properties: {
+                    content: { type: 'richtext', description: 'The main body of the email. HTML is supported.' },
+                    audience: { description: 'WARNING: Selecting anything other than "test-admin-only" will send emails when status is changed to "sending".' }
+                },
+                actions: {
+                    // We need a custom hook to actually SEND the emails when the admin changes status to 'sending'
+                    edit: {
+                        after: async (response, request, context) => {
+                            // Check if the admin just updated the status to 'sending'
+                            if (request.method === 'post' && request.payload.status === 'sending' && context.record.params.status === 'draft') {
+                                
+                                // --- TRIGGER THE EMAIL SENDING PROCESS ---
+                                // We call a background utility function so AdminJS doesn't hang
+                                // waiting for 10,000 emails to send.
+                                const { processNewsletterCampaign } = require('../utils/mailer');
+                                processNewsletterCampaign(context.record.params._id);
+                                
+                                // Update the response notice
+                                response.notice = {
+                                    message: 'Campaign has been queued for sending. It will process in the background.',
+                                    type: 'success',
+                                };
+                            }
+                            return response;
+                        }
+                    }
+                }
+            }
+        },
             // DIRECT USER NOTIFICATIONS
             {
                 resource: UserNotification,
