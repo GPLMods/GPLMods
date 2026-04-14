@@ -10,3 +10,6 @@ npm-debug.log
 
 #CORS Rules
 rules.json
+
+#Temp Files
+fix-slugs.js

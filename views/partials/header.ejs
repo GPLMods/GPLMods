@@ -77,10 +77,7 @@
                 <!-- 3. Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
-                        <!-- Desktop Avatar -->
-                        <a href="/profile" style="margin-right: 10px; display: flex; align-items: center;">
-                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--silver);">
-                        </a>
+                        <!-- Desktop Only Buttons-->
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
                     <% } else { %>

@@ -405,13 +405,13 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     color: var(--black);
 }
 .platform-tag.android { background-color: var(--android-color, #A4C639); }
-
-/* --- UPDATED IOS COLORS TO ORANGE --- */
-.platform-tag.ios-jailed, .platform-tag.ios-ipa { background-color: #FFFFFF; color: var(--black); } /* White */
-.platform-tag.ios-jailbroken, .platform-tag.ios-deb { background-color: #FF9800; color: var(--black); } /*Orange */
-
+.platform-tag.ios-jailed, .platform-tag.ios-ipa { background-color: #FFFFFF; color: var(--black); }
+.platform-tag.ios-jailbroken, .platform-tag.ios-deb { background-color: #FF9800; color: var(--black); } 
 .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: var(--white); }
 .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
+
+/* ✅ NEW FIX: Orange color for Drafts (Category 'n/a' becomes class 'n') */
+.platform-tag.n { background-color: #FF9800; color: var(--black); } 
 
 /* 6. Fix Overlapping Top Tags */
 .app-feature-tag { 

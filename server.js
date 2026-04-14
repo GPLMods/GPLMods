@@ -1931,10 +1931,14 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
 // My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
-        // 1. Fetch the user's uploads and populate the older versions
-        const userUploads = await File.find({ uploader: req.user.username })
-                                      .sort({ createdAt: -1 })
-                                      .populate('olderVersions', 'version fileSize createdAt'); 
+        // 1. Fetch ONLY the user's LATEST uploads and populate the older versions
+        // ✅ FIX: Added `isLatestVersion: true` to prevent duplicates!
+        const userUploads = await File.find({ 
+            uploader: req.user.username,
+            isLatestVersion: true 
+        })
+        .sort({ createdAt: -1 })
+        .populate('olderVersions', 'version fileSize createdAt');
         
         // 2. Map through the uploads to generate signed image URLs
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {

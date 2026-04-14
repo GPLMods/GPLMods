@@ -443,17 +443,28 @@
         </div>
     </div>
 </div>
+<!-- ======== DYNAMIC STATUS MESSAGE BOX (Like DMCA Page) ======== -->
+<div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
-<!-- Status Message Alert Box (Catches ?success= or ?error= from URL) -->
 <script>
-// --- Helper to control the Error Modal ---
-// (We keep this outside DOMContentLoaded so it's globally available)
-function showErrorModal(message) {
-    // Basic fallback alert since you don't have a custom error modal defined in the HTML above
-    alert(message); 
+// --- Helper to control the Error/Success Alert Box ---
+function showStatusAlert(message, type) {
+    const alertBox = document.getElementById('status-alert-box');
+    if (!alertBox) return;
+
+    alertBox.textContent = message;
+    
+    if (type === 'error') {
+        alertBox.className = 'alert-msg alert-error';
+    } else {
+        alertBox.className = 'alert-msg alert-success';
+    }
+    
+    alertBox.style.display = 'block';
+    alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Helper function for the inline onclick handlers on the confirmation modals
+// Helper function for closing modals
 window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -464,6 +475,15 @@ window.closeConfirmModal = function(modalId) {
 
 // ONE single DOMContentLoaded listener for the whole page
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- Check URL for existing errors/success messages on load ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('error')) { 
+        showStatusAlert(urlParams.get('error'), 'error'); 
+    }
+    if (urlParams.has('success')) { 
+        showStatusAlert(urlParams.get('success'), 'success'); 
+    }
 
     // ==========================================
     // 1. UI ELEMENTS & BASIC LOGIC
@@ -530,11 +550,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (platformSelect) {
         platformSelect.addEventListener('change', populateCategories);
-        // Auto-Select Platform based on Smart Guess
         const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
         if (preSelectedPlatform) {
             platformSelect.value = preSelectedPlatform;
-            populateCategories(); // Call the function directly to populate subcategories
+            populateCategories(); 
         }
     }
 
@@ -587,7 +606,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. QUILL RICH TEXT EDITORS 
     // ==========================================
-    // We MUST ensure the DOM elements exist before telling Quill to hook into them.
     const toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -596,7 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
-    // Only initialize if the element is actually on the page
     if (document.getElementById('editor-modDescription')) {
         quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
     }
@@ -613,7 +630,6 @@ document.addEventListener('DOMContentLoaded', () => {
         quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
     }
 
-    // Helper to sync Quill data to hidden textareas before submission
     function syncQuillData() {
         if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
         if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
@@ -630,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
     
-    // Find the main form (Selects any form where the action starts with /upload-finalize)
+    // Find the main form 
     const mainForm = document.querySelector('form[action^="/upload-finalize"]');
 
     const draftModal = document.getElementById('draft-confirm-modal');
@@ -638,10 +654,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmDraftBtn = document.getElementById('confirmDraftBtn');
     const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-    // 1. Open Modals
+    // --- 1. Open Modals ---
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            // We don't strictly validate for a draft, let them save partial progress
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
         });
@@ -651,9 +668,15 @@ document.addEventListener('DOMContentLoaded', () => {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Standard HTML5 validation check
+            // Standard HTML5 validation check ONLY for real submissions
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
+                return;
+            }
+            
+            // Custom check: Ensure they picked at least one screenshot for submission
+            if (screenshotsInput && screenshotsInput.files.length < 1) {
+                showStatusAlert('Error: You must upload at least one screenshot to submit the mod.', 'error');
                 return;
             }
 
@@ -662,38 +685,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Handle Confirmations
+    // --- 2. Handle Confirmations & Submit Form ---
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
-            if(actionTypeInput) actionTypeInput.value = 'draft'; // Tell the backend this is a draft
-            syncQuillData(); // Sync Quill to textareas
-            mainForm.submit(); // Actually submit the form
+            if(actionTypeInput) actionTypeInput.value = 'draft'; 
+            syncQuillData(); 
+            
+            // Remove the 'required' attributes from inputs so the browser doesn't block the draft save!
+            mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
+
+            confirmDraftBtn.textContent = 'Saving...';
+            confirmDraftBtn.disabled = true;
+            mainForm.submit(); 
         });
     }
 
     if (confirmSubmitBtn && mainForm) {
         confirmSubmitBtn.addEventListener('click', () => {
+            if(actionTypeInput) actionTypeInput.value = 'submit'; 
+            syncQuillData(); 
             
-            // Final custom validation check for Screenshots
-            if (screenshotsInput && screenshotsInput.files.length < 1) {
-                showErrorModal('Error: You must upload at least one screenshot to submit the mod.');
-                closeConfirmModal('submit-confirm-modal');
-                return;
-            }
-            if (screenshotsInput && screenshotsInput.files.length > 4) {
-                showErrorModal(`Error: Maximum 4 screenshots allowed. You selected ${screenshotsInput.files.length}.`);
-                closeConfirmModal('submit-confirm-modal');
-                return;
-            }
-
-            if(actionTypeInput) actionTypeInput.value = 'submit'; // Tell the backend this is a real submission
-            syncQuillData(); // Sync Quill to textareas
-            
-            // Disable button to prevent double-clicks
             confirmSubmitBtn.textContent = 'Submitting...';
             confirmSubmitBtn.disabled = true;
-            
-            mainForm.submit(); // Actually submit the form
+            mainForm.submit(); 
         });
     }
 

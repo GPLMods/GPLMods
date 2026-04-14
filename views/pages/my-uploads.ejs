@@ -7,10 +7,6 @@
     .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .page-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
     .upload-cta-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
-/* ======== NEW: Green Update Button Styles ======== */
-    .item-actions .update-btn { border-color: rgba(67, 160, 71, 0.5); color: var(--green); }
-    .item-actions .update-btn:hover { background-color: var(--green); color: var(--white); border-color: var(--green); box-shadow: 0 0 10px rgba(67, 160, 71, 0.5); }
-    /* ================================================= */
     .upload-cta-button:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
     .filter-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
     .filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 10px 20px; border: 1px solid var(--dark-gray); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-size: 0.9em; font-family: inherit; }
@@ -39,12 +35,19 @@
     .item-actions a, .item-actions button { display: inline-block; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 600; border: 1px solid var(--silver); color: var(--silver); background: transparent; transition: all 0.3s ease; font-size: 0.85em; cursor: pointer; font-family: inherit;}
     .item-actions a:hover, .item-actions button:hover { color: var(--white); border-color: var(--white); }
     .item-actions .delete-btn { border-color: rgba(229, 57, 53, 0.5); color: #e57373; }
-    .item-actions .delete-btn:hover { background-color: var(--red); color: var(--white); border-color: var(--red); }
-    .item-actions .edit-resubmit-btn { border-color: rgba(255, 215, 0, 0.5); color: #ffd54f; }
-    .item-actions .edit-resubmit-btn:hover { background-color: var(--gold); color: var(--black); border-color: var(--gold); }
-    .item-actions .view-btn { border-color: rgba(33, 150, 243, 0.5); color: #64b5f6; }
-    .item-actions .view-btn:hover { background-color: var(--blue); color: var(--white); border-color: var(--blue); }
+    .item-actions .delete-btn:hover { background-color: var(--red); color: var(--white) !important; border-color: var(--red); }
     
+    .item-actions .edit-resubmit-btn { border-color: rgba(255, 215, 0, 0.5); color: #ffd54f; }
+    /* ✅ FIX: Added !important to guarantee the text turns black on the gold background */
+    .item-actions .edit-resubmit-btn:hover { background-color: var(--gold); color: var(--black) !important; border-color: var(--gold); }
+    
+    .item-actions .view-btn { border-color: rgba(33, 150, 243, 0.5); color: #64b5f6; }
+    .item-actions .view-btn:hover { background-color: var(--blue); color: var(--white) !important; border-color: var(--blue); }
+
+    /* ======== Green Update Button Styles ======== */
+    .item-actions .update-btn { border-color: rgba(67, 160, 71, 0.5); color: var(--green); }
+    /* ✅ FIX: Added !important here as well for consistency */
+    .item-actions .update-btn:hover { background-color: var(--green); color: var(--white) !important; border-color: var(--green); box-shadow: 0 0 10px rgba(67, 160, 71, 0.5); }
     @media (max-width: 768px) {
         .page-actions { flex-direction: column; align-items: flex-start; }
         .filter-tabs { width: 100%; justify-content: flex-start; margin-top: 10px; }

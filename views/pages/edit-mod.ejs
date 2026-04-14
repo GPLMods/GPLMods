@@ -149,18 +149,20 @@
                 </div>
             </fieldset>
             
-            <fieldset class="form-section">
+                        <fieldset class="form-section">
                 <legend>Descriptions</legend>
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
                     <textarea id="modDescription" name="modDescription" style="display:none;" required><%- file.modDescription %></textarea>
+                    <!-- Pre-load data inside the div so Quill sees it -->
                     <div id="editor-modDescription"><%- file.modDescription %></div>
                 </div>
 
                 <div class="form-group">
                     <label for="modFeatures">Mod Features* (One per line)</label>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;" required><%- file.modFeatures %></textarea>
+                    <!-- Pre-load data inside the div so Quill sees it -->
                     <div id="editor-modFeatures"><%- file.modFeatures %></div>
                 </div>
 
@@ -184,7 +186,6 @@
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
                 </div>
             </fieldset>
-
             <fieldset class="form-section">
                 <legend>Media & Metadata</legend>
                 
@@ -230,6 +231,10 @@
     </div>
 </div>
 
+<!-- ======== DYNAMIC STATUS MESSAGE BOX ======== -->
+<div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
+
+
 <!-- ======== CONFIRMATION MODALS ======== -->
 
 <!-- Submit Confirmation Modal -->
@@ -268,17 +273,49 @@
 </div>
 
 <script>
-// --- Global Helper Function (Must be outside DOMContentLoaded) ---
+// --- Helper to control the Error/Success Alert Box ---
+function showStatusAlert(message, type) {
+    const alertBox = document.getElementById('status-alert-box');
+    if (!alertBox) return;
+
+    alertBox.textContent = message;
+    
+    if (type === 'error') {
+        alertBox.className = 'status-banner rejected'; // Reuse your red banner style
+        alertBox.style.backgroundColor = 'rgba(229, 57, 53, 0.1)';
+        alertBox.style.color = 'var(--red)';
+        alertBox.style.border = '1px solid var(--red)';
+    } else {
+        alertBox.className = 'status-banner'; // Reuse banner style but make it green
+        alertBox.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+        alertBox.style.color = '#2ecc71';
+        alertBox.style.border = '1px solid #2ecc71';
+    }
+    
+    alertBox.style.display = 'block';
+    alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Helper function for closing modals
 window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => { modal.style.display = 'none'; }, 200);
     }
-};
+}
 
-// --- SINGLE DOMContentLoaded LISTENER ---
-document.addEventListener('DOMContentLoaded', function() {
+// ONE single DOMContentLoaded listener for the whole page
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- Check URL for existing errors/success messages on load ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('error')) { 
+        showStatusAlert(urlParams.get('error'), 'error'); 
+    }
+    if (urlParams.has('success')) { 
+        showStatusAlert(urlParams.get('success'), 'success'); 
+    }
 
     // ==========================================
     // 1. UI ELEMENTS & BASIC LOGIC
@@ -310,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (files.length > 0) {
                 screenshotPreviewContainer.style.display = 'block'; 
-                screenshotFileNameSpan.textContent = files.length + ' new file(s) selected';
+                if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = files.length + ' new file(s) selected';
                 
                 Array.from(files).slice(0, 4).forEach(file => {
                     const reader = new FileReader();
@@ -337,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function populateCategories() {
+        if (!platformSelect || !categorySelect) return;
         const selectedPlatform = platformSelect.value;
         const categories = categoriesByPlatform[selectedPlatform] ||[];
         const currentCategory = "<%= file.platforms[0] || '' %>"; 
@@ -422,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmDraftBtn = document.getElementById('confirmDraftBtn');
     const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-    // Open Modals
+    // --- 1. Open Modals ---
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -434,35 +472,40 @@ document.addEventListener('DOMContentLoaded', function() {
     if (submitModBtn && mainForm && submitModal) {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // HTML5 validation
+            
+            // Standard HTML5 validation check ONLY for real submissions
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
                 return;
             }
+
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
         });
     }
 
-    // Confirm Draft
+    // --- 2. Handle Confirmations & Submit Form ---
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            syncQuillData(); // Get text from Quill
+            syncQuillData(); 
+            
+            // ✅ FIX: Remove 'required' attributes so the browser lets the draft save!
+            mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
+
+            confirmDraftBtn.textContent = 'Saving...';
+            confirmDraftBtn.disabled = true;
             mainForm.submit(); 
         });
     }
 
-    // Confirm Submit
     if (confirmSubmitBtn && mainForm) {
         confirmSubmitBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'submit'; 
-            syncQuillData(); // Get text from Quill
+            syncQuillData(); 
             
-            // UI Feedback
             confirmSubmitBtn.textContent = 'Submitting...';
             confirmSubmitBtn.disabled = true;
-            
             mainForm.submit(); 
         });
     }
