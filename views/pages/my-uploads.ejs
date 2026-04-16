@@ -1,59 +1,59 @@
 <%- include('../partials/header') %>
 
 <style>
-    /* Most of your styles are moving to style.css, but we keep page-specific ones here */
-    .page-header { text-align: center; padding: 60px 20px; }
+    .page-header { text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 30px; }
     .page-header h1 { font-size: 3em; color: var(--white); }
     .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    
     .page-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
     .upload-cta-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
     .upload-cta-button:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
+    
     .filter-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
     .filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 10px 20px; border: 1px solid var(--dark-gray); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-size: 0.9em; font-family: inherit; }
     .filter-btn:hover, .filter-btn.active { background-color: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 600; }
-    .uploads-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
-    .upload-item { background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; position: relative; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 1px solid #2a2a2a; }
-    .upload-item:hover { transform: translateY(-5px); box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
-    .mod-card-image { height: 150px; background-color: #222; display: flex; align-items: center; justify-content: center; padding: 20px; border-bottom: 1px solid #333; }
-    .mod-card-image img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
-    .mod-card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
-    .item-title { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 10px; }
-    .item-title h3 { font-size: 1.25em; margin: 0; color: var(--white); line-height: 1.3; }
-    .item-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 25px; font-size: 0.85em; }
-    .detail-row { display: flex; flex-direction: column; }
-    .detail-row span:first-child { color: var(--silver); font-weight: 300; font-size: 0.9em; margin-bottom: 2px; }
-    .detail-row span:last-child { color: var(--white); font-weight: 500; }
-    .detail-row.rating span:last-child { color: var(--gold); }
-    .detail-row.working-vote span:last-child { color: var(--green); }
-    .detail-row.full-width { grid-column: 1 / -1; }
-    .item-status-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #333; margin-top: auto; flex-wrap: wrap; gap: 15px; }
-    .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.8em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .status-live { background-color: var(--green); color: var(--white); }
-    .status-pending, .status-processing { background-color: var(--gold); color: var(--black); }
-    .status-rejected { background-color: var(--red); color: var(--white); }
-    .item-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .item-actions a, .item-actions button { display: inline-block; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 600; border: 1px solid var(--silver); color: var(--silver); background: transparent; transition: all 0.3s ease; font-size: 0.85em; cursor: pointer; font-family: inherit;}
-    .item-actions a:hover, .item-actions button:hover { color: var(--white); border-color: var(--white); }
-    .item-actions .delete-btn { border-color: rgba(229, 57, 53, 0.5); color: #e57373; }
-    .item-actions .delete-btn:hover { background-color: var(--red); color: var(--white) !important; border-color: var(--red); }
-    
-    .item-actions .edit-resubmit-btn { border-color: rgba(255, 215, 0, 0.5); color: #ffd54f; }
-    /* ✅ FIX: Added !important to guarantee the text turns black on the gold background */
-    .item-actions .edit-resubmit-btn:hover { background-color: var(--gold); color: var(--black) !important; border-color: var(--gold); }
-    
-    .item-actions .view-btn { border-color: rgba(33, 150, 243, 0.5); color: #64b5f6; }
-    .item-actions .view-btn:hover { background-color: var(--blue); color: var(--white) !important; border-color: var(--blue); }
 
-    /* ======== Green Update Button Styles ======== */
-    .item-actions .update-btn { border-color: rgba(67, 160, 71, 0.5); color: var(--green); }
-    /* ✅ FIX: Added !important here as well for consistency */
-    .item-actions .update-btn:hover { background-color: var(--green); color: var(--white) !important; border-color: var(--green); box-shadow: 0 0 10px rgba(67, 160, 71, 0.5); }
+    .uploads-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+    .upload-item { background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .upload-item:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 10px 25px rgba(255, 215, 0, 0.15); }
+
+    .mod-card-image { width: 100%; height: 160px; background-color: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 15px; border-bottom: 1px solid #222; position: relative; }
+    .mod-card-image img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+
+    .status-badge-top { position: absolute; top: 10px; left: 10px; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; z-index: 2; }
+    .status-live { background-color: var(--green); color: var(--white); box-shadow: 0 0 10px rgba(67,160,71,0.5); }
+    .status-pending, .status-processing { background-color: var(--gold); color: var(--black); box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+    .status-rejected { background-color: var(--red); color: var(--white); box-shadow: 0 0 10px rgba(229,57,53,0.5); }
+
+    .platform-tag { position: absolute; top: 10px; right: 10px; font-size: 0.75em; font-weight: 700; padding: 5px 12px; border-radius: 20px; color: var(--black); z-index: 2; }
+
+    .mod-card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+    .mod-card-content h3 { font-size: 1.4em; margin-bottom: 15px; color: var(--white); word-break: break-word; }
+
+    .item-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 20px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222; }
+    .stat-row { display: flex; flex-direction: column; }
+    .stat-label { color: var(--silver); font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .stat-value { color: var(--white); font-weight: 600; font-size: 1em; }
+    .stat-value.gold { color: var(--gold); }
+    .stat-value.green { color: var(--green); }
+    
+    .rejection-reason { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: #ffadad; padding: 10px; border-radius: 8px; font-size: 0.85em; margin-bottom: 20px; }
+
+    .item-actions { display: flex; gap: 10px; margin-top: auto; flex-wrap: wrap; }
+    .action-btn { flex: 1; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid transparent; transition: all 0.3s ease; font-size: 0.9em; cursor: pointer; font-family: inherit; display: flex; justify-content: center; align-items: center; gap: 5px; }
+    
+    .btn-view { background: rgba(33, 150, 243, 0.1); color: var(--blue); border-color: var(--blue); }
+    .btn-view:hover { background-color: var(--blue); color: var(--white); }
+    .btn-edit { background: rgba(255, 215, 0, 0.1); color: var(--gold); border-color: var(--gold); }
+    .btn-edit:hover { background-color: var(--gold); color: var(--black); }
+    .btn-delete { background: rgba(229, 57, 53, 0.1); color: var(--red); border-color: var(--red); }
+    .btn-delete:hover { background-color: var(--red); color: var(--white); }
+    .btn-draft { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+    .btn-draft:hover { transform: scale(1.05); }
+
     @media (max-width: 768px) {
         .page-actions { flex-direction: column; align-items: flex-start; }
-        .filter-tabs { width: 100%; justify-content: flex-start; margin-top: 10px; }
-        .uploads-list { grid-template-columns: 1fr; }
-        .item-status-actions { flex-direction: column; align-items: stretch; gap: 15px; }
-        .item-actions { justify-content: flex-end; }
+        .filter-tabs { width: 100%; }
     }
 </style>
 
@@ -80,174 +80,126 @@
         <div class="uploads-list">
             <% if(uploads && uploads.length > 0) { %>
                 <% uploads.forEach(file => { %>
-                    <!-- The data-category ensures the filter buttons work -->
                     <div class="upload-item" data-category="<%= file.category %>">
+                        
                         <div class="mod-card-image">
+                            <!-- Absolute Status Badge -->
+                            <span class="status-badge-top status-<%= file.status === 'processing' ? 'pending' : file.status %>">
+                                <%= file.status === 'processing' ? 'Draft' : file.status %>
+                            </span>
+                            
+                            <!-- Absolute Platform Tag -->
+                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                <%= file.category.toUpperCase().replace('-', ' ') %>
+                            </span>
+
                             <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon">
                         </div>
+                        
                         <div class="mod-card-content">
-                            <div class="item-title">
-                                <h3 style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <%= file.name %>
-                                    <!-- ✅ NEW: Show Variant Badge -->
-                                    <% if (file.isVariant) { %>
-                                        <span style="background-color: var(--blue); color: var(--white); font-size: 0.55em; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">Variant</span>
-                                    <% } %>
-                                </h3>
-                                <!-- CUSTOM COLOR PLATFORM TAG -->
-<!-- ✅ FIX 1: Corrected Draft Tag Coloring -->
-<% if (file.category === 'n/a' || !file.category) { %>
-    <!-- It's a draft with no category selected yet -->
-    <span class="platform-tag" style="background-color: #555; color: var(--white); padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
-        DRAFT
-    </span>
-<% } else { %>
-    <!-- It's a normal mod with a category -->
-    <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
-        <%= file.category.toUpperCase().replace('-', ' ') %>
-    </span>
-<% } %>
+                            <h3><%= file.name %></h3>
                             
-                            <div class="item-details-grid">
-                                <div class="detail-row">
-                                    <span>Downloads:</span>
-                                    <span><%= file.downloads.toLocaleString() %></span>
+                            <div class="item-stats">
+                                <div class="stat-row">
+                                    <span class="stat-label">Downloads</span>
+                                    <span class="stat-value"><%= file.downloads.toLocaleString() %></span>
                                 </div>
-                                <div class="detail-row rating">
-                                    <span>AVG Rating:</span>
-                                    <span><%= file.averageRating.toFixed(1) %> ★</span>
-                                </div>
-                                <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-                                <% const workingPercentage = totalVotes > 0 ? ((file.workingVoteCount / totalVotes) * 100).toFixed(0) : 'N/A'; %>
-                                <div class="detail-row working-vote">
-                                    <span>Working Vote:</span>
-                                    <span><%= workingPercentage %><%= totalVotes > 0 ? '%' : '' %></span>
-                                </div>
-                                <div class="detail-row">
-                                    <span>Date Uploaded:</span>
-                                    <span><%= file.createdAt.toLocaleDateString() %></span>
+                                <div class="stat-row">
+                                    <span class="stat-label">Rating</span>
+                                    <span class="stat-value gold"><%= file.averageRating.toFixed(1) %> ★</span>
                                 </div>
                                 
-                                <% if (file.status === 'rejected' && file.rejectionReason) { %>
-                                    <div class="detail-row full-width">
-                                        <span style="color: var(--red);">Reason for Rejection:</span>
-                                        <span style="color: var(--silver); font-style: italic;"><%= file.rejectionReason %></span>
-                                    </div>
-                                <% } %>
+                                <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+                                <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
+                                <div class="stat-row">
+                                    <span class="stat-label">Working Vote</span>
+                                    <span class="stat-value green"><%= workingPercentage %></span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Uploaded</span>
+                                    <span class="stat-value"><%= new Date(file.createdAt).toLocaleDateString() %></span>
+                                </div>
                             </div>
 
-                                                        <!-- THE STATUS BADGE AND ACTION BUTTONS -->
-                            <div class="item-status-actions">
-                                
-                                <!-- 1. THE STATUS BADGE -->
-                                <% if (file.status === 'processing') { %>
-                                    <!-- It's a Draft -->
-                                    <span class="status-badge" style="background-color: var(--silver); color: var(--black);">
-                                        DRAFT
-                                    </span>
-                                <% } else { %>
-                                    <!-- It's Pending, Live, or Rejected -->
-                                    <span class="status-badge status-<%= file.status %>">
-                                        <%= file.status %>
-                                    </span>
-                                <% } %>
-                                
-                                <!-- 2. THE ACTION BUTTONS -->
-                                <div class="item-actions">
-                                    
-                                    <!-- VIEW BUTTON (Only if live) -->
-                                    <% if (file.status === 'live') { %>
-                                        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="view-btn">View</a>
-                                        
-                                        <!-- UPDATE MOD BUTTON (Only if live) -->
-                                        <a href="/mods/<%= file._id %>/add-version" class="update-btn">
-                                            <i class="fas fa-arrow-up" style="margin-right: 5px;"></i>Update Mod
-                                        </a>
-                                    <% } %>
-                                    
-                                    <!-- DYNAMIC EDIT BUTTON -->
-                                   <!-- ✅ FIX 2: Point "Finish Draft" to the Edit Page -->
-<% if (file.status === 'processing') { %>
-    <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn" style="border-color: var(--gold); color: var(--gold);">
-        <i class="fas fa-pencil-alt" style="margin-right: 5px;"></i>Finish Draft
-    </a>
-<% } else { %>
-                                        <!-- If it's live, pending, or rejected, they use the standard Edit Mod form -->
-                                        <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
-                                            <% if (file.status === 'rejected') { %>
-                                                <i class="fas fa-tools" style="margin-right: 5px;"></i>Fix & Resubmit
-                                            <% } else if (file.isVariant) { %>
-                                                Edit Variant
-                                            <% } else { %>
-                                                Edit Info
-                                            <% } %>
-                                        </a>
-                                    <% } %>
+                            <% if (file.status === 'rejected' && file.rejectionReason) { %>
+                                <div class="rejection-reason">
+                                    <strong>Reason for Rejection:</strong><br>
+                                    <%= file.rejectionReason %>
+                                </div>
+                            <% } %>
 
-                                    <!-- MANAGE VERSIONS BUTTON (Only if old versions exist) -->
+                            <div class="item-actions">
+                                <% if (file.status === 'processing') { %>
+                                    <a href="/upload-details/<%= file._id %>" class="action-btn btn-draft" style="width: 100%;">
+                                        <i class="fas fa-edit"></i> Finish Draft
+                                    </a>
+                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="Discard Draft">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                <% } else { %>
+                                    <% if (file.status === 'live') { %>
+                                        <a href="/mods/<%= file._id %>" class="action-btn btn-view">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    <% } %>
+                                    
+                                    <a href="/mods/<%= file._id %>/edit" class="action-btn btn-edit">
+                                        <i class="fas fa-pen"></i> <%= file.status === 'rejected' ? 'Fix' : 'Edit' %>
+                                    </a>
+
                                     <% if (file.olderVersions && file.olderVersions.length > 0) { %>
-                                        <button type="button" class="btn btn-secondary manage-versions-btn" 
-                                                data-id="<%= file._id %>" 
-                                                data-versions="<%= JSON.stringify(file.olderVersions) %>"
-                                                style="border-color: var(--silver); color: var(--silver);">
-                                            Manage Old Versions (<%= file.olderVersions.length %>)
+                                        <button type="button" class="action-btn btn-secondary manage-versions-btn" data-id="<%= file._id %>" data-versions="<%= JSON.stringify(file.olderVersions) %>">
+                                            <i class="fas fa-history"></i> Versions (<%= file.olderVersions.length %>)
                                         </button>
                                     <% } %>
                                     
-                                    <!-- DELETE BUTTON -->
-                                    <button class="delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>">
+                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="Delete Mod">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                </div>
+                                <% } %>
                             </div>
-                            <!-- END OF STATUS AND ACTIONS -->
-
-                        </div> <!-- Closes .mod-card-content -->
-                    </div> <!-- Closes .upload-item -->
+                            
+                        </div>
+                    </div>
                 <% }) %>
             <% } else { %>
-                <!-- Show this if they have no uploads -->
-                <p style="text-align: center; width: 100%; color: var(--silver); grid-column: 1 / -1; padding: 40px;">
-                    You haven't uploaded any mods yet.
-                </p>
-            <% } %> <!-- ✅ THIS WAS THE MISSING CLOSING TAG! -->
-        </div> <!-- Closes .uploads-list -->
-    </div> <!-- Closes .container -->
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333;">
+                    <i class="fas fa-folder-open" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--white); margin-bottom: 10px;">No Uploads Yet</h2>
+                    <p style="color: var(--silver); font-size: 1.1em;">You haven't contributed any mods to the platform yet.</p>
+                </div>
+            <% } %>
+        </div> 
+    </div> 
 </main>
-<!-- ======== CUSTOM DELETE MODAL (REUSABLE) ======== -->
+
+<!-- ======== CUSTOM DELETE MODAL ======== -->
 <div id="delete-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        
-        <!-- ✅ FIX: Added IDs so we can change the text dynamically -->
         <h2 id="delete-modal-title" style="color: var(--red); margin-bottom: 15px;">Delete Mod?</h2>
         <p id="delete-modal-text" style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
             Are you absolutely sure you want to delete this mod? This is a permanent action and cannot be undone.
         </p>
-        
         <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
             <button type="button" class="policy-button" id="confirmDeleteBtn" style="background-color: var(--red); color: var(--white); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-red);">Yes, Delete</button>
             <button type="button" class="policy-button decline" id="cancelDeleteBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
         </div>
     </div>
 </div>
-<!-- ===================================== -->
+
 <!-- ======== CUSTOM MANAGE VERSIONS MODAL ======== -->
 <div id="versions-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; border-top: 3px solid var(--blue); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 style="color: var(--blue); margin: 0;">Manage Old Versions</h2>
             <span class="close-versions-modal" style="color: var(--silver); font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
         </div>
-
         <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
             Deleting old versions frees up server space. The current, active version will <strong style="color:var(--white);">not</strong> be affected.
         </p>
-
         <div id="versions-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
             <!-- JS will populate this list -->
         </div>
-
         <div style="border-top: 1px solid #333; padding-top: 20px; text-align: center;">
             <button type="button" id="deleteAllVersionsBtn" class="btn btn-secondary" style="background-color: transparent; color: var(--red); border: 2px solid var(--red); padding: 10px 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
                 <i class="fas fa-trash-alt"></i> Delete ALL Old Versions
@@ -255,7 +207,7 @@
         </div>
     </div>
 </div>
-<!-- ============================================== -->
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
@@ -289,12 +241,10 @@
         const closeVersionsBtn = document.querySelector('.close-versions-modal');
         const versionsListContainer = document.getElementById('versions-list-container');
         
-        // State variables to remember what we are trying to delete
-        let deleteActionType = null; // 'full-mod', 'single-version', or 'all-versions'
+        let deleteActionType = null; 
         let targetModId = null;
         let targetVersionId = null;
-        let elementToAnimate = null; // The card or row to remove from the screen
-        let versionRowElement = null; // The specific row in the versions modal
+        let elementToAnimate = null;
 
         // --- 3. HELPER FUNCTIONS ---
         function showDeleteModal(title, text) {
@@ -308,12 +258,10 @@
             deleteModal.classList.remove('show');
             setTimeout(() => {
                 deleteModal.style.display = 'none';
-                // Reset state
                 deleteActionType = null;
                 targetModId = null;
                 targetVersionId = null;
                 elementToAnimate = null;
-                versionRowElement = null;
                 confirmDeleteBtn.textContent = 'Yes, Delete';
                 confirmDeleteBtn.disabled = false;
             }, 200);
@@ -323,7 +271,6 @@
             if (!element) return onComplete && onComplete();
             const currentHeight = element.offsetHeight;
             element.style.height = currentHeight + 'px';
-            element.offsetHeight; // force reflow
             element.style.transition = 'opacity 0.3s ease, transform 0.3s ease, height 0.5s ease 0.2s, padding 0.5s ease 0.2s, margin 0.5s ease 0.2s, border 0.5s ease 0.2s';
             element.style.opacity = '0';
             element.style.transform = 'scale(0.9)';
@@ -341,94 +288,66 @@
         }
 
         // --- 4. ATTACH LISTENERS ---
-
-                // A. Clicking "Delete" on a main Mod Card
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
-                
-                // Read the data attributes we set on the button
                 deleteActionType = 'full-mod';
                 targetModId = this.dataset.id;
-                const modStatus = this.dataset.status; // NEW: Get the status
-                
+                const modStatus = this.dataset.status;
                 elementToAnimate = this.closest('.upload-item');
                 
-                // Dynamically change the text based on if it's a draft or a real mod
                 if (modStatus === 'processing') {
-                    showDeleteModal(
-                        'Discard Draft?', 
-                        'Are you sure you want to delete this draft? The uploaded file will be permanently removed from the server.'
-                    );
+                    showDeleteModal('Discard Draft?', 'Are you sure you want to delete this draft? The uploaded file will be permanently removed from the server.');
                 } else {
-                    showDeleteModal(
-                        'Delete Mod?', 
-                        'Are you absolutely sure you want to delete this entire mod? This includes all files, images, and reviews. This is permanent.'
-                    );
+                    showDeleteModal('Delete Mod?', 'Are you absolutely sure you want to delete this entire mod? This includes all files, images, and reviews. This is permanent.');
                 }
             });
         });
 
-        // B. Clicking "Cancel" inside the red modal
         cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
-        // C. Clicking "Manage Old Versions" to open the Blue Modal
         document.querySelectorAll('.manage-versions-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const modId = this.dataset.id;
-                const versions = JSON.parse(this.dataset.versions);
+                const versions = JSON.parse(this.dataset.versions || '[]');
                 
-                // Build the list HTML
                 versionsListContainer.innerHTML = '';
                 versions.forEach(v => {
                     const div = document.createElement('div');
-                    div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px; transition: all 0.3s ease;';
+                    div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px;';
                     div.innerHTML = `
                         <div>
-                            <strong style="color: var(--gold); display: block;">v${v.version}</strong>
+                            <strong style="color: var(--gold); display: block;">v${v.version || 'Unknown'}</strong>
                             <span style="color: var(--silver); font-size: 0.85em;">Uploaded: ${new Date(v.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <button class="btn btn-secondary delete-single-version-btn" data-mod-id="${modId}" data-version-id="${v._id}" style="padding: 5px 15px; font-size: 0.85em; border-color: var(--red); color: var(--red);">Delete</button>
+                        <button class="btn btn-secondary delete-single-version-btn" data-mod-id="${modId}" data-version-id="${v._id || v}" style="padding: 5px 15px; font-size: 0.85em; border-color: var(--red); color: var(--red);">Delete</button>
                     `;
                     versionsListContainer.appendChild(div);
                 });
 
-                // Attach listener to the new "Delete ALL" button inside the blue modal
                 const deleteAllBtn = document.getElementById('deleteAllVersionsBtn');
-                // We clone and replace the button to remove old event listeners from previous clicks
                 const newDeleteAllBtn = deleteAllBtn.cloneNode(true);
                 deleteAllBtn.parentNode.replaceChild(newDeleteAllBtn, deleteAllBtn);
                 
                 newDeleteAllBtn.addEventListener('click', () => {
                     deleteActionType = 'all-versions';
                     targetModId = modId;
-                    // Close the blue modal, open the red confirmation modal
                     versionsModal.classList.remove('show');
                     setTimeout(() => {
                         versionsModal.style.display = 'none';
-                        showDeleteModal(
-                            'Delete ALL Old Versions?', 
-                            'This will permanently delete all historical files to save space. The current LIVE version will remain safe. Proceed?'
-                        );
+                        showDeleteModal('Delete ALL Old Versions?', 'This will permanently delete all historical files to save space. The current LIVE version will remain safe. Proceed?');
                     }, 200);
                 });
 
-                // Attach listeners to the individual "Delete" buttons in the list
                 document.querySelectorAll('.delete-single-version-btn').forEach(delBtn => {
                     delBtn.addEventListener('click', function() {
                         deleteActionType = 'single-version';
                         targetModId = this.dataset.modId;
                         targetVersionId = this.dataset.versionId;
-                        versionRowElement = this.closest('div'); // The row in the list
-                        
-                        // Close blue modal, open red confirmation modal
                         versionsModal.classList.remove('show');
                         setTimeout(() => {
                             versionsModal.style.display = 'none';
-                            showDeleteModal(
-                                'Delete This Version?', 
-                                'Are you sure you want to permanently delete this specific older version of the mod?'
-                            );
+                            showDeleteModal('Delete This Version?', 'Are you sure you want to permanently delete this specific older version of the mod?');
                         }, 200);
                     });
                 });
@@ -438,7 +357,6 @@
             });
         });
 
-        // Close the Blue "Manage Versions" modal
         if(closeVersionsBtn) {
             closeVersionsBtn.addEventListener('click', () => {
                 versionsModal.classList.remove('show');
@@ -446,7 +364,7 @@
             });
         }
 
-        // --- 5. THE MASTER CONFIRMATION HANDLER ---
+        // --- 5. MASTER CONFIRMATION HANDLER ---
         confirmDeleteBtn.addEventListener('click', async function() {
             if (!deleteActionType || !targetModId) return;
 
@@ -454,8 +372,6 @@
             confirmDeleteBtn.disabled = true;
 
             let apiUrl = '';
-            
-            // Determine which route to hit based on what the user clicked
             if (deleteActionType === 'full-mod') {
                 apiUrl = `/mods/${targetModId}/delete`;
             } else if (deleteActionType === 'single-version') {
@@ -470,13 +386,9 @@
                 
                 if (result.success) {
                     closeDeleteModal(); 
-                    
                     if (deleteActionType === 'full-mod') {
-                        // Animate the whole mod card away
                         animateAndRemove(elementToAnimate);
-                    } else if (deleteActionType === 'all-versions' || deleteActionType === 'single-version') {
-                        // Deleting versions changes the data payload of the "Manage" button, 
-                        // so a full page reload is the safest way to ensure the UI stays in sync.
+                    } else {
                         setTimeout(() => window.location.reload(), 300);
                     }
                 } else {
@@ -489,7 +401,6 @@
                 closeDeleteModal();
             }
         });
-
     });
 </script>
 
