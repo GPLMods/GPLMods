@@ -67,6 +67,8 @@ const cron = require('node-cron');
 const AutomatedCampaign = require('./models/automatedCampaign');
 const SiteState = require('./models/siteState');
 const Subscriber = require('./models/subscriber');
+const DocCategory = require('./models/docCategory');
+const DocPage = require('./models/docPage');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -3399,6 +3401,59 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error("Partnership Application Error:", error);
         res.redirect('/partnership?error=An error occurred while submitting your application.');
+    }
+});
+
+// ===================================
+// CUSTOM DOCUMENTATION ROUTES
+// ===================================
+
+app.get('/docs/:slug?', async (req, res) => {
+    try {
+        const requestedSlug = req.params.slug;
+
+        // 1. Fetch the entire structure for the Sidebar
+        // We find all categories, sort them by 'order', and then use Mongoose "virtuals" 
+        // or a manual lookup to get their child pages. For simplicity, we'll fetch all pages 
+        // and group them in Node.js.
+        const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
+        const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
+
+        // Group pages by category ID for easy rendering in EJS
+        const sidebarStructure = allCategories.map(cat => {
+            return {
+                ...cat,
+                pages: allPages.filter(p => p.category && p.category._id.toString() === cat._id.toString())
+            };
+        });
+
+        // 2. Determine which page to display
+        let currentPage = null;
+
+        if (requestedSlug) {
+            // Find the specific page requested
+            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
+            if (!currentPage) {
+                return res.status(404).render('pages/404');
+            }
+        } else {
+            // If they just visit /docs, show the very first page of the first category
+            if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
+                currentPage = sidebarStructure[0].pages[0];
+                // Redirect to the actual slug for clean URLs
+                return res.redirect(`/docs/${currentPage.slug}`);
+            }
+        }
+
+        // 3. Render the custom Docs template
+        res.render('pages/docs', {
+            sidebarStructure: sidebarStructure,
+            currentPage: currentPage
+        });
+
+    } catch (error) {
+        console.error("Docs Engine Error:", error);
+        res.status(500).render('pages/500');
     }
 });
 

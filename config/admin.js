@@ -22,6 +22,8 @@ const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 const Subscriber = require('../models/subscriber');
 const NewsletterCampaign = require('../models/newsletterCampaign');
+const DocCategory = require('../models/docCategory'); // <--- ADD THIS
+const DocPage = require('../models/docPage');         // <--- ADD THIS
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -496,6 +498,33 @@ async function createAdminRouter() {
                             }
                             return response;
                         }
+                    }
+                }
+            }
+        },
+        // ---------------------------------
+        // DOCUMENTATION (CUSTOM WIKI)
+        // ---------------------------------
+        {
+            resource: DocCategory,
+            options: {
+                navigation: { name: 'Documentation', icon: 'Book' },
+                listProperties: ['name', 'order'],
+            }
+        },
+        {
+            resource: DocPage,
+            options: {
+                navigation: { name: 'Documentation', icon: 'Book' },
+                listProperties: ['title', 'category', 'order', 'updatedAt'],
+                editProperties: ['title', 'slug', 'category', 'order', 'content'],
+                showProperties: ['title', 'slug', 'category', 'order', 'content', 'updatedAt'],
+                properties: {
+                    content: { 
+                        type: 'richtext' // The magic wand! This gives you a full WYSIWYG editor
+                    },
+                    slug: {
+                        description: 'The URL-friendly name (e.g., "how-to-install-apk"). Must be unique.'
                     }
                 }
             }

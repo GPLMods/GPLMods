@@ -455,9 +455,15 @@ function showStatusAlert(message, type) {
     alertBox.textContent = message;
     
     if (type === 'error') {
-        alertBox.className = 'alert-msg alert-error';
+        alertBox.className = 'status-banner rejected'; 
+        alertBox.style.backgroundColor = 'rgba(229, 57, 53, 0.1)';
+        alertBox.style.color = 'var(--red)';
+        alertBox.style.border = '1px solid var(--red)';
     } else {
-        alertBox.className = 'alert-msg alert-success';
+        alertBox.className = 'status-banner'; 
+        alertBox.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+        alertBox.style.color = '#2ecc71';
+        alertBox.style.border = '1px solid #2ecc71';
     }
     
     alertBox.style.display = 'block';
@@ -517,17 +523,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamic Category Dropdown Logic
     const categoriesByPlatform = {
-        android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-        'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
         'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-        windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-        wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+        windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+        wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
     };
 
     function populateCategories() {
         if (!platformSelect || !categorySelect) return;
         const selectedPlatform = platformSelect.value;
-        const categories = categoriesByPlatform[selectedPlatform] || [];
+        const categories = categoriesByPlatform[selectedPlatform] ||[];
         categorySelect.innerHTML = '';
         if (categories.length > 0) {
             categorySelect.disabled = false;
@@ -606,10 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. QUILL RICH TEXT EDITORS 
     // ==========================================
-    const toolbarOptions = [
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['clean'] 
+    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean'] 
     ];
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
@@ -630,12 +634,28 @@ document.addEventListener('DOMContentLoaded', () => {
         quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
     }
 
+    // ✅ FIX: Improved sync function to handle empty editor states correctly
     function syncQuillData() {
-        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+        if(quillDesc) {
+            const html = quillDesc.root.innerHTML;
+            document.getElementById('modDescription').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillFeat) {
+            const html = quillFeat.root.innerHTML;
+            document.getElementById('modFeatures').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillOff) {
+            const html = quillOff.root.innerHTML;
+            document.getElementById('officialDescription').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillNew) {
+            const html = quillNew.root.innerHTML;
+            document.getElementById('whatsNew').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillNote) {
+            const html = quillNote.root.innerHTML;
+            document.getElementById('importantNote').value = html === '<p><br></p>' ? '' : html;
+        }
     }
 
 
@@ -645,8 +665,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
-    
-    // Find the main form 
     const mainForm = document.querySelector('form[action^="/upload-finalize"]');
 
     const draftModal = document.getElementById('draft-confirm-modal');
@@ -658,7 +676,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // We don't strictly validate for a draft, let them save partial progress
+            // ✅ FIX: Sync data BEFORE opening modal so it's ready
+            syncQuillData(); 
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
         });
@@ -668,18 +687,38 @@ document.addEventListener('DOMContentLoaded', () => {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Standard HTML5 validation check ONLY for real submissions
+            // ✅ FIX: Sync data BEFORE validation
+            syncQuillData();
+            
+            // --- MANUAL VALIDATION ---
+            // We must manually validate because native checkValidity() fails silently on hidden fields
+            
+            // 1. Check native visible fields
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
                 return;
             }
             
-            // Custom check: Ensure they picked at least one screenshot for submission
+            // 2. Check Quill hidden fields (Mod Description and Features are usually required)
+            const descValue = document.getElementById('modDescription').value.trim();
+            const featValue = document.getElementById('modFeatures').value.trim();
+            
+            if (!descValue) {
+                showStatusAlert('Error: Mod Description is required.', 'error');
+                return;
+            }
+            if (!featValue) {
+                showStatusAlert('Error: Mod Features are required.', 'error');
+                return;
+            }
+
+            // 3. Check Screenshots
             if (screenshotsInput && screenshotsInput.files.length < 1) {
                 showStatusAlert('Error: You must upload at least one screenshot to submit the mod.', 'error');
                 return;
             }
 
+            // All checks passed, show modal
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
         });
@@ -689,9 +728,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            syncQuillData(); 
             
-            // Remove the 'required' attributes from inputs so the browser doesn't block the draft save!
+            // ✅ FIX: Remove ALL required attributes before submitting a draft
             mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
 
             confirmDraftBtn.textContent = 'Saving...';
@@ -703,7 +741,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmSubmitBtn && mainForm) {
         confirmSubmitBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'submit'; 
-            syncQuillData(); 
             
             confirmSubmitBtn.textContent = 'Submitting...';
             confirmSubmitBtn.disabled = true;

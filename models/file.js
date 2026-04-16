@@ -75,7 +75,7 @@ const FileSchema = new Schema({
     // Make these optional if using an external link
     fileSize: { type: Number, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 0 },
     originalFilename: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 'External File' },
-    uploader: { type: String, default: "Anonymous" },
+    uploader: { type: String, default: "GPL Community" },
     developer: {
         type: String,
         trim: true,
@@ -153,7 +153,7 @@ const FileSchema = new Schema({
     status: {
         type: String,
         // ADDED 'processing' to the enum array so Mongoose doesn't reject it
-        enum: ['processing', 'pending', 'live', 'rejected'], 
+        enum: ['processing', 'pending', 'live', 'rejected', 'draft'], 
         default: 'pending' // All new uploads will require admin approval
     },
     rejectionReason: { // To store why a mod was rejected

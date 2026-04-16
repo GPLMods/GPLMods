@@ -95,10 +95,18 @@
                                     <% } %>
                                 </h3>
                                 <!-- CUSTOM COLOR PLATFORM TAG -->
-                                <span class="platform-tag <%= file.category ? file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') : 'n/a' %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap; <%= !file.category ? 'background-color: var(--gold); color: var(--black);' : '' %>">
-                                    <%= file.category ? file.category.toUpperCase().replace('-', ' ') : 'N/A (DRAFT)' %>
-                                </span>
-                            </div>
+<!-- ✅ FIX 1: Corrected Draft Tag Coloring -->
+<% if (file.category === 'n/a' || !file.category) { %>
+    <!-- It's a draft with no category selected yet -->
+    <span class="platform-tag" style="background-color: #555; color: var(--white); padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
+        DRAFT
+    </span>
+<% } else { %>
+    <!-- It's a normal mod with a category -->
+    <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>" style="padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; white-space: nowrap;">
+        <%= file.category.toUpperCase().replace('-', ' ') %>
+    </span>
+<% } %>
                             
                             <div class="item-details-grid">
                                 <div class="detail-row">
@@ -158,12 +166,12 @@
                                     <% } %>
                                     
                                     <!-- DYNAMIC EDIT BUTTON -->
-                                    <% if (file.status === 'processing') { %>
-                                        <!-- If it's a draft, they need to finish the initial upload details -->
-                                        <a href="/upload-details/<%= file._id %>" class="edit-resubmit-btn" style="border-color: var(--gold); color: var(--gold);">
-                                            <i class="fas fa-pencil-alt" style="margin-right: 5px;"></i>Finish Draft
-                                        </a>
-                                    <% } else { %>
+                                   <!-- ✅ FIX 2: Point "Finish Draft" to the Edit Page -->
+<% if (file.status === 'processing') { %>
+    <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn" style="border-color: var(--gold); color: var(--gold);">
+        <i class="fas fa-pencil-alt" style="margin-right: 5px;"></i>Finish Draft
+    </a>
+<% } else { %>
                                         <!-- If it's live, pending, or rejected, they use the standard Edit Mod form -->
                                         <a href="/mods/<%= file._id %>/edit" class="edit-resubmit-btn">
                                             <% if (file.status === 'rejected') { %>

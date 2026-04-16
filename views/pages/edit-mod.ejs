@@ -281,12 +281,12 @@ function showStatusAlert(message, type) {
     alertBox.textContent = message;
     
     if (type === 'error') {
-        alertBox.className = 'status-banner rejected'; // Reuse your red banner style
+        alertBox.className = 'status-banner rejected'; 
         alertBox.style.backgroundColor = 'rgba(229, 57, 53, 0.1)';
         alertBox.style.color = 'var(--red)';
         alertBox.style.border = '1px solid var(--red)';
     } else {
-        alertBox.className = 'status-banner'; // Reuse banner style but make it green
+        alertBox.className = 'status-banner'; 
         alertBox.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
         alertBox.style.color = '#2ecc71';
         alertBox.style.border = '1px solid #2ecc71';
@@ -377,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!platformSelect || !categorySelect) return;
         const selectedPlatform = platformSelect.value;
         const categories = categoriesByPlatform[selectedPlatform] ||[];
+        
         const currentCategory = "<%= file.platforms[0] || '' %>"; 
 
         categorySelect.innerHTML = ''; 
@@ -419,32 +420,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. QUILL RICH TEXT EDITORS 
     // ==========================================
-    const toolbarOptions = [
-        ['bold', 'italic', 'underline', 'strike'],
+    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         ['clean'] 
     ];
 
-    function initQuill(selector) {
-        const el = document.querySelector(selector);
-        if (el) return new Quill(selector, { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        return null;
+    let quillDesc, quillFeat, quillOff, quillNew, quillNote;
+
+    if (document.getElementById('editor-modDescription')) {
+        quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-modFeatures')) {
+        quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-officialDescription')) {
+        quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-whatsNew')) {
+        quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }
+    if (document.getElementById('editor-importantNote')) {
+        quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
     }
 
-    // Initialize the editors
-    const quillDesc = initQuill('#editor-modDescription');
-    const quillFeat = initQuill('#editor-modFeatures');
-    const quillOff = initQuill('#editor-officialDescription');
-    const quillNew = initQuill('#editor-whatsNew');
-    const quillNote = initQuill('#editor-importantNote');
-
-    // Helper to sync Quill data to hidden textareas
+    // ✅ FIX: Improved sync function
     function syncQuillData() {
-        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML;
-        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML;
-        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML;
-        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML;
-        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML;
+        if(quillDesc) {
+            const html = quillDesc.root.innerHTML;
+            document.getElementById('modDescription').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillFeat) {
+            const html = quillFeat.root.innerHTML;
+            document.getElementById('modFeatures').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillOff) {
+            const html = quillOff.root.innerHTML;
+            document.getElementById('officialDescription').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillNew) {
+            const html = quillNew.root.innerHTML;
+            document.getElementById('whatsNew').value = html === '<p><br></p>' ? '' : html;
+        }
+        if(quillNote) {
+            const html = quillNote.root.innerHTML;
+            document.getElementById('importantNote').value = html === '<p><br></p>' ? '' : html;
+        }
     }
 
     // ==========================================
@@ -464,6 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            // ✅ FIX: Sync data BEFORE opening modal
+            syncQuillData(); 
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
         });
@@ -473,12 +495,30 @@ document.addEventListener('DOMContentLoaded', () => {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Standard HTML5 validation check ONLY for real submissions
+            // ✅ FIX: Sync data BEFORE validation
+            syncQuillData();
+            
+            // --- MANUAL VALIDATION ---
+            // 1. Check native visible fields
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
                 return;
             }
+            
+            // 2. Check Quill hidden fields (Only if they aren't variants)
+            const descInput = document.getElementById('modDescription');
+            const featInput = document.getElementById('modFeatures');
+            
+            if (descInput && !descInput.value.trim()) {
+                showStatusAlert('Error: Mod Description is required.', 'error');
+                return;
+            }
+            if (featInput && !featInput.value.trim()) {
+                showStatusAlert('Error: Mod Features are required.', 'error');
+                return;
+            }
 
+            // All checks passed
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
         });
@@ -488,9 +528,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmDraftBtn && mainForm) {
         confirmDraftBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            syncQuillData(); 
             
-            // ✅ FIX: Remove 'required' attributes so the browser lets the draft save!
+            // ✅ FIX: Remove ALL required attributes so the browser lets the draft save
             mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
 
             confirmDraftBtn.textContent = 'Saving...';
@@ -502,7 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmSubmitBtn && mainForm) {
         confirmSubmitBtn.addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'submit'; 
-            syncQuillData(); 
             
             confirmSubmitBtn.textContent = 'Submitting...';
             confirmSubmitBtn.disabled = true;
