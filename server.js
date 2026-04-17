@@ -3171,7 +3171,7 @@ app.get('/membership', (req, res) => {
     });
 });
 
-// ======== ADD THE BULLETPROOF SITEMAP HERE ========
+// ======== THE BULLETPROOF, FULLY AUTOMATED SITEMAP ========
 app.get('/sitemap.xml', async (req, res) => {
     try {
         // 1. Set the correct XML header so browsers & Google know how to read it
@@ -3183,33 +3183,45 @@ app.get('/sitemap.xml', async (req, res) => {
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
         // 2. Static Pages
-        const staticPages = ['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy'];
+        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate'];
         staticPages.forEach(page => {
             xml += `  <url>\n    <loc>${baseUrl}${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
         });
 
         // 3. Category Pages
-        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
         categories.forEach(cat => {
              xml += `  <url>\n    <loc>${baseUrl}/category?platform=${cat}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
-        // 4. Live Mods (With fallback for missing/corrupted dates)
+        // 4. Live Mods (Now using the new SEO Slugs!)
         const liveMods = await File.find({ 
             showInSitemap: { $ne: false }, 
-            isLatestVersion: true 
-        }).select('_id updatedAt');
+            isLatestVersion: true,
+            status: 'live' // Only show approved mods
+        }).select('_id category slug updatedAt'); // Fetch the slug!
 
         liveMods.forEach(mod => {
-            let lastModDate;
-            try {
-                // Safely attempt to parse the date. If it fails, use the current date.
-                lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
-            } catch (e) {
-                lastModDate = new Date().toISOString(); 
-            }
+            let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
             
-            xml += `  <url>\n    <loc>${baseUrl}/mods/${mod._id}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+            // Use the beautiful SEO slug if available, fallback to ID
+            const modUrl = `${baseUrl}/${mod.category}/${mod.slug || mod._id}`;
+            
+            xml += `  <url>\n    <loc>${modUrl}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+        });
+
+        // 5. Automatically include all Developer Pages
+        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true });
+        uniqueDevelopers.forEach(dev => {
+            if (dev && dev !== 'N/A') {
+                xml += `  <url>\n    <loc>${baseUrl}/developer?name=${slugify(dev)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+            }
+        });
+
+        // 6. Automatically include all Public User Profiles (Uploaders)
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true });
+        uniqueUploaders.forEach(uploader => {
+             xml += `  <url>\n    <loc>${baseUrl}/users/${slugify(uploader)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
         });
 
         xml += '</urlset>';
