@@ -141,10 +141,14 @@
                                         <a href="/mods/<%= file._id %>" class="action-btn btn-view">
                                             <i class="fas fa-eye"></i> View
                                         </a>
+                                        <!-- ✅ FIX: Restored the Add New Version (Update) Button -->
+                                        <a href="/mods/<%= file._id %>/add-version" class="action-btn btn-draft">
+                                            <i class="fas fa-arrow-up"></i> Update Mod
+                                        </a>
                                     <% } %>
                                     
                                     <a href="/mods/<%= file._id %>/edit" class="action-btn btn-edit">
-                                        <i class="fas fa-pen"></i> <%= file.status === 'rejected' ? 'Fix' : 'Edit' %>
+                                        <i class="fas fa-pen"></i> <%= file.status === 'rejected' ? 'Fix' : 'Edit Info' %>
                                     </a>
 
                                     <% if (file.olderVersions && file.olderVersions.length > 0) { %>
@@ -217,14 +221,28 @@
 
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
+                // 1. Remove active class from all buttons
                 filterButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // 2. Add active class to the clicked button
                 this.classList.add('active');
-                const category = this.dataset.category;
+                
+                // 3. Get the category we want to filter by
+                const selectedCategory = this.dataset.category;
+
+                // 4. Show/Hide items based on category
                 uploadItems.forEach(item => {
-                    if (category === 'all' || item.dataset.category.includes(category)) {
-                        item.style.display = 'flex'; 
-                    } else {
-                        item.style.display = 'none';
+                    const itemCategory = item.dataset.category;
+
+                    if (selectedCategory === 'all') {
+                        item.style.display = 'flex'; // Show everything
+                    } 
+                    // EXACT MATCHING to prevent "ios-jailed" from matching "ios-jailbroken"
+                    else if (selectedCategory === itemCategory) {
+                        item.style.display = 'flex'; // Show matching items
+                    } 
+                    else {
+                        item.style.display = 'none'; // Hide everything else
                     }
                 });
             });

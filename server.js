@@ -1969,54 +1969,58 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 // --- PUBLIC PROFILE ROUTE ---
 app.get('/users/:username', async (req, res) => {
     try {
-        const slug = req.params.username;
-        
-        // 1. Create a RegEx that replaces dashes with a pattern that matches either a dash or a space
-        // This means looking for "john-doe" will match "John Doe" or "john-doe" in the DB.
-        const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
+        const username = req.params.username;
+        // 1. Create a RegEx to handle the slug (e.g., 'john-doe' -> matches 'John Doe')
+        const searchPattern = new RegExp(`^${username.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        // 2. Search for the user using the RegEx
+        // 2. Fetch the user and populate the follower/following arrays
         const user = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
 
         if (!user) return res.status(404).render('pages/404');
 
-        if (user.profileImageKey) {
-            try {
-                user.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                    Bucket: process.env.B2_BUCKET_NAME, Key: user.profileImageKey
-                }), { expiresIn: 3600 });
-            } catch (e) { 
-                user.signedAvatarUrl = '/images/default-avatar.png'; 
-            }
-        } else {
-            user.signedAvatarUrl = '/images/default-avatar.png';
-        }
+        // 3. Get the main user's avatar
+        user.signedAvatarUrl = await getSmartImageUrl(user.profileImageKey);
 
-        
-        // 3. Search for uploads using the exact username we just found from the DB, NOT the slug
+        // 4. Fetch the user's live uploads
         const uploads = await File.find({ 
-            uploader: user.username, // Use the real, formatted name from the user document
+            uploader: user.username, // Use the real name from DB, not the slug
             isLatestVersion: true,
             status: 'live' 
         }).sort({ createdAt: -1 });
         
+        // Get signed URLs for the upload icons
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            const iconUrl = key ? await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 }) : '/images/default-avatar.png';
+            const iconUrl = await getSmartImageUrl(key);
             return { ...file.toObject(), iconUrl };
         }));
 
-        // --- Follow Logic Check ---
+        // 5. --- NEW: Get signed URLs for Followers ---
+        const followersWithAvatars = await Promise.all(user.followers.map(async (follower) => {
+            const avatarUrl = await getSmartImageUrl(follower.profileImageKey);
+            return { ...follower.toObject(), signedAvatarUrl: avatarUrl };
+        }));
+
+        // 6. --- NEW: Get signed URLs for Following ---
+        const followingWithAvatars = await Promise.all(user.following.map(async (followingUser) => {
+            const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
+            return { ...followingUser.toObject(), signedAvatarUrl: avatarUrl };
+        }));
+
+        // 7. Check if current logged-in user is following this profile
         let isFollowing = false;
         if (req.isAuthenticated()) {
             isFollowing = req.user.following.includes(user._id);
         }
 
+        // 8. Render the page, passing the newly processed arrays
         res.render('pages/public-profile', { 
-            profileUser: user, 
+            profileUser: { ...user.toObject(), signedAvatarUrl: user.signedAvatarUrl }, // Pass the main user data
             uploads: uploadsWithUrls,
+            followersList: followersWithAvatars, // <--- NEW
+            followingList: followingWithAvatars, // <--- NEW
             isFollowing: isFollowing 
         });
 
@@ -2024,7 +2028,7 @@ app.get('/users/:username', async (req, res) => {
         console.error("Public Profile Error:", error);
         res.status(500).render('pages/500'); 
     }
-}); 
+});
 
 // --- ACCOUNT MANAGEMENT ROUTES ---
 

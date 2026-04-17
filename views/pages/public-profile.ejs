@@ -126,20 +126,25 @@
                 <% } %>
             </div>
 
-            <!-- ======== NEW: Community Tab (Followers/Following) ======== -->
+                        <!-- ======== Community Tab (Followers/Following) ======== -->
             <div id="community" class="tab-content">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                
+                <!-- Use a responsive grid or flexbox depending on screen size -->
+                <div style="display: flex; flex-wrap: wrap; gap: 40px;">
                     
                     <!-- Followers List -->
-                    <div>
-                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Followers (<%= profileUser.followers.length %>)</h2>
-                        <% if (profileUser.followers.length > 0) { %>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Followers (<%= followersList.length %>)</h2>
+                        <% if (followersList && followersList.length > 0) { %>
                             <ul style="list-style: none; padding: 0;">
-                                <% profileUser.followers.forEach(follower => { %>
+                                <% followersList.forEach(follower => { %>
                                     <li style="margin-bottom: 15px;">
-                                        <a href="/users/<%= follower.username %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
-                                            <!-- Assuming you have a fallback for missing avatars in the UI -->
-                                            <img src="/images/default-avatar.png" style="width: 40px; height: 40px; border-radius: 50%;">
+                                        <!-- Using slugify for clean URLs -->
+                                        <a href="/users/<%= slugify(follower.username) %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
+                                            
+                                            <!-- ✅ FIX: Now using the signed avatar URL! -->
+                                            <img src="<%= follower.signedAvatarUrl %>" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                            
                                             <div>
                                                 <strong style="display: block;"><%= follower.username %></strong>
                                                 <span style="font-size: 0.8em; color: var(--silver);"><%= follower.role %></span>
@@ -154,14 +159,17 @@
                     </div>
 
                     <!-- Following List -->
-                    <div>
-                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Following (<%= profileUser.following.length %>)</h2>
-                        <% if (profileUser.following.length > 0) { %>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px;">Following (<%= followingList.length %>)</h2>
+                        <% if (followingList && followingList.length > 0) { %>
                             <ul style="list-style: none; padding: 0;">
-                                <% profileUser.following.forEach(followingUser => { %>
+                                <% followingList.forEach(followingUser => { %>
                                     <li style="margin-bottom: 15px;">
-                                        <a href="/users/<%= followingUser.username %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
-                                            <img src="/images/default-avatar.png" style="width: 40px; height: 40px; border-radius: 50%;">
+                                        <a href="/users/<%= slugify(followingUser.username) %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
+                                            
+                                            <!-- ✅ FIX: Now using the signed avatar URL! -->
+                                            <img src="<%= followingUser.signedAvatarUrl %>" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                            
                                             <div>
                                                 <strong style="display: block;"><%= followingUser.username %></strong>
                                                 <span style="font-size: 0.8em; color: var(--silver);"><%= followingUser.role %></span>
@@ -177,7 +185,7 @@
 
                 </div>
             </div>
-
+            <!-- ======================================================== -->
         </section> <!-- Properly closing the profile-content section here -->
     </div>
 </main>

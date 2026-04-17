@@ -42,7 +42,9 @@
                                 
                                 <p style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
                                     <span style="color: var(--silver); font-size: 0.85em;">Updated by: </span>
-                                    <strong style="color: var(--gold);"><a href="/users/<%= slugify(file.uploader) %>"><%= file.uploader %></a></strong><br>
+                                    <strong style="color: var(--gold);">
+                                        <a href="/users/<%= slugify(file.uploader) %>" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></a>
+                                    </strong><br>
                                     <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt) %></span>
                                 </p>
                                 
