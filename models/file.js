@@ -5,7 +5,7 @@ const FileSchema = new Schema({
     // --- DYNAMICALLY REQUIRED FIELDS ---
     // These are NOT required during the initial 'processing' step, 
     // but they ARE required once the user submits the final form.
-    name: { type: String, required: function() { return this.status !== 'processing'; } },
+name: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
  // --- NEW: THE URL SLUG ---
     slug: { 
         type: String, 
@@ -13,9 +13,9 @@ const FileSchema = new Schema({
         trim: true,
         // It's not required during initial 'processing'
     },
-    version: { type: String, required: function() { return this.status !== 'processing'; } },
-    modDescription: { type: String, required: function() { return this.status !== 'processing'; } },
-    modFeatures: { type: String, required: function() { return this.status !== 'processing'; } },
+version: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+modDescription: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+modFeatures: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     officialDescription: { type: String },
     whatsNew: { type: String },
 // --- NEW: IMPORTANT NOTE FIELD ---
@@ -25,8 +25,8 @@ const FileSchema = new Schema({
     },
     
     // --- STORAGE KEYS (S3/Cloud) ---
-    iconKey: { type: String, required: function() { return this.status !== 'processing'; } },
-    screenshotKeys: { type: [String], required: function() { return this.status !== 'processing'; } },
+    iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    screenshotKeys: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     videoUrl: { type: String }, 
     
     // Make fileKey optional ONLY IF an external link is provided
@@ -60,15 +60,12 @@ const FileSchema = new Schema({
     },
 
     // --- CATEGORIZATION ---
-    category: { 
-        type: String, 
-        required: function() { return this.status !== 'processing'; }, 
-        enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] 
-    },
+    category: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; }, enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] },
+
     subCategory: { 
         type: String 
     },
-    platforms: { type: [String], required: function() { return this.status !== 'processing'; } },
+platforms: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },
 
     // --- FILE INFO ---

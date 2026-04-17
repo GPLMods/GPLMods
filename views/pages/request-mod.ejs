@@ -10,28 +10,16 @@
         border: 1px solid #333;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .request-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .request-header h1 {
-        font-size: 2.5em;
-        color: var(--white);
-    }
-    .request-header h1 span {
-        color: var(--gold);
-        text-shadow: 0 0 15px var(--glow-gold);
-    }
-    .request-header p {
-        color: var(--silver);
-        font-size: 1.1em;
-    }
+    .request-header { text-align: center; margin-bottom: 2rem; }
+    .request-header h1 { font-size: 2.5em; color: var(--white); }
+    .request-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .request-header p { color: var(--silver); font-size: 1.1em; }
     
-    .form-group { margin-bottom: 20px; }
+    .form-group { margin-bottom: 20px; position: relative; } /* Added position: relative for dropdowns */
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
-    .form-group input, .form-group select, .form-group textarea {
+    .form-group input, .form-group textarea {
         width: 100%;
-        padding: 12px 15px;
+        padding: 15px; /* Matched support page padding */
         border-radius: 8px;
         border: 1px solid #333;
         background-color: var(--black);
@@ -39,32 +27,13 @@
         font-family: 'Poppins', sans-serif;
         font-size: 1em;
         transition: all 0.3s ease;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
         outline: none;
-        border-color: var(--gold);
-        box-shadow: 0 0 10px var(--glow-gold);
     }
-    .form-group textarea { min-height: 100px; resize: vertical; }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+    .form-group textarea { min-height: 120px; resize: vertical; } /* Slightly reduced height vs support */
     
-    .submit-btn {
-        width: 100%;
-        background-color: var(--gold);
-        color: var(--black);
-        padding: 15px;
-        font-size: 1.2em;
-        font-weight: bold;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 10px;
-        box-shadow: 0 0 15px var(--glow-gold);
-    }
-    .submit-btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 0 25px var(--glow-gold);
-    }
+    .submit-btn { width: 100%; background-color: var(--gold); color: var(--black); padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; box-shadow: 0 0 15px var(--glow-gold); text-transform: uppercase; letter-spacing: 1px; }
+    .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
 
     .alert-msg { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; }
     .alert-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
@@ -72,6 +41,69 @@
     
     /* Hide the existing mod link field by default */
     #existing-mod-group { display: none; }
+
+    /* --- ✅ ADDED: CUSTOM SELECT DROPDOWN CSS --- */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background-color: var(--black);
+        border: 1px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--silver);
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    /* When the dropdown is open */
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    /* The dropdown menu */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        z-index: 100;
+        display: none; /* Hidden by default */
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        display: block; /* Shown when open */
+    }
+    .custom-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        color: var(--white);
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background-color: var(--black); color: var(--gold); }
+    .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
+    /* ------------------------------------------- */
+
 </style>
 
 <main class="container">
@@ -88,18 +120,21 @@
             <div class="alert-msg alert-success"><%= message %></div>
         <% } %>
 
-        <form action="/request-mod" method="POST">
+        <!-- ✅ ADDED: id="requestForm" to intercept validation -->
+        <form action="/request-mod" method="POST" id="requestForm">
             
            <!-- Request Type Dropdown -->
             <div class="form-group">
                 <label>What type of request is this?*</label>
+                <!-- Hidden Native Select -->
                 <select id="requestType" name="requestType" required style="display: none;">
                     <option value="" disabled selected>Select an option...</option>
                     <option value="new-mod">I want a New Mod (Not on the site yet)</option>
                     <option value="update">I need an Update for an existing mod</option>
                     <option value="re-upload">A download link is broken (Re-upload needed)</option>
                 </select>
-                <div class="custom-select-wrapper">
+                <!-- Custom UI -->
+                <div class="custom-select-wrapper" id="requestTypeWrapper">
                     <div class="custom-select">
                         <span class="selected-text">Select an option...</span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
@@ -114,12 +149,13 @@
 
             <div class="form-group">
                 <label for="appName">App / Game Name*</label>
-                <input type="text" id="appName" name="appName" placeholder="e.g., Subway Surfers" required>
+                <input type="text" id="appName" name="appName" placeholder="e.g., Subway Surfers" required autocomplete="off">
             </div>
 
             <!-- Platform Dropdown -->
             <div class="form-group">
                 <label>Platform*</label>
+                <!-- Hidden Native Select -->
                 <select id="platform" name="platform" required style="display: none;">
                     <option value="" disabled selected>Select platform...</option>
                     <option value="android">Android</option>
@@ -129,7 +165,8 @@
                     <option value="wordpress">WordPress</option>
                     <option value="other">Other</option>
                 </select>
-                <div class="custom-select-wrapper">
+                <!-- Custom UI -->
+                <div class="custom-select-wrapper" id="platformWrapper">
                     <div class="custom-select">
                         <span class="selected-text">Select platform...</span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
@@ -147,18 +184,18 @@
 
             <div class="form-group">
                 <label for="officialLink">Official Link (Play Store, App Store, Steam, etc.)*</label>
-                <input type="url" id="officialLink" name="officialLink" placeholder="https://play.google.com/..." required>
+                <input type="url" id="officialLink" name="officialLink" placeholder="https://play.google.com/..." required autocomplete="off">
             </div>
 
             <!-- This field only shows if they select Update or Re-upload -->
             <div class="form-group" id="existing-mod-group">
                 <label for="existingModLink">Link to the existing mod on GPL Mods</label>
-                <input type="url" id="existingModLink" name="existingModLink" placeholder="https://gplmods.../mods/12345">
+                <input type="url" id="existingModLink" name="existingModLink" placeholder="https://gplmods.webredirect.org/mods/..." autocomplete="off">
             </div>
 
             <div class="form-group">
                 <label for="requestedVersion">Specific Version Needed (Optional)</label>
-                <input type="text" id="requestedVersion" name="requestedVersion" placeholder="e.g., v3.14.2">
+                <input type="text" id="requestedVersion" name="requestedVersion" placeholder="e.g., v3.14.2" autocomplete="off">
             </div>
 
             <div class="form-group">
@@ -171,28 +208,134 @@
                 <textarea id="additionalNotes" name="additionalNotes" placeholder="Any other details we should know?"></textarea>
             </div>
 
-            <button type="submit" class="submit-btn">Submit Request</button>
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
         </form>
     </div>
 </main>
 
 <script>
-    // Simple script to show/hide the "Existing Mod Link" field based on the request type
     document.addEventListener('DOMContentLoaded', () => {
-        const requestTypeSelect = document.getElementById('requestType');
+        
+        // --- ✅ FIX: UNIVERSAL CUSTOM SELECT LOGIC ---
+        // We find ALL custom select wrappers on the page so this logic works for both dropdowns
+        const customSelectWrappers = document.querySelectorAll('.custom-select-wrapper');
+
+        customSelectWrappers.forEach(wrapper => {
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const options = wrapper.querySelectorAll('.custom-option');
+            
+            // Find the hidden native <select> that sits right above this wrapper in the DOM
+            const nativeSelect = wrapper.previousElementSibling;
+
+            // 1. Toggle dropdown open/close
+            customSelect.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent document click from instantly closing it
+                
+                // Close ANY OTHER open dropdowns on the page first
+                customSelectWrappers.forEach(w => {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+
+                wrapper.classList.toggle('open');
+                
+                // Reset error styling if it was triggered
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            });
+
+            // 2. Handle clicking an option
+            options.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const value = this.getAttribute('data-value');
+                    const text = this.textContent;
+
+                    // Update UI text
+                    selectedText.textContent = text;
+                    selectedText.style.color = 'var(--white)'; 
+
+                    // Update the hidden native select value
+                    if (nativeSelect) {
+                        nativeSelect.value = value;
+                        // Manually dispatch a 'change' event on the native select 
+                        // so our other logic (like showing/hiding the URL field) can react!
+                        nativeSelect.dispatchEvent(new Event('change'));
+                    }
+
+                    // Manage selected state styling
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // Close the dropdown
+                    wrapper.classList.remove('open');
+                });
+            });
+        });
+
+        // 3. Close dropdowns when clicking anywhere outside of them
+        document.addEventListener('click', function() {
+            customSelectWrappers.forEach(wrapper => {
+                wrapper.classList.remove('open');
+            });
+        });
+        // ----------------------------------------------
+
+
+        // --- Existing Mod Link Show/Hide Logic ---
+        const requestTypeSelect = document.getElementById('requestType'); // The hidden native select
         const existingModGroup = document.getElementById('existing-mod-group');
         const existingModInput = document.getElementById('existingModLink');
 
+        // This listener fires when the custom JS above manually triggers it
         requestTypeSelect.addEventListener('change', function() {
             if (this.value === 'update' || this.value === 're-upload') {
                 existingModGroup.style.display = 'block';
-                existingModInput.required = true; // Make it required if it's an update
+                existingModInput.required = true; 
             } else {
                 existingModGroup.style.display = 'none';
                 existingModInput.required = false;
-                existingModInput.value = ''; // Clear it
+                existingModInput.value = ''; 
             }
         });
+
+
+        // --- Form Validation & Submission Logic ---
+        const form = document.getElementById('requestForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const nativeRequestType = document.getElementById('requestType');
+        const nativePlatform = document.getElementById('platform');
+
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                let hasError = false;
+
+                // Validate Request Type
+                if (!nativeRequestType.value) {
+                    const wrapper = document.getElementById('requestTypeWrapper').querySelector('.custom-select');
+                    wrapper.style.borderColor = 'var(--red)';
+                    wrapper.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                    hasError = true;
+                }
+
+                // Validate Platform
+                if (!nativePlatform.value) {
+                    const wrapper = document.getElementById('platformWrapper').querySelector('.custom-select');
+                    wrapper.style.borderColor = 'var(--red)';
+                    wrapper.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                    hasError = true;
+                }
+
+                if (hasError) {
+                    e.preventDefault(); 
+                    alert('Please select an option from all required dropdown menus.');
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.7';
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Submitting...';
+                }
+            });
+        }
     });
 </script>
 

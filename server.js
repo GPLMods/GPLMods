@@ -1935,9 +1935,10 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
         // 1. Fetch ONLY the user's LATEST uploads and populate the older versions
         // ✅ FIX: Added `isLatestVersion: true` to prevent duplicates!
-        const userUploads = await File.find({ 
+                const userUploads = await File.find({ 
             uploader: req.user.username,
-            isLatestVersion: true 
+            // Ensure we get latest versions OR things still in draft/processing
+            $or: [ { isLatestVersion: true }, { status: { $in:['processing', 'draft'] } } ]
         })
         .sort({ createdAt: -1 })
         .populate('olderVersions', 'version fileSize createdAt');
@@ -2544,7 +2545,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 // 4. IMPORTANT: Status Logic
         if (actionType === 'draft') {
             // If they saved a draft, change the status to processing, taking it offline
-            file.status = 'processing'; 
+            file.status = 'draft'; 
         } else {
             // If they clicked Submit...
             if (file.status === 'rejected' || file.status === 'processing') {
@@ -2651,7 +2652,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
-        const finalStatus = actionType === 'draft' ? 'processing' : 'pending';
+        const finalStatus = actionType === 'draft' ? 'draft' : 'pending';
 
         // --- SAVE TO DATABASE ---
         const updateData = {

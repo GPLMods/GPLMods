@@ -85,7 +85,7 @@
                         <div class="mod-card-image">
                             <!-- Absolute Status Badge -->
                             <span class="status-badge-top status-<%= file.status === 'processing' ? 'pending' : file.status %>">
-                                <%= file.status === 'processing' ? 'Draft' : file.status %>
+                                    <%= file.status === 'processing' ? 'Processing...' : (file.status === 'draft' ? 'Draft' : file.status) %>
                             </span>
                             
                             <!-- Absolute Platform Tag -->

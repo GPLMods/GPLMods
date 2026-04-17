@@ -27,6 +27,8 @@
         border-radius: 15px;
         max-width: 800px;
         margin: 2rem auto;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
     /* Form Header Text */
@@ -64,6 +66,7 @@
     /* Form Groups and Inputs */
     .form-group {
         margin-bottom: 25px;
+        position: relative; /* Essential for custom dropdowns */
     }
     .form-group label {
         display: block;
@@ -95,6 +98,77 @@
         resize: vertical;
     }
 
+    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background-color: var(--black);
+        border: 1px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--silver);
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    /* When the dropdown is open */
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    /* The dropdown menu */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        z-index: 100;
+        display: none; /* Hidden by default */
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        display: block; /* Shown when open */
+    }
+    .custom-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        color: var(--white);
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background-color: var(--black); color: var(--gold); }
+    .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
+    /* Disabled state for custom select */
+    .custom-select-wrapper.disabled .custom-select {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #111;
+    }
+    .custom-select-wrapper.disabled .custom-options {
+        display: none !important;
+    }
+    /* ------------------------------------------- */
+
     /* Icon Preview Section */
     .icon-upload-container {
         display: flex;
@@ -121,7 +195,8 @@
     .icon-preview img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain; 
+        display: none;
     }
     .icon-preview span {
         color: #444;
@@ -166,20 +241,24 @@
     /* Screenshot & Video Previews */
     .preview-container {
         margin-top: 15px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
         background-color: var(--black);
-        padding: 8px;
+        padding: 15px;
         border: 1px solid #333;
         border-radius: 8px;
+        display: none; 
     }
-    .preview-container img {
-        width: 120px;
+    #screenshotPreviewContainer {
+        column-count: 2;
+        column-gap: 15px;
+    }
+    #screenshotPreviewContainer img {
+        width: 100%;
         height: auto;
-        aspect-ratio: 9 / 16;
-        object-fit: cover;
-        border-radius: 4px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        break-inside: avoid; 
+        display: block;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     .video-preview-wrapper {
         position: relative;
@@ -196,7 +275,8 @@
         width: 100%;
         height: 100%;
     }
-.button-group {
+
+    .button-group {
         display: flex;
         gap: 15px;
         margin-top: 30px;
@@ -212,7 +292,7 @@
         font-weight: 700;
         cursor: pointer;
         transition: all 0.3s ease;
-        flex: 1; /* Takes half the space */
+        flex: 1; 
     }
     .draft-button:hover {
         border-color: var(--gold);
@@ -238,13 +318,14 @@
     }
     .submit-button:hover {
         opacity: 0.9;
+        transform: translateY(-2px);
     }
-    /* --- ✅ FIX: Force Quill Editors to be responsive on mobile --- */
+
+    /* Force Quill Editors to be responsive */
     .ql-toolbar, .ql-container {
         max-width: 100% !important;
         box-sizing: border-box !important;
     }
-    
     .ql-editor {
         word-wrap: break-word !important;
         overflow-wrap: break-word !important;
@@ -252,13 +333,12 @@
         max-width: 100% !important;
         padding: 12px 10px !important; 
     }
-    
     .upload-form-container {
         max-width: 100%;
         overflow-x: hidden;
     }
 
-    /* Custom styles to make Quill match our dark theme */
+    /* Custom styles for Quill */
     .ql-toolbar.ql-snow {
         background-color: #333;
         border-color: #444;
@@ -271,7 +351,7 @@
         color: var(--white);
         font-family: 'Poppins', sans-serif;
         font-size: 1em;
-        min-height: 250px; /* Taller editors! */
+        min-height: 250px; 
     }
     .ql-editor.ql-blank::before { color: #888; }
     .ql-snow .ql-stroke { stroke: var(--silver); }
@@ -284,8 +364,8 @@
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
 
-        <form action="/upload-finalize/<%= fileId %>" method="POST" enctype="multipart/form-data">
-            <!-- HIDDEN INPUTS to pass the main file info -->
+        <form action="/upload-finalize/<%= fileId %>" method="POST" enctype="multipart/form-data" id="mainUploadForm">
+            <!-- HIDDEN INPUTS -->
             <input type="hidden" name="fileKey" value="<%= fileKey %>">
             <input type="hidden" name="originalFilename" value="<%= filename %>">
             <input type="hidden" name="fileSize" value="<%= filesize %>">
@@ -306,20 +386,20 @@
                     </div>
                 </div>
 
-                <!-- Text and Select Fields -->
                 <div class="form-group">
                     <label for="modName">Mod Name*</label>
-                    <input type="text" id="modName" name="modName" value="<%= defaultName %>" placeholder="e.g., Roblox or Minecraft" required>
+                    <input type="text" id="modName" name="modName" value="<%= defaultName %>" placeholder="e.g., Roblox or Minecraft" required autocomplete="off">
                 </div>
 
                 <div class="form-group">
                     <label for="developerName">Official Developer / Company</label>
-                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang">
+                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang" autocomplete="off">
                 </div>
 
+                <!-- ✅ UPDATED: Platform Dropdown -->
                 <div class="form-group">
-                    <label for="modPlatform">Platform*</label>
-                    <select id="modPlatform" name="modPlatform" required>
+                    <label>Platform*</label>
+                    <select id="modPlatform" name="modPlatform" required style="display: none;">
                         <option value="" disabled selected>Select a platform...</option>
                         <option value="android">Android</option>
                         <option value="ios-jailed">iOS - Jailed (IPA)</option>
@@ -327,20 +407,44 @@
                         <option value="windows">Windows</option>
                         <option value="wordpress">WordPress</option>
                     </select>
+                    
+                    <div class="custom-select-wrapper" id="platformWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">Select a platform...</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="android">Android</div>
+                            <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                            <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                            <div class="custom-option" data-value="windows">Windows</div>
+                            <div class="custom-option" data-value="wordpress">WordPress</div>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- ✅ UPDATED: Category Dropdown -->
                 <div class="form-group">
-                    <label for="modCategory">Category*</label>
-                    <select id="modCategory" name="modCategory" required disabled>
+                    <label>Category*</label>
+                    <select id="modCategory" name="modCategory" required disabled style="display: none;">
                         <option value="" disabled selected>Select a platform first...</option>
                     </select>
+
+                    <div class="custom-select-wrapper disabled" id="categoryWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">Select a platform first...</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <!-- Options will be dynamically populated here -->
+                        <div class="custom-options" id="categoryOptionsContainer"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-    <label for="modVersion">Mod Version*</label>
-    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" required>
-</div>
-</fieldset>
+                    <label for="modVersion">Mod Version*</label>
+                    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" required autocomplete="off">
+                </div>
+            </fieldset>
             
             <fieldset class="form-section">
                 <legend>Descriptions</legend>
@@ -380,7 +484,7 @@
                 <legend>Media & Metadata</legend>
                 <div class="form-group">
                     <label for="tags">Tags (Optional, comma-separated)</label>
-                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline">
+                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline" autocomplete="off">
                 </div>
 
                 <div class="form-group">
@@ -395,13 +499,11 @@
 
                 <div class="form-group">
                     <label for="videoUrl">Video URL (Optional)</label>
-                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                     <div class="preview-container" id="videoPreviewContainer"></div>
                 </div>
             </fieldset>
             
-            <!-- ======== ADD THIS HIDDEN INPUT ======== -->
-            <!-- JavaScript will change this value based on which button is clicked -->
             <input type="hidden" name="actionType" id="actionType" value="submit">
 
             <div class="button-group">
@@ -443,17 +545,16 @@
         </div>
     </div>
 </div>
-<!-- ======== DYNAMIC STATUS MESSAGE BOX (Like DMCA Page) ======== -->
+
 <div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
 <script>
-// --- Helper to control the Error/Success Alert Box ---
+// Helper to control the Error/Success Alert Box
 function showStatusAlert(message, type) {
     const alertBox = document.getElementById('status-alert-box');
     if (!alertBox) return;
 
     alertBox.textContent = message;
-    
     if (type === 'error') {
         alertBox.className = 'status-banner rejected'; 
         alertBox.style.backgroundColor = 'rgba(229, 57, 53, 0.1)';
@@ -465,12 +566,10 @@ function showStatusAlert(message, type) {
         alertBox.style.color = '#2ecc71';
         alertBox.style.border = '1px solid #2ecc71';
     }
-    
     alertBox.style.display = 'block';
     alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Helper function for closing modals
 window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -479,17 +578,11 @@ window.closeConfirmModal = function(modalId) {
     }
 }
 
-// ONE single DOMContentLoaded listener for the whole page
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Check URL for existing errors/success messages on load ---
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('error')) { 
-        showStatusAlert(urlParams.get('error'), 'error'); 
-    }
-    if (urlParams.has('success')) { 
-        showStatusAlert(urlParams.get('success'), 'success'); 
-    }
+    if (urlParams.has('error')) showStatusAlert(urlParams.get('error'), 'error'); 
+    if (urlParams.has('success')) showStatusAlert(urlParams.get('success'), 'success'); 
 
     // ==========================================
     // 1. UI ELEMENTS & BASIC LOGIC
@@ -500,8 +593,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenshotsInput = document.getElementById('screenshots');
     const screenshotFileNameSpan = document.getElementById('screenshotFileName');
     const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-    const platformSelect = document.getElementById('modPlatform');
-    const categorySelect = document.getElementById('modCategory');
     const videoUrlInput = document.getElementById('videoUrl');
     const videoPreviewContainer = document.getElementById('videoPreviewContainer');
 
@@ -519,48 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
             }
         });
-    }
-
-    // Dynamic Category Dropdown Logic
-    const categoriesByPlatform = {
-        android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-        'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-        'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-        windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-        wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
-    };
-
-    function populateCategories() {
-        if (!platformSelect || !categorySelect) return;
-        const selectedPlatform = platformSelect.value;
-        const categories = categoriesByPlatform[selectedPlatform] ||[];
-        categorySelect.innerHTML = '';
-        if (categories.length > 0) {
-            categorySelect.disabled = false;
-            let defaultOption = document.createElement('option');
-            defaultOption.text = 'Select a category...';
-            defaultOption.value = '';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            categorySelect.add(defaultOption);
-            categories.forEach(function(category) {
-                let option = document.createElement('option');
-                option.text = category;
-                option.value = category.toLowerCase().replace(/ /g, '-');
-                categorySelect.add(option);
-            });
-        } else {
-            categorySelect.disabled = true;
-        }
-    }
-
-    if (platformSelect) {
-        platformSelect.addEventListener('change', populateCategories);
-        const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
-        if (preSelectedPlatform) {
-            platformSelect.value = preSelectedPlatform;
-            populateCategories(); 
-        }
     }
 
     // Screenshot Preview Logic
@@ -610,73 +659,181 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. QUILL RICH TEXT EDITORS 
+    // 2. CUSTOM SELECT LOGIC (DYNAMIC)
     // ==========================================
-    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean'] 
-    ];
+    
+    // Setup for standard static custom selects (Platform)
+    const platformWrapper = document.getElementById('platformWrapper');
+    const nativePlatformSelect = document.getElementById('modPlatform');
+    const categoryWrapper = document.getElementById('categoryWrapper');
+    const nativeCategorySelect = document.getElementById('modCategory');
+    const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
+
+    function setupCustomSelect(wrapper, nativeSelect) {
+        if (!wrapper || !nativeSelect) return;
+        
+        const customSelect = wrapper.querySelector('.custom-select');
+        const selectedText = wrapper.querySelector('.selected-text');
+        
+        // 1. Toggle open/close
+        customSelect.addEventListener('click', function(e) {
+            if (wrapper.classList.contains('disabled')) return;
+            e.stopPropagation();
+            
+            // Close others
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            
+            wrapper.classList.toggle('open');
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+        });
+
+        // 2. We use event delegation for options because Category options are dynamic
+        const optionsContainer = wrapper.querySelector('.custom-options');
+        if (optionsContainer) {
+            optionsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('custom-option')) {
+                    e.stopPropagation();
+                    const value = e.target.getAttribute('data-value');
+                    const text = e.target.textContent;
+
+                    selectedText.textContent = text;
+                    selectedText.style.color = 'var(--white)';
+                    nativeSelect.value = value;
+                    
+                    // Dispatch change event to trigger dependent logic (like populating categories)
+                    nativeSelect.dispatchEvent(new Event('change'));
+
+                    // Manage selected state
+                    wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                    e.target.classList.add('selected');
+
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+    }
+
+    // Initialize the Platform wrapper
+    setupCustomSelect(platformWrapper, nativePlatformSelect);
+    // Initialize the Category wrapper
+    setupCustomSelect(categoryWrapper, nativeCategorySelect);
+
+    // Close all when clicking outside
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+            wrapper.classList.remove('open');
+        });
+    });
+
+    // --- Dynamic Category Population Logic ---
+    const categoriesByPlatform = {
+        android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
+        'ios-jailbroken':['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
+        windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
+        wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+    };
+
+    function populateCategories() {
+        if (!nativePlatformSelect || !nativeCategorySelect || !categoryOptionsContainer || !categoryWrapper) return;
+        
+        const selectedPlatform = nativePlatformSelect.value;
+        const categories = categoriesByPlatform[selectedPlatform] ||[];
+        
+        // Clear both native and custom options
+        nativeCategorySelect.innerHTML = '';
+        categoryOptionsContainer.innerHTML = '';
+        
+        const customSelectedText = categoryWrapper.querySelector('.selected-text');
+
+        if (categories.length > 0) {
+            nativeCategorySelect.disabled = false;
+            categoryWrapper.classList.remove('disabled');
+            customSelectedText.textContent = 'Select a category...';
+            customSelectedText.style.color = 'var(--silver)';
+            
+            // Setup Native Default
+            let nativeDefault = document.createElement('option');
+            nativeDefault.text = 'Select a category...';
+            nativeDefault.value = '';
+            nativeDefault.disabled = true;
+            nativeDefault.selected = true;
+            nativeCategorySelect.add(nativeDefault);
+
+            // Populate both Native and Custom options
+            categories.forEach(function(category) {
+                const catValue = category.toLowerCase().replace(/ /g, '-');
+                
+                // Native
+                let option = document.createElement('option');
+                option.text = category;
+                option.value = catValue;
+                nativeCategorySelect.add(option);
+                
+                // Custom
+                let customOpt = document.createElement('div');
+                customOpt.className = 'custom-option';
+                customOpt.setAttribute('data-value', catValue);
+                customOpt.textContent = category;
+                categoryOptionsContainer.appendChild(customOpt);
+            });
+        } else {
+            nativeCategorySelect.disabled = true;
+            categoryWrapper.classList.add('disabled');
+            customSelectedText.textContent = 'Select a platform first...';
+            customSelectedText.style.color = 'var(--silver)';
+        }
+    }
+
+    // When the NATIVE platform select changes (which is triggered by our custom UI)
+    if (nativePlatformSelect) {
+        nativePlatformSelect.addEventListener('change', populateCategories);
+        
+        // Auto-Select based on Smart Guess from backend
+        const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
+        if (preSelectedPlatform) {
+            // Find the corresponding custom option and click it programmatically
+            const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
+            if(optionToSelect) {
+                optionToSelect.click(); // This sets the text, updates the native select, and triggers the 'change' event to populate categories!
+            }
+        }
+    }
+
+    // ==========================================
+    // 3. QUILL RICH TEXT EDITORS & SUBMISSION
+    // ==========================================
+    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean']];
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
-    if (document.getElementById('editor-modDescription')) {
-        quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-modFeatures')) {
-        quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-officialDescription')) {
-        quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-whatsNew')) {
-        quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-importantNote')) {
-        quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
+    if (document.getElementById('editor-modDescription')) quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-modFeatures')) quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-officialDescription')) quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-whatsNew')) quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-importantNote')) quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
 
-    // ✅ FIX: Improved sync function to handle empty editor states correctly
     function syncQuillData() {
-        if(quillDesc) {
-            const html = quillDesc.root.innerHTML;
-            document.getElementById('modDescription').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillFeat) {
-            const html = quillFeat.root.innerHTML;
-            document.getElementById('modFeatures').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillOff) {
-            const html = quillOff.root.innerHTML;
-            document.getElementById('officialDescription').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillNew) {
-            const html = quillNew.root.innerHTML;
-            document.getElementById('whatsNew').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillNote) {
-            const html = quillNote.root.innerHTML;
-            document.getElementById('importantNote').value = html === '<p><br></p>' ? '' : html;
-        }
+        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML === '<p><br></p>' ? '' : quillDesc.root.innerHTML;
+        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML === '<p><br></p>' ? '' : quillFeat.root.innerHTML;
+        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML === '<p><br></p>' ? '' : quillOff.root.innerHTML;
+        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML === '<p><br></p>' ? '' : quillNew.root.innerHTML;
+        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML === '<p><br></p>' ? '' : quillNote.root.innerHTML;
     }
 
-
-    // ==========================================
-    // 3. DRAFT & SUBMIT BUTTON / MODAL LOGIC
-    // ==========================================
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
-    const mainForm = document.querySelector('form[action^="/upload-finalize"]');
-
+    const mainForm = document.getElementById('mainUploadForm');
     const draftModal = document.getElementById('draft-confirm-modal');
     const submitModal = document.getElementById('submit-confirm-modal');
-    const confirmDraftBtn = document.getElementById('confirmDraftBtn');
-    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-    // --- 1. Open Modals ---
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // ✅ FIX: Sync data BEFORE opening modal so it's ready
             syncQuillData(); 
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
@@ -686,69 +843,64 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitModBtn && mainForm && submitModal) {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // ✅ FIX: Sync data BEFORE validation
             syncQuillData();
             
-            // --- MANUAL VALIDATION ---
-            // We must manually validate because native checkValidity() fails silently on hidden fields
-            
-            // 1. Check native visible fields
-            if (!mainForm.checkValidity()) {
+            let hasError = false;
+
+            // 1. Validate Dropdowns Custom UI
+            if (!nativePlatformSelect.value) {
+                platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                platformWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                hasError = true;
+            }
+            if (!nativeCategorySelect.value || nativeCategorySelect.disabled) {
+                categoryWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                categoryWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                hasError = true;
+            }
+
+            // 2. Check native visible fields
+            if (!mainForm.checkValidity() || hasError) {
                 mainForm.reportValidity();
+                if(hasError) alert('Please select a platform and category.');
                 return;
             }
             
-            // 2. Check Quill hidden fields (Mod Description and Features are usually required)
-            const descValue = document.getElementById('modDescription').value.trim();
-            const featValue = document.getElementById('modFeatures').value.trim();
-            
-            if (!descValue) {
-                showStatusAlert('Error: Mod Description is required.', 'error');
-                return;
+            // 3. Check Quill hidden fields
+            if (!document.getElementById('modDescription').value.trim()) {
+                showStatusAlert('Error: Mod Description is required.', 'error'); return;
             }
-            if (!featValue) {
-                showStatusAlert('Error: Mod Features are required.', 'error');
-                return;
+            if (!document.getElementById('modFeatures').value.trim()) {
+                showStatusAlert('Error: Mod Features are required.', 'error'); return;
             }
 
-            // 3. Check Screenshots
+            // 4. Check Screenshots
             if (screenshotsInput && screenshotsInput.files.length < 1) {
-                showStatusAlert('Error: You must upload at least one screenshot to submit the mod.', 'error');
-                return;
+                showStatusAlert('Error: You must upload at least one screenshot.', 'error'); return;
             }
 
-            // All checks passed, show modal
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
         });
     }
 
-    // --- 2. Handle Confirmations & Submit Form ---
-    if (confirmDraftBtn && mainForm) {
-        confirmDraftBtn.addEventListener('click', () => {
+    if (document.getElementById('confirmDraftBtn') && mainForm) {
+        document.getElementById('confirmDraftBtn').addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            
-            // ✅ FIX: Remove ALL required attributes before submitting a draft
             mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
-
-            confirmDraftBtn.textContent = 'Saving...';
-            confirmDraftBtn.disabled = true;
+            document.getElementById('confirmDraftBtn').textContent = 'Saving...';
             mainForm.submit(); 
         });
     }
 
-    if (confirmSubmitBtn && mainForm) {
-        confirmSubmitBtn.addEventListener('click', () => {
+    if (document.getElementById('confirmSubmitBtn') && mainForm) {
+        document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'submit'; 
-            
-            confirmSubmitBtn.textContent = 'Submitting...';
-            confirmSubmitBtn.disabled = true;
+            document.getElementById('confirmSubmitBtn').textContent = 'Submitting...';
             mainForm.submit(); 
         });
     }
-
-}); // <--- DOMContentLoaded Closes Here
+});
 </script>
 
 <%- include('../partials/footer') %>

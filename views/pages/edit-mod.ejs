@@ -11,7 +11,7 @@
     .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
     .form-section legend { padding: 0 10px; margin-left: 15px; font-size: 1.3em; font-weight: 600; color: var(--gold); }
-    .form-group { margin-bottom: 25px; }
+    .form-group { margin-bottom: 25px; position: relative; } /* Added position: relative for custom dropdowns */
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
     .form-group input[type="text"], .form-group input[type="url"], .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
@@ -37,41 +37,31 @@
     .status-banner.rejected { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); }
 
     /* Custom styles to make Quill match our dark theme */
-    .ql-toolbar.ql-snow {
-        background-color: #333;
-        border-color: #444;
-        border-radius: 8px 8px 0 0;
-    }
-    .ql-container.ql-snow {
-        background-color: var(--black);
-        border-color: #444;
-        border-radius: 0 0 8px 8px;
-        color: var(--white);
-        font-family: 'Poppins', sans-serif;
-        font-size: 1em;
-        min-height: 250px;
-    }
+    .ql-toolbar.ql-snow { background-color: #333; border-color: #444; border-radius: 8px 8px 0 0; }
+    .ql-container.ql-snow { background-color: var(--black); border-color: #444; border-radius: 0 0 8px 8px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; min-height: 250px; }
     .ql-editor.ql-blank::before { color: #888; }
     .ql-snow .ql-stroke { stroke: var(--silver); }
     .ql-snow .ql-fill { fill: var(--silver); }
     .ql-snow .ql-picker { color: var(--silver); }
     
     /* --- Force Quill Editors to be responsive on mobile --- */
-    .ql-toolbar, .ql-container {
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-    .ql-editor {
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-        word-break: break-word !important;
-        max-width: 100% !important;
-        padding: 12px 10px !important;
-    }
-    .upload-form-container {
-        max-width: 100%;
-        overflow-x: hidden;
-    }
+    .ql-toolbar, .ql-container { max-width: 100% !important; box-sizing: border-box !important; }
+    .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 10px !important; }
+    .upload-form-container { max-width: 100%; overflow-x: hidden; }
+
+    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px; background-color: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; color: var(--silver); font-size: 1em; transition: all 0.3s ease; }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
+    .custom-options { position: absolute; top: 100%; left: 0; right: 0; background-color: var(--dark-gray); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 100; display: none; max-height: 250px; overflow-y: auto; }
+    .custom-select-wrapper.open .custom-options { display: block; }
+    .custom-option { padding: 12px 15px; cursor: pointer; color: var(--white); transition: background-color 0.2s; border-bottom: 1px solid #2a2a2a; }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background-color: var(--black); color: var(--gold); }
+    .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
+    .custom-select-wrapper.disabled .custom-select { opacity: 0.5; cursor: not-allowed; background-color: #111; }
+    .custom-select-wrapper.disabled .custom-options { display: none !important; }
 </style>
 
 <div class="container">
@@ -122,47 +112,72 @@
 
                 <div class="form-group">
                     <label for="developerName">Official Developer / Company</label>
-                    <input type="text" id="developerName" name="developerName" value="<%= file.developer %>">
+                    <input type="text" id="developerName" name="developerName" value="<%= file.developer !== 'N/A' ? file.developer : '' %>">
                 </div>
 
+                <!-- ✅ FIXED: Platform Custom Dropdown -->
                 <div class="form-group">
-                    <label for="modPlatform">Platform*</label>
-                    <select id="modPlatform" name="modPlatform" required>
+                    <label>Platform*</label>
+                    <!-- Hidden Native Select -->
+                    <select id="modPlatform" name="modPlatform" required style="display: none;">
+                        <option value="" disabled <%= !file.category ? 'selected' : '' %>>Select a platform...</option>
                         <option value="android" <%= file.category === 'android' ? 'selected' : '' %>>Android</option>
                         <option value="ios-jailed" <%= file.category === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
                         <option value="ios-jailbroken" <%= file.category === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
                         <option value="windows" <%= file.category === 'windows' ? 'selected' : '' %>>Windows</option>
                         <option value="wordpress" <%= file.category === 'wordpress' ? 'selected' : '' %>>WordPress</option>
                     </select>
+                    
+                    <!-- Custom UI -->
+                    <div class="custom-select-wrapper" id="platformWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text"><%= file.category ? file.category.toUpperCase() : 'Select a platform...' %></span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option <%= file.category === 'android' ? 'selected' : '' %>" data-value="android">Android</div>
+                            <div class="custom-option <%= file.category === 'ios-jailed' ? 'selected' : '' %>" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                            <div class="custom-option <%= file.category === 'ios-jailbroken' ? 'selected' : '' %>" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                            <div class="custom-option <%= file.category === 'windows' ? 'selected' : '' %>" data-value="windows">Windows</div>
+                            <div class="custom-option <%= file.category === 'wordpress' ? 'selected' : '' %>" data-value="wordpress">WordPress</div>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- ✅ FIXED: Category Custom Dropdown -->
                 <div class="form-group">
-                    <label for="modCategory">Sub-Category*</label>
-                    <select id="modCategory" name="modCategory" required>
+                    <label>Sub-Category*</label>
+                    <select id="modCategory" name="modCategory" required disabled style="display: none;">
                         <option value="<%= file.platforms[0] || '' %>" selected><%= file.platforms[0] || 'Select category...' %></option>
                     </select>
+
+                    <div class="custom-select-wrapper disabled" id="categoryWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text"><%= file.platforms[0] || 'Select a platform first...' %></span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options" id="categoryOptionsContainer"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="modVersion">Mod Version*</label>
-                    <input type="text" id="modVersion" name="modVersion" value="<%= file.version %>" required>
+                    <input type="text" id="modVersion" name="modVersion" value="<%= file.version !== 'Draft' ? file.version : '' %>" required>
                 </div>
             </fieldset>
             
-                        <fieldset class="form-section">
+            <fieldset class="form-section">
                 <legend>Descriptions</legend>
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
                     <textarea id="modDescription" name="modDescription" style="display:none;" required><%- file.modDescription %></textarea>
-                    <!-- Pre-load data inside the div so Quill sees it -->
                     <div id="editor-modDescription"><%- file.modDescription %></div>
                 </div>
 
                 <div class="form-group">
                     <label for="modFeatures">Mod Features* (One per line)</label>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;" required><%- file.modFeatures %></textarea>
-                    <!-- Pre-load data inside the div so Quill sees it -->
                     <div id="editor-modFeatures"><%- file.modFeatures %></div>
                 </div>
 
@@ -186,6 +201,7 @@
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
                 </div>
             </fieldset>
+
             <fieldset class="form-section">
                 <legend>Media & Metadata</legend>
                 
@@ -204,7 +220,6 @@
                         <span class="file-name" id="screenshotFileName" style="display:block; margin-top: 10px; color: var(--silver); text-align: center;">Leave empty to keep current screenshots</span>
                     </div>
                     
-                    <!-- Show existing screenshots by default -->
                     <div class="preview-container" id="screenshotPreviewContainer" style="<%= file.screenshotUrls.length > 0 ? 'display:block;' : 'display:none;' %>">
                         <% file.screenshotUrls.forEach(url => { %>
                             <img src="<%= url %>" alt="Current Screenshot">
@@ -234,10 +249,7 @@
 <!-- ======== DYNAMIC STATUS MESSAGE BOX ======== -->
 <div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
-
 <!-- ======== CONFIRMATION MODALS ======== -->
-
-<!-- Submit Confirmation Modal -->
 <div id="submit-confirm-modal" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <i class="fas fa-paper-plane" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
@@ -257,7 +269,6 @@
     </div>
 </div>
 
-<!-- Draft Confirmation Modal -->
 <div id="draft-confirm-modal" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--silver); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <i class="fas fa-save" style="font-size: 3em; color: var(--silver); margin-bottom: 15px;"></i>
@@ -273,13 +284,11 @@
 </div>
 
 <script>
-// --- Helper to control the Error/Success Alert Box ---
+// Helper to control the Error/Success Alert Box
 function showStatusAlert(message, type) {
     const alertBox = document.getElementById('status-alert-box');
     if (!alertBox) return;
-
     alertBox.textContent = message;
-    
     if (type === 'error') {
         alertBox.className = 'status-banner rejected'; 
         alertBox.style.backgroundColor = 'rgba(229, 57, 53, 0.1)';
@@ -291,12 +300,10 @@ function showStatusAlert(message, type) {
         alertBox.style.color = '#2ecc71';
         alertBox.style.border = '1px solid #2ecc71';
     }
-    
     alertBox.style.display = 'block';
     alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Helper function for closing modals
 window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -305,17 +312,11 @@ window.closeConfirmModal = function(modalId) {
     }
 }
 
-// ONE single DOMContentLoaded listener for the whole page
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Check URL for existing errors/success messages on load ---
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('error')) { 
-        showStatusAlert(urlParams.get('error'), 'error'); 
-    }
-    if (urlParams.has('success')) { 
-        showStatusAlert(urlParams.get('success'), 'success'); 
-    }
+    if (urlParams.has('error')) showStatusAlert(urlParams.get('error'), 'error'); 
+    if (urlParams.has('success')) showStatusAlert(urlParams.get('success'), 'success'); 
 
     // ==========================================
     // 1. UI ELEMENTS & BASIC LOGIC
@@ -325,46 +326,93 @@ document.addEventListener('DOMContentLoaded', () => {
     const screenshotsInput = document.getElementById('screenshots');
     const screenshotFileNameSpan = document.getElementById('screenshotFileName');
     const screenshotPreviewContainer = document.getElementById('screenshotPreviewContainer');
-    const platformSelect = document.getElementById('modPlatform');
-    const categorySelect = document.getElementById('modCategory');
 
-    // Live icon preview
     if (modIcon) {
         modIcon.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => { iconImage.src = e.target.result; }
+                reader.onload = (e) => { iconImage.src = e.target.result; iconImage.style.display = 'block'; }
                 reader.readAsDataURL(this.files[0]);
             }
         });
     }
 
-    // Screenshot Preview
     if (screenshotsInput) {
         screenshotsInput.addEventListener('change', function() {
             const files = this.files;
-            screenshotPreviewContainer.innerHTML = ''; 
-            
+            if (screenshotPreviewContainer) screenshotPreviewContainer.innerHTML = ''; 
             if (files.length > 0) {
-                screenshotPreviewContainer.style.display = 'block'; 
+                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'block'; 
                 if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = files.length + ' new file(s) selected';
-                
                 Array.from(files).slice(0, 4).forEach(file => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const img = document.createElement('img');
                         img.src = e.target.result;
-                        screenshotPreviewContainer.appendChild(img);
+                        if (screenshotPreviewContainer) screenshotPreviewContainer.appendChild(img);
                     }
                     reader.readAsDataURL(file);
                 });
             } else {
-                screenshotPreviewContainer.style.display = 'none';
+                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'none';
             }
         });
     }
 
-    // Category Dropdown Logic
+    // ==========================================
+    // 2. CUSTOM SELECT LOGIC (DYNAMIC)
+    // ==========================================
+    const platformWrapper = document.getElementById('platformWrapper');
+    const nativePlatformSelect = document.getElementById('modPlatform');
+    const categoryWrapper = document.getElementById('categoryWrapper');
+    const nativeCategorySelect = document.getElementById('modCategory');
+    const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
+
+    function setupCustomSelect(wrapper, nativeSelect) {
+        if (!wrapper || !nativeSelect) return;
+        const customSelect = wrapper.querySelector('.custom-select');
+        const selectedText = wrapper.querySelector('.selected-text');
+        
+        customSelect.addEventListener('click', function(e) {
+            if (wrapper.classList.contains('disabled')) return;
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+        });
+
+        const optionsContainer = wrapper.querySelector('.custom-options');
+        if (optionsContainer) {
+            optionsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('custom-option')) {
+                    e.stopPropagation();
+                    const value = e.target.getAttribute('data-value');
+                    const text = e.target.textContent;
+
+                    selectedText.textContent = text;
+                    selectedText.style.color = 'var(--white)';
+                    nativeSelect.value = value;
+                    nativeSelect.dispatchEvent(new Event('change'));
+
+                    wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+    }
+
+    setupCustomSelect(platformWrapper, nativePlatformSelect);
+    setupCustomSelect(categoryWrapper, nativeCategorySelect);
+
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => wrapper.classList.remove('open'));
+    });
+
+    // --- Dynamic Category Population Logic ---
     const categoriesByPlatform = {
         android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
         'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
@@ -374,117 +422,103 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function populateCategories() {
-        if (!platformSelect || !categorySelect) return;
-        const selectedPlatform = platformSelect.value;
-        const categories = categoriesByPlatform[selectedPlatform] ||[];
+        if (!nativePlatformSelect || !nativeCategorySelect || !categoryOptionsContainer || !categoryWrapper) return;
         
-        const currentCategory = "<%= file.platforms[0] || '' %>"; 
+        const selectedPlatform = nativePlatformSelect.value;
+        const categories = categoriesByPlatform[selectedPlatform] ||[];
+        const currentCategory = "<%= (file.platforms && file.platforms.length > 0) ? file.platforms[0] : '' %>"; 
 
-        categorySelect.innerHTML = ''; 
+        nativeCategorySelect.innerHTML = '';
+        categoryOptionsContainer.innerHTML = '';
+        const customSelectedText = categoryWrapper.querySelector('.selected-text');
 
         if (categories.length > 0) {
-            categorySelect.disabled = false;
-            let defaultOption = document.createElement('option');
-            defaultOption.text = 'Select a category...';
-            defaultOption.value = '';
-            defaultOption.disabled = true;
+            nativeCategorySelect.disabled = false;
+            categoryWrapper.classList.remove('disabled');
+            customSelectedText.textContent = 'Select a category...';
+            customSelectedText.style.color = 'var(--silver)';
             
-            if (!currentCategory) defaultOption.selected = true;
-            categorySelect.add(defaultOption);
+            let nativeDefault = document.createElement('option');
+            nativeDefault.text = 'Select a category...';
+            nativeDefault.value = '';
+            nativeDefault.disabled = true;
+            if (!currentCategory) nativeDefault.selected = true;
+            nativeCategorySelect.add(nativeDefault);
 
             categories.forEach(function(category) {
+                const catValue = category.toLowerCase().replace(/ /g, '-');
+                
                 let option = document.createElement('option');
                 option.text = category;
-                const catValue = category.toLowerCase().replace(/ /g, '-');
                 option.value = catValue;
+                nativeCategorySelect.add(option);
                 
-                if (catValue === currentCategory) {
-                    option.selected = true;
-                }
-                categorySelect.add(option);
+                let customOpt = document.createElement('div');
+                customOpt.className = 'custom-option';
+                customOpt.setAttribute('data-value', catValue);
+                customOpt.textContent = category;
+                categoryOptionsContainer.appendChild(customOpt);
             });
+            
+            // Set the selected custom option if a current category exists
+            if (currentCategory) {
+                const optToSelect = categoryOptionsContainer.querySelector(`.custom-option[data-value="${currentCategory}"]`);
+                if (optToSelect) {
+                    optToSelect.classList.add('selected');
+                    customSelectedText.textContent = optToSelect.textContent;
+                    customSelectedText.style.color = 'var(--white)';
+                    nativeCategorySelect.value = currentCategory;
+                }
+            }
+
         } else {
-            categorySelect.disabled = true;
-            let defaultOption = document.createElement('option');
-            defaultOption.text = 'Select a platform first...';
-            defaultOption.value = '';
-            categorySelect.add(defaultOption);
+            nativeCategorySelect.disabled = true;
+            categoryWrapper.classList.add('disabled');
+            customSelectedText.textContent = 'Select a platform first...';
+            customSelectedText.style.color = 'var(--silver)';
         }
     }
 
-    populateCategories();
-    if (platformSelect) {
-        platformSelect.addEventListener('change', populateCategories);
+    if (nativePlatformSelect) {
+        nativePlatformSelect.addEventListener('change', populateCategories);
+        const preSelectedPlatform = "<%= file.category || '' %>"; 
+        if (preSelectedPlatform) {
+            const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
+            if(optionToSelect) optionToSelect.click(); 
+        }
     }
 
     // ==========================================
-    // 2. QUILL RICH TEXT EDITORS 
+    // 3. QUILL RICH TEXT EDITORS & SUBMISSION
     // ==========================================
-    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['clean'] 
-    ];
+    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean']];
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
-    if (document.getElementById('editor-modDescription')) {
-        quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-modFeatures')) {
-        quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-officialDescription')) {
-        quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-whatsNew')) {
-        quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
-    if (document.getElementById('editor-importantNote')) {
-        quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }
+    if (document.getElementById('editor-modDescription')) quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-modFeatures')) quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-officialDescription')) quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-whatsNew')) quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    if (document.getElementById('editor-importantNote')) quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
 
-    // ✅ FIX: Improved sync function
     function syncQuillData() {
-        if(quillDesc) {
-            const html = quillDesc.root.innerHTML;
-            document.getElementById('modDescription').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillFeat) {
-            const html = quillFeat.root.innerHTML;
-            document.getElementById('modFeatures').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillOff) {
-            const html = quillOff.root.innerHTML;
-            document.getElementById('officialDescription').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillNew) {
-            const html = quillNew.root.innerHTML;
-            document.getElementById('whatsNew').value = html === '<p><br></p>' ? '' : html;
-        }
-        if(quillNote) {
-            const html = quillNote.root.innerHTML;
-            document.getElementById('importantNote').value = html === '<p><br></p>' ? '' : html;
-        }
+        if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML === '<p><br></p>' ? '' : quillDesc.root.innerHTML;
+        if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML === '<p><br></p>' ? '' : quillFeat.root.innerHTML;
+        if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML === '<p><br></p>' ? '' : quillOff.root.innerHTML;
+        if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML === '<p><br></p>' ? '' : quillNew.root.innerHTML;
+        if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML === '<p><br></p>' ? '' : quillNote.root.innerHTML;
     }
 
-    // ==========================================
-    // 3. BUTTON & MODAL LOGIC
-    // ==========================================
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
     const mainForm = document.getElementById('details-form');
-
     const draftModal = document.getElementById('draft-confirm-modal');
     const submitModal = document.getElementById('submit-confirm-modal');
-    const confirmDraftBtn = document.getElementById('confirmDraftBtn');
-    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
 
-    // --- 1. Open Modals ---
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // ✅ FIX: Sync data BEFORE opening modal
             syncQuillData(); 
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
@@ -494,61 +528,53 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitModBtn && mainForm && submitModal) {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // ✅ FIX: Sync data BEFORE validation
             syncQuillData();
             
-            // --- MANUAL VALIDATION ---
-            // 1. Check native visible fields
-            if (!mainForm.checkValidity()) {
+            let hasError = false;
+
+            if (!nativePlatformSelect.value) {
+                platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                hasError = true;
+            }
+            if (!nativeCategorySelect.value || nativeCategorySelect.disabled) {
+                categoryWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                hasError = true;
+            }
+
+            if (!mainForm.checkValidity() || hasError) {
                 mainForm.reportValidity();
+                if(hasError) alert('Please select a platform and category.');
                 return;
             }
             
-            // 2. Check Quill hidden fields (Only if they aren't variants)
             const descInput = document.getElementById('modDescription');
             const featInput = document.getElementById('modFeatures');
             
-            if (descInput && !descInput.value.trim()) {
-                showStatusAlert('Error: Mod Description is required.', 'error');
-                return;
-            }
-            if (featInput && !featInput.value.trim()) {
-                showStatusAlert('Error: Mod Features are required.', 'error');
-                return;
-            }
+            if (descInput && !descInput.value.trim()) { showStatusAlert('Error: Mod Description is required.', 'error'); return; }
+            if (featInput && !featInput.value.trim()) { showStatusAlert('Error: Mod Features are required.', 'error'); return; }
 
-            // All checks passed
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
         });
     }
 
-    // --- 2. Handle Confirmations & Submit Form ---
-    if (confirmDraftBtn && mainForm) {
-        confirmDraftBtn.addEventListener('click', () => {
+    if (document.getElementById('confirmDraftBtn') && mainForm) {
+        document.getElementById('confirmDraftBtn').addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            
-            // ✅ FIX: Remove ALL required attributes so the browser lets the draft save
             mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
-
-            confirmDraftBtn.textContent = 'Saving...';
-            confirmDraftBtn.disabled = true;
+            document.getElementById('confirmDraftBtn').textContent = 'Saving...';
             mainForm.submit(); 
         });
     }
 
-    if (confirmSubmitBtn && mainForm) {
-        confirmSubmitBtn.addEventListener('click', () => {
+    if (document.getElementById('confirmSubmitBtn') && mainForm) {
+        document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'submit'; 
-            
-            confirmSubmitBtn.textContent = 'Submitting...';
-            confirmSubmitBtn.disabled = true;
+            document.getElementById('confirmSubmitBtn').textContent = 'Submitting...';
             mainForm.submit(); 
         });
     }
-
-}); // <--- END OF DOMContentLoaded
+});
 </script>
 
 <%- include('../partials/footer') %>
