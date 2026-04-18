@@ -1,12 +1,19 @@
 <!-- Only render this HTML/JS if the user is supposed to see ads -->
 <% if (typeof showAds !== 'undefined' && showAds) { %>
 
+    <!-- 1. Include Video.js and the VAST Plugin CSS/JS -->
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/videojs-vast-vpaid@2.0.2/bin/videojs.vast.vpaid.min.css" rel="stylesheet">
+    
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-vast-vpaid@2.0.2/bin/videojs_5.vast.vpaid.min.js"></script>
+
     <!-- ======== VIDEO AD MODAL ======== -->
     <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 10000;">
         
-        <!-- Adjusted the modal content box to be wider to accommodate an iframe -->
         <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 800px; width: 95%; border-top: 4px solid var(--blue); box-shadow: 0 10px 40px rgba(33, 150, 243, 0.4); display: flex; flex-direction: column; gap: 15px;">
             
+            <!-- INTRO SCREEN -->
             <div id="ad-intro-screen">
                 <i class="fas fa-play-circle" style="font-size: 4em; color: var(--blue); margin-bottom: 20px;"></i>
                 <h2 style="color: var(--white); margin-bottom: 15px;">Support GPL Mods</h2>
@@ -14,19 +21,27 @@
                     Please watch a short sponsor video to help keep our servers running and our mods free for everyone.
                 </p>
                 
-                <!-- Changed from an <a> tag to a <button> -->
                 <button id="watch-video-btn" class="btn btn-primary" style="background: var(--blue); color: var(--white); padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 1.1em; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(33, 150, 243, 0.5); width: 100%; transition: all 0.3s;">
-                    Watch Short Video
+                    Play Video
                 </button>
             </div>
 
-            <!-- This iframe is hidden initially. It will hold the HilltopAd. -->
-            <div id="ad-iframe-container" style="display: none; width: 100%; height: 60vh; min-height: 300px; background-color: #000; border-radius: 8px; overflow: hidden; position: relative;">
-                <!-- The iframe points to your ad link -->
-                <iframe id="sponsor-ad-frame" src="" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+            <!-- THE VAST VIDEO PLAYER CONTAINER (Hidden initially) -->
+            <div id="ad-player-container" style="display: none; width: 100%; margin: 0 auto;">
+                <!-- 
+                  We initialize the video tag. It needs a dummy source initially.
+                  The VAST plugin will hijack it and play the ad. 
+                -->
+                <video id="vid1" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" width="640" height="360" data-setup='{}'>
+                    <!-- A tiny, blank MP4 acts as a placeholder so the player initializes correctly -->
+                    <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAG21kYXQAAAGzABAHAAABthkEAAAAACkQAAA=" type="video/mp4">
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video
+                    </p>
+                </video>
             </div>
 
-            <!-- The Skip button, initially hidden -->
+            <!-- THE SKIP BUTTON -->
             <button id="skip-video-btn" class="btn btn-secondary" style="display: none; width: 100%; padding: 15px; border-radius: 20px; font-weight: bold; cursor: not-allowed; opacity: 0.5; border: 2px solid #555; color: #888;">
                 Skip in <span id="skip-timer">30</span>s
             </button>
@@ -39,38 +54,46 @@
             const videoModal = document.getElementById('video-ad-modal');
             const introScreen = document.getElementById('ad-intro-screen');
             const watchBtn = document.getElementById('watch-video-btn');
-            const iframeContainer = document.getElementById('ad-iframe-container');
-            const adIframe = document.getElementById('sponsor-ad-frame');
+            const playerContainer = document.getElementById('ad-player-container');
             const skipBtn = document.getElementById('skip-video-btn');
             const skipTimerSpan = document.getElementById('skip-timer');
             
-            // The Direct Link provided by HilltopAds
-            const AD_URL = "https://fluffy-management.com/d/m.Fgzyd/GUNYvfZEGMUC/fe/mK9wuUZwUdlpk/PJT/Y-5aNPjigI5IMjjzk/tpNojsk-2wOWD/kvzMMQwm";
+            // --- YOUR HILLTOPADS VAST TAG URL ---
+            const VAST_URL = "https://fluffy-management.com/d/m.Fgzyd/GUNYvfZEGMUC/fe/mK9wuUZwUdlpk/PJT/Y-5aNPjigI5IMjjzk/tpNojsk-2wOWD/kvzMMQwm";
 
             if (!videoModal || !watchBtn || !skipBtn || !skipTimerSpan) return;
 
-            // 1. Show the modal smoothly after the page loads
+            // 1. Show the modal smoothly
             setTimeout(() => { 
                 videoModal.classList.add('show'); 
-                document.body.style.overflow = 'hidden'; // Stop background scrolling
+                document.body.style.overflow = 'hidden'; 
             }, 500);
 
-            // 2. When they click to watch the video
+            // 2. Handle the "Play Video" click
             watchBtn.addEventListener('click', () => {
                 
-                // Hide the intro screen
+                // Hide intro, show player and skip button
                 introScreen.style.display = 'none';
-                
-                // Load the ad into the iframe and show it
-                adIframe.src = AD_URL;
-                iframeContainer.style.display = 'block';
-
-                // Show the "Skip" button countdown
+                playerContainer.style.display = 'block';
                 skipBtn.style.display = 'block';
 
-                let timeLeft = 30; // 30 seconds delay
+                // --- INITIALIZE VIDEO.JS AND VAST ---
+                const player = videojs('vid1');
 
-                // 3. Start the countdown timer
+                player.vastClient({
+                    adTagUrl: VAST_URL,
+                    playAdAlways: true,
+                    // If the ad fails to load (e.g., ad blocker), we don't want the user stuck forever.
+                    adCancelTimeout: 5000, 
+                    adsEnabled: true
+                });
+
+                // Start playing immediately
+                player.play();
+
+                // --- 3. Start the Skip Timer ---
+                let timeLeft = 30; 
+                
                 const timerInterval = setInterval(() => {
                     timeLeft--;
                     skipTimerSpan.textContent = timeLeft;
@@ -89,14 +112,18 @@
                         
                         // 4. When they click the enabled Skip button, close everything
                         skipBtn.addEventListener('click', () => {
-                            // Stop the ad from playing in the background by removing the src
-                            adIframe.src = ""; 
+                            // Destroy the player so audio doesn't keep playing
+                            if (player) {
+                                player.dispose(); 
+                            }
                             
                             videoModal.classList.remove('show');
-                            document.body.style.overflow = 'auto'; // Restore scrolling
+                            document.body.style.overflow = 'auto'; 
                             
                             setTimeout(() => { 
                                 videoModal.style.display = 'none'; 
+                                // Remove the modal from DOM completely so it doesn't interfere
+                                videoModal.remove(); 
                             }, 300);
                         }, { once: true });
                     }
