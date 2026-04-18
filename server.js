@@ -3163,54 +3163,84 @@ app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 app.get('/refund-policy', (req, res) => res.render('pages/static/refund-policy'));
 app.get('/donate', (req, res) => res.render('pages/static/donate'));
-app.get('/leaderboard', (req, res) => res.render('pages/coming-soon'));
 app.get('/membership', (req, res) => {
     // If you use Stripe/Cashfree keys in this view, pass them here
     res.render('pages/membership', {
         // e.g., stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     });
 });
+// --- NEW: DOCUMENTATION SYSTEM ROUTE ---
+app.get('/docs/:slug?', async (req, res) => {
+    try {
+        const requestedSlug = req.params.slug;
+
+        const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
+        const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
+
+        const sidebarStructure = allCategories.map(cat => {
+            return {
+                ...cat,
+                pages: allPages.filter(p => p.category && p.category._id.toString() === cat._id.toString())
+            };
+        });
+
+        let currentPage = null;
+
+        if (requestedSlug) {
+            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
+            if (!currentPage) {
+                // If they type a bad slug, render the 404 page
+                return res.status(404).render('pages/404');
+            }
+        } else {
+            // If they just visit /docs, find the very first page
+            if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
+                currentPage = sidebarStructure[0].pages[0];
+                return res.redirect(`/docs/${currentPage.slug}`);
+            }
+        }
+
+        res.render('pages/docs', {
+            sidebarStructure: sidebarStructure,
+            currentPage: currentPage
+        });
+
+    } catch (error) {
+        console.error("Docs Engine Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
 
 // ======== THE BULLETPROOF, FULLY AUTOMATED SITEMAP ========
 app.get('/sitemap.xml', async (req, res) => {
     try {
-        // 1. Set the correct XML header so browsers & Google know how to read it
         res.set('Content-Type', 'text/xml');
-        
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-        // 2. Static Pages
-        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate'];
+        // 1. Static Pages
+        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs']; // Added /docs here
         staticPages.forEach(page => {
             xml += `  <url>\n    <loc>${baseUrl}${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
         });
 
-        // 3. Category Pages
+        // 2. Category Pages
         const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
         categories.forEach(cat => {
              xml += `  <url>\n    <loc>${baseUrl}/category?platform=${cat}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
-        // 4. Live Mods (Now using the new SEO Slugs!)
-        const liveMods = await File.find({ 
-            showInSitemap: { $ne: false }, 
-            isLatestVersion: true,
-            status: 'live' // Only show approved mods
-        }).select('_id category slug updatedAt'); // Fetch the slug!
-
+        // 3. Live Mods
+        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' }).select('_id category slug updatedAt');
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
-            
-            // Use the beautiful SEO slug if available, fallback to ID
             const modUrl = `${baseUrl}/${mod.category}/${mod.slug || mod._id}`;
-            
             xml += `  <url>\n    <loc>${modUrl}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
         });
 
-        // 5. Automatically include all Developer Pages
+        // 4. Developer Pages
         const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true });
         uniqueDevelopers.forEach(dev => {
             if (dev && dev !== 'N/A') {
@@ -3218,10 +3248,17 @@ app.get('/sitemap.xml', async (req, res) => {
             }
         });
 
-        // 6. Automatically include all Public User Profiles (Uploaders)
+        // 5. Public User Profiles
         const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true });
         uniqueUploaders.forEach(uploader => {
              xml += `  <url>\n    <loc>${baseUrl}/users/${slugify(uploader)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        });
+
+        // 6. --- NEW: DYNAMIC DOCUMENTATION PAGES ---
+        const allDocPages = await DocPage.find().select('slug updatedAt').lean();
+        allDocPages.forEach(doc => {
+            let lastDocDate = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
+            xml += `  <url>\n    <loc>${baseUrl}/docs/${doc.slug}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
         xml += '</urlset>';
@@ -3232,8 +3269,6 @@ app.get('/sitemap.xml', async (req, res) => {
         res.status(500).send('Error generating sitemap');
     }
 });
-// ==================================================
-
 app.post('/dmca-request', async (req, res) => {
     try {
         await new Dmca(req.body).save();
@@ -3420,60 +3455,6 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
         res.redirect('/partnership?error=An error occurred while submitting your application.');
     }
 });
-
-// ===================================
-// CUSTOM DOCUMENTATION ROUTES
-// ===================================
-
-app.get('/docs/:slug?', async (req, res) => {
-    try {
-        const requestedSlug = req.params.slug;
-
-        // 1. Fetch the entire structure for the Sidebar
-        // We find all categories, sort them by 'order', and then use Mongoose "virtuals" 
-        // or a manual lookup to get their child pages. For simplicity, we'll fetch all pages 
-        // and group them in Node.js.
-        const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
-        const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
-
-        // Group pages by category ID for easy rendering in EJS
-        const sidebarStructure = allCategories.map(cat => {
-            return {
-                ...cat,
-                pages: allPages.filter(p => p.category && p.category._id.toString() === cat._id.toString())
-            };
-        });
-
-        // 2. Determine which page to display
-        let currentPage = null;
-
-        if (requestedSlug) {
-            // Find the specific page requested
-            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
-            if (!currentPage) {
-                return res.status(404).render('pages/404');
-            }
-        } else {
-            // If they just visit /docs, show the very first page of the first category
-            if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
-                currentPage = sidebarStructure[0].pages[0];
-                // Redirect to the actual slug for clean URLs
-                return res.redirect(`/docs/${currentPage.slug}`);
-            }
-        }
-
-        // 3. Render the custom Docs template
-        res.render('pages/docs', {
-            sidebarStructure: sidebarStructure,
-            currentPage: currentPage
-        });
-
-    } catch (error) {
-        console.error("Docs Engine Error:", error);
-        res.status(500).render('pages/500');
-    }
-});
-
 // ===============================
 // 16. SERVER STARTUP & ADMIN ROUTER
 // ===============================
