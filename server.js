@@ -835,7 +835,7 @@ const renderHomepage = async (req, res) => {
                     filesByCategory[category][section].map(async (file) => {
                         const key = file.iconUrl || file.iconKey;
                         const signedIconUrl = await getSmartImageUrl(key);
-                        return { ...file.toObject(), iconUrl: signedIconUrl };
+                        return { ...file(), iconUrl: signedIconUrl };
                     })
                 );
             }
