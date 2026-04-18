@@ -712,13 +712,23 @@ passport.use(new MicrosoftStrategy({
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
 app.get('/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
     
-    // 1. Gather Basic Server Info
+        // 1. Gather Basic Server Info
+    const memUsage = process.memoryUsage();
+    const totalMem = os.totalmem();
+    
     const healthData = {
         status: 'UP',
         timestamp: new Date().toISOString(),
         uptime: formatUptime(process.uptime()),
         nodeVersion: process.version,
-        memoryUsage: process.memoryUsage(),
+        // ✅ NEW: Detailed Memory Metrics
+        memoryUsage: {
+            rss: memUsage.rss,             // Total RAM allocated
+            heapTotal: memUsage.heapTotal, // V8 engine memory
+            heapUsed: memUsage.heapUsed,   // Actual active JS objects
+            systemTotal: totalMem,         // Server total RAM
+            percentage: ((memUsage.rss / totalMem) * 100).toFixed(2) + '%'
+        },
         environment: process.env.NODE_ENV || 'development',
         services: {
             database: { status: 'UNKNOWN', details: null },
@@ -806,10 +816,12 @@ const renderHomepage = async (req, res) => {
         const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
-        await Promise.all(categories.map(async (cat) => {
-            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4);
-            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4);
-            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4);
+                await Promise.all(categories.map(async (cat) => {
+            // ✅ OPTIMIZATION: Added .lean() to prevent memory spikes on homepage load
+            const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
+            const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
+            const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4).lean();
+            
             filesByCategory[cat] = {
                 '100-Percent-Working': workingMods,
                 'Most-Popular': popularMods,
@@ -3233,7 +3245,9 @@ app.get('/sitemap.xml', async (req, res) => {
         });
 
         // 3. Live Mods
-        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' }).select('_id category slug updatedAt');
+        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' })
+            .select('_id category slug updatedAt')
+            .lean(); 
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
             const modUrl = `${baseUrl}/${mod.category}/${mod.slug || mod._id}`;
@@ -3241,7 +3255,7 @@ app.get('/sitemap.xml', async (req, res) => {
         });
 
         // 4. Developer Pages
-        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true });
+        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
         uniqueDevelopers.forEach(dev => {
             if (dev && dev !== 'N/A') {
                 xml += `  <url>\n    <loc>${baseUrl}/developer?name=${slugify(dev)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
@@ -3249,7 +3263,7 @@ app.get('/sitemap.xml', async (req, res) => {
         });
 
         // 5. Public User Profiles
-        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true });
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
         uniqueUploaders.forEach(uploader => {
              xml += `  <url>\n    <loc>${baseUrl}/users/${slugify(uploader)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
         });
@@ -3524,6 +3538,52 @@ const startServer = async () => {
         console.error('Server failed to start.', error);
     }
 }; // <-- This correctly closes the startServer() function
+
+// ===================================
+// AUTOMATION ENGINE & RAM MANAGER
+// ===================================
+const os = require('os');
+
+// --- 1. THE RAM OPTIMIZER (Runs every 10 minutes) ---
+cron.schedule('*/10 * * * *', () => {
+    try {
+        // Get current memory usage in MB
+        const usedMemory = process.memoryUsage().rss / 1024 / 1024;
+        const totalMem = os.totalmem() / 1024 / 1024;
+        const memoryPercentage = (usedMemory / totalMem) * 100;
+
+        console.log(`[RAM Monitor] Current Usage: ${usedMemory.toFixed(2)} MB (${memoryPercentage.toFixed(1)}%)`);
+
+        // If we are approaching Render's 512MB limit (e.g., hitting 350MB+)
+        if (usedMemory > 350) {
+            console.warn(`[RAM Warning] Memory high (${usedMemory.toFixed(2)} MB). Initiating aggressive cleanup...`);
+
+            // 1. Clear our custom in-memory caches
+            cachedTotalUpdates = 0; 
+            recentMessages = recentMessages.slice(-10); // Keep only last 10 chat messages in RAM instead of 50
+
+            // 2. Force V8 Garbage Collection (if the flag is enabled)
+            if (global.gc) {
+                global.gc();
+                const newMem = process.memoryUsage().rss / 1024 / 1024;
+                console.log(`[RAM Monitor] Garbage collection forced. Memory reduced to: ${newMem.toFixed(2)} MB`);
+            } else {
+                console.warn("[RAM Monitor] Cannot force GC. Start server with 'node --expose-gc server.js'");
+            }
+        }
+    } catch (e) {
+        console.error("RAM Manager Error:", e);
+    }
+});
+
+// --- 2. THE CHAT HISTORY CLEANER (Runs every hour) ---
+// Prevents the recentMessages array from slowly growing and causing a memory leak
+cron.schedule('0 * * * *', () => {
+    if (recentMessages.length > 20) {
+        recentMessages = recentMessages.slice(-20); // Trim to last 20 every hour
+        console.log("[Maintenance] Chat history array pruned to prevent memory leak.");
+    }
+});
 
 // ===================================
 // AUTOMATION ENGINE (CRON JOBS)
