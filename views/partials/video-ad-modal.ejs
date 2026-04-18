@@ -1,12 +1,17 @@
 <!-- Only render this HTML/JS if the user is supposed to see ads -->
 <% if (typeof showAds !== 'undefined' && showAds) { %>
 
-    <!-- 1. Include Video.js and the VAST Plugin CSS/JS -->
-    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/videojs-vast-vpaid@2.0.2/bin/videojs.vast.vpaid.min.css" rel="stylesheet">
-    
-    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/videojs-vast-vpaid@2.0.2/bin/videojs_5.vast.vpaid.min.js"></script>
+    <!-- 1. Include Video.js Core -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
+    <!-- 2. Include the required videojs-contrib-ads plugin -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/7.3.2/videojs.ads.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-ads/7.3.2/videojs.ads.min.js"></script>
+
+    <!-- 3. Include the modern videojsx-vast-plugin -->
+    <link href="https://cdn.jsdelivr.net/npm/videojsx-vast-plugin@1.1.2/dist/videojs.vast.vpaid.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/videojsx-vast-plugin@1.1.2/dist/videojs_5.vast.vpaid.min.js"></script>
 
     <!-- ======== VIDEO AD MODAL ======== -->
     <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 10000;">
@@ -22,18 +27,18 @@
                 </p>
                 
                 <button id="watch-video-btn" class="btn btn-primary" style="background: var(--blue); color: var(--white); padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 1.1em; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(33, 150, 243, 0.5); width: 100%; transition: all 0.3s;">
-                    Play Video
+                    Play Sponsor Video
                 </button>
             </div>
 
-            <!-- THE VAST VIDEO PLAYER CONTAINER (Hidden initially) -->
-            <div id="ad-player-container" style="display: none; width: 100%; margin: 0 auto;">
+            <!-- THE VAST VIDEO PLAYER CONTAINER -->
+            <div id="ad-player-container" style="display: none; width: 100%; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden;">
                 <!-- 
-                  We initialize the video tag. It needs a dummy source initially.
-                  The VAST plugin will hijack it and play the ad. 
+                  Important: Removed data-setup='{}' so we can initialize it entirely via JS.
+                  We must use the 'vjs-16-9' class to force the correct aspect ratio.
                 -->
-                <video id="vid1" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" width="640" height="360" data-setup='{}'>
-                    <!-- A tiny, blank MP4 acts as a placeholder so the player initializes correctly -->
+                <video id="vid1" class="video-js vjs-default-skin vjs-16-9 vjs-big-play-centered" controls preload="auto">
+                    <!-- Tiny placeholder MP4 -->
                     <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAG21kYXQAAAGzABAHAAABthkEAAAAACkQAAA=" type="video/mp4">
                     <p class="vjs-no-js">
                         To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video
@@ -63,6 +68,8 @@
 
             if (!videoModal || !watchBtn || !skipBtn || !skipTimerSpan) return;
 
+            let player = null;
+
             // 1. Show the modal smoothly
             setTimeout(() => { 
                 videoModal.classList.add('show'); 
@@ -77,19 +84,26 @@
                 playerContainer.style.display = 'block';
                 skipBtn.style.display = 'block';
 
-                // --- INITIALIZE VIDEO.JS AND VAST ---
-                const player = videojs('vid1');
+                // --- INITIALIZE VIDEO.JS ---
+                player = videojs('vid1');
 
+                // --- INITIALIZE VAST PLUGIN ---
+                // The videojsx plugin uses this specific syntax
                 player.vastClient({
                     adTagUrl: VAST_URL,
                     playAdAlways: true,
-                    // If the ad fails to load (e.g., ad blocker), we don't want the user stuck forever.
-                    adCancelTimeout: 5000, 
-                    adsEnabled: true
+                    adsEnabled: true,
+                    adCancelTimeout: 5000 // 5 seconds to load the XML, otherwise it fails gracefully
                 });
 
-                // Start playing immediately
-                player.play();
+                // Attempt to play. Some browsers require the user interaction (the button click)
+                // to happen strictly within the same execution stack to allow autoplay with sound.
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.warn("Autoplay blocked, user must click the big play button in the player.", error);
+                    });
+                }
 
                 // --- 3. Start the Skip Timer ---
                 let timeLeft = 30; 
@@ -101,7 +115,7 @@
                     if (timeLeft <= 0) {
                         clearInterval(timerInterval);
                         
-                        // The 30 seconds are up! Enable the skip button.
+                        // Enable the skip button
                         skipBtn.innerHTML = 'Close & Continue to Site';
                         skipBtn.style.cursor = 'pointer';
                         skipBtn.style.opacity = '1';
@@ -110,19 +124,16 @@
                         skipBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
                         skipBtn.disabled = false;
                         
-                        // 4. When they click the enabled Skip button, close everything
+                        // 4. When they click Skip, destroy player and close modal
                         skipBtn.addEventListener('click', () => {
-                            // Destroy the player so audio doesn't keep playing
                             if (player) {
-                                player.dispose(); 
+                                player.dispose(); // CRITICAL: Destroys the player and stops the ad
                             }
                             
                             videoModal.classList.remove('show');
                             document.body.style.overflow = 'auto'; 
                             
                             setTimeout(() => { 
-                                videoModal.style.display = 'none'; 
-                                // Remove the modal from DOM completely so it doesn't interfere
                                 videoModal.remove(); 
                             }, 300);
                         }, { once: true });
