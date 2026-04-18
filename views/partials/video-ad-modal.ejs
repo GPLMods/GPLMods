@@ -2,25 +2,32 @@
 <% if (typeof showAds !== 'undefined' && showAds) { %>
 
     <!-- ======== VIDEO AD MODAL ======== -->
-    <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.9); z-index: 10000;">
-        <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 450px; border-top: 4px solid var(--blue); box-shadow: 0 10px 40px rgba(33, 150, 243, 0.4);">
+    <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 10000;">
+        
+        <!-- Adjusted the modal content box to be wider to accommodate an iframe -->
+        <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 800px; width: 95%; border-top: 4px solid var(--blue); box-shadow: 0 10px 40px rgba(33, 150, 243, 0.4); display: flex; flex-direction: column; gap: 15px;">
             
-            <i class="fas fa-play-circle" style="font-size: 4em; color: var(--blue); margin-bottom: 20px;"></i>
-            <h2 style="color: var(--white); margin-bottom: 15px;">Support GPL Mods</h2>
-            <p style="color: var(--silver); margin-bottom: 25px; line-height: 1.6; font-size: 1.1em;">
-                Please watch a short sponsor video to help keep our servers running and our mods free for everyone.
-            </p>
-            
-            <!-- 
-                1. The button opens the HilltopAds Direct Video Link in a new tab.
-                2. REPLACE the href below with your actual HilltopAds URL!
-            -->
-            <a href="https://fluffy-management.com/d/m.Fgzyd/GUNYvfZEGMUC/fe/mK9wuUZwUdlpk/PJT/Y-5aNPjigI5IMjjzk/tpNojsk-2wOWD/kvzMMQwm" class="btn btn-primary" id="watch-video-btn" style="background: var(--blue); color: var(--white); padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 1.1em; text-decoration: none; display: inline-block; box-shadow: 0 0 20px rgba(33, 150, 243, 0.5); width: 100%; transition: all 0.3s;">
-                Watch Short Video
-            </a>
+            <div id="ad-intro-screen">
+                <i class="fas fa-play-circle" style="font-size: 4em; color: var(--blue); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--white); margin-bottom: 15px;">Support GPL Mods</h2>
+                <p style="color: var(--silver); margin-bottom: 25px; line-height: 1.6; font-size: 1.1em;">
+                    Please watch a short sponsor video to help keep our servers running and our mods free for everyone.
+                </p>
+                
+                <!-- Changed from an <a> tag to a <button> -->
+                <button id="watch-video-btn" class="btn btn-primary" style="background: var(--blue); color: var(--white); padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 1.1em; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(33, 150, 243, 0.5); width: 100%; transition: all 0.3s;">
+                    Watch Short Video
+                </button>
+            </div>
 
-            <!-- The Skip button, initially hidden and disabled -->
-            <button id="skip-video-btn" class="btn btn-secondary" style="display: none; width: 100%; margin-top: 15px; padding: 12px; border-radius: 20px; font-weight: bold; cursor: not-allowed; opacity: 0.5;">
+            <!-- This iframe is hidden initially. It will hold the HilltopAd. -->
+            <div id="ad-iframe-container" style="display: none; width: 100%; height: 60vh; min-height: 300px; background-color: #000; border-radius: 8px; overflow: hidden; position: relative;">
+                <!-- The iframe points to your ad link -->
+                <iframe id="sponsor-ad-frame" src="" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+            </div>
+
+            <!-- The Skip button, initially hidden -->
+            <button id="skip-video-btn" class="btn btn-secondary" style="display: none; width: 100%; padding: 15px; border-radius: 20px; font-weight: bold; cursor: not-allowed; opacity: 0.5; border: 2px solid #555; color: #888;">
                 Skip in <span id="skip-timer">30</span>s
             </button>
             
@@ -30,11 +37,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const videoModal = document.getElementById('video-ad-modal');
+            const introScreen = document.getElementById('ad-intro-screen');
             const watchBtn = document.getElementById('watch-video-btn');
+            const iframeContainer = document.getElementById('ad-iframe-container');
+            const adIframe = document.getElementById('sponsor-ad-frame');
             const skipBtn = document.getElementById('skip-video-btn');
             const skipTimerSpan = document.getElementById('skip-timer');
             
-            // Safety check
+            // The Direct Link provided by HilltopAds
+            const AD_URL = "https://fluffy-management.com/d/m.Fgzyd/GUNYvfZEGMUC/fe/mK9wuUZwUdlpk/PJT/Y-5aNPjigI5IMjjzk/tpNojsk-2wOWD/kvzMMQwm";
+
             if (!videoModal || !watchBtn || !skipBtn || !skipTimerSpan) return;
 
             // 1. Show the modal smoothly after the page loads
@@ -46,8 +58,14 @@
             // 2. When they click to watch the video
             watchBtn.addEventListener('click', () => {
                 
-                // Hide the "Watch" button, show the "Skip" button
-                watchBtn.style.display = 'none';
+                // Hide the intro screen
+                introScreen.style.display = 'none';
+                
+                // Load the ad into the iframe and show it
+                adIframe.src = AD_URL;
+                iframeContainer.style.display = 'block';
+
+                // Show the "Skip" button countdown
                 skipBtn.style.display = 'block';
 
                 let timeLeft = 30; // 30 seconds delay
@@ -59,22 +77,30 @@
 
                     if (timeLeft <= 0) {
                         clearInterval(timerInterval);
+                        
                         // The 30 seconds are up! Enable the skip button.
                         skipBtn.innerHTML = 'Close & Continue to Site';
                         skipBtn.style.cursor = 'pointer';
                         skipBtn.style.opacity = '1';
-                        skipBtn.style.borderColor = 'var(--silver)';
-                        skipBtn.style.color = 'var(--white)';
+                        skipBtn.style.borderColor = 'var(--gold)';
+                        skipBtn.style.color = 'var(--gold)';
+                        skipBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
                         skipBtn.disabled = false;
                         
-                        // 4. When they click the enabled Skip button, hide the modal
+                        // 4. When they click the enabled Skip button, close everything
                         skipBtn.addEventListener('click', () => {
+                            // Stop the ad from playing in the background by removing the src
+                            adIframe.src = ""; 
+                            
                             videoModal.classList.remove('show');
                             document.body.style.overflow = 'auto'; // Restore scrolling
-                            setTimeout(() => { videoModal.style.display = 'none'; }, 300);
-                        }, { once: true }); // Ensure this listener only fires once
+                            
+                            setTimeout(() => { 
+                                videoModal.style.display = 'none'; 
+                            }, 300);
+                        }, { once: true });
                     }
-                }, 1000); // Run every 1 second (1000ms)
+                }, 1000);
             });
         });
     </script>
