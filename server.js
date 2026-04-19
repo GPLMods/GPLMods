@@ -560,7 +560,13 @@ function ensureAuthenticated(req, res, next) {
 }
 function ensureAdmin(req, res, next) {
     if (req.user && req.user.role === 'admin') return next();
-    res.status(403).render('pages/403');
+    
+    // Use the universal error template
+    res.status(403).render('pages/error', {
+        errorCode: '403',
+        errorTitle: 'Access <span>Denied</span>',
+        errorMessage: 'You do not have the necessary permissions to view this page.'
+    });
 }
 function redirectIfAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
@@ -843,7 +849,7 @@ const renderHomepage = async (req, res) => {
         res.render('pages/index', { filesByCategory });
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 };
 
@@ -887,7 +893,7 @@ app.get('/notifications', ensureAuthenticated, async (req, res) => {
 
     } catch (error) {
         console.error("Error loading notification hub:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 // 2. Site Updates List (Global Announcements)
@@ -898,7 +904,7 @@ app.get('/notifications/site-updates', async (req, res) => {
         res.render('pages/updates', { announcements: announcements });
     } catch (error) { 
         console.error("Site Updates page error:", error);
-        res.status(500).render('pages/500'); 
+        return next(error); 
     }
 });
 
@@ -919,7 +925,7 @@ app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) =
         res.render('pages/admin-messages', { personalNotifications: personalNotifications });
     } catch (error) {
         console.error("Admin Messages page error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 // --- NEW: 24-Hour "New Uploads" Feed ---
@@ -946,7 +952,7 @@ app.get('/notifications/new-uploads', async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching new uploads feed:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -974,7 +980,7 @@ app.get('/notifications/new-updates', async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching new updates feed:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 // --- NEW: Personalized "Following" Feed ---
@@ -1012,7 +1018,7 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching following feed:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 // Category / Filter Route
@@ -1075,7 +1081,7 @@ app.get('/category', async (req, res) => {
 
     } catch (error) { 
         console.error("Category Route Error:", error);
-        res.status(500).render('pages/500'); 
+        return next(error); 
     }
 });
 
@@ -1162,7 +1168,7 @@ app.get('/search', async (req, res) => {
 
     } catch (error) {
         console.error("Search Error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1224,7 +1230,7 @@ app.get('/:category/:slug', async (req, res, next) => {
 
         // 4. If STILL not found, throw 404
         if (!masterFile) {
-            return res.status(404).render('pages/404');
+            return next(error);
         }
 
         // --- Security Check for Drafts/Pending ---
@@ -1305,7 +1311,7 @@ app.get('/:category/:slug', async (req, res, next) => {
 
     } catch (e) {
         console.error("Error on /:category/:slug route:", e);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1347,7 +1353,7 @@ app.get('/developer', async (req, res) => {
 
     } catch (error) {
         console.error("Developer page error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1360,7 +1366,7 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
         }
         res.render('pages/add-version', { parentFile: parentFile });
     } catch (error) {
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
@@ -1542,7 +1548,7 @@ app.get('/download-file/:id', async (req, res) => {
     try {
         const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
         if (!file) {
-            return res.status(404).render('pages/404');
+            return next(error);
         }
 
         // --- 1. CHECK FOR EXTERNAL CLOUD LINK FIRST ---
@@ -1578,7 +1584,7 @@ app.get('/download-file/:id', async (req, res) => {
 app.get('/mods/:id/parts', async (req, res) => {
     try {
         const fileId = req.params.id;
-        if (!Types.ObjectId.isValid(fileId)) return res.status(404).render('pages/404');
+        if (!Types.ObjectId.isValid(fileId)) return next(error);
 
         const file = await File.findById(fileId);
         
@@ -1597,7 +1603,7 @@ app.get('/mods/:id/parts', async (req, res) => {
 
     } catch (e) {
         console.error("Multi-part page error:", e);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1690,7 +1696,7 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
 
     } catch (e) {
         console.error("Registration error:", e);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1755,7 +1761,7 @@ app.post('/verify-otp', async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -1976,22 +1982,37 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
         res.render('pages/my-uploads', { uploads: uploadsWithUrls }); 
     } catch (error) { 
         console.error("My Uploads Error:", error);
-        res.status(500).render('pages/500'); 
+        return next(error); 
     }
 });
 // --- PUBLIC PROFILE ROUTE ---
-app.get('/users/:username', async (req, res) => {
+app.get('/users/:username', async (req, res, next) => {
     try {
-        const username = req.params.username;
-        // 1. Create a RegEx to handle the slug (e.g., 'john-doe' -> matches 'John Doe')
-        const searchPattern = new RegExp(`^${username.replace(/-/g, '[-\\s]+')}$`, 'i');
+        const slug = req.params.username;
+        const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        // 2. Fetch the user and populate the follower/following arrays
         const user = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
 
-        if (!user) return res.status(404).render('pages/404');
+        // --- 1. HANDLE USER NOT FOUND ---
+        if (!user) {
+            return res.status(404).render('pages/error', {
+                errorCode: '404',
+                errorTitle: 'User <span>Not Found</span>',
+                errorMessage: `We couldn't find a user named "${slug}". They may have changed their name or deleted their account.`
+            });
+        }
+
+        // --- 2. HANDLE BANNED USERS ---
+        // If the user is banned, hide their profile from the public
+        if (user.isBanned) {
+            return res.status(403).render('pages/error', {
+                errorCode: '403', // 403 Forbidden is appropriate here
+                errorTitle: 'Account <span>Suspended</span>',
+                errorMessage: `The account for "${user.username}" has been suspended due to a violation of our Terms of Service.`
+            });
+        }
 
         // 3. Get the main user's avatar
         user.signedAvatarUrl = await getSmartImageUrl(user.profileImageKey);
@@ -2039,7 +2060,7 @@ app.get('/users/:username', async (req, res) => {
 
     } catch (error) { 
         console.error("Public Profile Error:", error);
-        res.status(500).render('pages/500'); 
+        return next(error); 
     }
 });
 
@@ -2165,7 +2186,7 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
             if (err) return next(err);
             res.redirect('/?message=Your account has been successfully deleted.');
         });
-    } catch (error) { res.status(500).render('pages/500'); }
+    } catch (error) { return next(error); }
 });
 // ===================================
 // 10. FILE UPLOAD & MANAGEMENT
@@ -2205,7 +2226,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     // This closes the 'try' block that started at the top of the route.
     } catch (limitError) {
         console.error("Upload limit check failed:", limitError);
-        return res.status(500).render('pages/500');
+        return next(error);
     }
     // ========================================================
 
@@ -2260,7 +2281,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
         } catch (error) {
             console.error("Distributor initial upload error:", error);
-            return res.status(500).render('pages/500');
+            return next(error);
         }
     }
 
@@ -2330,7 +2351,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
     } catch (error) {
         console.error("Initial upload error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 }); // <--- ADD THIS CLOSING BRACE AND PARENTHESIS HERE
 
@@ -2339,7 +2360,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         const fileId = req.params.fileId;
         const pendingFile = await File.findById(fileId);
 
-        if (!pendingFile) return res.status(404).render('pages/404');
+        if (!pendingFile) return next(error);
         if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
 
         const filename = pendingFile.originalFilename || "";
@@ -2375,7 +2396,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
 
     } catch (error) {
         console.error("Error loading upload details:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -2505,7 +2526,7 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
         });
     } catch (error) {
         console.error("Error loading edit page:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -2579,7 +2600,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
     } catch (error) {
         console.error("Error updating mod:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -2714,7 +2735,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
     } catch (error) {
         console.error("Finalize upload error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -3199,17 +3220,21 @@ app.get('/membership', (req, res) => {
         // e.g., stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     });
 });
+
 // --- NEW: DOCUMENTATION SYSTEM ROUTE ---
-app.get('/docs/:slug?', async (req, res) => {
+app.get('/docs/:slug?', async (req, res, next) => {
     try {
         const requestedSlug = req.params.slug;
 
+        // Fetch categories and pages, sorting by the 'order' field
         const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
         const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
 
+        // Build the hierarchical structure for the sidebar
         const sidebarStructure = allCategories.map(cat => {
             return {
                 ...cat,
+                // Filter pages that belong to this category ID
                 pages: allPages.filter(p => p.category && p.category._id.toString() === cat._id.toString())
             };
         });
@@ -3219,11 +3244,15 @@ app.get('/docs/:slug?', async (req, res) => {
         if (requestedSlug) {
             currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
             if (!currentPage) {
-                // If they type a bad slug, render the 404 page
-                return res.status(404).render('pages/404');
+                // ✅ FIX: Correctly throw a 404 if the slug doesn't exist
+                return res.status(404).render('pages/error', {
+                    errorCode: '404',
+                    errorTitle: 'Doc <span>Not Found</span>',
+                    errorMessage: "The documentation page you are looking for does not exist."
+                });
             }
         } else {
-            // If they just visit /docs, find the very first page
+            // ✅ FIX: If they just visit /docs, find the very first page in the first category
             if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
                 currentPage = sidebarStructure[0].pages[0];
                 return res.redirect(`/docs/${currentPage.slug}`);
@@ -3237,7 +3266,7 @@ app.get('/docs/:slug?', async (req, res) => {
 
     } catch (error) {
         console.error("Docs Engine Error:", error);
-        res.status(500).render('pages/500');
+        return next(error); // ✅ FIX: Correct syntax for passing the error to the 500 handler
     }
 });
 
@@ -3394,7 +3423,7 @@ app.get('/support', ensureAuthenticated, async (req, res) => {
         });
     } catch (error) {
         console.error("Error loading support page:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -3438,7 +3467,7 @@ app.get('/partnership', ensureAuthenticated, async (req, res) => {
         });
     } catch (error) {
         console.error("Partnership load error:", error);
-        res.status(500).render('pages/500');
+        return next(error);
     }
 });
 
@@ -3540,12 +3569,28 @@ const startServer = async () => {
             });
         });
 
-        // Error Handlers must remain at the very, very bottom
-        app.use((req, res) => res.status(404).render('pages/404'));
-        app.use((err, req, res, next) => {
-            console.error(err.stack);
-            res.status(500).render('pages/500');
-        });
+// ===============================================
+// 14. GLOBAL ERROR HANDLERS (MUST BE LAST)
+// ===============================================
+
+// 404 Handler - Catch all unhandled routes
+app.use((req, res) => {
+    res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
+    });
+});
+
+// 500 Handler - Catch all server crashes/exceptions
+app.use((err, req, res, next) => {
+    console.error(err.stack); // Still log the error for you to debug!
+    res.status(500).render('pages/error', {
+        errorCode: '500',
+        errorTitle: 'Server <span>Error</span>',
+        errorMessage: "Something went wrong on our end. Our team has been notified and we're working to fix it."
+    });
+});
 
         // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {

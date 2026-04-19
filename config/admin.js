@@ -505,29 +505,67 @@ async function createAdminRouter() {
         // ---------------------------------
         // DOCUMENTATION (CUSTOM WIKI)
         // ---------------------------------
-        {
-            resource: DocCategory,
-            options: {
-                navigation: { name: 'Documentation', icon: 'Book' },
-                listProperties: ['name', 'order'],
-            }
-        },
-        {
-            resource: DocPage,
-            options: {
-                navigation: { name: 'Documentation', icon: 'Book' },
-                listProperties: ['title', 'category', 'order', 'updatedAt'],
-                editProperties: ['title', 'slug', 'category', 'order', 'content'],
-                showProperties: ['title', 'slug', 'category', 'order', 'content', 'updatedAt'],
-                properties: {
-                    content: { 
-                        type: 'richtext' // The magic wand! This gives you a full WYSIWYG editor
+{
+                resource: DocCategory,
+                options: {
+                    navigation: { name: 'Documentation', icon: 'Book' },
+                    listProperties: ['name', 'order', 'createdAt'],
+                    editProperties:['name', 'order']
+                }
+            },
+            {
+                resource: DocPage,
+                options: {
+                    navigation: { name: 'Documentation', icon: 'Document' },
+                    listProperties:['title', 'category', 'order', 'slug'],
+                    // Exclude slug from edit so it's generated automatically
+                    editProperties:['title', 'category', 'order', 'content'], 
+                    showProperties:['title', 'category', 'order', 'slug', 'content', 'createdAt'],
+                    properties: {
+                        content: { 
+                            type: 'richtext' // Essential for writing the docs
+                        },
+                        category: {
+                            // AdminJS will automatically create a dropdown for the reference field
+                            isSortable: true
+                        }
                     },
-                    slug: {
-                        description: 'The URL-friendly name (e.g., "how-to-install-apk"). Must be unique.'
+                    actions: {
+                        new: {
+                            // ✅ FIX: Auto-generate the slug before saving a new page
+                            before: async (request) => {
+                                if (request.payload.title) {
+                                    // Use a simple slugify regex
+                                    let baseSlug = request.payload.title.toString().toLowerCase()
+                                        .replace(/\s+/g, '-')
+                                        .replace(/[^\w\-]+/g, '')
+                                        .replace(/\-\-+/g, '-')
+                                        .replace(/^-+/, '')
+                                        .replace(/-+$/, '');
+                                    
+                                    request.payload.slug = baseSlug;
+                                }
+                                return request;
+                            }
+                        },
+                        edit: {
+                            // ✅ FIX: Auto-update the slug if the title changes
+                            before: async (request) => {
+                                if (request.payload.title) {
+                                    let baseSlug = request.payload.title.toString().toLowerCase()
+                                        .replace(/\s+/g, '-')
+                                        .replace(/[^\w\-]+/g, '')
+                                        .replace(/\-\-+/g, '-')
+                                        .replace(/^-+/, '')
+                                        .replace(/-+$/, '');
+                                    
+                                    request.payload.slug = baseSlug;
+                                }
+                                return request;
                     }
                 }
             }
+        }
         },
             // DIRECT USER NOTIFICATIONS
             {
