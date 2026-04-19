@@ -192,7 +192,7 @@ async function createAdminRouter() {
                 options: {
                     navigation: { icon: 'Users' }, 
                     listProperties: ['profileImageKey', 'username', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['_id', 'profileImageKey', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
+                    showProperties:['profileImageKey', '_id', 'profileImageKey', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
                     editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
                     properties: {
                         password: { isVisible: false },
