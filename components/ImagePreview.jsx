@@ -1,38 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box } from '@adminjs/design-system';
 
 const ImagePreview = (props) => {
     const { record, property } = props;
     const value = record.params[property.name];
 
-    if (!value) {
+    // State to hold the final, secure URL
+    const [imageUrl, setImageUrl] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // If there's no image key, stop loading immediately
+        if (!value) {
+            setLoading(false);
+            return;
+        }
+
+        // If the admin pasted a direct web URL (e.g., imgur, google drive), use it immediately
+        if (value.startsWith('http://') || value.startsWith('https://')) {
+            setImageUrl(value);
+            setLoading(false);
+            return;
+        }
+
+        // If it's a private Backblaze B2 key, fetch a secure signed URL from our backend
+        const fetchSignedUrl = async () => {
+            try {
+                // Call the new secure API endpoint we built in server.js
+                const response = await fetch(`/api/admin/signed-url?key=${encodeURIComponent(value)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setImageUrl(data.url);
+                } else {
+                    console.error("Failed to fetch signed URL.");
+                }
+            } catch (error) {
+                console.error("Network error fetching signed URL:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSignedUrl();
+    }, [value]); // Re-run if the value changes
+
+    // Loading state
+    if (loading) {
+        return <div style={{ color: '#FFD700', fontSize: '12px' }}>Loading...</div>;
+    }
+
+    // Empty state
+    if (!imageUrl) {
         return <div style={{ color: '#888', fontSize: '12px' }}>N/A</div>;
     }
 
-    // Helper to safely build the URL
-    const getSmartUrl = (key) => {
-        if (key.startsWith('http')) return key;
-        
-        // If it's a B2 key, we need a public URL. 
-        // Since AdminJS components run in the browser, they don't have access to your server's s3Client.
-        // For a fully secure private bucket, you would need an API route like /api/admin/signed-url?key=...
-        // However, if your bucket is public (or has a public CDN in front of it like Cloudflare), 
-        // you can just construct the URL here:
-        
-        // REPLACEME: If your bucket is public, put the base URL here.
-        // Example: return `https://f003.backblazeb2.com/file/your-bucket-name/${key}`;
-        
-        // If your bucket is strictly private and you MUST use signed URLs, 
-        // this component becomes an async fetch component (more complex). 
-        // For now, let's assume you have a public endpoint or we just show the key.
-        
-        // For demonstration, we will try to construct a standard B2 URL.
-        // You MUST update 'your-bucket-name' and 'f00X' to match your actual B2 info.
-        return `https://f003.backblazeb2.com/file/gpl-cloud/${key}`; 
-    };
-
-    const imageUrl = getSmartUrl(value);
-
+    // Success state: Render the secure image
     return (
         <Box>
             <img 

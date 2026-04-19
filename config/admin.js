@@ -254,9 +254,9 @@ async function createAdminRouter() {
                     properties: {
                         modDescription: { type: 'richtext' },
                         officialDescription: { type: 'richtext' },
-                        modFeatures: { type: 'textarea' }, 
-                        whatsNew: { type: 'textarea' },
-                        importantNote: { type: 'textarea' }, // Ensure the new field is here too
+                        modFeatures: { type: 'richtext' }, 
+                        whatsNew: { type: 'richtext' },
+                        importantNote: { type: 'richtext' }, // Ensure the new field is here too
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },

@@ -3115,6 +3115,24 @@ app.post('/admin/reports/:reportId/status', ensureAuthenticated, ensureAdmin, as
     await Report.findByIdAndUpdate(req.params.reportId, { status: req.body.status });
     res.redirect('/admin/reports');
 });
+// --- NEW: Secure Signed URL Generator for AdminJS ---
+// Only accessible by Admins. Used by custom React components to view private images.
+app.get('/api/admin/signed-url', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const key = req.query.key;
+        if (!key) {
+            return res.status(400).json({ error: 'No key provided.' });
+        }
+
+        // Use our existing smart helper! It already knows how to handle external URLs vs B2 keys.
+        const signedUrl = await getSmartImageUrl(key);
+        
+        res.json({ url: signedUrl });
+    } catch (error) {
+        console.error("Error generating signed URL for AdminJS:", error);
+        res.status(500).json({ error: 'Failed to generate URL.' });
+    }
+});
 
 app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin, async (req, res) => {
     await File.findByIdAndDelete(req.params.fileId);
