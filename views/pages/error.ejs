@@ -1,45 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= errorCode %> Error - GPL Mods</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="apple-touch-icon" href="/favicon.png">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="/css/error-pages.css">
-    
-    <!-- We inline some CSS variables just in case the main CSS fails to load during a 500 error -->
-    <style>
-        :root {
-            --gold: #FFD700;
-            --black: #0a0a0a;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-            /* Dynamic colors based on error code */
-            --error-color: <%= errorCode == 500 || errorCode == 403 ? '#e53935' : 'var(--gold)' %>;
-            --glow-error: <%= errorCode == 500 || errorCode == 403 ? 'rgba(229, 57, 53, 0.5)' : 'var(--glow-gold)' %>;
-        }
-        
-        .error-code { color: var(--error-color); text-shadow: 0 0 20px var(--glow-error); }
-        .error-title span { color: var(--error-color); text-shadow: 0 0 15px var(--glow-error); }
-    </style>
-</head>
-<body>
+<%- include('../partials/header') %>
 
-    <main class="error-container container">
-        <div class="error-code"><%= errorCode %></div>
-        <h1 class="error-title"><%- errorTitle %></h1> <!-- Using <%- %> in case we pass HTML like spans -->
-        <p class="error-message"><%= errorMessage %></p>
-        
-        <!-- Only show the go home button if it's NOT a ban message (or show a different button) -->
-        <a href="<%= user ? '/home' : '/' %>" class="btn" style="margin-top: 2rem; display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">
-            Go to Homepage
-        </a>
-    </main>
+<style>
+    /* We only need layout specifics here; colors and fonts come from style.css */
+    .error-page-wrapper { 
+        padding: 80px 20px; 
+        text-align: center;
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
 
-</body>
-</html>
+    .error-code { 
+        font-size: 8em; 
+        font-weight: 700; 
+        color: var(--dark-gray); 
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
+        line-height: 1; 
+        margin-bottom: -10px;
+    }
+
+    .error-title { 
+        font-size: 3em; 
+        margin-bottom: 20px; 
+        color: var(--white);
+    }
+
+    .error-message { 
+        color: var(--silver); 
+        font-size: 1.2em; 
+        max-width: 600px; 
+        margin: 0 auto 30px auto; 
+        line-height: 1.6;
+    }
+
+    /* --- DYNAMIC ERROR COLORS --- */
+    /* If it's a 404 (Not Found), we use Gold. If it's 403 or 500 (Access Denied/Server Error), we use Red! */
+    <% if (errorCode == '404') { %>
+        .error-title span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .home-button { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+        .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
+    <% } else { %>
+        .error-title span { color: var(--red); text-shadow: 0 0 15px var(--glow-red); }
+        .home-button { background: var(--red); color: var(--white); box-shadow: 0 0 15px var(--glow-red); }
+        .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-red); }
+    <% } %>
+    
+    .home-button { 
+        display: inline-block; 
+        padding: 12px 30px; 
+        border-radius: 25px; 
+        text-decoration: none; 
+        font-size: 1.1em; 
+        font-weight: 600; 
+        transition: all 0.3s ease; 
+        border: none;
+    }
+</style>
+
+<main class="container error-page-wrapper">
+    <!-- Dynamic Error Code (404, 403, 500, etc.) -->
+    <div class="error-code"><%= errorCode %></div>
+    
+    <!-- Dynamic Title -->
+    <h1 class="error-title"><%- errorTitle %></h1>
+    
+    <!-- Dynamic Message -->
+    <p class="error-message"><%= errorMessage %></p>
+    
+    <!-- Smart Routing: Sends logged-in users to /home, guests to / -->
+    <a href="<%= user ? '/home' : '/' %>" class="home-button">Go to Homepage</a>
+</main>
+
+<%- include('../partials/footer') %>

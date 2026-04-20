@@ -1196,12 +1196,11 @@ app.get('/:category/:slug', async (req, res, next) => {
         const variantId = req.query.variant;
 
         // 1. Prevent this route from capturing system URLs
-        // 1. Prevent this route from capturing system URLs
         const reservedPaths =[
             'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
             'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
             'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
-            'download-file', 'upload-details', 'reset-password' // <--- ✅ ADDED THESE 3
+            'download-file', 'upload-details', 'reset-password', 'docs' // <--- ✅ ADDED THESE 3
         ];
         
         if (reservedPaths.includes(category)) return next();
@@ -1311,7 +1310,8 @@ app.get('/:category/:slug', async (req, res, next) => {
 
     } catch (e) {
         console.error("Error on /:category/:slug route:", e);
-        return next(error);
+        // ✅ FIX: Changed next(error) to next(e) because the caught variable is named 'e'
+        return next(e); 
     }
 });
 
@@ -3243,8 +3243,10 @@ app.get('/docs/:slug?', async (req, res, next) => {
 
         if (requestedSlug) {
             currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
+            
             if (!currentPage) {
-                // ✅ FIX: Correctly throw a 404 if the slug doesn't exist
+                // ✅ FIX: Removed "return return next(error);;" 
+                // and replaced it with the proper 404 error page render
                 return res.status(404).render('pages/error', {
                     errorCode: '404',
                     errorTitle: 'Doc <span>Not Found</span>',
