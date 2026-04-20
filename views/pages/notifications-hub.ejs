@@ -101,37 +101,36 @@
         <h1>Your <span>Notifications</span></h1>
         <p>Select a category below to view your alerts and updates.</p>
 
+        <!-- ALL CARDS MUST BE INSIDE THIS DIV -->
         <div class="notification-categories">
             
-            <!-- Category 1: Admin Responses (Personal) -->
-            <a href="/notifications/admin-messages" class="category-card">
-                <div class="category-info">
-                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
-                    <div class="category-icon" style="background: transparent; border: none;">
-                        <lottie-player src="/animations/massage.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
+            <!-- ✅ FIX: Logged-in Users Only -->
+            <% if (user) { %>
+                <!-- Category 1: Admin Responses (Personal) -->
+                <a href="/notifications/admin-messages" class="category-card">
+                    <div class="category-info">
+                        <div class="category-icon" style="background: transparent; border: none;">
+                            <lottie-player src="/animations/massage.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
+                        </div>
+                        <div class="category-text">
+                            <h2>Admin Responses</h2>
+                            <p>Direct messages, warnings, and support ticket replies.</p>
+                        </div>
                     </div>
-                    <div class="category-text">
-                        <h2>Admin Responses</h2>
-                        <p>Direct messages, warnings, and support ticket replies.</p>
-                    </div>
-                </div>
-                
-                <!-- Server-side rendered badge for personal messages -->
-                <!-- ✅ FIX: Added typeof safety check -->
-                <% if (typeof unreadPersonalCount !== 'undefined' && unreadPersonalCount > 0) { %>
-                    <div class="cat-badge">
-                        <%= unreadPersonalCount > 9 ? '9+' : unreadPersonalCount %> New
-                    </div>
-                <% } else { %>
-                    <i class="fas fa-chevron-right card-arrow"></i>
-                <% } %>
-            </a>
+                    
+                    <% if (typeof unreadPersonalCount !== 'undefined' && unreadPersonalCount > 0) { %>
+                        <div class="cat-badge">
+                            <%= unreadPersonalCount > 9 ? '9+' : unreadPersonalCount %> New
+                        </div>
+                    <% } else { %>
+                        <i class="fas fa-chevron-right card-arrow"></i>
+                    <% } %>
+                </a>
+            <% } %>
 
-            <!-- Category 2: Site Updates (Global) -->
-            <!-- ✅ FIX: Added fallback to 0 if variable is undefined -->
+            <!-- Category 2: Site Updates (Global - Visible to Everyone) -->
             <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= typeof totalGlobalUpdates !== 'undefined' ? totalGlobalUpdates : 0 %>">
                 <div class="category-info">
-                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/update.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
@@ -140,18 +139,13 @@
                         <p>Global announcements, new features, and patch notes.</p>
                     </div>
                 </div>
-                
-                <!-- Client-side rendered badge for global updates -->
                 <div class="cat-badge" id="global-badge"></div>
                 <i class="fas fa-chevron-right card-arrow" id="global-arrow"></i>
             </a>
 
-        </div>
-    </div>
-<!-- ======== NEW: Category 3: New Uploads (24h) ======== -->
+            <!-- Category 3: New Uploads (24h - Visible to Everyone) -->
             <a href="/notifications/new-uploads" class="category-card">
                 <div class="category-info">
-                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/upload.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
@@ -162,24 +156,10 @@
                 </div>
                 <i class="fas fa-chevron-right card-arrow"></i>
             </a>
-            <!-- ======== NEW: Category 4: Following Feed ======== -->
-            <a href="/notifications/following" class="category-card">
-                <div class="category-info">
-                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
-                    <div class="category-icon" style="background: transparent; border: none;">
-                        <lottie-player src="/animations/group.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
-                    </div>
-                    <div class="category-text">
-                        <h2>Following Updates</h2>
-                        <p>Latest uploads and updates from members you follow.</p>
-                    </div>
-                </div>
-                <i class="fas fa-chevron-right card-arrow"></i>
-            </a>
-            <!-- ======== NEW: Category 5: New Updates (24h) ======== -->
+
+            <!-- Category 4: New Updates (24h - Visible to Everyone) -->
             <a href="/notifications/new-updates" class="category-card">
                 <div class="category-info">
-                    <!-- ✅ UPGRADE: Custom Lottie Upload Animation -->
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/sync.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
                     </div>
@@ -190,8 +170,26 @@
                 </div>
                 <i class="fas fa-chevron-right card-arrow"></i>
             </a>
-         </div>
-        </div>
+
+            <!-- ✅ FIX: Logged-in Users Only -->
+            <% if (user) { %>
+                <!-- Category 5: Following Feed -->
+                <a href="/notifications/following" class="category-card">
+                    <div class="category-info">
+                        <div class="category-icon" style="background: transparent; border: none;">
+                            <lottie-player src="/animations/group.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
+                        </div>
+                        <div class="category-text">
+                            <h2>Following Updates</h2>
+                            <p>Latest uploads and updates from members you follow.</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right card-arrow"></i>
+                </a>
+            <% } %>
+
+        </div> <!-- Closes .notification-categories -->
+    </div> <!-- Closes .hub-container -->
 </main>
 
 <script>
@@ -202,22 +200,17 @@
         const globalArrow = document.getElementById('global-arrow');
 
         if (siteUpdatesCard && globalBadge) {
-            // Read the total updates from the server-rendered HTML attribute
             const currentTotalUpdates = parseInt(siteUpdatesCard.getAttribute('data-total-updates') || '0', 10);
-            
-            // Read what the user had seen previously from their browser storage
             const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
             
             const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
 
-            // ✅ FIX 6: If there are unread updates, display the badge
             if (unreadGlobalCount > 0) {
                 globalBadge.textContent = (unreadGlobalCount > 9 ? '9+' : unreadGlobalCount) + ' New';
                 globalBadge.style.display = 'flex';
                 if (globalArrow) globalArrow.style.display = 'none';
             }
 
-            // When they click the card, mark global updates as read in localStorage
             siteUpdatesCard.addEventListener('click', () => {
                 localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
             });

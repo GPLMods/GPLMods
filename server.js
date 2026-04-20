@@ -873,19 +873,23 @@ app.get('/home', ensureAuthenticated, async (req, res) => {
 // NOTIFICATION SYSTEM ROUTES
 // ===================================
 // 1. The Notification Hub (Category Selection)
-app.get('/notifications', ensureAuthenticated, async (req, res) => {
+// ✅ FIX: Removed ensureAuthenticated so guests can view the hub
+app.get('/notifications', async (req, res) => {
     try {
-        // 1. Count unread personal messages
-        const UserNotification = require('./models/userNotification');
-        const unreadPersonalCount = await UserNotification.countDocuments({ 
-            user: req.user._id, 
-            isRead: false 
-        });
+        let unreadPersonalCount = 0;
 
-        // 2. Count Total Global Announcements
+        // Only try to count personal messages if the user is actually logged in
+        if (req.isAuthenticated()) {
+            const UserNotification = require('./models/userNotification');
+            unreadPersonalCount = await UserNotification.countDocuments({ 
+                user: req.user._id, 
+                isRead: false 
+            });
+        }
+
+        // Count Total Global Announcements (visible to everyone)
         const totalGlobalUpdates = await Announcement.countDocuments();
 
-        // ✅ FIX 6: Explicitly pass BOTH variables to the EJS template
         res.render('pages/notifications-hub', {
             unreadPersonalCount: unreadPersonalCount || 0,
             totalGlobalUpdates: totalGlobalUpdates || 0
@@ -893,7 +897,7 @@ app.get('/notifications', ensureAuthenticated, async (req, res) => {
 
     } catch (error) {
         console.error("Error loading notification hub:", error);
-        return next(error);
+        res.status(500).render('pages/500');
     }
 });
 // 2. Site Updates List (Global Announcements)
@@ -2037,7 +2041,8 @@ app.get('/users/:username', async (req, res, next) => {
             isLatestVersion: true,
             status: 'live' 
         }).sort({ createdAt: -1 });
-  // Get signed URLs for the upload icons
+
+        // Get signed URLs for the upload icons
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(key);
@@ -2045,29 +2050,31 @@ app.get('/users/:username', async (req, res, next) => {
         }));
 
         // 5. --- NEW: Get signed URLs for Followers ---
-        const followersWithAvatars = await Promise.all(user.followers.map(async (follower) => {
+        // ✅ FIX: Changed 'user.followers' to 'targetUser.followers'
+        const followersWithAvatars = await Promise.all(targetUser.followers.map(async (follower) => {
             const avatarUrl = await getSmartImageUrl(follower.profileImageKey);
             return { ...follower.toObject(), signedAvatarUrl: avatarUrl };
         }));
 
         // 6. --- NEW: Get signed URLs for Following ---
-        const followingWithAvatars = await Promise.all(user.following.map(async (followingUser) => {
+        // ✅ FIX: Changed 'user.following' to 'targetUser.following'
+        const followingWithAvatars = await Promise.all(targetUser.following.map(async (followingUser) => {
             const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
             return { ...followingUser.toObject(), signedAvatarUrl: avatarUrl };
         }));        
 
-        // --- 5. CHECK FOLLOW STATUS ---
+        // --- 7. CHECK FOLLOW STATUS ---
         let isFollowing = false;
         // Ensure req.user and req.user.following exist before checking
         if (req.isAuthenticated() && req.user && req.user.following) {
             isFollowing = req.user.following.includes(targetUser._id);
         }
 
-        // --- 6. RENDER PAGE ---
+        // --- 8. RENDER PAGE ---
         res.render('pages/public-profile', { 
-            profileUser: targetUser, // Pass targetUser to EJS as 'profileUser'
+            profileUser: targetUser, 
             uploads: uploadsWithUrls,
-            followersList: followersWithAvatars, // <--- NEW
+            followersList: followersWithAvatars, 
             followingList: followingWithAvatars,
             isFollowing: isFollowing 
         });
