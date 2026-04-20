@@ -1985,18 +1985,22 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
         return next(error); 
     }
 });
-// --- PUBLIC PROFILE ROUTE ---
+
+// ===================================
+// PUBLIC PROFILE ROUTE
+// ===================================
 app.get('/users/:username', async (req, res, next) => {
     try {
         const slug = req.params.username;
         const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        const user = await User.findOne({ username: searchPattern })
+        const profileUser = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
 
         // --- 1. HANDLE USER NOT FOUND ---
-        if (!user) {
+        if (!profileUser) {
+            // ✅ FIX: Correctly render the universal error page
             return res.status(404).render('pages/error', {
                 errorCode: '404',
                 errorTitle: 'User <span>Not Found</span>',
@@ -2005,21 +2009,31 @@ app.get('/users/:username', async (req, res, next) => {
         }
 
         // --- 2. HANDLE BANNED USERS ---
-        // If the user is banned, hide their profile from the public
-        if (user.isBanned) {
+        if (profileUser.isBanned) {
+            // ✅ FIX: Correctly render the universal error page for banned users
             return res.status(403).render('pages/error', {
-                errorCode: '403', // 403 Forbidden is appropriate here
+                errorCode: '403',
                 errorTitle: 'Account <span>Suspended</span>',
-                errorMessage: `The account for "${user.username}" has been suspended due to a violation of our Terms of Service.`
+                errorMessage: `The account for "${profileUser.username}" has been suspended due to a violation of our Terms of Service.`
             });
         }
 
-        // 3. Get the main user's avatar
-        user.signedAvatarUrl = await getSmartImageUrl(user.profileImageKey);
+        // --- 3. PROCEED NORMALLY IF USER IS VALID ---
+        if (profileUser.profileImageKey) {
+            try {
+                profileUser.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME, Key: profileUser.profileImageKey
+                }), { expiresIn: 3600 });
+            } catch (e) { 
+                profileUser.signedAvatarUrl = '/images/default-avatar.png'; 
+            }
+        } else {
+            profileUser.signedAvatarUrl = '/images/default-avatar.png';
+        }
 
-        // 4. Fetch the user's live uploads
+        // Fetch uploads
         const uploads = await File.find({ 
-            uploader: user.username, // Use the real name from DB, not the slug
+            uploader: profileUser.username, // Use actual username, not slug
             isLatestVersion: true,
             status: 'live' 
         }).sort({ createdAt: -1 });
@@ -2043,10 +2057,10 @@ app.get('/users/:username', async (req, res, next) => {
             return { ...followingUser.toObject(), signedAvatarUrl: avatarUrl };
         }));
 
-        // 7. Check if current logged-in user is following this profile
+        // Check if current user is following this profile
         let isFollowing = false;
         if (req.isAuthenticated()) {
-            isFollowing = req.user.following.includes(user._id);
+            isFollowing = req.user.following.includes(profileUser._id);
         }
 
         // 8. Render the page, passing the newly processed arrays
@@ -2058,9 +2072,10 @@ app.get('/users/:username', async (req, res, next) => {
             isFollowing: isFollowing 
         });
 
+
     } catch (error) { 
         console.error("Public Profile Error:", error);
-        return next(error); 
+        next(error); 
     }
 });
 
