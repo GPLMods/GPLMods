@@ -4,14 +4,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coming Soon - GPL Mods</title>
-
     <!-- Link to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Link to our stylesheet that now contains the coming-soon styles -->
-    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --glow-silver: rgba(192, 192, 192, 0.5);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); display: flex; flex-direction: column; text-align: center; }
+        .container { width: 90%; max-width: 1200px; margin: auto; }
+        
+        /* Minimal Header */
+        .main-header { padding: 15px 0; background-color: var(--black); flex-shrink: 0; }
+        .header-content { display: flex; justify-content: center; align-items: center; }
+        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; }
+        .logo span { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 40px 20px;
+        }
+        .main-content h1 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .main-content h1 span {
+            color: var(--gold);
+            text-shadow: 0 0 15px var(--glow-gold);
+        }
+        .main-content p {
+            color: var(--silver);
+            font-size: 1.2em;
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+
+        /* Countdown Timer */
+        #countdown {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .time-block {
+            background-color: var(--dark-gray);
+            padding: 15px 25px;
+            border-radius: 10px;
+            min-width: 100px;
+        }
+        .time-block .number {
+            font-size: 3em;
+            font-weight: 600;
+            line-height: 1.1;
+            color: var(--gold);
+        }
+        .time-block .label {
+            font-size: 0.9em;
+            color: var(--silver);
+        }
+
+        /* Subscription Form */
+        .subscription-form {
+            max-width: 500px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .subscription-form h3 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--white);
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+        }
+        .form-group input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: 1px solid var(--dark-gray);
+            background-color: var(--dark-gray);
+            color: var(--white);
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+        .form-group button {
+            background: var(--gold);
+            color: var(--black);
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: none;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .form-group button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
+        
+        /* Back to Home Link */
+        .home-link {
+            color: var(--silver);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .home-link:hover {
+            color: var(--gold);
+        }
+        
+        /* Minimal Footer */
+        .main-footer { padding: 40px 20px; color: var(--silver); flex-shrink: 0; font-size: 0.9em; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content h1 { font-size: 2.2em; }
+            .main-content p { font-size: 1em; }
+            #countdown { gap: 10px; }
+            .time-block { min-width: 70px; padding: 10px; }
+            .time-block .number { font-size: 2em; }
+            .form-group { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
 

@@ -1,86 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error -GPL Mods</title>
+    <title>Error - GPL Mods</title>
     <!-- Link to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Link to our stylesheet that now contains the coming-soon styles -->
-    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* --- GLOBAL VARIABLES --- */
+        :root {
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --white: #ffffff;
+            --gold: #FFD700;
+            --silver: #c0c0c0;
+            --red: #ff3333;
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --glow-silver: rgba(192, 192, 192, 0.5);
+            --glow-red: rgba(255, 51, 51, 0.5);
+        }
+
+        /* --- RESET & BASE STYLES --- */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        html, body { 
+            height: 100%; 
+        }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--black); 
+            color: var(--white); 
+            display: flex; 
+            flex-direction: column; 
+            text-align: center; 
+        }
+
+        .container { 
+            width: 90%; 
+            max-width: 1200px; 
+            margin: auto; 
+        }
+
+        /* --- HEADER STYLES --- */
+        .main-header { 
+            padding: 15px 0; 
+            background-color: var(--black); 
+            flex-shrink: 0; 
+        }
+        
+        .header-content { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        .logo { 
+            font-size: 1.8em; 
+            font-weight: 700; 
+            color: var(--gold); 
+            text-shadow: 0 0 10px var(--glow-gold); 
+            text-decoration: none; 
+        }
+        
+        /* Silver glow for "Mods" added here */
+        .logo span { 
+            color: var(--silver); 
+            text-shadow: 0 0 10px var(--glow-silver); 
+        }
+
+        /* --- ERROR PAGE LAYOUT --- */
+        .error-page-wrapper { 
+            padding: 40px 20px; 
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .error-code { 
+            font-size: clamp(8em, 20vw, 12em); /* Responsive sizing */
+            font-weight: 700; 
+            line-height: 1; 
+            margin-bottom: -10px;
+        }
+
+        .error-title { 
+            font-size: clamp(2em, 5vw, 3em); /* Responsive sizing */
+            margin-bottom: 20px; 
+            color: var(--white);
+            text-transform: uppercase;
+        }
+
+        .error-message { 
+            color: var(--silver); 
+            font-size: 1.2em; 
+            max-width: 600px; 
+            margin: 0 auto 30px auto; 
+            line-height: 1.6;
+        }
+
+        .home-button { 
+            display: inline-block; 
+            padding: 12px 35px; 
+            border-radius: 25px; 
+            text-decoration: none; 
+            font-size: 1.1em; 
+            font-weight: 600; 
+            transition: all 0.3s ease; 
+            border: none;
+            cursor: pointer;
+        }
+
+        /* --- GLOW ANIMATIONS --- */
+        @keyframes pulseGlowGold {
+            0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.05); color: var(--dark-gray); }
+            100% { text-shadow: 0 0 30px var(--glow-gold), 0 0 10px var(--gold); color: #332b00; }
+        }
+
+        @keyframes pulseGlowRed {
+            0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.05); color: var(--dark-gray); }
+            100% { text-shadow: 0 0 30px var(--glow-red), 0 0 10px var(--red); color: #330000; }
+        }
+
+        /* --- DYNAMIC ERROR COLORS (EJS LOGIC) --- */
+        <% if (errorCode == '404') { %>
+            .error-code { animation: pulseGlowGold 2s infinite alternate ease-in-out; }
+            .error-title span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+            .home-button { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+            .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); background-color: #fff; }
+        <% } else { %>
+            .error-code { animation: pulseGlowRed 2s infinite alternate ease-in-out; }
+            .error-title span { color: var(--red); text-shadow: 0 0 15px var(--glow-red); }
+            .home-button { background: var(--red); color: var(--white); box-shadow: 0 0 15px var(--glow-red); }
+            .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-red); background-color: #fff; color: var(--black); }
+        <% } %>
+    </style>
 </head>
 <body>
 
-<style>
-    /* We only need layout specifics here; colors and fonts come from style.css */
-    .error-page-wrapper { 
-        padding: 80px 20px; 
-        text-align: center;
-        min-height: 60vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
+    <!-- Minimal Header -->
+    <header class="main-header">
+        <div class="container header-content">
+            <a href="/" class="logo">GPL <span>Mods</span></a>
+        </div>
+    </header>
 
-    .error-code { 
-        font-size: 8em; 
-        font-weight: 700; 
-        color: var(--dark-gray); 
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
-        line-height: 1; 
-        margin-bottom: -10px;
-    }
+    <!-- Main Error Content -->
+    <main class="container error-page-wrapper">
+        <!-- Dynamic Error Code with Animation -->
+        <div class="error-code"><%= errorCode %></div>
+        
+        <!-- Dynamic Title -->
+        <h1 class="error-title"><%- errorTitle %></h1>
+        
+        <!-- Dynamic Message -->
+        <p class="error-message"><%= errorMessage %></p>
+        
+        <!-- Smart Routing: Sends logged-in users to /home, guests to / -->
+        <a href="<%= typeof user !== 'undefined' && user ? '/home' : '/' %>" class="home-button">Go to Homepage</a>
+    </main>
 
-    .error-title { 
-        font-size: 3em; 
-        margin-bottom: 20px; 
-        color: var(--white);
-    }
-
-    .error-message { 
-        color: var(--silver); 
-        font-size: 1.2em; 
-        max-width: 600px; 
-        margin: 0 auto 30px auto; 
-        line-height: 1.6;
-    }
-
-    /* --- DYNAMIC ERROR COLORS --- */
-    /* If it's a 404 (Not Found), we use Gold. If it's 403 or 500 (Access Denied/Server Error), we use Red! */
-    <% if (errorCode == '404') { %>
-        .error-title span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-        .home-button { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
-        .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
-    <% } else { %>
-        .error-title span { color: var(--red); text-shadow: 0 0 15px var(--glow-red); }
-        .home-button { background: var(--red); color: var(--white); box-shadow: 0 0 15px var(--glow-red); }
-        .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-red); }
-    <% } %>
-    
-    .home-button { 
-        display: inline-block; 
-        padding: 12px 30px; 
-        border-radius: 25px; 
-        text-decoration: none; 
-        font-size: 1.1em; 
-        font-weight: 600; 
-        transition: all 0.3s ease; 
-        border: none;
-    }
-</style>
-
-<main class="container error-page-wrapper">
-    <!-- Dynamic Error Code (404, 403, 500, etc.) -->
-    <div class="error-code"><%= errorCode %></div>
-    
-    <!-- Dynamic Title -->
-    <h1 class="error-title"><%- errorTitle %></h1>
-    
-    <!-- Dynamic Message -->
-    <p class="error-message"><%= errorMessage %></p>
-    
-    <!-- Smart Routing: Sends logged-in users to /home, guests to / -->
-    <a href="<%= user ? '/home' : '/' %>" class="home-button">Go to Homepage</a>
-</main>
+</body>
+</html>

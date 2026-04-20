@@ -1992,15 +1992,16 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 app.get('/users/:username', async (req, res, next) => {
     try {
         const slug = req.params.username;
+        // Create regex to match dashed slugs to spaced usernames (e.g. gpl-mods -> GPL Mods)
         const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        const profileUser = await User.findOne({ username: searchPattern })
+        // Fetch the user we are looking for
+        const targetUser = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
             .populate('followers', 'username profileImageKey role');
 
         // --- 1. HANDLE USER NOT FOUND ---
-        if (!profileUser) {
-            // ✅ FIX: Correctly render the universal error page
+        if (!targetUser) {
             return res.status(404).render('pages/error', {
                 errorCode: '404',
                 errorTitle: 'User <span>Not Found</span>',
@@ -2009,36 +2010,34 @@ app.get('/users/:username', async (req, res, next) => {
         }
 
         // --- 2. HANDLE BANNED USERS ---
-        if (profileUser.isBanned) {
-            // ✅ FIX: Correctly render the universal error page for banned users
+        if (targetUser.isBanned) {
             return res.status(403).render('pages/error', {
                 errorCode: '403',
                 errorTitle: 'Account <span>Suspended</span>',
-                errorMessage: `The account for "${profileUser.username}" has been suspended due to a violation of our Terms of Service.`
+                errorMessage: `The account for "${targetUser.username}" has been suspended due to a violation of our Terms of Service.`
             });
         }
 
-        // --- 3. PROCEED NORMALLY IF USER IS VALID ---
-        if (profileUser.profileImageKey) {
+        // --- 3. GET AVATAR URL ---
+        if (targetUser.profileImageKey) {
             try {
-                profileUser.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                    Bucket: process.env.B2_BUCKET_NAME, Key: profileUser.profileImageKey
+                targetUser.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME, Key: targetUser.profileImageKey
                 }), { expiresIn: 3600 });
             } catch (e) { 
-                profileUser.signedAvatarUrl = '/images/default-avatar.png'; 
+                targetUser.signedAvatarUrl = '/images/default-avatar.png'; 
             }
         } else {
-            profileUser.signedAvatarUrl = '/images/default-avatar.png';
+            targetUser.signedAvatarUrl = '/images/default-avatar.png';
         }
 
-        // Fetch uploads
+        // --- 4. GET UPLOADS ---
         const uploads = await File.find({ 
-            uploader: profileUser.username, // Use actual username, not slug
+            uploader: targetUser.username, // Use the actual matched username
             isLatestVersion: true,
             status: 'live' 
         }).sort({ createdAt: -1 });
-        
-        // Get signed URLs for the upload icons
+  // Get signed URLs for the upload icons
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(key);
@@ -2055,23 +2054,23 @@ app.get('/users/:username', async (req, res, next) => {
         const followingWithAvatars = await Promise.all(user.following.map(async (followingUser) => {
             const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
             return { ...followingUser.toObject(), signedAvatarUrl: avatarUrl };
-        }));
+        }));        
 
-        // Check if current user is following this profile
+        // --- 5. CHECK FOLLOW STATUS ---
         let isFollowing = false;
-        if (req.isAuthenticated()) {
-            isFollowing = req.user.following.includes(profileUser._id);
+        // Ensure req.user and req.user.following exist before checking
+        if (req.isAuthenticated() && req.user && req.user.following) {
+            isFollowing = req.user.following.includes(targetUser._id);
         }
 
-        // 8. Render the page, passing the newly processed arrays
+        // --- 6. RENDER PAGE ---
         res.render('pages/public-profile', { 
-            profileUser: { ...user.toObject(), signedAvatarUrl: user.signedAvatarUrl }, // Pass the main user data
+            profileUser: targetUser, // Pass targetUser to EJS as 'profileUser'
             uploads: uploadsWithUrls,
             followersList: followersWithAvatars, // <--- NEW
-            followingList: followingWithAvatars, // <--- NEW
+            followingList: followingWithAvatars,
             isFollowing: isFollowing 
         });
-
 
     } catch (error) { 
         console.error("Public Profile Error:", error);
