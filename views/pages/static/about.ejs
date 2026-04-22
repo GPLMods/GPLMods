@@ -1,4 +1,4 @@
-<%- include('../../../partials/header') %>
+<%- include('../../partials/header') %>
 
 <style>
     /* --- ABOUT PAGE SPECIFIC STYLES --- */
@@ -179,7 +179,10 @@
     <div class="members-modal-content">
         <span class="close-modal-btn" id="closeMembersModal">&times;</span>
         <h2 style="color: var(--gold); margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px;">Extended Team & Contributors</h2>
-        
+
+        <p style="text-align: center; color: var(--gold); margin-top: 25px; font-size: 0.9em; font-style: italic;">
+         <strong>Core Services we used to Build Our Platform</strong>
+        </p>
         <!-- Member 1 -->
         <div class="extended-member-item">
             <div class="member-info">
@@ -209,8 +212,8 @@
                 <a href="http://www.youtube.com/@hilltopads_network" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
             </div>
         </div>
-
-        <!-- Member 3 -->
+        
+       <!-- Member 3 -->
         <div class="extended-member-item">
             <div class="member-info">
                 <img src="/images/mongodb.png" alt="MongoDB">
@@ -224,8 +227,23 @@
                 <a href="https://www.mongodb.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
             </div>
         </div>
-        
+
         <!-- Member 4 -->
+        <div class="extended-member-item">
+            <div class="member-info">
+                <img src="/images/improvemx.png" alt="ImproveMX">
+                <div>
+                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">ImproveMX</h4>
+                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Mail Forwarding Service Provider!</span>
+                </div>
+            </div>
+            <div class="member-socials">
+                <a href="https://github.com/improvmx" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                <a href="https://improvmx.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+            </div>
+        </div>
+        
+        <!-- Member 5 -->
         <div class="extended-member-item">
             <div class="member-info">
                 <img src="/images/render.png" alt="Render">
@@ -239,11 +257,22 @@
                 <a href="https://github.com/render-oss" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
             </div>
         </div>
+        
+       <!-- Member 6 -->
+        <div class="extended-member-item">
+            <div class="member-info">
+                <img src="/images/tidio.png" alt="Tidio">
+                <div>
+                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Tidio</h4>
+                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Support Chatbot Provider!</span>
+                </div>
+            </div>
+            <div class="member-socials">
+                <a href="https://www.tidio.com/ai-agent/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+                <a href="www.youtube.com/@Tidio" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
 
-        <!-- Note about becoming a contributor -->
-        <p style="text-align: center; color: var(--gold); margin-top: 25px; font-size: 0.9em; font-style: italic;">
-            Upload highly-rated mods consistently to be featured on this list!
-        </p>
     </div>
 </div>
 
@@ -276,4 +305,4 @@
     });
 </script>
 
-<%- include('../../../partials/footer') %>
+<%- include('../../partials/footer') %>

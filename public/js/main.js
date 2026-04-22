@@ -1,6 +1,6 @@
 /**
  * ==================================================================================
- * GPL MODS GLOBAL JAVASCRIPT (BULLETPROOF VERSION)
+ * GPL MODS GLOBAL JAVASCRIPT
  * ==================================================================================
  * Table of Contents:
  * 1. Document Ready Initializer (with Try/Catch Safety)
@@ -9,10 +9,11 @@
  * 4. Search Bar Handler (Dynamic Animation)
  * 5. Search History & Suggestions
  * 6. Mobile Navigation Handler
- * 7. Policy Acceptance Banner
+ * 7. Policy Acceptance Banner and PWA  and Newsletter Sequence
  * 8. Robust Sidebar Music Player
  * 9. Smart Audio Handler (YouTube/Vimeo pauses BG music)
- * 10. Notifications & PWA Install Banner
+ * 10. Notifications Logic
+ * 11. Newsletter Logic
  * ==================================================================================
  */
 
@@ -30,8 +31,9 @@ try { initializeStarRatings(); } catch (e) { console.error("Star Ratings Error:"
 try { initializeHomepageTabs(); } catch (e) { console.error("Homepage Tabs Error:", e); }
 try { initializeSmartAudioHandler(); } catch (e) { console.error("Smart Audio Error:", e); }
 try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error:", e); }
-try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); } // <-- ADD THIS LINE
-try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); } // Added here!
+try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); }
+try { initializeNewsletter(); } catch (e) { console.error("Newsletter Error:", e); }
+try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); }
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
         console.log("All initializers finished.");
     };
@@ -413,7 +415,8 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 7. POLICY BANNER
+ * 7. POLICY BANNER & SEQUENCE ORCHESTRATOR
+ * This controls the TOS, PWA, and Newsletter sequence.
  * ==================================================================================
  */
 function initializePolicyBanner() {
@@ -421,50 +424,157 @@ function initializePolicyBanner() {
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
-    if (!policyModal || !acceptBtn || !declineBtn) return; 
+    if (!policyModal || !acceptBtn || !declineBtn) return;
 
-    if (localStorage.getItem('gplmods_policy_accepted') === 'true') return; 
-
+    // Check current page: Don't show TOS if they are reading the policies!
     const currentPath = window.location.pathname;
     const isPolicyPage = currentPath === '/tos' || currentPath === '/privacy-policy';
 
     if (isPolicyPage) {
         policyModal.style.display = 'none';
-        return; 
+        return;
     }
 
-    policyModal.style.display = 'flex'; 
-    policyModal.classList.add('show');
-    
-    setTimeout(() => {
-        const contentBox = policyModal.querySelector('.policy-modal-content');
-        if (contentBox) contentBox.classList.add('active');
-    }, 10);
+    const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
-    acceptBtn.addEventListener('click', () => {
-        localStorage.setItem('gplmods_policy_accepted', 'true');
-        const contentBox = policyModal.querySelector('.policy-modal-content');
-        if (contentBox) contentBox.classList.remove('active');
+    if (!hasAcceptedTOS) {
+        // --- PHASE 1: Show TOS Modal ---
+        policyModal.style.display = 'flex';
+        policyModal.classList.add('show');
+
         setTimeout(() => {
-            policyModal.classList.remove('show');
-            policyModal.style.display = 'none'; 
-        }, 300); 
-    }, { once: true });
+            const contentBox = policyModal.querySelector('.policy-modal-content');
+            if (contentBox) contentBox.classList.add('active');
+        }, 10);
 
-    declineBtn.addEventListener('click', () => {
-        const contentBox = policyModal.querySelector('.policy-modal-content');
-        if (contentBox) {
-            contentBox.innerHTML = `
-                <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
-                <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
-                    To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy.
-                </p>
-                <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
-                    Refresh Page
-                </button>
-            `;
+        acceptBtn.addEventListener('click', () => {
+            localStorage.setItem('gplmods_policy_accepted', 'true');
+            const contentBox = policyModal.querySelector('.policy-modal-content');
+            if (contentBox) contentBox.classList.remove('active');
+            
+            setTimeout(() => {
+                policyModal.classList.remove('show');
+                policyModal.style.display = 'none';
+                
+                // --- PHASE 2: Start the PWA/Newsletter Sequence ---
+                startEngagementSequence();
+            }, 300);
+        }, { once: true });
+
+        declineBtn.addEventListener('click', () => {
+            const contentBox = policyModal.querySelector('.policy-modal-content');
+            if (contentBox) {
+                contentBox.innerHTML = `
+                    <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
+                    <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
+                        To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy.
+                    </p>
+                    <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
+                        Refresh Page
+                    </button>
+                `;
+            }
+        }, { once: true });
+
+    } else {
+        // They already accepted TOS previously. Just run the sequence logic.
+        startEngagementSequence();
+    }
+}
+
+/**
+ * ORCHESTRATOR: Handles the timing of PWA and Newsletter banners
+ */
+function startEngagementSequence() {
+    // Timers in milliseconds (Adjusted for testing, change back to 3/2 mins for production)
+    // const pwaDelay = 3 * 60 * 1000; // 3 minutes
+    // const newsletterFallbackDelay = 5 * 60 * 1000; // 5 minutes
+    // const newsletterAfterPwaDelay = 2 * 60 * 1000; // 2 minutes
+    // For Testing
+    // const pwaDelay = 10000; //10 Seconds
+    // const newsletterFallbackDelay = 20000; // 20 Seconds
+    // const newsletterAfterPwaDelay = 10000; // 10 Seconds
+    // For testing right now, change the value to 10 seconds, 20 seconds, and 10 seconds
+    const pwaDelay = 3 * 60 * 1000; 
+    const newsletterFallbackDelay = 5 * 60 * 1000; 
+    const newsletterAfterPwaDelay = 2 * 60 * 1000; 
+
+    // --- PWA LOGIC ---
+    let deferredPrompt;
+    let pwaShown = false;
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('pwa-install');
+    const dismissBtn = document.getElementById('pwa-dismiss');
+    
+    const isPwaDismissed = localStorage.getItem('pwaDismissed') === 'true';
+    const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches;
+
+    // We set a fallback timer for the newsletter in case the PWA prompt NEVER fires
+    // (e.g., they are on an unsupported browser or already installed it)
+    let newsletterTimer = setTimeout(() => {
+        if (!pwaShown) triggerNewsletter();
+    }, newsletterFallbackDelay);
+
+    if (!isPwaDismissed && !isPwaInstalled) {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // The browser is ready. Now wait for our programmed delay.
+            setTimeout(() => {
+                if (pwaBanner) {
+                    pwaBanner.classList.add('show');
+                    pwaShown = true;
+                    clearTimeout(newsletterTimer); // Cancel fallback timer
+                }
+            }, pwaDelay);
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (pwaBanner) pwaBanner.classList.remove('show');
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                }
+                // They handled PWA, queue the Newsletter
+                setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
+            });
         }
-    }, { once: true });
+
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                if (pwaBanner) pwaBanner.classList.remove('show');
+                localStorage.setItem('pwaDismissed', 'true');
+                // They handled PWA, queue the Newsletter
+                setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (pwaBanner) pwaBanner.classList.remove('show');
+            localStorage.setItem('pwaDismissed', 'true');
+            deferredPrompt = null;
+        });
+    }
+
+    // --- NEWSLETTER TRIGGER ---
+    function triggerNewsletter() {
+        const popup = document.getElementById('newsletter-popup');
+        const isSubscribed = localStorage.getItem('gplmods_subscribed') === 'true';
+        const dismissedTime = localStorage.getItem('gplmods_newsletter_dismissed');
+        const now = new Date().getTime();
+        
+        let shouldShow = !isSubscribed;
+        if (dismissedTime && (now - parseInt(dismissedTime)) < (3 * 24 * 60 * 60 * 1000)) {
+            shouldShow = false; // Dismissed less than 3 days ago
+        }
+
+        if (shouldShow && popup) {
+            popup.classList.add('show');
+        }
+    }
 }
 
 /**
@@ -494,13 +604,13 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
 
     const playlist =[
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
-        { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
         { title: 'Nekozilla', src: '/audio/bgm-2.mp3' },
         { title: 'Heroes Tonight', src: '/audio/bgm-3.mp3' },
         { title: 'Dreams', src: '/audio/bgm-4.mp3' },
         { title: 'Royalty', src: '/audio/bgm-5.mp3' },
         { title: 'Mortals', src: '/audio/bgm-6.mp3' },
         { title: 'On & On', src: '/audio/bgm-7.mp3' },
+        { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
     ];
     
     let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;
@@ -636,25 +746,22 @@ function initializeSmartAudioHandler() {
 
 /**
  * ==================================================================================
- * 10. NOTIFICATIONS & PWA INSTALL BANNER
+ * 10. NOTIFICATIONS (Just the Bell Logic)
  * ==================================================================================
  */
 function initializeNotificationsAndPWA() {
-    // --- 1. NOTIFICATION BADGE LOGIC (WITH NUMBERS) ---
+    // --- NOTIFICATION BADGE LOGIC (WITH NUMBERS) ---
     const bellLink = document.getElementById('nav-bell-link');
     const badge = document.getElementById('notification-badge');
     
     if (bellLink && badge) {
         const currentTotalUpdates = parseInt(bellLink.getAttribute('data-total-updates') || '0', 10);
-        const unreadPersonal = parseInt(bellLink.getAttribute('data-unread-personal') || '0', 10);
         const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
+        const unreadCount = currentTotalUpdates - lastSeenTotal;
         
-        const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
-        const totalUnread = (unreadGlobalCount > 0 ? unreadGlobalCount : 0) + unreadPersonal;
-        
-        if (totalUnread > 0) {
+        if (unreadCount > 0) {
             badge.style.display = 'flex';
-            badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
         }
         
         bellLink.addEventListener('click', () => {
@@ -662,13 +769,7 @@ function initializeNotificationsAndPWA() {
         });
     }
 
-    // --- 2. ROBUST PWA INSTALL LOGIC ---
-    let deferredPrompt;
-    const pwaBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('pwa-install');
-    const dismissBtn = document.getElementById('pwa-dismiss');
-
-    // Register Service Worker
+    // Register Service Worker (Keep this outside the sequence so it always registers)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
@@ -676,56 +777,63 @@ function initializeNotificationsAndPWA() {
                 .catch(err => console.error('SW registration failed: ', err));
         });
     }
+}
+/**
+ * ==================================================================================
+ * 11. NEWSLETTER FORM HANDLER
+ * ==================================================================================
+ */
+function initializeNewsletter() {
+    const popup = document.getElementById('newsletter-popup');
+    const closeBtn = document.getElementById('newsletter-close-btn');
+    const form = document.getElementById('newsletter-form');
+    const emailInput = document.getElementById('newsletter-email');
+    const submitBtn = document.getElementById('newsletter-submit');
+    const msgDiv = document.getElementById('newsletter-msg');
 
-    // Listen for the Chrome Install Prompt Event
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent the mini-infobar from appearing on mobile
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        
-        // Check if user dismissed it recently
-        const isDismissed = localStorage.getItem('pwaDismissed') === 'true';
-        
-        if (!isDismissed && pwaBanner) {
-            // Show the banner much faster (1 second instead of 3)
-            setTimeout(() => {
-                pwaBanner.classList.add('show');
-            }, 1000); 
-        }
-    });
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            popup.classList.remove('show');
+            localStorage.setItem('gplmods_newsletter_dismissed', new Date().getTime().toString());
+        });
+    }
 
-    if (installBtn) {
-        installBtn.addEventListener('click', async () => {
-            // Hide the banner immediately
-            if (pwaBanner) pwaBanner.classList.remove('show');
-            
-            if (deferredPrompt) {
-                // Show the native browser install prompt
-                deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`User response to install prompt: ${outcome}`);
-                // We've used the prompt, and can't use it again
-                deferredPrompt = null;
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            if (!email) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Subscribing...';
+            msgDiv.className = 'newsletter-msg';
+
+            try {
+                const response = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, source: 'footer_popup' })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    msgDiv.textContent = data.message;
+                    msgDiv.classList.add('success');
+                    localStorage.setItem('gplmods_subscribed', 'true');
+                    setTimeout(() => { popup.classList.remove('show'); }, 3000);
+                } else {
+                    msgDiv.textContent = data.error || 'Failed to subscribe.';
+                    msgDiv.classList.add('error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Subscribe Now';
+                }
+            } catch (err) {
+                msgDiv.textContent = 'A network error occurred.';
+                msgDiv.classList.add('error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Subscribe Now';
             }
         });
     }
-
-    if (dismissBtn) {
-        dismissBtn.addEventListener('click', () => {
-            if (pwaBanner) pwaBanner.classList.remove('show');
-            // Hide it for 7 days
-            localStorage.setItem('pwaDismissed', 'true');
-            setTimeout(() => localStorage.removeItem('pwaDismissed'), 7 * 24 * 60 * 60 * 1000); 
-        });
-    }
-    
-    // Hide banner forever if successfully installed
-    window.addEventListener('appinstalled', () => {
-        console.log('PWA was installed successfully!');
-        if (pwaBanner) pwaBanner.classList.remove('show');
-        localStorage.setItem('pwaDismissed', 'true'); // Ensure it doesn't pop up again
-        deferredPrompt = null;
-    });
 }

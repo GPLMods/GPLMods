@@ -77,6 +77,63 @@
             </div>
             <!-- ======== END OF NEW BLOCK ======== -->
 
+<!-- ======== ANTI-ADBLOCK MODAL ======== -->
+<% if (typeof showAds !== 'undefined' && showAds) { %>
+<div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
+        <i class="fas fa-shield-alt" style="font-size: 4em; color: var(--red); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
+        <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">
+            It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.
+        </p>
+        <p style="color: var(--silver); margin-bottom: 30px;">
+            Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.
+        </p>
+        <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
+    </div>
+</div>
+
+<!-- 1. LOAD THE LOCAL LIBRARY SCRIPT FIRST -->
+<!-- This matches <script src="adblock-checker.min.js"></script> from the video -->
+<script src="/js/adblock-checker.min.js"></script>
+
+<!-- 2. RUN THE CHECKER LOGIC -->
+<!-- This matches the logic from the video's script.js file -->
+<script>
+    // Define the async function exactly as shown in the video
+    async function checkUserAdblockStatus() {
+        const currentPath = window.location.pathname;
+        const isExemptPage = currentPath === '/membership' || currentPath === '/login' || currentPath === '/register';
+
+        if (!isExemptPage) {
+            try {
+                // Call the library method precisely as instructed: AdBlockChecker.checkAdBlock()
+                let isEnabled = await AdBlockChecker.checkAdBlock();
+                
+                if (isEnabled) {
+                    console.log("AdBlocker detected! Springing the trap.");
+                    const abModal = document.getElementById('adblock-modal');
+                    if (abModal) {
+                        abModal.style.display = 'flex';
+                        // Tiny delay ensures CSS transitions apply correctly
+                        setTimeout(() => abModal.classList.add('show'), 10);
+                        document.body.style.overflow = 'hidden'; 
+                    }
+                } else {
+                     console.log("No AdBlocker active. Continuing normally.");
+                }
+            } catch (err) {
+                console.error("AdBlock checker script error:", err);
+            }
+        }
+    }
+
+    // Run the check on page load, exactly like: window.addEventListener("load", updateStatus);
+    window.addEventListener("load", checkUserAdblockStatus);
+
+</script>
+<% } %>
+
             <div class="footer-links">
                 <a href="/about">About Us</a>
                 <a href="/faq">FAQ</a>
@@ -129,60 +186,6 @@
             <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
         </div>
     </div>
-<!-- ======== ANTI-ADBLOCK MODAL ======== -->
-<div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
-        <i class="fas fa-shield-alt" style="font-size: 4em; color: var(--red); margin-bottom: 20px;"></i>
-        <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
-        <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">
-            It looks like you are using an ad blocker. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.
-        </p>
-        <p style="color: var(--silver); margin-bottom: 30px;">
-            Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.
-        </p>
-        <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">I have disabled my Ad Blocker</button>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Check if we should enforce adblock rules for this specific user
-        const userNeedsAds = <%= typeof showAds !== 'undefined' ? showAds : true %>;
-        const currentPath = window.location.pathname;
-        
-        // ✅ FIX: Do NOT show the adblock modal on the membership, login, or register pages!
-        const isExemptPage = currentPath === '/membership' || currentPath === '/login' || currentPath === '/register';
-        
-        if (userNeedsAds && !isExemptPage) {
-            // Create a fake "ad" element
-            const adTest = document.createElement('div');
-            adTest.innerHTML = '&nbsp;';
-            // These class names are universally targeted by AdBlock, uBlock Origin, Brave Shields, etc.
-            adTest.className = 'adsbox ad-placement doubleclick ad-placeholder adsbygoogle';
-            adTest.style.position = 'absolute';
-            adTest.style.top = '-10000px';
-            document.body.appendChild(adTest);
-
-            setTimeout(() => {
-                // If the element's height is 0 or it's hidden, an ad blocker is active!
-                const isBlocked = adTest.offsetHeight === 0 || window.getComputedStyle(adTest).display === 'none';
-                
-                if (isBlocked) {
-                    const abModal = document.getElementById('adblock-modal');
-                    if (abModal) {
-                        abModal.style.display = 'flex';
-                        // Tiny delay to allow CSS transition to work
-                        setTimeout(() => abModal.classList.add('show'), 10);
-                        document.body.style.overflow = 'hidden'; // Stop background scrolling
-                    }
-                }
-                
-                // Clean up the test element
-                adTest.remove();
-            }, 500); // 500ms delay gives the adblocker time to process the DOM
-        }
-    });
-</script>
 
 <!-- Hidden Audio Player for JS to control -->
     <audio id="background-audio" preload="auto"></audio>
@@ -192,84 +195,3 @@
     <script src="//code.tidio.co/yp1nowk7qp296bwxznsfy7v8xwcl3ibn.js" async></script>
 </body>
 </html>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const popup = document.getElementById('newsletter-popup');
-        const closeBtn = document.getElementById('newsletter-close-btn');
-        const form = document.getElementById('newsletter-form');
-        const emailInput = document.getElementById('newsletter-email');
-        const submitBtn = document.getElementById('newsletter-submit');
-        const msgDiv = document.getElementById('newsletter-msg');
-
-        // Check if we should show the popup
-        const isSubscribed = localStorage.getItem('gplmods_subscribed') === 'true';
-        const dismissedTime = localStorage.getItem('gplmods_newsletter_dismissed');
-        const now = new Date().getTime();
-        
-        // Show if not subscribed, and either never dismissed OR dismissed more than 3 days ago
-        let shouldShow = !isSubscribed;
-        if (dismissedTime && (now - parseInt(dismissedTime)) < (3 * 24 * 60 * 60 * 1000)) {
-            shouldShow = false;
-        }
-
-        if (shouldShow && popup) {
-            // Delay the popup so it doesn't overwhelm the user immediately
-            setTimeout(() => {
-                popup.classList.add('show');
-            }, 8000); // 8 seconds delay
-        }
-
-        // Handle Close
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                popup.classList.remove('show');
-                // Remember they dismissed it so we don't bother them for 3 days
-                localStorage.setItem('gplmods_newsletter_dismissed', now.toString());
-            });
-        }
-
-        // Handle Submission
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = emailInput.value.trim();
-                if (!email) return;
-
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Subscribing...';
-                msgDiv.className = 'newsletter-msg'; // Reset classes
-
-                try {
-                    const response = await fetch('/api/subscribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email, source: 'footer_popup' })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        msgDiv.textContent = data.message;
-                        msgDiv.classList.add('success');
-                        localStorage.setItem('gplmods_subscribed', 'true'); // Never show again
-                        
-                        // Hide popup after showing success message
-                        setTimeout(() => {
-                            popup.classList.remove('show');
-                        }, 3000);
-                    } else {
-                        msgDiv.textContent = data.error || 'Failed to subscribe.';
-                        msgDiv.classList.add('error');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Subscribe Now';
-                    }
-                } catch (err) {
-                    msgDiv.textContent = 'A network error occurred.';
-                    msgDiv.classList.add('error');
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Subscribe Now';
-                }
-            });
-        }
-    });
-</script>

@@ -5,8 +5,7 @@
     <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
     <!-- ======== VIDEO AD MODAL ======== -->
-    <!-- Added pointer-events: auto to ensure the background overlay blocks clicks to the site below -->
-    <div id="video-ad-modal" class="policy-modal" style="display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 10000; pointer-events: auto;">
+    <div id="video-ad-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 10000; pointer-events: auto;">
         
         <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 800px; width: 95%; border-top: 4px solid var(--gold); box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4); display: flex; flex-direction: column; gap: 15px;">
             
@@ -23,21 +22,20 @@
                 </button>
             </div>
 
-            <!-- THE FLUID PLAYER CONTAINER (Hidden initially) -->
-            <!-- Removing the custom close button means the user relies ENTIRELY on the player UI -->
+            <!-- THE FLUID PLAYER CONTAINER -->
             <div id="ad-player-container" style="display: none; width: 100%; aspect-ratio: 16 / 9; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; position: relative;">
                 
-                <!-- 
-                  Dummy Base64 video prevents 404 errors. 
-                  The VAST preRoll ad will intercept this immediately.
-                -->
+                <!-- A simple 10-second silent video to hold the player open while the ad loads -->
                 <video id="fluid-video-id" style="width: 100%; height: 100%;">
-                    <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAG21kYXQAAAGzABAHAAABthkEAAAAACkQAAA=" type="video/mp4" />
+                    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
                 </video>
                 
             </div>
 
-            <!-- Removed your custom skip/close button. -->
+            <!-- ✅ FIX: Reliable Close Button (Hidden initially) -->
+            <button id="manual-close-btn" class="btn btn-secondary" style="display: none; margin-top: 15px; border: 1px solid #555; background: transparent; color: var(--silver); padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                Close & Continue
+            </button>
             
         </div>
     </div>
@@ -48,59 +46,86 @@
             const introScreen = document.getElementById('ad-intro-screen');
             const watchBtn = document.getElementById('watch-video-btn');
             const playerContainer = document.getElementById('ad-player-container');
+            const manualCloseBtn = document.getElementById('manual-close-btn');
+            const backgroundAudio = document.getElementById('background-audio');
 
             if (!videoModal || !watchBtn || !playerContainer) return;
 
+            // --- 1. COOKIE LOGIC (30 Minute Cooldown) ---
+            const adCookieName = 'gplmods_video_ad_watched';
+            
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
+
+            function setAdCookie() {
+                const date = new Date();
+                date.setTime(date.getTime() + (30 * 60 * 1000)); // 30 mins
+                document.cookie = `${adCookieName}=true;expires=${date.toUTCString()};path=/`;
+            }
+
+            if (getCookie(adCookieName) === 'true') {
+                console.log("User watched video ad recently. Skipping.");
+                return; 
+            }
+
             let myFP = null;
 
-            // 1. Show the modal smoothly
+            // --- 2. SHOW MODAL & PAUSE MUSIC ---
             setTimeout(() => { 
-                videoModal.classList.add('show'); 
-                document.body.style.overflow = 'hidden'; // Stop background scrolling
+                videoModal.style.display = 'flex';
+                setTimeout(() => videoModal.classList.add('show'), 10);
+                document.body.style.overflow = 'hidden'; 
+                
+                if (backgroundAudio && !backgroundAudio.paused) {
+                    backgroundAudio.dataset.adPaused = 'true';
+                    backgroundAudio.pause();
+                }
             }, 500);
 
-            // Function to smoothly close the modal and resume the site
+            // --- 3. CLOSE MODAL LOGIC ---
             function closeAdModal() {
                 if (myFP) {
                     try { myFP.destroy(); } catch(e) {}
                 }
                 videoModal.classList.remove('show');
-                document.body.style.overflow = 'auto'; // Restore page scrolling
+                document.body.style.overflow = 'auto'; 
+                
+                setAdCookie(); // Set cookie when closed
+                
                 setTimeout(() => { 
-                    videoModal.remove(); // Remove from DOM
+                    videoModal.style.display = 'none';
+                    if (backgroundAudio && backgroundAudio.dataset.adPaused === 'true') {
+                        backgroundAudio.play();
+                        backgroundAudio.dataset.adPaused = 'false';
+                    }
                 }, 300);
             }
 
-            // 2. Handle the "Play Video" click
+            // Bind the close function to the new manual button
+            manualCloseBtn.addEventListener('click', closeAdModal);
+
+            // --- 4. HANDLE "PLAY VIDEO" CLICK ---
             watchBtn.addEventListener('click', () => {
                 
-                // Hide intro, show player
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
 
-                // 3. Initialize Fluid Player using your EXACT config
                 myFP = fluidPlayer('fluid-video-id', {
                     "layoutControls": {
-                        "controlBar": {
-                            "autoHideTimeout": 3,
-                            "animated": true,
-                            "autoHide": true
-                        },
-                        "htmlOnPauseBlock": {
-                            "html": null,
-                            "height": null,
-                            "width": null
-                        },
-                        "autoPlay": true, // Automatically start
+                        "controlBar": { "autoHideTimeout": 3, "animated": true, "autoHide": true },
+                        "autoPlay": true, 
                         "mute": false,
-                        "allowTheatre": true,
+                        "allowTheatre": false,
                         "playPauseAnimation": false,
                         "playbackRateEnabled": false,
                         "allowDownload": false,
                         "playButtonShowing": false,
-                        "fillToContainer": true, // Perfect for our aspect-ratio box
-                        "primaryColor": "#FFD700", // GPL Mods Gold!
-                        "posterImage": ""
+                        "fillToContainer": true, 
+                        "primaryColor": "#FFD700" 
                     },
                     "vastOptions": {
                         "adList":[
@@ -108,54 +133,17 @@
                                 "roll": "preRoll",
                                 "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
                                 "adText": ""
-                            },
-                            {
-                                "roll": "midRoll",
-                                "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
-                                "adText": ""
-                            },
-                            {
-                                "roll": "postRoll",
-                                "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
-                                "adText": ""
                             }
                         ],
-                        "adCTAText": false,
-                        "adCTATextPosition": ""
+                        "adCTAText": false
                     }
                 });
 
-                // ========================================================
-                // CRITICAL LOGIC: Auto-Close when the main content finishes
-                // ========================================================
-                
-                // Fluid Player will play the preRoll ad, then play the main video, 
-                // then play the postRoll ad.
-                
-                // We listen for the 'ended' event on the HTML5 video element itself.
-                // Because our main video is just a 1-byte dummy file, it "ends" instantly
-                // as soon as the pre/mid/post-roll ads are finished playing or skipping.
-                
-                const videoElement = document.getElementById('fluid-video-id');
-                
-                if (videoElement) {
-                    videoElement.addEventListener('ended', function() {
-                        // All ads and content are finished. Close the modal automatically!
-                        console.log("Ads finished, closing modal.");
-                        closeAdModal();
-                    });
-                }
-
-                // SAFETY FALLBACK: Ad Blockers
-                // If an ad blocker blocks the VAST request, the dummy video will just play and instantly end, 
-                // triggering the 'ended' event above and closing the modal. The user won't get stuck.
-                
-                // SECONDARY FALLBACK: VAST Error
-                // If HilltopAds throws an error (e.g. no fill), we must close the modal so the user isn't trapped.
-                myFP.on('vastAdError', function() {
-                    console.log("VAST Error (likely no fill or blocked). Continuing to site.");
-                    closeAdModal();
-                });
+                // ✅ FIX: Show the Close button after 8 seconds, regardless of what the ad is doing.
+                // This guarantees the user is never trapped, even if the ad throws a DOMException or fails to load.
+                setTimeout(() => {
+                    manualCloseBtn.style.display = 'inline-block';
+                }, 8000);
             });
         });
     </script>
