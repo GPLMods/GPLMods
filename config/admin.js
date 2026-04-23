@@ -98,8 +98,7 @@ async function createAdminRouter() {
         }
     };
 
-    const isProduction = process.env.NODE_ENV === 'production';
-
+    env: {NODE_ENV: 'production',},
     // Configure AdminJS
     const adminJsOptions = {
         rootPath: '/admin',

@@ -938,18 +938,21 @@ app.get('/notifications/new-uploads', async (req, res) => {
         // 1. Calculate the timestamp for 24 hours ago
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-        // 2. Find files CREATED within the last 24 hours that are LIVE
+        // ✅ RAM OPTIMIZATION: Added .lean()
         const recentUploads = await File.find({
             createdAt: { $gte: oneDayAgo },
             status: 'live',
             isLatestVersion: true
-        }).sort({ createdAt: -1 });
+        })
+        .sort({ createdAt: -1 })
+        .lean(); 
+           
 
         // 3. Get signed URLs for the icons (using our smart helper)
         const uploadsWithUrls = await Promise.all(recentUploads.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(iconKey);
-            return { ...file.toObject(), iconUrl };
+            return { ...file, iconUrl };
         }));
 
         res.render('pages/feed-new-uploads', { files: uploadsWithUrls });
@@ -971,13 +974,15 @@ app.get('/notifications/new-updates', async (req, res) => {
             updatedAt: { $gte: oneDayAgo },
             status: 'live',
             isLatestVersion: true
-        }).sort({ updatedAt: -1 });
+        })        
+        .sort({ updatedAt: -1 })
+        .lean();  
 
         // 2. Get signed URLs for the icons
         const updatesWithUrls = await Promise.all(recentUpdates.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(iconKey);
-            return { ...file.toObject(), iconUrl };
+            return { ...file, iconUrl };
         }));
 
         res.render('pages/feed-new-updates', { files: updatesWithUrls });
@@ -1010,12 +1015,13 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
         })
         .sort({ updatedAt: -1 }) // Sort by most recently updated/uploaded
         .limit(50); // Reasonable limit for a feed
+        .lean();
 
         // 4. Get signed URLs for the icons (using our smart helper)
         const modsWithUrls = await Promise.all(followingMods.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(iconKey);
-            return { ...file.toObject(), iconUrl };
+            return { ...file, iconUrl };
         }));
 
         res.render('pages/feed-following', { files: modsWithUrls });
@@ -1064,12 +1070,13 @@ app.get('/category', async (req, res) => {
             .sort(sortOptions)
             .skip((currentPage - 1) * limit)
             .limit(limit);
+            .lean();
 
         // 5. Get Signed URLs for images
-        const filesWithUrls = await Promise.all(files.map(async (file) => {
+                const filesWithUrls = await Promise.all(files.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-avatar.png';
-            return { ...file.toObject(), iconUrl };
+            return { ...file, iconUrl }; // No need for toObject() when using .lean()
         }));
 
         res.render('pages/category', {
@@ -1139,10 +1146,12 @@ app.get('/search', async (req, res) => {
         const totalResults = await File.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalResults / resultsPerPage);
 
+       // ✅ RAM OPTIMIZATION: Added .lean()
         const searchResults = await File.find(searchQuery)
             .sort(sortQuery)
             .skip((page - 1) * resultsPerPage)
-            .limit(resultsPerPage);
+            .limit(resultsPerPage)
+            .lean();
 
         const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
@@ -1154,7 +1163,7 @@ app.get('/search', async (req, res) => {
                     console.error(`Could not get signed URL for key: ${key}`);
                 }
             }
-            return { ...file.toObject(), iconUrl: signedIconUrl };
+            return { ...file, iconUrl: signedIconUrl };
         }));
 
         res.render('pages/search', {
@@ -1328,22 +1337,23 @@ app.get('/developer', async (req, res) => {
         // Create a RegEx to handle the slug
         const searchPattern = new RegExp(developerSlug.replace(/-/g, '[-\\s]+'), 'i');
 
+        // ✅ RAM OPTIMIZATION: Added .lean()
         const filesByDeveloper = await File.find({
             developer: searchPattern, 
             isLatestVersion: true,
             status: 'live'
-        }).sort({ createdAt: -1 });
-
+        })
+        .sort({ createdAt: -1 })
+        .lean();
         // --- FIX: GENERATE SIGNED URLS FOR IMAGES ---
         const filesWithUrls = await Promise.all(filesByDeveloper.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-avatar.png';
             if (key) {
-                try {
-                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
-                } catch (e) {}
+                try { signedIconUrl = await getSmartImageUrl(key); } catch (e) {}
             }
-            return { ...file.toObject(), iconUrl: signedIconUrl };
+            // ✅ REMOVED: .toObject() is no longer needed
+            return { ...file, iconUrl: signedIconUrl }; 
         }));
 
         // Pass the actual original developer name to the template if files exist,
@@ -1963,7 +1973,8 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             $or: [ { isLatestVersion: true }, { status: { $in:['processing', 'draft'] } } ]
         })
         .sort({ createdAt: -1 })
-        .populate('olderVersions', 'version fileSize createdAt');
+        .populate('olderVersions', 'version fileSize createdAt')
+        .lean();
         
         // 2. Map through the uploads to generate signed image URLs
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
@@ -1975,12 +1986,11 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
                 } catch (urlError) {}
             }
             
-            // ✅ FIX: Manually attach the olderVersions array to the new plain object
-            const plainFile = file.toObject();
-            plainFile.iconUrl = signedIconUrl;
-            plainFile.olderVersions = file.olderVersions || []; // Ensure it's an array
+            // ✅ FIX: Because of .lean(), 'file' is already a plain object! No .toObject() needed.
+            file.iconUrl = signedIconUrl;
+            file.olderVersions = file.olderVersions ||[]; 
             
-            return plainFile;
+            return file; 
         }));
 
         res.render('pages/my-uploads', { uploads: uploadsWithUrls }); 
@@ -1996,15 +2006,16 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 app.get('/users/:username', async (req, res, next) => {
     try {
         const slug = req.params.username;
-        // Create regex to match dashed slugs to spaced usernames (e.g. gpl-mods -> GPL Mods)
         const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        // Fetch the user we are looking for
+        // --- 1. OPTIMIZED FETCH ---
+        // ✅ ADDED .lean() to save massive amounts of RAM
         const targetUser = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
-            .populate('followers', 'username profileImageKey role');
+            .populate('followers', 'username profileImageKey role')
+            .lean(); // <--- CRITICAL OPTIMIZATION HERE
 
-        // --- 1. HANDLE USER NOT FOUND ---
+        // --- 2. HANDLE USER NOT FOUND ---
         if (!targetUser) {
             return res.status(404).render('pages/error', {
                 errorCode: '404',
@@ -2013,7 +2024,7 @@ app.get('/users/:username', async (req, res, next) => {
             });
         }
 
-        // --- 2. HANDLE BANNED USERS ---
+        // --- 3. HANDLE BANNED USERS ---
         if (targetUser.isBanned) {
             return res.status(403).render('pages/error', {
                 errorCode: '403',
@@ -2022,12 +2033,10 @@ app.get('/users/:username', async (req, res, next) => {
             });
         }
 
-        // --- 3. GET AVATAR URL ---
+        // --- 4. GET AVATAR URL ---
         if (targetUser.profileImageKey) {
             try {
-                targetUser.signedAvatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                    Bucket: process.env.B2_BUCKET_NAME, Key: targetUser.profileImageKey
-                }), { expiresIn: 3600 });
+                targetUser.signedAvatarUrl = await getSmartImageUrl(targetUser.profileImageKey);
             } catch (e) { 
                 targetUser.signedAvatarUrl = '/images/default-avatar.png'; 
             }
@@ -2035,32 +2044,33 @@ app.get('/users/:username', async (req, res, next) => {
             targetUser.signedAvatarUrl = '/images/default-avatar.png';
         }
 
-        // --- 4. GET UPLOADS ---
+        // --- 5. GET LATEST UPLOADS ---
+        // ✅ ALREADY OPTIMIZED WITH .lean()
         const uploads = await File.find({ 
-            uploader: targetUser.username, // Use the actual matched username
+            uploader: targetUser.username, 
             isLatestVersion: true,
             status: 'live' 
-        }).sort({ createdAt: -1 });
+        })
+        .sort({ createdAt: -1 })
+        .lean(); 
 
-        // Get signed URLs for the upload icons
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(key);
-            return { ...file.toObject(), iconUrl };
+            // .toObject() removed because we used .lean()
+            return { ...file, iconUrl }; 
         }));
 
-        // 5. --- NEW: Get signed URLs for Followers ---
-        // ✅ FIX: Changed 'user.followers' to 'targetUser.followers'
+        // --- 6. OPTIMIZED FOLLOWERS & FOLLOWING ---
+        // ✅ FIX: Removed .toObject() because targetUser was fetched with .lean()
         const followersWithAvatars = await Promise.all(targetUser.followers.map(async (follower) => {
             const avatarUrl = await getSmartImageUrl(follower.profileImageKey);
-            return { ...follower.toObject(), signedAvatarUrl: avatarUrl };
+            return { ...follower, signedAvatarUrl: avatarUrl }; 
         }));
 
-        // 6. --- NEW: Get signed URLs for Following ---
-        // ✅ FIX: Changed 'user.following' to 'targetUser.following'
         const followingWithAvatars = await Promise.all(targetUser.following.map(async (followingUser) => {
             const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
-            return { ...followingUser.toObject(), signedAvatarUrl: avatarUrl };
+            return { ...followingUser, signedAvatarUrl: avatarUrl };
         }));        
 
         // --- 7. CHECK FOLLOW STATUS ---
@@ -3473,7 +3483,7 @@ app.post('/request-mod', ensureAuthenticated, async (req, res) => {
 // ===================================
 app.get('/support', ensureAuthenticated, async (req, res) => {
     try {
-        const myTickets = await SupportTicket.find({ user: req.user._id }).sort({ createdAt: -1 });
+        const myTickets = await SupportTicket.find({ user: req.user._id }).sort({ createdAt: -1 }).lean();
         res.render('pages/support', {
             tickets: myTickets,
             message: req.query.message,
@@ -3665,8 +3675,8 @@ app.use((err, req, res, next) => {
 // ===================================
 const os = require('os');
 
-// --- 1. THE RAM OPTIMIZER (Runs every 10 minutes) ---
-cron.schedule('*/10 * * * *', () => {
+// --- 1. THE RAM OPTIMIZER (Runs every 30 minutes) ---
+cron.schedule('*/30 * * * *', () => {
     try {
         // Get current memory usage in MB
         const usedMemory = process.memoryUsage().rss / 1024 / 1024;
