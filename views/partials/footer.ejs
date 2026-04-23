@@ -1,87 +1,110 @@
-<style>
-    .newsletter-popup {
-        position: fixed;
-        bottom: 20px;
-        left: 20px; /* Positioned on the bottom left */
-        background-color: var(--dark-gray);
-        border: 1px solid var(--gold);
-        border-radius: 12px;
-        padding: 25px;
-        width: 90%;
-        max-width: 350px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        z-index: 9998; /* Just below the policy modal */
-        transform: translateX(-150%); /* Hidden off-screen initially */
-        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .newsletter-popup.show {
-        transform: translateX(0); /* Slides in */
-    }
-    .newsletter-close {
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        color: var(--silver);
-        cursor: pointer;
-        font-size: 1.5em;
-        line-height: 1;
-        transition: color 0.2s;
-    }
-    .newsletter-close:hover { color: var(--red); }
-    .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
-    .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
-    .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
-    .newsletter-input {
-        width: 100%;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #444;
-        background-color: var(--black);
-        color: var(--white);
-        outline: none;
-        font-family: 'Poppins', sans-serif;
-    }
-    .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
-    .newsletter-btn {
-        background-color: var(--gold);
-        color: var(--black);
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
-    .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
-    .newsletter-msg.success { color: var(--green); display: block; }
-    .newsletter-msg.error { color: var(--red); display: block; }
-</style>
 </main>    
     <footer class="main-footer">
         <div class="container">
-            <!-- ======== ADD THIS NEW SOCIAL ICONS BLOCK ======== -->
-            <div class="social-icons">
-                <a href="https://youtube.com/@gplmods" target="_blank" title="YouTube">
-                    <i class="fab fa-youtube"></i>
-                </a>
-                <a href="https://discord.gg/frBQ2zTu7" target="_blank" title="Discord">
-                    <i class="fab fa-discord"></i>
-                </a>
-                <a href="https://github.com/GPLMods" target="_blank" title="GitHub">
-                    <i class="fab fa-github"></i>
-                </a>
-                <!-- Add more icons as needed -->
+            
+            <style>
+                /* --- Social Icons Carousel Styles --- */
+                .social-carousel-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 15px;
+                    margin-bottom: 25px;
+                    max-width: 300px; /* Limits the width of the whole block */
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+                
+                .social-nav-btn {
+                    background: none;
+                    border: none;
+                    color: var(--silver);
+                    font-size: 1.5em;
+                    cursor: pointer;
+                    transition: color 0.3s ease, transform 0.2s ease;
+                    padding: 5px;
+                    z-index: 2;
+                }
+                
+                .social-nav-btn:hover {
+                    color: var(--gold);
+                    transform: scale(1.2);
+                }
+                
+                .social-nav-btn:disabled {
+                    color: #444;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .social-icons-window {
+                    width: 150px; /* Exact width to fit exactly 3 icons (approx 30px width + 20px gap each) */
+                    overflow: hidden; /* Hide the icons outside this window */
+                    position: relative;
+                }
+
+                .social-icons-track {
+                    display: flex;
+                    gap: 20px; /* Space between icons */
+                    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth sliding animation */
+                    /* Start at 0, JavaScript will update this */
+                    transform: translateX(0px); 
+                }
+
+                .social-icons-track a {
+                    color: var(--silver); 
+                    font-size: 1.8em;      
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                    background-color: transparent;
+                    border: none;
+                    width: auto;
+                    height: auto;
+                    padding: 0;
+                    flex-shrink: 0; /* Prevent icons from squishing */
+                }
+
+                .social-icons-track a:hover {
+                    color: var(--gold);      
+                    transform: scale(1.2);   
+                }
+                /* ----------------------------------- */
+            </style>
+
+            <!-- ======== NEW: SOCIAL ICONS CAROUSEL ======== -->
+            <div class="social-carousel-container">
+                <button id="social-prev" class="social-nav-btn" title="Previous"><i class="fas fa-chevron-left"></i></button>
+                
+                <div class="social-icons-window">
+                    <div id="social-track" class="social-icons-track">
+                        <!-- Add as many icons as you want here! -->
+                        <a href="https://youtube.com/@gplmods" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="https://discord.gg/frBQ2zTu7" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
+                        <a href="https://github.com/GPLMods" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                        <a href="#" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" target="_blank" title="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="#" target="_blank" title="Reddit"><i class="fab fa-reddit"></i></a>
+                    </div>
+                </div>
+
+                <button id="social-next" class="social-nav-btn" title="Next"><i class="fas fa-chevron-right"></i></button>
             </div>
             <!-- ======== END OF NEW BLOCK ======== -->
+
 
 <!-- ======== ANTI-ADBLOCK MODAL ======== -->
 <% if (typeof showAds !== 'undefined' && showAds) { %>
 <div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
-        <i class="fas fa-shield-alt" style="font-size: 4em; color: var(--red); margin-bottom: 20px;"></i>
+                               <!-- ======== CUSTOM AD BLOCK ANIMATION ======== -->
+            <lottie-player 
+                src="/animations/ad.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" 
+               loop autoplay>
+            </lottie-player>
+            <!-- ========================================================== -->
         <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
         <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">
             It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.
@@ -160,7 +183,70 @@
             </div>
         </div>
     </div>
+    
 <!-- ======== NEW: NEWSLETTER POPUP ======== -->
+<style>
+    .newsletter-popup {
+        position: fixed;
+        bottom: 20px;
+        left: 20px; /* Positioned on the bottom left */
+        background-color: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        padding: 25px;
+        width: 90%;
+        max-width: 350px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        z-index: 9998; /* Just below the policy modal */
+        transform: translateX(-150%); /* Hidden off-screen initially */
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .newsletter-popup.show {
+        transform: translateX(0); /* Slides in */
+    }
+    .newsletter-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: var(--silver);
+        cursor: pointer;
+        font-size: 1.5em;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+    .newsletter-close:hover { color: var(--red); }
+    .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
+    .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
+    .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
+    .newsletter-input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background-color: var(--black);
+        color: var(--white);
+        outline: none;
+        font-family: 'Poppins', sans-serif;
+    }
+    .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
+    .newsletter-btn {
+        background-color: var(--gold);
+        color: var(--black);
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
+    .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
+    .newsletter-msg.success { color: var(--green); display: block; }
+    .newsletter-msg.error { color: var(--red); display: block; }
+</style>
+
 <div id="newsletter-popup" class="newsletter-popup">
     <span class="newsletter-close" id="newsletter-close-btn">&times;</span>
     <h3><i class="fas fa-envelope-open-text" style="margin-right: 8px;"></i> Get Updates</h3>

@@ -14,6 +14,7 @@
  * 9. Smart Audio Handler (YouTube/Vimeo pauses BG music)
  * 10. Notifications Logic
  * 11. Newsletter Logic
+ * 12. REUSABLE SOCIAL CAROUSEL LOGIC
  * ==================================================================================
  */
 
@@ -35,6 +36,7 @@ try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:"
 try { initializeNewsletter(); } catch (e) { console.error("Newsletter Error:", e); }
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); }
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
+try { initializeSocialCarousels(); } catch (e) { console.error("Carousel Error:", e); }
         console.log("All initializers finished.");
     };
 
@@ -791,7 +793,7 @@ function initializeNewsletter() {
     const submitBtn = document.getElementById('newsletter-submit');
     const msgDiv = document.getElementById('newsletter-msg');
 
-    if (closeBtn) {
+    if (closeBtn && popup) {
         closeBtn.addEventListener('click', () => {
             popup.classList.remove('show');
             localStorage.setItem('gplmods_newsletter_dismissed', new Date().getTime().toString());
@@ -834,6 +836,76 @@ function initializeNewsletter() {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Subscribe Now';
             }
-        });
+       });
     }
+}
+
+/**
+ * ==================================================================================
+ * 12. REUSABLE SOCIAL CAROUSEL LOGIC
+ * Handles the sliding animation for social icon groups (Footer, Profiles, etc.)
+ * ==================================================================================
+ */
+function initializeSocialCarousels() {
+    // Find every carousel container on the page
+    const carouselContainers = document.querySelectorAll('.social-carousel-container');
+
+    carouselContainers.forEach(container => {
+        // We find the specific elements INSIDE this specific container
+        const track = container.querySelector('.social-icons-track');
+        const prevBtn = container.querySelector('.social-nav-btn[title="Previous"]');
+        const nextBtn = container.querySelector('.social-nav-btn[title="Next"]');
+        
+        if (!track || !prevBtn || !nextBtn) return;
+
+        const icons = track.querySelectorAll('a');
+        const totalIcons = icons.length;
+        
+        // If 3 or fewer icons, hide arrows and disable carousel logic
+        if (totalIcons <= 3) {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            return; 
+        }
+
+        let currentIndex = 0;
+        const visibleIconsCount = 3;
+        const slideAmount = 48; // Approx width (28px) + gap (20px)
+
+        function updateCarousel() {
+            track.style.transform = `translateX(-${currentIndex * slideAmount}px)`;
+
+            if (currentIndex === 0) {
+                prevBtn.disabled = true;
+                prevBtn.style.opacity = '0.3';
+            } else {
+                prevBtn.disabled = false;
+                prevBtn.style.opacity = '1';
+            }
+
+            if (currentIndex >= (totalIcons - visibleIconsCount)) {
+                nextBtn.disabled = true;
+                nextBtn.style.opacity = '0.3';
+            } else {
+                nextBtn.disabled = false;
+                nextBtn.style.opacity = '1';
+            }
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentIndex < totalIcons - visibleIconsCount) {
+                currentIndex++;
+                updateCarousel();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCarousel();
+            }
+        });
+
+        updateCarousel(); // Initialize state
+    });
 }

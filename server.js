@@ -803,7 +803,7 @@ app.get('/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
     }
 
     // Instead of sending raw JSON, let's render a beautiful admin page!
-    res.render('pages/admin/healthz', { health: healthData });
+    res.render('pages/admin/status', { health: healthData });
 });
 
 // --- HELPER: Format Uptime ---
@@ -3353,6 +3353,41 @@ app.get('/sitemap.xml', async (req, res) => {
         res.status(500).send('Error generating sitemap');
     }
 });
+
+// ======== HTML SITEMAP (FOR TIDIO LYRO & AI CRAWLERS) ========
+app.get('/ai-directory', async (req, res) => {
+    try {
+        // Fetch all active, latest version mods. 
+        // We only need the fields required to build the URL and title.
+        const liveMods = await File.find({ 
+            status: 'live', 
+            isLatestVersion: true,
+            showInSitemap: { $ne: false }
+        })
+        .select('name category slug developer') // Only grab what we need to make it fast
+        .sort({ category: 1, name: 1 }); // Sort alphabetically by category, then name
+
+        // Group mods by category so the AI understands the site structure better
+        const modsByCategory = {};
+        liveMods.forEach(mod => {
+            if (!modsByCategory[mod.category]) {
+                modsByCategory[mod.category] = [];
+            }
+            modsByCategory[mod.category].push(mod);
+        });
+
+        res.render('pages/ai-directory', { 
+            modsByCategory: modsByCategory 
+        });
+
+    } catch (error) {
+        console.error("AI Directory generation error:", error);
+        res.status(500).send('Error generating AI directory');
+    }
+});
+// ==============================================================
+
+// --- DMCA PAGE ROUTE ---
 app.post('/dmca-request', async (req, res) => {
     try {
         await new Dmca(req.body).save();

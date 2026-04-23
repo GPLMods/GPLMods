@@ -70,6 +70,43 @@
                 <% } %>
             </div>
 
+    <!-- ======== NEW: ADMIN/DISTRIBUTOR SOCIAL LINKS ======== -->
+    <% 
+        // Only show for Admins and Distributors
+        if (profileUser.role === 'admin' || profileUser.role === 'distributor') { 
+            // Collect any valid links they have
+            const links =[];
+            if (profileUser.socialLinks?.telegram) links.push({ url: profileUser.socialLinks.telegram, icon: 'fab fa-telegram-plane' });
+            if (profileUser.socialLinks?.discord) links.push({ url: profileUser.socialLinks.discord, icon: 'fab fa-discord' });
+            if (profileUser.socialLinks?.website) links.push({ url: profileUser.socialLinks.website, icon: 'fas fa-globe' });
+            if (profileUser.socialLinks?.youtube) links.push({ url: profileUser.socialLinks.youtube, icon: 'fab fa-youtube' });
+            
+            // If they have at least one link, show the carousel
+            if (links.length > 0) { 
+    %>
+        <div style="margin-top: 20px;">
+            <div class="social-carousel-container" id="profile-social-container">
+                <button id="prof-social-prev" class="social-nav-btn" title="Previous"><i class="fas fa-chevron-left"></i></button>
+                
+                <div class="social-icons-window">
+                    <div id="prof-social-track" class="social-icons-track">
+                        <% links.forEach(link => { %>
+                            <a href="<%= link.url %>" target="_blank" rel="noopener noreferrer">
+                                <i class="<%= link.icon %>"></i>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+
+                <button id="prof-social-next" class="social-nav-btn" title="Next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    <% 
+            } 
+        } 
+    %>
+    <!-- ======== END SOCIAL LINKS ======== -->
+
             <!-- Uploads Tab -->
             <div id="uploads" class="tab-content">
                 <h2>Uploaded Mods</h2>

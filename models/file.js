@@ -16,13 +16,10 @@ name: { type: String, required: function() { return this.status !== 'processing'
 version: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
 modDescription: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
 modFeatures: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
-    officialDescription: { type: String },
-    whatsNew: { type: String },
+officialDescription: { type: String },
+whatsNew: { type: String },
 // --- NEW: IMPORTANT NOTE FIELD ---
-    importantNote: { 
-        type: String,
-        trim: true
-    },
+importantNote: { type: String, trim: true },
     
     // --- STORAGE KEYS (S3/Cloud) ---
     iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },

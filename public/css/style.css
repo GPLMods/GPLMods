@@ -308,6 +308,60 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         }
         .section-title { font-size: 1.3em; }
         .section-more { color: var(--gold); text-decoration: none; font-weight: 600; flex-shrink: 0; }
+
+/* ==========================================================================
+   GLOBAL IN-TEXT LINK COLORS (Overrides Default Browser Blue/Purple)
+   ========================================================================== */
+/* 
+   Target links inside text blocks, but EXCLUDE anything that is a button 
+   using the :not() selector so our UI buttons don't break!
+*/
+p a:not(.btn):not(.overlay-button):not(.action-btn), 
+li a:not(.btn):not(.overlay-button):not(.action-btn), 
+.tab-content a:not(.btn):not(.overlay-button):not(.action-btn), 
+.info-box a:not(.btn):not(.overlay-button):not(.action-btn), 
+.full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn),
+.app-description-content a:not(.btn):not(.overlay-button):not(.action-btn) {
+    color: #64b5f6; /* Bright Light Blue for excellent contrast against dark backgrounds */
+    font-weight: 600;
+    text-decoration: underline; 
+    text-decoration-color: rgba(100, 181, 246, 0.4); /* Subtle blue underline */
+    text-underline-offset: 3px;
+    transition: all 0.3s ease;
+}
+
+/* Visited state - a nice soft purple so it doesn't vanish into the gray */
+p a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
+li a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
+.tab-content a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
+.info-box a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
+.full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn):visited,
+.app-description-content a:not(.btn):not(.overlay-button):not(.action-btn):visited {
+    color: #b39ddb; 
+}
+
+/* Hover state - turns gold to match the premium theme */
+p a:not(.btn):not(.overlay-button):not(.action-btn):hover, 
+li a:not(.btn):not(.overlay-button):not(.action-btn):hover, 
+.tab-content a:not(.btn):not(.overlay-button):not(.action-btn):hover, 
+.info-box a:not(.btn):not(.overlay-button):not(.action-btn):hover, 
+.full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn):hover,
+.app-description-content a:not(.btn):not(.overlay-button):not(.action-btn):hover {
+    color: var(--gold); 
+    text-decoration-color: var(--gold);
+}
+
+/* EXTRA PROTECTION FOR BUTTONS: 
+   Guarantees the "View Mod" button text NEVER turns gold on hover! 
+*/
+a.overlay-btn-primary { 
+    color: var(--black) !important; 
+    text-decoration: none !important; 
+}
+a.overlay-btn-primary:hover { 
+    color: var(--black) !important; 
+}
+/* ========================================================================== */
         
 /* ==========================================================================
    HOMEPAGE HORIZONTAL CAROUSEL (GLIDE) LAYOUT
@@ -2034,4 +2088,58 @@ input[type="search"]::-webkit-search-cancel-button:hover {
 
 @media (min-width: 768px) {
     .pwa-buttons { flex-direction: row; }
+}
+
+/* ==========================================================================
+   SOCIAL ICONS CAROUSEL (Used in Footer and Public Profiles)
+   ========================================================================== */
+.social-carousel-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.social-nav-btn {
+    background: none;
+    border: none;
+    color: var(--silver);
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: color 0.3s ease, transform 0.2s ease;
+    padding: 5px;
+    z-index: 2;
+}
+
+.social-nav-btn:hover { color: var(--gold); transform: scale(1.2); }
+.social-nav-btn:disabled { color: #444; cursor: not-allowed; transform: none; opacity: 0.3; }
+
+.social-icons-window {
+    width: 150px; 
+    overflow: hidden; 
+    position: relative;
+}
+
+.social-icons-track {
+    display: flex;
+    gap: 20px; 
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: translateX(0px); 
+}
+
+.social-icons-track a {
+    color: var(--silver); 
+    font-size: 1.8em;      
+    text-decoration: none;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.social-icons-track a:hover {
+    color: var(--gold);      
+    transform: scale(1.2);   
 }

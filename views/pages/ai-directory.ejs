@@ -1,0 +1,61 @@
+<%- include('../partials/header') %>
+
+<style>
+    .ai-dir-container {
+        max-width: 900px;
+        margin: 40px auto;
+        background: var(--dark-gray);
+        padding: 40px;
+        border-radius: 12px;
+        border: 1px solid #333;
+    }
+    .ai-dir-container h1 { color: var(--gold); border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;}
+    .ai-dir-container h2 { color: var(--silver); margin-top: 30px; text-transform: uppercase; font-size: 1.2em; border-bottom: 1px solid #222; padding-bottom: 5px; }
+    .ai-dir-list { list-style-type: none; padding-left: 0; }
+    .ai-dir-list li { margin-bottom: 10px; }
+    .ai-dir-list a { color: var(--white); text-decoration: none; font-weight: 500; font-size: 1.1em; transition: color 0.2s; }
+    .ai-dir-list a:hover { color: var(--gold); text-decoration: underline; }
+    .dev-tag { color: var(--silver); font-size: 0.85em; font-weight: normal; margin-left: 5px; }
+</style>
+
+<main class="container">
+    <div class="ai-dir-container">
+        <h1>GPL Mods - Complete Content Directory</h1>
+        <p style="color: var(--silver); margin-bottom: 30px;">
+            This index contains links to all publicly available modifications, applications, and official documentation on GPL Mods.
+        </p>
+
+        <!-- Section 1: Crucial Site Knowledge for AI -->
+        <h2>Site Documentation & Policies</h2>
+        <ul class="ai-dir-list">
+            <li><a href="/about">About Us (What is GPL Mods)</a></li>
+            <li><a href="/faq">Frequently Asked Questions (FAQ)</a></li>
+            <li><a href="/tos">Terms of Service (Rules & Guidelines)</a></li>
+            <li><a href="/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/dmca">DMCA Copyright Policy & Takedowns</a></li>
+        </ul>
+
+        <!-- Section 2: All Live Mods Organized by Category -->
+        <% Object.keys(modsByCategory).forEach(category => { %>
+            <h2><%= category.toUpperCase().replace('-', ' ') %> Mods</h2>
+            <ul class="ai-dir-list">
+                <% modsByCategory[category].forEach(mod => { %>
+                    <li>
+                        <!-- Ensure we use the slug layout from our SEO update -->
+                        <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>">
+                            <%= mod.name %>
+                        </a>
+                        <span class="dev-tag">(Developer: <%= mod.developer %>)</span>
+                    </li>
+                <% }) %>
+            </ul>
+        <% }) %>
+        
+        <% if (Object.keys(modsByCategory).length === 0) { %>
+            <p>No active mods available in the directory at this time.</p>
+        <% } %>
+
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

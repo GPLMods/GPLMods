@@ -191,12 +191,16 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: { icon: 'Users' }, 
-                    listProperties: ['profileImageKey', 'username', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['profileImageKey', '_id', 'profileImageKey', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio'],
-                    editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['profileImageKey', '_id', 'profileImageKey', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks'],
+                    editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
+                        'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
+                        'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
+                        'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
+                        'socialLinks.youtube': { description: 'e.g., https://youtube.com/...' },
                         // ✅ FIX: Use ImagePreview for avatars
                         profileImageKey: {
                             components: {
