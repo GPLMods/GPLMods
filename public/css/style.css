@@ -322,10 +322,10 @@ li a:not(.btn):not(.overlay-button):not(.action-btn),
 .info-box a:not(.btn):not(.overlay-button):not(.action-btn), 
 .full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn),
 .app-description-content a:not(.btn):not(.overlay-button):not(.action-btn) {
-    color: #64b5f6; /* Bright Light Blue for excellent contrast against dark backgrounds */
+    color: #FF4433; /* Bright Light Blue for excellent contrast against dark backgrounds */
     font-weight: 600;
     text-decoration: underline; 
-    text-decoration-color: rgba(100, 181, 246, 0.4); /* Subtle blue underline */
+    text-decoration-color: rgba(255, 83, 73, 0.4); /* Subtle blue underline */
     text-underline-offset: 3px;
     transition: all 0.3s ease;
 }
@@ -337,7 +337,7 @@ li a:not(.btn):not(.overlay-button):not(.action-btn):visited,
 .info-box a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
 .full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn):visited,
 .app-description-content a:not(.btn):not(.overlay-button):not(.action-btn):visited {
-    color: #b39ddb; 
+    color: #33EEFF; 
 }
 
 /* Hover state - turns gold to match the premium theme */

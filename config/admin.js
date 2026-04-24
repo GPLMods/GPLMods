@@ -98,21 +98,23 @@ async function createAdminRouter() {
         }
     };
 
-    env: {NODE_ENV: 'production',},
+    // ✅ FIX 1: We define isProduction properly here. 
+    // Setting it to 'true' forces AdminJS into production mode.
+    const isProduction = true; 
+
     // Configure AdminJS
     const adminJsOptions = {
         rootPath: '/admin',
-        // ✅ CRITICAL: Pass the imported singleton loader here
         componentLoader: componentLoader, 
         
         defaultTheme: 'dark', 
-        availableThemes: [gplModsTheme, light], 
+        availableThemes:[gplModsTheme, light], 
         
-        // Setup Assets (Tell AdminJS where to find the pre-built files in production)
-        env: { isProduction: isProduction },
+        // ✅ FIX 2: Properly pass the env variables into AdminJS
+        env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
-            styles: isProduction ? ['/.adminjs/bundle.css'] : [],
-            scripts: isProduction ? ['/.adminjs/bundle.js'] : []
+            styles: isProduction ? ['/.adminjs/bundle.css'] :[],
+            scripts: isProduction ? ['/.adminjs/bundle.js'] :[]
         },
         // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
@@ -551,7 +553,7 @@ async function createAdminRouter() {
                                 return request;
                             }
                         },
-                        edit: {
+                                                edit: {
                             // ✅ FIX: Auto-update the slug if the title changes
                             before: async (request) => {
                                 if (request.payload.title) {

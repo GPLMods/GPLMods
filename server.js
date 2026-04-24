@@ -1014,7 +1014,7 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
             isLatestVersion: true
         })
         .sort({ updatedAt: -1 }) // Sort by most recently updated/uploaded
-        .limit(50); // Reasonable limit for a feed
+        .limit(50) // Reasonable limit for a feed
         .lean();
 
         // 4. Get signed URLs for the icons (using our smart helper)
@@ -1069,7 +1069,7 @@ app.get('/category', async (req, res) => {
         const files = await File.find(queryFilter)
             .sort(sortOptions)
             .skip((currentPage - 1) * limit)
-            .limit(limit);
+            .limit(limit)
             .lean();
 
         // 5. Get Signed URLs for images
