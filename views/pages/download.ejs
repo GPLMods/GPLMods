@@ -122,21 +122,53 @@
             </div>
             <% } %>
             
-            <!-- ======== DYNAMIC DOWNLOAD BUTTON ======== -->
+            <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON ======== -->
             <% if (file.isMultiPart) { %>
-                <!-- Redirects to the new Multi-Part page -->
                 <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
                     <i class="fas fa-layer-group" style="margin-right: 10px;"></i>
                     View Download Links
                     <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
                 </a>
             <% } else { %>
-                <!-- Standard Single-File Download -->
                 <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
                     <i class="fas fa-download" style="margin-right: 10px;"></i>
                     Download (<%= formatBytes(file.fileSize) %>)
                 </a>
             <% } %>
+
+            <!-- ======== NEW: ALTERNATIVE LINKS (MIRRORS) ======== -->
+            <% if (file.alternativeLinks && file.alternativeLinks.length > 0) { %>
+                <div style="background-color: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid #333; text-align: left;">
+                    <span style="color: var(--silver); font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px;">
+                        <i class="fas fa-link" style="margin-right: 5px; color: var(--gold);"></i> Alternative Mirrors
+                    </span>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <% file.alternativeLinks.forEach(mirror => { %>
+                            <a href="<%= mirror.url %>" target="_blank" rel="noopener noreferrer" 
+                               style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; text-decoration: none; color: var(--white); font-size: 0.9em; border: 1px solid #333; transition: all 0.2s;">
+                                
+                                <span>
+                                    <% 
+                                    // Add a smart icon based on the provider name
+                                    const lowerName = mirror.providerName.toLowerCase();
+                                    let icon = 'fas fa-cloud-download-alt';
+                                    let iconColor = 'var(--silver)';
+                                    if (lowerName.includes('mega')) { icon = 'fas fa-m'; iconColor = '#D9272E'; }
+                                    if (lowerName.includes('drive') || lowerName.includes('google')) { icon = 'fab fa-google-drive'; iconColor = '#FFD700'; }
+                                    if (lowerName.includes('mediafire')) { icon = 'fas fa-fire'; iconColor = '#007FFF'; }
+                                    if (lowerName.includes('dropbox')) { icon = 'fab fa-dropbox'; iconColor = '#0061FF'; }
+                                    %>
+                                    <i class="<%= icon %>" style="margin-right: 8px; color: <%= iconColor %>;"></i>
+                                    <%= mirror.providerName %>
+                                </span>
+                                <i class="fas fa-external-link-alt" style="font-size: 0.8em; color: var(--silver);"></i>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+            <!-- =================================================== -->
             
             <!-- ============================ -->
             <!-- Updated Action Buttons Start -->

@@ -32,6 +32,12 @@ importantNote: { type: String, trim: true },
     // --- ADD EXTERNAL LINK FIELD ---
     externalDownloadUrl: { type: String, trim: true },
 
+    // --- NEW: ALTERNATIVE DOWNLOAD LINKS (MIRRORS) ---
+    alternativeLinks:[{
+        providerName: { type: String, required: true }, // e.g., "Google Drive", "Mega", "MediaFire"
+        url: { type: String, required: true }
+    }],
+
 // --- NEW: MULTI-PART DOWNLOADS ---
     isMultiPart: {
         type: Boolean,

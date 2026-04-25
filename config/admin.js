@@ -242,7 +242,7 @@ async function createAdminRouter() {
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
                         'iconKey', 'screenshotKeys', 'videoUrl',
-                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 
+                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks',
                         'isMultiPart', 'downloadParts', 'installationInstructions',
                         // ✅ NEW: Added Variant fields to edit view
                         'isVariant', 'masterFile'
@@ -252,7 +252,7 @@ async function createAdminRouter() {
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename',
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
-                        'isMultiPart', 'downloadParts', 'installationInstructions',
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks',
                         // ✅ NEW: Added Variant fields to show view
                         'isVariant', 'masterFile'
                     ],
@@ -263,6 +263,7 @@ async function createAdminRouter() {
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, // Ensure the new field is here too
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
+                        alternativeLinks: { isArray: true, description: 'Add alternative download mirrors (e.g., Mega, Google Drive) if the main link fails.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
