@@ -114,7 +114,7 @@ async function createAdminRouter() {
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
             styles: isProduction ? ['/.adminjs/bundle.css'] :[],
-            scripts: isProduction ? ['/.adminjs/bundle.js'] :[]
+            scripts: isProduction ? ['/.adminjs/bundle.js'] :['/js/image-fallback.js'],
         },
         // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
@@ -205,8 +205,8 @@ async function createAdminRouter() {
                         // ✅ FIX: Use ImagePreview for avatars
                         profileImageKey: {
                             components: {
-                                list: Components.ImagePreview,
-                                show: Components.ImagePreview,
+                                list: Components.AvatarCell,
+                                show: Components.AvatarCell,
                             },
                             // Ensure it's hidden on the edit form if you don't want them editing the raw key manually
                             isVisible: { edit: false, filter: false, list: true, show: true } 

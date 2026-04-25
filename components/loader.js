@@ -9,7 +9,10 @@ const Components = {
     ActionRedirect: componentLoader.add('ActionRedirect', path.resolve(__dirname, './ActionRedirect.jsx')),
     VariantBadge: componentLoader.add('VariantBadge', path.resolve(__dirname, './VariantBadge.jsx')),
     
-    // --- ADD THE NEW IMAGE COMPONENT HERE ---
+    // ✅ FIX 1: Removed the extra './components/' from the path
+    AvatarCell: componentLoader.add('AvatarCell', path.resolve(__dirname, './AvatarCell.jsx')),
+    
+    // ✅ FIX 2: Completed the cut-off ImagePreview line
     ImagePreview: componentLoader.add('ImagePreview', path.resolve(__dirname, './ImagePreview.jsx'))
 };
 
