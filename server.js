@@ -96,10 +96,7 @@ app.set('views', path.join(__dirname, 'views'));
 // ===============================
 
 // 1. Reserved Names List (Lowercase for easy checking)
-const RESERVED_NAMES = [
-    'admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 
-    'moderator', 'system', 'staff', 'support', 'owner' 'gpl hacker', 'destributior', 'mod destrubuter',
-];
+const RESERVED_NAMES = ['admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 'moderator', 'system', 'staff', 'support', 'owner' 'gpl hacker', 'destributior', 'mod destrubuter'];
 
 /**
  * Checks if a requested username contains any reserved words.
