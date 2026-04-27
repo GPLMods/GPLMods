@@ -68,8 +68,17 @@
     .docs-content-area h1 { font-size: 2.8em; color: var(--white); margin-bottom: 10px; }
     .docs-content-area .meta { color: var(--silver); font-size: 0.9em; margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 20px; }
     
-    /* Rich Text Formatting (Crucial for AdminJS output) */
-    .rich-content { color: #ccc; font-size: 1.1em; line-height: 1.8; }
+/* Rich Text Formatting (Crucial for AdminJS output) */
+    .rich-content { 
+        color: #ccc; 
+        font-size: 1.1em; 
+        line-height: 1.8; 
+        
+        /* ✅ FIX: Force long words and URLs to wrap! */
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
     .rich-content h2 { color: var(--gold); margin-top: 40px; margin-bottom: 15px; font-size: 1.8em; }
     .rich-content h3 { color: var(--white); margin-top: 30px; margin-bottom: 10px; }
     .rich-content p { margin-bottom: 20px; }

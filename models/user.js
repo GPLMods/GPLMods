@@ -56,6 +56,9 @@ profileImageKey: {
         trim: true,
         maxlength: 250
     },
+dateOfBirth: {
+        type: Date
+    },
     lastSeen: {
         type: Date,
         default: Date.now

@@ -42,6 +42,7 @@ const cors = require('cors');
 const fs = require('fs');
 const FormData = require('form-data');
 const { Upload } = require("@aws-sdk/lib-storage");
+const Filter = require('bad-words');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
@@ -77,6 +78,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const { Types } = mongoose;
 
+// Initialize the profanity filter
+const profanityFilter = new Filter();
+// You can add custom words that aren't in the default list
+// profanityFilter.addWords('custombadword1', 'custombadword2');
+// You can also remove words you don't consider bad
+// profanityFilter.removeWords('hell');
+
+// Expose it globally so we can use it in Socket.IO and Express routes
+global.profanityFilter = profanityFilter;
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -87,7 +98,7 @@ app.set('views', path.join(__dirname, 'views'));
 // 1. Reserved Names List (Lowercase for easy checking)
 const RESERVED_NAMES = [
     'admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 
-    'moderator', 'system', 'staff', 'support', 'owner'
+    'moderator', 'system', 'staff', 'support', 'owner' 'gpl hacker', 'destributior', 'mod destrubuter',
 ];
 
 /**
@@ -482,27 +493,44 @@ app.use(async (req, res, next) => {
 let cachedTotalUpdates = 0;
 let lastUpdateCheck = 0;
 
+// ✅ FIX: Added the 'async' keyword here so 'await' works inside!
 app.use(async (req, res, next) => {
-    // 1. Basic Helpers
+    // Basic Helpers
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
-    res.locals.formatBytes = formatBytes; 
+    res.locals.formatBytes = formatBytes;
     res.locals.slugify = slugify;
+    
+    // --- Linkvertise & Ad Monetization Helpers ---
+    res.locals.base64Encode = (str) => Buffer.from(str).toString('base64');
+    res.locals.linkvertiseId = process.env.LINKVERTISE_ID || 'YOUR_ID'; 
+    res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; // <--- ADD THIS
+    
+    // Default fallback values
+    res.locals.linkvertiseEnabled = false;
+    res.locals.linkvertiseId = '';
+    res.locals.adNetworkBaseUrl = '';
 
+    // If the SiteState is cached, pull the ad settings from it
+    if (cachedSiteState) {
+        res.locals.linkvertiseEnabled = cachedSiteState.enableLinkvertise;
+        res.locals.linkvertiseId = cachedSiteState.linkvertiseId;
+        res.locals.adNetworkBaseUrl = cachedSiteState.adNetworkBaseUrl;
+    }
     // 2. ======== AD DELIVERY LOGIC ========
-    let shouldShowAds = true; // Default to true (Guests see ads)
+    let shouldShowAds = true; 
     
     if (req.isAuthenticated() && req.user) {
         const role = req.user.role;
         const membership = req.user.membership;
-        // Exempt Admins, Distributors, and Premium users
         if (role === 'admin' || role === 'distributor' || membership === 'premium') {
             shouldShowAds = false; 
         }
     }
-    // Pass the boolean to EVERY EJS template
+    // This is globally available everywhere!
     res.locals.showAds = shouldShowAds;
     // ========================================
+
 
     // 3. ======== NOTIFICATIONS LOGIC ========
     try {
@@ -1311,6 +1339,17 @@ app.get('/:category/:slug', async (req, res, next) => {
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(displayFile._id) : false;
         const userHasVotedOnStatus = req.user ? displayFile.votedOnStatusBy.includes(req.user._id) : false;
 
+
+        // ======== NEW: FIND UPLOADER ROLE ========
+        let isUploaderDistributor = false;
+        // Search the DB for the user who uploaded this file
+        const uploaderUser = await User.findOne({ username: currentFile.uploader }).lean();
+        
+        if (uploaderUser && uploaderUser.role === 'distributor') {
+            isUploaderDistributor = true;
+        }
+        // =========================================
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -1318,7 +1357,8 @@ app.get('/:category/:slug', async (req, res, next) => {
             versionHistory,
             reviews: reviewsWithAvatars,
             userHasWhitelisted,
-            userHasVotedOnStatus
+            userHasVotedOnStatus,
+            isUploaderDistributor
         });
 
     } catch (e) {
@@ -1611,8 +1651,19 @@ app.get('/mods/:id/parts', async (req, res) => {
         const iconKey = file.iconUrl || file.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
 
+        // ======== NEW: FIND UPLOADER ROLE ========
+        let isUploaderDistributor = false;
+        const uploaderUser = await User.findOne({ username: file.uploader }).lean();
+        
+        if (uploaderUser && uploaderUser.role === 'distributor') {
+            isUploaderDistributor = true;
+        }
+        // =========================================
+
+
         res.render('pages/download-parts', { 
-            file: { ...file.toObject(), iconUrl }
+            file: { ...file.toObject(), iconUrl },
+            isUploaderDistributor
         });
 
     } catch (e) {
@@ -1665,14 +1716,20 @@ app.get('/register', redirectIfAuthenticated, (req, res) => {
 });
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
-        const { username, email, password } = req.body;
-        if (!username || !email || !password) {
-            return res.status(400).send("All fields are required.");
+        // ✅ FIX: Added dateOfBirth to destructuring
+        const { username, email, password, dateOfBirth } = req.body;
+        if (!username || !email || !password || !dateOfBirth) {
+            return res.status(400).send("All fields are required, including Date of Birth.");
         }
+
 
         // --- NEW: Security Check (Reserved Names) ---
         if (isNameReserved(username)) {
             return res.status(400).send("That username is reserved and cannot be used.");
+        }
+
+        if (global.profanityFilter.isProfane(username)) {
+             return res.status(400).send("That username contains inappropriate language.");
         }
 
         let user = await User.findOne({ email: email.toLowerCase() });
@@ -1684,20 +1741,22 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         // --- NEW: Generate Unique Username (Discriminator) ---
         // We do this BEFORE creating the new user object
         const uniqueUsername = await generateUniqueUsername(username);
-
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 600000; 
+
+        let user = await User.findOne({ email: email.toLowerCase() });
 
         if (user && !user.isVerified) {
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
-            // Update their requested username just in case they changed it
-            user.username = uniqueUsername; 
+            user.username = uniqueUsername;
+            user.dateOfBirth = new Date(dateOfBirth); // ✅ FIX: Save DOB
         } else {
             user = new User({
-                username: uniqueUsername, // Use the generated name
+                username: uniqueUsername,
                 email: email.toLowerCase(),
                 password,
+                dateOfBirth: new Date(dateOfBirth), // ✅ FIX: Save DOB
                 verificationOtp: otp,
                 otpExpires: otpExpires
             });
@@ -2602,6 +2661,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.tags = processedTags;
+        ageRating = req.body.ageRating,
         if (formData.modCategory) {
             file.platforms = [formData.modCategory];
         }
@@ -2704,7 +2764,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // --- GENERATE SLUG ---
         let finalSlug = fileToUpdate.slug; // Keep existing slug if saving a draft
         if (!isVariant && actionType === 'submit' && !finalSlug) {
-            let baseSlug = slugify(formData.modName);
+            let baseSlug = slugify(cleanName);
             finalSlug = baseSlug;
             let slugCounter = 1;
             while (await File.findOne({ slug: finalSlug, category: formData.modPlatform, isLatestVersion: true, _id: { $ne: fileId } })) {
@@ -2713,6 +2773,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
         }
 
+        // --- NEW: Sanitize Mod Details ---
+        const cleanName = global.profanityFilter.clean(formData.modName);
+        const cleanDescription = global.profanityFilter.clean(formData.modDescription);
+        const cleanFeatures = global.profanityFilter.clean(formData.modFeatures || '');
+        const cleanWhatsNew = global.profanityFilter.clean(formData.whatsNew || ''); is
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
@@ -2720,15 +2785,16 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
         // --- SAVE TO DATABASE ---
         const updateData = {
-            name: formData.modName || fileToUpdate.name, 
+            name: cleanName, // Use clean name || fileToUpdate.name, 
             version: formData.modVersion || fileToUpdate.version,
-            modDescription: formData.modDescription,
             modFeatures: formData.modFeatures,
-            whatsNew: formData.whatsNew,
-            importantNote: formData.importantNote,
+            modDescription: cleanDescription, // Use clean description
+            modFeatures: cleanFeatures,       // Use clean features
+            whatsNew: cleanWhatsNew,          // Use clean what's new
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
             videoUrl: formData.videoUrl, 
+            ageRating: req.body.ageRating,
             
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
@@ -3120,7 +3186,9 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         const existing = await Review.findOne({ file: req.params.fileId, user: req.user._id });
         if (existing) return res.redirect(`/mods/${req.params.fileId}`);
 
-        const newReview = new Review({ file: req.params.fileId, user: req.user._id, username: req.user.username, rating: parseInt(rating), comment });
+        // Sanitize the comment
+        const cleanComment = global.profanityFilter.clean(req.body.comment);
+        const newReview = new Review({ file: req.params.fileId, user: req.user._id, username: req.user.username, rating: parseInt(rating), comment: cleanComment });
         await newReview.save();
         
         const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(req.params.fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
@@ -3620,6 +3688,8 @@ const startServer = async () => {
             console.log('A user connected to chat');
             socket.emit('chat history', recentMessages);
             socket.on('chat message', (msg) => {
+                // --- NEW: Sanitize chat messages ---
+                const cleanText = global.profanityFilter.clean(msg.text);
                 const messageData = {
                     username: msg.username,
                     avatar: msg.avatar, 
@@ -3720,12 +3790,19 @@ cron.schedule('0 * * * *', () => {
 // AUTOMATION ENGINE (CRON JOBS)
 // ===================================
 
-// This job runs every 1 minute
 cron.schedule('* * * * *', async () => {
     try {
-        const now = new Date();
+        // --- 1. Check if the engine is enabled in SiteState ---
+        const SiteState = require('./models/siteState'); // Ensure this is imported
+        const siteState = await SiteState.findOne({ singletonId: 'master-state' });
+        
+        // If the state document doesn't exist, or the toggle is false, DO NOTHING.
+        if (!siteState || siteState.enableAutomationEngine !== true) {
+            return; // Exit silently
+        }
 
-        // 1. Find campaigns that are scheduled to run NOW
+        // --- 2. Proceed with normal checks ---
+        const now = new Date();
         const pendingCampaigns = await AutomatedCampaign.find({
             status: 'scheduled',
             scheduledDate: { $lte: now }

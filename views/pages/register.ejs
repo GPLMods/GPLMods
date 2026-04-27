@@ -274,16 +274,26 @@
                         <label for="confirmPassword">Confirm Password</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
                     </div>
+                    <!-- ======== NEW: DATE OF BIRTH INPUT ======== -->
+                    <div class="form-group">
+                        <label for="dateOfBirth">Date of Birth</label>
+                        <input type="date" id="dateOfBirth" name="dateOfBirth" required style="color-scheme: dark;">
+                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access mature content.</p>
+                    </div>
+                    <!-- ========================================== -->
 
                     <!-- UPDATED: ReCAPTCHA and Terms -->
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
                     </div>
-                    
-                    <!-- NEW: Privacy Policy Link added -->
-                    <p style="font-size: 0.8em; color: var(--silver); text-align: center; margin-bottom: 15px;">
-                        By registering, you agree to our <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a>.
-                    </p>
+                    <!-- ======== NEW: 13+ Confirmation ======== -->
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                        <input type="checkbox" id="ageConfirm" name="ageConfirm" required style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;">
+                        <label for="ageConfirm" style="color: var(--silver); font-size: 0.85em; margin: 0; cursor: pointer; line-height: 1.4;">
+                            I confirm that I am 13 years of age or older and agree to the <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a>.
+                        </label>
+                    </div>
+                    <!-- ======================================= -->
 
                     <button type="submit" class="submit-button">Sign Up</button>
                 </form>

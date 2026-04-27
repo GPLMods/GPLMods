@@ -34,9 +34,27 @@ const SiteStateSchema = new Schema({
     maintenanceMessage: { type: String, default: 'GPL Mods is currently down for scheduled maintenance. We will be back online shortly. Thank you for your patience!' },
 
     // Custom text to display on the Unavailable Page
-    unavailableTitle: { type: String, default: 'Service Temporarily Unavailable' },
-    unavailableMessage: { type: String, default: 'This specific service or page is currently unavailable. Please check back later.' }
+        unavailableTitle: { type: String, default: 'Service Temporarily Unavailable' },
+    unavailableMessage: { type: String, default: 'This specific service or page is currently unavailable. Please check back later.' },
 
+    // --- NEW: Automation Engine Toggle ---
+    enableAutomationEngine: {
+        type: Boolean,
+        default: false // Set to false if you want it off by default
+    },
+    // --- NEW: AD MONETIZATION CONTROLS ---
+    enableLinkvertise: {
+        type: Boolean,
+        default: true
+    },
+    linkvertiseId: {
+        type: String,
+        default: '123456' // Placeholder
+    },
+    // The base URL for your ad network. {{ID}} and {{URL}} will be replaced dynamically.
+    adNetworkBaseUrl: {
+        type: String,
+        default: 'https://link-to.net/{{ID}}/dynamic?r={{URL}}'
+    }
 }, { timestamps: true });
-
 module.exports = mongoose.model('SiteState', SiteStateSchema);

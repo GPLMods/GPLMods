@@ -114,7 +114,7 @@ async function createAdminRouter() {
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
             styles: isProduction ? ['/.adminjs/bundle.css'] :[],
-            scripts: isProduction ? ['/.adminjs/bundle.js'] :['/js/image-fallback.js'],
+            scripts: isProduction ? ['/.adminjs/bundle.js',' /js/image-fallback.js'] :[],
         },
         // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
@@ -192,9 +192,9 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: { icon: 'Users' }, 
-                    listProperties: ['profileImageKey', '_id', 'username', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['profileImageKey', '_id', 'profileImageKey', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks'],
-                    editProperties:['username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks'],
+                    editProperties:['username', 'age', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
@@ -236,21 +236,21 @@ async function createAdminRouter() {
                 options: {
                     navigation: { icon: 'FileCode' },
                     // ✅ NEW: Added 'isVariant' to the list view
-                    listProperties: ['iconKey', 'name', 'fileSize', 'version', 'isVariant', 'status', 'category'],
+                    listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'category'],
                     editProperties: [
-                        'name', 'version', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
+                        'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
                         'iconKey', 'screenshotKeys', 'videoUrl',
-                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks',
+                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
                         'isMultiPart', 'downloadParts', 'installationInstructions',
                         // ✅ NEW: Added Variant fields to edit view
                         'isVariant', 'masterFile'
                     ],
                     showProperties: [
-                        'iconKey', 'name', 'version', 'developer', 'uploader', 'status', 'rejectionReason',
+                        'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
-                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename',
+                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
                         'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks',
                         // ✅ NEW: Added Variant fields to show view
@@ -266,6 +266,11 @@ async function createAdminRouter() {
                         alternativeLinks: { isArray: true, description: 'Add alternative download mirrors (e.g., Mega, Google Drive) if the main link fails.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
+                    customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
+                    downloadParts: {
+                        isArray: true,
+                        description: 'Add individual parts. You can provide a custom ad link or up to 2 mirrors per part.'
+                    },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
                             isVisible: {
@@ -450,16 +455,17 @@ async function createAdminRouter() {
                         },
                         delete: { isAccessible: false } 
                     },
-                    listProperties: ['status', 'targetAudience', 'updatedAt'],
+                    listProperties: ['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
                     editProperties: [
-                        'status', 'targetAudience', 'targetUsername', 
+                        'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
                         'maintenanceTitle', 'maintenanceMessage', 
-                        'unavailableTitle', 'unavailableMessage'
+                        'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                     ],
                     properties: {
-                        maintenanceMessage: { type: 'textarea' },
-                        unavailableMessage: { type: 'textarea' },
-                        targetUsername: { description: 'Only required if Target Audience is "specific-user".' }
+                        maintenanceMessage: { type: 'richtext' },
+                        unavailableMessage: { type: 'richtext' },
+                        targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
+                       adNetworkBaseUrl: {description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
                     }
                 }
             },

@@ -123,23 +123,75 @@
             </div>
         </div>
 
-        <!-- Links List -->
+       <!-- Links List -->
         <div class="download-links-section">
             <h2>Download Links</h2>
             <div class="parts-list">
-                                <% file.downloadParts.forEach((part, index) => { %>
-                    <div class="part-item" style="flex-direction: column; align-items: stretch;">
+                <% file.downloadParts.forEach((part, index) => { %>
+                    
+                    <% 
+                        // --- DYNAMIC AD NETWORK ROUTING LOGIC FOR PARTS ---
+                        let finalPartUrl = part.partUrl;
+                        let isPartAdSupported = false;
+
+                        if (showAds) {
+                            if (part.customAdLink) {
+                                // 1. Admin Manual Override
+                                finalPartUrl = part.customAdLink;
+                                isPartAdSupported = true;
+                            } else if (linkvertiseEnabled && !isUploaderDistributor) {
+                                // 2. Dynamic Generator
+                                const encodedUrl = base64Encode(part.partUrl);
+                                finalPartUrl = adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', encodedUrl);
+                                isPartAdSupported = true;
+                            }
+                        }
+
+                        // Helper for Mirrors
+                        const getMirrorUrl = (mirrorUrl) => {
+                            if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
+                                return adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', base64Encode(mirrorUrl));
+                            }
+                            return mirrorUrl;
+                        };
+                    %>
+
+                    <div class="part-item">
+                        <div class="part-name">
+                            <i class="fas fa-file-archive"></i>
+                            <%= part.partName %>
+                            <% if (isPartAdSupported) { %>
+                                <span style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; margin-left: 10px; color: var(--silver);">Ad-Supported</span>
+                            <% } %>
+                        </div>
                         
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <div class="part-name">
-                                <i class="fas fa-file-archive"></i>
-                                <%= part.partName %>
-                            </div>
+                        <!-- Actions Container: Mirrors + Main Download -->
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center; margin-top: 10px;">
                             
-                            <a href="<%= part.partUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
-                                Download
+                            <!-- Optional Mirror 1 -->
+                            <% if (part.mirror1Url) { %>
+                                <a href="<%= getMirrorUrl(part.mirror1Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                    <i class="fas fa-link"></i> <%= part.mirror1Provider || 'Mirror 1' %>
+                                </a>
+                            <% } %>
+
+                            <!-- Optional Mirror 2 -->
+                            <% if (part.mirror2Url) { %>
+                                <a href="<%= getMirrorUrl(part.mirror2Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                    <i class="fas fa-link"></i> <%= part.mirror2Provider || 'Mirror 2' %>
+                                </a>
+                            <% } %>
+
+                            <!-- Main Part Download -->
+                            <a href="<%= finalPartUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
+                                <% if (!isPartAdSupported) { %> <i class="fas fa-bolt" style="margin-right: 5px;"></i> <% } %>
+                                Download Part <%= index + 1 %>
                             </a>
                         </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
                         
                         <!-- ======== VIRUSTOTAL LOGIC FOR PARTS ======== -->
                         <% if (part.partVirusTotalId) { %>

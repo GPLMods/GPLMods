@@ -57,11 +57,24 @@
                         <label for="bio">Your Bio</label>
                         <textarea id="bio" name="bio" placeholder="Tell us a little about yourself..."><%= user.bio || '' %></textarea>
                     </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="age">Your Age</label>
+                        <input type="number" id="age" name="age" value="<%= user.age || '' %>" min="13" max="120" style="...">
+                        <p style="font-size: 0.8rem; color: var(--silver);">Required to download 18+ content.</p>
+                    </div>
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" value="<%= user.email %>" required>
                          <p class="email-note">Note: Changing your email will require re-verification and you will be logged out.</p>
                     </div>
+    <!-- ======== NEW: Date of Birth Input ======== -->
+    <div class="form-group" style="margin-bottom: 1rem;">
+        <label for="dateOfBirth">Date of Birth</label>
+        <!-- Extract just the YYYY-MM-DD part for the input value -->
+        <input type="date" id="dateOfBirth" name="dateOfBirth" value="<%= user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : '' %>" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; color-scheme: dark;">
+        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access 18+ content.</p>
+    </div>
+    <!-- ========================================== -->
                     <button type="submit" class="submit-button">Save Profile Changes</button>
                 </form>
             </section>

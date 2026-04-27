@@ -39,6 +39,7 @@
     "@gitbook/embed": "^0.4.0",
     "adminjs": "^7.8.17",
     "axios": "^1.6.7",
+    "bad-words": "^4.0.0",
     "bcryptjs": "^2.4.3",
     "cashfree-pg": "^5.1.0",
     "connect-mongodb-session": "^5.0.0",

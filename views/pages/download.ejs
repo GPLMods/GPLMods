@@ -122,19 +122,111 @@
             </div>
             <% } %>
             
-            <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON ======== -->
+            <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
+            
+            <% 
+                // Calculate User Age from DOB
+                let userAge = 0;
+                let hasDOB = false;
+                if (user && user.dateOfBirth) {
+                    hasDOB = true;
+                    const diff_ms = Date.now() - new Date(user.dateOfBirth).getTime();
+                    const age_dt = new Date(diff_ms);
+                    userAge = Math.abs(age_dt.getUTCFullYear() - 1970);
+                }
+            %>
+
+            <% if (file.ageRating === '18+') { %>
+                <!-- === IT IS AN 18+ FILE === -->
+                
+                <% if (user) { %>
+                    <!-- LOGGED IN USER -->
+                    <% if (hasDOB && userAge >= 18) { %>
+                        <!-- THEY ARE 18+: Show Download Buttons -->
+            <!-- Pre-calculate the main download URL and whether it's wrapped in ads -->
+            <%
+                let mainDownloadUrl = `/download-file/${file._id}`;
+                let isMainAdSupported = false;
+
+                if (showAds) {
+                    if (file.customAdLink) {
+                        // 1. Manual Admin Override
+                        mainDownloadUrl = file.customAdLink;
+                        isMainAdSupported = true;
+                    } else if (linkvertiseEnabled && !isUploaderDistributor && !file.isMultiPart) {
+                        // 2. Dynamic Base64 Generation (Uses the absolute URL required by Linkvertise)
+                        const fullDownloadRoute = `${baseUrl}/download-file/${file._id}`;
+                        const encodedUrl = base64Encode(fullDownloadRoute);
+                        mainDownloadUrl = adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', encodedUrl);
+                        isMainAdSupported = true;
+                    }
+                }
+            %>
+
+            <!-- Standard Download Button Logic (Inside your Age Gate checks) -->
             <% if (file.isMultiPart) { %>
                 <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
-                    <i class="fas fa-layer-group" style="margin-right: 10px;"></i>
-                    View Download Links
+                    <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
                     <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
                 </a>
+                        <% } else { %>
+                            <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                                <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
+                            </a>
+                        <% } %>
+                    <% } else { %>
+                        <!-- THEY ARE TOO YOUNG OR NO DOB SET -->
+                        <div style="background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--red); font-size: 2em; margin-bottom: 10px;"></i>
+                            <h3 style="color: var(--white); margin-bottom: 5px;">18+ Age Restricted</h3>
+                            <% if (!hasDOB) { %>
+                                <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 10px;">Please set your Date of Birth in your profile to verify your age.</p>
+                                <a href="/profile" class="btn btn-secondary" style="border-color: var(--red); color: var(--red); width: 100%;">Update Profile</a>
+                            <% } else { %>
+                                <p style="color: var(--silver); font-size: 0.9em;">You do not meet the age requirement (18+) to access this content.</p>
+                            <% } %>
+                        </div>
+                    <% } %>
+
+                <% } else { %>
+                    <!-- GUEST USER: Show Verify Button to trigger JS Modal -->
+                    <div id="guest-age-gate-container">
+                        <button type="button" id="verify-age-btn" class="download-button" style="text-align: center; background-color: #333; color: var(--white); box-shadow: none; border: 2px dashed var(--red);">
+                            <i class="fas fa-lock" style="margin-right: 10px; color: var(--red);"></i>
+                            Verify Age to Download (18+)
+                        </button>
+                    </div>
+                    
+                    <!-- Hidden Buttons for guests who pass the check -->
+                    <div id="hidden-download-buttons" style="display: none;">
+                        <% if (file.isMultiPart) { %>
+                            <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
+                                <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
+                                <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
+                            </a>
+                        <% } else { %>
+                            <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                                <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
+
             <% } else { %>
-                <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
-                    <i class="fas fa-download" style="margin-right: 10px;"></i>
-                    Download (<%= formatBytes(file.fileSize) %>)
-                </a>
+                <!-- === NOT AN 18+ FILE: Just show normal buttons === -->
+                <% if (file.isMultiPart) { %>
+                    <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
+                        <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
+                        <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
+                    </a>
+                <% } else { %>
+                    <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                        <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
+                    </a>
+                <% } %>
             <% } %>
+
+            <!-- ========================================================= -->
 
             <!-- ======== NEW: ALTERNATIVE LINKS (MIRRORS) ======== -->
             <% if (file.alternativeLinks && file.alternativeLinks.length > 0) { %>
@@ -145,12 +237,26 @@
                     
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <% file.alternativeLinks.forEach(mirror => { %>
-                            <a href="<%= mirror.url %>" target="_blank" rel="noopener noreferrer" 
+                            
+                            <% 
+                                // --- DYNAMIC AD NETWORK ROUTING LOGIC ---
+                                let finalMirrorUrl = mirror.url;
+                                
+                                // If Viewer sees ads AND System is Enabled AND Uploader isn't a distributor
+                                if (showAds && linkvertiseEnabled && !isUploaderDistributor) {
+                                    const encodedUrl = base64Encode(mirror.url);
+                                    // Use the template string from the Admin Panel database!
+                                    finalMirrorUrl = adNetworkBaseUrl
+                                        .replace('{{ID}}', linkvertiseId)
+                                        .replace('{{URL}}', encodedUrl);
+                                }
+                            %>
+               
+                           <a href="<%= finalMirrorUrl %>" target="_blank" rel="noopener noreferrer" 
                                style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; text-decoration: none; color: var(--white); font-size: 0.9em; border: 1px solid #333; transition: all 0.2s;">
                                 
                                 <span>
                                     <% 
-                                    // Add a smart icon based on the provider name
                                     const lowerName = mirror.providerName.toLowerCase();
                                     let icon = 'fas fa-cloud-download-alt';
                                     let iconColor = 'var(--silver)';
@@ -162,7 +268,13 @@
                                     <i class="<%= icon %>" style="margin-right: 8px; color: <%= iconColor %>;"></i>
                                     <%= mirror.providerName %>
                                 </span>
-                                <i class="fas fa-external-link-alt" style="font-size: 0.8em; color: var(--silver);"></i>
+                                
+                                 <!-- Show a lock icon if it's a monetized link -->
+                                <% if (showAds) { %>
+                                    <i class="fas fa-ad" style="font-size: 0.8em; color: var(--silver);" title="Ad-supported link. Get Premium for direct access."></i>
+                                <% } else { %>
+                                    <i class="fas fa-external-link-alt" style="font-size: 0.8em; color: var(--gold);" title="Direct Premium Access"></i>
+                                <% } %>
                             </a>
                         <% }) %>
                     </div>
@@ -618,6 +730,96 @@
     </div>
 </div>
 <!-- ===================================================== -->
+<!-- ======== GUEST DOB VERIFICATION MODAL ======== -->
+<% if (!user && file.ageRating === '18+') { %>
+<div id="age-modal-container" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <i class="fas fa-calendar-alt" style="font-size: 3em; color: var(--red); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Age Verification</h2>
+        
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            This content is intended for mature audiences. Please enter your Date of Birth to confirm you are 18 or older.
+        </p>
+        
+        <div style="margin-bottom: 20px;">
+            <input type="date" id="guest-dob-input" style="padding: 12px; border-radius: 8px; border: 1px solid #444; background: var(--black); color: white; width: 100%; text-align: center; font-size: 1.1em; outline: none; color-scheme: dark;">
+        </div>
+
+        <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" id="confirmAgeBtn" class="policy-button" style="background-color: var(--red); color: var(--white); border: none;">Verify</button>
+            <button type="button" id="cancelAgeBtn" class="policy-button decline">Cancel</button>
+        </div>
+        <p id="age-error-msg" style="color: var(--red); margin-top: 15px; display: none; font-size: 0.9em; font-weight: bold;"></p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        const ageGateContainer = document.getElementById('guest-age-gate-container');
+        const hiddenButtons = document.getElementById('hidden-download-buttons');
+        
+        if (getCookie('gplmods_18_verified') === 'true') {
+            ageGateContainer.style.display = 'none';
+            hiddenButtons.style.display = 'block';
+            return; 
+        }
+
+        const verifyBtn = document.getElementById('verify-age-btn');
+        const ageModal = document.getElementById('age-modal-container');
+        const confirmAgeBtn = document.getElementById('confirmAgeBtn');
+        const cancelAgeBtn = document.getElementById('cancelAgeBtn');
+        const dobInput = document.getElementById('guest-dob-input');
+        const errorMsg = document.getElementById('age-error-msg');
+
+        verifyBtn.addEventListener('click', () => {
+            ageModal.style.display = 'flex';
+            setTimeout(() => ageModal.classList.add('show'), 10);
+        });
+
+        cancelAgeBtn.addEventListener('click', () => {
+            ageModal.classList.remove('show');
+            setTimeout(() => ageModal.style.display = 'none', 200);
+        });
+
+        confirmAgeBtn.addEventListener('click', () => {
+            const dobValue = dobInput.value;
+            
+            if (!dobValue) {
+                errorMsg.textContent = "Please enter a valid Date of Birth.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Calculate age precisely based on date
+            const dob = new Date(dobValue);
+            const diff_ms = Date.now() - dob.getTime();
+            const age_dt = new Date(diff_ms);
+            const calculatedAge = Math.abs(age_dt.getUTCFullYear() - 1970);
+
+            if (calculatedAge >= 18) {
+                document.cookie = "gplmods_18_verified=true; max-age=" + (30*24*60*60) + "; path=/";
+                ageModal.classList.remove('show');
+                setTimeout(() => {
+                    ageModal.style.display = 'none';
+                    ageGateContainer.style.display = 'none';
+                    hiddenButtons.style.display = 'block';
+                }, 200);
+            } else {
+                errorMsg.textContent = "You must be 18 or older to access this content.";
+                errorMsg.style.display = 'block';
+            }
+        });
+    });
+</script>
+<% } %>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -1,8 +1,8 @@
 <%- include('../partials/header') %>
 
 <!-- ✅ ADD QUILL.JS STYLES AND SCRIPT -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 
 <style>
     /* Your custom theme styles are now integrated */
@@ -423,6 +423,48 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="ageRating">Age Rating*</label>
+                    
+                    <!-- 1. Hide the native select -->
+                    <select id="ageRating" name="ageRating" required style="display: none;">
+                        <option value="NA" <%= (typeof file !== 'undefined' && file.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
+                        <option value="3+" <%= (typeof file !== 'undefined' && file.ageRating === '3+') ? 'selected' : '' %>>3+ (Everyone)</option>
+                        <option value="7+" <%= (typeof file !== 'undefined' && file.ageRating === '7+') ? 'selected' : '' %>>7+ (Low Violence)</option>
+                        <option value="12+" <%= (typeof file !== 'undefined' && file.ageRating === '12+') ? 'selected' : '' %>>12+ (Moderate Violence)</option>
+                        <option value="16+" <%= (typeof file !== 'undefined' && file.ageRating === '16+') ? 'selected' : '' %>>16+ (Strong Violence)</option>
+                        <option value="18+" <%= (typeof file !== 'undefined' && file.ageRating === '18+') ? 'selected' : '' %>>18+ (Adults Only)</option>
+                    </select>
+
+                    <!-- 2. Add the custom wrapper HTML -->
+                    <div class="custom-select-wrapper" id="ageRatingWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">
+                                <!-- Determine initial display text based on selected option -->
+                                <% if (typeof file !== 'undefined' && file.ageRating) { %>
+                                    <% if (file.ageRating === '3+') { %> 3+ (Everyone)
+                                    <% } else if (file.ageRating === '7+') { %> 7+ (Low Violence)
+                                    <% } else if (file.ageRating === '12+') { %> 12+ (Moderate Violence)
+                                    <% } else if (file.ageRating === '16+') { %> 16+ (Strong Violence)
+                                    <% } else if (file.ageRating === '18+') { %> 18+ (Adults Only)
+                                    <% } else { %> Not Rated (N/A) <% } %>
+                                <% } else { %>
+                                    Not Rated (N/A)
+                                <% } %>
+                            </span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
+                            <div class="custom-option" data-value="3+">3+ (Everyone)</div>
+                            <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
+                            <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
+                            <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
+                            <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ✅ UPDATED: Category Dropdown -->
                 <div class="form-group">
                     <label>Category*</label>
@@ -668,6 +710,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryWrapper = document.getElementById('categoryWrapper');
     const nativeCategorySelect = document.getElementById('modCategory');
     const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
+    // --- NEW: Add variables for Age Rating ---
+    const ageRatingWrapper = document.getElementById('ageRatingWrapper');
+    const nativeAgeRatingSelect = document.getElementById('ageRating');
+    // -----------------------------------------
 
     function setupCustomSelect(wrapper, nativeSelect) {
         if (!wrapper || !nativeSelect) return;
@@ -720,6 +766,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(platformWrapper, nativePlatformSelect);
     // Initialize the Category wrapper
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
+    // --- Initialize the Age Rating wrapper ---
+    setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
+    // --- NEW: Initialize the Age Rating wrapper ---
+    // Apply the 'selected' class to the correct custom option on load
+    if (nativeAgeRatingSelect && ageRatingWrapper) {
+        const currentValue = nativeAgeRatingSelect.value;
+        if (currentValue) {
+            const optionToSelect = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentValue}"]`);
+            if (optionToSelect) {
+                // We just add the class visually, we don't 'click' it because that would trigger a change event unnecessarily
+                optionToSelect.classList.add('selected');
+            }
+        }
+    }
+    // ----------------------------------------------
 
     // Close all when clicking outside
     document.addEventListener('click', function() {

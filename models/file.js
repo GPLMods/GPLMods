@@ -20,6 +20,13 @@ officialDescription: { type: String },
 whatsNew: { type: String },
 // --- NEW: IMPORTANT NOTE FIELD ---
 importantNote: { type: String, trim: true },
+
+    // --- NEW: AGE RATING SYSTEM ---
+    ageRating: {
+        type: String,
+        enum:['NA', '3+', '7+', '12+', '16+', '18+'],
+        default: 'NA'
+    },
     
     // --- STORAGE KEYS (S3/Cloud) ---
     iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
