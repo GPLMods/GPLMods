@@ -49,7 +49,7 @@ const SiteStateSchema = new Schema({
     },
     linkvertiseId: {
         type: String,
-        default: '123456' // Placeholder
+        default: '5373913' // Placeholder
     },
     // The base URL for your ad network. {{ID}} and {{URL}} will be replaced dynamically.
     adNetworkBaseUrl: {

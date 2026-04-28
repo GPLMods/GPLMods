@@ -500,12 +500,12 @@ app.use(async (req, res, next) => {
     
     // --- Linkvertise & Ad Monetization Helpers ---
     res.locals.base64Encode = (str) => Buffer.from(str).toString('base64');
-    res.locals.linkvertiseId = process.env.LINKVERTISE_ID || 'YOUR_ID'; 
+    res.locals.linkvertiseId = process.env.LINKVERTISE_ID || '5373913'; 
     res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; // <--- ADD THIS
     
     // Default fallback values
     res.locals.linkvertiseEnabled = false;
-    res.locals.linkvertiseId = '';
+    res.locals.linkvertiseId = '5373913';
     res.locals.adNetworkBaseUrl = '';
 
     // If the SiteState is cached, pull the ad settings from it
