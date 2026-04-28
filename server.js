@@ -96,7 +96,7 @@ app.set('views', path.join(__dirname, 'views'));
 // ===============================
 
 // 1. Reserved Names List (Lowercase for easy checking)
-const RESERVED_NAMES = ['admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 'moderator', 'system', 'staff', 'support', 'owner' 'gpl hacker', 'destributior', 'mod destrubuter'];
+const RESERVED_NAMES = ['admin', 'administrator', 'gplmods', 'gpl community', 'gpl', 'moderator', 'system', 'staff', 'support', 'owner', 'gpl hacker', 'destributior', 'mod destrubuter'];
 
 /**
  * Checks if a requested username contains any reserved words.
@@ -1265,10 +1265,11 @@ app.get('/:category/:slug', async (req, res, next) => {
             }).populate('variants');
         }
 
-        // 4. If STILL not found, throw 404
-        if (!masterFile) {
-            return next(error);
-        }
+            // 4. If STILL not found, throw 404
+    if (!masterFile) {
+        return next(); // Passes control to your 404 middleware
+    }
+
 
         // --- Security Check for Drafts/Pending ---
         if (masterFile.status !== 'live') {
@@ -1340,7 +1341,7 @@ app.get('/:category/:slug', async (req, res, next) => {
         // ======== NEW: FIND UPLOADER ROLE ========
         let isUploaderDistributor = false;
         // Search the DB for the user who uploaded this file
-        const uploaderUser = await User.findOne({ username: currentFile.uploader }).lean();
+        const uploaderUser = await User.findOne({ username: displayFile.uploader }).lean();
         
         if (uploaderUser && uploaderUser.role === 'distributor') {
             isUploaderDistributor = true;
@@ -1741,7 +1742,6 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 600000; 
 
-        let user = await User.findOne({ email: email.toLowerCase() });
 
         if (user && !user.isVerified) {
             user.verificationOtp = otp;
@@ -2645,7 +2645,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         // 2. Format tags
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : file.tags;
 
-        // 3. Update all text fields
+// 3. Update all text fields
         file.name = formData.modName || file.name;
         file.version = formData.modVersion || file.version;
         file.developer = formData.developerName || file.developer;
@@ -2658,9 +2658,12 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.tags = processedTags;
-        ageRating = req.body.ageRating,
+        
+        // ✅ FIX: Added "file." to save it properly, and replaced the comma with a semicolon!
+        file.ageRating = req.body.ageRating || file.ageRating; 
+        
         if (formData.modCategory) {
-            file.platforms = [formData.modCategory];
+            file.platforms =[formData.modCategory];
         }
 
 // 4. IMPORTANT: Status Logic

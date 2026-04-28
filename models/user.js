@@ -80,13 +80,17 @@ dateOfBirth: {
         type: Boolean,
         default: false
     },
-// --- NEW FIELDS FOR DISTRIBUTORS ---
+// --- NEW FIELDS FOR DISTRIBUTORS AND ADMIN ---
     organizationName: { type: String },
     socialLinks: {
         telegram: { type: String },
         discord: { type: String },
         website: { type: String },
-        youtube: { type: String }
+        youtube: { type: String },
+        socialLinks.telegram: { type: String },
+        socialLinks.discord: { type: String },
+        socialLinks.website: { type: String },
+        socialLinks.youtube: { type: String }
     },
     // --- NEW OTP FIELDS ---
     verificationOtp: {

@@ -194,7 +194,7 @@ async function createAdminRouter() {
                     navigation: { icon: 'Users' }, 
                     listProperties: ['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isBanned', 'lastSeen'],
                     showProperties:['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks'],
-                    editProperties:['username', 'age', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
