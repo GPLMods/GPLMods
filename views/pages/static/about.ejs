@@ -42,10 +42,23 @@
     /* Social Media Section */
     .social-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
     .social-card { display: flex; align-items: center; gap: 12px; background: var(--dark-gray); padding: 15px 30px; border-radius: 30px; border: 1px solid #333; color: var(--white); text-decoration: none; font-weight: 600; font-size: 1.1em; transition: all 0.3s ease; }
-    .social-card.discord:hover { background: #5865F2; border-color: #5865F2; }
-    .social-card.youtube:hover { background: #FF0000; border-color: #FF0000; }
-    .social-card.github:hover { background: #333; border-color: #fff; }
-    .social-card.telegram:hover { background: #0088cc; border-color: #0088cc; }
+    
+    /* Social Card Hover Colors */
+    .social-card.discord:hover { background: #5865F2; border-color: #5865F2; color: #fff; }
+    .social-card.youtube:hover { background: #FF0000; border-color: #FF0000; color: #fff; }
+    .social-card.github:hover { background: #333333; border-color: #ffffff; color: #fff; }
+    .social-card.reddit:hover { background: #FF4500; border-color: #FF4500; color: #fff; }
+    .social-card.twitter:hover { background: #1DA1F2; border-color: #1DA1F2; color: #fff; } /* Or #000000 for X */
+    .social-card.linkedin:hover { background: #0077b5; border-color: #0077b5; color: #fff; }
+    .social-card.instagram:hover { 
+        background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); 
+        border-color: #c13584; 
+        color: #fff; 
+    }
+    .social-card.facebook:hover { background: #1877F2; border-color: #1877F2; color: #fff; }
+    .social-card.threads:hover { background: #000000; border-color: #ffffff; color: #fff; }
+    .social-card.gravatar:hover { background: #1D70B8; border-color: #1D70B8; color: #fff; }
+
 
     /* Newsletter & CTA Section */
     .cta-section { background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border: 1px solid #333; text-align: center; padding: 50px 20px; margin: 40px 0 60px 0; border-radius: 15px; position: relative; overflow: hidden; }
@@ -138,7 +151,7 @@
     <section class="about-section">
         <h2 class="section-title">Connect With Us</h2>
         <p style="text-align: center; color: var(--silver); margin-bottom: 30px;">Join the conversation, report bugs, and request new mods on our official channels.</p>
-        <div class="social-grid">
+                <div class="social-grid">
             <a href="https://discord.gg/frBQ2zTu7" target="_blank" class="social-card discord">
                 <i class="fab fa-discord"></i> Discord Server
             </a>
@@ -147,6 +160,29 @@
             </a>
             <a href="https://github.com/GPLMods" target="_blank" class="social-card github">
                 <i class="fab fa-github"></i> GitHub Repository
+            </a>
+            <a href="https://www.reddit.com/user/GPLMods" target="_blank" class="social-card reddit">
+                <i class="fab fa-reddit"></i> Reddit Community
+            </a>
+           <a href="https://x.com/GPLMods" target="_blank" class="social-card twitter">
+                <i class="fab fa-twitter"></i> X (Twitter)
+            </a>
+            <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank" class="social-card linkedin">
+                <i class="fab fa-linkedin"></i> LinkedIn
+            </a>
+             <a href="https://www.instagram.com/gplmods" target="_blank" class="social-card instagram">
+                <i class="fab fa-instagram"></i> Instagram
+            </a>
+             <a href="https://www.facebook.com/profile.php?id=61572148715492" target="_blank" class="social-card facebook">
+                <i class="fab fa-facebook-f"></i> Facebook Page
+            </a>
+             <a href="https://threads.net/gplmods" target="_blank" class="social-card threads">
+                <i class="fab fa-threads"></i> Threads
+            </a>
+              <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank" class="social-card gravatar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
+                      <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
+                </svg> Gravatar Profile
             </a>
         </div>
     </section>
@@ -270,6 +306,20 @@
             <div class="member-socials">
                 <a href="https://www.tidio.com/ai-agent/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
                 <a href="www.youtube.com/@Tidio" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+        <!-- Member 7: VirusTotal (NEW) -->
+        <div class="extended-member-item">
+            <div class="member-info">
+                <img src="/images/virustotal.png" alt="VirusTotal" onerror="this.src='/images/default-avatar.png'">
+                <div>
+                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">VirusTotal</h4>
+                    <span style="color: var(--silver); font-size: 0.9em;">Our Antivirus & Security Scan Provider!</span>
+                </div>
+            </div>
+            <div class="member-socials">
+                <a href="https://twitter.com/virustotal" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.virustotal.com/" target="_blank" title="Website"><i class="fas fa-shield-alt"></i></a>
             </div>
         </div>
 
