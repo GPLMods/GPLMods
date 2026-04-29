@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 
 <!-- ✅ ADD QUILL.JS STYLES AND SCRIPT -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 
 <style>
@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
     // --- Initialize the Age Rating wrapper ---
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
-    // --- NEW: Initialize the Age Rating wrapper ---
+
     // Apply the 'selected' class to the correct custom option on load
     if (nativeAgeRatingSelect && ageRatingWrapper) {
         const currentValue = nativeAgeRatingSelect.value;

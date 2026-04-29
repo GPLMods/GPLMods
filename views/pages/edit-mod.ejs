@@ -409,15 +409,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryWrapper = document.getElementById('categoryWrapper');
     const nativeCategorySelect = document.getElementById('modCategory');
     const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
+    
+    // ✅ FIX: Moved these outside the function so they are globally available!
+    const ageRatingWrapper = document.getElementById('ageRatingWrapper');
+    const nativeAgeRatingSelect = document.getElementById('ageRating');
 
     function setupCustomSelect(wrapper, nativeSelect) {
         if (!wrapper || !nativeSelect) return;
         const customSelect = wrapper.querySelector('.custom-select');
         const selectedText = wrapper.querySelector('.selected-text');
-    // --- NEW: Add variables for Age Rating ---
-        const ageRatingWrapper = document.getElementById('ageRatingWrapper');
-        const nativeAgeRatingSelect = document.getElementById('ageRating');
-    // -----------------------------------------
         
         customSelect.addEventListener('click', function(e) {
             if (wrapper.classList.contains('disabled')) return;
@@ -453,10 +453,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupCustomSelect(platformWrapper, nativePlatformSelect);
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
-// --- NEW: Initialize the Age Rating wrapper ---
+    // Initialize the Age Rating wrapper
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
 
-    // Apply the 'selected' class to the correct custom option on load
+    // Apply the 'selected' class to the correct custom option on load for Age Rating
     if (nativeAgeRatingSelect && ageRatingWrapper) {
         const currentValue = nativeAgeRatingSelect.value;
         if (currentValue) {
@@ -466,7 +466,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    // ----------------------------------------------
 
     document.addEventListener('click', function() {
         document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => wrapper.classList.remove('open'));
