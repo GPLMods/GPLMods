@@ -154,10 +154,9 @@
                         mainDownloadUrl = file.customAdLink;
                         isMainAdSupported = true;
                     } else if (linkvertiseEnabled && !isUploaderDistributor && !file.isMultiPart) {
-                        // 2. Dynamic Base64 Generation (Uses the absolute URL required by Linkvertise)
+                        // ✅ FIX: Use our new global helper
                         const fullDownloadRoute = `${baseUrl}/download-file/${file._id}`;
-                        const encodedUrl = base64Encode(fullDownloadRoute);
-                        mainDownloadUrl = adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', encodedUrl);
+                        mainDownloadUrl = generateAdLink(fullDownloadRoute);
                         isMainAdSupported = true;
                     }
                 }
@@ -244,11 +243,8 @@
                                 
                                 // If Viewer sees ads AND System is Enabled AND Uploader isn't a distributor
                                 if (showAds && linkvertiseEnabled && !isUploaderDistributor) {
-                                    const encodedUrl = base64Encode(mirror.url);
-                                    // Use the template string from the Admin Panel database!
-                                    finalMirrorUrl = adNetworkBaseUrl
-                                        .replace('{{ID}}', linkvertiseId)
-                                        .replace('{{URL}}', encodedUrl);
+                                    // ✅ FIX: Use our new global helper
+                                    finalMirrorUrl = generateAdLink(mirror.url);
                                 }
                             %>
                

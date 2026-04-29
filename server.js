@@ -486,27 +486,40 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// 5. Globals & Notification Cache Middleware
+// --- Globals & Notification Cache ---
 let cachedTotalUpdates = 0;
 let lastUpdateCheck = 0;
 
-// ✅ FIX: Added the 'async' keyword here so 'await' works inside!
+// ✅ FIX: Added the 'async' keyword right here!
 app.use(async (req, res, next) => {
-    // Basic Helpers
     res.locals.user = req.user || null;
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes;
     res.locals.slugify = slugify;
     
     // --- Linkvertise & Ad Monetization Helpers ---
-    res.locals.base64Encode = (str) => Buffer.from(str).toString('base64');
     res.locals.linkvertiseId = process.env.LINKVERTISE_ID || '5373913'; 
-    res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; // <--- ADD THIS
-    
-    // Default fallback values
-    res.locals.linkvertiseEnabled = false;
-    res.locals.linkvertiseId = '5373913';
-    res.locals.adNetworkBaseUrl = '';
+    res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
+
+    // ✅ FIX: Official Linkvertise Generation Logic
+    res.locals.generateAdLink = (targetUrl) => {
+        if (!targetUrl) return '';
+        
+        // 1. Encode the URI first (Crucial for Linkvertise)
+        const encodedUri = encodeURI(targetUrl);
+        // 2. Convert to binary buffer, then Base64
+        const base64Str = Buffer.from(encodedUri, "binary").toString("base64");
+        
+        // If an admin manually set a DIFFERENT ad network in the dashboard (like ShrinkMe)
+        if (cachedSiteState && cachedSiteState.adNetworkBaseUrl && !cachedSiteState.adNetworkBaseUrl.includes('link-to.net')) {
+             return cachedSiteState.adNetworkBaseUrl.replace('{{ID}}', res.locals.linkvertiseId).replace('{{URL}}', base64Str);
+        }
+
+        // 3. Default: Return the official Linkvertise formatted URL with the required random number
+        const randomNum = Math.random() * 1000;
+        return `https://link-to.net/${res.locals.linkvertiseId}/${randomNum}/dynamic?r=${base64Str}`;
+    };
+    // ---------------------------------------------
 
     // If the SiteState is cached, pull the ad settings from it
     if (cachedSiteState) {
@@ -531,14 +544,13 @@ app.use(async (req, res, next) => {
 
     // 3. ======== NOTIFICATIONS LOGIC ========
     try {
-        // Check Global Announcements (Cached every 5 mins)
+        // This 'await' will now work perfectly because the function is 'async'
         if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
             cachedTotalUpdates = await Announcement.countDocuments();
             lastUpdateCheck = Date.now();
         }
         res.locals.totalUpdatesCount = cachedTotalUpdates;
 
-        // Check Personal Notifications (Real-time per user)
         let unreadPersonalCount = 0;
         if (req.isAuthenticated() && req.user) {
             unreadPersonalCount = await UserNotification.countDocuments({ 
@@ -548,16 +560,12 @@ app.use(async (req, res, next) => {
         }
         res.locals.unreadPersonalCount = unreadPersonalCount;
         
-        // Everything succeeded, move to the next route
         next(); 
 
     } catch (e) {
         console.error("Global Middleware Error:", e);
-        // Fallback to 0 so the page still loads even if DB fails
         res.locals.totalUpdatesCount = cachedTotalUpdates;
         res.locals.unreadPersonalCount = 0;
-        
-        // Still move to the next route even if notifications failed to load
         next(); 
     }
 });

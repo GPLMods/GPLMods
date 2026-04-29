@@ -136,13 +136,11 @@
 
                         if (showAds) {
                             if (part.customAdLink) {
-                                // 1. Admin Manual Override
                                 finalPartUrl = part.customAdLink;
                                 isPartAdSupported = true;
                             } else if (linkvertiseEnabled && !isUploaderDistributor) {
-                                // 2. Dynamic Generator
-                                const encodedUrl = base64Encode(part.partUrl);
-                                finalPartUrl = adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', encodedUrl);
+                                // ✅ FIX: Use our new global helper for the main part URL
+                                finalPartUrl = generateAdLink(part.partUrl);
                                 isPartAdSupported = true;
                             }
                         }
@@ -150,7 +148,8 @@
                         // Helper for Mirrors
                         const getMirrorUrl = (mirrorUrl) => {
                             if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
-                                return adNetworkBaseUrl.replace('{{ID}}', linkvertiseId).replace('{{URL}}', base64Encode(mirrorUrl));
+                                // ✅ FIX: Use our new global helper for the part mirrors
+                                return generateAdLink(mirrorUrl);
                             }
                             return mirrorUrl;
                         };
