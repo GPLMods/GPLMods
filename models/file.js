@@ -38,7 +38,10 @@ importantNote: { type: String, trim: true },
     
     // --- ADD EXTERNAL LINK FIELD ---
     externalDownloadUrl: { type: String, trim: true },
-
+    customAdLink: { type: String, trim: true },
+    // --- NEW: MANUAL ANTIVIRUS SCAN LINKS ---
+    manualFileScanUrl: { type: String, trim: true },
+    manualSiteScanUrl: { type: String, trim: true },
     // --- NEW: ALTERNATIVE DOWNLOAD LINKS (MIRRORS) ---
     alternativeLinks:[{
         providerName: { type: String, required: true }, // e.g., "Google Drive", "Mega", "MediaFire"

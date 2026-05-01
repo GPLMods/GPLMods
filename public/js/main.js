@@ -15,6 +15,7 @@
  * 10. Notifications Logic
  * 11. Newsletter Logic
  * 12. REUSABLE SOCIAL CAROUSEL LOGIC
+ * 13. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
  * ==================================================================================
  */
 
@@ -36,6 +37,7 @@ try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:"
 try { initializeNewsletter(); } catch (e) { console.error("Newsletter Error:", e); }
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); }
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
+try { initializeLanguageSystem(); } catch (e) { console.error("Language System Error:", e); }
 try { initializeSocialCarousels(); } catch (e) { console.error("Carousel Error:", e); }
         console.log("All initializers finished.");
     };
@@ -908,5 +910,93 @@ function initializeSocialCarousels() {
         });
 
         updateCarousel(); // Initialize state
+    });
+}
+/**
+ * ==================================================================================
+ * 13. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
+ * ==================================================================================
+ */
+
+// This global function is called by the Google script once it loads
+window.googleTranslateElementInit = function() {
+    new google.translate.TranslateElement({
+        pageLanguage: 'en', // Your website's default language
+        autoDisplay: false
+    }, 'google_translate_element');
+};
+
+function initializeLanguageSystem() {
+    const langBtn = document.getElementById('lang-btn');
+    const langMenu = document.getElementById('lang-menu');
+    
+    if (!langBtn || !langMenu) return;
+
+    // --- 1. Cookie Helpers ---
+    function getCookie(name) {
+        const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : null;
+    }
+    
+    function setLangCookie(langCode) {
+        // Sets the specific cookie Google Translate looks for
+        document.cookie = `googtrans=/auto/${langCode}; path=/; max-age=2592000`; // 30 days
+        document.cookie = `googtrans=/auto/${langCode}; path=/; domain=${window.location.hostname}; max-age=2592000`;
+    }
+
+    function clearLangCookie() {
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+    }
+
+    // --- 2. Auto-Detect Device Language ---
+    // If the user hasn't explicitly chosen a language (no cookie exists)
+    if (!getCookie('googtrans')) {
+        const userLangRaw = navigator.language || navigator.userLanguage;
+        const userLangCode = userLangRaw.split('-')[0]; // e.g., 'es-ES' becomes 'es'
+        
+        // If their device isn't English, auto-set their language
+        if (userLangCode !== 'en') {
+            setLangCookie(userLangCode);
+            // We don't reload here so the page loads smoothly; the script inject below will catch it.
+        }
+    }
+
+    // --- 3. Inject the Google Translate Engine ---
+    // We do this dynamically so it doesn't slow down the initial page load
+    const gtScript = document.createElement('script');
+    gtScript.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+    gtScript.async = true;
+    document.body.appendChild(gtScript);
+
+    // --- 4. Custom Dropdown UI Logic ---
+    langBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        langMenu.classList.toggle('show');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!langBtn.contains(e.target) && !langMenu.contains(e.target)) {
+            langMenu.classList.remove('show');
+        }
+    });
+
+    // Handle language selection
+    const langOptions = langMenu.querySelectorAll('a');
+    langOptions.forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            e.preventDefault();
+            const selectedLang = opt.getAttribute('data-lang');
+            
+            if (selectedLang === 'en') {
+                clearLangCookie(); // Go back to default English
+            } else {
+                setLangCookie(selectedLang); // Set target language
+            }
+            
+            // Reload the page to apply the translation engine smoothly
+            window.location.reload();
+        });
     });
 }

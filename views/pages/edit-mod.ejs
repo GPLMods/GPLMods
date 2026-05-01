@@ -243,6 +243,19 @@
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
                 </div>
             </fieldset>
+            <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
+                <fieldset class="form-section">
+                    <legend>Security Scan Overrides</legend>
+                    <div class="form-group">
+                        <label for="manualFileScanUrl">Manual File Scan URL</label>
+                        <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="https://virustotal.com/gui/file/...">
+                    </div>
+                    <div class="form-group">
+                        <label for="manualSiteScanUrl">Manual Site Scan URL</label>
+                        <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" value="<%= file.manualSiteScanUrl || '' %>" placeholder="https://virustotal.com/gui/url/...">
+                    </div>
+                </fieldset>
+            <% } %>
 
             <fieldset class="form-section">
                 <legend>Media & Metadata</legend>

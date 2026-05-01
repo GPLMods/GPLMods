@@ -82,16 +82,14 @@ dateOfBirth: {
     },
 // --- NEW FIELDS FOR DISTRIBUTORS AND ADMIN ---
     organizationName: { type: String },
+    // Define the nested object correctly
     socialLinks: {
-        telegram: { type: String },
-        discord: { type: String },
-        website: { type: String },
-        youtube: { type: String },
-        'socialLinks.telegram': { type: String },
-        'socialLinks.discord': { type: String },
-        'socialLinks.website': { type: String },
-        'socialLinks.youtube': { type: String }
+        telegram: { type: String, trim: true },
+        discord: { type: String, trim: true },
+        website: { type: String, trim: true },
+        youtube: { type: String, trim: true }
     },
+    // ---------------------------------------------
     // --- NEW OTP FIELDS ---
     verificationOtp: {
         type: String

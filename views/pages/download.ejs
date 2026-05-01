@@ -297,58 +297,57 @@
                     <a href="/login" class="action-btn">Login to Interact</a>
                 <% } %>
 
-<!-- ======== VIRUSTOTAL LOGIC ======== -->
-<% if (file.virusTotalId || file.virusTotalAnalysisId) { %>
-    
-    <% if (file.virusTotalScanDate) { %>
-        <!-- The scan is COMPLETE. Show the results block! -->
-        <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
-            <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                <i class="fas fa-shield-virus" style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
-                <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Security Scan</span>
-                <span style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
-                    <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
-                </span>
-            </div>
-            
-            <% 
-               const vtHash = file.virusTotalId || "";
-               const vtAnalysis = file.virusTotalAnalysisId || "";
-               let vtUrl = "";
+        <!-- ======== DYNAMIC SECURITY SCANS ======== -->
+        <% if (file.virusTotalId || file.virusTotalAnalysisId || file.manualFileScanUrl || file.manualSiteScanUrl) { %>
+            <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
+                
+                <!-- If Automated Scan is Complete -->
+                <% if (file.virusTotalScanDate) { %>
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                        <i class="fas fa-shield-virus" style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
+                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Automated Scan</span>
+                        <span style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                            <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
+                        </span>
+                    </div>
+                <% } else if (file.virusTotalAnalysisId) { %>
+                    <!-- If Automated Scan is Pending -->
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                        <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
+                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan Pending...</span>
+                        <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8em;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                <% } %>
 
-               // Determine the correct URL type based on the presence of an external link
-               const isUrlScan = !!file.externalDownloadUrl;
+                <!-- Scan Link Buttons Container -->
+                <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;">
+                    
+                    <!-- 1. Manual File Scan -->
+                    <% if (file.manualFileScanUrl) { %>
+                        <a href="<%= file.manualFileScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                            <i class="fas fa-file-shield" style="color: var(--green); margin-right: 8px;"></i> View True File Scan
+                        </a>
+                    <% } %>
 
-               if (vtHash.length === 64) {
-                   // ✅ FIX: Route to /gui/url/ if it's an external link, otherwise /gui/file/
-                   vtUrl = isUrlScan 
-                        ? `https://www.virustotal.com/gui/url/${vtHash}`
-                        : `https://www.virustotal.com/gui/file/${vtHash}`;
-               } 
-               else if (vtAnalysis) {
-                   vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-               }
-            %>
-            <!-- ✅ FIX: Upgraded "View Full Report" to a bordered button -->
-<a href="<%= vtUrl %>" target="_blank" class="full-width-btn" style="text-align: center; display: block; margin-top: 12px; font-size: 0.9em; font-weight: 600; color: var(--silver); text-decoration: none; border: 1px solid #444; border-radius: 6px; padding: 8px 0; transition: all 0.2s ease; background-color: rgba(255, 255, 255, 0.05);" onmouseover="this.style.borderColor='var(--silver)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#444'; this.style.color='var(--silver)';">
-    View Full Report
-</a>
-        </div>
-        
-    <% } else { %>
-        <!-- The scan is PENDING. Show the refresh button. -->
-        <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--gold);">
-            <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.5em;"></i>
-                <span style="font-weight: bold; color: var(--white);">Scan in Progress...</span>
+                    <!-- 2. Manual Site/URL Scan -->
+                    <% if (file.manualSiteScanUrl) { %>
+                        <a href="<%= file.manualSiteScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                            <i class="fas fa-globe" style="color: var(--gold); margin-right: 8px;"></i> View Host Site Scan
+                        </a>
+                    <% } %>
+
+                    <!-- 3. Automated VT Scan Link -->
+                    <% if (file.virusTotalId || file.virusTotalAnalysisId) { 
+                        const vtUrl = file.virusTotalId ? `https://www.virustotal.com/gui/file/${file.virusTotalId}` : `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
+                    %>
+                        <a href="<%= vtUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
+                            <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
+                        </a>
+                    <% } %>
+                </div>
             </div>
-            <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary full-width-btn" style="margin-top: 10px; padding: 8px; border-color: var(--gold); color: var(--gold);">
-                <i class="fas fa-sync-alt"></i> Check Results Now
-            </button>
-        </div>
-    <% } %>
-<% } %>
-<!-- ======================================= -->
+        <% } %>
+        <!-- ============================================== -->
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
                     <a href="/mods/<%= file._id %>/add-version" class="action-btn">
@@ -374,9 +373,7 @@
                     <% } %>
                 </li>
                 <li>
-                    Uploaded by: 
-                    <!-- ✅ CHANGED: Now using slugify -->
-                    <a href="/users/<%= slugify(file.uploader) %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
+                 Uploaded by: <a href="/users/<%= slugify(file.uploader) %>" class="meta-link notranslate"><%= file.uploader %> <span class="arrow">›</span></a>
                 </li>
                 <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
                 <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
@@ -644,7 +641,7 @@
                                 <div class="avatar-wrapper">
                                     <img src="<%= (review.user && review.user.signedAvatarUrl) ? review.user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar">
                                 </div>
-                                <span class="comment-author"><%= review.username %></span>
+                                <span class="comment-author notranslate"><%= review.username %></span>
                                 <div class="comment-rating rating">
                                     <div class="stars-outer">
                                         <div class="stars-inner" style="width: <%= (review.rating / 5) * 100 %>%;"></div>

@@ -192,42 +192,57 @@
             </div>
         </div>
                         
-                        <!-- ======== VIRUSTOTAL LOGIC FOR PARTS ======== -->
-                        <% if (part.partVirusTotalId) { %>
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; display: flex; align-items: center; justify-content: space-between;">
-                                
-                                <% if (part.partVirusTotalScanDate) { %>
-                                    <!-- SCAN COMPLETE -->
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <i class="fas fa-shield-virus" style="color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.2em;"></i>
-                                        <span style="color: var(--silver); font-size: 0.9em;">Security Scan:</span>
-                                        <strong style="color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
-                                            <%= part.partVirusTotalPositiveCount %> / <%= part.partVirusTotalTotalScans %>
-                                        </strong>
-                                    </div>
-                                    
-                                    <% 
-                                       const vtUrl = part.partVirusTotalId.length === 64 
-                                            ? `https://www.virustotal.com/gui/url/${part.partVirusTotalId}`
-                                            : `https://www.virustotal.com/gui/file-analysis/${part.partVirusTotalId}`;
-                                    %>
-                                    <a href="<%= vtUrl %>" target="_blank" style="color: var(--silver); font-size: 0.85em; text-decoration: underline;">View Report</a>
-                                
-                                <% } else { %>
-                                    <!-- SCAN PENDING -->
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
-                                        <span style="color: var(--silver); font-size: 0.9em;">Scan Pending...</span>
-                                    </div>
-                                    <button onclick="refreshPartVTScan('<%= file._id %>', '<%= part._id %>')" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.8em; border-color: var(--gold); color: var(--gold);">
-                                        <i class="fas fa-sync-alt"></i> Check Status
-                                    </button>
-                                <% } %>
-                            </div>
-                        <% } %>
-                        <!-- ============================================ -->
+        <!-- ======== DYNAMIC SECURITY SCANS ======== -->
+        <% if (file.virusTotalId || file.virusTotalAnalysisId || file.manualFileScanUrl || file.manualSiteScanUrl) { %>
+            <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
+                
+                <!-- If Automated Scan is Complete -->
+                <% if (file.virusTotalScanDate) { %>
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                        <i class="fas fa-shield-virus" style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
+                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Automated Scan</span>
+                        <span style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                            <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
+                        </span>
                     </div>
-                <% }) %>
+                <% } else if (file.virusTotalAnalysisId) { %>
+                    <!-- If Automated Scan is Pending -->
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                        <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
+                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan Pending...</span>
+                        <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8em;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                <% } %>
+
+                <!-- Scan Link Buttons Container -->
+                <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;">
+                    
+                    <!-- 1. Manual File Scan -->
+                    <% if (file.manualFileScanUrl) { %>
+                        <a href="<%= file.manualFileScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                            <i class="fas fa-file-shield" style="color: var(--green); margin-right: 8px;"></i> View True File Scan
+                        </a>
+                    <% } %>
+
+                    <!-- 2. Manual Site/URL Scan -->
+                    <% if (file.manualSiteScanUrl) { %>
+                        <a href="<%= file.manualSiteScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                            <i class="fas fa-globe" style="color: var(--gold); margin-right: 8px;"></i> View Host Site Scan
+                        </a>
+                    <% } %>
+
+                    <!-- 3. Automated VT Scan Link -->
+                    <% if (file.virusTotalId || file.virusTotalAnalysisId) { 
+                        const vtUrl = file.virusTotalId ? `https://www.virustotal.com/gui/file/${file.virusTotalId}` : `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
+                    %>
+                        <a href="<%= vtUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
+                            <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+        <!-- ============================================== -->
         <!-- Instructions -->
         <div class="instructions-section">
             <h3><i class="fas fa-tools" style="margin-right: 10px; color: var(--silver);"></i>Installation Instructions</h3>

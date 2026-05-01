@@ -83,6 +83,23 @@
                     <label for="whatsNew">What's New in this Version? (Optional)</label>
                     <textarea id="whatsNew" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
                 </div>
+            <!-- ONLY SHOW TO DISTRIBUTORS AND ADMINS -->
+            <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
+                <fieldset class="form-section">
+                    <legend>Security Scan Overrides</legend>
+                    <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Provide direct links to file scans (e.g., MalwareBazaar, VirusTotal File Scan) if the automated URL scanner cannot reach the actual file.</p>
+                    
+                    <div class="form-group">
+                        <label for="manualFileScanUrl">Manual File Scan URL (Optional)</label>
+                        <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" placeholder="https://virustotal.com/gui/file/...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="manualSiteScanUrl">Manual Site Scan URL (Optional)</label>
+                        <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" placeholder="https://virustotal.com/gui/url/...">
+                    </div>
+                </fieldset>
+            <% } %>
 
                 <div class="form-group" style="text-align: left; margin-bottom: 15px; margin-top: 30px;">
                     <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">

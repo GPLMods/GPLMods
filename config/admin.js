@@ -192,8 +192,8 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: { icon: 'Users' }, 
-                    listProperties: ['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['profileImageKey', '_id', 'username', 'age', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
@@ -241,7 +241,7 @@ async function createAdminRouter() {
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
-                        'iconKey', 'screenshotKeys', 'videoUrl',
+                        'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
                         'isMultiPart', 'downloadParts', 'installationInstructions',
                         // ✅ NEW: Added Variant fields to edit view
@@ -250,7 +250,7 @@ async function createAdminRouter() {
                     showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
-                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',
+                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
                         'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks',
                         // ✅ NEW: Added Variant fields to show view

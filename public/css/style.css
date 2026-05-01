@@ -322,10 +322,10 @@ li a:not(.btn):not(.overlay-button):not(.action-btn),
 .info-box a:not(.btn):not(.overlay-button):not(.action-btn), 
 .full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn),
 .app-description-content a:not(.btn):not(.overlay-button):not(.action-btn) {
-    color: #FF4433; /* Bright Light Blue for excellent contrast against dark backgrounds */
+    color: #ffffff; /* White COLOUR FOR HILIGHTING */
     font-weight: 600;
     text-decoration: underline; 
-    text-decoration-color: rgba(255, 83, 73, 0.4); /* Subtle blue underline */
+    text-decoration-color: rgba(255, 255, 255, 0.4); /* Subtle blue underline */
     text-underline-offset: 3px;
     transition: all 0.3s ease;
 }
@@ -337,7 +337,7 @@ li a:not(.btn):not(.overlay-button):not(.action-btn):visited,
 .info-box a:not(.btn):not(.overlay-button):not(.action-btn):visited, 
 .full-blog-body a:not(.btn):not(.overlay-button):not(.action-btn):visited,
 .app-description-content a:not(.btn):not(.overlay-button):not(.action-btn):visited {
-    color: #33EEFF; 
+    color: #c0c0c0; 
 }
 
 /* Hover state - turns gold to match the premium theme */
@@ -2142,4 +2142,73 @@ a.overlay-btn-primary:hover {
 .social-icons-track a:hover {
     color: var(--gold);      
     transform: scale(1.2);   
+}
+/* ==========================================================================
+   MULTI-LANGUAGE SYSTEM STYLES
+   ========================================================================== */
+
+/* 1. Custom Language Dropdown */
+.lang-dropdown-content { 
+    display: none; 
+    position: absolute; 
+    right: 0; 
+    top: 150%; 
+    background-color: var(--dark-gray); 
+    min-width: 180px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8); 
+    border-radius: 12px; 
+    border: 1px solid #333; 
+    z-index: 2000; 
+    overflow: hidden; 
+}
+.lang-dropdown-content.show { 
+    display: block; 
+    animation: popDown 0.2s ease-out forwards; 
+}
+@keyframes popDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.lang-dropdown-content a { 
+    color: var(--silver); 
+    padding: 12px 16px; 
+    text-decoration: none; 
+    display: block; 
+    transition: all 0.2s; 
+    font-size: 0.9em;
+    border-bottom: 1px solid #222;
+}
+.lang-dropdown-content a:last-child { border-bottom: none; }
+.lang-dropdown-content a:hover { 
+    background-color: var(--gold); 
+    color: var(--black); 
+    font-weight: bold;
+}
+
+/* 2. HIDE GOOGLE'S DEFAULT UI (Seamless Integration) */
+.goog-te-banner-frame.skiptranslate, 
+.goog-te-gadget-icon,
+#goog-gt-tt { 
+    display: none !important; 
+}
+body { 
+    top: 0px !important; 
+}
+.goog-tooltip skiptranslate, 
+.activity-root, 
+.status-message, 
+.started-activity-container { 
+    display: none !important; 
+}
+/* Prevent hovering over translated text from showing the original text popup */
+.goog-text-highlight { 
+    background-color: transparent !important; 
+    border: none !important; 
+    box-shadow: none !important; 
+}
+
+/* 3. Utility class to stop specific items from translating */
+/* Add class="notranslate" to anything you don't want translated! */
+.notranslate {
+    /* Google Engine respects this class natively */
 }

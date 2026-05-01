@@ -1,0 +1,13 @@
+# Allow all crawlers to access all public pages
+User-agent: *
+Allow: /
+
+# Prevent crawlers from indexing private or administrative areas
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /api/
+Disallow: /account/
+
+# Point crawlers to your sitemap so they can discover all your mods!
+# REPLACE THIS URL WITH YOUR ACTUAL LIVE DOMAIN
+Sitemap: https://gplmods.webredirect.org/sitemap.xml

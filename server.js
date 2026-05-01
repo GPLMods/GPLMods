@@ -145,6 +145,19 @@ async function generateUniqueUsername(baseName) {
     // 4. Return the base name + the next available number
     return `${cleanBaseName}#${maxDiscriminator + 1}`;
 }
+// --- NEW HELPER: VALIDATE NAMES (Letters, Numbers, Spaces ONLY) ---
+function isValidName(str) {
+    if (!str) return false;
+    
+    const trimmed = str.trim();
+    if (trimmed.length === 0) return false; // Prevents "    " (only spaces)
+
+    // Regex: ^ (start) [a-zA-Z0-9 ]+ (one or more letters, numbers, or spaces) $ (end)
+    // This strictly forbids emojis, symbols (!@#$), and invisible characters.
+    const regex = /^[a-zA-Z0-9 ]+$/;
+    return regex.test(trimmed);
+}
+// ------------------------------------------------------------------
 
 // Helper: Format Date
 function timeAgo(date) {
@@ -665,8 +678,17 @@ passport.use(new GoogleStrategy({
         if (user) { user.googleId = googleUserData.googleId; await user.save(); done(null, user); } 
         else {
             // --- NEW: Security Check & Discriminator ---
-            let requestedName = googleUserData.username; // Or githubUserData.username, etc.
+            let requestedName = googleUserData.username; // Or githubUserData / microsoftUserData
             
+            // ======== SANITIZE SOCIAL NAME ========
+            // Strip out anything that isn't a letter, number, or space
+            requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+            // If the name was 100% emojis, it will now be empty. Give a fallback name:
+            if (!requestedName || requestedName.length === 0) {
+                requestedName = 'Member';
+            }
+            // ======================================
+
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
                 requestedName = 'Member'; 
@@ -696,8 +718,17 @@ passport.use(new GitHubStrategy({
         if (user) { user.githubId = githubUserData.githubId; await user.save(); done(null, user); } 
         else {
             // --- NEW: Security Check & Discriminator ---
-            let requestedName = githubUserData.username; // Or microsoftUserData.username, etc.
+            let requestedName = githubUserData.username; // Or githubUserData / microsoftUserData
             
+            // ======== SANITIZE SOCIAL NAME ========
+            // Strip out anything that isn't a letter, number, or space
+            requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+            // If the name was 100% emojis, it will now be empty. Give a fallback name:
+            if (!requestedName || requestedName.length === 0) {
+                requestedName = 'Member';
+            }
+            // ======================================
+
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
                 requestedName = 'Member'; 
@@ -727,13 +758,21 @@ passport.use(new MicrosoftStrategy({
         if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); } 
         else {
             // --- NEW: Security Check & Discriminator ---
-            let requestedName = microsoftUserData;  // Or googleUserData.username, etc.
+            let requestedName = microsoftUserData.username; // Or githubUserData / microsoftUserData
             
+            // ======== SANITIZE SOCIAL NAME ========
+            // Strip out anything that isn't a letter, number, or space
+            requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+            // If the name was 100% emojis, it will now be empty. Give a fallback name:
+            if (!requestedName || requestedName.length === 0) {
+                requestedName = 'Member';
+            }
+            // ======================================
+
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
                 requestedName = 'Member'; 
             }
-
             // Generate the unique # number
             const uniqueUsername = await generateUniqueUsername(requestedName);
             microsoftUserData.username = uniqueUsername; // Update the data object before creating
@@ -1459,10 +1498,14 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                 platforms: previousVersion.platforms,
                 tags: previousVersion.tags,
                 uploader: req.user.username,
+                ageRating: previousVersion.ageRating,
                 
                 // New details
                 version: softwareVersion,
                 whatsNew: whatsNew,
+            // --- NEW: ADD MANUAL SCANS TO NEW VERSION ---
+            manualFileScanUrl: req.body.manualFileScanUrl,
+            manualSiteScanUrl: req.body.manualSiteScanUrl,
                 originalFilename: originalFilename || previousVersion.originalFilename,
                 fileKey: 'external-link', 
                 fileSize: 0, 
@@ -1727,6 +1770,11 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         if (!username || !email || !password || !dateOfBirth) {
             return res.status(400).send("All fields are required, including Date of Birth.");
         }
+        // ========  VALIDATION CHECK ========
+        if (!isValidName(username)) {
+            return res.status(400).send("Username can only contain letters, numbers, and spaces. No emojis.");
+        }
+        // ===========================================
 
 
         // --- NEW: Security Check (Reserved Names) ---
@@ -2169,6 +2217,11 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
 
         // --- Handle Username Change ---
         if (username && username !== user.username) {
+            // ======== VALIDATION CHECK ========
+            if (!isValidName(username)) {
+                 return res.redirect('/profile?error=Username can only contain letters, numbers, and spaces.');
+            }
+            // ===========================================
             
             // 1. Security Check
             if (isNameReserved(username)) {
@@ -2652,6 +2705,11 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // 2. Format tags
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : file.tags;
+        // ======== VALIDATION CHECK ========
+        if (formData.modName && !isValidName(formData.modName)) {
+            return res.redirect(`/mods/${file._id}/edit?error=Mod Name can only contain letters, numbers, and spaces.`);
+        }
+        // ===========================================
 
 // 3. Update all text fields
         file.name = formData.modName || file.name;
@@ -2666,6 +2724,9 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.tags = processedTags;
+        // --- NEW: UPDATE MANUAL SCANS (allow clearing them) ---
+        if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = formData.manualFileScanUrl;
+        if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = formData.manualSiteScanUrl;
         
         // ✅ FIX: Added "file." to save it properly, and replaced the comma with a semicolon!
         file.ageRating = req.body.ageRating || file.ageRating; 
@@ -2743,6 +2804,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required for new mods.`);
             }
         }
+        // ======== ADD THIS VALIDATION CHECK ========
+        if (!isValidName(formData.modName)) {
+            return res.redirect(`/upload-details/${fileId}?error=Mod Name can only contain letters, numbers, and spaces. No emojis.`);
+        }
+        // ===========================================
 
         let iconKey = fileToUpdate.iconKey; // Keep existing if not updating
         let screenshotKeys = fileToUpdate.screenshotKeys || [];
@@ -2802,7 +2868,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
             videoUrl: formData.videoUrl, 
+            tags: processedTags,
             ageRating: req.body.ageRating,
+            // --- NEW: SAVE MANUAL SCANS ---
+            manualFileScanUrl: formData.manualFileScanUrl,
+            manualSiteScanUrl: formData.manualSiteScanUrl,
+
             
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
@@ -2905,6 +2976,14 @@ app.get('/api/check-username', async (req, res) => {
         if (!requestedName || requestedName.trim().length < 3) {
             return res.json({ available: false, message: 'Username too short' });
         }
+        // ======== VALIDATION CHECK ========
+        if (!isValidName(requestedName)) {
+            return res.json({ 
+                available: false, 
+                message: 'Letters, numbers, and spaces only. No emojis.' 
+            });
+        }
+        // ===========================================
 
         // 1. Check against reserved names
         if (isNameReserved(requestedName)) {
