@@ -280,7 +280,29 @@
             <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
         </div>
     </div>
-
+    <!-- ======== NEW: FLOATING MUSIC PLAYER ======== -->
+    <div id="floating-music-player" class="floating-music-player">
+        <!-- Toggle Button (Always visible on the edge) -->
+        <button id="music-toggle-btn" class="music-toggle-btn" title="Toggle Music Player">
+            <i class="fas fa-music"></i>
+        </button>
+        
+        <!-- Player Content (Expands out) -->
+        <div class="music-player-content">
+            <span id="music-track-name" class="track-name">Loading...</span>
+            <div class="music-controls">
+                <button id="music-prev-btn" class="music-btn" title="Previous Track">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="music-play-pause-btn" class="music-btn" title="Play/Pause">
+                    <i class="fas fa-play" id="play-pause-icon"></i>
+                </button>
+                <button id="music-next-btn" class="music-btn" title="Next Track">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 <!-- Hidden Audio Player for JS to control -->
     <audio id="background-audio" preload="auto"></audio>
 

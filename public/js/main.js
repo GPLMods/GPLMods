@@ -583,28 +583,30 @@ function startEngagementSequence() {
 
 /**
  * ==================================================================================
- * 8. ROBUST SIDEBAR MUSIC PLAYER (FIXED)
+ * 8. ROBUST FLOATING MUSIC PLAYER & BACKGROUND AUTO-PAUSE
  * ==================================================================================
  */
 function initializeMusicPlayer() {
+    const playerContainer = document.getElementById('floating-music-player');
+    const toggleBtn = document.getElementById('music-toggle-btn');
     const audioPlayer = document.getElementById('background-audio'); 
     const playPauseBtn = document.getElementById('music-play-pause-btn'); 
+    const playPauseIcon = document.getElementById('play-pause-icon');
     const prevBtn = document.getElementById('music-prev-btn'); 
     const nextBtn = document.getElementById('music-next-btn'); 
     const trackNameDisplay = document.getElementById('music-track-name'); 
 
-    if (!audioPlayer) {
-    console.warn("Audio element not found — creating fallback #background-audio.");
-    audioPlayer = document.createElement('audio');
-    audioPlayer.id = 'background-audio';
-    audioPlayer.preload = 'auto';
-    document.body.appendChild(audioPlayer);
-}
+    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
+        console.warn("Music Player elements missing. Player disabled.");
+        return; 
+    }
 
-if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
-    console.warn("Music Player controls or display missing. Player disabled.");
-    return;
-}
+    // --- 1. Sliding Toggle Logic ---
+    if (toggleBtn && playerContainer) {
+        toggleBtn.addEventListener('click', () => {
+            playerContainer.classList.toggle('open');
+        });
+    }
 
     const playlist =[
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
@@ -625,29 +627,22 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
 
     function loadTrack(index) {
         const track = playlist[index];
-        if (!track) {
-             trackNameDisplay.textContent = "Select a track"; // ✅ FIX 5: Fallback text
-             return;
-        }
+        if (!track) return;
         audioPlayer.src = track.src;
         trackNameDisplay.textContent = track.title;
         localStorage.setItem('musicTrackIndex', index);
     }
 
-    // ✅ FIX: Correctly toggle FontAwesome classes, even if the <i> tag itself was clicked
     function updatePlayIcon(isPlaying) {
-        // Find the icon by its specific ID to ensure we always get it
-        const icon = document.getElementById('play-pause-icon');
-        if (!icon) return;
-
+        if (!playPauseIcon) return;
         if (isPlaying) {
-            icon.className = 'fas fa-pause'; // Change to pause icon
+            playPauseIcon.className = 'fas fa-pause'; 
             playPauseBtn.title = "Pause Music";
-            trackNameDisplay.textContent = playlist[trackIndex].title; // Show name when playing
+            trackNameDisplay.textContent = playlist[trackIndex].title;
         } else {
-            icon.className = 'fas fa-play'; // Change to play icon
+            playPauseIcon.className = 'fas fa-play'; 
             playPauseBtn.title = "Play Music";
-            trackNameDisplay.textContent = "Paused"; // Show paused status
+            trackNameDisplay.textContent = "Paused"; 
         }
     }
 
@@ -668,11 +663,8 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
     }
     
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) {
-            playTrack();
-        } else {
-            pauseTrack();
-        }
+        if (audioPlayer.paused) playTrack();
+        else pauseTrack();
     });
 
     nextBtn.addEventListener('click', () => {
@@ -688,33 +680,23 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
     });
     
     audioPlayer.addEventListener('ended', () => { nextBtn.click(); });
-    
     audioPlayer.addEventListener('timeupdate', () => {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    
-    // Initialize state
     loadTrack(trackIndex);
     
-    // We set the initial icon state immediately
     const savedState = localStorage.getItem('musicState');
-    if (savedState === 'playing') {
-        updatePlayIcon(true);
-    } else {
-        updatePlayIcon(false);
-        trackNameDisplay.textContent = "Select a track"; // ✅ FIX 5: Ensure paused state shows this
-    }
+    if (savedState === 'playing') updatePlayIcon(true);
+    else updatePlayIcon(false);
 
     const savedTime = localStorage.getItem('musicCurrentTime');
 
     if (savedState === 'playing') {
         if (savedTime) audioPlayer.currentTime = parseFloat(savedTime);
-        
         const playPromise = audioPlayer.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.warn("Browser blocked autoplay on new page load.");
                 updatePlayIcon(false); 
                 localStorage.setItem('musicState', 'paused');
             });
@@ -722,6 +704,27 @@ if (!playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
     } else {
         audioPlayer.pause(); 
     }
+
+    // --- 2. NEW: SMART BACKGROUND TAB AUTO-PAUSE LOGIC ---
+    let wasPlayingBeforeHidden = false;
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            // User switched to another tab
+            if (!audioPlayer.paused) {
+                wasPlayingBeforeHidden = true; // Remember they had it playing
+                audioPlayer.pause();           // Pause silently (don't update UI/LocalStorage)
+            } else {
+                wasPlayingBeforeHidden = false;
+            }
+        } else {
+            // User came back to the GPL Mods tab
+            if (wasPlayingBeforeHidden) {
+                audioPlayer.play().catch(e => console.warn("Could not auto-resume audio"));
+                wasPlayingBeforeHidden = false; // Reset
+            }
+        }
+    });
 }
 /**
  * ==================================================================================

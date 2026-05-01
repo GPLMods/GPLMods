@@ -520,55 +520,104 @@ a.overlay-btn-primary:hover {
 .overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
 .overlay-button:hover { transform: scale(1.05); }
 
-/* Sidebar Music Player
--------------------------------------------------- */
-.music-player {
-    padding: 15px 0;
-    text-align: center;
+/* ==========================================================================
+   FLOATING BOTTOM-LEFT MUSIC PLAYER
+   ========================================================================== */
+
+.floating-music-player {
+    position: fixed;
+    bottom: 30px; /* Floats at the bottom */
+    left: 0;      /* Sticks to the left edge */
+    z-index: 9998; /* Just under modals, but above page content */
+    display: flex;
+    align-items: center;
+    background-color: var(--dark-gray);
+    border: 1px solid #333;
+    border-left: none; /* No border on the flush left side */
+    border-radius: 0 30px 30px 0; /* Rounded on the right side */
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.6);
+    
+    /* The Magic: Hide content off-screen, leave only the 55px button visible */
+    transform: translateX(calc(-100% + 55px)); 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.music-player #track-name {
-    display: block;
-    margin-bottom: 15px;
-    font-weight: 600;
+
+/* When the 'open' class is added via JS, it slides fully into view */
+.floating-music-player.open {
+    transform: translateX(0);
+}
+
+/* The Music Icon Button that stays visible */
+.music-toggle-btn {
+    width: 55px;
+    height: 55px;
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    font-size: 1.5em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent; 
+}
+.music-toggle-btn:hover {
+    color: var(--white);
+    text-shadow: 0 0 10px var(--glow-gold);
+}
+
+/* Content wrapper inside the sliding pill */
+.music-player-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 20px 10px 5px;
+    width: max-content; /* Grows based on buttons */
+}
+
+.music-player-content .track-name {
     color: var(--silver);
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 5px;
+    max-width: 150px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .music-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 25px; 
+    gap: 15px; 
 }
 
-/* --- The New Borderless Button Style --- */
 .music-controls button.music-btn {
     background: none; 
     border: none;     
     padding: 5px;
     line-height: 0; 
     cursor: pointer;
-    
-    /* ✅ FIX 1: Remove the default blue/grey tap overlay on mobile browsers! */
     -webkit-tap-highlight-color: transparent; 
-    
-    color: var(--silver); /* Default silver color */
+    color: var(--silver);
+    font-size: 1.2em; /* Size of FontAwesome icons */
     transition: color 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Hover & Active states for the whole button */
 .music-controls button.music-btn:hover,
 .music-controls button.music-btn:focus {
-    color: var(--gold); /* Turn gold on hover/tap */
-    transform: scale(1.1); /* Grow slightly */
-    text-shadow: 0 0 10px var(--glow-gold); /* Add glow */
-    outline: none; /* Remove focus outlines */
+    color: var(--gold);
+    transform: scale(1.2);
+    text-shadow: 0 0 10px var(--glow-gold);
+    outline: none;
 }
 
 .music-controls button.music-btn:active {
-    transform: scale(0.85); /* Shrink on click/tap */
-    color: var(--gold); /* Stay gold while clicking */
+    transform: scale(0.85);
+    color: var(--gold);
 }
 
         /* --- Policy Acceptance Banner --- */
@@ -721,124 +770,6 @@ a.overlay-btn-primary:hover {
 .main-footer .social-icons i {
     /* This can often help reset styles if the 'a' tag isn't enough */
 }
-
-.player-controls button {
-    background: none;
-    border: none;
-    color: var(--silver); /* This now acts as a fallback */
-    font-size: 1.5em; /* This is no longer needed but is harmless */
-    cursor: pointer;
-    transition: color 0.3s ease, transform 0.3s ease;
-    padding: 5px; /* Add some padding for a better click area */
-    line-height: 0; /* Important for aligning SVGs */
-}
-.player-controls button:hover {
-    color: var(--gold);
-    transform: scale(1.1);
-}
-
-/* --- NEW SVG STYLES --- */
-.player-icon {
-    width: 28px;
-    height: 28px;
-    fill: currentColor; /* This makes the SVG take the color of its parent button */
-}
-
-.album-art {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background-color: var(--black);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.vinyl-record {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #333, #111);
-    border: 2px solid #444;
-    position: relative;
-    transition: transform 1s linear;
-}
-.vinyl-record::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
-    background-color: var(--gold);
-    border-radius: 50%;
-}
-/* Spinning animation when playing */
-.footer-music-player.playing .vinyl-record {
-    animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.track-info {
-    flex-grow: 1;
-    overflow: hidden; /* For the marquee effect */
-    white-space: nowrap;
-}
-.track-title {
-    color: var(--silver);
-    font-weight: 500;
-}
-
-.player-controls button {
-    background: none;
-    border: none;
-    color: var(--silver);
-    font-size: 1.5em;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-.player-controls button:hover {
-    color: var(--gold);
-}
-    /* Add this transition to make the height change smooth */
-    transition: opacity 0.5s ease, transform 0.5s ease, height 0.4s ease-in-out, padding 0.4s ease-in-out;
-
-/* NEW: The wrapper for the content that will be hidden */
-.player-main-content {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    width: 100%;
-    transition: opacity 0.3s ease;
-}
-
-/* NEW: The toggle button itself */
-.player-toggle-btn {
-    position: absolute;
-    top: -25px; /* Position it just above the player bar */
-    left: 50%;
-    transform: translateX(-50%);
-    
-    background-color: var(--dark-gray);
-    border: 1px solid #333;
-    border-bottom: none;
-    border-radius: 10px 10px 0 0;
-    padding: 2px 10px;
-    cursor: pointer;
-    z-index: -1; /* Place it behind the player by default */
-}
-.player-toggle-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: var(--silver);
-    transition: transform 0.4s ease;
-}
-
 /* --- START OF ABOUT PAGE NEW STYLES --- */
         
         /* Header & Nav Styles (Consistent) */
@@ -2212,3 +2143,41 @@ body {
 .notranslate {
     /* Google Engine respects this class natively */
 }
+/* ==========================================================================
+   GOOGLE TRANSLATE WIDGET FIX
+   Hides the ugly top bar and prevents it from breaking the layout
+   ========================================================================== */
+
+/* 1. Hide the top iframe bar injected by Google */
+.skiptranslate iframe.goog-te-banner-frame {
+    display: none !important;
+}
+
+/* 2. Prevent Google from pushing the body down */
+body {
+    top: 0px !important;
+    position: static !important;
+}
+
+/* 3. Hide the Google Translate tooltip popup when hovering over text */
+.goog-text-highlight {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 4. (Optional) Hide the "Powered by Google Translate" logo in the dropdown */
+.goog-logo-link {
+    display: none !important;
+}
+.goog-te-gadget {
+    color: transparent !important;
+}
+.goog-te-gadget .goog-te-combo {
+    color: var(--white) !important;
+    background-color: var(--dark-gray) !important;
+    border: 1px solid #333 !important;
+    padding: 5px;
+    border-radius: 5px;
+}
+/* ========================================================================== */
