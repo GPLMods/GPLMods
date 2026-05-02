@@ -3,11 +3,13 @@ const bcrypt = require('bcryptjs');
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
+    // --- AUTHENTICATION FIELDS ---
     username: {
         type: String,
         required: true,
         unique: true,
-        trim: true
+        trim: true,
+        lowercase: false
     },
     email: {
         type: String,
@@ -18,25 +20,32 @@ const UserSchema = new Schema({
     },
     password: {
         type: String,
-        required: false
+        required: false,
+        default: null
     },
+    // --- SOCIAL LOGIN IDs ---
     googleId: {
-        type: String
+        type: String,
+        default: null
     },
     githubId: {
-        type: String
+        type: String,
+        default: null
     },
     microsoftId: {
-        type: String
+        type: String,
+        default: null
     },
+    // --- ACCOUNT STATUS ---
     role: {
         type: String,
         enum: ['member', 'distributor', 'admin'],
         default: 'member'
     },
-isBanned: {
+    isBanned: {
         type: Boolean,
-        default: false
+        default: false,
+        index: true
     },
     banReason: {
         type: String,
@@ -48,68 +57,111 @@ isBanned: {
         enum: ['free', 'premium'],
         default: 'free'
     },
-profileImageKey: {
-    type: String // Stores the path like 'avatars/12345-image.png'
-},
+    isVerified: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    // --- PROFILE INFORMATION ---
+    profileImageKey: {
+        type: String,
+        default: null
+    },
     bio: {
         type: String,
         trim: true,
-        maxlength: 250
+        maxlength: 250,
+        default: ''
     },
-dateOfBirth: {
-        type: Date
-    },
-    lastSeen: {
+    dateOfBirth: {
         type: Date,
-        default: Date.now
+        default: null
     },
-    whitelist: {
-        type: [Schema.Types.ObjectId],
-        ref: 'File',
-        default:[]
+    organizationName: {
+        type: String,
+        trim: true,
+        default: null
     },
-   following: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    }],
-    followers: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    }],
-    isVerified: {
-        type: Boolean,
-        default: false
-    },
-// --- NEW FIELDS FOR DISTRIBUTORS AND ADMIN ---
-    organizationName: { type: String },
-    // Define the nested object correctly
+    // --- SOCIAL LINKS ---
     socialLinks: {
-        telegram: { type: String, trim: true },
-        discord: { type: String, trim: true },
-        website: { type: String, trim: true },
-        youtube: { type: String, trim: true }
+        type: {
+            telegram: {
+                type: String,
+                trim: true,
+                default: null
+            },
+            discord: {
+                type: String,
+                trim: true,
+                default: null
+            },
+            website: {
+                type: String,
+                trim: true,
+                default: null
+            },
+            youtube: {
+                type: String,
+                trim: true,
+                default: null
+            }
+        },
+        default: {}
     },
-    // ---------------------------------------------
-    // --- NEW OTP FIELDS ---
+    // --- USER RELATIONSHIPS ---
+    whitelist: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'File'
+        }],
+        default: []
+    },
+    following: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        default: []
+    },
+    followers: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        default: []
+    },
+    // --- OTP & PASSWORD RESET ---
     verificationOtp: {
-        type: String
+        type: String,
+        default: null
     },
     otpExpires: {
-        type: Date
+        type: Date,
+        default: null
     },
-    // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
     passwordResetToken: {
-        type: String
+        type: String,
+        default: null
     },
     passwordResetExpires: {
-        type: Date
+        type: Date,
+        default: null
+    },
+    // --- ACTIVITY TRACKING ---
+    lastSeen: {
+        type: Date,
+        default: Date.now,
+        index: true
     }
-}, { timestamps: true }); // <--- Schema closes here, followed by options
+}, { 
+    timestamps: true,
+    collection: 'users'
+}); // <--- Schema closes here, followed by options
 
-// Modern Pre-save hook: No need for 'next' when using async/await!
+// --- PRE-SAVE MIDDLEWARE ---
 UserSchema.pre('save', async function() {
     // If password is not modified, just return and let Mongoose continue
-    if (!this.isModified('password')) {
+    if (!this.isModified('password') || !this.password) {
         return;
     }
     
@@ -118,8 +170,9 @@ UserSchema.pre('save', async function() {
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Method to compare candidate password with the stored hashed password
+// --- INSTANCE METHODS ---
 UserSchema.methods.comparePassword = async function(candidatePassword) {
+    if (!this.password || !candidatePassword) return false;
     return await bcrypt.compare(candidatePassword, this.password);
 };
 

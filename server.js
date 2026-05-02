@@ -3408,7 +3408,7 @@ app.get('/membership', (req, res) => {
 });
 
 // --- NEW: DOCUMENTATION SYSTEM ROUTE ---
-app.get('/docs/:slug?', async (req, res, next) => {
+app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
     try {
         const requestedSlug = req.params.slug;
 

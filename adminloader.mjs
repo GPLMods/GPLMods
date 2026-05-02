@@ -97,25 +97,38 @@ async function runAdminBuilder() {
         process.exit(1);
     }
 
-    // --- STEP 3: Cache Check ---
-    process.stdout.write('⏳ Checking for existing AdminJS build cache... ');
+    // --- STEP 3: Cache Check & Force Rebuild Option ---
     const bundlePath = path.join(__dirname, '.adminjs', 'bundle.js');
+    const forceRebuild = process.env.REBUILD_ADMIN_BUNDLE === 'true';
+    
+    process.stdout.write('⏳ Checking for existing AdminJS build cache... ');
+    let cacheExists = false;
     
     try {
         await fs.access(bundlePath);
+        cacheExists = true;
         console.log('✅ Cache Found');
+    } catch (e) {
+        cacheExists = false;
+        console.log('ℹ️ No Cache Found');
+    }
+    
+    // Skip build only if: cache exists AND not forcing rebuild
+    if (cacheExists && !forceRebuild) {
         console.log('\n✨ .adminjs/bundle.js is present.');
-        console.log('✨ Skipping expensive Webpack build to save deployment time.\n');
+        console.log('✨ Skipping Webpack build (set REBUILD_ADMIN_BUNDLE=true to force rebuild).\n');
         
         console.log('==================================================');
         console.log('✅ PRE-BUILD SEQUENCE FINISHED SUCCESSFULLY');
         console.log('==================================================\n');
         process.exit(0);
-        
-    } catch (e) {
-        console.log('ℹ️ No Cache Found (or incomplete)');
-        console.log('\n⚙️ Starting AdminJS Webpack Build Process. This will take a moment...\n');
     }
+    
+    if (forceRebuild && cacheExists) {
+        console.log('🔄 Force rebuild enabled via REBUILD_ADMIN_BUNDLE=true\n');
+    }
+    
+    console.log('⚙️ Starting AdminJS Webpack Build Process. This will take a moment...\n');
 
     // --- STEP 4: Execute Build ---
     try {
