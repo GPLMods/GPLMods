@@ -1,264 +1,144 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const { Schema } = mongoose; // Destructured Schema for easier access
 
 const FileSchema = new Schema({
-    // --- CORE METADATA ---
-    name: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        trim: true
-    },
-    slug: {
-        type: String,
+    // --- DYNAMICALLY REQUIRED FIELDS ---
+    // These are NOT required during the initial 'processing' step, 
+    // but they ARE required once the user submits the final form.
+name: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+ // --- NEW: THE URL SLUG ---
+    slug: { 
+        type: String, 
         lowercase: true,
         trim: true,
-        sparse: true,
-        index: true
+        // It's not required during initial 'processing'
     },
-    version: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        trim: true
-    },
-    // --- DESCRIPTIONS & CONTENT ---
-    modDescription: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        default: ''
-    },
-    modFeatures: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        default: ''
-    },
-    officialDescription: {
-        type: String,
-        default: '',
-        trim: true
-    },
-    whatsNew: {
-        type: String,
-        default: '',
-        trim: true
-    },
-    importantNote: {
-        type: String,
-        trim: true,
-        default: ''
-    },
-    // --- AGE RATING ---
+version: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+modDescription: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+modFeatures: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+officialDescription: { type: String },
+whatsNew: { type: String },
+// --- NEW: IMPORTANT NOTE FIELD ---
+importantNote: { type: String, trim: true },
+
+    // --- NEW: AGE RATING SYSTEM ---
     ageRating: {
         type: String,
-        enum: ['NA', '3+', '7+', '12+', '16+', '18+'],
+        enum:['NA', '3+', '7+', '12+', '16+', '18+'],
         default: 'NA'
     },
-    // --- MEDIA & STORAGE ---
-    iconKey: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        default: null
-    },
-    screenshotKeys: {
-        type: [{
-            type: String,
-            trim: true
-        }],
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        default: []
-    },
-    videoUrl: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    // --- FILE STORAGE & DOWNLOADS ---
-    fileKey: {
-        type: String,
-        required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; },
-        default: null
-    },
-    fileSize: {
-        type: Number,
-        required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; },
-        default: 0
-    },
-    originalFilename: {
-        type: String,
-        required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; },
-        default: 'External File'
-    },
-    externalDownloadUrl: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    customAdLink: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    manualFileScanUrl: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    manualSiteScanUrl: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    // --- ALTERNATIVE DOWNLOAD LINKS ---
-    alternativeLinks: {
-        type: [{
-            providerName: {
-                type: String,
-                required: true,
-                trim: true
-            },
-            url: {
-                type: String,
-                required: true,
-                trim: true
-            }
-        }],
-        default: []
-    },
-    // --- MULTI-PART DOWNLOADS ---
+    
+    // --- STORAGE KEYS (S3/Cloud) ---
+    iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    screenshotKeys: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    videoUrl: { type: String }, 
+    
+    // Make fileKey optional ONLY IF an external link is provided
+    fileKey: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; } }, 
+    
+    // --- ADD EXTERNAL LINK FIELD ---
+    externalDownloadUrl: { type: String, trim: true },
+    customAdLink: { type: String, trim: true },
+    // --- NEW: MANUAL ANTIVIRUS SCAN LINKS ---
+    manualFileScanUrl: { type: String, trim: true },
+    manualSiteScanUrl: { type: String, trim: true },
+    // --- NEW: ALTERNATIVE DOWNLOAD LINKS (MIRRORS) ---
+    alternativeLinks:[{
+        providerName: { type: String, required: true }, // e.g., "Google Drive", "Mega", "MediaFire"
+        url: { type: String, required: true }
+    }],
+
+// --- NEW: MULTI-PART DOWNLOADS ---
     isMultiPart: {
         type: Boolean,
         default: false
     },
-    downloadParts: {
-        type: [{
-            partName: {
-                type: String,
-                required: true,
-                trim: true
-            },
-            partUrl: {
-                type: String,
-                required: true,
-                trim: true
-            },
-            partVirusTotalId: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            partVirusTotalScanDate: {
-                type: Date,
-                default: null
-            },
-            partVirusTotalPositiveCount: {
-                type: Number,
-                default: 0
-            },
-            partVirusTotalTotalScans: {
-                type: Number,
-                default: 0
-            }
-        }],
-        default: []
+        // --- NEW: MULTI-PART DOWNLOADS ---
+    isMultiPart: {
+        type: Boolean,
+        default: false
     },
+    downloadParts: [{
+        partName: { type: String, required: true }, 
+        partUrl: { type: String, required: true },
+        // --- ADD THESE NEW FIELDS FOR EACH PART ---
+        partVirusTotalId: { type: String, trim: true }, // The Hash or Analysis ID
+        partVirusTotalScanDate: { type: Date },
+        partVirusTotalPositiveCount: { type: Number, default: 0 },
+        partVirusTotalTotalScans: { type: Number, default: 0 }
+    }],
     installationInstructions: {
         type: String,
         default: 'Extract all parts into the same folder and run the installer.'
     },
+
     // --- CATEGORIZATION ---
-    category: {
-        type: String,
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        enum: ['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'],
-        index: true
+    category: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; }, enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] },
+
+    subCategory: { 
+        type: String 
     },
-    subCategory: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    platforms: {
-        type: [{
-            type: String,
-            trim: true
-        }],
-        required: function() { return this.status !== 'processing' && this.status !== 'draft'; },
-        default: []
-    },
-    tags: {
-        type: [{
-            type: String,
-            trim: true,
-            lowercase: true
-        }],
-        default: []
-    },
-    // --- DEVELOPER INFO ---
-    uploader: {
-        type: String,
-        default: 'GPL Community',
-        trim: true
-    },
+platforms: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    tags: { type: [String] },
+
+    // --- FILE INFO ---
+    // Make these optional if using an external link
+    fileSize: { type: Number, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 0 },
+    originalFilename: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 'External File' },
+    uploader: { type: String, default: "GPL Community" },
     developer: {
         type: String,
         trim: true,
-        default: 'N/A'
+        default: 'N/A' // Name of the original creator/developer
     },
-    // --- VERSION & VARIANT CONTROL ---
+
+    // --- VERSION & VARIANT CONTROL SYSTEM ---
     isLatestVersion: {
         type: Boolean,
-        default: true,
-        index: true
+        default: true
     },
     parentFile: {
         type: Schema.Types.ObjectId,
         ref: 'File',
         default: null
     },
-    olderVersions: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'File'
-        }],
-        default: []
-    },
+    olderVersions: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
+    
+    // --- NEW: VARIANT SYSTEM ---
     isVariant: {
         type: Boolean,
-        default: false,
-        index: true
+        default: false
     },
+    // The "Master" file that holds the main description and icon
     masterFile: {
         type: Schema.Types.ObjectId,
         ref: 'File',
-        default: null,
-        index: true
+        default: null
     },
-    variants: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'File'
-        }],
-        default: []
+    // An array on the Master file linking to all its alternative variants
+    variants: [{
+        type: Schema.Types.ObjectId,
+        ref: 'File'
+    }],
+    
+    // --- TRACKING, STATS & RATINGS ---
+    downloads: { type: Number, default: 0 },
+    averageRating: { 
+        type: Number, 
+        default: 0 
     },
-    // --- STATS & RATINGS ---
-    downloads: {
-        type: Number,
-        default: 0,
-        index: true
-    },
-    averageRating: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 5
-    },
-    ratingCount: {
-        type: Number,
-        default: 0
+    ratingCount: { 
+        type: Number, 
+        default: 0 
     },
     whitelistCount: {
         type: Number,
         default: 0
     },
+
     // --- WORKING STATUS VOTES ---
     workingVoteCount: {
         type: Number,
@@ -268,46 +148,34 @@ const FileSchema = new Schema({
         type: Number,
         default: 0
     },
-    votedOnStatusBy: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-        default: []
-    },
-    // --- CERTIFICATION & STATUS ---
+    // Array to store the IDs of users who have voted on this file's status
+    votedOnStatusBy:[{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+
     certification: {
         type: String,
-        enum: ['none', 'certified', 'community-tested'],
+        enum:['none', 'certified', 'community-tested'],
         default: 'none'
     },
+
     status: {
         type: String,
-        enum: ['processing', 'pending', 'live', 'rejected', 'draft'],
-        default: 'pending',
-        index: true
+        // ADDED 'processing' to the enum array so Mongoose doesn't reject it
+        enum: ['processing', 'pending', 'live', 'rejected', 'draft'], 
+        default: 'pending' // All new uploads will require admin approval
     },
-    rejectionReason: {
+    rejectionReason: { // To store why a mod was rejected
         type: String,
-        trim: true,
-        default: ''
+        trim: true
     },
-    showInSitemap: {
+showInSitemap: {
         type: Boolean,
-        default: true
-    },
-    // --- VIRUS TOTAL SCANNING ---
-    virusTotalId: {
-        type: String,
-        default: null
-    },
-    virusTotalAnalysisId: {
-        type: String,
-        default: null
+        default: true // Automatically true for new uploads
     },
     virusTotalScanDate: {
-        type: Date,
-        default: null
+        type: Date
     },
     virusTotalPositiveCount: {
         type: Number,
@@ -316,10 +184,15 @@ const FileSchema = new Schema({
     virusTotalTotalScans: {
         type: Number,
         default: 0
-    }
-}, {
-    timestamps: true,
-    collection: 'files'
-});
+    },
+
+    virusTotalAnalysisId: { type: String },
+    virusTotalId: { type: String },
+    
+// The first argument (schema definition) ends here
+}, { 
+    // The second argument is for options, like timestamps
+    timestamps: true 
+}); 
 
 module.exports = mongoose.model('File', FileSchema);

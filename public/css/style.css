@@ -242,79 +242,47 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         /* --- Hero Section (Now just a spacer) --- */
         .hero { padding: 20px 0 0 0; }
         
-/* --- Category Tab Navigation --- */
-        
-        .tabs-container { 
-            position: relative; 
-            margin-bottom: 25px; 
-            overflow-x: auto; 
-            scrollbar-width: none; 
-            /* ✅ FIX: Let the container shrink to fit its contents */
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
+        /* --- Category Tab Navigation --- */
+        .tabs-container { position: relative; margin-bottom: 25px; overflow-x: auto; scrollbar-width: none; }
         .tabs-container::-webkit-scrollbar { display: none; }
-        
-        .tabs-nav { 
-            /* ✅ FIX: Inline-flex allows the dark background to perfectly wrap the buttons */
-            display: inline-flex; 
-            position: relative; 
-            background-color: var(--dark-gray); 
-            border-radius: 25px; 
-            padding: 5px; 
-            white-space: nowrap; 
-            /* Ensure the nav itself doesn't try to stretch */
-            width: max-content; 
-        }
-
-        /* --- UNIFIED GOLDEN TAB BUTTONS --- */
-        .tab-button, .tabs-nav button { 
-            background: none !important; 
-            border: none; 
-            color: var(--silver); 
-            font-size: 1.1em; 
-            padding: 10px 25px;
-            cursor: pointer; 
-            position: relative; 
-            transition: all 0.3s ease; 
-            border-radius: 25px;
-            font-weight: 600;
-            z-index: 10 !important; 
-        }
-        .tab-button:hover, .tabs-nav button:hover { 
-            color: var(--white); 
-        }
-        
-        .tab-button.active, .tabs-nav button.active, .tabs-nav .tab-button.active { 
-            color: #000000 !important; /* ✅ FIX 3: Force active text to be solid black */
-            font-weight: 700; 
-            text-shadow: none;
-        }
-        
-        .tab-button.active::after, .tabs-nav button.active::after { 
-            display: none !important; 
-        }
-        
+        .tabs-nav { display: inline-flex; position: relative; background-color: var(--dark-gray); border-radius: 25px; padding: 5px; white-space: nowrap; }
+        .tab-button { background: none; border: none; color: var(--silver); font-size: 1em; font-weight: 600; padding: 10px 20px; flex: 1 0 auto; cursor: pointer; position: relative; z-index: 2; transition: color 0.4s ease; }
+        /* By adding the parent nav's ID, this rule becomes more important */
+/* --- UNIFIED GOLDEN TAB BUTTONS --- */
+.tabs-nav button { 
+    background: none; 
+    border: none; 
+    color: var(--silver); 
+    font-size: 1.1em; 
+    padding: 10px 25px; /* Adjusted padding for pill shape */
+    cursor: pointer; 
+    position: relative; 
+    transition: all 0.3s ease; 
+    border-radius: 25px; /* Rounded edges for inactive tabs too */
+}
+.tabs-nav button:hover { 
+    color: var(--white); 
+}
+/* The Active Golden Pill */
+.tabs-nav button.active, .tabs-nav .tab-button.active { 
+    background-color: var(--gold) !important; 
+    color: var(--black) !important; 
+    font-weight: 700; 
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    text-shadow: none;
+}
+/* REMOVE the old underline style by making it display: none */
+.tabs-nav button.active::after { 
+    display: none !important; 
+}
         .tab-highlight {
-            position: absolute; 
-            top: 5px; 
-            left: 0; 
-            height: calc(100% - 10px);
-            background-color: var(--gold) !important; 
-            border-radius: 20px; 
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            position: absolute; top: 5px; left: 0; height: calc(100% - 10px);
+            background-color: var(--gold); border-radius: 20px; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
             transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            z-index: 1 !important; /* ✅ FIX 2: Force golden pill BELOW the text */
+            z-index: 1;
         }
-        
-        .sub-tabs-container { 
-            margin-top: -15px; 
-            margin-bottom: 25px; 
-        }
-        
-        .tab-content { display: none; } 
-        .tab-content.active { display: block; }
+        .sub-tabs-container { margin-top: -15px; margin-bottom: 25px; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
 
         /* --- Mod Sections & Cards (Optimized Layout) --- */
         .mod-section { padding-top: 30px; }
@@ -324,6 +292,7 @@ input[type="search"]::-webkit-search-cancel-button:hover {
         }
         .section-title { font-size: 1.3em; }
         .section-more { color: var(--gold); text-decoration: none; font-weight: 600; flex-shrink: 0; }
+
 
 /* ==========================================================================
    GLOBAL IN-TEXT LINK COLORS (Overrides Default Browser Blue/Purple)

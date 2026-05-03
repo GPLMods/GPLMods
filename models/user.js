@@ -3,13 +3,11 @@ const bcrypt = require('bcryptjs');
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
-    // --- AUTHENTICATION FIELDS ---
     username: {
         type: String,
         required: true,
         unique: true,
-        trim: true,
-        lowercase: false
+        trim: true
     },
     email: {
         type: String,
@@ -20,32 +18,25 @@ const UserSchema = new Schema({
     },
     password: {
         type: String,
-        required: false,
-        default: null
+        required: false
     },
-    // --- SOCIAL LOGIN IDs ---
     googleId: {
-        type: String,
-        default: null
+        type: String
     },
     githubId: {
-        type: String,
-        default: null
+        type: String
     },
     microsoftId: {
-        type: String,
-        default: null
+        type: String
     },
-    // --- ACCOUNT STATUS ---
     role: {
         type: String,
         enum: ['member', 'distributor', 'admin'],
         default: 'member'
     },
-    isBanned: {
+isBanned: {
         type: Boolean,
-        default: false,
-        index: true
+        default: false
     },
     banReason: {
         type: String,
@@ -57,111 +48,68 @@ const UserSchema = new Schema({
         enum: ['free', 'premium'],
         default: 'free'
     },
-    isVerified: {
-        type: Boolean,
-        default: false,
-        index: true
-    },
-    // --- PROFILE INFORMATION ---
-    profileImageKey: {
-        type: String,
-        default: null
-    },
+profileImageKey: {
+    type: String // Stores the path like 'avatars/12345-image.png'
+},
     bio: {
         type: String,
         trim: true,
-        maxlength: 250,
-        default: ''
+        maxlength: 250
     },
-    dateOfBirth: {
-        type: Date,
-        default: null
+dateOfBirth: {
+        type: Date
     },
-    organizationName: {
-        type: String,
-        trim: true,
-        default: null
-    },
-    // --- SOCIAL LINKS ---
-    socialLinks: {
-        type: {
-            telegram: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            discord: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            website: {
-                type: String,
-                trim: true,
-                default: null
-            },
-            youtube: {
-                type: String,
-                trim: true,
-                default: null
-            }
-        },
-        default: {}
-    },
-    // --- USER RELATIONSHIPS ---
-    whitelist: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'File'
-        }],
-        default: []
-    },
-    following: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-        default: []
-    },
-    followers: {
-        type: [{
-            type: Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-        default: []
-    },
-    // --- OTP & PASSWORD RESET ---
-    verificationOtp: {
-        type: String,
-        default: null
-    },
-    otpExpires: {
-        type: Date,
-        default: null
-    },
-    passwordResetToken: {
-        type: String,
-        default: null
-    },
-    passwordResetExpires: {
-        type: Date,
-        default: null
-    },
-    // --- ACTIVITY TRACKING ---
     lastSeen: {
         type: Date,
-        default: Date.now,
-        index: true
+        default: Date.now
+    },
+    whitelist: {
+        type: [Schema.Types.ObjectId],
+        ref: 'File',
+        default:[]
+    },
+   following: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    followers: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+// --- NEW FIELDS FOR DISTRIBUTORS AND ADMIN ---
+    organizationName: { type: String },
+    // Define the nested object correctly
+    socialLinks: {
+        telegram: { type: String, trim: true },
+        discord: { type: String, trim: true },
+        website: { type: String, trim: true },
+        youtube: { type: String, trim: true }
+    },
+    // ---------------------------------------------
+    // --- NEW OTP FIELDS ---
+    verificationOtp: {
+        type: String
+    },
+    otpExpires: {
+        type: Date
+    },
+    // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
+    passwordResetToken: {
+        type: String
+    },
+    passwordResetExpires: {
+        type: Date
     }
-}, { 
-    timestamps: true,
-    collection: 'users'
-}); // <--- Schema closes here, followed by options
+}, { timestamps: true }); // <--- Schema closes here, followed by options
 
-// --- PRE-SAVE MIDDLEWARE ---
+// Modern Pre-save hook: No need for 'next' when using async/await!
 UserSchema.pre('save', async function() {
     // If password is not modified, just return and let Mongoose continue
-    if (!this.isModified('password') || !this.password) {
+    if (!this.isModified('password')) {
         return;
     }
     
@@ -170,9 +118,8 @@ UserSchema.pre('save', async function() {
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// --- INSTANCE METHODS ---
+// Method to compare candidate password with the stored hashed password
 UserSchema.methods.comparePassword = async function(candidatePassword) {
-    if (!this.password || !candidatePassword) return false;
     return await bcrypt.compare(candidatePassword, this.password);
 };
 

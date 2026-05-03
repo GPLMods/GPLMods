@@ -192,18 +192,23 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: { icon: 'Users' }, 
-                    listProperties: ['profileImageKey', '_id', 'username', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'organizationName'],
-                    editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'organizationName', 'newPassword'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
-                        socialLinks: { isVisible: false },  // ✅ FIX: Hide nested object from AdminJS
+                        'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
+                        'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
+                        'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
+                        'socialLinks.youtube': { description: 'e.g., https://youtube.com/...' },
+                        // ✅ FIX: Use ImagePreview for avatars
                         profileImageKey: {
                             components: {
                                 list: Components.AvatarCell,
                                 show: Components.AvatarCell,
                             },
+                            // Ensure it's hidden on the edit form if you don't want them editing the raw key manually
                             isVisible: { edit: false, filter: false, list: true, show: true } 
                         }
                     },
@@ -236,18 +241,18 @@ async function createAdminRouter() {
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
-                        'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl',
-                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'customAdLink',
-                        'installationInstructions',
+                        'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
+                        'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
+                        'isMultiPart', 'downloadParts', 'installationInstructions',
                         // ✅ NEW: Added Variant fields to edit view
                         'isVariant', 'masterFile'
                     ],
                     showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
-                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl',
+                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
-                        'isMultiPart', 'installationInstructions',
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks',
                         // ✅ NEW: Added Variant fields to show view
                         'isVariant', 'masterFile'
                     ],
@@ -256,14 +261,16 @@ async function createAdminRouter() {
                         officialDescription: { type: 'richtext' },
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
-                        importantNote: { type: 'richtext' },
+                        importantNote: { type: 'richtext' }, // Ensure the new field is here too
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
-                        // ✅ FIX: Hide nested array fields that AdminJS can\'t handle
-                        alternativeLinks: { isVisible: false },
-                        downloadParts: { isVisible: false },
+                        alternativeLinks: { isArray: true, description: 'Add alternative download mirrors (e.g., Mega, Google Drive) if the main link fails.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
-                        customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
+                    customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
+                    downloadParts: {
+                        isArray: true,
+                        description: 'Add individual parts. You can provide a custom ad link or up to 2 mirrors per part.'
+                    },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
                             isVisible: {
@@ -273,24 +280,41 @@ async function createAdminRouter() {
                         },
                         iconKey: { 
                             description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.',
+                            // ✅ FIX: Use ImagePreview for mod icons
                             components: {
                                 list: Components.ImagePreview,
                                 show: Components.ImagePreview,
                             }
                         },
-                        isMultiPart: {
+                                                isMultiPart: {
                             description: 'Check this box if the file is split into multiple download links.'
                         },
+                        downloadParts: {
+                            isArray: true,
+                            description: 'Add the individual links here (e.g., Part 1, Part 2).'
+                        },
+                        // Tell AdminJS about the new nested field
+                        'downloadParts.partVirusTotalId': {
+                            description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash for THIS SPECIFIC PART.'
+                        },
+                        // Hide the raw stats from the edit form to keep it clean
+                        'downloadParts.partVirusTotalScanDate': { isVisible: { edit: false, show: true, list: false } },
+                        'downloadParts.partVirusTotalPositiveCount': { isVisible: { edit: false, show: true, list: false } },
+                        'downloadParts.partVirusTotalTotalScans': { isVisible: { edit: false, show: true, list: false } },
+                        
                         // ======== NEW: VARIANT LOGIC FOR ADMINJS ========
                         isVariant: {
+                            // Make it a visually distinct pill/badge in the list view
                             components: {
+                                // ✅ FIX: Use the pre-loaded component from the singleton!
                                 list: Components.VariantBadge, 
                             },
+                            // Prevent admins from accidentally un-checking it and breaking the DB structure
                             isDisabled: true 
                         },
                         masterFile: {
                             description: 'If this is a Variant, this is the ID of the original Master App it belongs to.',
-                            isDisabled: true 
+                            isDisabled: true // Prevent admins from re-assigning a variant to a different master file
                         }
                         // ================================================
                     },
