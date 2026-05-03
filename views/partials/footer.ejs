@@ -10,74 +10,32 @@
                     justify-content: center;
                     gap: 15px;
                     margin-bottom: 25px;
-                    max-width: 300px; /* Limits the width of the whole block */
+                    max-width: 300px;
                     margin-left: auto;
                     margin-right: auto;
                 }
-                
                 .social-nav-btn {
-                    background: none;
-                    border: none;
-                    color: var(--silver);
-                    font-size: 1.5em;
-                    cursor: pointer;
-                    transition: color 0.3s ease, transform 0.2s ease;
-                    padding: 5px;
-                    z-index: 2;
+                    background: none; border: none; color: var(--silver); font-size: 1.5em; cursor: pointer; transition: color 0.3s ease, transform 0.2s ease; padding: 5px; z-index: 2;
                 }
-                
-                .social-nav-btn:hover {
-                    color: var(--gold);
-                    transform: scale(1.2);
-                }
-                
-                .social-nav-btn:disabled {
-                    color: #444;
-                    cursor: not-allowed;
-                    transform: none;
-                }
-
+                .social-nav-btn:hover { color: var(--gold); transform: scale(1.2); }
+                .social-nav-btn:disabled { color: #444; cursor: not-allowed; transform: none; }
                 .social-icons-window {
-                    width: 150px; /* Exact width to fit exactly 3 icons (approx 30px width + 20px gap each) */
-                    overflow: hidden; /* Hide the icons outside this window */
-                    position: relative;
+                    width: 150px; overflow: hidden; position: relative;
                 }
-
                 .social-icons-track {
-                    display: flex;
-                    gap: 20px; /* Space between icons */
-                    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth sliding animation */
-                    /* Start at 0, JavaScript will update this */
-                    transform: translateX(0px); 
+                    display: flex; gap: 20px; transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); transform: translateX(0px); 
                 }
-
                 .social-icons-track a {
-                    color: var(--silver); 
-                    font-size: 1.8em;      
-                    text-decoration: none;
-                    transition: all 0.3s ease;
-                    background-color: transparent;
-                    border: none;
-                    width: auto;
-                    height: auto;
-                    padding: 0;
-                    flex-shrink: 0; /* Prevent icons from squishing */
+                    color: var(--silver); font-size: 1.8em; text-decoration: none; transition: all 0.3s ease; background-color: transparent; border: none; width: auto; height: auto; padding: 0; flex-shrink: 0; 
                 }
-
-                .social-icons-track a:hover {
-                    color: var(--gold);      
-                    transform: scale(1.2);   
-                }
-                /* ----------------------------------- */
+                .social-icons-track a:hover { color: var(--gold); transform: scale(1.2); }
             </style>
 
-            <!-- ======== NEW: SOCIAL ICONS CAROUSEL ======== -->
+            <!-- ======== SOCIAL ICONS CAROUSEL ======== -->
             <div class="social-carousel-container">
                 <button id="social-prev" class="social-nav-btn" title="Previous"><i class="fas fa-chevron-left"></i></button>
-                
                 <div class="social-icons-window">
                     <div id="social-track" class="social-icons-track">
-                        <!-- Add as many icons as you want here! -->
                         <a href="https://youtube.com/@gplmods" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
                         <a href="https://discord.gg/frBQ2zTu7" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
                         <a href="https://github.com/GPLMods" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
@@ -87,85 +45,18 @@
                         <a href="https://www.instagram.com/gplmods" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
                         <a href="https://www.facebook.com/profile.php?id=61572148715492" target="_blank" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
                         <a href="https://threads.net/gplmods" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
-                       <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank" title="Gravatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
-                      <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
-                    </svg>
-                </a>
+                        <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank" title="Gravatar">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
+                                <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
+                            </svg>
+                        </a>
                     </div>
                 </div>
-
                 <button id="social-next" class="social-nav-btn" title="Next"><i class="fas fa-chevron-right"></i></button>
             </div>
-            <!-- ======== END OF NEW BLOCK ======== -->
+            <!-- ======== END OF SOCIAL ICONS ======== -->
 
-<!-- Only render these heavy modals and scripts if it is NOT a crawler -->
-<% if (typeof showModals !== 'undefined' && showModals) { %>
-<!-- ======== ANTI-ADBLOCK MODAL ======== -->
-<% if (typeof showAds !== 'undefined' && showAds) { %>
-<div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
-                               <!-- ======== CUSTOM AD BLOCK ANIMATION ======== -->
-            <lottie-player 
-                src="/animations/ad.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" 
-               loop autoplay>
-            </lottie-player>
-            <!-- ========================================================== -->
-        <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
-        <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">
-            It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.
-        </p>
-        <p style="color: var(--silver); margin-bottom: 30px;">
-            Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.
-        </p>
-        <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
-    </div>
-</div>
-
-<!-- 1. LOAD THE LOCAL LIBRARY SCRIPT FIRST -->
-<!-- This matches <script src="adblock-checker.min.js"></script> from the video -->
-<script src="/js/adblock-checker.min.js"></script>
-
-<!-- 2. RUN THE CHECKER LOGIC -->
-<!-- This matches the logic from the video's script.js file -->
-<script>
-    // Define the async function exactly as shown in the video
-    async function checkUserAdblockStatus() {
-        const currentPath = window.location.pathname;
-        const isExemptPage = currentPath === '/membership' || currentPath === '/login' || currentPath === '/register';
-
-        if (!isExemptPage) {
-            try {
-                // Call the library method precisely as instructed: AdBlockChecker.checkAdBlock()
-                let isEnabled = await AdBlockChecker.checkAdBlock();
-                
-                if (isEnabled) {
-                    console.log("AdBlocker detected! Springing the trap.");
-                    const abModal = document.getElementById('adblock-modal');
-                    if (abModal) {
-                        abModal.style.display = 'flex';
-                        // Tiny delay ensures CSS transitions apply correctly
-                        setTimeout(() => abModal.classList.add('show'), 10);
-                        document.body.style.overflow = 'hidden'; 
-                    }
-                } else {
-                     console.log("No AdBlocker active. Continuing normally.");
-                }
-            } catch (err) {
-                console.error("AdBlock checker script error:", err);
-            }
-        }
-    }
-
-    // Run the check on page load, exactly like: window.addEventListener("load", updateStatus);
-    window.addEventListener("load", checkUserAdblockStatus);
-
-</script>
-<% } %>
-
+            <!-- THIS IS THE ACTUAL FOOTER CONTENT. CRAWLERS MUST SEE THIS. -->
             <div class="footer-links">
                 <a href="/about">About Us</a>
                 <a href="/faq">FAQ</a>
@@ -179,137 +70,125 @@
         </div>
     </footer>
 
-<!-- ======== NEW UNIFIED POLICY MODAL ======== -->
-    <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
-        <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <h2 style="color: var(--gold); margin-bottom: 15px;">Welcome to GPL Mods</h2>
-            <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
-                To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.
-            </p>
-            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-                <button class="policy-button" id="acceptPolicy" style="background-color: var(--gold); color: var(--black); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em;">Accept</button>
-                <button class="policy-button decline" id="declinePolicy" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Decline</button>
-            </div>
-        </div>
-    </div>
+    <!-- ========================================================================= -->
+    <!-- BELOW THIS LINE: DYNAMIC SCRIPTS AND MODALS (HIDDEN FROM CRAWLERS)        -->
+    <!-- ========================================================================= -->
     
-<!-- ======== NEW: NEWSLETTER POPUP ======== -->
-<style>
-    .newsletter-popup {
-        position: fixed;
-        bottom: 20px;
-        left: 20px; /* Positioned on the bottom left */
-        background-color: var(--dark-gray);
-        border: 1px solid var(--gold);
-        border-radius: 12px;
-        padding: 25px;
-        width: 90%;
-        max-width: 350px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        z-index: 9998; /* Just below the policy modal */
-        transform: translateX(-150%); /* Hidden off-screen initially */
-        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .newsletter-popup.show {
-        transform: translateX(0); /* Slides in */
-    }
-    .newsletter-close {
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        color: var(--silver);
-        cursor: pointer;
-        font-size: 1.5em;
-        line-height: 1;
-        transition: color 0.2s;
-    }
-    .newsletter-close:hover { color: var(--red); }
-    .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
-    .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
-    .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
-    .newsletter-input {
-        width: 100%;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #444;
-        background-color: var(--black);
-        color: var(--white);
-        outline: none;
-        font-family: 'Poppins', sans-serif;
-    }
-    .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
-    .newsletter-btn {
-        background-color: var(--gold);
-        color: var(--black);
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
-    .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
-    .newsletter-msg.success { color: var(--green); display: block; }
-    .newsletter-msg.error { color: var(--red); display: block; }
-</style>
-
-<div id="newsletter-popup" class="newsletter-popup">
-    <span class="newsletter-close" id="newsletter-close-btn">&times;</span>
-    <h3><i class="fas fa-envelope-open-text" style="margin-right: 8px;"></i> Get Updates</h3>
-    <p>Subscribe to our newsletter to get the latest mods, exclusive updates, and site news delivered straight to your inbox.</p>
-    
-    <form id="newsletter-form" class="newsletter-form">
-        <!-- Pre-fill email if user is logged in -->
-        <input type="email" id="newsletter-email" class="newsletter-input" placeholder="Your Email Address" required value="<%= user ? user.email : '' %>">
-        <button type="submit" class="newsletter-btn" id="newsletter-submit">Subscribe Now</button>
-        <div id="newsletter-msg" class="newsletter-msg"></div>
-    </form>
-</div>
-<!-- ======================================= -->
-
-<!-- ======== PWA INSTALL BANNER ======== -->
-    <div id="pwa-install-banner" class="pwa-banner">
-        <div class="pwa-banner-content">
-            <h4>Install GPL Mods App</h4>
-            <p>Add to your home screen for a faster, full-screen experience!</p>
-        </div>
-        <div class="pwa-buttons">
-            <button id="pwa-install" class="pwa-btn pwa-install-btn">Install</button>
-            <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
-        </div>
-    </div>
-    <!-- ======== NEW: FLOATING MUSIC PLAYER ======== -->
-    <div id="floating-music-player" class="floating-music-player">
-        <!-- Toggle Button (Always visible on the edge) -->
-        <button id="music-toggle-btn" class="music-toggle-btn" title="Toggle Music Player">
-            <i class="fas fa-music"></i>
-        </button>
-        
-        <!-- Player Content (Expands out) -->
-        <div class="music-player-content">
-            <span id="music-track-name" class="track-name">Loading...</span>
-            <div class="music-controls">
-                <button id="music-prev-btn" class="music-btn" title="Previous Track">
-                    <i class="fas fa-step-backward"></i>
-                </button>
-                <button id="music-play-pause-btn" class="music-btn" title="Play/Pause">
-                    <i class="fas fa-play" id="play-pause-icon"></i>
-                </button>
-                <button id="music-next-btn" class="music-btn" title="Next Track">
-                    <i class="fas fa-step-forward"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-<!-- Hidden Audio Player for JS to control -->
-    <audio id="background-audio" preload="auto"></audio>
-    <!-- Only load the Tidio Chatbot for real human users -->
+    <!-- ✅ FIX: Start the showModals check HERE, below the visible footer content -->
     <% if (typeof showModals !== 'undefined' && showModals) { %>
-    <!-- Your scripts -->
-    <script src="/js/main.js"></script>
-    <script src="//code.tidio.co/oenvk3uelgibnqqryawwjuxamjeslyk5.js" async></script>
+
+        <!-- ======== ANTI-ADBLOCK MODAL ======== -->
+        <% if (typeof showAds !== 'undefined' && showAds) { %>
+            <div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
+                <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
+                    <lottie-player src="/animations/ad.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" loop autoplay></lottie-player>
+                    <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
+                    <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.</p>
+                    <p style="color: var(--silver); margin-bottom: 30px;">Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.</p>
+                    <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
+                </div>
+            </div>
+
+            <script src="/js/adblock-checker.min.js"></script>
+            <script>
+                async function checkUserAdblockStatus() {
+                    const currentPath = window.location.pathname;
+                    const isExemptPage = currentPath === '/membership' || currentPath === '/login' || currentPath === '/register';
+
+                    if (!isExemptPage) {
+                        try {
+                            let isEnabled = await AdBlockChecker.checkAdBlock();
+                            if (isEnabled) {
+                                console.log("AdBlocker detected! Springing the trap.");
+                                const abModal = document.getElementById('adblock-modal');
+                                if (abModal) {
+                                    abModal.style.display = 'flex';
+                                    setTimeout(() => abModal.classList.add('show'), 10);
+                                    document.body.style.overflow = 'hidden'; 
+                                }
+                            }
+                        } catch (err) { console.error("AdBlock checker error:", err); }
+                    }
+                }
+                window.addEventListener("load", checkUserAdblockStatus);
+            </script>
+        <% } %> <!-- End of showAds check -->
+
+        <!-- ======== UNIFIED POLICY MODAL ======== -->
+        <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
+            <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h2 style="color: var(--gold); margin-bottom: 15px;">Welcome to GPL Mods</h2>
+                <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.</p>
+                <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="policy-button" id="acceptPolicy" style="background-color: var(--gold); color: var(--black); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em;">Accept</button>
+                    <button class="policy-button decline" id="declinePolicy" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Decline</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== NEWSLETTER POPUP ======== -->
+        <style>
+            .newsletter-popup { position: fixed; bottom: 20px; left: 20px; background-color: var(--dark-gray); border: 1px solid var(--gold); border-radius: 12px; padding: 25px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 9998; transform: translateX(-150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+            .newsletter-popup.show { transform: translateX(0); }
+            .newsletter-close { position: absolute; top: 10px; right: 15px; color: var(--silver); cursor: pointer; font-size: 1.5em; line-height: 1; transition: color 0.2s; }
+            .newsletter-close:hover { color: var(--red); }
+            .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
+            .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
+            .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
+            .newsletter-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: var(--black); color: var(--white); outline: none; font-family: 'Poppins', sans-serif; }
+            .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
+            .newsletter-btn { background-color: var(--gold); color: var(--black); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
+            .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
+            .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
+            .newsletter-msg.success { color: var(--green); display: block; }
+            .newsletter-msg.error { color: var(--red); display: block; }
+        </style>
+        <div id="newsletter-popup" class="newsletter-popup">
+            <span class="newsletter-close" id="newsletter-close-btn">&times;</span>
+            <h3><i class="fas fa-envelope-open-text" style="margin-right: 8px;"></i> Get Updates</h3>
+            <p>Subscribe to our newsletter to get the latest mods, exclusive updates, and site news delivered straight to your inbox.</p>
+            <form id="newsletter-form" class="newsletter-form">
+                <input type="email" id="newsletter-email" class="newsletter-input" placeholder="Your Email Address" required value="<%= user ? user.email : '' %>">
+                <button type="submit" class="newsletter-btn" id="newsletter-submit">Subscribe Now</button>
+                <div id="newsletter-msg" class="newsletter-msg"></div>
+            </form>
+        </div>
+
+        <!-- ======== PWA INSTALL BANNER ======== -->
+        <div id="pwa-install-banner" class="pwa-banner">
+            <div class="pwa-banner-content">
+                <h4>Install GPL Mods App</h4>
+                <p>Add to your home screen for a faster, full-screen experience!</p>
+            </div>
+            <div class="pwa-buttons">
+                <button id="pwa-install" class="pwa-btn pwa-install-btn">Install</button>
+                <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
+            </div>
+        </div>
+
+        <!-- ======== FLOATING MUSIC PLAYER ======== -->
+        <div id="floating-music-player" class="floating-music-player">
+            <button id="music-toggle-btn" class="music-toggle-btn" title="Toggle Music Player"><i class="fas fa-music"></i></button>
+            <div class="music-player-content">
+                <span id="music-track-name" class="track-name">Loading...</span>
+                <div class="music-controls">
+                    <button id="music-prev-btn" class="music-btn" title="Previous Track"><i class="fas fa-step-backward"></i></button>
+                    <button id="music-play-pause-btn" class="music-btn" title="Play/Pause"><i class="fas fa-play" id="play-pause-icon"></i></button>
+                    <button id="music-next-btn" class="music-btn" title="Next Track"><i class="fas fa-step-forward"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden Audio Player -->
+        <audio id="background-audio" preload="auto"></audio>
+        
+        <!-- Main Scripts (Includes orchestrator for Modals/Newsletters/PWA) -->
+        <script src="/js/main.js"></script>
+
+        <!-- Tidio Chatbot -->
+        <script src="//code.tidio.co/oenvk3uelgibnqqryawwjuxamjeslyk5.js" async></script>
+
+    <% } %> <!-- ✅ THIS IS THE FIX: The closing tag for showModals is safely at the very bottom -->
+
 </body>
 </html>
