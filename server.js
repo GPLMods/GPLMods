@@ -43,6 +43,7 @@ const fs = require('fs');
 const FormData = require('form-data');
 const { Upload } = require("@aws-sdk/lib-storage");
 const Filter = require('bad-words');
+const { isbot } = require('isbot');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
@@ -540,19 +541,33 @@ app.use(async (req, res, next) => {
         res.locals.linkvertiseId = cachedSiteState.linkvertiseId;
         res.locals.adNetworkBaseUrl = cachedSiteState.adNetworkBaseUrl;
     }
-    // 2. ======== AD DELIVERY LOGIC ========
-    let shouldShowAds = true; 
+    // 1. ======== CRAWLER DETECTION LOGIC ========
+    // Use the 'isbot' library to check the User-Agent header
+    const userAgent = req.get('User-Agent');
+    const isCrawler = isbot(userAgent);
     
-    if (req.isAuthenticated() && req.user) {
+    // We pass this boolean to ALL EJS templates
+    res.locals.isCrawler = isCrawler;
+    // 2. ======== AD DELIVERY & MODAL LOGIC ========
+    let shouldShowAds = true; 
+    let shouldShowModals = true; // Controls Policy, Adblock, Tidio
+
+    // If it's a bot (Google, Bing, Twitter preview, etc.), turn OFF ads and modals
+    if (isCrawler) {
+        shouldShowAds = false;
+        shouldShowModals = false;
+    } else if (req.isAuthenticated() && req.user) {
+        // If it's a real user, check their role/membership
         const role = req.user.role;
         const membership = req.user.membership;
         if (role === 'admin' || role === 'distributor' || membership === 'premium') {
             shouldShowAds = false; 
         }
     }
-    // This is globally available everywhere!
+
     res.locals.showAds = shouldShowAds;
-    // ========================================
+    res.locals.showModals = shouldShowModals; // Pass this new variable
+    // ==============================================
 
 
     // 3. ======== NOTIFICATIONS LOGIC ========
@@ -3458,9 +3473,20 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
     }
 });
 
-// ======== THE BULLETPROOF, FULLY AUTOMATED SITEMAP ========
+// ======== THE BULLETPROOF, SEO-OPTIMIZED SITEMAP ========
+
+// 1. Helper function to ensure XML strictness
+const escapeXML = (str) => {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&apos;');
+};
+
 app.get('/sitemap.xml', async (req, res) => {
     try {
+        // Set the correct XML header so browsers & Google know how to read it
         res.set('Content-Type', 'text/xml');
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         
@@ -3468,46 +3494,61 @@ app.get('/sitemap.xml', async (req, res) => {
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
         // 1. Static Pages
-        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs']; // Added /docs here
+        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs'];
         staticPages.forEach(page => {
-            xml += `  <url>\n    <loc>${baseUrl}${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+            const pageUrl = `${baseUrl}${page}`;
+            xml += `  <url>\n    <loc>${escapeXML(pageUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
         });
 
         // 2. Category Pages
-        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
         categories.forEach(cat => {
-             xml += `  <url>\n    <loc>${baseUrl}/category?platform=${cat}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+             // encodeURIComponent ensures special chars in categories are handled safely
+             const catUrl = `${baseUrl}/category?platform=${encodeURIComponent(cat)}`;
+             xml += `  <url>\n    <loc>${escapeXML(catUrl)}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
         // 3. Live Mods
         const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' })
             .select('_id category slug updatedAt')
             .lean(); 
+            
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
-            const modUrl = `${baseUrl}/${mod.category}/${mod.slug || mod._id}`;
-            xml += `  <url>\n    <loc>${modUrl}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+            
+            // encodeURIComponent safely converts emojis, +, @, and # to be URL-safe!
+            const safeCategory = encodeURIComponent(mod.category);
+            const safeSlug = encodeURIComponent(mod.slug || mod._id.toString());
+            const modUrl = `${baseUrl}/${safeCategory}/${safeSlug}`;
+            
+            xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
         });
 
         // 4. Developer Pages
         const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
         uniqueDevelopers.forEach(dev => {
             if (dev && dev !== 'N/A') {
-                xml += `  <url>\n    <loc>${baseUrl}/developer?name=${slugify(dev)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+                // Using encodeURIComponent instead of slugify ensures emojis and special characters 
+                // in company names (like "DevGroup #1 🚀") are properly indexed by Google!
+                const devUrl = `${baseUrl}/developer?name=${encodeURIComponent(dev)}`;
+                xml += `  <url>\n    <loc>${escapeXML(devUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
             }
         });
 
         // 5. Public User Profiles
         const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
         uniqueUploaders.forEach(uploader => {
-             xml += `  <url>\n    <loc>${baseUrl}/users/${slugify(uploader)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+             // This fixes the Noob#1 bug! The # is safely converted to %23 so the URL doesn't break.
+             const userUrl = `${baseUrl}/users/${encodeURIComponent(uploader)}`;
+             xml += `  <url>\n    <loc>${escapeXML(userUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
         });
 
-        // 6. --- NEW: DYNAMIC DOCUMENTATION PAGES ---
+        // 6. Dynamic Documentation Pages
         const allDocPages = await DocPage.find().select('slug updatedAt').lean();
         allDocPages.forEach(doc => {
             let lastDocDate = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
-            xml += `  <url>\n    <loc>${baseUrl}/docs/${doc.slug}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            const docUrl = `${baseUrl}/docs/${encodeURIComponent(doc.slug)}`;
+            xml += `  <url>\n    <loc>${escapeXML(docUrl)}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
 
         xml += '</urlset>';
@@ -3518,7 +3559,6 @@ app.get('/sitemap.xml', async (req, res) => {
         res.status(500).send('Error generating sitemap');
     }
 });
-
 // ======== HTML SITEMAP (FOR TIDIO LYRO & AI CRAWLERS) ========
 app.get('/ai-directory', async (req, res) => {
     try {

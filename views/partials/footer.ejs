@@ -99,7 +99,8 @@
             </div>
             <!-- ======== END OF NEW BLOCK ======== -->
 
-
+<!-- Only render these heavy modals and scripts if it is NOT a crawler -->
+<% if (typeof showModals !== 'undefined' && showModals) { %>
 <!-- ======== ANTI-ADBLOCK MODAL ======== -->
 <% if (typeof showAds !== 'undefined' && showAds) { %>
 <div id="adblock-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; background-color: rgba(0,0,0,0.95); z-index: 100000;">
@@ -305,7 +306,8 @@
     </div>
 <!-- Hidden Audio Player for JS to control -->
     <audio id="background-audio" preload="auto"></audio>
-
+    <!-- Only load the Tidio Chatbot for real human users -->
+    <% if (typeof showModals !== 'undefined' && showModals) { %>
     <!-- Your scripts -->
     <script src="/js/main.js"></script>
     <script src="//code.tidio.co/oenvk3uelgibnqqryawwjuxamjeslyk5.js" async></script>

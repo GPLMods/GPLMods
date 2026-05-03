@@ -428,6 +428,7 @@ function initializePolicyBanner() {
     const acceptBtn = document.getElementById('acceptPolicy');
     const declineBtn = document.getElementById('declinePolicy');
 
+    // 1. Safety Check: If HTML is missing, exit gracefully
     if (!policyModal || !acceptBtn || !declineBtn) return;
 
     // Check current page: Don't show TOS if they are reading the policies!
