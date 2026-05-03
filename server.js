@@ -3484,7 +3484,7 @@ const escapeXML = (str) => {
               .replace(/'/g, '&apos;');
 };
 
-app.get('/sitemap.xml', async (req, res) => {
+app.get('/mods.xml', async (req, res) => {
     try {
         // Set the correct XML header so browsers & Google know how to read it
         res.set('Content-Type', 'text/xml');
