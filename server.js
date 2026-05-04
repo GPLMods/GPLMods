@@ -207,6 +207,42 @@ function slugify(text) {
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
 }
+// ===============================
+// INDEXNOW SEO PROTOCOL HELPER
+// ===============================
+const indexNowKey = process.env.INDEXNOW_KEY || 'gplmods-indexnow-key-2026-secure';
+
+// 1. Verification Route: Search engines check this to verify ownership
+app.get(`/${indexNowKey}.txt`, (req, res) => {
+    res.type('text/plain');
+    res.send(indexNowKey);
+});
+
+// 2. The Pinger Function
+async function notifyIndexNow(urlList) {
+    if (!urlList || urlList.length === 0) return;
+
+    // Ensure we only send an array
+    const urls = Array.isArray(urlList) ? urlList :[urlList];
+    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+    const host = new URL(baseUrl).hostname; // Extracts just the domain (e.g., gplmods.webredirect.org)
+
+    try {
+        console.log(`Pinging IndexNow with ${urls.length} URLs...`);
+        const response = await axios.post('https://api.indexnow.org/indexnow', {
+            host: host,
+            key: indexNowKey,
+            keyLocation: `${baseUrl}/${indexNowKey}.txt`,
+            urlList: urls
+        }, {
+            headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+        
+        console.log(`IndexNow Ping Successful! Status: ${response.status}`);
+    } catch (error) {
+        console.error("IndexNow Ping Failed:", error.response ? error.response.data : error.message);
+    }
+}
 // --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
 // Handles files up to 650MB automatically
 async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
@@ -1548,6 +1584,10 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             });
             newVersion.isLatestVersion = true;
             await newVersion.save();
+        // --- INDEXNOW PING ---
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const newModUrl = `${baseUrl}/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
+        notifyIndexNow([newModUrl]);
 
             // We use JSON here so the frontend AJAX knows what to do
             return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
@@ -2595,6 +2635,11 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
             }
         }
 
+        // --- INDEXNOW PING (DELETION) ---
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const deadUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
+        notifyIndexNow([deadUrl]); // Tell Google this link is dead now
+
         // --- 2. DELETE FROM DATABASE ---
         await File.findByIdAndDelete(fileId);
         await Review.deleteMany({ file: fileId });
@@ -2766,6 +2811,12 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
 
         await file.save();
+        // --- INDEXNOW PING ---
+        // Tell search engines the mod has been updated!
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const modUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
+        // Fire and forget (don't await it so it doesn't slow down the user's redirect)
+        notifyIndexNow([modUrl]); 
         
         if (actionType === 'draft') {
              res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is now hidden from the public until you submit it.`);
@@ -2933,6 +2984,44 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // ===================================
 // 11. API ROUTES
 // ===================================
+// ===================================
+// ADMIN: BULK INDEXNOW SYNC
+// ===================================
+app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let urlsToPing =[
+            baseUrl, 
+            `${baseUrl}/about`,
+            `${baseUrl}/dmca`, 
+            `${baseUrl}/faq`, 
+            `${baseUrl}/category?platform=android`,
+            `${baseUrl}/category?platform=ios-jailed`,
+            `${baseUrl}/category?platform=ios-jailbroken`,
+            `${baseUrl}/category?platform=wordpress`,
+            `${baseUrl}/category?platform=windows`
+        ];
+
+        // Get all live mods
+        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' }).select('category slug _id').lean();
+        liveMods.forEach(mod => {
+            urlsToPing.push(`${baseUrl}/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`);
+        });
+
+        // Send them all to IndexNow! (IndexNow accepts up to 10,000 URLs per request)
+        await notifyIndexNow(urlsToPing);
+
+        res.json({ 
+            success: true, 
+            message: `Successfully sent ${urlsToPing.length} URLs to IndexNow (Bing/Yandex).`,
+            urls: urlsToPing
+        });
+
+    } catch (error) {
+        console.error("Bulk Sync Error:", error);
+        res.status(500).json({ success: false, error: 'Failed to sync with IndexNow.' });
+    }
+});
 
 app.get('/api/search/suggestions', async (req, res) => {
     try {
