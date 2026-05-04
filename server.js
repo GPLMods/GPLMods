@@ -2990,31 +2990,69 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        let urlsToPing =[
-            baseUrl, 
-            `${baseUrl}/about`,
-            `${baseUrl}/dmca`, 
-            `${baseUrl}/faq`, 
-            `${baseUrl}/category?platform=android`,
-            `${baseUrl}/category?platform=ios-jailed`,
-            `${baseUrl}/category?platform=ios-jailbroken`,
-            `${baseUrl}/category?platform=wordpress`,
-            `${baseUrl}/category?platform=windows`
-        ];
+        let urlsToPing =[];
 
-        // Get all live mods
-        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' }).select('category slug _id').lean();
-        liveMods.forEach(mod => {
-            urlsToPing.push(`${baseUrl}/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`);
+        // 1. Static Pages
+        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs'];
+        staticPages.forEach(page => {
+            urlsToPing.push(`${baseUrl}${page}`);
         });
 
-        // Send them all to IndexNow! (IndexNow accepts up to 10,000 URLs per request)
-        await notifyIndexNow(urlsToPing);
+        // 2. Category Pages
+        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+        categories.forEach(cat => {
+             urlsToPing.push(`${baseUrl}/category?platform=${encodeURIComponent(cat)}`);
+        });
+
+        // 3. Live Mods
+        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' }).select('category slug _id').lean();
+        liveMods.forEach(mod => {
+            const safeCategory = encodeURIComponent(mod.category);
+            const safeSlug = encodeURIComponent(mod.slug || mod._id.toString());
+            urlsToPing.push(`${baseUrl}/${safeCategory}/${safeSlug}`);
+        });
+
+        // 4. Developer Pages
+        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
+        uniqueDevelopers.forEach(dev => {
+            if (dev && dev !== 'N/A') {
+                urlsToPing.push(`${baseUrl}/developer?name=${encodeURIComponent(dev)}`);
+            }
+        });
+
+        // 5. Public User Profiles
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
+        uniqueUploaders.forEach(uploader => {
+             urlsToPing.push(`${baseUrl}/users/${encodeURIComponent(uploader)}`);
+        });
+
+        // 6. Dynamic Documentation Pages (Optional, keep if you plan to use DocPages)
+        try {
+            const DocPage = mongoose.model('DocPage'); // Safely check if the model is registered
+            const allDocPages = await DocPage.find().select('slug').lean();
+            allDocPages.forEach(doc => {
+                urlsToPing.push(`${baseUrl}/docs/${encodeURIComponent(doc.slug)}`);
+            });
+        } catch(e) {
+            // Model not found or not created yet, skip silently
+        }
+
+        // --- Execute the Ping ---
+        // We chunk the requests to respect IndexNow limits (max 10,000 per request)
+        const CHUNK_SIZE = 9500; 
+        for (let i = 0; i < urlsToPing.length; i += CHUNK_SIZE) {
+            const chunk = urlsToPing.slice(i, i + CHUNK_SIZE);
+            await notifyIndexNow(chunk);
+            // Small delay between chunks if you have a massive site
+            if (i + CHUNK_SIZE < urlsToPing.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
 
         res.json({ 
             success: true, 
-            message: `Successfully sent ${urlsToPing.length} URLs to IndexNow (Bing/Yandex).`,
-            urls: urlsToPing
+            message: `Successfully pushed ${urlsToPing.length} URLs to IndexNow (Bing/Yandex).`,
+            urls: urlsToPing // Returns the array so the admin can visually verify what was sent
         });
 
     } catch (error) {
