@@ -1,52 +1,88 @@
 <%- include('../../partials/header') %>
 
+<style>
+    .page-header { text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--dark-gray); }
+    .page-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
+    .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .page-header p { color: var(--silver); font-size: 1.1em; }
+
+    .content-section { background-color: var(--dark-gray); padding: 40px; border-radius: 15px; max-width: 900px; margin: 40px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .content-section h2 { font-size: 1.8em; color: var(--gold); margin-bottom: 15px; margin-top: 35px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .content-section h2:first-child { margin-top: 0; }
+    .content-section p { color: var(--silver); margin-bottom: 15px; line-height: 1.7; font-size: 1.05em; }
+    .content-section ul { list-style-type: none; padding: 0; margin-bottom: 20px; }
+    .content-section li { color: var(--silver); margin-bottom: 10px; padding-left: 25px; position: relative; line-height: 1.6; }
+    .content-section li::before { content: '•'; color: var(--gold); position: absolute; left: 5px; font-weight: bold; font-size: 1.2em; }
+    .content-section strong { color: var(--white); }
+    .content-section a { color: var(--gold); text-decoration: none; font-weight: 600; }
+    .content-section a:hover { text-decoration: underline; }
+    
+    .contact-box { background: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center; }
+    .contact-box p { margin-bottom: 5px; font-size: 1em; }
+</style>
+
 <main>
     <div class="page-header">
         <div class="container">
             <h1>Terms of <span>Service</span></h1>
-            <p>Last Updated: October 18, 2025</p>
+            <p>Last Updated: May 4, 2026</p>
         </div>
     </div>
     
     <div class="container">
         <div class="content-section">
-            <p><strong>IMPORTANT:</strong> Please read these Terms of Service ("Terms") carefully. By accessing or using the GPL Mods website (the "Service"), you agree to be bound by these Terms. If you do not agree to these Terms, you may not use the Service.</p>
+            <p><strong>IMPORTANT:</strong> Please read these Terms of Service ("Terms") carefully. By accessing or using the GPL Mods website (the "Service"), you agree to be bound by these Terms.</p>
 
             <h2>1. Use of the Service</h2>
-            <p>GPL Mods provides a platform for users to download and share user-created modifications ("Mods") for various software. You agree to use the Service only for lawful purposes and in a way that does not infringe the rights of, restrict, or inhibit anyone else's use and enjoyment of the Service.</p>
+            <p>Anyone may download modification files ("mods") from our website. All mods are provided by registered community members and collaborating mod distributors. You agree to use the Service only for lawful purposes and in a manner that respects the community.</p>
             
-            <h2>2. User-Generated Content</h2>
-            <p>You are solely responsible for the content you upload, post, or otherwise transmit via the Service. By uploading a Mod, you represent and warrant that you have the right to do so and that it does not violate any laws or third-party rights.</p>
+            <h2>2. User-Generated Content & Ownership</h2>
+            <p>You are solely responsible for the mods and mod variants you upload. We employ automated safety checks via third-party antivirus providers (e.g., VirusTotal) and conduct manual reviews by our administration team to ensure basic safety standards.</p>
             <ul>
-                <li>You grant GPL Mods a worldwide, non-exclusive, royalty-free license to use, host, store, reproduce, and distribute the content you submit for the purposes of operating and providing the Service.</li>
-                <li>We reserve the right, but not the obligation, to review and remove any user-generated content that we believe, in our sole discretion, violates these Terms or our community guidelines.</li>
+                <li>All descriptions, files, content, images, icons, and links belong to you or their respective owners/distributors.</li>
+                <li>Any mirror links or external download links you provide belong to you.</li>
+                <li><strong>Separation of Hosting:</strong> Files are hosted by our designated cloud providers or via links provided by distributors. These files and storage locations are legally and physically separated from the GPL Mods website infrastructure and do not constitute a part of our core Service.</li>
             </ul>
 
             <h2>3. Prohibited Conduct</h2>
-            <p>You agree not to:</p>
+            <p>To maintain a safe and reliable platform, you are strictly prohibited from engaging in the following conduct:</p>
             <ul>
-                <li>Upload any content that is illegal, harmful, or contains viruses, malware, or other malicious code.</li>
-                <li>Infringe upon the intellectual property rights of others. Please see our DMCA Policy for reporting copyright infringement.</li>
-                <li>Engage in any activity that could disable, overburden, or impair the proper working of the Service.</li>
-                <li>Attempt to gain unauthorized access to any part of the Service or its related systems.</li>
+                <li>Providing illegal mods, unreleased software, incomplete builds, or corrupted files.</li>
+                <li>Uploading files that contain any type of virus, malware, or spyware. <strong>Violation of this rule will result in an immediate, permanent ban.</strong></li>
             </ul>
 
-            <h2>4. Disclaimer of Warranties</h2>
-            <p><strong>The Service and all Mods available through it are provided on an "AS IS" and "AS AVAILABLE" basis without any warranties of any kind, express or implied.</strong></p>
-            <p>GPL Mods does not warrant that the Service will be uninterrupted or error-free. We do not test or endorse every Mod and cannot guarantee their functionality, safety, or legality. You download and use Mods at your own risk.</p>
+            <h2>4. Limitation of Liability & Code of Conduct</h2>
+            <p>We enforce a strict code of conduct. You are not allowed to disrespect, harass, or abuse any community members, administrators, or distributors. The use of abusive language is prohibited.</p>
+            <p>This platform is built for everyone. We strictly adhere to and respect children's safety acts and all applicable global community safety standards.</p>
 
-            <h2>5. Limitation of Liability</h2>
-            <p><strong>To the fullest extent permitted by applicable law, GPL Mods shall not be liable for any indirect, incidental, special, consequential, or punitive damages... [etc.]</strong></p>
-            <!-- Abridged for brevity, but you would include all sections -->
+            <h2>5. Disclaimer of Warranties</h2>
+            <p>The mods provided here are scanned by antivirus software; however, <strong>we do not provide any type of additional warranty or guarantee for these files</strong>, as they are uploaded by independent community members.</p>
+            <ul>
+                <li><strong>Use at Your Own Risk:</strong> We are not responsible for any type of damage, data loss, or issues caused by using mods downloaded from our platform on your device.</li>
+                <li><strong>Device Compatibility:</strong> The functionality of mods may vary greatly from device to device. There is a chance a mod file may not work on your specific device due to unsupported software versions, hardware limitations, or other technical difficulties. GPL Mods is not responsible for ensuring compatibility. If a mod does not work, you may request assistance directly from the uploader via community channels.</li>
+            </ul>
             
             <h2>6. Termination</h2>
-            <p>We may terminate or suspend your access to the Service immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.</p>
+            <p>We reserve the right to terminate or suspend your account, temporarily or permanently, depending on the severity of the condition or any breach of our Terms of Service or applicable law.</p>
 
             <h2>7. Changes to Terms</h2>
-            <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide notice of any changes by posting the new Terms on this page. Your continued use of the Service after any such changes constitutes your acceptance of the new Terms of Service.</p>
+            <p>We may update or change these terms at any time, especially when new features are added to the website. Registered users will be notified of significant changes via email. It is highly recommended to subscribe to our newsletter and follow our official social media channels to stay informed.</p>
             
-            <h2>8. Contact Us</h2>
-            <p>If you have any questions about these Terms, please contact us at <a href="mailto:help@gplmods.webredirect.org">help@gplmods.webredirect.org</a>.</p>
+            <h2>8. Contact & Support</h2>
+            <p>If you have any questions or require assistance, please reach out to us during our operating hours.</p>
+            
+            <div class="contact-box">
+                <p><strong>For Terms & Legal inquiries:</strong> <a href="mailto:support@gplmods.webredirect.org">support@gplmods.webredirect.org</a></p>
+                <p><strong>For General Help & Site Support:</strong> <a href="mailto:help@gplmods.webredirect.org">help@gplmods.webredirect.org</a></p>
+                
+                <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+                
+                <p style="color: var(--gold); font-weight: bold; margin-bottom: 5px;">Support Operating Hours</p>
+                <p style="font-size: 0.9em; color: var(--silver);">(Timezone: GMT+5:30 / IST)</p>
+                <p style="margin-top: 10px;">Monday to Friday</p>
+                <p><strong>Morning:</strong> 8:00 AM to 10:00 AM</p>
+                <p><strong>Evening:</strong> 6:00 PM to 10:00 PM</p>
+            </div>
         </div>
     </div>
 </main>

@@ -70,6 +70,19 @@
     .dmca-alert.success { background-color: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
     .dmca-alert.error { background-color: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; }
 
+    /* Highlight box for the new policy */
+    .policy-highlight {
+        background-color: rgba(255, 215, 0, 0.05);
+        border-left: 4px solid var(--gold);
+        padding: 20px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 25px;
+    }
+
+    /* Contact Box Styles */
+    .contact-box { background: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 30px; text-align: center; }
+    .contact-box p { margin-bottom: 5px; font-size: 1em; }
+
     @media (max-width: 768px) {
         .dmca-page-header h1 { font-size: 2.2em; }
         .dmca-content-section { padding: 25px; }
@@ -89,41 +102,52 @@
             <!-- Dynamic Success/Error Message Container -->
             <div id="dmca-alert-box" class="dmca-alert"></div>
 
-            <h2>Our Policy</h2>
-            <p>GPL Mods ("GPL") respects the intellectual property rights of others and expects its users to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond promptly to notices of alleged copyright infringement that are properly submitted to our Designated Copyright Agent.</p>
-            
+            <div class="policy-highlight">
+                <p style="color: var(--white); font-weight: bold; margin-bottom: 10px;">Our Platform's Purpose & Safe Harbor</p>
+                <p>GPL Mods is a community-driven directory. <strong>We do not create or host modifications ourselves.</strong> All files and links found on this website are uploaded and shared by our community members.</p>
+                <p>Furthermore, content shared on this platform is distributed under the spirit of the GNU/GPL license for <strong>testing, evaluation, and educational purposes only.</strong> Because many developers do not provide trial versions, this platform allows users to evaluate software features. If you are satisfied with a product, we strongly encourage you to purchase the premium version directly from the official developer to support their work.</p>
+            </div>
+
             <h2>Notification of Copyright Infringement</h2>
-            <p>If you are a copyright owner or an agent thereof and believe that any content on our platform infringes upon your copyrights, you may submit a notification pursuant to the DMCA by providing our Copyright Agent with the following information in writing:</p>
+            <p>If you are the official copyright owner (or an authorized agent) and wish to request the removal of content submitted by a community member, you may submit a takedown request. <strong>We take false claims very seriously.</strong></p>
+            
+            <p>To process your request, you must provide proof that the content strictly belongs to you or the entity you represent. Our administration team may contact you via email to request additional information to verify your identity. This may include:</p>
             <ul>
-                <li>A physical or electronic signature of a person authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
-                <li>Identification of the copyrighted work claimed to have been infringed, or, if multiple copyrighted works at a single online site are covered by a single notification, a representative list of such works at that site.</li>
-                <li>Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit us to locate the material (please provide the specific URL(s) of the infringing content).</li>
-                <li>Information reasonably sufficient to permit us to contact you, such as an address, telephone number, and, if available, an electronic mail address.</li>
-                <li>A statement that you have a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law.</li>
-                <li>A statement that the information in the notification is accurate, and under penalty of perjury, that you are authorized to act on behalf of the owner of an exclusive right that is allegedly infringed.</li>
+                <li>Official company registration documents.</li>
+                <li>Proof of domain ownership or software licensing rights.</li>
+                <li>A short KYC (Know Your Customer) or verification process to ensure no unauthorized third party is filing a fraudulent complaint against your intellectual property.</li>
             </ul>
 
-            <h2>How to Submit a Notice</h2>
-            <p>Please send your completed DMCA notice to our Designated Copyright Agent at the following email address:</p>
-            <p><a href="mailto:dmca@gplmods.webredirect.org">dmca@gplmods.webredirect.org</a></p>
-            <p>Upon receipt of a valid infringement notification, we will take whatever action, in our sole discretion, we deem appropriate, including the removal of the challenged material from our platform.</p>
+            <h2>How to Submit a Notice & Contact Us</h2>
+            <p>Upon receipt of a valid and verified infringement notification, we will take appropriate action, including the prompt removal of the challenged material from our platform.</p>
+            <p>You may submit your verified takedown request using the form at the bottom of this page, or by contacting our Designated Copyright Agent directly via email.</p>
 
-            <h2>Counter-Notification</h2>
-            <p>If you believe that your content that was removed is not infringing, or that you have the authorization from the copyright owner, the copyright owner's agent, or pursuant to the law, to post and use the material, you may send a counter-notice to our Copyright Agent. Please be aware that you may be held liable for damages if you make a material misrepresentation in a counter-notice.</p>
+            <div class="contact-box">
+                <p><strong>For DMCA & Takedown Notices:</strong> <a href="mailto:dmca@gplmods.webredirect.org">dmca@gplmods.webredirect.org</a></p>
+                <p><strong>For Privacy & Legal inquiries:</strong> <a href="mailto:support@gplmods.webredirect.org">support@gplmods.webredirect.org</a></p>
+                <p><strong>For General Help:</strong> <a href="mailto:help@gplmods.webredirect.org">help@gplmods.webredirect.org</a></p>
+                
+                <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+                
+                <p style="color: var(--gold); font-weight: bold; margin-bottom: 5px;">Support & Processing Hours</p>
+                <p style="font-size: 0.9em; color: var(--silver);">(Timezone: GMT+5:30 / IST)</p>
+                <p style="margin-top: 10px;">Monday to Friday</p>
+                <p><strong>Morning:</strong> 8:00 AM to 10:00 AM</p>
+                <p><strong>Evening:</strong> 6:00 PM to 10:00 PM</p>
+            </div>
 
             <div class="dmca-form-container">
                 <h2>Submit a DMCA Notice</h2>
-                <p style="margin-bottom: 20px;">Alternatively, you can quickly submit your DMCA takedown request using the form below. This goes directly to our administration queue.</p>
+                <p style="margin-bottom: 20px;">Use the form below to submit your initial takedown request directly to our administration queue. Please ensure all contact information is accurate so our team can follow up for verification.</p>
                 
-                <!-- Form action points to the backend route we already set up -->
                 <form class="dmca-form" action="/dmca-request" method="POST">
                     <div class="dmca-form-group">
                         <label for="fullName">Your Full Name*</label>
                         <input type="text" id="fullName" name="fullName" required>
                     </div>
                     <div class="dmca-form-group">
-                        <label for="email">Your Contact Email*</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="email">Official Company Email*</label>
+                        <input type="email" id="email" name="email" required placeholder="name@yourcompany.com">
                     </div>
                     <div class="dmca-form-group">
                         <label for="copyrightHolder">Name of Copyright Holder you represent*</label>
@@ -131,24 +155,23 @@
                     </div>
                     <div class="dmca-form-group">
                         <label for="originalWorkUrl">URL to the original copyrighted work*</label>
-                        <!-- Updated name attribute to originalWorkUrl -->
                         <input type="url" id="originalWorkUrl" name="originalWorkUrl" required>
                     </div>
                     <div class="dmca-form-group">
                         <label for="infringingUrl">URL(s) on GPL Mods you claim are infringing*</label>
-                        <!-- Updated name attribute to infringingUrl -->
                         <textarea id="infringingUrl" name="infringingUrl" rows="4" required placeholder="Provide one URL per line"></textarea>
                     </div>
                     <div class="dmca-form-group">
                         <label for="signature">Electronic Signature (type your full name again)*</label>
                         <input type="text" id="signature" name="signature" required>
                     </div>
-                    <button type="submit" class="dmca-submit-btn">Submit Request</button>
+                    <button type="submit" class="dmca-submit-btn">Submit Request for Verification</button>
                 </form>
             </div>
         </div>
     </div>
 </main>
+
 
 <script>
     // This script catches URL parameters (like ?success=...) from the backend 
