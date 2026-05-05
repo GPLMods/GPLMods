@@ -248,14 +248,25 @@ async function notifyIndexNow(urlList) {
 // ===============================
 const { google } = require('googleapis');
 
-// Setup the JWT authentication client
-const jwtClient = new google.auth.JWT(
-    process.env.GOOGLE_CLIENT_EMAIL,
-    null,
-    // We must replace the literal '\n' strings from the .env file with actual newlines
-    process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,['https://www.googleapis.com/auth/indexing'],
-    null
-);
+// 1. Get the raw string from the environment
+let rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY || '';
+
+// 2. Format it securely. 
+// This regex replaces literal "\n" strings OR double-escaped "\\n" strings with actual newline characters that the Google SDK requires.
+let formattedPrivateKey = rawPrivateKey.replace(/\\n/g, '\n');
+
+// 3. Setup the JWT authentication client
+let jwtClient = null;
+
+if (process.env.GOOGLE_CLIENT_EMAIL && formattedPrivateKey) {
+    jwtClient = new google.auth.JWT(
+        process.env.GOOGLE_CLIENT_EMAIL,
+        null,
+        formattedPrivateKey,
+        ['https://www.googleapis.com/auth/indexing'],
+        null
+    );
+}
 
 /**
  * Pings Google Indexing API to update or remove a URL
@@ -263,7 +274,11 @@ const jwtClient = new google.auth.JWT(
  * @param {string} type - 'URL_UPDATED' or 'URL_DELETED'
  */
 async function notifyGoogle(url, type = 'URL_UPDATED') {
-    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) return;
+    // Safety check
+    if (!jwtClient) {
+        console.error(`[Google Indexing] Skipped: Missing or invalid credentials in .env file.`);
+        return;
+    }
 
     try {
         await jwtClient.authorize();
@@ -274,12 +289,11 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
                 type: type 
             }
         });
-        console.log(`[Google Indexing] Successfully pinged: ${url} (${type})`);
+        console.log(`[Google] Successfully pinged: ${url}`);
     } catch (error) {
-        console.error(`[Google Indexing Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
+        console.error(`[Google Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
     }
 }
-
 // --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
 // Handles files up to 650MB automatically
 async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
@@ -3076,22 +3090,34 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
 
         // --- Execute Google Indexing Ping (Sequential) ---
         // WARNING: DO NOT RUN THIS IF YOU HAVE > 200 URLS
-        // We run these sequentially to avoid flooding the API
+        // --- Execute Google Indexing Ping (Sequential) ---
         let googleSuccessCount = 0;
         let googleFailCount = 0;
 
-        // We run this asynchronously in the background so the admin isn't staring at a loading screen for 5 minutes
         (async () => {
             console.log(`[Google Sync] Starting bulk sync of ${urlsToPing.length} URLs...`);
             for (let i = 0; i < urlsToPing.length; i++) {
                 try {
-                    await notifyGoogle(urlsToPing[i], 'URL_UPDATED');
+                    // Safety check: ensure jwtClient is configured before attempting
+                    if (!jwtClient) {
+                        throw new Error("No key or keyFile set.");
+                    }
+                    
+                    await jwtClient.authorize();
+                    await google.indexing('v3').urlNotifications.publish({
+                        auth: jwtClient,
+                        requestBody: { url: urlsToPing[i], type: 'URL_UPDATED' }
+                    });
+                    
+                    console.log(`[Google] Successfully pinged: ${urlsToPing[i]}`);
                     googleSuccessCount++;
-                    // Wait 250ms between requests to be polite to the API
                     await new Promise(resolve => setTimeout(resolve, 250));
+                    
                 } catch (err) {
+                    // Track the failure!
                     googleFailCount++;
-                    // If we hit the 429 quota error, stop the loop entirely
+                    console.error(`[Google Error] Failed for ${urlsToPing[i]}:`, err.message);
+                    
                     if (err.response && err.response.status === 429) {
                         console.error("[Google Sync] HALTED: Daily Quota Exceeded (200 requests/day).");
                         break; 
