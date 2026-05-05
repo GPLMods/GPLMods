@@ -243,6 +243,43 @@ async function notifyIndexNow(urlList) {
         console.error("IndexNow Ping Failed:", error.response ? error.response.data : error.message);
     }
 }
+// ===============================
+// GOOGLE INDEXING API HELPER
+// ===============================
+const { google } = require('googleapis');
+
+// Setup the JWT authentication client
+const jwtClient = new google.auth.JWT(
+    process.env.GOOGLE_CLIENT_EMAIL,
+    null,
+    // We must replace the literal '\n' strings from the .env file with actual newlines
+    process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,['https://www.googleapis.com/auth/indexing'],
+    null
+);
+
+/**
+ * Pings Google Indexing API to update or remove a URL
+ * @param {string} url - The URL to index
+ * @param {string} type - 'URL_UPDATED' or 'URL_DELETED'
+ */
+async function notifyGoogle(url, type = 'URL_UPDATED') {
+    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) return;
+
+    try {
+        await jwtClient.authorize();
+        const response = await google.indexing('v3').urlNotifications.publish({
+            auth: jwtClient,
+            requestBody: {
+                url: url,
+                type: type 
+            }
+        });
+        console.log(`[Google Indexing] Successfully pinged: ${url} (${type})`);
+    } catch (error) {
+        console.error(`[Google Indexing Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
+    }
+}
+
 // --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
 // Handles files up to 650MB automatically
 async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
@@ -1588,6 +1625,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         const newModUrl = `${baseUrl}/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
         notifyIndexNow([newModUrl]);
+        notifyGoogle(newModUrl, 'URL_UPDATED'); // Tell Google about the new version!
 
             // We use JSON here so the frontend AJAX knows what to do
             return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
@@ -2639,6 +2677,7 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         const deadUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
         notifyIndexNow([deadUrl]); // Tell Google this link is dead now
+        notifyGoogle(deadUrl, 'URL_DELETED'); // Tell Google to REMOVE this from search results!
 
         // --- 2. DELETE FROM DATABASE ---
         await File.findByIdAndDelete(fileId);
@@ -2816,7 +2855,8 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         const modUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
         // Fire and forget (don't await it so it doesn't slow down the user's redirect)
-        notifyIndexNow([modUrl]); 
+        notifyIndexNow([modUrl]);
+        notifyGoogle(modUrl, 'URL_UPDATED'); // Tell Google the page changed!
         
         if (actionType === 'draft') {
              res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is now hidden from the public until you submit it.`);
@@ -2985,7 +3025,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // 11. API ROUTES
 // ===================================
 // ===================================
-// ADMIN: BULK INDEXNOW SYNC
+// ADMIN: BULK INDEXNOW & GOOGLE SYNC
 // ===================================
 app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
@@ -2993,7 +3033,7 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
         let urlsToPing =[];
 
         // 1. Static Pages
-        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs'];
+        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate'];
         staticPages.forEach(page => {
             urlsToPing.push(`${baseUrl}${page}`);
         });
@@ -3026,38 +3066,51 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
              urlsToPing.push(`${baseUrl}/users/${encodeURIComponent(uploader)}`);
         });
 
-        // 6. Dynamic Documentation Pages (Optional, keep if you plan to use DocPages)
-        try {
-            const DocPage = mongoose.model('DocPage'); // Safely check if the model is registered
-            const allDocPages = await DocPage.find().select('slug').lean();
-            allDocPages.forEach(doc => {
-                urlsToPing.push(`${baseUrl}/docs/${encodeURIComponent(doc.slug)}`);
-            });
-        } catch(e) {
-            // Model not found or not created yet, skip silently
-        }
-
-        // --- Execute the Ping ---
-        // We chunk the requests to respect IndexNow limits (max 10,000 per request)
+        // --- Execute IndexNow Ping (Bulk) ---
+        // IndexNow can handle thousands of URLs at once
         const CHUNK_SIZE = 9500; 
         for (let i = 0; i < urlsToPing.length; i += CHUNK_SIZE) {
             const chunk = urlsToPing.slice(i, i + CHUNK_SIZE);
             await notifyIndexNow(chunk);
-            // Small delay between chunks if you have a massive site
-            if (i + CHUNK_SIZE < urlsToPing.length) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
         }
+
+        // --- Execute Google Indexing Ping (Sequential) ---
+        // WARNING: DO NOT RUN THIS IF YOU HAVE > 200 URLS
+        // We run these sequentially to avoid flooding the API
+        let googleSuccessCount = 0;
+        let googleFailCount = 0;
+
+        // We run this asynchronously in the background so the admin isn't staring at a loading screen for 5 minutes
+        (async () => {
+            console.log(`[Google Sync] Starting bulk sync of ${urlsToPing.length} URLs...`);
+            for (let i = 0; i < urlsToPing.length; i++) {
+                try {
+                    await notifyGoogle(urlsToPing[i], 'URL_UPDATED');
+                    googleSuccessCount++;
+                    // Wait 250ms between requests to be polite to the API
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                } catch (err) {
+                    googleFailCount++;
+                    // If we hit the 429 quota error, stop the loop entirely
+                    if (err.response && err.response.status === 429) {
+                        console.error("[Google Sync] HALTED: Daily Quota Exceeded (200 requests/day).");
+                        break; 
+                    }
+                }
+            }
+            console.log(`[Google Sync] Finished. Success: ${googleSuccessCount}, Failed: ${googleFailCount}`);
+        })();
 
         res.json({ 
             success: true, 
-            message: `Successfully pushed ${urlsToPing.length} URLs to IndexNow (Bing/Yandex).`,
-            urls: urlsToPing // Returns the array so the admin can visually verify what was sent
+            message: `Successfully pushed ${urlsToPing.length} URLs to IndexNow. Google sync has started in the background (Warning: Google limits to 200 requests/day).`,
+            totalUrls: urlsToPing.length,
+            urls: urlsToPing 
         });
 
     } catch (error) {
         console.error("Bulk Sync Error:", error);
-        res.status(500).json({ success: false, error: 'Failed to sync with IndexNow.' });
+        res.status(500).json({ success: false, error: 'Failed to sync with search engines.' });
     }
 });
 
