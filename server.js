@@ -251,23 +251,27 @@ const { google } = require('googleapis');
 let jwtClient = null;
 
 try {
-    // 1. Read the entire JSON string from the environment variable
-    if (process.env.GOOGLE_CREDENTIALS_JSON) {
-        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    // 1. Read the Base64 string from the environment variable
+    if (process.env.GOOGLE_CREDENTIALS_BASE64) {
         
-        // 2. Setup the JWT authentication client using the parsed JSON
+        // 2. Decode the Base64 string back into perfectly formatted JSON text
+        const jsonString = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf-8');
+        
+        // 3. Parse the clean JSON
+        const credentials = JSON.parse(jsonString);
+        
+        // 4. Setup the JWT authentication client (Official Google Method)
         jwtClient = new google.auth.JWT(
             credentials.client_email,
             null,
-            credentials.private_key,
-            ['https://www.googleapis.com/auth/indexing']
+            credentials.private_key,['https://www.googleapis.com/auth/indexing'] // Official scope required by the docs
         );
-        console.log("[Google Indexing] Credentials loaded successfully.");
+        console.log("[Google Indexing] Credentials successfully decoded and loaded!");
     } else {
-        console.warn("[Google Indexing] GOOGLE_CREDENTIALS_JSON not found in environment variables. Google sync will be skipped.");
+        console.warn("[Google Indexing] GOOGLE_CREDENTIALS_BASE64 not found. Google sync skipped.");
     }
 } catch (e) {
-    console.error("[Google Indexing Error] Failed to parse GOOGLE_CREDENTIALS_JSON. Make sure you pasted the entire file contents.", e.message);
+    console.error("[Google Indexing Error] Failed to decode or parse Base64 credentials.", e.message);
 }
 
 /**
@@ -276,14 +280,15 @@ try {
  * @param {string} type - 'URL_UPDATED' or 'URL_DELETED'
  */
 async function notifyGoogle(url, type = 'URL_UPDATED') {
-    // Safety check
     if (!jwtClient) {
-        console.error(`[Google Error] Skipped ${url}: Missing or invalid credentials.`);
+        console.error(`[Google Error] Skipped ${url}: Missing credentials.`);
         return;
     }
 
     try {
         await jwtClient.authorize();
+        
+        // Official API call per Google documentation
         const response = await google.indexing('v3').urlNotifications.publish({
             auth: jwtClient,
             requestBody: {
