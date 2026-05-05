@@ -248,24 +248,26 @@ async function notifyIndexNow(urlList) {
 // ===============================
 const { google } = require('googleapis');
 
-// 1. Get the raw string from the environment
-let rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY || '';
-
-// 2. Format it securely. 
-// This regex replaces literal "\n" strings OR double-escaped "\\n" strings with actual newline characters that the Google SDK requires.
-let formattedPrivateKey = rawPrivateKey.replace(/\\n/g, '\n');
-
-// 3. Setup the JWT authentication client
 let jwtClient = null;
 
-if (process.env.GOOGLE_CLIENT_EMAIL && formattedPrivateKey) {
-    jwtClient = new google.auth.JWT(
-        process.env.GOOGLE_CLIENT_EMAIL,
-        null,
-        formattedPrivateKey,
-        ['https://www.googleapis.com/auth/indexing'],
-        null
-    );
+try {
+    // 1. Read the entire JSON string from the environment variable
+    if (process.env.GOOGLE_CREDENTIALS_JSON) {
+        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+        
+        // 2. Setup the JWT authentication client using the parsed JSON
+        jwtClient = new google.auth.JWT(
+            credentials.client_email,
+            null,
+            credentials.private_key,
+            ['https://www.googleapis.com/auth/indexing']
+        );
+        console.log("[Google Indexing] Credentials loaded successfully.");
+    } else {
+        console.warn("[Google Indexing] GOOGLE_CREDENTIALS_JSON not found in environment variables. Google sync will be skipped.");
+    }
+} catch (e) {
+    console.error("[Google Indexing Error] Failed to parse GOOGLE_CREDENTIALS_JSON. Make sure you pasted the entire file contents.", e.message);
 }
 
 /**
@@ -276,7 +278,7 @@ if (process.env.GOOGLE_CLIENT_EMAIL && formattedPrivateKey) {
 async function notifyGoogle(url, type = 'URL_UPDATED') {
     // Safety check
     if (!jwtClient) {
-        console.error(`[Google Indexing] Skipped: Missing or invalid credentials in .env file.`);
+        console.error(`[Google Error] Skipped ${url}: Missing or invalid credentials.`);
         return;
     }
 
@@ -291,7 +293,9 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
         });
         console.log(`[Google] Successfully pinged: ${url}`);
     } catch (error) {
+        // If Google rejects it (e.g., quota exceeded, domain not verified in Search Console)
         console.error(`[Google Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
+        throw error; // Throw the error so the bulk sync loop can count it as a failure
     }
 }
 // --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
