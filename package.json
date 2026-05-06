@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/GPLMods/GPLMods.git"
   },
-  "license": "MPL-2.0",
+  "license": "GPL-3.0",
   "author": "GPL Mods",
   "type": "commonjs",
   "main": "server.js",
