@@ -86,6 +86,15 @@
                     <label for="externalUrl">External Download Link*</label>
                     <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." required>
                 </div>
+                <!-- ======== NEW: DIRECT IPA LINK FOR SIDELOADING ======== -->
+                <div class="form-group" id="ipa-link-group" style="text-align: left; display: none;">
+                    <label for="ipaDirectDownloadUrl" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">
+                        Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span>
+                    </label>
+                    <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.ipa?dl=1" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
+                    <span style="font-size: 0.85em; color: #888; display: block; margin-top: 5px;">Required to enable TrollStore/AltStore install buttons for Premium users. Must be a direct streamable link (like Dropbox).</span>
+                </div>
+                <!-- ======================================================== -->
                 
                 <div id="multi-link-group" class="form-group" style="display: none;">
                     <label>Add Download Parts (Min 2)*</label>

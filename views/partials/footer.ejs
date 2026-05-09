@@ -64,6 +64,8 @@
                 <a href="/tos">Terms of Service</a>
                 <a href="/privacy-policy">Privacy Policy</a>
                 <a href="/refund-policy">Refund Policy</a>
+                <a href="/repos">App Repositories</a>
+                <a href="/jailbreak-repos">Jailbreak Repositories</a>
                 <a href="/donate">Donate Us!</a>
             </div>
             <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
@@ -166,21 +168,45 @@
             </div>
         </div>
 
-        <!-- ======== FLOATING MUSIC PLAYER ======== -->
-        <div id="floating-music-player" class="floating-music-player">
-            <button id="music-toggle-btn" class="music-toggle-btn" title="Toggle Music Player"><i class="fas fa-music"></i></button>
-            <div class="music-player-content">
-                <span id="music-track-name" class="track-name">Loading...</span>
-                <div class="music-controls">
-                    <button id="music-prev-btn" class="music-btn" title="Previous Track"><i class="fas fa-step-backward"></i></button>
-                    <button id="music-play-pause-btn" class="music-btn" title="Play/Pause"><i class="fas fa-play" id="play-pause-icon"></i></button>
-                    <button id="music-next-btn" class="music-btn" title="Next Track"><i class="fas fa-step-forward"></i></button>
-                </div>
-            </div>
+<!-- ======== FLOATING BOTTOM-LEFT MUSIC PLAYER ======== -->
+<div id="floating-music-player" class="floating-music-player">
+    
+    <button id="music-toggle-btn" class="music-toggle-btn" title="Toggle Music Player">
+        <i class="fas fa-music"></i>
+    </button>
+    
+    <div class="music-player-content">
+        <span id="music-track-name" class="track-name">Loading...</span>
+        
+        <div class="music-controls">
+            <button id="music-prev-btn" class="music-btn"><i class="fas fa-step-backward"></i></button>
+            <button id="music-play-pause-btn" class="music-btn"><i class="fas fa-play" id="play-pause-icon"></i></button>
+            <button id="music-next-btn" class="music-btn"><i class="fas fa-step-forward"></i></button>
         </div>
 
-        <!-- Hidden Audio Player -->
-        <audio id="background-audio" preload="auto"></audio>
+        <!-- NEW: Volume Bar -->
+        <div class="volume-container">
+            <i class="fas fa-volume-down volume-icon"></i>
+            <input type="range" id="music-volume-slider" min="0" max="1" step="0.01" value="0.25">
+            <i class="fas fa-volume-up volume-icon"></i>
+        </div>
+
+        <!-- NEW: Premium Custom YT Feature -->
+        <% if (user && (user.role === 'admin' || user.role === 'distributor' || user.membership === 'premium')) { %>
+            <div class="custom-music-input">
+                <input type="text" id="custom-yt-url" placeholder="Paste YT/YT Music URL..." autocomplete="off">
+                <button id="load-yt-btn" class="btn btn-primary" title="Load Custom Track"><i class="fas fa-search"></i></button>
+            </div>
+            <span id="yt-status-msg" style="display:none; color: var(--gold); font-size: 0.7em; margin-top: 5px;">Track loaded!</span>
+        <% } %>
+    </div>
+    
+    <!-- Hidden Players -->
+    <audio id="background-audio" loop></audio>
+    <!-- The invisible YouTube container -->
+    <div id="yt-player-container" style="position: absolute; width: 0; height: 0; pointer-events: none; opacity: 0;"></div>
+</div>
+<!-- =================================================== -->
         
         <!-- Main Scripts (Includes orchestrator for Modals/Newsletters/PWA) -->
         <script src="/js/main.js"></script>

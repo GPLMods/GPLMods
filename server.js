@@ -71,6 +71,7 @@ const SiteState = require('./models/siteState');
 const Subscriber = require('./models/subscriber');
 const DocCategory = require('./models/docCategory');
 const DocPage = require('./models/docPage');
+const Donation = require('./models/donation');
 
 // ===============================
 // 2. INITIALIZATION & CONFIGURATION
@@ -1002,6 +1003,19 @@ function formatUptime(seconds) {
 const renderHomepage = async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
+        // --- NEW: Fetch Editor's Choice Mods for Homepage ---
+        const editorsChoiceModsRaw = await File.find({ ...findQuery, isEditorsChoice: true }).sort({ updatedAt: -1 }).limit(10);
+        
+        // Process URLs for Editor's Choice
+        const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/default-avatar.png';
+            if (iconKey) {
+                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+            }
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+        // ---------------------------------------------------
         const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
@@ -1029,7 +1043,7 @@ const renderHomepage = async (req, res) => {
                 );
             }
         }
-        res.render('pages/index', { filesByCategory });
+        res.render('pages/index', { filesByCategory, editorsChoiceMods });
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
         return next(error);
@@ -1245,6 +1259,24 @@ app.get('/category', async (req, res) => {
         } else {
             sortOptions.createdAt = -1; // Default: Newest first
         }
+        // --- NEW: Fetch Editor's Choice Mods for this specific platform ---
+        let editorQuery = { isLatestVersion: true, status: 'live', isEditorsChoice: true };
+        if (platform && platform !== 'all') {
+            editorQuery.category = platform;
+        }
+        
+        const editorsChoiceModsRaw = await File.find(editorQuery).sort({ updatedAt: -1 }).limit(10);
+        
+        // Process URLs
+        const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/icon.png';
+            if (iconKey) {
+                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+            }
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+        // -----------------------------------------------------------------
 
         // 4. Pagination & Fetching
         const totalMods = await File.countDocuments(queryFilter);
@@ -1265,6 +1297,7 @@ app.get('/category', async (req, res) => {
         res.render('pages/category', {
             files: filesWithUrls,
             totalPages: totalPages,
+            editorsChoiceMods: editorsChoiceMods,
             currentPage: currentPage,
             
             // Pass the current filters back to the frontend so the dropdowns stay selected
@@ -1348,17 +1381,39 @@ app.get('/search', async (req, res) => {
             }
             return { ...file, iconUrl: signedIconUrl };
         }));
+        // --- 2. SEARCH FOR USERS (This was missing!) ---
+        const userResultsRaw = await User.find({
+            username: { $regex: query, $options: 'i' }
+        })
+        .select('username role profileImageKey followers following lastSeen')
+        .limit(4);
 
+        const usersWithAvatars = await Promise.all(userResultsRaw.map(async (u) => {
+            let avatarUrl = '/images/default-avatar.png';
+            if (u.profileImageKey) {
+                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) {}
+            }
+            return { ...u.toObject(), signedAvatarUrl: avatarUrl };
+        }));
+
+        const processedUsers = usersWithAvatars.map(u => {
+            let isFollowing = false;
+            if (req.user && req.user.following) {
+                isFollowing = req.user.following.includes(u._id.toString());
+            }
+            return { ...u, isFollowing };
+        });
+
+        // --- 3. RENDER THE PAGE ---
         res.render('pages/search', {
             results: resultsWithUrls, 
-            query: rawQuery, 
+            userResults: processedUsers, // <--- NOW PASSING userResults!
+            query: query,
             totalResults: totalResults,
             totalPages: totalPages,
             currentPage: page,
-            
-            // --- Pass ALL current filters back to the EJS template ---
             currentPlatform: platform,
-            currentSubCategory: subCategory, // <--- ADDED THIS
+            currentSubCategory: subCategory, // <--- NOW PASSING subCategory!
             currentSort: sort
         });
 
@@ -1523,7 +1578,86 @@ app.get('/:category/:slug', async (req, res, next) => {
         return next(e); 
     }
 });
+// --- NEW: Jailbreak Repo Hub Route ---
+app.get('/jailbreak-repos', async (req, res) => {
+    try {
+        // Fetch all live Jailbreak tweaks
+        const jbMods = await File.find({ 
+            category: 'ios-jailbroken', 
+            status: 'live', 
+            isLatestVersion: true 
+        }).sort({ createdAt: -1 });
 
+        // Filter them into their specific architecture buckets
+        const rootless = [];
+        const rootful =[];
+        const roothide = [];
+        const other =[];
+
+        for (let file of jbMods) {
+            const subcat = file.platforms[0] || '';
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            const fileObj = { ...file.toObject(), iconUrl };
+
+            if (subcat.includes('Rootless')) rootless.push(fileObj);
+            else if (subcat.includes('Rootful')) rootful.push(fileObj);
+            else if (subcat.includes('Roothide')) roothide.push(fileObj);
+            else other.push(fileObj);
+        }
+
+        res.render('pages/jailbreak-repos', { rootless, rootful, roothide, other });
+
+    } catch (e) {
+        console.error("Jailbreak repo error:", e);
+        res.status(500).render('pages/500');
+    }
+});
+// ===================================
+// REPOSITORY HUB ROUTE (F-Droid & iOS Sources)
+// ===================================
+app.get('/repos', async (req, res) => {
+    try {
+        // --- 1. Fetch Android F-Droid Candidates ---
+        // Android mods that have a direct download link (Dropbox, etc.)
+        const androidRepoMods = await File.find({ 
+            category: 'android',
+            status: 'live',
+            isLatestVersion: true,
+            ipaDirectDownloadUrl: { $exists: true, $ne: '' } // We reuse this field for Android direct links too!
+        }).sort({ createdAt: -1 });
+
+        const androidFiles = await Promise.all(androidRepoMods.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        // --- 2. Fetch iOS Jailed (Sideloading) Candidates ---
+        // iOS Jailed mods that have a direct download link
+        const iosJailedRepoMods = await File.find({ 
+            category: 'ios-jailed',
+            status: 'live',
+            isLatestVersion: true,
+            ipaDirectDownloadUrl: { $exists: true, $ne: '' }
+        }).sort({ createdAt: -1 });
+
+        const iosFiles = await Promise.all(iosJailedRepoMods.map(async (file) => {
+            const iconKey = file.iconUrl || file.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            return { ...file.toObject(), iconUrl };
+        }));
+
+        res.render('pages/repos', { 
+            androidFiles: androidFiles,
+            iosFiles: iosFiles
+        });
+
+    } catch (e) {
+        console.error("Repository Hub Error:", e);
+        res.status(500).render('pages/500');
+    }
+});
 // --- UPDATED DEVELOPER PAGE ROUTE ---
 app.get('/developer', async (req, res) => {
     try {
@@ -1594,7 +1728,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
 
         // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link / Multi-Part) ---
         if ((req.user.role === 'distributor' || req.user.role === 'admin') && (req.body.externalUrl || req.body.isMultiPart)) {
-            const { externalUrl, isMultiPart, partUrls, softwareVersion, whatsNew, originalFilename } = req.body;
+            const { externalUrl, isMultiPart, partUrls, softwareVersion, whatsNew, originalFilename, ipaDirectDownloadUrl } = req.body;
             
             const newVersion = new File({
                 // Copy details from previous
@@ -1610,7 +1744,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                 tags: previousVersion.tags,
                 uploader: req.user.username,
                 ageRating: previousVersion.ageRating,
-                
+                ipaDirectDownloadUrl: ipaDirectDownloadUrl, // <--- SAVE IT
                 // New details
                 version: softwareVersion,
                 whatsNew: whatsNew,
@@ -2636,6 +2770,10 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         else if (ext === 'ipa') defaultPlatform = 'ios-jailed';
         else if (ext === 'deb') defaultPlatform = 'ios-jailbroken';
         else if (ext === 'zip') defaultPlatform = 'wordpress'; 
+        // ======== NEW: AUTO-DETECT DROPBOX LINK ========
+        if (pendingFile.externalDownloadUrl && pendingFile.externalDownloadUrl.toLowerCase().includes('dropbox.com')) {
+            defaultPlatform = 'ios-jailed';
+        }
 
         let cleanName = filename.replace(/\.[^/.]+$/, ""); 
         let defaultVersion = "";
@@ -2845,6 +2983,15 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.importantNote = formData.importantNote || file.importantNote;        
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
+        // --- NEW: Update dependencies on edit ---
+        file.minOsVersion = formData.minOsVersion !== undefined ? formData.minOsVersion : file.minOsVersion;
+        if (formData.architectures !== undefined) {
+            file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
+        }
+        // ======== NEW: SAVE THE IPA DIRECT LINK ON EDIT ========
+        if (formData.ipaDirectDownloadUrl !== undefined) {
+            file.ipaDirectDownloadUrl = formData.ipaDirectDownloadUrl;
+        }
         file.tags = processedTags;
         // --- NEW: UPDATE MANUAL SCANS (allow clearing them) ---
         if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = formData.manualFileScanUrl;
@@ -2942,6 +3089,8 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         let iconKey = fileToUpdate.iconKey; // Keep existing if not updating
         let screenshotKeys = fileToUpdate.screenshotKeys || [];
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : [];
+        // --- NEW: Parse architectures safely (can be string or array) ---
+        const archData = formData.architectures ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) :[];
 
         // --- PROCESS IMAGES ---
         if (!isVariant && softwareIcon && softwareIcon.length > 0) {
@@ -3007,7 +3156,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
-            
+// ======== NEW: SAVE THE IPA DIRECT LINK ========
+            ipaDirectDownloadUrl: formData.ipaDirectDownloadUrl || '',
+            // --- NEW: Save dependencies ---
+            architectures: archData,
+            minOsVersion: formData.minOsVersion || '',
+            // ------------------------------          
             status: finalStatus // 'processing' (draft) or 'pending' (submitted)
         };
 
@@ -3617,6 +3771,98 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error("Follow User Error:", error);
         res.status(500).send("Server Error");
+    }
+});
+// ===================================
+// LEADERBOARD ROUTE
+// ===================================
+app.get('/leaderboard', async (req, res) => {
+    try {
+        const category = req.query.category || 'uploaders'; // uploaders, downloaded, followed, donators
+        const timeframe = req.query.timeframe || 'all-time'; // daily, weekly, monthly, all-time
+
+        // 1. Calculate Date Filters
+        let dateFilter = {};
+        const now = new Date();
+        if (timeframe === 'daily') {
+            dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 1)) } };
+        } else if (timeframe === 'weekly') {
+            dateFilter = { createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } };
+        } else if (timeframe === 'monthly') {
+            dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
+        }
+
+        let results =[];
+
+        // 2. Perform MongoDB Aggregations based on Category
+        if (category === 'uploaders') {
+            // Count all LIVE files uploaded by each user
+            const pipeline =[
+                { $match: { status: 'live', ...dateFilter } },
+                { $group: { _id: '$uploader', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 100 }
+            ];
+            const rawUploaders = await File.aggregate(pipeline);
+            
+            // Fetch avatars for the top uploaders
+            results = await Promise.all(rawUploaders.map(async (u) => {
+                const user = await User.findOne({ username: u._id });
+                const avatarUrl = user && user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
+                return { name: u._id, score: u.count, avatar: avatarUrl, role: user ? user.role : 'member' };
+            }));
+
+        } else if (category === 'downloaded') {
+            // Find most downloaded files uploaded in the selected timeframe
+            const files = await File.find({ status: 'live', isLatestVersion: true, ...dateFilter })
+                .sort({ downloads: -1 })
+                .limit(100);
+                
+            results = await Promise.all(files.map(async (f) => {
+                const iconUrl = await getSmartImageUrl(f.iconKey || f.iconUrl);
+                return { name: f.name, score: f.downloads, subtext: `By ${f.uploader}`, avatar: iconUrl, link: `/mods/${f._id}` };
+            }));
+
+        } else if (category === 'followed') {
+            // "Most Followed" ignores timeframes, it's always current state
+            const rawUsers = await User.aggregate([
+                { $project: { username: 1, profileImageKey: 1, role: 1, followerCount: { $size: { $ifNull:["$followers", []] } } } },
+                { $sort: { followerCount: -1 } },
+                { $limit: 100 }
+            ]);
+            
+            results = await Promise.all(rawUsers.map(async (u) => {
+                const avatarUrl = u.profileImageKey ? await getSmartImageUrl(u.profileImageKey) : '/images/default-avatar.png';
+                return { name: u.username, score: u.followerCount, avatar: avatarUrl, role: u.role };
+            }));
+
+        } else if (category === 'donators') {
+            // Sum all successful donations per user
+            const pipeline =[
+                { $match: { status: 'successful', user: { $ne: null }, ...dateFilter } },
+                { $group: { _id: '$user', totalAmount: { $sum: '$amount' }, username: { $first: '$username' } } },
+                { $sort: { totalAmount: -1 } },
+                { $limit: 100 }
+            ];
+            const rawDonators = await Donation.aggregate(pipeline);
+            
+            results = await Promise.all(rawDonators.map(async (d) => {
+                const user = await User.findById(d._id);
+                const avatarUrl = user && user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
+                // Convert currency to string (e.g., ₹500)
+                return { name: d.username, score: `₹${d.totalAmount.toLocaleString()}`, isCurrency: true, avatar: avatarUrl, role: user ? user.role : 'member' };
+            }));
+        }
+
+        res.render('pages/leaderboard', {
+            results,
+            currentCategory: category,
+            currentTimeframe: timeframe
+        });
+
+    } catch (error) {
+        console.error("Leaderboard Error:", error);
+        res.status(500).render('pages/500');
     }
 });
 

@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+
+<style>
+    .repo-header { text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
+    .repo-header h1 { font-size: 3em; color: var(--white); }
+    .repo-header h1 span { color: #FF9800; text-shadow: 0 0 15px rgba(255, 152, 0, 0.5); }
+    .arch-section { margin-bottom: 60px; background: var(--dark-gray); padding: 30px; border-radius: 15px; border: 1px solid #333; }
+    .arch-title { display: flex; align-items: center; gap: 15px; font-size: 1.8em; color: var(--white); margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 15px; }
+    .arch-desc { color: var(--silver); margin-bottom: 25px; font-size: 1.05em; }
+</style>
+
+<main class="container">
+    <div class="repo-header">
+        <h1>Jailbreak <span>Repositories</span></h1>
+        <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
+    </div>
+
+    <!-- ROOTLESS (Modern ARM64) -->
+    <section class="arch-section">
+        <h2 class="arch-title"><i class="fas fa-mobile-alt" style="color: #34C759;"></i> Rootless Tweaks (Modern ARM64)</h2>
+        <p class="arch-desc">Designed for modern jailbreaks (Dopamine, Palera1n rootless) on iOS 15+. These tweaks install to <code>/var/jb</code>.</p>
+        
+        <div class="mod-grid">
+            <% if (rootless.length > 0) { %>
+                <% rootless.forEach(file => { %>
+                    <%- include('../partials/mod-card', { file: file }) %>
+                <% }) %>
+            <% } else { %>
+                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No rootless tweaks available yet.</p>
+            <% } %>
+        </div>
+    </section>
+
+    <!-- ROOTFUL (Legacy ARM) -->
+    <section class="arch-section">
+        <h2 class="arch-title"><i class="fas fa-hdd" style="color: var(--gold);"></i> Rootful Tweaks (Legacy ARM)</h2>
+        <p class="arch-desc">For older devices and legacy jailbreaks (Unc0ver, checkra1n) that modify the actual root file system (<code>/</code>).</p>
+        
+        <div class="mod-grid">
+            <% if (rootful.length > 0) { %>
+                <% rootful.forEach(file => { %>
+                    <%- include('../partials/mod-card', { file: file }) %>
+                <% }) %>
+            <% } else { %>
+                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No rootful tweaks available yet.</p>
+            <% } %>
+        </div>
+    </section>
+
+    <!-- ROOTHIDE (Anti-JB Detection) -->
+    <section class="arch-section">
+        <h2 class="arch-title"><i class="fas fa-user-secret" style="color: #5E5CE6;"></i> Roothide Tweaks (ARM64e)</h2>
+        <p class="arch-desc">Specifically compiled for the Roothide jailbreak environment to bypass strict jailbreak detection in banking and gaming apps.</p>
+        
+        <div class="mod-grid">
+            <% if (roothide.length > 0) { %>
+                <% roothide.forEach(file => { %>
+                    <%- include('../partials/mod-card', { file: file }) %>
+                <% }) %>
+            <% } else { %>
+                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No roothide tweaks available yet.</p>
+            <% } %>
+        </div>
+    </section>
+
+</main>
+
+<%- include('../partials/footer') %>

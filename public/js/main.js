@@ -584,7 +584,7 @@ function startEngagementSequence() {
 
 /**
  * ==================================================================================
- * 8. ROBUST FLOATING MUSIC PLAYER & BACKGROUND AUTO-PAUSE
+ * 8. ROBUST DUAL-SOURCE MUSIC PLAYER (LOCAL + YOUTUBE)
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -596,19 +596,21 @@ function initializeMusicPlayer() {
     const prevBtn = document.getElementById('music-prev-btn'); 
     const nextBtn = document.getElementById('music-next-btn'); 
     const trackNameDisplay = document.getElementById('music-track-name'); 
+    const volumeSlider = document.getElementById('music-volume-slider');
+    
+    // Premium YT Elements
+    const customYtInput = document.getElementById('custom-yt-url');
+    const loadYtBtn = document.getElementById('load-yt-btn');
+    const ytStatusMsg = document.getElementById('yt-status-msg');
 
-    if (!audioPlayer || !playPauseBtn || !prevBtn || !nextBtn || !trackNameDisplay) {
-        console.warn("Music Player elements missing. Player disabled.");
-        return; 
-    }
+    if (!audioPlayer || !playPauseBtn || !trackNameDisplay) return; 
 
     // --- 1. Sliding Toggle Logic ---
     if (toggleBtn && playerContainer) {
-        toggleBtn.addEventListener('click', () => {
-            playerContainer.classList.toggle('open');
-        });
+        toggleBtn.addEventListener('click', () => playerContainer.classList.toggle('open'));
     }
 
+    // --- 2. Default Playlist ---
     const playlist =[
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'Nekozilla', src: '/audio/bgm-2.mp3' },
@@ -616,113 +618,215 @@ function initializeMusicPlayer() {
         { title: 'Dreams', src: '/audio/bgm-4.mp3' },
         { title: 'Royalty', src: '/audio/bgm-5.mp3' },
         { title: 'Mortals', src: '/audio/bgm-6.mp3' },
-        { title: 'On & On', src: '/audio/bgm-7.mp3' },
-        { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
-        { title: 'Wrong Side Out', src: '/audio/bgm-9.mp3' },
+        { title: 'On & On', src: '/audio/bgm-7.mp3' }
     ];
     
+    // --- 3. State Management ---
+    let currentSource = localStorage.getItem('musicSource') || 'local'; // 'local' or 'youtube'
     let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;
     if (trackIndex >= playlist.length || trackIndex < 0) trackIndex = 0;
     
-    audioPlayer.volume = 0.25;
+    let ytVideoId = localStorage.getItem('customYtId') || null;
+    let ytPlayer = null;
+    let isYtReady = false;
 
-    function loadTrack(index) {
-        const track = playlist[index];
-        if (!track) return;
-        audioPlayer.src = track.src;
-        trackNameDisplay.textContent = track.title;
-        localStorage.setItem('musicTrackIndex', index);
-    }
+    // --- 4. YouTube IFrame API Initialization ---
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    function updatePlayIcon(isPlaying) {
-        if (!playPauseIcon) return;
-        if (isPlaying) {
-            playPauseIcon.className = 'fas fa-pause'; 
-            playPauseBtn.title = "Pause Music";
-            trackNameDisplay.textContent = playlist[trackIndex].title;
-        } else {
-            playPauseIcon.className = 'fas fa-play'; 
-            playPauseBtn.title = "Play Music";
-            trackNameDisplay.textContent = "Paused"; 
+    window.onYouTubeIframeAPIReady = function() {
+        ytPlayer = new YT.Player('yt-player-container', {
+            height: '0', width: '0',
+            videoId: ytVideoId || '', // Load saved custom track if exists
+            playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'playsinline': 1, 'loop': 1, 'playlist': ytVideoId || '' },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    };
+
+    function onPlayerReady(event) {
+        isYtReady = true;
+        setGlobalVolume(volumeSlider.value); // Apply default volume to YT
+        // If the site loaded and the state was 'playing' AND source is 'youtube', start it
+        if (currentSource === 'youtube' && localStorage.getItem('musicState') === 'playing') {
+            ytPlayer.playVideo();
         }
     }
 
-    function playTrack() {
-        audioPlayer.play().then(() => {
-            updatePlayIcon(true); 
-            localStorage.setItem('musicState', 'playing');
-        }).catch(e => {
-            console.warn("Browser prevented autoplay.", e);
-            pauseTrack(); 
-        });
+    function onPlayerStateChange(event) {
+        // YT.PlayerState.ENDED == 0. If it ends, loop it.
+        if (event.data === 0) {
+            ytPlayer.playVideo();
+        }
+        // If YT actually plays, fetch the real video title!
+        if (event.data === 1 && currentSource === 'youtube') {
+            const videoData = ytPlayer.getVideoData();
+            if (videoData && videoData.title) {
+                trackNameDisplay.textContent = "YT: " + videoData.title;
+            }
+        }
     }
 
-    function pauseTrack() {
-        audioPlayer.pause();
-        updatePlayIcon(false); 
-        localStorage.setItem('musicState', 'paused');
-    }
+    // --- 5. Core Control Functions (Dual Routing) ---
     
+    function updatePlayIcon(isPlaying) {
+        if (!playPauseIcon) return;
+        playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        playPauseBtn.title = isPlaying ? "Pause Music" : "Play Music";
+    }
+
+    function loadLocalTrack(index) {
+        currentSource = 'local';
+        localStorage.setItem('musicSource', 'local');
+        localStorage.setItem('musicTrackIndex', index);
+        
+        if (isYtReady) ytPlayer.pauseVideo(); // Ensure YT is dead
+        
+        const track = playlist[index];
+        audioPlayer.src = track.src;
+        trackNameDisplay.textContent = track.title;
+        setGlobalVolume(volumeSlider.value);
+    }
+
+    function playMusic() {
+        localStorage.setItem('musicState', 'playing');
+        if (currentSource === 'local') {
+            audioPlayer.play().then(() => updatePlayIcon(true)).catch(e => pauseMusic());
+        } else if (currentSource === 'youtube' && isYtReady && ytVideoId) {
+            ytPlayer.playVideo();
+            updatePlayIcon(true);
+            trackNameDisplay.textContent = "Loading YT Track...";
+        }
+    }
+
+    function pauseMusic() {
+        localStorage.setItem('musicState', 'paused');
+        updatePlayIcon(false);
+        audioPlayer.pause();
+        if (isYtReady) ytPlayer.pauseVideo();
+    }
+
+    function setGlobalVolume(val) {
+        audioPlayer.volume = val;
+        if (isYtReady) ytPlayer.setVolume(val * 100); // YT volume is 0-100
+        localStorage.setItem('musicVolume', val);
+    }
+
+    // --- 6. Event Listeners ---
+
+    // Play/Pause Button
     playPauseBtn.addEventListener('click', () => {
-        if (audioPlayer.paused) playTrack();
-        else pauseTrack();
+        const isPlaying = (currentSource === 'local' && !audioPlayer.paused) || 
+                          (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
+        if (isPlaying) pauseMusic();
+        else playMusic();
     });
 
+    // Next/Prev Buttons (Forces back to Local Playlist)
     nextBtn.addEventListener('click', () => {
         trackIndex = (trackIndex + 1) % playlist.length;
-        loadTrack(trackIndex);
-        playTrack();
+        loadLocalTrack(trackIndex);
+        playMusic();
     });
 
     prevBtn.addEventListener('click', () => {
         trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
-        loadTrack(trackIndex);
-        playTrack();
+        loadLocalTrack(trackIndex);
+        playMusic();
     });
-    
-    audioPlayer.addEventListener('ended', () => { nextBtn.click(); });
+
+    audioPlayer.addEventListener('ended', () => nextBtn.click());
     audioPlayer.addEventListener('timeupdate', () => {
         if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
     });
 
-    loadTrack(trackIndex);
-    
-    const savedState = localStorage.getItem('musicState');
-    if (savedState === 'playing') updatePlayIcon(true);
-    else updatePlayIcon(false);
+    // Volume Slider
+    const savedVol = localStorage.getItem('musicVolume') || 0.25;
+    volumeSlider.value = savedVol;
+    setGlobalVolume(savedVol);
 
-    const savedTime = localStorage.getItem('musicCurrentTime');
+    volumeSlider.addEventListener('input', (e) => {
+        setGlobalVolume(e.target.value);
+    });
 
-    if (savedState === 'playing') {
-        if (savedTime) audioPlayer.currentTime = parseFloat(savedTime);
-        const playPromise = audioPlayer.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                updatePlayIcon(false); 
-                localStorage.setItem('musicState', 'paused');
-            });
-        }
-    } else {
-        audioPlayer.pause(); 
+    // --- 7. Custom YouTube Input Logic (Premium) ---
+    if (customYtInput && loadYtBtn) {
+        loadYtBtn.addEventListener('click', () => {
+            const url = customYtInput.value.trim();
+            // Regex extracts ID from standard YT and YT Music links
+            const match = url.match(/(?:v=|youtu\.be\/|youtube\.com\/embed\/|music\.youtube\.com\/watch\?v=)([^&?]+)/);
+            
+            if (match && match[1]) {
+                ytVideoId = match[1];
+                currentSource = 'youtube';
+                localStorage.setItem('musicSource', 'youtube');
+                localStorage.setItem('customYtId', ytVideoId);
+                
+                audioPlayer.pause(); // Kill local audio
+                
+                if (isYtReady) {
+                    ytPlayer.loadVideoById({videoId: ytVideoId});
+                    playMusic();
+                }
+                
+                customYtInput.value = '';
+                ytStatusMsg.style.display = 'block';
+                setTimeout(() => ytStatusMsg.style.display = 'none', 3000);
+            } else {
+                alert("Invalid YouTube or YouTube Music URL!");
+            }
+        });
     }
 
-    // --- 2. NEW: SMART BACKGROUND TAB AUTO-PAUSE LOGIC ---
-    let wasPlayingBeforeHidden = false;
+    // --- 8. Initialize on Page Load ---
+    if (currentSource === 'local') {
+        loadLocalTrack(trackIndex);
+        const savedTime = localStorage.getItem('musicCurrentTime');
+        if (savedTime && localStorage.getItem('musicState') === 'playing') {
+            audioPlayer.currentTime = parseFloat(savedTime);
+        }
+    } else {
+        trackNameDisplay.textContent = "Custom YT Track";
+    }
 
+    if (localStorage.getItem('musicState') === 'playing') {
+        if (currentSource === 'local') {
+            const playPromise = audioPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => updatePlayIcon(true)).catch(() => {
+                    updatePlayIcon(false);
+                    localStorage.setItem('musicState', 'paused');
+                });
+            }
+        }
+        // YT Auto-resume handled in onPlayerReady
+    } else {
+        updatePlayIcon(false);
+    }
+
+    // --- 9. Smart Tab Auto-Pause ---
+    let wasPlayingBeforeHidden = false;
     document.addEventListener("visibilitychange", () => {
+        const isCurrentlyPlaying = (currentSource === 'local' && !audioPlayer.paused) || 
+                                   (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
+        
         if (document.hidden) {
-            // User switched to another tab
-            if (!audioPlayer.paused) {
-                wasPlayingBeforeHidden = true; // Remember they had it playing
-                audioPlayer.pause();           // Pause silently (don't update UI/LocalStorage)
+            if (isCurrentlyPlaying) {
+                wasPlayingBeforeHidden = true;
+                if (currentSource === 'local') audioPlayer.pause();
+                if (currentSource === 'youtube' && isYtReady) ytPlayer.pauseVideo();
             } else {
                 wasPlayingBeforeHidden = false;
             }
         } else {
-            // User came back to the GPL Mods tab
             if (wasPlayingBeforeHidden) {
-                audioPlayer.play().catch(e => console.warn("Could not auto-resume audio"));
-                wasPlayingBeforeHidden = false; // Reset
+                if (currentSource === 'local') audioPlayer.play().catch(e=>console.warn(e));
+                if (currentSource === 'youtube' && isYtReady) ytPlayer.playVideo();
+                wasPlayingBeforeHidden = false;
             }
         }
     });

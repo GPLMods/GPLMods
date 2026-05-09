@@ -240,19 +240,19 @@ async function createAdminRouter() {
                     editProperties: [
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
-                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 
-                        'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
+                        'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'architectures', 'minOsVersion', 
+                        'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
-                        'isMultiPart', 'downloadParts', 'installationInstructions',
+                        'isMultiPart', 'downloadParts', 'installationInstructions','ipaDirectDownloadUrl',
                         // ✅ NEW: Added Variant fields to edit view
                         'isVariant', 'masterFile'
                     ],
                     showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
-                        'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 
+                        'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 'isEditorsChoice', 'editorsChoiceDescription',
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
-                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 
-                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks',
+                        'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 'architectures', 'minOsVersion',  
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'ipaDirectDownloadUrl',
                         // ✅ NEW: Added Variant fields to show view
                         'isVariant', 'masterFile'
                     ],
@@ -262,11 +262,21 @@ async function createAdminRouter() {
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, // Ensure the new field is here too
+                    isEditorsChoice: {
+                        description: 'Check this to feature this mod in the Editor\'s Choice banner at the top of the homepage and category pages.'
+                    },
+                    editorsChoiceDescription: {
+                        type: 'textarea',
+                        description: '(Optional) A short, catchy description for the banner. If left blank, it will use the start of the main mod description.'
+                    },
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
                         alternativeLinks: { isArray: true, description: 'Add alternative download mirrors (e.g., Mega, Google Drive) if the main link fails.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
                     customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
+                        ipaDirectDownloadUrl: { 
+                            description: 'Optional: For iOS Jailed (IPA) mods ONLY. Paste a true direct link (like Dropbox with ?dl=1) to enable 1-click sideloading app installs.' 
+                        },
                     downloadParts: {
                         isArray: true,
                         description: 'Add individual parts. You can provide a custom ad link or up to 2 mirrors per part.'

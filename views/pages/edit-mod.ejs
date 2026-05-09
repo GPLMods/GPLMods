@@ -5,13 +5,24 @@
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 
 <style>
+    :root {
+        --black: #0a0a0a;
+        --dark-gray: #1a1a1a;
+        --white: #ffffff;
+        --gold: #FFD700;
+        --silver: #c0c0c0;
+        --glow-gold: rgba(255, 215, 0, 0.5);
+        --red: #e53935;
+        --blue: #2196F3;
+    }
+    
     /* Reusing your standard form styles */
     .upload-form-container { max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; }
     .upload-form-container h2 { text-align: center; font-size: 2.5em; margin-bottom: 1rem; color: var(--white); }
     .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
     .form-section legend { padding: 0 10px; margin-left: 15px; font-size: 1.3em; font-weight: 600; color: var(--gold); }
-    .form-group { margin-bottom: 25px; position: relative; } /* Added position: relative for custom dropdowns */
+    .form-group { margin-bottom: 25px; position: relative; } 
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
     .form-group input[type="text"], .form-group input[type="url"], .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
@@ -49,7 +60,7 @@
     .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 10px !important; }
     .upload-form-container { max-width: 100%; overflow-x: hidden; }
 
-    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
+    /* --- ✅ CUSTOM SELECT DROPDOWN CSS --- */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
     .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px; background-color: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; color: var(--silver); font-size: 1em; transition: all 0.3s ease; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
@@ -115,11 +126,11 @@
                     <input type="text" id="developerName" name="developerName" value="<%= file.developer !== 'N/A' ? file.developer : '' %>">
                 </div>
 
-                <!-- ✅ FIXED: Platform Custom Dropdown -->
+                <!-- Platform Custom Dropdown -->
                 <div class="form-group">
                     <label>Platform*</label>
-                    <!-- Hidden Native Select -->
-                    <select id="modPlatform" name="modPlatform" required style="display: none;">
+                    <!-- HIDDEN - REQUIRED REMOVED to prevent silent submission failure -->
+                    <select id="modPlatform" name="modPlatform" style="display: none;">
                         <option value="" disabled <%= !file.category ? 'selected' : '' %>>Select a platform...</option>
                         <option value="android" <%= file.category === 'android' ? 'selected' : '' %>>Android</option>
                         <option value="ios-jailed" <%= file.category === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
@@ -128,7 +139,6 @@
                         <option value="wordpress" <%= file.category === 'wordpress' ? 'selected' : '' %>>WordPress</option>
                     </select>
                     
-                    <!-- Custom UI -->
                     <div class="custom-select-wrapper" id="platformWrapper">
                         <div class="custom-select">
                             <span class="selected-text"><%= file.category ? file.category.toUpperCase() : 'Select a platform...' %></span>
@@ -144,11 +154,10 @@
                     </div>
                 </div>
 
-                    <div class="form-group">
+                <div class="form-group">
                     <label for="ageRating">Age Rating*</label>
-                    
-                    <!-- 1. Hide the native select -->
-                    <select id="ageRating" name="ageRating" required style="display: none;">
+                    <!-- HIDDEN - REQUIRED REMOVED -->
+                    <select id="ageRating" name="ageRating" style="display: none;">
                         <option value="NA" <%= (typeof file !== 'undefined' && file.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
                         <option value="3+" <%= (typeof file !== 'undefined' && file.ageRating === '3+') ? 'selected' : '' %>>3+ (Everyone)</option>
                         <option value="7+" <%= (typeof file !== 'undefined' && file.ageRating === '7+') ? 'selected' : '' %>>7+ (Low Violence)</option>
@@ -157,11 +166,9 @@
                         <option value="18+" <%= (typeof file !== 'undefined' && file.ageRating === '18+') ? 'selected' : '' %>>18+ (Adults Only)</option>
                     </select>
 
-                    <!-- 2. Add the custom wrapper HTML -->
                     <div class="custom-select-wrapper" id="ageRatingWrapper">
                         <div class="custom-select">
                             <span class="selected-text">
-                                <!-- Determine initial display text based on selected option -->
                                 <% if (typeof file !== 'undefined' && file.ageRating) { %>
                                     <% if (file.ageRating === '3+') { %> 3+ (Everyone)
                                     <% } else if (file.ageRating === '7+') { %> 7+ (Low Violence)
@@ -186,10 +193,11 @@
                     </div>
                 </div>
 
-                <!-- ✅ FIXED: Category Custom Dropdown -->
+                <!-- Category Custom Dropdown -->
                 <div class="form-group">
                     <label>Sub-Category*</label>
-                    <select id="modCategory" name="modCategory" required disabled style="display: none;">
+                    <!-- HIDDEN - REQUIRED REMOVED -->
+                    <select id="modCategory" name="modCategory" disabled style="display: none;">
                         <option value="<%= file.platforms[0] || '' %>" selected><%= file.platforms[0] || 'Select category...' %></option>
                     </select>
 
@@ -202,6 +210,27 @@
                     </div>
                 </div>
 
+                <!-- ======== DEPENDENCIES SECTION (WITH CUSTOM WRAPPER) ======== -->
+                <div class="form-group" id="arch-group" style="display: none; background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px;">
+                    <label style="color: var(--gold);"><i class="fas fa-microchip"></i> Architecture Support <span id="arch-req-star" style="color: var(--red); display: none;">*</span></label>
+                    <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Select all hardware architectures this file supports.</p>
+                    
+                    <div class="custom-select-wrapper" id="archWrapper">
+                        <div class="custom-select" id="archCustomSelect">
+                            <span class="selected-text" id="archSelectedText">Select architectures...</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options" id="archOptionsContainer">
+                            <!-- Multi-select checkboxes will be dynamically populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
+                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= file.minOsVersion || '' %>" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
+                </div>
+
                 <div class="form-group">
                     <label for="modVersion">Mod Version*</label>
                     <input type="text" id="modVersion" name="modVersion" value="<%= file.version !== 'Draft' ? file.version : '' %>" required>
@@ -211,15 +240,16 @@
             <fieldset class="form-section">
                 <legend>Descriptions</legend>
 
+                <!-- HIDDEN TEXTAREAS - REQUIRED REMOVED to prevent silent browser failures -->
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" style="display:none;" required><%- file.modDescription %></textarea>
+                    <textarea id="modDescription" name="modDescription" style="display:none;"><%- file.modDescription %></textarea>
                     <div id="editor-modDescription"><%- file.modDescription %></div>
                 </div>
 
                 <div class="form-group">
                     <label for="modFeatures">Mod Features* (One per line)</label>
-                    <textarea id="modFeatures" name="modFeatures" style="display:none;" required><%- file.modFeatures %></textarea>
+                    <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file.modFeatures %></textarea>
                     <div id="editor-modFeatures"><%- file.modFeatures %></div>
                 </div>
 
@@ -243,6 +273,14 @@
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
                 </div>
             </fieldset>
+
+            <!-- ======== DIRECT IPA LINK FOR SIDELOADING ======== -->
+            <div class="form-group" id="ipa-link-group" style="display: none; background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
+                <label for="ipaDirectDownloadUrl" style="color: var(--white);"><i class="fab fa-apple"></i> Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
+                <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" value="<%= file.ipaDirectDownloadUrl || '' %>" placeholder="e.g., https://www.dropbox.com/s/.../app.ipa?dl=1">
+                <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable TrollStore/AltStore install buttons for Premium users. Must be a direct streamable link (like Dropbox).</span>
+            </div>
+
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
                 <fieldset class="form-section">
                     <legend>Security Scan Overrides</legend>
@@ -275,10 +313,10 @@
                         <span class="file-name" id="screenshotFileName" style="display:block; margin-top: 10px; color: var(--silver); text-align: center;">Leave empty to keep current screenshots</span>
                     </div>
                     
-                    <div class="preview-container" id="screenshotPreviewContainer" style="<%= file.screenshotUrls.length > 0 ? 'display:block;' : 'display:none;' %>">
-                        <% file.screenshotUrls.forEach(url => { %>
+                    <div class="preview-container" id="screenshotPreviewContainer" style="<%= file.screenshotUrls && file.screenshotUrls.length > 0 ? 'display:block;' : 'display:none;' %>">
+                        <% if(file.screenshotUrls) { file.screenshotUrls.forEach(url => { %>
                             <img src="<%= url %>" alt="Current Screenshot">
-                        <% }) %>
+                        <% }) } %>
                     </div>
                 </div>
 
@@ -306,7 +344,7 @@
 
 <!-- ======== CONFIRMATION MODALS ======== -->
 <div id="submit-confirm-modal" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
         <i class="fas fa-paper-plane" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
         <h2 style="color: var(--white); margin-bottom: 15px;">Submit Changes?</h2>
         <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
@@ -325,7 +363,7 @@
 </div>
 
 <div id="draft-confirm-modal" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--silver); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--silver); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
         <i class="fas fa-save" style="font-size: 3em; color: var(--silver); margin-bottom: 15px;"></i>
         <h2 style="color: var(--white); margin-bottom: 15px;">Save Draft?</h2>
         <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
@@ -337,6 +375,12 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Overlay CSS inline safely -->
+<style>
+    .policy-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; }
+    .policy-modal.show { display: block; }
+</style>
 
 <script>
 // Helper to control the Error/Success Alert Box
@@ -363,7 +407,6 @@ window.closeConfirmModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('show');
-        setTimeout(() => { modal.style.display = 'none'; }, 200);
     }
 }
 
@@ -423,9 +466,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const nativeCategorySelect = document.getElementById('modCategory');
     const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
     
-    // ✅ FIX: Moved these outside the function so they are globally available!
     const ageRatingWrapper = document.getElementById('ageRatingWrapper');
     const nativeAgeRatingSelect = document.getElementById('ageRating');
+    
+    const archWrapper = document.getElementById('archWrapper');
+    const archCustomSelect = document.getElementById('archCustomSelect');
 
     function setupCustomSelect(wrapper, nativeSelect) {
         if (!wrapper || !nativeSelect) return;
@@ -464,14 +509,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Setup toggling for Architecture Multi-Select specifically
+    if (archCustomSelect && archWrapper) {
+        archCustomSelect.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== archWrapper) w.classList.remove('open');
+            });
+            archWrapper.classList.toggle('open');
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+        });
+    }
+
     setupCustomSelect(platformWrapper, nativePlatformSelect);
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
-    // Initialize the Age Rating wrapper
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
 
-    // Apply the 'selected' class to the correct custom option on load for Age Rating
+    // Apply the 'selected' class safely to Age Rating dropdown on load
     if (nativeAgeRatingSelect && ageRatingWrapper) {
-        const currentValue = nativeAgeRatingSelect.value;
+        const currentValue = <%- JSON.stringify(file.ageRating || '') %>;
         if (currentValue) {
             const optionToSelect = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentValue}"]`);
             if (optionToSelect) {
@@ -484,7 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => wrapper.classList.remove('open'));
     });
 
-    // --- Dynamic Category Population Logic ---
     const categoriesByPlatform = {
         android:['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
         'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
@@ -498,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const selectedPlatform = nativePlatformSelect.value;
         const categories = categoriesByPlatform[selectedPlatform] ||[];
-        const currentCategory = "<%= (file.platforms && file.platforms.length > 0) ? file.platforms[0] : '' %>"; 
+        const currentCategory = <%- JSON.stringify((file.platforms && file.platforms.length > 0) ? file.platforms[0] : '') %>; 
 
         nativeCategorySelect.innerHTML = '';
         categoryOptionsContainer.innerHTML = '';
@@ -532,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 categoryOptionsContainer.appendChild(customOpt);
             });
             
-            // Set the selected custom option if a current category exists
             if (currentCategory) {
                 const optToSelect = categoryOptionsContainer.querySelector(`.custom-option[data-value="${currentCategory}"]`);
                 if (optToSelect) {
@@ -542,7 +597,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     nativeCategorySelect.value = currentCategory;
                 }
             }
-
         } else {
             nativeCategorySelect.disabled = true;
             categoryWrapper.classList.add('disabled');
@@ -552,8 +606,116 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (nativePlatformSelect) {
-        nativePlatformSelect.addEventListener('change', populateCategories);
-        const preSelectedPlatform = "<%= file.category || '' %>"; 
+        nativePlatformSelect.addEventListener('change', function() {
+            populateCategories();
+
+            // Dependency / Architecture / OS Logic Check
+            const selectedPlatform = this.value;
+            const archMap = {
+                'android':['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86'],
+                'windows':['x86-64', 'x64', 'x86'],
+                'ios-jailed':['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)'],
+                'ios-jailbroken':['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)']
+            };
+
+            const archGroup = document.getElementById('arch-group');
+            const archOptionsContainer = document.getElementById('archOptionsContainer');
+            const archSelectedText = document.getElementById('archSelectedText');
+            
+            const archReqStar = document.getElementById('arch-req-star');
+            const osReqStar = document.getElementById('os-req-star');
+            const minOsInput = document.getElementById('minOsVersion');
+            const ipaLinkGroup = document.getElementById('ipa-link-group');
+
+            const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;
+
+            if (archMap[selectedPlatform]) {
+                archGroup.style.display = 'block';
+                archOptionsContainer.innerHTML = ''; 
+                
+                let checkedCount = 0;
+                let lastCheckedValue = '';
+
+                archMap[selectedPlatform].forEach(arch => {
+                    const label = document.createElement('label');
+                    label.className = 'custom-option';
+                    label.style.display = 'flex';
+                    label.style.alignItems = 'center';
+                    label.style.gap = '10px';
+                    label.style.cursor = 'pointer';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.name = 'architectures';
+                    checkbox.value = arch;
+                    checkbox.style.accentColor = 'var(--gold)';
+                    checkbox.style.width = '16px';
+                    checkbox.style.height = '16px';
+                    checkbox.style.cursor = 'pointer';
+                    
+                    if (preSelectedArchs.includes(arch)) {
+                        checkbox.checked = true;
+                        checkedCount++;
+                        lastCheckedValue = arch;
+                    }
+                    
+                    label.addEventListener('click', function(e) {
+                        e.stopPropagation(); 
+                    });
+                    
+                    checkbox.addEventListener('change', function() {
+                        const checkedBoxes = archOptionsContainer.querySelectorAll('input[type="checkbox"]:checked');
+                        if (checkedBoxes.length === 0) {
+                            archSelectedText.textContent = 'Select architectures...';
+                            archSelectedText.style.color = 'var(--silver)';
+                        } else if (checkedBoxes.length === 1) {
+                            archSelectedText.textContent = checkedBoxes[0].value;
+                            archSelectedText.style.color = 'var(--white)';
+                        } else {
+                            archSelectedText.textContent = `${checkedBoxes.length} architectures selected`;
+                            archSelectedText.style.color = 'var(--white)';
+                        }
+                    });
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(arch));
+                    archOptionsContainer.appendChild(label);
+                });
+
+                if (checkedCount === 0) {
+                    archSelectedText.textContent = 'Select architectures...';
+                    archSelectedText.style.color = 'var(--silver)';
+                } else if (checkedCount === 1) {
+                    archSelectedText.textContent = lastCheckedValue;
+                    archSelectedText.style.color = 'var(--white)';
+                } else {
+                    archSelectedText.textContent = `${checkedCount} architectures selected`;
+                    archSelectedText.style.color = 'var(--white)';
+                }
+
+            } else {
+                archGroup.style.display = 'none';
+            }
+
+            if (selectedPlatform === 'ios-jailbroken') {
+                if(archReqStar) archReqStar.style.display = 'inline';
+                if(osReqStar) osReqStar.style.display = 'inline';
+                if(minOsInput) minOsInput.required = true;
+            } else {
+                if(archReqStar) archReqStar.style.display = 'none';
+                if(osReqStar) osReqStar.style.display = 'none';
+                if(minOsInput) minOsInput.required = false;
+            }
+
+            if (selectedPlatform.startsWith('ios')) {
+                if(ipaLinkGroup) ipaLinkGroup.style.display = 'block';
+            } else {
+                if(ipaLinkGroup) ipaLinkGroup.style.display = 'none';
+            }
+        });
+
+        // Initialize values safely with proper escaping
+        const preSelectedPlatform = <%- JSON.stringify(file.category || '') %>; 
         if (preSelectedPlatform) {
             const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
             if(optionToSelect) optionToSelect.click(); 
@@ -563,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3. QUILL RICH TEXT EDITORS & SUBMISSION
     // ==========================================
-    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean']];
+    const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],[{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean']];
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
@@ -592,8 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
             syncQuillData(); 
-            draftModal.style.display = 'flex';
-            setTimeout(() => draftModal.classList.add('show'), 10);
+            draftModal.classList.add('show');
         });
     }
 
@@ -604,18 +765,30 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let hasError = false;
 
+            // ✅ MANUAL VALIDATION EXECUTED BEFORE NATIVE reportValidity()
             if (!nativePlatformSelect.value) {
-                platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                if (platformWrapper) platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
                 hasError = true;
             }
+            
             if (!nativeCategorySelect.value || nativeCategorySelect.disabled) {
-                categoryWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                if (categoryWrapper) categoryWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
                 hasError = true;
             }
 
-            if (!mainForm.checkValidity() || hasError) {
-                mainForm.reportValidity();
-                if(hasError) alert('Please select a platform and category.');
+            if (nativePlatformSelect.value === 'ios-jailbroken') {
+                const checkedArchs = document.querySelectorAll('input[name="architectures"]:checked');
+                if (checkedArchs.length === 0) {
+                    if (archWrapper) {
+                        archWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                        archWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                    }
+                    hasError = true;
+                }
+            }
+
+            if (hasError) {
+                showStatusAlert('Please fill out all required custom dropdowns.', 'error');
                 return;
             }
             
@@ -625,15 +798,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (descInput && !descInput.value.trim()) { showStatusAlert('Error: Mod Description is required.', 'error'); return; }
             if (featInput && !featInput.value.trim()) { showStatusAlert('Error: Mod Features are required.', 'error'); return; }
 
-            submitModal.style.display = 'flex';
-            setTimeout(() => submitModal.classList.add('show'), 10);
+            if (!mainForm.checkValidity()) {
+                mainForm.reportValidity();
+                return;
+            }
+
+            submitModal.classList.add('show');
         });
     }
 
     if (document.getElementById('confirmDraftBtn') && mainForm) {
         document.getElementById('confirmDraftBtn').addEventListener('click', () => {
             if(actionTypeInput) actionTypeInput.value = 'draft'; 
-            mainForm.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
             document.getElementById('confirmDraftBtn').textContent = 'Saving...';
             mainForm.submit(); 
         });

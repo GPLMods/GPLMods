@@ -12,6 +12,65 @@
         }
     }
 </script>
+<section class="hero"></section>
+
+<!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
+<% if (typeof editorsChoiceMods !== 'undefined' && editorsChoiceMods.length > 0) { %>
+    <section class="featured-section">
+        <!-- We use the icon of the first featured mod as the blurred background -->
+        <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
+        
+        <div class="container" style="position: relative;">
+            <div class="featured-carousel" id="featured-carousel">
+                <% editorsChoiceMods.forEach((mod, index) => { %>
+                    <div class="featured-card" id="featured-slide-<%= index %>">
+                        <div class="featured-icon-wrapper">
+                            <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                        </div>
+                        <div class="featured-content">
+                            <h2>Editor's Choice: <span><%= mod.name %></span></h2>
+                            
+                            <!-- Smart Description Logic -->
+                            <% 
+                                let desc = mod.editorsChoiceDescription;
+                                if (!desc || desc.trim() === '') {
+                                    desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification.";
+                                }
+                            %>
+                            <p><%- desc %></p>
+                            
+                            <div class="featured-buttons">
+                                <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
+                                
+                                <% if (user) { %>
+                                    <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
+                                        <button type="submit" class="featured-button btn-secondary">
+                                            <i class="fas fa-heart"></i> Wishlist
+                                        </button>
+                                    </form>
+                                <% } else { %>
+                                    <a href="/login" class="featured-button btn-secondary">
+                                        <i class="fas fa-heart"></i> Wishlist
+                                    </a>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+            
+            <!-- Carousel Dots (Only show if more than 1 item) -->
+            <% if (editorsChoiceMods.length > 1) { %>
+                <div class="carousel-dots">
+                    <% editorsChoiceMods.forEach((_, index) => { %>
+                        <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollToSlide(<%= index %>)"></div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+    </section>
+<% } %>
+<!-- ============================================== -->
 
 <div class="container" id="mods-container">
 <!-- ======== MAIN CATAGORY TAB ======== -->
@@ -153,6 +212,98 @@
                 modCards.forEach(c => c.classList.remove('active-overlay'));
             }
         });
+    });
+</script>
+<!-- ======== EDITOR'S CHOICE CAROUSEL SCRIPT ======== -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const carousel = document.getElementById('featured-carousel');
+        if (!carousel) return;
+
+        const slides = carousel.querySelectorAll('.featured-card');
+        const dots = document.querySelectorAll('.carousel-dots .dot');
+        
+        // If there's 1 or 0 slides, we don't need animation or dots
+        if (slides.length <= 1) return;
+
+        let currentIndex = 0;
+        let autoPlayInterval;
+        const delay = 4000; // 4 seconds between auto-scrolls
+
+        // 1. Function to visually update the active dot
+        function updateDots(index) {
+            dots.forEach(d => d.classList.remove('active'));
+            if(dots[index]) dots[index].classList.add('active');
+        }
+
+        // 2. Function to scroll the container to a specific slide
+        function scrollToCurrentSlide() {
+            const slide = document.getElementById(`featured-slide-${currentIndex}`);
+            if (slide) {
+                carousel.scrollTo({
+                    left: slide.offsetLeft,
+                    behavior: 'smooth'
+                });
+                updateDots(currentIndex);
+            }
+        }
+
+        // 3. Logic to move to the next slide (loops back to start)
+        function nextSlide() {
+            currentIndex++;
+            if (currentIndex >= slides.length) {
+                currentIndex = 0; // Loop back to the first slide
+            }
+            scrollToCurrentSlide();
+        }
+
+        // 4. Auto-Play Controls
+        function startAutoPlay() {
+            autoPlayInterval = setInterval(nextSlide, delay);
+        }
+
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+        }
+
+        function resetAutoPlay() {
+            stopAutoPlay();
+            startAutoPlay();
+        }
+
+        // 5. MAGIC FIX: Detect Manual Swipes using IntersectionObserver
+        // This watches the screen and updates the dot automatically when a user swipes!
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Find out which slide just came into view
+                    const index = Array.from(slides).indexOf(entry.target);
+                    currentIndex = index;
+                    updateDots(index);
+                }
+            });
+        }, {
+            root: carousel,
+            threshold: 0.6 // Trigger when 60% of the slide is visible
+        });
+
+        slides.forEach(slide => observer.observe(slide));
+
+        // 6. User Experience: Pause auto-play if they are hovering or touching the card
+        carousel.addEventListener('mouseenter', stopAutoPlay);
+        carousel.addEventListener('mouseleave', startAutoPlay);
+        carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
+        carousel.addEventListener('touchend', startAutoPlay, { passive: true });
+
+        // 7. Expose the manual click function for the dots
+        window.scrollToSlide = function(index) {
+            currentIndex = index;
+            scrollToCurrentSlide();
+            resetAutoPlay(); // Reset the timer so it doesn't double-jump
+        };
+
+        // Start the engine!
+        startAutoPlay();
     });
 </script>
 <%- include('../partials/popunder-ads') %>

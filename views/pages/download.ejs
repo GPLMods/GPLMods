@@ -277,6 +277,98 @@
                 </div>
             <% } %>
             <!-- =================================================== -->
+            <!-- ======== 1-CLICK IOS INSTALLERS (Jailed & Jailbroken) ======== -->
+            <% 
+                const isIosDirect = (file.category === 'ios-jailed' || file.category === 'ios-jailbroken');
+                const hasDirectLink = !!file.ipaDirectDownloadUrl;
+                
+                let hasSideloadPermission = false;
+                if (user && (user.membership === 'premium' || user.role === 'admin' || user.role === 'distributor')) {
+                    hasSideloadPermission = true;
+                }
+
+                if (isIosDirect && hasDirectLink) { 
+            %>
+                <div style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-top: 15px; margin-bottom: 25px; text-align: left;">
+                    
+                    <h3 style="color: var(--white); font-size: 1.1em; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fab fa-apple"></i> 1-Click Direct Install
+                    </h3>
+                    
+                    <% if (hasSideloadPermission) { %>
+                        <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 15px;">Send directly to your device's package manager.</p>
+                        
+                        <% 
+                            const rawUrl = file.ipaDirectDownloadUrl;
+                            const base64Url = Buffer.from(rawUrl).toString('base64');
+                        %>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            
+                            <% if (file.category === 'ios-jailed') { %>
+                                <!-- JAILED IPA APPS -->
+                                <a href="apple-magnifier://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-magic" style="color: #007AFF;"></i> TrollStore
+                                </a>
+                                <a href="sidestore://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-store" style="color: #5E5CE6;"></i> SideStore
+                                </a>
+                                <a href="altstore://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-box" style="color: #34C759;"></i> AltStore
+                                </a>
+                                <a href="esign://import?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-pen-nib" style="color: #FF2D55;"></i> E-Sign
+                                </a>
+                                <a href="feather://import/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-feather-alt" style="color: #FF9500;"></i> Feather
+                                </a>
+                                <a href="scarlet://install=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-spider" style="color: #FF3B30;"></i> Scarlet
+                                </a>
+                                <a href="livecontainer://install-ipa?url=<%= base64Url %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
+                                    <i class="fas fa-box-open" style="color: var(--gold);"></i> Live Container
+                                </a>
+                                <a href="ksign://import?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
+                                    <i class="fas fa-signature" style="color: #AF52DE;"></i> Ksign
+                                </a>
+
+                            <% } else if (file.category === 'ios-jailbroken') { %>
+                                <!-- JAILBROKEN REPO / DEB APPS -->
+                                <a href="sileo://source/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-wind" style="color: #5AC8FA;"></i> Sileo
+                                </a>
+                                <a href="zbra://sources/add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-horse-head" style="color: #000000; background: #fff; padding: 2px; border-radius: 4px;"></i> Zebra
+                                </a>
+                                <a href="cydia://url/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-cube" style="color: #8E8E93;"></i> Cydia
+                                </a>
+                                <a href="purepkg://source/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-box-open" style="color: #FF2D55;"></i> Pure PKG
+                                </a>
+                                <a href="saily://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-shopping-bag" style="color: #FF9500;"></i> Saily
+                                </a>
+                                <a href="installer://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                    <i class="fas fa-download" style="color: #34C759;"></i> Installer 5
+                                </a>
+                                <a href="postbox://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
+                                    <i class="fas fa-mailbox" style="color: #FF3B30;"></i> PostBox
+                                </a>
+                            <% } %>
+                        </div>
+
+                    <% } else { %>
+                        <div style="background-color: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed var(--gold); text-align: center; margin-top: 10px;">
+                            <i class="fas fa-crown" style="font-size: 1.5em; color: var(--gold); margin-bottom: 10px;"></i>
+                            <p style="color: var(--white); font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Premium Feature</p>
+                            <p style="color: var(--silver); font-size: 0.8em; line-height: 1.4; margin-bottom: 15px;">Unlock 1-Click direct installations to Sileo, Zebra, TrollStore, and more!</p>
+                            <a href="/membership" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85em; width: 100%;">Upgrade to Premium</a>
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+            <!-- ======================================================== -->
             
             <!-- ============================ -->
             <!-- Updated Action Buttons Start -->
@@ -364,6 +456,21 @@
                 <li>Version: <span><%= file.version %></span></li>
                 <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
                 <li>
+                <!-- ======== NEW: DEPENDENCY DISPLAYS ======== -->
+                <% if (file.minOsVersion && file.minOsVersion.trim() !== '') { %>
+                    <li>Requires: <span style="color: var(--gold);"><%= file.minOsVersion %>+</span></li>
+                <% } %>
+                
+                <% if (file.architectures && file.architectures.length > 0) { %>
+                    <li>Architecture: 
+                        <span style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-top: 5px;">
+                            <% file.architectures.forEach(arch => { %>
+                                <span style="background: #222; border: 1px solid #444; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: var(--silver);"><%= arch %></span>
+                            <% }) %>
+                        </span>
+                    </li>
+                <% } %>
+                <!-- ======================================== -->
                     Developer: 
                     <% if (file.developer && file.developer !== 'N/A') { %>
                         <!-- ✅ CHANGED: Now using slugify -->

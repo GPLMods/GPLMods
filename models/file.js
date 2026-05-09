@@ -32,7 +32,7 @@ importantNote: { type: String, trim: true },
     iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     screenshotKeys: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     videoUrl: { type: String }, 
-    
+    ipaDirectDownloadUrl: { type: String, trim: true },    
     // Make fileKey optional ONLY IF an external link is provided
     fileKey: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; } }, 
     
@@ -80,6 +80,18 @@ importantNote: { type: String, trim: true },
     },
 platforms: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },
+    // ======== NEW: DEPENDENCIES & ARCHITECTURE ========
+    architectures: { 
+        type: [String], 
+        default:[] 
+    },
+    minOsVersion: { 
+        type: String, 
+        trim: true,
+        default: '' // e.g., "iOS 14.0", "Windows 10", "Android 8.0"
+    },
+    // ==================================================
+
 
     // --- FILE INFO ---
     // Make these optional if using an external link
@@ -158,6 +170,15 @@ platforms: { type: [String], required: function() { return this.status !== 'proc
         type: String,
         enum:['none', 'certified', 'community-tested'],
         default: 'none'
+    },
+    // --- NEW: EDITOR'S CHOICE FIELDS ---
+    isEditorsChoice: {
+        type: Boolean,
+        default: false
+    },
+    editorsChoiceDescription: {
+        type: String,
+        trim: true
     },
 
     status: {

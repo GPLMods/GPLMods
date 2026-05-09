@@ -603,6 +603,69 @@ a.overlay-btn-primary:hover {
 .music-controls button.music-btn:active {
     transform: scale(0.9);
 }
+/* --- Volume Slider & Custom Input Styles --- */
+.volume-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+}
+.volume-icon {
+    color: var(--silver);
+    font-size: 0.8em;
+}
+/* Custom Range Slider Styling */
+#music-volume-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+#music-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--gold);
+    cursor: pointer;
+    box-shadow: 0 0 5px var(--glow-gold);
+}
+
+/* Premium Custom Input */
+.custom-music-input {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    margin-top: 15px;
+}
+.custom-music-input input {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 15px;
+    border: 1px solid #444;
+    background-color: var(--black);
+    color: var(--white);
+    font-size: 0.75em;
+    outline: none;
+    transition: border-color 0.3s;
+}
+.custom-music-input input:focus {
+    border-color: var(--gold);
+}
+.custom-music-input button {
+    padding: 6px 12px;
+    height: auto;
+    font-size: 0.8em;
+    border-radius: 15px;
+}
 
         /* --- Policy Acceptance Banner --- */
         -banner {
@@ -753,6 +816,98 @@ a.overlay-btn-primary:hover {
 /* This targets the <i> tag directly if needed, for Font Awesome */
 .main-footer .social-icons i {
     /* This can often help reset styles if the 'a' tag isn't enough */
+}
+/* ==========================================================================
+   EDITOR'S CHOICE BANNER (CAROUSEL)
+   ========================================================================== */
+.featured-section { 
+    padding: 40px 0; 
+    position: relative; 
+    overflow: hidden; 
+    border-top: 1px solid var(--dark-gray); 
+    border-bottom: 1px solid var(--dark-gray);
+    margin-bottom: 40px; 
+}
+.featured-bg-image { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    filter: blur(15px) brightness(0.2); /* Darkened more so text pops */
+    transform: scale(1.1); 
+    z-index: 1; 
+}
+
+/* Container for multiple featured cards */
+.featured-carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none; /* Hide scrollbar */
+    gap: 20px;
+    position: relative;
+    z-index: 2;
+}
+.featured-carousel::-webkit-scrollbar { display: none; }
+
+.featured-card { 
+    flex: 0 0 100%; /* Take full width of container */
+    scroll-snap-align: start;
+    display: flex; 
+    align-items: center; 
+    gap: 40px; 
+    background-color: rgba(10, 10, 10, 0.6); 
+    backdrop-filter: blur(8px); 
+    padding: 30px; 
+    border-radius: 20px; 
+    border: 1px solid #333; 
+}
+
+/* Reusing Universal Image Logic */
+.featured-icon-wrapper {
+    width: 160px;
+    height: 160px;
+    border-radius: 25px;
+    flex-shrink: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background-color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    border: 1px solid #333;
+}
+.featured-icon { 
+    max-width: 100%; 
+    max-height: 100%; 
+    object-fit: contain; 
+}
+
+.featured-content { flex-grow: 1; }
+.featured-content h2 { font-size: 2.2em; line-height: 1.2; margin-bottom: 5px;}
+.featured-content h2 span { color: var(--gold); }
+.featured-content p { color: var(--silver); margin: 10px 0 20px 0; font-size: 1.1em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.featured-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+.featured-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; border: none; cursor: pointer; font-family: inherit;}
+.featured-button.btn-primary { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+.featured-button.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
+.featured-button.btn-secondary { background: transparent; border: 2px solid var(--gold); color: var(--gold); }
+.featured-button.btn-secondary:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); transform: translateY(-3px); }
+
+/* Navigation dots for carousel */
+.carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 20px; position: relative; z-index: 2;}
+.dot { width: 10px; height: 10px; border-radius: 50%; background-color: #555; cursor: pointer; transition: background-color 0.3s; }
+.dot.active { background-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+
+@media (max-width: 768px) {
+    .featured-card { flex-direction: column; text-align: center; gap: 20px; padding: 20px; }
+    .featured-icon-wrapper { width: 120px; height: 120px; }
+    .featured-content h2 { font-size: 1.8em; }
+    .featured-buttons { justify-content: center; width: 100%; }
+    .featured-button { width: 100%; }
 }
 /* --- START OF ABOUT PAGE NEW STYLES --- */
         

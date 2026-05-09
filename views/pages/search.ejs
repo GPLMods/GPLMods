@@ -82,6 +82,97 @@
     /* Responsive */
     @media (max-width: 992px) { .filter-section { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 768px) { .filter-section { grid-template-columns: 1fr; } .filter-button { width: 100%; margin-top: 10px; } }
+    /* --- NEW: User Search Result Styles --- */
+    .user-results-section {
+        margin-bottom: 40px;
+    }
+    .user-results-section h2 {
+        color: var(--white);
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+    }
+    .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .user-card {
+        background-color: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-decoration: none;
+    }
+    .user-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--silver);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .user-card-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--gold);
+    }
+    .user-card-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .user-card-name {
+        color: var(--white);
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .user-card-role {
+        font-size: 0.75em;
+        color: var(--silver);
+        text-transform: uppercase;
+        background: #222;
+        padding: 2px 8px;
+        border-radius: 10px;
+        align-self: flex-start;
+        margin-bottom: 5px;
+    }
+    .role-admin { color: var(--red); border: 1px solid var(--red); }
+    .role-distributor { color: var(--blue); border: 1px solid var(--blue); }
+    
+    .user-card-stats {
+        color: var(--silver);
+        font-size: 0.8em;
+        display: flex;
+        gap: 10px;
+    }
+    .follow-btn-small {
+        background: transparent;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .follow-btn-small:hover {
+        background: var(--gold);
+        color: var(--black);
+    }
+    .follow-btn-small.following {
+        color: var(--silver);
+        border-color: #555;
+    }
+    .follow-btn-small.following:hover {
+        background: #555;
+        color: var(--white);
+    }
 </style>
 
 <main>
@@ -180,6 +271,44 @@
 
             <button type="submit" class="filter-button" style="background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; border: none; font-size: 1em; font-weight: 600; cursor: pointer; align-self: end; height: 48px; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
         </form>
+        <!-- ============================================== -->
+        <!-- ============================================== -->
+        <!-- NEW: USER SEARCH RESULTS                       -->
+        <!-- ============================================== -->
+        <% if (userResults && userResults.length > 0) { %>
+            <section class="user-results-section">
+                <h2>Community Members</h2>
+                <div class="user-grid">
+                    <% userResults.forEach(u => { %>
+                        <a href="/users/<%= slugify(u.username) %>" class="user-card">
+                            <img src="<%= u.signedAvatarUrl %>" alt="<%= u.username %>" class="user-card-avatar">
+                            
+                            <div class="user-card-info">
+                                <span class="user-card-name"><%= u.username %></span>
+                                <% if (u.role !== 'member') { %>
+                                    <span class="user-card-role role-<%= u.role %>"><%= u.role %></span>
+                                <% } %>
+                                <div class="user-card-stats">
+                                    <span><i class="fas fa-users"></i> <%= u.followers ? u.followers.length : 0 %></span>
+                                    <span><i class="fas fa-clock"></i> <%= timeAgo(u.lastSeen) %></span>
+                                </div>
+                            </div>
+
+                            <% if (user && user._id.toString() !== u._id.toString()) { %>
+                                <!-- We wrap the button in an object to prevent the 'a' tag click from triggering -->
+                                <object>
+                                    <form action="/users/<%= u._id %>/follow" method="POST" style="margin: 0;">
+                                        <button type="submit" class="follow-btn-small <%= u.isFollowing ? 'following' : '' %>">
+                                            <%= u.isFollowing ? 'Unfollow' : 'Follow' %>
+                                        </button>
+                                    </form>
+                                </object>
+                            <% } %>
+                        </a>
+                    <% }) %>
+                </div>
+            </section>
+        <% } %>
         <!-- ============================================== -->
 
         <!-- Only show the grid if there are results -->
