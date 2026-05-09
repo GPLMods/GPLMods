@@ -15,6 +15,41 @@
         <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
     </div>
 
+<main class="container">
+    <div class="repo-header">
+        <h1>Jailbreak <span>Repositories</span></h1>
+        <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
+    </div>
+
+    <!-- ======== NEW: ADD REPO MASTER SECTION ======== -->
+    <% 
+        const rawDomain = "gplmods.webredirect.org"; 
+        const fullRepoUrl = `https://${rawDomain}/ios-repo`;
+    %>
+    <section class="arch-section" style="border-top: 4px solid var(--gold); text-align: center; background-color: var(--black);">
+        <h2 style="color: var(--white); margin-bottom: 15px;"><i class="fas fa-link" style="color: var(--gold);"></i> Add GPL Mods Repo</h2>
+        <p style="color: var(--silver); margin-bottom: 25px;">Add our repository to your package manager to easily browse and install all available tweaks.</p>
+        
+        <div style="display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 25px;">
+            <%= fullRepoUrl %>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+            <a href="sileo://source/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
+                <i class="fas fa-wind" style="color: #5AC8FA;"></i> Add to Sileo
+            </a>
+            <a href="zbra://sources/add/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
+                <i class="fas fa-horse-head" style="color: #000; background: #fff; padding: 2px; border-radius: 4px;"></i> Add to Zebra
+            </a>
+            <a href="cydia://url/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
+                <i class="fas fa-cube" style="color: #8E8E93;"></i> Add to Cydia
+            </a>
+            <a href="installer://add/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
+                <i class="fas fa-download" style="color: #34C759;"></i> Add to Installer
+            </a>
+        </div>
+    </section>
+
     <!-- ROOTLESS (Modern ARM64) -->
     <section class="arch-section">
         <h2 class="arch-title"><i class="fas fa-mobile-alt" style="color: #34C759;"></i> Rootless Tweaks (Modern ARM64)</h2>

@@ -280,6 +280,13 @@
                 <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" value="<%= file.ipaDirectDownloadUrl || '' %>" placeholder="e.g., https://www.dropbox.com/s/.../app.ipa?dl=1">
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable TrollStore/AltStore install buttons for Premium users. Must be a direct streamable link (like Dropbox).</span>
             </div>
+                <!-- ======== NEW: JAILBREAK PACKAGE ID ======== -->
+                <div class="form-group" id="pkg-id-group" style="display: none; background: rgba(255, 149, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #FF9500; margin-bottom: 25px;">
+                    <label for="iosPackageId" style="color: var(--white);"><i class="fas fa-box-open"></i> Jailbreak Package ID <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
+                    <input type="text" id="iosPackageId" name="iosPackageId" placeholder="e.g., com.spark.snowboard">
+                    <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable direct Sileo/Zebra package installation buttons. Must exactly match the ID in your control file.</span>
+                </div>
+                <!-- =========================================== -->
 
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
                 <fieldset class="form-section">
@@ -626,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
             const ipaLinkGroup = document.getElementById('ipa-link-group');
+            const pkgIdGroup = document.getElementById('pkg-id-group'); // ✅ Added PKG ID reference
 
             const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;
 
@@ -707,11 +715,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(minOsInput) minOsInput.required = false;
             }
 
-            if (selectedPlatform.startsWith('ios')) {
-                if(ipaLinkGroup) ipaLinkGroup.style.display = 'block';
-            } else {
-                if(ipaLinkGroup) ipaLinkGroup.style.display = 'none';
-            }
+            // ✅ SHOW/HIDE LOGIC FOR IOS FIELDS
+            if (ipaLinkGroup) ipaLinkGroup.style.display = (selectedPlatform === 'ios-jailed') ? 'block' : 'none';
+            if (pkgIdGroup) pkgIdGroup.style.display = (selectedPlatform === 'ios-jailbroken') ? 'block' : 'none';
+
         });
 
         // Initialize values safely with proper escaping

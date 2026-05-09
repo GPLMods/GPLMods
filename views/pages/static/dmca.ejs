@@ -82,6 +82,14 @@
     /* Contact Box Styles */
     .contact-box { background: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 30px; text-align: center; }
     .contact-box p { margin-bottom: 5px; font-size: 1em; }
+/* ✅ FIX: Force long emails to wrap on small screens */
+    .contact-box a {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-all;
+        display: inline-block; /* Helps with layout consistency when wrapped */
+        max-width: 100%; /* Ensures it never exceeds the container */
+    }
 
     @media (max-width: 768px) {
         .dmca-page-header h1 { font-size: 2.2em; }
@@ -123,9 +131,18 @@
             <p>You may submit your verified takedown request using the form at the bottom of this page, or by contacting our Designated Copyright Agent directly via email.</p>
 
             <div class="contact-box">
-                <p><strong>For DMCA & Takedown Notices:</strong> <a href="mailto:dmca@gplmods.webredirect.org">dmca@gplmods.webredirect.org</a></p>
-                <p><strong>For Privacy & Legal inquiries:</strong> <a href="mailto:support@gplmods.webredirect.org">support@gplmods.webredirect.org</a></p>
-                <p><strong>For General Help:</strong> <a href="mailto:help@gplmods.webredirect.org">help@gplmods.webredirect.org</a></p>
+                <p>
+                    <strong style="display: block; margin-bottom: 5px;">For DMCA & Takedown Notices:</strong> 
+                    <a href="mailto:dmca@gplmods.webredirect.org">dmca@gplmods.webredirect.org</a>
+                </p>
+                <p>
+                    <strong style="display: block; margin-bottom: 5px;">For Privacy & Legal inquiries:</strong> 
+                    <a href="mailto:support@gplmods.webredirect.org">support@gplmods.webredirect.org</a>
+                </p>
+                <p>
+                    <strong style="display: block; margin-bottom: 5px;">For General Help:</strong> 
+                    <a href="mailto:help@gplmods.webredirect.org">help@gplmods.webredirect.org</a>
+                </p>
                 
                 <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
                 

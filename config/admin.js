@@ -239,7 +239,7 @@ async function createAdminRouter() {
                     listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'category'],
                     editProperties: [
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
-                        'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion',
+                        'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion', 'iosPackageId',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'architectures', 'minOsVersion', 
                         'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
@@ -252,7 +252,7 @@ async function createAdminRouter() {
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 'isEditorsChoice', 'editorsChoiceDescription',
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 'architectures', 'minOsVersion',  
-                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'ipaDirectDownloadUrl',
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'ipaDirectDownloadUrl', 'iosPackageId',
                         // ✅ NEW: Added Variant fields to show view
                         'isVariant', 'masterFile'
                     ],
@@ -262,6 +262,9 @@ async function createAdminRouter() {
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, // Ensure the new field is here too
+                        iosPackageId: {
+                        description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY. Enter the exact Package ID (e.g., com.gplmods.tweakname) to enable 1-Click tweak installation.'
+                    },
                     isEditorsChoice: {
                         description: 'Check this to feature this mod in the Editor\'s Choice banner at the top of the homepage and category pages.'
                     },

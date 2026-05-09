@@ -334,27 +334,29 @@
 
                             <% } else if (file.category === 'ios-jailbroken') { %>
                                 <!-- JAILBROKEN REPO / DEB APPS -->
-                                <a href="sileo://source/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-wind" style="color: #5AC8FA;"></i> Sileo
-                                </a>
-                                <a href="zbra://sources/add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-horse-head" style="color: #000000; background: #fff; padding: 2px; border-radius: 4px;"></i> Zebra
-                                </a>
-                                <a href="cydia://url/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-cube" style="color: #8E8E93;"></i> Cydia
-                                </a>
-                                <a href="purepkg://source/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-box-open" style="color: #FF2D55;"></i> Pure PKG
-                                </a>
-                                <a href="saily://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-shopping-bag" style="color: #FF9500;"></i> Saily
-                                </a>
-                                <a href="installer://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-download" style="color: #34C759;"></i> Installer 5
-                                </a>
-                                <a href="postbox://add/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
-                                    <i class="fas fa-mailbox" style="color: #FF3B30;"></i> PostBox
-                                </a>
+                                <% 
+                                   // We dynamically grab the domain name
+                                   const hostDomain = "https://gplmods.webredirect.org/ios-repo"; 
+                                %>
+
+                                <% if (file.iosPackageId) { %>
+                                    <!-- They provided a Package ID! Show Direct Tweak Links -->
+                                    <a href="sileo://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                        <i class="fas fa-wind" style="color: #5AC8FA;"></i> Sileo
+                                    </a>
+                                    <a href="zbra://package/<%= file.iosPackageId %>?source=<%= hostDomain %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                        <i class="fas fa-horse-head" style="color: #000000; background: #fff; padding: 2px; border-radius: 4px;"></i> Zebra
+                                    </a>
+                                    <a href="cydia://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                        <i class="fas fa-cube" style="color: #8E8E93;"></i> Cydia
+                                    </a>
+                                    <a href="installer://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
+                                        <i class="fas fa-download" style="color: #34C759;"></i> Installer
+                                    </a>
+                                <% } else { %>
+                                    <!-- Fallback: Just show basic info if they forgot the ID -->
+                                    <p style="color: var(--silver); font-size: 0.85em; grid-column: 1 / -1; margin: 0;">Add our repo to your package manager to install this tweak.</p>
+                                <% } %>
                             <% } %>
                         </div>
 

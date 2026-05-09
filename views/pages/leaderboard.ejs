@@ -5,16 +5,35 @@
     .lb-header h1 { font-size: 3em; color: var(--white); }
     .lb-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     
-    .lb-controls { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-bottom: 40px; }
+    .lb-controls { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-bottom: 20px; }
     
     .lb-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; background: var(--dark-gray); padding: 10px; border-radius: 30px; border: 1px solid #333; }
     .lb-tab { padding: 10px 25px; border-radius: 20px; color: var(--silver); text-decoration: none; font-weight: bold; transition: all 0.3s ease; }
     .lb-tab:hover { color: var(--white); }
     .lb-tab.active { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
 
-    .time-tabs { display: flex; gap: 5px; }
+    .time-tabs { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
     .time-tab { padding: 5px 15px; border-radius: 15px; border: 1px solid #444; color: var(--silver); text-decoration: none; font-size: 0.9em; transition: all 0.2s; }
     .time-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); }
+
+    /* --- NEW: Stats Summary Bar --- */
+    .lb-stats-summary {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 15px;
+        background: rgba(255, 215, 0, 0.05);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        border-radius: 10px;
+        color: var(--silver);
+        font-weight: 600;
+        display: inline-block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .lb-stats-summary strong {
+        color: var(--gold);
+        font-size: 1.2em;
+    }
 
     .lb-container { max-width: 900px; margin: 0 auto 60px auto; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; padding: 20px; }
     
@@ -22,29 +41,98 @@
     .lb-item:hover { background: #222; }
     .lb-item:last-child { border-bottom: none; }
 
-    /* ✅ FIX: Adjusted rank container to fit the Lottie animation */
     .lb-rank { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; color: #555; }
     
-    /* Removed the old text-color medals, adding glowing borders for top 3 instead */
+    /* Avatar Base Styles */
     .lb-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 20px; border: 2px solid #444; }
-    .rank-1 .lb-avatar { border-color: #FFD700; box-shadow: 0 0 15px var(--glow-gold); }
-    .rank-2 .lb-avatar { border-color: #C0C0C0; box-shadow: 0 0 15px rgba(192,192,192,0.4); }
-    .rank-3 .lb-avatar { border-color: #CD7F32; box-shadow: 0 0 15px rgba(205,127,50,0.4); }
+    
+    /* Top 10 Colored Borders */
+    .rank-1 .lb-avatar { border-color: #FFD700; box-shadow: 0 0 15px var(--glow-gold); } /* Gold */
+    .rank-2 .lb-avatar { border-color: #C0C0C0; box-shadow: 0 0 15px rgba(192,192,192,0.4); } /* Silver */
+    .rank-3 .lb-avatar { border-color: #CD7F32; box-shadow: 0 0 15px rgba(205,127,50,0.4); } /* Bronze */
+    
+    /* Ranks 4-10: Custom Gradients/Colors based on rank */
+    .rank-4 .lb-avatar { border-color: #ff5252; } /* Red */
+    .rank-5 .lb-avatar { border-color: #e040fb; } /* Purple */
+    .rank-6 .lb-avatar { border-color: #448aff; } /* Blue */
+    .rank-7 .lb-avatar { border-color: #69f0ae; } /* Green */
+    .rank-8 .lb-avatar { border-color: #ffab40; } /* Orange */
+    .rank-9 .lb-avatar { border-color: #18ffff; } /* Cyan */
+    .rank-10 .lb-avatar { border-color: #b2ff59; } /* Lime */
 
-    .lb-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 20px; border: 2px solid #444; }
-    .rank-1 .lb-avatar { border-color: #FFD700; box-shadow: 0 0 10px var(--glow-gold); }
-
-    .lb-info { flex-grow: 1; display: flex; flex-direction: column; }
-    .lb-name { font-size: 1.2em; font-weight: bold; color: var(--white); }
-    .lb-subtext { font-size: 0.85em; color: var(--silver); }
+    /* --- FIX: Truncating Long Names --- */
+    .lb-info { 
+        flex-grow: 1; 
+        display: flex; 
+        flex-direction: column; 
+        /* Crucial for truncation to work in flexbox */
+        min-width: 0; 
+        margin-right: 15px; 
+    }
+    .lb-name-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        /* Keep badges from being crushed by long names */
+        width: 100%;
+    }
+    .lb-name { 
+        font-size: 1.2em; 
+        font-weight: bold; 
+        color: var(--white); 
+        /* The Truncation Magic */
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        /* Allow it to shrink if needed, but not grow infinitely */
+        flex-shrink: 1;
+    }
+    .lb-subtext { 
+        font-size: 0.85em; 
+        color: var(--silver); 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+    }
+    
+    .lb-score-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        /* Prevent score from shrinking so it's always readable */
+        flex-shrink: 0;
+    }
     
     .lb-score { font-size: 1.3em; font-weight: bold; color: var(--gold); }
-    .lb-score-label { font-size: 0.7em; color: var(--silver); text-transform: uppercase; margin-left: 5px; }
+    .lb-score-label { font-size: 0.7em; color: var(--silver); text-transform: uppercase; }
 
-    .role-badge { font-size: 0.7em; padding: 2px 8px; border-radius: 10px; margin-left: 10px; background: #333; color: var(--silver); text-transform: uppercase; }
-    .role-admin { background: var(--red); color: white; }
-    .role-distributor { background: var(--blue); color: white; }
+    .role-badge { 
+        font-size: 0.7em; 
+        padding: 2px 8px; 
+        border-radius: 10px; 
+        background: #333; 
+        color: var(--silver); 
+        text-transform: uppercase; 
+        /* Prevent badge from shrinking */
+        flex-shrink: 0;
+    }
+    .role-admin { background: var(--red); color: white; border: 1px solid var(--red); }
+    .role-distributor { background: var(--blue); color: white; border: 1px solid var(--blue); }
 
+    /* Mobile Adjustments */
+    @media (max-width: 480px) {
+        .lb-rank { width: 40px; margin-right: 10px; }
+        .lb-avatar { width: 40px; height: 40px; margin-right: 10px; }
+        .lb-name { font-size: 1.1em; }
+        .lb-score { font-size: 1.1em; }
+        .role-badge { padding: 2px 5px; font-size: 0.6em; }
+        
+        /* Make Lottie animations slightly smaller on mobile to fit */
+        .lb-rank lottie-player {
+            width: 45px !important;
+            height: 45px !important;
+        }
+    }
 </style>
 
 <main>
@@ -53,7 +141,7 @@
         <p style="color: var(--silver);">The top 100 creators, files, and supporters in the GPL Community.</p>
     </div>
 
-    <div class="container">
+    <div class="container" style="text-align: center;">
         <div class="lb-controls">
             <!-- Category Tabs -->
             <div class="lb-tabs">
@@ -74,20 +162,25 @@
             <% } %>
         </div>
 
-        <div class="lb-container">
+        <!-- NEW: Total Count Summary -->
+        <div class="lb-stats-summary">
+            Out of <strong><%= totalCount.toLocaleString() %></strong> <%= totalLabel %>
+        </div>
+
+        <div class="lb-container" style="text-align: left;">
             <% if (results && results.length > 0) { %>
                 <% results.forEach((item, index) => { %>
                     <% const rank = index + 1; %>
                     
                     <!-- Link to user profile or mod page -->
-                    <% const itemLink = item.link ? item.link : `/users/${item.name}`; %>
+                    <% const itemLink = item.link ? item.link : `/users/${slugify(item.name)}`; %>
 
                     <a href="<%= itemLink %>" class="lb-item rank-<%= rank %>">
                         
                         <!-- ======== LOTTIE ANIMATED RANK BADGES ======== -->
                         <div class="lb-rank">
                             <% if(rank <= 10) { %>
-                                <!-- For Ranks 1 to 10, it loads rank-1.json, rank-2.json, etc. -->
+                                <!-- Ensure you have rank-1.json through rank-10.json in your folder -->
                                 <lottie-player 
                                     src="/animations/rank-<%= rank %>.json" 
                                     background="transparent" 
@@ -106,21 +199,25 @@
                         <img src="<%= item.avatar %>" alt="Avatar" class="lb-avatar">
                         
                         <div class="lb-info">
-                            <div style="display: flex; align-items: center;">
-                                <span class="lb-name"><%= item.name %></span>
+                            <div class="lb-name-wrapper">
+                                <!-- The name is now truncatable -->
+                                <span class="lb-name" title="<%= item.name %>"><%= item.name %></span>
+                                
                                 <% if (item.role && item.role !== 'member') { %>
                                     <span class="role-badge role-<%= item.role %>"><%= item.role %></span>
                                 <% } %>
                             </div>
-                            <% if (item.subtext) { %><span class="lb-subtext"><%= item.subtext %></span><% } %>
+                            <% if (item.subtext) { %><span class="lb-subtext" title="<%= item.subtext %>"><%= item.subtext %></span><% } %>
                         </div>
                         
-                        <div class="lb-score">
-                            <%= item.score %>
+                        <div class="lb-score-container">
+                            <div class="lb-score">
+                                <%= item.score %>
+                            </div>
                             <% if (!item.isCurrency) { %>
-                                <span class="lb-score-label">
+                                <div class="lb-score-label">
                                     <%= currentCategory === 'uploaders' ? 'Mods' : (currentCategory === 'downloaded' ? 'DLs' : 'Followers') %>
-                                </span>
+                                </div>
                             <% } %>
                         </div>
                     </a>

@@ -11,8 +11,26 @@
     /* Repo Box */
     .repo-box { background: var(--black); border: 1px solid var(--gold); border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center; box-shadow: 0 5px 20px rgba(255, 215, 0, 0.05); }
     .repo-box h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.3em; }
-    .repo-url-display { display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 20px; }
     
+    .repo-url-display { 
+        display: inline-block; 
+        background: #111; 
+        border: 1px dashed #555; 
+        color: var(--silver); 
+        padding: 10px 20px; 
+        border-radius: 8px; 
+        font-family: monospace; 
+        font-size: 1.1em; 
+        letter-spacing: 1px; 
+        user-select: all; 
+        margin-bottom: 20px;
+        
+        /* ✅ FIX: Force long URLs to wrap onto the next line */
+        word-break: break-all; 
+        
+        /* Prevent the box from getting wider than its container */
+        max-width: 100%; 
+    }
     .repo-buttons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
     .repo-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #1a1a1a; color: var(--silver); border: 1px solid #444; padding: 12px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: all 0.3s ease; }
     .repo-btn:hover { background: var(--gold); color: var(--black); border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 5px 15px var(--glow-gold); }
@@ -41,28 +59,31 @@
 
         <div class="repo-box">
             <h3>Add iOS Source</h3>
-            <div class="repo-url-display"><%= fullRepoUrl %>/ios-repo</div>
+            
+            <!-- ✅ FIX: Pointing exactly to the new apps.json file -->
+            <div class="repo-url-display"><%= fullRepoUrl %>/ios-repo/apps.json</div>
             
             <div class="repo-buttons-grid">
-                <a href="altstore://source?url=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <!-- ✅ FIX: Updated all hrefs to point to apps.json -->
+                <a href="altstore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-box" style="color: #34C759;"></i> Add to AltStore
                 </a>
-                <a href="sidestore://source?url=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="sidestore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-store" style="color: #5E5CE6;"></i> Add to SideStore
                 </a>
-                <a href="scarlet://repo=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="scarlet://repo=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-spider" style="color: #FF3B30;"></i> Add to Scarlet
                 </a>
-                <a href="esign://import?url=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="esign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-pen-nib" style="color: #FF2D55;"></i> Add to E-Sign
                 </a>
-                <a href="feather://import/<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="feather://import/<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-feather-alt" style="color: #FF9500;"></i> Add to Feather
                 </a>
-                <a href="livecontainer://source?url=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="livecontainer://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-box-open" style="color: var(--gold);"></i> Add to LiveContainer
                 </a>
-                <a href="ksign://import?url=<%= fullRepoUrl %>/ios-repo" class="repo-btn">
+                <a href="ksign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
                     <i class="fas fa-signature" style="color: #AF52DE;"></i> Add to Ksign
                 </a>
             </div>
@@ -81,22 +102,37 @@
         </div>
     </section>
 
-    <!-- ============================================== -->
+<!-- ============================================== -->
     <!-- ANDROID F-DROID REPO                           -->
     <!-- ============================================== -->
     <section class="platform-section" style="border-top: 4px solid var(--android-color);">
-        <h2 class="platform-title"><i class="fab fa-android" style="color: var(--android-color);"></i> Android F-Droid Repository</h2>
-        <p style="color: var(--silver); margin-bottom: 20px; font-size: 1.05em;">Add our custom repository to F-Droid, Droid-ify, or Aurora Store to manage your Android mods just like native apps.</p>
+        <h2 class="platform-title"><i class="fab fa-android" style="color: var(--android-color);"></i> Android Mod Repository</h2>
+        
+        <!-- Updated Explanation -->
+        <p style="color: var(--silver); margin-bottom: 15px; font-size: 1.05em;">
+            Manage your Android mods just like native apps! Add our custom repository to a modern F-Droid client to receive automatic updates.
+        </p>
+
+        <!-- Warning Note -->
+        <div style="background-color: rgba(255, 215, 0, 0.1); border-left: 4px solid var(--gold); padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: left;">
+            <p style="margin: 0; color: var(--silver); font-size: 0.9em;">
+                <strong style="color: var(--gold);"><i class="fas fa-exclamation-triangle"></i> Important Note for Android Users:</strong><br>
+                Because GPL Mods generates its library dynamically in real-time, our repository format works best with modern, third-party F-Droid clients. 
+                <strong style="color: var(--white);">We highly recommend using <a href="https://github.com/Droid-ify/client" target="_blank" style="color: var(--android-color);">Droid-ify</a> or <a href="https://github.com/NeoApplications/Neo-Store" target="_blank" style="color: var(--android-color);">Neo Store</a></strong>. 
+                The official, legacy F-Droid app may reject the repository due to strict static signature requirements.
+            </p>
+        </div>
 
         <div class="repo-box" style="border-color: var(--android-color);">
-            <h3 style="color: var(--android-color);">Add F-Droid Source</h3>
-            <!-- F-Droid repos usually point to an fdroid/repo directory -->
+            <h3 style="color: var(--android-color);">Add Android Source</h3>
+            
+            <!-- The Dynamic Repo URL -->
             <div class="repo-url-display"><%= fullRepoUrl %>/fdroid/repo</div>
             
             <div class="repo-buttons-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <!-- Standard FDroid scheme -->
                 <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn" style="border-color: var(--android-color);">
-                    <i class="fas fa-robot" style="color: var(--android-color);"></i> Add to F-Droid
+                    <i class="fas fa-robot" style="color: var(--android-color);"></i> Add to Droid-ify / Neo Store
                 </a>
             </div>
         </div>
@@ -105,7 +141,6 @@
         <div class="mod-grid">
             <% if (androidFiles.length > 0) { %>
                 <% androidFiles.forEach(file => { %>
-                    <!-- REPLACE WITH YOUR UNIVERSAL MOD CARD CODE OR INCLUDE -->
                     <%- include('../partials/mod-card', { file: file }) %>
                 <% }) %>
             <% } else { %>
