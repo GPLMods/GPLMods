@@ -101,6 +101,9 @@ async function createAdminRouter() {
     // ✅ FIX 1: We define isProduction properly here. 
     // Setting it to 'true' forces AdminJS into production mode.
     const isProduction = true; 
+    // --- Define Shared Folders ---
+    const marketingNav = { name: 'Marketing', icon: 'Email' };
+    const docsNav = { name: 'Documentation', icon: 'Catalog' };
 
     // Configure AdminJS
     const adminJsOptions = {
@@ -186,14 +189,16 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
 
-        resources: [
-                  // USER MANAGEMENT
+                resources:[
+            // ---------------------------------
+            // USER MANAGEMENT
+            // ---------------------------------
             {
                 resource: User,
                 options: {
-                    navigation: { icon: 'Users' }, 
-                    listProperties: ['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    navigation: { icon: 'UserMultiple' }, // ✅ Valid Carbon Icon
+                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
+                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
@@ -202,13 +207,8 @@ async function createAdminRouter() {
                         'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
                         'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
                         'socialLinks.youtube': { description: 'e.g., https://youtube.com/...' },
-                        // ✅ FIX: Use ImagePreview for avatars
                         profileImageKey: {
-                            components: {
-                                list: Components.AvatarCell,
-                                show: Components.AvatarCell,
-                            },
-                            // Ensure it's hidden on the edit form if you don't want them editing the raw key manually
+                            components: { list: Components.AvatarCell, show: Components.AvatarCell },
                             isVisible: { edit: false, filter: false, list: true, show: true } 
                         }
                     },
@@ -230,30 +230,29 @@ async function createAdminRouter() {
                 }
             },
             
+            // ---------------------------------
             // FILE (MOD) MANAGEMENT
+            // ---------------------------------
             {
-                 resource: File,
+                resource: File,
                 options: {
-                    navigation: { icon: 'FileCode' },
-                    // ✅ NEW: Added 'isVariant' to the list view
-                    listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
-                    editProperties: [
+                    navigation: { icon: 'Document' }, // ✅ Valid Carbon Icon
+                    listProperties:['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
+                    editProperties:[
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion', 'iosPackageId',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'architectures', 'minOsVersion', 
                         'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
                         'isMultiPart', 'downloadParts', 'installationInstructions','directDownloadUrl',
-                        // ✅ NEW: Added Variant fields to edit view
                         'isVariant', 'showInRepo', 'masterFile'
                     ],
-                    showProperties: [
+                    showProperties:[
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 'isEditorsChoice', 'editorsChoiceDescription',
-                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
+                        'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl',
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 'architectures', 'minOsVersion',  
                         'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'directDownloadUrl', 'iosPackageId',
-                        // ✅ NEW: Added Variant fields to show view
                         'isVariant', 'showInRepo', 'masterFile'
                     ],
                     properties: {
@@ -261,106 +260,57 @@ async function createAdminRouter() {
                         officialDescription: { type: 'richtext' },
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
-                        importantNote: { type: 'richtext' }, // Ensure the new field is here too
-                        showInRepo: {
-                        description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.'
-                    },
-                        iosPackageId: {
-                        description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY. Enter the exact Package ID (e.g., com.gplmods.tweakname) to enable 1-Click tweak installation.'
-                    },
-                    isEditorsChoice: {
-                        description: 'Check this to feature this mod in the Editor\'s Choice banner at the top of the homepage and category pages.'
-                    },
-                    editorsChoiceDescription: {
-                        type: 'textarea',
-                        description: '(Optional) A short, catchy description for the banner. If left blank, it will use the start of the main mod description.'
-                    },
+                        importantNote: { type: 'richtext' }, 
+                        showInRepo: { description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.' },
+                        iosPackageId: { description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY.' },
+                        isEditorsChoice: { description: 'Check this to feature this mod in the Editor\'s Choice banner.' },
+                        editorsChoiceDescription: { type: 'textarea', description: '(Optional) A short, catchy description.' },
                         externalDownloadUrl: { description: 'Paste direct download link from Google Drive, Dropbox, Mega, etc.' },
-                        alternativeLinks: { isArray: true, description: 'Add alternative download mirrors (e.g., Mega, Google Drive) if the main link fails.' },
+                        alternativeLinks: { isArray: true, description: 'Add alternative download mirrors.' },
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
-                    customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
-                        directDownloadUrl: { 
-                            description: 'Optional: Paste a true direct link (like Dropbox with ?dl=1). Enables F-Droid, Sileo, AltStore 1-click installs and fast direct downloads for Windows/WordPress.' 
-                        },
-                    downloadParts: {
-                        isArray: true,
-                        description: 'Add individual parts. You can provide a custom ad link or up to 2 mirrors per part.'
-                    },
+                        customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here.' },
+                        directDownloadUrl: { description: 'Optional: Paste a true direct link (like Dropbox with ?dl=1).' },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
-                            isVisible: {
-                               edit: (record) => record.params.status === 'rejected',
-                               list: false, filter: false, show: true
-                            }
+                            isVisible: { edit: (record) => record.params.status === 'rejected', list: false, filter: false, show: true }
                         },
                         iconKey: { 
                             description: 'Paste a direct image URL (https://...) OR a Backblaze B2 key.',
-                            // ✅ FIX: Use ImagePreview for mod icons
-                            components: {
-                                list: Components.ImagePreview,
-                                show: Components.ImagePreview,
-                            }
+                            components: { list: Components.ImagePreview, show: Components.ImagePreview }
                         },
-                                                isMultiPart: {
-                            description: 'Check this box if the file is split into multiple download links.'
-                        },
-                        downloadParts: {
-                            isArray: true,
-                            description: 'Add the individual links here (e.g., Part 1, Part 2).'
-                        },
-                        // Tell AdminJS about the new nested field
-                        'downloadParts.partVirusTotalId': {
-                            description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash for THIS SPECIFIC PART.'
-                        },
-                        // Hide the raw stats from the edit form to keep it clean
+                        isMultiPart: { description: 'Check this box if the file is split into multiple download links.' },
+                        downloadParts: { isArray: true, description: 'Add the individual links here.' },
+                        'downloadParts.partVirusTotalId': { description: 'Paste the FULL VirusTotal URL OR SHA-256 Hash.' },
                         'downloadParts.partVirusTotalScanDate': { isVisible: { edit: false, show: true, list: false } },
                         'downloadParts.partVirusTotalPositiveCount': { isVisible: { edit: false, show: true, list: false } },
                         'downloadParts.partVirusTotalTotalScans': { isVisible: { edit: false, show: true, list: false } },
-                        
-                        // ======== NEW: VARIANT LOGIC FOR ADMINJS ========
                         isVariant: {
-                            // Make it a visually distinct pill/badge in the list view
-                            components: {
-                                // ✅ FIX: Use the pre-loaded component from the singleton!
-                                list: Components.VariantBadge, 
-                            },
-                            // Prevent admins from accidentally un-checking it and breaking the DB structure
+                            components: { list: Components.VariantBadge },
                             isDisabled: true 
                         },
                         masterFile: {
                             description: 'If this is a Variant, this is the ID of the original Master App it belongs to.',
-                            isDisabled: true // Prevent admins from re-assigning a variant to a different master file
+                            isDisabled: true 
                         }
-                        // ================================================
                     },
                     actions: {
                         new: { 
                             isAccessible: true,
                             before: async (request) => {
-                                // 1. Clean the main VT ID
-                                if (request.payload.virusTotalId) {
-                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
-                                }
-                                
-                                // 2. Clean ALL the multi-part VT IDs
-                                // AdminJS sends arrays as flat objects: {'downloadParts.0.partVirusTotalId': '...', 'downloadParts.1...': '...'}
+                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
                                 Object.keys(request.payload).forEach(key => {
                                     if (key.startsWith('downloadParts.') && key.endsWith('.partVirusTotalId')) {
                                         request.payload[key] = extractVTId(request.payload[key]);
                                     }
                                 });
-                                
                                 return request;
                             }
                         },
                         edit: { 
                             isAccessible: true,
                             before: async (request) => {
-                                // (Copy the exact same logic from 'new.before' here)
-                                if (request.payload.virusTotalId) {
-                                    request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
-                                }
+                                if (request.payload.virusTotalId) request.payload.virusTotalId = extractVTId(request.payload.virusTotalId);
                                 Object.keys(request.payload).forEach(key => {
                                     if (key.startsWith('downloadParts.') && key.endsWith('.partVirusTotalId')) {
                                         request.payload[key] = extractVTId(request.payload[key]);
@@ -369,74 +319,47 @@ async function createAdminRouter() {
                                 return request;
                             }
                         },
-                                                // --- UPDATED: Admin Delete Mod Action (Deletes from Cloud too) ---
                         delete: { 
                             isAccessible: true,
                             before: async (request, context) => {
-                                // 1. We must fetch the record BEFORE it gets deleted to get the keys
                                 const recordId = request.params.recordId;
                                 const fileToDelete = await File.findById(recordId).populate('olderVersions');
-                                
                                 if (fileToDelete) {
-                                    // 2. Delete main files from B2
                                     await deleteFromB2Admin(fileToDelete.fileKey);
                                     await deleteFromB2Admin(fileToDelete.iconKey);
                                     if (fileToDelete.screenshotKeys) {
-                                        for (const key of fileToDelete.screenshotKeys) {
-                                            await deleteFromB2Admin(key);
-                                        }
+                                        for (const key of fileToDelete.screenshotKeys) await deleteFromB2Admin(key);
                                     }
-                                    
-                                    // 3. Delete older versions from B2 and DB
                                     if (fileToDelete.olderVersions) {
                                         for (const oldV of fileToDelete.olderVersions) {
                                             await deleteFromB2Admin(oldV.fileKey);
                                             await File.findByIdAndDelete(oldV._id);
                                         }
                                     }
-                                    
-                                    // 4. Clean up related Reviews and Reports
                                     await Review.deleteMany({ file: recordId });
                                     await Report.updateMany({ file: recordId }, { status: 'resolved' });
                                 }
-                                
-                                // 5. Return the request so AdminJS can proceed with deleting the main DB record
                                 return request;
                             }
                         },
-                        
-                        // ✅ FIX: Update Custom Actions to use the Redirect Component
                         viewOnSite: {
-                            actionType: 'record',
-                            icon: 'View',
-                            component: Components.ActionRedirect, // <--- ADD THIS
+                            actionType: 'record', icon: 'View', component: Components.ActionRedirect,
                             handler: async (request, response, context) => {
-                                // We pass the redirect URL inside the record params so the component can read it
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = `/mods/${context.record.params._id}`;
-                                return {
-                                    record: updatedRecord,
-                                    notice: { message: 'Opening mod page...', type: 'success' }
-                                };
+                                return { record: updatedRecord, notice: { message: 'Opening mod page...', type: 'success' } };
                             }
                         },
                         testDownload: {
-                            actionType: 'record',
-                            icon: 'Download',
-                            component: Components.ActionRedirect, // <--- ADD THIS
+                            actionType: 'record', icon: 'Download', component: Components.ActionRedirect,
                             handler: async (request, response, context) => {
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = `/download-file/${context.record.params._id}`;
-                                return {
-                                    record: updatedRecord,
-                                    notice: { message: 'Initiating test download...', type: 'success' }
-                                };
+                                return { record: updatedRecord, notice: { message: 'Initiating test download...', type: 'success' } };
                             }
                         },
                         viewVirusTotal: {
-                            actionType: 'record',
-                            icon: 'Shield',
-                            component: Components.ActionRedirect, // <--- ADD THIS
+                            actionType: 'record', icon: 'Security', component: Components.ActionRedirect,
                             handler: async (request, response, context) => {
                                 const vtHash = context.record.params.virusTotalId || "";
                                 const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
@@ -447,32 +370,26 @@ async function createAdminRouter() {
                                 
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = vtUrl;
-                                
-                                return {
-                                    record: updatedRecord,
-                                    notice: { message: 'Opening VirusTotal report...', type: 'success' }
-                                 };
+                                return { record: updatedRecord, notice: { message: 'Opening VirusTotal report...', type: 'success' } };
                             }
                         }
                     } 
                 } 
             }, 
+
+            // ---------------------------------
             // GLOBAL SITE CONTROLS
+            // ---------------------------------
             {
                 resource: SiteState,
                 options: {
-                    navigation: { icon: 'Settings' },
+                    navigation: { icon: 'Settings' }, // ✅ Valid Carbon Icon
                     actions: {
-                        new: {
-                            isAccessible: async () => {
-                                const count = await SiteState.countDocuments();
-                                return count === 0;
-                            }
-                        },
+                        new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
                         delete: { isAccessible: false } 
                     },
-                    listProperties: ['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
-                    editProperties: [
+                    listProperties:['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
+                    editProperties:[
                         'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
                         'maintenanceTitle', 'maintenanceMessage', 
                         'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
@@ -481,62 +398,54 @@ async function createAdminRouter() {
                         maintenanceMessage: { type: 'richtext' },
                         unavailableMessage: { type: 'richtext' },
                         targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
-                       adNetworkBaseUrl: {description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
+                        adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
                     }
                 }
             },
-                    // ---------------------------------
-        // NEWSLETTER & MARKETING
-        // ---------------------------------
-        {
-            resource: Subscriber,
-            options: {
-                listProperties: ['email', 'isSubscribed', 'source', 'createdAt'],
-                // Admins shouldn't really edit subscribers manually, maybe just delete or toggle status
-            }
-        },
-        {
-            resource: NewsletterCampaign,
-            options: {
-                listProperties: ['subject', 'audience', 'template', 'status', 'sentCount', 'createdAt'],
-                showProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status', 'sentCount', 'createdAt'],
-                editProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status'],
-                properties: {
-                    content: { type: 'richtext', description: 'The main body of the email. HTML is supported.' },
-                    audience: { description: 'WARNING: Selecting anything other than "test-admin-only" will send emails when status is changed to "sending".' }
-                },
-                actions: {
-                    // We need a custom hook to actually SEND the emails when the admin changes status to 'sending'
-                    edit: {
-                        after: async (response, request, context) => {
-                            // Check if the admin just updated the status to 'sending'
-                            if (request.method === 'post' && request.payload.status === 'sending' && context.record.params.status === 'draft') {
-                                
-                                // --- TRIGGER THE EMAIL SENDING PROCESS ---
-                                // We call a background utility function so AdminJS doesn't hang
-                                // waiting for 10,000 emails to send.
-                                const { processNewsletterCampaign } = require('../utils/mailer');
-                                processNewsletterCampaign(context.record.params._id);
-                                
-                                // Update the response notice
-                                response.notice = {
-                                    message: 'Campaign has been queued for sending. It will process in the background.',
-                                    type: 'success',
-                                };
+
+            // ---------------------------------
+            // NEWSLETTER & MARKETING
+            // ---------------------------------
+            {
+                resource: Subscriber,
+                options: {
+                    navigation: marketingNav, // ✅ Groups into "Marketing" folder with Email icon
+                    listProperties: ['email', 'isSubscribed', 'source', 'createdAt'],
+                }
+            },
+            {
+                resource: NewsletterCampaign,
+                options: {
+                    navigation: marketingNav, // ✅ Groups into "Marketing" folder with Email icon
+                    listProperties:['subject', 'audience', 'template', 'status', 'sentCount', 'createdAt'],
+                    showProperties:['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status', 'sentCount', 'createdAt'],
+                    editProperties:['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status'],
+                    properties: {
+                        content: { type: 'richtext', description: 'The main body of the email. HTML is supported.' },
+                        audience: { description: 'WARNING: Selecting anything other than "test-admin-only" will send emails when status is changed to "sending".' }
+                    },
+                    actions: {
+                        edit: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post' && request.payload.status === 'sending' && context.record.params.status === 'draft') {
+                                    const { processNewsletterCampaign } = require('../utils/mailer');
+                                    processNewsletterCampaign(context.record.params._id);
+                                    response.notice = { message: 'Campaign queued for sending.', type: 'success' };
+                                }
+                                return response;
                             }
-                            return response;
                         }
                     }
                 }
-            }
-        },
-        // ---------------------------------
-        // DOCUMENTATION (CUSTOM WIKI)
-        // ---------------------------------
-{
+            },
+
+            // ---------------------------------
+            // DOCUMENTATION (CUSTOM WIKI)
+            // ---------------------------------
+            {
                 resource: DocCategory,
                 options: {
-                    navigation: { name: 'Documentation', icon: 'Book' },
+                    navigation: docsNav, // ✅ Groups into "Documentation" folder with Catalog icon
                     listProperties: ['name', 'order', 'createdAt'],
                     editProperties:['name', 'order']
                 }
@@ -544,94 +453,83 @@ async function createAdminRouter() {
             {
                 resource: DocPage,
                 options: {
-                    navigation: { name: 'Documentation', icon: 'Document' },
+                    navigation: docsNav, // ✅ Groups into "Documentation" folder with Catalog icon
                     listProperties:['title', 'category', 'order', 'slug'],
-                    // Exclude slug from edit so it's generated automatically
                     editProperties:['title', 'category', 'order', 'content'], 
                     showProperties:['title', 'category', 'order', 'slug', 'content', 'createdAt'],
                     properties: {
-                        content: { 
-                            type: 'richtext' // Essential for writing the docs
-                        },
-                        category: {
-                            // AdminJS will automatically create a dropdown for the reference field
-                            isSortable: true
-                        }
+                        content: { type: 'richtext' },
+                        category: { isSortable: true }
                     },
                     actions: {
                         new: {
-                            // ✅ FIX: Auto-generate the slug before saving a new page
                             before: async (request) => {
                                 if (request.payload.title) {
-                                    // Use a simple slugify regex
-                                    let baseSlug = request.payload.title.toString().toLowerCase()
-                                        .replace(/\s+/g, '-')
-                                        .replace(/[^\w\-]+/g, '')
-                                        .replace(/\-\-+/g, '-')
-                                        .replace(/^-+/, '')
-                                        .replace(/-+$/, '');
-                                    
-                                    request.payload.slug = baseSlug;
+                                    request.payload.slug = request.payload.title.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
                                 }
                                 return request;
                             }
                         },
-                                                edit: {
-                            // ✅ FIX: Auto-update the slug if the title changes
+                        edit: {
                             before: async (request) => {
                                 if (request.payload.title) {
-                                    let baseSlug = request.payload.title.toString().toLowerCase()
-                                        .replace(/\s+/g, '-')
-                                        .replace(/[^\w\-]+/g, '')
-                                        .replace(/\-\-+/g, '-')
-                                        .replace(/^-+/, '')
-                                        .replace(/-+$/, '');
-                                    
-                                    request.payload.slug = baseSlug;
+                                    request.payload.slug = request.payload.title.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
                                 }
                                 return request;
+                            }
+                        }
                     }
                 }
-            }
-        }
-        },
+            },
+
+            // ---------------------------------
             // DIRECT USER NOTIFICATIONS
+            // ---------------------------------
             {
                 resource: UserNotification,
                 options: {
-                    navigation: { icon: 'Bell' },
-                    listProperties: ['user', 'title', 'type', 'isRead', 'createdAt'],
-                    showProperties: ['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
-                    editProperties: ['user', 'title', 'message', 'type'], 
+                    navigation: { icon: 'Notification' }, // ✅ Valid Carbon Icon
+                    listProperties:['user', 'title', 'type', 'isRead', 'createdAt'],
+                    showProperties:['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
+                    editProperties:['user', 'title', 'message', 'type'], 
                     properties: { message: { type: 'textarea' } }
                 }
             },
+
+            // ---------------------------------
             // SUPPORT TICKETS
+            // ---------------------------------
             {
                 resource: SupportTicket,
                 options: {
-                    navigation: { icon: 'Ticket' },
+                    navigation: { icon: 'Help' }, // ✅ Valid Carbon Icon
                     listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
-                    showProperties: ['status', 'category', 'subject', 'message', 'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'],
+                    showProperties:['status', 'category', 'subject', 'message', 'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'],
                     editProperties: ['status', 'adminNotes'], 
                     properties: { message: { type: 'textarea' }, adminNotes: { type: 'textarea' } }
                 }
             },
+
+            // ---------------------------------
             // AUTOMATED CAMPAIGNS
+            // ---------------------------------
             {
                 resource: AutomatedCampaign,
                 options: {
-                    navigation: { icon: 'Robot' },
-                    listProperties: ['title', 'targetGroup', 'scheduledDate', 'status'],
+                    navigation: { icon: 'Event' }, // ✅ Valid Carbon Icon
+                    listProperties:['title', 'targetGroup', 'scheduledDate', 'status'],
                     properties: { notificationMessage: { type: 'textarea' } }
                 }
             },
+
+            // ---------------------------------
             // PARTNERSHIP APPLICATIONS
+            // ---------------------------------
             {
                 resource: DistributorApplication,
                 options: {
-                    navigation: { icon: 'Handshake' },
-                    listProperties: ['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
+                    navigation: { icon: 'Partnership' }, // ✅ Valid Carbon Icon
+                    listProperties:['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
                     showProperties:[
                         'status', 'organizationName', 'username', 'email', 
                         'primaryDistributionPlatform', 'platformUrl', 'monetizationMethod',
@@ -639,22 +537,25 @@ async function createAdminRouter() {
                         'socialTelegram', 'socialDiscord', 'socialWebsite', 'socialYoutube',
                         'adminNotes', 'createdAt'
                     ],
-                    editProperties: ['status', 'adminNotes'],
+                    editProperties:['status', 'adminNotes'],
                     properties: { adminNotes: { type: 'textarea' } }
                 }
             },
+
+            // ---------------------------------
             // USER REQUESTS
+            // ---------------------------------
             {
                 resource: Request,
                 options: {
-                    navigation: { icon: 'Target' }, 
+                    navigation: { icon: 'Idea' }, // ✅ Valid Carbon Icon
                     listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
                     showProperties:[
                         'requestType', 'appName', 'platform', 'requestedVersion', 
                         'officialLink', 'existingModLink', 'modFeaturesRequested', 
                         'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
                     ],
-                    editProperties: ['status', 'adminNotes'], 
+                    editProperties:['status', 'adminNotes'], 
                     properties: {
                         modFeaturesRequested: { type: 'textarea' },
                         additionalNotes: { type: 'textarea' },
@@ -662,11 +563,14 @@ async function createAdminRouter() {
                     }
                 }
             },
+
+            // ---------------------------------
             // MODERATION RESOURCES
+            // ---------------------------------
             {
                 resource: Review,
                 options: {
-                    navigation: { icon: 'Star' },
+                    navigation: { icon: 'Star' }, // ✅ Valid Carbon Icon
                     listProperties:['username', 'rating', 'comment', 'file', 'createdAt'],
                     actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
                 },
@@ -674,7 +578,7 @@ async function createAdminRouter() {
             {
                 resource: Report,
                 options: {
-                    navigation: { icon: 'Flag' },
+                    navigation: { icon: 'Flag' }, // ✅ Valid Carbon Icon
                     listProperties:['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
@@ -682,7 +586,7 @@ async function createAdminRouter() {
             {
                 resource: Dmca,
                 options: {
-                    navigation: { icon: 'ShieldWarning' },
+                    navigation: { icon: 'Warning' }, // ✅ Valid Carbon Icon
                     listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
@@ -690,16 +594,19 @@ async function createAdminRouter() {
             {
                 resource: UnbanRequest,
                 options: {
-                    navigation: { icon: 'Unlock' },
+                    navigation: { icon: 'Unlocked' }, // ✅ Valid Carbon Icon
                     listProperties: ['username', 'email', 'status', 'createdAt'],
                     editProperties:['status'],
                 }
             },
+
+            // ---------------------------------
             // SITE CONTENT RESOURCE
+            // ---------------------------------
             {
                 resource: Announcement,
                 options: {
-                    navigation: { icon: 'Megaphone' },
+                    navigation: { icon: 'Bullhorn' }, // ✅ Valid Carbon Icon
                     listProperties: ['title', 'author', 'createdAt'],
                     editProperties: ['title', 'author', 'content'],
                     properties: { content: { type: 'richtext' } },
@@ -707,7 +614,6 @@ async function createAdminRouter() {
             }
         ] 
     };
-
     const adminJs = new AdminJS(adminJsOptions);
     
     // In v7+, buildRouter expects the AdminJS instance. 
