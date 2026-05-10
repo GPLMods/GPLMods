@@ -1452,7 +1452,7 @@ app.get('/:category/:slug', async (req, res, next) => {
             'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
             'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
             'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
-            'download-file', 'upload-details', 'reset-password', 'docs' 'fdroid' 'ios-repo' 'repo'// <--- ✅ ADDED THESE 3
+            'download-file', 'upload-details', 'reset-password', 'docs', 'fdroid', 'ios-repo', 'repo', 'sitemap'
         ];
         
         if (reservedPaths.includes(category)) return next();
