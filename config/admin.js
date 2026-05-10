@@ -196,7 +196,7 @@ async function createAdminRouter() {
             {
                 resource: User,
                 options: {
-                    navigation: { icon: 'UserMultiple' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Users' }, // ✅ Valid Carbon Icon
                     listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
                     showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
@@ -236,7 +236,7 @@ async function createAdminRouter() {
             {
                 resource: File,
                 options: {
-                    navigation: { icon: 'Document' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'File' }, // ✅ Valid Carbon Icon
                     listProperties:['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
                     editProperties:[
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
@@ -343,7 +343,7 @@ async function createAdminRouter() {
                             }
                         },
                         viewOnSite: {
-                            actionType: 'record', icon: 'View', component: Components.ActionRedirect,
+                            actionType: 'record', icon: 'ExternalLink', component: Components.ActionRedirect,
                             handler: async (request, response, context) => {
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = `/mods/${context.record.params._id}`;
@@ -359,7 +359,7 @@ async function createAdminRouter() {
                             }
                         },
                         viewVirusTotal: {
-                            actionType: 'record', icon: 'Security', component: Components.ActionRedirect,
+                            actionType: 'record', icon: 'Shield', component: Components.ActionRedirect,
                             handler: async (request, response, context) => {
                                 const vtHash = context.record.params.virusTotalId || "";
                                 const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
@@ -502,7 +502,7 @@ async function createAdminRouter() {
             {
                 resource: SupportTicket,
                 options: {
-                    navigation: { icon: 'Help' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Info' }, // ✅ Valid Carbon Icon
                     listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
                     showProperties:['status', 'category', 'subject', 'message', 'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'],
                     editProperties: ['status', 'adminNotes'], 
@@ -516,7 +516,7 @@ async function createAdminRouter() {
             {
                 resource: AutomatedCampaign,
                 options: {
-                    navigation: { icon: 'Event' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Cpu' }, // ✅ Valid Carbon Icon
                     listProperties:['title', 'targetGroup', 'scheduledDate', 'status'],
                     properties: { notificationMessage: { type: 'textarea' } }
                 }
@@ -528,7 +528,7 @@ async function createAdminRouter() {
             {
                 resource: DistributorApplication,
                 options: {
-                    navigation: { icon: 'Partnership' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'UserCheck' }, // ✅ Valid Carbon Icon
                     listProperties:['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
                     showProperties:[
                         'status', 'organizationName', 'username', 'email', 
@@ -548,7 +548,7 @@ async function createAdminRouter() {
             {
                 resource: Request,
                 options: {
-                    navigation: { icon: 'Idea' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'UserPlus' }, // ✅ Valid Carbon Icon
                     listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
                     showProperties:[
                         'requestType', 'appName', 'platform', 'requestedVersion', 
@@ -578,7 +578,7 @@ async function createAdminRouter() {
             {
                 resource: Report,
                 options: {
-                    navigation: { icon: 'Flag' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'X' }, // ✅ Valid Carbon Icon
                     listProperties:['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
@@ -586,7 +586,7 @@ async function createAdminRouter() {
             {
                 resource: Dmca,
                 options: {
-                    navigation: { icon: 'Warning' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'AlertOctagon' }, // ✅ Valid Carbon Icon
                     listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
@@ -594,7 +594,7 @@ async function createAdminRouter() {
             {
                 resource: UnbanRequest,
                 options: {
-                    navigation: { icon: 'Unlocked' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'UserX' }, // ✅ Valid Carbon Icon
                     listProperties: ['username', 'email', 'status', 'createdAt'],
                     editProperties:['status'],
                 }
@@ -606,7 +606,7 @@ async function createAdminRouter() {
             {
                 resource: Announcement,
                 options: {
-                    navigation: { icon: 'Bullhorn' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Target' }, // ✅ Valid Carbon Icon
                     listProperties: ['title', 'author', 'createdAt'],
                     editProperties: ['title', 'author', 'content'],
                     properties: { content: { type: 'richtext' } },
