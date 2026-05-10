@@ -2,9 +2,17 @@
 
 <style>
     .membership-page { padding: 60px 20px; text-align: center; }
+    .membership-header { position: relative; z-index: 2; }
     .membership-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
     .membership-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .membership-header p { color: var(--silver); font-size: 1.1em; max-width: 700px; margin: 0 auto 40px auto; }
+
+    /* Premium Animation Wrapper */
+    .premium-animation-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: -15px;
+    }
 
     /* Currency Switcher */
     .currency-selector { margin-bottom: 40px; display: inline-flex; align-items: center; gap: 10px; background: var(--dark-gray); padding: 10px 20px; border-radius: 25px; border: 1px solid #333; }
@@ -20,42 +28,80 @@
     /* Pricing Grid */
     .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; align-items: stretch; }
     
-    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease; }
     .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     
     /* Specific Card Styling */
     .card-guest { border-top: 4px solid #555; }
     .card-member { border-top: 4px solid var(--silver); }
-    .card-premium { border: 2px solid var(--gold); transform: scale(1.05); z-index: 10; box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); }
     .card-distributor { border-top: 4px solid var(--blue); }
 
-    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); }
+    /* ✅ UPGRADE: Animated Premium Card */
+    .card-premium { 
+        transform: scale(1.05); 
+        z-index: 10; 
+        background: var(--dark-gray);
+        border: none;
+        position: relative;
+    }
+    
+    /* Animated Gradient Border Magic */
+    .card-premium::before {
+        content: '';
+        position: absolute;
+        top: -2px; left: -2px; right: -2px; bottom: -2px;
+        background: linear-gradient(45deg, var(--gold), #ff8c00, var(--gold), #fff);
+        background-size: 400%;
+        z-index: -1;
+        border-radius: 16px;
+        animation: glowingBorder 6s linear infinite;
+    }
+    
+    .card-premium::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: var(--dark-gray);
+        z-index: -1;
+        border-radius: 14px;
+    }
+
+    @keyframes glowingBorder {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .popular-badge { position: absolute; top: 20px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     .save-badge { background: var(--green); color: var(--white); font-size: 0.7em; padding: 3px 8px; border-radius: 10px; margin-left: 10px; vertical-align: middle; }
 
     .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
-    .card-premium .tier-name { color: var(--gold); }
+    .card-premium .tier-name { color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); }
     .tier-desc { color: var(--silver); font-size: 0.9em; min-height: 40px; margin-bottom: 20px; }
     
+    /* Notice box for Distributor to make it clear */
+    .distributor-notice { background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); color: #90caf9; font-size: 0.8em; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-weight: 600; }
+
     .price-container { margin-bottom: 30px; min-height: 55px; display: flex; align-items: center; justify-content: center; }
     .price { font-size: 2.5em; font-weight: 700; color: var(--white); display: flex; align-items: center; justify-content: center; gap: 5px; }
     .currency-symbol { font-size: 0.5em; color: var(--silver); align-self: flex-start; margin-top: 10px; }
     .price-period { color: var(--silver); font-size: 0.4em; font-weight: normal; }
 
     .feature-list { list-style: none; padding: 0; margin-bottom: 30px; text-align: left; flex-grow: 1; }
-    .feature-list li { color: var(--silver); margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95em; }
+    .feature-list li { color: var(--silver); margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95em; line-height: 1.4; }
     .feature-list li i { color: var(--green); margin-top: 4px; }
     .feature-list li.missing i { color: #555; }
     .feature-list li.missing { color: #666; text-decoration: line-through; }
 
     /* Action Buttons */
-    .plan-btn { padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif;}
+    .plan-btn { padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; position: relative; z-index: 2;}
     .btn-outline { background: transparent; border: 2px solid #555; color: var(--silver); }
     
     .btn-silver { background: transparent; border: 2px solid var(--silver); color: var(--silver); }
     .btn-silver:hover { background: var(--silver); color: var(--black); box-shadow: 0 0 15px var(--glow-silver); }
     
     .btn-gold { background: var(--gold); color: var(--black); border: 2px solid var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
-    .btn-gold:hover { background: transparent; color: var(--gold); }
+    .btn-gold:hover { background: transparent; color: var(--gold); border-color: var(--gold); }
 
     .btn-blue { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
     .btn-blue:hover { background: var(--blue); color: var(--white); box-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
@@ -78,6 +124,13 @@
 
 <main class="membership-page">
     <div class="container">
+        
+        <!-- ✅ UPGRADE: Premium Lottie Animation Header -->
+        <div class="premium-animation-wrapper">
+            <!-- Using a standard premium crown lottie file -->
+            <lottie-player src="https://assets8.lottiefiles.com/packages/lf20_x2lejemf.json" background="transparent" speed="1" style="width: 120px; height: 120px;" loop autoplay></lottie-player>
+        </div>
+
         <div class="membership-header">
             <h1>Choose Your <span>Experience</span></h1>
             <p>Whether you're just browsing, an active community member, or a professional mod distributor, we have a plan for you.</p>
@@ -116,9 +169,8 @@
                     <li><i class="fas fa-check"></i> View VirusTotal Scans</li>
                     <li class="missing"><i class="fas fa-times"></i> Upload Mods</li>
                     <li class="missing"><i class="fas fa-times"></i> Post Reviews & Comments</li>
-                    <li class="missing"><i class="fas fa-times"></i> Create a Whitelist</li>
+                    <li class="missing"><i class="fas fa-times"></i> Request For Mods Mods And Updates</li>
                 </ul>
-                <!-- FIX: Guest tier now prompts login/signup instead of saying "Current Plan" or "Logout" -->
                 <% if (!user) { %>
                     <button class="plan-btn btn-outline" disabled style="opacity: 0.5;">Your Current Status</button>
                 <% } else { %>
@@ -134,11 +186,13 @@
                     <div class="price"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
                 </div>
                 <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> Browse & Download Mods</li>
+                    <li><i class="fas fa-check"></i> All Guest Features</li>
                     <li><i class="fas fa-check"></i> <strong>Upload Free Mods</strong></li>
                     <li><i class="fas fa-check"></i> Post Reviews & Comments</li>
                     <li><i class="fas fa-check"></i> Create a Whitelist</li>
-                    <li class="missing"><i class="fas fa-times"></i> Ad-Free Experience</li>
+                    <li><i class="fas fa-check"></i> Standard Support</li>
+                    <li class="missing"><i class="fas fa-times"></i> 1-Click IPA/DEB Installs</li>
+                   <li class="missing"><i class="fas fa-times"></i>Custom YT Background Music Player and Add Free Mirror's</strong></li>
                 </ul>
                 <% if (!user) { %>
                     <a href="/register" class="plan-btn btn-silver">Sign Up Free</a>
@@ -152,13 +206,12 @@
             <!-- 3. GPL MODS+ (PREMIUM) -->
             <div class="pricing-card card-premium">
                 <div class="popular-badge">PREMIUM</div>
-                <h2 class="tier-name">GPL Mods+</h2>
-                <p class="tier-desc">The ultimate, ad-free downloading experience.</p>
+                <h2 class="tier-name"><i class="fas fa-crown" style="margin-right: 8px;"></i> GPL Mods+</h2>
+                <p class="tier-desc" style="color: var(--white);">The ultimate, ad-free downloading experience.</p>
                 
                 <div class="price-container">
                     <div class="price">
                         <span class="currency-symbol" data-currency>₹</span>
-                        <!-- DYNAMIC PRICE VALUES -->
                         <span class="price-value" id="premium-price"
                               data-monthly-inr="99" data-monthly-usd="2.00" data-monthly-eur="1.80" data-monthly-gbp="1.50"
                               data-6months-inr="499" data-6months-usd="10.00" data-6months-eur="9.00" data-6months-gbp="8.00"
@@ -174,8 +227,12 @@
                     <li><i class="fas fa-check"></i> All Member Features</li>
                     <li><i class="fas fa-check"></i> <strong>100% Ad-Free Experience</strong></li>
                     <li><i class="fas fa-check"></i> <strong>Lightning Fast Downloads</strong></li>
+                    
+                    <!-- ✅ UPGRADE: Custom Music & 1-Click Installs -->
+                    <li><i class="fas fa-check"></i> <strong>Custom YT Background Music Player</strong></li>
+                    <li><i class="fas fa-check"></i> <strong>1-Click IPA/DEB Installs (AltStore, Sileo, etc.)</strong></li>
+                    
                     <li><i class="fas fa-check"></i> Priority Support</li>
-                    <li class="missing"><i class="fas fa-times"></i> Monetize Uploads</li>
                 </ul>
                 
                 <% if (!user) { %>
@@ -191,12 +248,18 @@
             <!-- 4. DISTRIBUTOR -->
             <div class="pricing-card card-distributor">
                 <h2 class="tier-name" style="color: var(--blue);">Distributor</h2>
-                <p class="tier-desc">Partner with us to monetize your mods.</p>
+                
+                <!-- ✅ UPGRADE: Clear clarification that this is for organizations -->
+                <p class="tier-desc"><strong>For Mod Distributors & Organizations only.</strong> Not for individual users.</p>
+                <div class="distributor-notice">
+                    <i class="fas fa-info-circle"></i> Requires manual application & approval with one-time mods destribution fee.
+                </div>
+
                 <div class="price-container">
                     <div class="price">Apply <span class="price-period">for access</span></div>
                 </div>
                 <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> All Member Features</li>
+                    <li><i class="fas fa-check"></i> All GPL Mods+ Features</li>
                     <li><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise)</strong></li>
                     <li><i class="fas fa-check"></i> Verified Organization Badge</li>
                     <li><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
@@ -213,7 +276,6 @@
 
         </div>
 
-        <!-- NEW: 7-Day Guarantee Box -->
         <div class="guarantee-box">
             <i class="fas fa-shield-check guarantee-icon"></i>
             <div class="guarantee-text">
@@ -229,61 +291,47 @@
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- State Variables ---
-        let currentCurrency = 'INR';
-        let currentDuration = 'monthly';
-
-        // --- Elements ---
+        // --- 1. Currency Switcher Logic ---
         const currencySelect = document.getElementById('currency-select');
-        const durationBtns = document.querySelectorAll('.duration-btn');
+        const priceValueElements = document.querySelectorAll('.price-value');
         const currencySymbols = document.querySelectorAll('[data-currency]');
         
-        const premiumPriceEl = document.getElementById('premium-price');
-        const premiumPeriodEl = document.getElementById('premium-period');
+        let currentCurrency = 'INR';
+        let currentDuration = 'monthly';
 
         const symbols = { 'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£' };
         const periods = { 'monthly': '/ month', '6months': '/ 6 months', 'yearly': '/ year', 'lifetime': '/ lifetime' };
 
-        // --- Update UI Function ---
         function updatePricingUI() {
-            // Update Currency Symbols
             currencySymbols.forEach(el => el.textContent = symbols[currentCurrency]);
-
-            // Construct the data attribute string (e.g., 'data-monthly-inr')
             const dataAttr = `data-${currentDuration}-${currentCurrency.toLowerCase()}`;
             
-            // Update the price value
-            const newPrice = premiumPriceEl.getAttribute(dataAttr);
-            if (newPrice) {
-                premiumPriceEl.textContent = newPrice;
-            }
-
-            // Update the period text
-            premiumPeriodEl.textContent = periods[currentDuration];
+            priceValueElements.forEach(el => {
+                const newPrice = el.getAttribute(dataAttr);
+                if (newPrice) el.textContent = newPrice;
+            });
+            const premiumPeriodEl = document.getElementById('premium-period');
+            if (premiumPeriodEl) premiumPeriodEl.textContent = periods[currentDuration];
         }
 
-        // --- Event Listeners ---
         currencySelect.addEventListener('change', function() {
             currentCurrency = this.value;
             updatePricingUI();
         });
 
+        const durationBtns = document.querySelectorAll('.duration-btn');
         durationBtns.forEach(btn => {
             btn.addEventListener('click', function() {
-                // Update active button
                 durationBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-                
-                // Update state and UI
                 currentDuration = this.getAttribute('data-duration');
                 updatePricingUI();
             });
         });
 
-        // Initialize UI on load
         updatePricingUI();
 
-        // --- Cashfree Payment Logic (Placeholder for future) ---
+        // --- 2. Cashfree Payment Logic ---
         const cashfree = new Cashfree();
         const submitButton = document.getElementById('premium-purchase-btn');
         const errorMessage = document.getElementById('payment-error-message');
@@ -296,7 +344,6 @@
                 this.textContent = 'Preparing Checkout...';
                 errorMessage.textContent = ''; 
 
-                // In the future, you will send currentDuration and currentCurrency to your backend here
                 fetch('/create-membership-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

@@ -280,7 +280,7 @@
             <!-- ======== 1-CLICK IOS INSTALLERS (Jailed & Jailbroken) ======== -->
             <% 
                 const isIosDirect = (file.category === 'ios-jailed' || file.category === 'ios-jailbroken');
-                const hasDirectLink = !!file.ipaDirectDownloadUrl;
+                const hasDirectLink = !!file.directDownloadUrl;
                 
                 let hasSideloadPermission = false;
                 if (user && (user.membership === 'premium' || user.role === 'admin' || user.role === 'distributor')) {
@@ -299,7 +299,7 @@
                         <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 15px;">Send directly to your device's package manager.</p>
                         
                         <% 
-                            const rawUrl = file.ipaDirectDownloadUrl;
+                            const rawUrl = file.directDownloadUrl;
                             const base64Url = Buffer.from(rawUrl).toString('base64');
                         %>
 

@@ -274,16 +274,20 @@
                 </div>
             </fieldset>
 
-            <!-- ======== DIRECT IPA LINK FOR SIDELOADING ======== -->
-            <div class="form-group" id="ipa-link-group" style="display: none; background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
-                <label for="ipaDirectDownloadUrl" style="color: var(--white);"><i class="fab fa-apple"></i> Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" value="<%= file.ipaDirectDownloadUrl || '' %>" placeholder="e.g., https://www.dropbox.com/s/.../app.ipa?dl=1">
-                <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable TrollStore/AltStore install buttons for Premium users. Must be a direct streamable link (like Dropbox).</span>
-            </div>
-                <!-- ======== NEW: JAILBREAK PACKAGE ID ======== -->
+                <!-- ======== ✅ FIX: UNIVERSAL DIRECT CLOUD LINK ======== -->
+                <div class="form-group" id="direct-link-group" style="background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
+                    <label for="directDownloadUrl" style="color: var(--white);"><i class="fas fa-link"></i> Direct Cloud Link (Dropbox, etc.) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
+                    <!-- ✅ FIX: Data MUST be in the 'value' attribute, not 'populated' -->
+                    <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.zip?dl=1" value="<%= file.directDownloadUrl || '' %>">
+                    <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">A direct streamable link. Enables 1-Click repo installs for iOS/Android, and acts as a fast mirror for all platforms.</span>
+                </div>
+                <!-- ======================================================== -->
+                
+                <!-- ======== ✅ FIX: JAILBREAK PACKAGE ID ======== -->
                 <div class="form-group" id="pkg-id-group" style="display: none; background: rgba(255, 149, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #FF9500; margin-bottom: 25px;">
                     <label for="iosPackageId" style="color: var(--white);"><i class="fas fa-box-open"></i> Jailbreak Package ID <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                    <input type="text" id="iosPackageId" name="iosPackageId" placeholder="e.g., com.spark.snowboard">
+                    <!-- ✅ FIX: Added value attribute here too -->
+                    <input type="text" id="iosPackageId" name="iosPackageId" placeholder="e.g., com.spark.snowboard" value="<%= file.iosPackageId || '' %>">
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable direct Sileo/Zebra package installation buttons. Must exactly match the ID in your control file.</span>
                 </div>
                 <!-- =========================================== -->
@@ -478,6 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const archWrapper = document.getElementById('archWrapper');
     const archCustomSelect = document.getElementById('archCustomSelect');
+    
+    // UI Display Elements
+    const pkgIdGroup = document.getElementById('pkg-id-group');
 
     function setupCustomSelect(wrapper, nativeSelect) {
         if (!wrapper || !nativeSelect) return;
@@ -516,7 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Setup toggling for Architecture Multi-Select specifically
     if (archCustomSelect && archWrapper) {
         archCustomSelect.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -533,13 +539,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
 
-    // Apply the 'selected' class safely to Age Rating dropdown on load
+    // ✅ SAFE INITIALIZATION: Age Rating
     if (nativeAgeRatingSelect && ageRatingWrapper) {
-        const currentValue = <%- JSON.stringify(file.ageRating || '') %>;
-        if (currentValue) {
-            const optionToSelect = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentValue}"]`);
-            if (optionToSelect) {
-                optionToSelect.classList.add('selected');
+        // Use JSON.stringify to safely inject string data
+        const currentAgeRating = <%- JSON.stringify(file.ageRating || '') %>;
+        if (currentAgeRating) {
+            const opt = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentAgeRating}"]`);
+            if (opt) {
+                opt.classList.add('selected');
+                ageRatingWrapper.querySelector('.selected-text').textContent = opt.textContent;
+                nativeAgeRatingSelect.value = currentAgeRating;
             }
         }
     }
@@ -561,6 +570,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const selectedPlatform = nativePlatformSelect.value;
         const categories = categoriesByPlatform[selectedPlatform] ||[];
+        
+        // ✅ SAFE INITIALIZATION: Saved Sub-Category
         const currentCategory = <%- JSON.stringify((file.platforms && file.platforms.length > 0) ? file.platforms[0] : '') %>; 
 
         nativeCategorySelect.innerHTML = '';
@@ -616,7 +627,6 @@ document.addEventListener('DOMContentLoaded', () => {
         nativePlatformSelect.addEventListener('change', function() {
             populateCategories();
 
-            // Dependency / Architecture / OS Logic Check
             const selectedPlatform = this.value;
             const archMap = {
                 'android':['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86'],
@@ -628,13 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const archGroup = document.getElementById('arch-group');
             const archOptionsContainer = document.getElementById('archOptionsContainer');
             const archSelectedText = document.getElementById('archSelectedText');
-            
             const archReqStar = document.getElementById('arch-req-star');
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
-            const ipaLinkGroup = document.getElementById('ipa-link-group');
-            const pkgIdGroup = document.getElementById('pkg-id-group'); // ✅ Added PKG ID reference
 
+            // ✅ SAFE INITIALIZATION: Architecture array
             const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;
 
             if (archMap[selectedPlatform]) {
@@ -667,9 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         lastCheckedValue = arch;
                     }
                     
-                    label.addEventListener('click', function(e) {
-                        e.stopPropagation(); 
-                    });
+                    label.addEventListener('click', function(e) { e.stopPropagation(); });
                     
                     checkbox.addEventListener('change', function() {
                         const checkedBoxes = archOptionsContainer.querySelectorAll('input[type="checkbox"]:checked');
@@ -709,23 +715,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(archReqStar) archReqStar.style.display = 'inline';
                 if(osReqStar) osReqStar.style.display = 'inline';
                 if(minOsInput) minOsInput.required = true;
+                if (pkgIdGroup) pkgIdGroup.style.display = 'block'; // Show PKG ID
             } else {
                 if(archReqStar) archReqStar.style.display = 'none';
                 if(osReqStar) osReqStar.style.display = 'none';
                 if(minOsInput) minOsInput.required = false;
+                if (pkgIdGroup) pkgIdGroup.style.display = 'none'; // Hide PKG ID
             }
-
-            // ✅ SHOW/HIDE LOGIC FOR IOS FIELDS
-            if (ipaLinkGroup) ipaLinkGroup.style.display = (selectedPlatform === 'ios-jailed') ? 'block' : 'none';
-            if (pkgIdGroup) pkgIdGroup.style.display = (selectedPlatform === 'ios-jailbroken') ? 'block' : 'none';
 
         });
 
-        // Initialize values safely with proper escaping
+        // ✅ SAFE INITIALIZATION: Trigger the chain reaction for Platform
         const preSelectedPlatform = <%- JSON.stringify(file.category || '') %>; 
         if (preSelectedPlatform) {
             const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
-            if(optionToSelect) optionToSelect.click(); 
+            if(optionToSelect) {
+                optionToSelect.click(); // This fires the logic to set up the rest of the form!
+            } else {
+                // Fallback just in case custom UI fails
+                nativePlatformSelect.value = preSelectedPlatform;
+                nativePlatformSelect.dispatchEvent(new Event('change'));
+            }
         }
     }
 
@@ -736,11 +746,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
-    if (document.getElementById('editor-modDescription')) quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    if (document.getElementById('editor-modFeatures')) quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    if (document.getElementById('editor-officialDescription')) quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    if (document.getElementById('editor-whatsNew')) quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    if (document.getElementById('editor-importantNote')) quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    // ✅ FIX: Use setTimeout to ensure the DOM is completely ready before Quill attaches
+    setTimeout(() => {
+        if (document.getElementById('editor-modDescription')) quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        if (document.getElementById('editor-modFeatures')) quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        if (document.getElementById('editor-officialDescription')) quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        if (document.getElementById('editor-whatsNew')) quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        if (document.getElementById('editor-importantNote')) quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+    }, 50);
 
     function syncQuillData() {
         if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML === '<p><br></p>' ? '' : quillDesc.root.innerHTML;
@@ -772,7 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let hasError = false;
 
-            // ✅ MANUAL VALIDATION EXECUTED BEFORE NATIVE reportValidity()
             if (!nativePlatformSelect.value) {
                 if (platformWrapper) platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
                 hasError = true;
@@ -830,6 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+</script>
 </script>
 
 <%- include('../partials/footer') %>

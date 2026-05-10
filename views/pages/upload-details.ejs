@@ -544,12 +544,14 @@
                 </div>
             </fieldset>
 
-                <!-- ======== DIRECT IPA / REPO LINK ======== -->
-                <div class="form-group" id="ipa-link-group" style="display: none; background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
-                    <label for="ipaDirectDownloadUrl" style="color: var(--white);"><i class="fab fa-apple"></i> Direct App / Repo Link (1-Click Install) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                    <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" placeholder="e.g., Dropbox URL or Repo URL (https://...)">
-                    <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">For iOS: Enables TrollStore / Sileo / Zebra install buttons for Premium users.</span>
+                <!-- ======== ✅ FIX: UNIVERSAL DIRECT CLOUD LINK ======== -->
+                <div class="form-group" id="direct-link-group" style="background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
+                    <label for="directDownloadUrl" style="color: var(--white);"><i class="fas fa-link"></i> Direct Cloud Link (Dropbox, etc.) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
+                    <!-- Make sure the value attribute is populated for the edit-mod.ejs page -->
+                    <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.zip?dl=1" value="<%= typeof file !== 'undefined' ? file.directDownloadUrl : '' %>">
+                    <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">A direct streamable link. Enables 1-Click repo installs for iOS/Android, and acts as a fast mirror for all platforms.</span>
                 </div>
+                <!-- ======================================================== -->
                 <!-- ======== NEW: JAILBREAK PACKAGE ID ======== -->
                 <div class="form-group" id="pkg-id-group" style="display: none; background: rgba(255, 149, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #FF9500; margin-bottom: 25px;">
                     <label for="iosPackageId" style="color: var(--white);"><i class="fas fa-box-open"></i> Jailbreak Package ID <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
@@ -934,7 +936,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const archReqStar = document.getElementById('arch-req-star');
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
-            const ipaLinkGroup = document.getElementById('ipa-link-group');
             const pkgIdGroup = document.getElementById('pkg-id-group'); // ✅ ADDED pkgIdGroup reference
             
 

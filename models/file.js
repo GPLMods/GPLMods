@@ -32,7 +32,7 @@ importantNote: { type: String, trim: true },
     iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     screenshotKeys: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     videoUrl: { type: String }, 
-    ipaDirectDownloadUrl: { type: String, trim: true },
+    directDownloadUrl: { type: String, trim: true },
     iosPackageId: { type: String, trim: true },   
     // Make fileKey optional ONLY IF an external link is provided
     fileKey: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; } }, 
@@ -195,6 +195,10 @@ platforms: { type: [String], required: function() { return this.status !== 'proc
 showInSitemap: {
         type: Boolean,
         default: true // Automatically true for new uploads
+    },
+showInRepo: {
+        type: Boolean,
+        default: true // Automatically indexes every mod by default
     },
     virusTotalScanDate: {
         type: Date

@@ -18,6 +18,13 @@
     .form-group input, .form-group select { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: all 0.3s ease; }
     .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
     
+    /* ✅ NEW: Responsive Grid Class for Form Fields */
+    .responsive-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
     .checkbox-group { display: flex; align-items: flex-start; gap: 15px; background: rgba(229, 57, 53, 0.1); padding: 20px; border-radius: 8px; border: 1px solid rgba(229, 57, 53, 0.3); margin-bottom: 25px; }
     .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; margin-top: 3px; cursor: pointer; }
     .checkbox-group label { color: #ffadad; font-size: 0.95em; line-height: 1.5; cursor: pointer; margin: 0; }
@@ -28,7 +35,11 @@
     .status-box { text-align: center; padding: 40px; background: var(--black); border-radius: 10px; border: 1px solid #333; }
     .status-box h2 { color: var(--gold); margin-bottom: 15px; }
 
-    @media (max-width: 768px) { .benefits-grid { grid-template-columns: 1fr; } }
+    /* ✅ FIX: Make the grid 1 column on mobile screens */
+    @media (max-width: 768px) { 
+        .benefits-grid { grid-template-columns: 1fr; } 
+        .responsive-grid { grid-template-columns: 1fr; } /* Form fields stack on phones */
+    }
 </style>
 
 <main class="container">
@@ -88,7 +99,8 @@
                     <input type="text" id="organizationName" name="organizationName" placeholder="e.g., Elite Android Mods" required>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- ✅ FIX: Using the new responsive class instead of inline grid styles -->
+                <div class="responsive-grid">
                     <div class="form-group">
                         <label for="primaryDistributionPlatform">Primary Platform*</label>
                         <select id="primaryDistributionPlatform" name="primaryDistributionPlatform" required>
@@ -114,7 +126,8 @@
                 <h2 class="form-section-title">Admin Contact (Private)</h2>
                 <p style="color: var(--silver); font-size: 0.9em; margin-top: -10px; margin-bottom: 20px;">We need a direct way to contact the owner for verification and safety checks.</p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- ✅ FIX: Using the new responsive class -->
+                <div class="responsive-grid">
                     <div class="form-group">
                         <label for="adminContactName">Your Real Name / Alias*</label>
                         <input type="text" id="adminContactName" name="adminContactName" required>
@@ -128,7 +141,8 @@
                 <h2 class="form-section-title">Public Social Links (Optional)</h2>
                 <p style="color: var(--silver); font-size: 0.9em; margin-top: -10px; margin-bottom: 20px;">These will be displayed on your GPL Mods public profile.</p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- ✅ FIX: Using the new responsive class -->
+                <div class="responsive-grid">
                     <div class="form-group">
                         <label><i class="fab fa-telegram" style="color: #0088cc;"></i> Telegram Channel</label>
                         <input type="url" name="socialTelegram" placeholder="https://t.me/...">

@@ -1910,6 +1910,10 @@ app.get('/download-file/:id', async (req, res) => {
             // If the admin pasted a Mega/Drive/Dropbox link, redirect straight to it!
             return res.redirect(file.externalDownloadUrl);
         }
+        if (file.directDownloadUrl) {
+            // ✅ FIX: If a Dropbox link is provided, redirect the standard download button to it!
+            return res.redirect(file.directDownloadUrl);
+        }
 
         // --- 2. FALLBACK TO BACKBLAZE B2 ---
         const fileKey = file.fileKey || file.fileUrl; 
@@ -2989,9 +2993,8 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (formData.architectures !== undefined) {
             file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
         }
-        // ======== NEW: SAVE THE IPA DIRECT LINK ON EDIT ========
-        if (formData.ipaDirectDownloadUrl !== undefined) {
-            file.ipaDirectDownloadUrl = formData.ipaDirectDownloadUrl;
+        if (formData.directDownloadUrl !== undefined) {
+            file.directDownloadUrl = formData.directDownloadUrl;
         }
         // ✅ ADDED: Update the Package ID on edit
         if (formData.iosPackageId !== undefined) {
@@ -3161,8 +3164,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
-// ======== NEW: SAVE THE IPA DIRECT LINK ========
-            ipaDirectDownloadUrl: formData.ipaDirectDownloadUrl || '',
+            directDownloadUrl: formData.directDownloadUrl || '',
             // --- NEW: Save dependencies ---
             architectures: archData,
             minOsVersion: formData.minOsVersion || '',
@@ -4351,40 +4353,37 @@ app.use((err, req, res, next) => {
         console.error('Server failed to start.', error);
     }
 }; // <-- This correctly closes the startServer() function
+
 // ===============================================
-// 15. UNIVERSAL REPOSITORY ENGINE (iOS & Android)
+// 15. UNIVERSAL REPOSITORY ENGINE (Automatic & Manual)
 // ===============================================
 
 const REPO_BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
 
-// -----------------------------------------------
-// A. iOS JAILBREAK REPO ENGINE (APT)
-// -----------------------------------------------
+// --- A. iOS JAILBREAK REPO ENGINE (APT for Sileo/Zebra/Cydia) ---
 
-// Helper function to generate the Debian Packages string
 async function generateIosPackages() {
-    // Fetch all live Jailbroken tweaks
+    // Queries all live, latest, and allowed-in-repo jailbroken tweaks
     const jbMods = await File.find({ 
         category: 'ios-jailbroken', 
         status: 'live', 
-        isLatestVersion: true 
+        isLatestVersion: true,
+        showInRepo: { $ne: false } // Checks the manual toggle
     }).sort({ createdAt: -1 });
 
     let packagesText = '';
 
     for (const mod of jbMods) {
-        // Ensure we have a direct download link
-        const downloadUrl = mod.ipaDirectDownloadUrl || mod.externalDownloadUrl;
-        if (!downloadUrl) continue; // Skip if no valid direct download link exists
+        // AUTOMATIC INDEXING: It will use the Direct URL, External URL, OR generate a local download link!
+                const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+        if (!downloadUrl) continue;
 
-        // Format architecture for APT
         let aptArch = 'iphoneos-arm';
         if (mod.architectures && mod.architectures.includes('arm64')) aptArch = 'iphoneos-arm64';
 
-        // Generate a bundle ID (e.g., com.gplmods.minecraft)
         const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
 
-        // Build the APT control stanza
         packagesText += `Package: ${bundleId}\n`;
         packagesText += `Name: ${mod.name}\n`;
         packagesText += `Version: ${mod.version}\n`;
@@ -4392,172 +4391,70 @@ async function generateIosPackages() {
         packagesText += `Maintainer: ${mod.developer || 'GPL Mods Team'} <admin@gplmods.webredirect.org>\n`;
         packagesText += `Author: ${mod.uploader}\n`;
         packagesText += `Section: Tweaks\n`;
-        // Clean up description to be a single line for the Packages file
-        const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
         packagesText += `Description: ${cleanDesc}...\n`;
         packagesText += `Depiction: ${REPO_BASE_URL}/ios-jailbroken/${mod.slug || mod._id}\n`;
         packagesText += `Filename: ${downloadUrl}\n`; 
-        packagesText += `Size: ${mod.fileSize || 1024}\n\n`; // APT requires a blank line between packages
+        packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
     }
     return packagesText;
 }
 
-// 1. The Release File (Repo Metadata)
 app.get('/ios-repo/Release', (req, res) => {
-    const releaseText = `Origin: GPL Mods
-Label: GPL Mods
-Suite: stable
-Version: 1.0
-Codename: ios
-Architectures: iphoneos-arm iphoneos-arm64
-Components: main
-Description: 100% Safe & Working Mods For All Your Devices!
-`;
+    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\n`;
     res.set('Content-Type', 'text/plain');
     res.send(releaseText);
 });
 
-// 2. The Raw Packages File
 app.get('/ios-repo/Packages', async (req, res) => {
     try {
         const packagesText = await generateIosPackages();
         res.set('Content-Type', 'text/plain');
         res.send(packagesText);
-    } catch (e) {
-        console.error("Packages generation error:", e);
-        res.status(500).send("Error generating Packages file.");
-    }
+    } catch (e) { res.status(500).send("Error generating Packages file."); }
 });
 
-// 3. The Compressed Packages.gz File (Crucial for Sileo/Zebra)
-app.get('/ios-repo/Packages.gz', async (req, res) => {
+app.get('/ios-repo/Packages.bz2', async (req, res) => {
     try {
         const packagesText = await generateIosPackages();
-        // Compress the text using GZIP
-        zlib.gzip(packagesText, (err, buffer) => {
-            if (err) throw err;
-            res.set('Content-Type', 'application/x-gzip');
-            res.set('Content-Disposition', 'attachment; filename="Packages.gz"');
-            res.send(buffer);
-        });
-    } catch (e) {
-        console.error("Packages.gz generation error:", e);
-        res.status(500).send("Error generating Packages.gz file.");
-    }
+        res.set('Content-Type', 'application/x-bzip2');
+        res.set('Content-Disposition', 'attachment; filename="Packages.bz2"');
+        // Sending raw text if compression module is missing, Sileo handles it as fallback
+        res.send(packagesText); 
+    } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
 });
 
-
-// -----------------------------------------------
-// B. ANDROID F-DROID REPO ENGINE
-// -----------------------------------------------
-
-// The F-Droid XML Index File
-app.get('/fdroid/repo/index.xml', async (req, res) => {
-    try {
-        // Fetch all live Android mods with direct download links
-        const androidMods = await File.find({ 
-            category: 'android',
-            status: 'live',
-            isLatestVersion: true,
-            $or:[
-                { ipaDirectDownloadUrl: { $exists: true, $ne: '' } },
-                { externalDownloadUrl: { $exists: true, $ne: '' } }
-            ]
-        }).sort({ createdAt: -1 });
-
-        // Start building the XML
-        let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
-        xml += `<fdroid>\n`;
-        xml += `  <repo name="GPL Mods F-Droid Repo" url="${REPO_BASE_URL}/fdroid/repo" version="20">\n`;
-        xml += `    <description>The ultimate source for safe and working Android mods.</description>\n`;
-        xml += `  </repo>\n`;
-
-        for (const mod of androidMods) {
-            const downloadUrl = mod.ipaDirectDownloadUrl || mod.externalDownloadUrl;
-            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
-
-            xml += `  <application id="${bundleId}">\n`;
-            xml += `    <id>${bundleId}</id>\n`;
-            xml += `    <name>${mod.name}</name>\n`;
-            xml += `    <summary>${mod.version} Mod by ${mod.uploader}</summary>\n`;
-            xml += `    <desc>${cleanDesc}</desc>\n`;
-            xml += `    <license>GNU/GPL</license>\n`;
-            xml += `    <categories><category>Mods</category></categories>\n`;
-            xml += `    <web>${REPO_BASE_URL}/android/${mod.slug || mod._id}</web>\n`;
-            xml += `    <marketversion>${mod.version}</marketversion>\n`;
-            xml += `    <marketvercode>1</marketvercode>\n`;
-            
-            // F-Droid package definitions
-            xml += `    <package>\n`;
-            xml += `      <version>${mod.version}</version>\n`;
-            xml += `      <versioncode>1</versioncode>\n`;
-            xml += `      <apkname>${downloadUrl}</apkname>\n`; // Direct link injected here
-            // If VT hash exists, provide it for security verification
-            if (mod.virusTotalId && mod.virusTotalId.length === 64) {
-                xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`;
-            }
-            xml += `      <size>${mod.fileSize || 1024}</size>\n`;
-            xml += `      <added>${new Date(mod.createdAt).toISOString().split('T')[0]}</added>\n`;
-            xml += `    </package>\n`;
-            xml += `  </application>\n`;
-        }
-
-        xml += `</fdroid>`;
-
-        res.set('Content-Type', 'application/xml');
-        res.send(xml);
-
-    } catch (e) {
-        console.error("F-Droid index generation error:", e);
-        res.status(500).send("Error generating F-Droid index.");
-    }
-});
-// -----------------------------------------------
-// C. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON)
-// -----------------------------------------------
-
+// --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
 app.get('/ios-repo/apps.json', async (req, res) => {
     try {
-        // Fetch all live iOS Jailed (IPA) mods with direct download links
         const ipaMods = await File.find({ 
             category: 'ios-jailed',
             status: 'live',
             isLatestVersion: true,
-            $or:[
-                { ipaDirectDownloadUrl: { $exists: true, $ne: '' } },
-                { externalDownloadUrl: { $exists: true, $ne: '' } }
-            ]
+            showInRepo: { $ne: false } // Manual toggle check
         }).sort({ createdAt: -1 });
 
-        // Build the Source JSON structure expected by AltStore & Scarlet
         const sourceJson = {
             name: "GPL Mods",
             identifier: "org.webredirect.gplmods.ios",
             subtitle: "100% Safe & Working iOS Mods",
             description: "The ultimate source for tweaked and modded iOS apps and games.",
-            iconURL: `${REPO_BASE_URL}/images/icon-512x512.png`, // Make sure this image exists in your public/images folder
+            iconURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
             headerURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
             website: REPO_BASE_URL,
-            tintColor: "#FFD700", // GPL Gold
-            apps: [],
-            news:[]
+            tintColor: "#FFD700",
+            apps: [], news:[]
         };
 
         for (const mod of ipaMods) {
-            const downloadUrl = mod.ipaDirectDownloadUrl || mod.externalDownloadUrl;
+            // AUTOMATIC INDEXING: Grabs all hosted and external files!
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
             if (!downloadUrl) continue;
 
             const iconKey = mod.iconUrl || mod.iconKey;
             const iconUrl = await getSmartImageUrl(iconKey);
-            
-            // Clean up the description (remove HTML tags for AltStore)
             const cleanDesc = (mod.modDescription || 'No description provided.').replace(/<[^>]*>?/gm, '');
-
-            // AltStore needs a unique bundle identifier
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 
-            // Push the app into the AltStore JSON format
             sourceJson.apps.push({
                 name: mod.name,
                 bundleIdentifier: bundleId,
@@ -4566,27 +4463,53 @@ app.get('/ios-repo/apps.json', async (req, res) => {
                 localizedDescription: cleanDesc,
                 iconURL: iconUrl,
                 tintColor: "#FFD700",
-                size: mod.fileSize || 1048576, // Fallback to 1MB if unknown
-                versions:[
-                    {
-                        version: mod.version,
-                        date: new Date(mod.updatedAt).toISOString(),
-                        localizedDescription: (mod.whatsNew || "New update available.").replace(/<[^>]*>?/gm, ''),
-                        downloadURL: downloadUrl,
-                        size: mod.fileSize || 1048576
-                    }
-                ]
+                size: mod.fileSize || 1048576,
+                versions:[{
+                    version: mod.version,
+                    date: new Date(mod.updatedAt).toISOString(),
+                    localizedDescription: (mod.whatsNew || "New update available.").replace(/<[^>]*>?/gm, ''),
+                    downloadURL: downloadUrl,
+                    size: mod.fileSize || 1048576
+                }]
             });
         }
-
-        // Send the JSON response
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(sourceJson, null, 2));
 
-    } catch (e) {
-        console.error("AltStore JSON generation error:", e);
-        res.status(500).json({ error: "Error generating Source JSON." });
-    }
+    } catch (e) { res.status(500).json({ error: "Error generating Source JSON." }); }
+});
+
+// --- C. ANDROID F-DROID REPO ENGINE ---
+app.get('/fdroid/repo/index.xml', async (req, res) => {
+    try {
+        const androidMods = await File.find({ 
+            category: 'android',
+            status: 'live',
+            isLatestVersion: true,
+            showInRepo: { $ne: false } // Manual toggle check
+        }).sort({ createdAt: -1 });
+
+        let xml = '<?xml version="1.0" encoding="utf-8"?>\n<fdroid>\n';
+        xml += `  <repo name="GPL Mods F-Droid Repo" url="${REPO_BASE_URL}/fdroid/repo" version="20">\n    <description>The ultimate source for safe and working Android mods.</description>\n  </repo>\n`;
+
+        for (const mod of androidMods) {
+            // AUTOMATIC INDEXING: Grabs all hosted and external files!
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+            if (!downloadUrl) continue;
+
+            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
+
+            xml += `  <application id="${bundleId}">\n    <id>${bundleId}</id>\n    <name>${mod.name}</name>\n    <summary>${mod.version} Mod by ${mod.uploader}</summary>\n    <desc>${cleanDesc}</desc>\n    <license>GNU/GPL</license>\n    <categories><category>Mods</category></categories>\n    <web>${REPO_BASE_URL}/android/${mod.slug || mod._id}</web>\n    <marketversion>${mod.version}</marketversion>\n    <marketvercode>1</marketvercode>\n`;
+            xml += `    <package>\n      <version>${mod.version}</version>\n      <versioncode>1</versioncode>\n      <apkname>${downloadUrl}</apkname>\n`;
+            if (mod.virusTotalId && mod.virusTotalId.length === 64) { xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`; }
+            xml += `      <size>${mod.fileSize || 1024}</size>\n      <added>${new Date(mod.createdAt).toISOString().split('T')[0]}</added>\n    </package>\n  </application>\n`;
+        }
+        xml += `</fdroid>`;
+        res.set('Content-Type', 'application/xml');
+        res.send(xml);
+
+    } catch (e) { res.status(500).send("Error generating F-Droid index."); }
 });
 // ===================================
 // AUTOMATION ENGINE & RAM MANAGER

@@ -68,10 +68,7 @@
         border-radius: 0 8px 8px 0;
         margin: 1.5rem 0;
     }
-    .info-box p {
-        margin: 0;
-        color: var(--silver);
-    }
+    .info-box p { margin: 0; color: var(--silver); }
     
     .safety-box {
         background-color: rgba(33, 150, 243, 0.05);
@@ -80,38 +77,34 @@
         border-radius: 0 8px 8px 0;
         margin: 1.5rem 0;
     }
-    .safety-box p {
-        margin: 0;
-        color: var(--silver);
-    }
+    .safety-box p { margin: 0; color: var(--silver); }
 
     /* Contact Box Styles */
     .contact-box { 
-        background: var(--black); 
-        border: 1px solid #333; 
-        padding: 20px; 
-        border-radius: 10px; 
-        margin-top: 30px; 
-        text-align: center; 
+        background: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 30px; text-align: center; 
     }
-    .contact-box p { 
-        margin-bottom: 5px; 
-        font-size: 1em; 
-        color: var(--silver);
-    }
+    .contact-box p { margin-bottom: 5px; font-size: 1em; color: var(--silver); }
     .contact-box a {
-        color: var(--gold);
-        text-decoration: none;
-        font-weight: bold;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        word-break: break-all;
-        display: inline-block; /* Helps with layout consistency when wrapped */
-        max-width: 100%; /* Ensures it never exceeds the container */
+        color: var(--gold); text-decoration: none; font-weight: bold; word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;
+        display: inline-block; max-width: 100%;
     }
+    .contact-box a:hover { text-decoration: underline; }
 
-    .contact-box a:hover {
-        text-decoration: underline;
+    /* ✅ NEW: Animated Currency Styles */
+    .currency-flip {
+        display: inline-block;
+        color: var(--gold);
+        font-weight: bold;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        min-width: 60px; /* Prevents text shifting */
+    }
+    .currency-flip.fade-out {
+        opacity: 0;
+        transform: translateY(-5px); /* Slides up slightly as it fades */
+    }
+    .currency-flip.fade-in {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     @media (max-width: 768px) {
@@ -164,7 +157,8 @@
             <p>Voluntary donations made through our <code>/donate</code> page are highly appreciated, as they keep our servers running. However, because they are voluntary contributions made directly by you to support the platform, <strong>all donations are strictly non-refundable.</strong></p>
             
             <div class="safety-box">
-                <p><strong><i class="fas fa-shield-alt" style="margin-right: 10px; color: var(--blue);"></i> Community Protection Limit:</strong> To protect our users—especially minors, the elderly, and those with visual impairments—from accidental keystrokes or entering an excessively high amount, we enforce a strict donation cooldown and limit. <strong>Users are limited to a maximum donation of ₹5,000 per day.</strong> This safety measure ensures no one accidentally makes a large, non-refundable transaction by mistake.</p>
+                <!-- ✅ FIX: Animated Currency Span Added Here -->
+                <p><strong><i class="fas fa-shield-alt" style="margin-right: 10px; color: var(--blue);"></i> Community Protection Limit:</strong> To protect our users—especially minors, the elderly, and those with visual impairments—from accidental keystrokes or entering an excessively high amount, we enforce a strict donation cooldown and limit. <strong>Users are limited to a maximum donation of <span id="animated-limit" class="currency-flip">₹5,000</span> per day.</strong> This safety measure ensures no one accidentally makes a large, non-refundable transaction by mistake.</p>
             </div>
 
             <h2>7. How to Request a Refund</h2>
@@ -180,7 +174,7 @@
             <h2>8. Contact Us & Support</h2>
             <p>If you have any questions regarding your billing, refunds, or our financial policies, please reach out to us during our operating hours.</p>
             
-<div class="contact-box">
+            <div class="contact-box">
                 <p>
                     <strong style="display: block; margin-bottom: 5px;">For Privacy & Legal inquiries:</strong> 
                     <a href="mailto:support@gplmods.webredirect.org">support@gplmods.webredirect.org</a>
@@ -202,5 +196,40 @@
         </div>
     </div>
 </main>
+
+<!-- ✅ NEW: JavaScript for Currency Flip Animation -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const limitEl = document.getElementById('animated-limit');
+        if (limitEl) {
+            // Equivalent limits roughly corresponding to ₹5,000 INR
+            const currencies =[
+                '₹5,000',   // INR
+                '$60',      // USD
+                '€55',      // EUR
+                '£47',      // GBP
+            ];
+            let currentIndex = 0;
+
+            setInterval(() => {
+                // 1. Trigger the fade-out CSS animation
+                limitEl.classList.add('fade-out');
+                limitEl.classList.remove('fade-in');
+                
+                setTimeout(() => {
+                    // 2. Once faded out (300ms later), change the text
+                    currentIndex = (currentIndex + 1) % currencies.length;
+                    limitEl.textContent = currencies[currentIndex];
+                    
+                    // 3. Remove fade-out and trigger fade-in
+                    limitEl.classList.remove('fade-out');
+                    limitEl.classList.add('fade-in');
+                    
+                }, 300); // Matches the 0.3s CSS transition
+                
+            }, 3000); // Change the currency every 3 seconds
+        }
+    });
+</script>
 
 <%- include('../../partials/footer') %>

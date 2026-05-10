@@ -15,12 +15,6 @@
         <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
     </div>
 
-<main class="container">
-    <div class="repo-header">
-        <h1>Jailbreak <span>Repositories</span></h1>
-        <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
-    </div>
-
     <!-- ======== NEW: ADD REPO MASTER SECTION ======== -->
     <% 
         const rawDomain = "gplmods.webredirect.org"; 
@@ -30,7 +24,8 @@
         <h2 style="color: var(--white); margin-bottom: 15px;"><i class="fas fa-link" style="color: var(--gold);"></i> Add GPL Mods Repo</h2>
         <p style="color: var(--silver); margin-bottom: 25px;">Add our repository to your package manager to easily browse and install all available tweaks.</p>
         
-        <div style="display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 25px;">
+        <!-- ✅ FIX: Added word-break: break-all; and max-width: 100%; -->
+        <div style="display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 25px; word-break: break-all; max-width: 100%;">
             <%= fullRepoUrl %>
         </div>
 

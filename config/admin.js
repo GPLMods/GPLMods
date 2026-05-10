@@ -236,25 +236,25 @@ async function createAdminRouter() {
                 options: {
                     navigation: { icon: 'FileCode' },
                     // ✅ NEW: Added 'isVariant' to the list view
-                    listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'category'],
+                    listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
                     editProperties: [
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion', 'iosPackageId',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'architectures', 'minOsVersion', 
                         'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
-                        'isMultiPart', 'downloadParts', 'installationInstructions','ipaDirectDownloadUrl',
+                        'isMultiPart', 'downloadParts', 'installationInstructions','directDownloadUrl',
                         // ✅ NEW: Added Variant fields to edit view
-                        'isVariant', 'masterFile'
+                        'isVariant', 'showInRepo', 'masterFile'
                     ],
                     showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 'isEditorsChoice', 'editorsChoiceDescription',
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl', // <--- ADDED HERE
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 'architectures', 'minOsVersion',  
-                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'ipaDirectDownloadUrl', 'iosPackageId',
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'directDownloadUrl', 'iosPackageId',
                         // ✅ NEW: Added Variant fields to show view
-                        'isVariant', 'masterFile'
+                        'isVariant', 'showInRepo', 'masterFile'
                     ],
                     properties: {
                         modDescription: { type: 'richtext' },
@@ -262,6 +262,9 @@ async function createAdminRouter() {
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, // Ensure the new field is here too
+                        showInRepo: {
+                        description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.'
+                    }, k 
                         iosPackageId: {
                         description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY. Enter the exact Package ID (e.g., com.gplmods.tweakname) to enable 1-Click tweak installation.'
                     },
@@ -277,8 +280,8 @@ async function createAdminRouter() {
                         virusTotalId: { description: 'Paste the FULL VirusTotal URL (https://...) OR just the SHA-256 Hash.' },
                         fileKey: { description: 'The Backblaze B2 file path' },
                     customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here. If provided, the dynamic generator is skipped.' },
-                        ipaDirectDownloadUrl: { 
-                            description: 'Optional: For iOS Jailed (IPA) mods ONLY. Paste a true direct link (like Dropbox with ?dl=1) to enable 1-click sideloading app installs.' 
+                        directDownloadUrl: { 
+                            description: 'Optional: Paste a true direct link (like Dropbox with ?dl=1). Enables F-Droid, Sileo, AltStore 1-click installs and fast direct downloads for Windows/WordPress.' 
                         },
                     downloadParts: {
                         isArray: true,
