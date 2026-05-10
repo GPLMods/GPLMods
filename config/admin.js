@@ -264,7 +264,7 @@ async function createAdminRouter() {
                         importantNote: { type: 'richtext' }, // Ensure the new field is here too
                         showInRepo: {
                         description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.'
-                    }, k 
+                    },
                         iosPackageId: {
                         description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY. Enter the exact Package ID (e.g., com.gplmods.tweakname) to enable 1-Click tweak installation.'
                     },
