@@ -1592,23 +1592,38 @@ a.overlay-btn-primary:hover {
             border: 1px solid #444;
             background-color: transparent !important;
         }
-
         .meta-info { list-style: none; text-align: left; color: var(--silver); }
-        /* Fixes long developer/uploader names breaking the list layout */
-.meta-info li { 
-    padding: 12px 0; 
-    border-bottom: 1px solid #2a2a2a;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* Aligns text to the top if it wraps to 2 lines */
-    gap: 15px; /* Ensures space between the label and the value */
-}
-.meta-info li span, .meta-info li a {
-    text-align: right;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 65%; /* Prevents long text from pushing the left label off-screen */
-}
+        
+        /* ✅ FIX: Improved responsive layout for all meta information rows */
+        .meta-info li { 
+            padding: 12px 0; 
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; /* Aligns text to the top for multi-line content */
+            gap: 15px; /* Ensures space between the label and the value */
+        }
+        
+        /* The label on the left (e.g., "Version:", "Architecture:") */
+        .meta-info li > :first-child:not(span):not(a):not(div) {
+            flex-shrink: 0; /* Prevents the label from shrinking */
+            min-width: 90px; /* Gives the label a consistent starting width */
+        }
+        
+        /* The value on the right (e.g., "1.0", "arm64-v8a") */
+        .meta-info li > span, 
+        .meta-info li > a, 
+        .meta-info li > div {
+            text-align: right;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            flex-grow: 1; /* Allows the value to take up the remaining space */
+            display: flex;
+            flex-wrap: wrap; /* Allows internal elements like badges to wrap */
+            justify-content: flex-end; /* Keeps badges aligned to the right */
+            gap: 5px;
+        }
+
         .meta-info li:last-child { border-bottom: none; }
         .meta-link {
             color: var(--white);

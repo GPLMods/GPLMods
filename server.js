@@ -75,7 +75,7 @@ const DocPage = require('./models/docPage');
 const Donation = require('./models/donation');
 
 // ===============================
-// 2. INITIALIZATION & CONFIGURATION
+// 1. INITIALIZATION & CONFIGURATION
 // ===============================
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -748,7 +748,7 @@ async function verifyRecaptcha(req, res, next) {
 }
 
 // ===============================
-// 5.5 PASSPORT STRATEGIES & MULTER
+// 1 PASSPORT STRATEGIES & MULTER
 // ===============================
 
 // ✅ FIX: STRICTLY USE RAM (MEMORY STORAGE)
@@ -897,7 +897,7 @@ passport.use(new MicrosoftStrategy({
 }));
 
 // ===============================
-// 6. PUBLIC & DIAGNOSTIC ROUTES
+// 1.5. PUBLIC & DIAGNOSTIC ROUTES
 // ===============================
 
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
@@ -1068,7 +1068,7 @@ app.get('/home', ensureAuthenticated, async (req, res) => {
     await renderHomepage(req, res);
 });
 // ===================================
-// NOTIFICATION SYSTEM ROUTES
+// 2 NOTIFICATION SYSTEM ROUTES
 // ===================================
 // 1. The Notification Hub (Category Selection)
 // ✅ FIX: Removed ensureAuthenticated so guests can view the hub
@@ -1977,7 +1977,7 @@ app.get('/mods/:id/parts', async (req, res) => {
 });
 
 // ===============================
-// 8. AUTH ROUTES
+// 3.5. AUTH ROUTES
 // ===============================
 
 // ✅ FIX 1: Added redirectIfAuthenticated
@@ -2300,7 +2300,7 @@ app.get('/auth/microsoft/callback',
     }
 );
 // ===============================
-// 9. PROFILE ROUTES
+// 4. PROFILE ROUTES
 // ===============================
 
 // Profile Route
@@ -2368,7 +2368,7 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 });
 
 // ===================================
-// PUBLIC PROFILE ROUTE
+// 6.5 PUBLIC PROFILE ROUTE
 // ===================================
 app.get('/users/:username', async (req, res, next) => {
     try {
@@ -2592,7 +2592,7 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     } catch (error) { return next(error); }
 });
 // ===================================
-// 10. FILE UPLOAD & MANAGEMENT
+// 7. FILE UPLOAD & MANAGEMENT
 // ===================================
 
 app.get('/upload', ensureAuthenticated, (req, res) => {
@@ -3208,10 +3208,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 });
 
 // ===================================
-// 11. API ROUTES
+// 8. API ROUTES
 // ===================================
 // ===================================
-// ADMIN: BULK INDEXNOW & GOOGLE SYNC
+// 9.2 ADMIN: BULK INDEXNOW & GOOGLE SYNC
 // ===================================
 app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req, res) => {
     try {
@@ -3465,7 +3465,7 @@ app.post('/api/subscribe', async (req, res) => {
 });
 
 // ===================================
-// 11.5  VIRUSTOTAL REFRESH ROUTE (SMART FIX)
+// 9.5  VIRUSTOTAL REFRESH ROUTE (SMART FIX)
 // ===================================
 app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
     try {
@@ -3571,7 +3571,7 @@ app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
     }
 });
 // ===================================
-// 11.6 VIRUSTOTAL REFRESH ROUTE (MULTI-PART)
+// 9.6 VIRUSTOTAL REFRESH ROUTE (MULTI-PART)
 // ===================================
 app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
     try {
@@ -3646,7 +3646,7 @@ app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
 });
 
 // ===============================
-// 12. SOCIAL & ADMIN INTERACTION
+// 10. SOCIAL & ADMIN INTERACTION
 // ===============================
 
 app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
@@ -3743,7 +3743,7 @@ app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin,
 
 app.get('/community-chat', ensureAuthenticated, (req, res) => res.render('pages/community-chat'));
 // ===================================
-// USER FOLLOW SYSTEM
+// 11 USER FOLLOW SYSTEM
 // ===================================
 app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
     try {
@@ -3783,7 +3783,7 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
     }
 });
 // ===================================
-// LEADERBOARD ROUTE (UPDATED)
+// 12 LEADERBOARD ROUTE (UPDATED)
 // ===================================
 app.get('/leaderboard', async (req, res) => {
     try {
@@ -3971,7 +3971,7 @@ const escapeXML = (str) => {
               .replace(/'/g, '&apos;');
 };
 
-app.get('/mods.xml', async (req, res) => {
+app.get('/sitemap.xml', async (req, res) => {
     try {
         // Set the correct XML header so browsers & Google know how to read it
         res.set('Content-Type', 'text/xml');
@@ -4078,6 +4078,159 @@ app.get('/ai-directory', async (req, res) => {
     }
 });
 // ==============================================================
+// ===============================================
+// 15. UNIVERSAL REPOSITORY ENGINE (Automatic & Manual)
+// ===============================================
+
+const REPO_BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+
+// --- A. iOS JAILBREAK REPO ENGINE (APT for Sileo/Zebra/Cydia) ---
+
+async function generateIosPackages() {
+    const jbMods = await File.find({ 
+        category: 'ios-jailbroken', 
+        status: 'live', 
+        isLatestVersion: true,
+        showInRepo: { $ne: false } 
+    }).sort({ createdAt: -1 });
+
+    let packagesText = '';
+
+    for (const mod of jbMods) {
+        const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+        if (!downloadUrl) continue;
+
+        let aptArch = 'iphoneos-arm';
+        if (mod.architectures && mod.architectures.includes('arm64')) aptArch = 'iphoneos-arm64';
+
+        const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
+
+        packagesText += `Package: ${bundleId}\n`;
+        packagesText += `Name: ${mod.name}\n`;
+        packagesText += `Version: ${mod.version}\n`;
+        packagesText += `Architecture: ${aptArch}\n`;
+        packagesText += `Maintainer: ${mod.developer || 'GPL Mods Team'} <admin@gplmods.webredirect.org>\n`;
+        packagesText += `Author: ${mod.uploader}\n`;
+        packagesText += `Section: Tweaks\n`;
+        packagesText += `Description: ${cleanDesc}...\n`;
+        packagesText += `Depiction: ${REPO_BASE_URL}/ios-jailbroken/${mod.slug || mod._id}\n`;
+        packagesText += `Filename: ${downloadUrl}\n`; 
+        packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
+    }
+    return packagesText;
+}
+
+// ✅ FIX: Ensure these route paths are exactly correct
+app.get('/ios-repo/Release', (req, res) => {
+    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\n`;
+    res.set('Content-Type', 'text/plain');
+    res.send(releaseText);
+});
+
+app.get('/ios-repo/Packages', async (req, res) => {
+    try {
+        const packagesText = await generateIosPackages();
+        res.set('Content-Type', 'text/plain');
+        res.send(packagesText);
+    } catch (e) { res.status(500).send("Error generating Packages file."); }
+});
+
+app.get('/ios-repo/Packages.bz2', async (req, res) => {
+    try {
+        const packagesText = await generateIosPackages();
+        res.set('Content-Type', 'application/x-bzip2');
+        res.set('Content-Disposition', 'attachment; filename="Packages.bz2"');
+        res.send(packagesText); 
+    } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
+});
+
+// --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
+app.get('/ios-repo/apps.json', async (req, res) => {
+    try {
+        const ipaMods = await File.find({ 
+            category: 'ios-jailed',
+            status: 'live',
+            isLatestVersion: true,
+            showInRepo: { $ne: false } 
+        }).sort({ createdAt: -1 });
+
+        const sourceJson = {
+            name: "GPL Mods",
+            identifier: "org.webredirect.gplmods.ios",
+            subtitle: "100% Safe & Working iOS Mods",
+            description: "The ultimate source for tweaked and modded iOS apps and games.",
+            iconURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
+            headerURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
+            website: REPO_BASE_URL,
+            tintColor: "#FFD700",
+            apps: [], news:[]
+        };
+
+        for (const mod of ipaMods) {
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+            if (!downloadUrl) continue;
+
+            const iconKey = mod.iconUrl || mod.iconKey;
+            const iconUrl = await getSmartImageUrl(iconKey);
+            const cleanDesc = (mod.modDescription || 'No description provided.').replace(/<[^>]*>?/gm, '');
+            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+            sourceJson.apps.push({
+                name: mod.name,
+                bundleIdentifier: bundleId,
+                developerName: mod.developer || mod.uploader,
+                subtitle: mod.version,
+                localizedDescription: cleanDesc,
+                iconURL: iconUrl,
+                tintColor: "#FFD700",
+                size: mod.fileSize || 1048576,
+                versions:[{
+                    version: mod.version,
+                    date: new Date(mod.updatedAt).toISOString(),
+                    localizedDescription: (mod.whatsNew || "New update available.").replace(/<[^>]*>?/gm, ''),
+                    downloadURL: downloadUrl,
+                    size: mod.fileSize || 1048576
+                }]
+            });
+        }
+        res.set('Content-Type', 'application/json');
+        res.send(JSON.stringify(sourceJson, null, 2));
+
+    } catch (e) { res.status(500).json({ error: "Error generating Source JSON." }); }
+});
+
+// --- C. ANDROID F-DROID REPO ENGINE ---
+app.get('/fdroid/repo/index.xml', async (req, res) => {
+    try {
+        const androidMods = await File.find({ 
+            category: 'android',
+            status: 'live',
+            isLatestVersion: true,
+            showInRepo: { $ne: false } 
+        }).sort({ createdAt: -1 });
+
+        let xml = '<?xml version="1.0" encoding="utf-8"?>\n<fdroid>\n';
+        xml += `  <repo name="GPL Mods F-Droid Repo" url="${REPO_BASE_URL}/fdroid/repo" version="20">\n    <description>The ultimate source for safe and working Android mods.</description>\n  </repo>\n`;
+
+        for (const mod of androidMods) {
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+            if (!downloadUrl) continue;
+
+            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
+
+            xml += `  <application id="${bundleId}">\n    <id>${bundleId}</id>\n    <name>${mod.name}</name>\n    <summary>${mod.version} Mod by ${mod.uploader}</summary>\n    <desc>${cleanDesc}</desc>\n    <license>GNU/GPL</license>\n    <categories><category>Mods</category></categories>\n    <web>${REPO_BASE_URL}/android/${mod.slug || mod._id}</web>\n    <marketversion>${mod.version}</marketversion>\n    <marketvercode>1</marketvercode>\n`;
+            xml += `    <package>\n      <version>${mod.version}</version>\n      <versioncode>1</versioncode>\n      <apkname>${downloadUrl}</apkname>\n`;
+            if (mod.virusTotalId && mod.virusTotalId.length === 64) { xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`; }
+            xml += `      <size>${mod.fileSize || 1024}</size>\n      <added>${new Date(mod.createdAt).toISOString().split('T')[0]}</added>\n    </package>\n  </application>\n`;
+        }
+        xml += `</fdroid>`;
+        res.set('Content-Type', 'application/xml');
+        res.send(xml);
+
+    } catch (e) { res.status(500).send("Error generating F-Droid index."); }
+});
 
 // --- DMCA PAGE ROUTE ---
 app.post('/dmca-request', async (req, res) => {
@@ -4322,7 +4475,7 @@ const startServer = async () => {
         });
 
 // ===============================================
-// 14. GLOBAL ERROR HANDLERS (MUST BE LAST)
+// 17. GLOBAL ERROR HANDLERS (MUST BE LAST)
 // ===============================================
 
 // 404 Handler - Catch all unhandled routes
@@ -4354,165 +4507,8 @@ app.use((err, req, res, next) => {
     }
 }; // <-- This correctly closes the startServer() function
 
-// ===============================================
-// 15. UNIVERSAL REPOSITORY ENGINE (Automatic & Manual)
-// ===============================================
-
-const REPO_BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-
-// --- A. iOS JAILBREAK REPO ENGINE (APT for Sileo/Zebra/Cydia) ---
-
-async function generateIosPackages() {
-    // Queries all live, latest, and allowed-in-repo jailbroken tweaks
-    const jbMods = await File.find({ 
-        category: 'ios-jailbroken', 
-        status: 'live', 
-        isLatestVersion: true,
-        showInRepo: { $ne: false } // Checks the manual toggle
-    }).sort({ createdAt: -1 });
-
-    let packagesText = '';
-
-    for (const mod of jbMods) {
-        // AUTOMATIC INDEXING: It will use the Direct URL, External URL, OR generate a local download link!
-                const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
-        if (!downloadUrl) continue;
-
-        let aptArch = 'iphoneos-arm';
-        if (mod.architectures && mod.architectures.includes('arm64')) aptArch = 'iphoneos-arm64';
-
-        const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
-
-        packagesText += `Package: ${bundleId}\n`;
-        packagesText += `Name: ${mod.name}\n`;
-        packagesText += `Version: ${mod.version}\n`;
-        packagesText += `Architecture: ${aptArch}\n`;
-        packagesText += `Maintainer: ${mod.developer || 'GPL Mods Team'} <admin@gplmods.webredirect.org>\n`;
-        packagesText += `Author: ${mod.uploader}\n`;
-        packagesText += `Section: Tweaks\n`;
-        packagesText += `Description: ${cleanDesc}...\n`;
-        packagesText += `Depiction: ${REPO_BASE_URL}/ios-jailbroken/${mod.slug || mod._id}\n`;
-        packagesText += `Filename: ${downloadUrl}\n`; 
-        packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
-    }
-    return packagesText;
-}
-
-app.get('/ios-repo/Release', (req, res) => {
-    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\n`;
-    res.set('Content-Type', 'text/plain');
-    res.send(releaseText);
-});
-
-app.get('/ios-repo/Packages', async (req, res) => {
-    try {
-        const packagesText = await generateIosPackages();
-        res.set('Content-Type', 'text/plain');
-        res.send(packagesText);
-    } catch (e) { res.status(500).send("Error generating Packages file."); }
-});
-
-app.get('/ios-repo/Packages.bz2', async (req, res) => {
-    try {
-        const packagesText = await generateIosPackages();
-        res.set('Content-Type', 'application/x-bzip2');
-        res.set('Content-Disposition', 'attachment; filename="Packages.bz2"');
-        // Sending raw text if compression module is missing, Sileo handles it as fallback
-        res.send(packagesText); 
-    } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
-});
-
-// --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
-app.get('/ios-repo/apps.json', async (req, res) => {
-    try {
-        const ipaMods = await File.find({ 
-            category: 'ios-jailed',
-            status: 'live',
-            isLatestVersion: true,
-            showInRepo: { $ne: false } // Manual toggle check
-        }).sort({ createdAt: -1 });
-
-        const sourceJson = {
-            name: "GPL Mods",
-            identifier: "org.webredirect.gplmods.ios",
-            subtitle: "100% Safe & Working iOS Mods",
-            description: "The ultimate source for tweaked and modded iOS apps and games.",
-            iconURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
-            headerURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
-            website: REPO_BASE_URL,
-            tintColor: "#FFD700",
-            apps: [], news:[]
-        };
-
-        for (const mod of ipaMods) {
-            // AUTOMATIC INDEXING: Grabs all hosted and external files!
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
-            if (!downloadUrl) continue;
-
-            const iconKey = mod.iconUrl || mod.iconKey;
-            const iconUrl = await getSmartImageUrl(iconKey);
-            const cleanDesc = (mod.modDescription || 'No description provided.').replace(/<[^>]*>?/gm, '');
-            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-
-            sourceJson.apps.push({
-                name: mod.name,
-                bundleIdentifier: bundleId,
-                developerName: mod.developer || mod.uploader,
-                subtitle: mod.version,
-                localizedDescription: cleanDesc,
-                iconURL: iconUrl,
-                tintColor: "#FFD700",
-                size: mod.fileSize || 1048576,
-                versions:[{
-                    version: mod.version,
-                    date: new Date(mod.updatedAt).toISOString(),
-                    localizedDescription: (mod.whatsNew || "New update available.").replace(/<[^>]*>?/gm, ''),
-                    downloadURL: downloadUrl,
-                    size: mod.fileSize || 1048576
-                }]
-            });
-        }
-        res.set('Content-Type', 'application/json');
-        res.send(JSON.stringify(sourceJson, null, 2));
-
-    } catch (e) { res.status(500).json({ error: "Error generating Source JSON." }); }
-});
-
-// --- C. ANDROID F-DROID REPO ENGINE ---
-app.get('/fdroid/repo/index.xml', async (req, res) => {
-    try {
-        const androidMods = await File.find({ 
-            category: 'android',
-            status: 'live',
-            isLatestVersion: true,
-            showInRepo: { $ne: false } // Manual toggle check
-        }).sort({ createdAt: -1 });
-
-        let xml = '<?xml version="1.0" encoding="utf-8"?>\n<fdroid>\n';
-        xml += `  <repo name="GPL Mods F-Droid Repo" url="${REPO_BASE_URL}/fdroid/repo" version="20">\n    <description>The ultimate source for safe and working Android mods.</description>\n  </repo>\n`;
-
-        for (const mod of androidMods) {
-            // AUTOMATIC INDEXING: Grabs all hosted and external files!
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
-            if (!downloadUrl) continue;
-
-            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
-
-            xml += `  <application id="${bundleId}">\n    <id>${bundleId}</id>\n    <name>${mod.name}</name>\n    <summary>${mod.version} Mod by ${mod.uploader}</summary>\n    <desc>${cleanDesc}</desc>\n    <license>GNU/GPL</license>\n    <categories><category>Mods</category></categories>\n    <web>${REPO_BASE_URL}/android/${mod.slug || mod._id}</web>\n    <marketversion>${mod.version}</marketversion>\n    <marketvercode>1</marketvercode>\n`;
-            xml += `    <package>\n      <version>${mod.version}</version>\n      <versioncode>1</versioncode>\n      <apkname>${downloadUrl}</apkname>\n`;
-            if (mod.virusTotalId && mod.virusTotalId.length === 64) { xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`; }
-            xml += `      <size>${mod.fileSize || 1024}</size>\n      <added>${new Date(mod.createdAt).toISOString().split('T')[0]}</added>\n    </package>\n  </application>\n`;
-        }
-        xml += `</fdroid>`;
-        res.set('Content-Type', 'application/xml');
-        res.send(xml);
-
-    } catch (e) { res.status(500).send("Error generating F-Droid index."); }
-});
 // ===================================
-// AUTOMATION ENGINE & RAM MANAGER
+// 18 AUTOMATION ENGINE & RAM MANAGER
 // ===================================
 const os = require('os');
 

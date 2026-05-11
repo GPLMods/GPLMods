@@ -65,9 +65,24 @@
         margin: 0 auto;
     }
 
-    .docs-content-area h1 { font-size: 2.8em; color: var(--white); margin-bottom: 10px; }
-    .docs-content-area .meta { color: var(--silver); font-size: 0.9em; margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 20px; }
-    
+    /* ✅ FIX: Added line-height and word-wrapping so long titles stack beautifully */
+    .docs-content-area h1 { 
+        font-size: 2.8em; 
+        color: var(--white); 
+        margin-bottom: 10px; 
+        line-height: 1.25; 
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    .docs-content-area .meta { 
+        color: var(--silver); 
+        font-size: 0.9em; 
+        margin-bottom: 40px; 
+        border-bottom: 1px solid #333; 
+        padding-bottom: 20px; 
+        line-height: 1.5;
+    }
+
 /* Rich Text Formatting (Crucial for AdminJS output) */
     .rich-content { 
         color: #ccc; 
@@ -94,7 +109,7 @@
     /* Mobile Toggle */
     .mobile-docs-toggle { display: none; background: var(--dark-gray); color: var(--gold); padding: 15px 20px; width: 100%; text-align: left; border: none; border-bottom: 1px solid #333; font-weight: bold; font-size: 1.1em; cursor: pointer; }
 
-    @media (max-width: 992px) {
+@media (max-width: 992px) {
         .docs-layout { flex-direction: column; }
         .mobile-docs-toggle { display: block; }
         .docs-sidebar { 
@@ -104,6 +119,23 @@
         .docs-sidebar.show { display: block; }
         .docs-content-area { padding: 30px 20px; }
     }
+
+    /* ======== ✅ FIX: NEW MOBILE SCALING ======== */
+    @media (max-width: 768px) {
+        .docs-content-area h1 {
+            font-size: 1.8em; /* Drastically shrink the title for phone screens */
+            margin-bottom: 15px;
+        }
+        .docs-content-area .meta {
+            font-size: 0.8em; /* Slightly shrink the date/category text */
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .rich-content {
+            font-size: 1em; /* Slightly scale down paragraph text for readability */
+        }
+    }
+    /* ============================================ */
 </style>
 
 <div class="docs-layout">
