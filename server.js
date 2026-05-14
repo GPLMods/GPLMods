@@ -45,9 +45,17 @@ const { Upload } = require("@aws-sdk/lib-storage");
 const Filter = require('bad-words');
 const { isbot } = require('isbot');
 const zlib = require('zlib');
+const otplib = require('otplib');
+const qrcode = require('qrcode');
+const { 
+    generateRegistrationOptions, 
+    verifyRegistrationResponse, 
+    generateAuthenticationOptions, 
+    verifyAuthenticationResponse 
+} = require('@simplewebauthn/server');
 
 // Custom Utilities & Config
-const { sendVerificationEmail, sendPasswordResetEmail } = require('./utils/mailer');
+const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
 
 // AWS SDK v3 Imports (Backblaze B2)
 // Add DeleteObjectCommand to this list
@@ -208,6 +216,37 @@ function slugify(text) {
         .replace(/\-\-+/g, '-')         // Replace multiple - with single -
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
+}
+// --- NEW: ANTI-TEMP MAIL CHECKER ---
+/**
+ * Checks if an email address is from a known disposable/temporary domain.
+ * @param {string} email - The email address to check.
+ * @returns {Promise<boolean>} - True if the email is disposable, False if it is safe.
+ */
+async function isDisposableEmail(email) {
+    try {
+        // Extract the domain from the email address
+        const domain = email.split('@')[1];
+        if (!domain) return true; // Invalid email format
+
+        // We use a fast, free, open-source API for disposable domain checking.
+        // It returns JSON. If 'disposable' is true, it's a temp mail.
+        const response = await axios.get(`https://open.kickbox.com/v1/disposable/${domain}`);
+        
+        // If the API confirms it is disposable, return true
+        if (response.data && response.data.disposable) {
+            return true;
+        }
+
+        // If it's not listed as disposable, consider it safe
+        return false;
+    } catch (error) {
+        console.error("Temp Mail Checker API Error:", error.message);
+        // If the API fails, we fail OPEN (allow the registration) to prevent blocking 
+        // legitimate users just because a third-party service is temporarily down.
+        // You could also maintain a hardcoded fallback list of domains here.
+        return false; 
+    }
 }
 // ===============================
 // INDEXNOW SEO PROTOCOL HELPER
@@ -600,6 +639,8 @@ app.use(async (req, res, next) => {
 
 // --- Globals & Notification Cache ---
 let cachedTotalUpdates = 0;
+let cachedNewUploads = 0;
+let cachedNewUpdates = 0;
 let lastUpdateCheck = 0;
 
 // ✅ FIX: Added the 'async' keyword right here!
@@ -670,27 +711,32 @@ app.use(async (req, res, next) => {
 
     // 3. ======== NOTIFICATIONS LOGIC ========
     try {
-        // This 'await' will now work perfectly because the function is 'async'
         if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            
             cachedTotalUpdates = await Announcement.countDocuments();
+            cachedNewUploads = await File.countDocuments({ status: 'live', isLatestVersion: true, createdAt: { $gte: oneDayAgo } });
+            cachedNewUpdates = await File.countDocuments({ status: 'live', isLatestVersion: true, updatedAt: { $gte: oneDayAgo } });
+            
             lastUpdateCheck = Date.now();
         }
         res.locals.totalUpdatesCount = cachedTotalUpdates;
+        res.locals.newUploadsCount = cachedNewUploads;
+        res.locals.newUpdatesCount = cachedNewUpdates;
 
         let unreadPersonalCount = 0;
         if (req.isAuthenticated() && req.user) {
-            unreadPersonalCount = await UserNotification.countDocuments({ 
-                user: req.user._id, 
-                isRead: false 
-            });
+            const UserNotification = require('./models/userNotification');
+            unreadPersonalCount = await UserNotification.countDocuments({ user: req.user._id, isRead: false });
         }
         res.locals.unreadPersonalCount = unreadPersonalCount;
         
         next(); 
-
     } catch (e) {
         console.error("Global Middleware Error:", e);
         res.locals.totalUpdatesCount = cachedTotalUpdates;
+        res.locals.newUploadsCount = cachedNewUploads;
+        res.locals.newUpdatesCount = cachedNewUpdates;
         res.locals.unreadPersonalCount = 0;
         next(); 
     }
@@ -1010,7 +1056,7 @@ const renderHomepage = async (req, res) => {
         // Process URLs for Editor's Choice
         const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-avatar.png';
+            let signedIconUrl = '/images/default-app-icon.png';
             if (iconKey) {
                 try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
             }
@@ -1071,26 +1117,29 @@ app.get('/home', ensureAuthenticated, async (req, res) => {
 // 2 NOTIFICATION SYSTEM ROUTES
 // ===================================
 // 1. The Notification Hub (Category Selection)
-// ✅ FIX: Removed ensureAuthenticated so guests can view the hub
 app.get('/notifications', async (req, res) => {
     try {
-        let unreadPersonalCount = 0;
+        let followingCount = 0;
 
-        // Only try to count personal messages if the user is actually logged in
-        if (req.isAuthenticated()) {
-            const UserNotification = require('./models/userNotification');
-            unreadPersonalCount = await UserNotification.countDocuments({ 
-                user: req.user._id, 
-                isRead: false 
-            });
+        // If the user is logged in, calculate their personalized "Following" updates
+        if (req.isAuthenticated() && req.user) {
+            const userWithFollowing = await User.findById(req.user._id).populate('following', 'username');
+            if (userWithFollowing && userWithFollowing.following && userWithFollowing.following.length > 0) {
+                const followedUsernames = userWithFollowing.following.map(u => u.username);
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                
+                followingCount = await File.countDocuments({
+                    uploader: { $in: followedUsernames },
+                    status: 'live',
+                    isLatestVersion: true,
+                    updatedAt: { $gte: oneDayAgo }
+                });
+            }
         }
 
-        // Count Total Global Announcements (visible to everyone)
-        const totalGlobalUpdates = await Announcement.countDocuments();
-
         res.render('pages/notifications-hub', {
-            unreadPersonalCount: unreadPersonalCount || 0,
-            totalGlobalUpdates: totalGlobalUpdates || 0
+            // Unread Personal and Global Counts are already provided by res.locals
+            followingCount: followingCount
         });
 
     } catch (error) {
@@ -1291,7 +1340,7 @@ app.get('/category', async (req, res) => {
         // 5. Get Signed URLs for images
                 const filesWithUrls = await Promise.all(files.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-avatar.png';
+            const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-app-icon.png';
             return { ...file, iconUrl }; // No need for toObject() when using .lean()
         }));
 
@@ -1372,7 +1421,7 @@ app.get('/search', async (req, res) => {
 
         const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-avatar.png'; 
+            let signedIconUrl = '/images/default-app-icon.png'; 
             if (key) {
                 try {
                     signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -1421,6 +1470,194 @@ app.get('/search', async (req, res) => {
     } catch (error) {
         console.error("Search Error:", error);
         return next(error);
+    }
+});
+// ===================================
+// COMMUNITY FORUM ROUTES (PHASE 3)
+// ===================================
+const Issue = require('./models/issue');
+const Reply = require('./models/reply');
+
+// 1. Forum Hub (View all issues with search/filter)
+app.get('/community', async (req, res) => {
+    try {
+        const { category, status, sort, q, page = 1 } = req.query;
+        const limit = 15;
+        
+        let queryFilter = {};
+        if (category && category !== 'all') queryFilter.category = category;
+        if (status && status !== 'all') queryFilter.status = status;
+        if (q) queryFilter.title = { $regex: q, $options: 'i' };
+
+        let sortOptions = { createdAt: -1 }; // Default: Newest
+        if (sort === 'views') sortOptions = { views: -1 };
+        if (sort === 'oldest') sortOptions = { createdAt: 1 };
+
+        const totalIssues = await Issue.countDocuments(queryFilter);
+        const totalPages = Math.ceil(totalIssues / limit);
+
+        const issues = await Issue.find(queryFilter)
+            .populate('author', 'username profileImageKey role forumPoints') // Populate author details
+            .sort(sortOptions)
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        // Get reply counts for each issue
+        const issuesWithCounts = await Promise.all(issues.map(async (issue) => {
+            const replyCount = await Reply.countDocuments({ issue: issue._id });
+            const authorObj = issue.author ? issue.author.toObject() : { username: 'Deleted User', forumRank: { color: 'var(--silver)' } };
+            // Ensure avatar URL is attached safely
+            if (issue.author && issue.author.profileImageKey) {
+                authorObj.signedAvatarUrl = await getSmartImageUrl(issue.author.profileImageKey);
+            } else {
+                authorObj.signedAvatarUrl = '/images/default-avatar.png';
+            }
+            return { ...issue.toObject(), author: authorObj, replyCount };
+        }));
+
+        res.render('pages/forum-index', {
+            issues: issuesWithCounts,
+            totalPages,
+            currentPage: parseInt(page),
+            currentCategory: category || 'all',
+            currentStatus: status || 'all',
+            currentSort: sort || 'newest',
+            searchQuery: q || ''
+        });
+
+    } catch (error) {
+        console.error("Forum Index Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 2. GET: Ask a Question Page
+app.get('/community/ask', ensureAuthenticated, (req, res) => {
+    res.render('pages/forum-ask');
+});
+
+// 3. POST: Submit a Question
+app.post('/community/ask', ensureAuthenticated, async (req, res) => {
+    try {
+        const { title, category, content } = req.body;
+        if (!title || !category || !content) return res.redirect('/community/ask?error=All fields are required.');
+
+        // Generate a unique slug: slugify title + random 5 char string
+        const baseSlug = slugify(title);
+        const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substr(2, 5)}`;
+
+        const newIssue = new Issue({
+            title,
+            slug: uniqueSlug,
+            content,
+            author: req.user._id,
+            category
+        });
+
+        await newIssue.save();
+        
+        // Award 5 points for asking a question
+        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 5 } });
+
+        res.redirect(`/community/${uniqueSlug}`);
+    } catch (error) {
+        console.error("Ask Issue Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 4. GET: View a Single Issue Thread
+app.get('/community/:slug', async (req, res) => {
+    try {
+        const issue = await Issue.findOneAndUpdate(
+            { slug: req.params.slug },
+            { $inc: { views: 1 } }, // Automatically increment views!
+            { new: true }
+        ).populate('author', 'username profileImageKey role forumPoints');
+
+        if (!issue) return res.status(404).render('pages/404');
+
+        // Fetch Author Avatar
+        const issueAuthor = issue.author ? issue.author.toObject() : { username: 'Deleted User' };
+        issueAuthor.signedAvatarUrl = issue.author?.profileImageKey ? await getSmartImageUrl(issue.author.profileImageKey) : '/images/default-avatar.png';
+
+        // Fetch Replies
+        const rawReplies = await Reply.find({ issue: issue._id })
+            .populate('author', 'username profileImageKey role forumPoints')
+            .sort({ isSolution: -1, createdAt: 1 }); // Solutions float to the top!
+
+        const replies = await Promise.all(rawReplies.map(async (reply) => {
+            const repAuth = reply.author ? reply.author.toObject() : { username: 'Deleted User' };
+            repAuth.signedAvatarUrl = reply.author?.profileImageKey ? await getSmartImageUrl(reply.author.profileImageKey) : '/images/default-avatar.png';
+            return { ...reply.toObject(), author: repAuth };
+        }));
+
+        res.render('pages/forum-issue', {
+            issue: { ...issue.toObject(), author: issueAuthor },
+            replies
+        });
+    } catch (error) {
+        console.error("View Issue Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 5. POST: Reply to an Issue
+app.post('/community/:slug/reply', ensureAuthenticated, async (req, res) => {
+    try {
+        const issue = await Issue.findOne({ slug: req.params.slug });
+        if (!issue || issue.status === 'closed') return res.redirect('/community');
+
+        const newReply = new Reply({
+            issue: issue._id,
+            author: req.user._id,
+            content: req.body.content,
+            isAdminReply: req.user.role === 'admin'
+        });
+
+        await newReply.save();
+
+        // Award 2 points for helping by replying
+        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 2 } });
+
+        res.redirect(`/community/${issue.slug}`);
+    } catch (error) {
+        console.error("Reply Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 6. POST: Mark Reply as Solution (Author or Admin only)
+app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, res) => {
+    try {
+        const issue = await Issue.findOne({ slug: req.params.slug });
+        const reply = await Reply.findById(req.params.replyId);
+
+        if (!issue || !reply) return res.status(404).send("Not found");
+
+        // Verify permissions (Must be Author of the issue or an Admin)
+        const isAuthor = issue.author.toString() === req.user._id.toString();
+        const isAdmin = req.user.role === 'admin';
+
+        if (!isAuthor && !isAdmin) return res.status(403).render('pages/403');
+
+        // Mark Reply as solution
+        reply.isSolution = true;
+        await reply.save();
+
+        // Mark Issue as resolved
+        issue.status = 'resolved';
+        await issue.save();
+
+        // ==== GAMIFICATION: Massive 25 Point Reward for the Solution Provider! ====
+        if (reply.author.toString() !== req.user._id.toString()) { // Don't reward if solving own issue
+            await User.findByIdAndUpdate(reply.author, { $inc: { forumPoints: 25 } });
+        }
+
+        res.redirect(`/community/${issue.slug}`);
+    } catch (error) {
+        console.error("Resolve Error:", error);
+        res.status(500).render('pages/500');
     }
 });
 
@@ -1534,6 +1771,16 @@ app.get('/:category/:slug', async (req, res, next) => {
 
         const reviews = await Review.find({ file: displayFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
         const reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
+        // --- NEW: Sort current user's review to the absolute top (Secretly) ---
+        if (req.user) {
+            reviewsWithAvatars.sort((a, b) => {
+                const isA = a.user._id.toString() === req.user._id.toString();
+                const isB = b.user._id.toString() === req.user._id.toString();
+                if (isA && !isB) return -1; // Push A to top
+                if (!isA && isB) return 1;  // Push B to top
+                return 0; // Keep original chronological sort for others
+            });
+        }
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
                 try { avatarUrl = await getSmartImageUrl(review.user.profileImageKey); } catch (e) {}
@@ -1548,8 +1795,14 @@ app.get('/:category/:slug', async (req, res, next) => {
         }
 
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(displayFile._id) : false;
-        const userHasVotedOnStatus = req.user ? displayFile.votedOnStatusBy.includes(req.user._id) : false;
-
+        // --- REPLACED 'userHasVotedOnStatus' WITH THESE TWO ---
+        let userVotedWorking = false;
+        let userVotedNotWorking = false;
+        if (req.user) {
+            userVotedWorking = displayFile.votedWorkingBy.includes(req.user._id);
+            userVotedNotWorking = displayFile.votedNotWorkingBy.includes(req.user._id);
+        }
+        // --------------------------------------------------------
 
         // ======== NEW: FIND UPLOADER ROLE ========
         let isUploaderDistributor = false;
@@ -1568,7 +1821,9 @@ app.get('/:category/:slug', async (req, res, next) => {
             versionHistory,
             reviews: reviewsWithAvatars,
             userHasWhitelisted,
-            userHasVotedOnStatus,
+            userVotedWorking,
+            userVotedNotWorking,
+            isUploaderDistributor
             isUploaderDistributor
         });
 
@@ -1617,7 +1872,12 @@ app.get('/jailbreak-repos', async (req, res) => {
             else other.push(fileObj);
         }
 
-        res.render('pages/jailbreak-repos', { rootless, rootful, roothide, other });
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        res.render('pages/jailbreak-repos', { 
+            rootless, rootful, roothide, other,
+            baseUrl: baseUrl // <-- Pass baseUrl to EJS
+        });
+
 
     } catch (e) {
         console.error("Jailbreak repo error:", e);
@@ -1666,9 +1926,12 @@ app.get('/repos', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
 
+         const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+
         res.render('pages/repos', { 
             androidFiles: androidFiles,
-            iosFiles: iosFiles
+            iosFiles: iosFiles,
+            baseUrl: baseUrl // <-- Pass baseUrl to EJS
         });
 
     } catch (e) {
@@ -1696,7 +1959,7 @@ app.get('/developer', async (req, res) => {
         // --- FIX: GENERATE SIGNED URLS FOR IMAGES ---
         const filesWithUrls = await Promise.all(filesByDeveloper.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-avatar.png';
+            let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
                 try { signedIconUrl = await getSmartImageUrl(key); } catch (e) {}
             }
@@ -2005,25 +2268,119 @@ app.get('/login', (req, res) => {
         error: req.query.error || null // <--- ADD THIS
     });
 });
+// ===============================
+// 3.6. AUTH ROUTES & 2FA INTERCEPTOR
+// ===============================
+
+// --- REFACTORED: CENTRALIZED LOGIN SUCCESS HANDLER ---
+const processSuccessfulLogin = async (req, res, next, user) => {
+    if (user.twoFactorEnabled) {
+        // Place user in 2FA limbo
+        req.session.pending2faUserId = user._id.toString();
+        
+        if (user.twoFactorMethod === 'email') {
+            try {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                user.verificationOtp = otp;
+                user.otpExpires = Date.now() + 600000;
+                await user.save();
+                await send2faEmail(user, otp); 
+            } catch (e) { console.error("2FA Email Error:", e); }
+        }
+        return res.redirect('/login/2fa');
+    } else {
+        // Standard Login
+        req.logIn(user, (loginErr) => {
+            if (loginErr) return next(loginErr);
+            let tempSession = req.session.passport;
+            req.session.regenerate(() => {
+                req.session.passport = tempSession;
+                req.session.save(() => res.redirect('/home?message=Welcome back!'));
+            });
+        });
+    }
+};
+
+// --- LOCAL LOGIN ---
 app.post('/login', verifyRecaptcha, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) return next(err);
-        
-        // If authentication fails, redirect back with the error message
+        if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
+        processSuccessfulLogin(req, res, next, user); 
+    })(req, res, next);
+});
+
+// --- SOCIAL CALLBACK HANDLER (Handles both Fresh Logins AND Social 2FA) ---
+const handleSocialCallback = (provider) => {
+    return (req, res, next) => {
+        passport.authenticate(provider, async (err, user, info) => {
+            if (err) return next(err);
+            if (!user) return res.redirect('/login');
+
+            // Is the user currently trying to pass a Social 2FA Challenge?
+            if (req.session.pending2faUserId) {
+                const pendingUser = await User.findById(req.session.pending2faUserId);
+                
+                // Check if the social account they just logged into belongs to the pending account
+                if (pendingUser && pendingUser._id.toString() === user._id.toString()) {
+                    // Match! 2FA is successful!
+                    req.logIn(pendingUser, (loginErr) => {
+                        if (loginErr) return next(loginErr);
+                        req.session.pending2faUserId = null;
+                        let tempSession = req.session.passport;
+                        req.session.regenerate(() => {
+                            req.session.passport = tempSession;
+                            req.session.save(() => res.redirect('/home?message=2FA Verified via Social Login!'));
+                        });
+                    });
+                    return;
+                } else {
+                    // Imposter detected
+                    return res.redirect('/login/2fa?error=The social account does not match the linked 2FA account.');
+                }
+            }
+
+            // If not in 2FA limbo, process as a normal login
+            processSuccessfulLogin(req, res, next, user);
+        })(req, res, next);
+    };
+};
+
+app.get('/auth/google/callback', handleSocialCallback('google'));
+app.get('/auth/github/callback', handleSocialCallback('github'));
+app.get('/auth/microsoft/callback', handleSocialCallback('microsoft'));
+
+// 3.7. LOGIN SYSTEM
+app.post('/login', verifyRecaptcha, (req, res, next) => {
+    passport.authenticate('local', async (err, user, info) => {
+        if (err) return next(err);
         if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
 
-        // If authentication succeeds, log them in
+        // --- NEW: 2FA INTERCEPT ---
+        if (user.twoFactorEnabled) {
+            // Save their ID temporarily in the session, but DO NOT log them in yet
+            req.session.pending2faUserId = user._id;
+            
+            // If they use Email 2FA, generate and send the code right now
+            if (user.twoFactorMethod === 'email') {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                user.verificationOtp = otp;
+                user.otpExpires = Date.now() + 600000; // 10 mins
+                await user.save();
+                await send2faEmail(user, otp);
+            }
+            
+            return res.redirect('/login/2fa');
+        }
+
+        // --- Standard Login (If 2FA is disabled) ---
         req.logIn(user, (loginErr) => {
             if (loginErr) return next(loginErr);
-            
+            processSuccessfulLogin(req, res, next); // <-- Use the interceptor here
             let tempSession = req.session.passport;
             req.session.regenerate((regenErr) => {
                 req.session.passport = tempSession;
-                req.session.save((saveErr) => {
-                    // ✅ FIX: Set a readable cookie for the frontend CDN bypass
-                    res.cookie('is_logged_in', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3 }); // 3 days
-                    res.redirect('/home?message=Welcome back!');
-                });
+                req.session.save(() => res.redirect('/home?message=Welcome back!'));
             });
         });
     })(req, res, next);
@@ -2059,7 +2416,16 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         }
 
         let user = await User.findOne({ email: email.toLowerCase() });
-
+        // ======== NEW: ANTI-TEMP MAIL CHECK ========
+        const isTempMail = await isDisposableEmail(email.toLowerCase());
+        if (isTempMail) {
+            return res.status(400).render('pages/register', { 
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, 
+                message: null,
+                error: "Registration failed. Disposable or temporary email addresses are not allowed. Please use a valid, permanent email." 
+            });
+        }
+        // ===========================================
         if (user && user.isVerified) {
             return res.status(400).send("An account with this email already exists.");
         }
@@ -2172,6 +2538,12 @@ app.get('/forgot-password', (req, res) => {
 app.post('/resend-otp', async (req, res) => {
     try {
         const { email } = req.body;
+        // ======== NEW: ANTI-TEMP MAIL CHECK ========
+        const isTempMail = await isDisposableEmail(email.toLowerCase());
+        if (isTempMail) {
+            return res.redirect('/forgot-password?error=Invalid email domain.');
+        }
+        // ===========================================
         const user = await User.findOne({ email: email.toLowerCase() });
         
         if (user && !user.isVerified) {
@@ -2270,7 +2642,8 @@ app.get('/logout', (req, res, next) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }), 
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
         res.cookie('is_logged_in', 'true', { 
@@ -2288,6 +2661,7 @@ app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' 
 
 app.get('/auth/github/callback', 
     passport.authenticate('github', { failureRedirect: '/login' }), 
+    processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
         res.cookie('is_logged_in', 'true', { 
@@ -2304,7 +2678,8 @@ app.get('/auth/github/callback',
 app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
 
 app.get('/auth/microsoft/callback', 
-    passport.authenticate('microsoft', { failureRedirect: '/login' }), 
+    passport.authenticate('microsoft', { failureRedirect: '/login' }),
+    processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
         res.cookie('is_logged_in', 'true', { 
@@ -2325,7 +2700,8 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
         const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
         
-        const userObj = userWithWhitelist.toObject();
+        // ✅ FIX: Added { virtuals: true } so the forumRank is sent to the frontend!
+        const userObj = userWithWhitelist.toObject({ virtuals: true });
         userObj.signedAvatarUrl = req.user.signedAvatarUrl; 
 
         // ✅ BUG 2 FIX: Generate Secure Smart URLs for all Whitelisted Mods!
@@ -2363,7 +2739,7 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
         // 2. Map through the uploads to generate signed image URLs
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-avatar.png';
+            let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
                 try {
                     signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -2515,6 +2891,12 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
         }
 
         if (email && email !== user.email) {
+            // ======== NEW: ANTI-TEMP MAIL CHECK ========
+            const isTempMail = await isDisposableEmail(email.toLowerCase());
+            if (isTempMail) {
+                return res.redirect('/profile?error=Disposable or temporary email addresses are not allowed. Please use a permanent email.');
+            }
+            // ===========================================
             const existingEmail = await User.findOne({ email });
             if (existingEmail) return res.redirect('/profile?error=Email in use.');
             user.email = email;
@@ -2587,26 +2969,396 @@ app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
         res.redirect('/profile?error=' + encodeURIComponent(error.message)); 
     }
 });
+// ===================================
+// SECURITY: DELETION & 2FA ROUTES
+// ===================================
 
+// --- 1. Account Deletion with OTP ---
+app.post('/account/delete-request', ensureAuthenticated, async (req, res) => {
+    try {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const user = await User.findById(req.user._id);
+        user.deletionOtp = otp;
+        user.deletionOtpExpires = Date.now() + 600000; // 10 mins
+        await user.save();
+        await sendDeletionOtpEmail(user, otp);
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false }); }
+});
+
+app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) => {
+    try {
+        const { otp, preserveMods } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user.deletionOtp || user.deletionOtp !== otp || user.deletionOtpExpires < Date.now()) {
+            return res.json({ success: false, message: 'Invalid or expired code.' });
+        }
+
+        const username = user.username;
+        if (preserveMods) {
+            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
+        } else {
+            await File.deleteMany({ uploader: username });
+        }
+        await Review.deleteMany({ user: user._id });
+        await User.findByIdAndDelete(user._id);
+
+        req.logout(function(err) {
+            if (err) return next(err);
+            res.json({ success: true, redirect: '/?message=Account deleted permanently.' });
+        });
+    } catch (error) { res.status(500).json({ success: false }); }
+});
+
+// --- 2. 2FA Setup Pages ---
+app.get('/account/2fa/setup', ensureAuthenticated, (req, res) => {
+    res.render('pages/2fa-setup', { error: req.query.error, message: req.query.message });
+});
+
+app.post('/account/2fa/generate-totp', ensureAuthenticated, async (req, res) => {
+    try {
+        const secret = otplib.authenticator.generateSecret();
+        const otpauth = otplib.authenticator.keyuri(req.user.email, 'GPL Mods', secret);
+        const qrCodeUrl = await qrcode.toDataURL(otpauth);
+        
+        // Save secret temporarily
+        await User.findByIdAndUpdate(req.user._id, { twoFactorSecret: secret });
+        
+        res.json({ success: true, qrCodeUrl, secret });
+    } catch (e) { res.json({ success: false }); }
+});
+
+// --- Enable 2FA & Generate Recovery Codes ---
+app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
+    try {
+        const { method, token } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (method === 'totp') {
+            const isValid = otplib.authenticator.check(token, user.twoFactorSecret);
+            if (!isValid) return res.redirect('/account/2fa/setup?error=Invalid Authenticator Code.');
+        }
+
+        user.twoFactorEnabled = true;
+        user.twoFactorMethod = method;
+
+        // Generate 8 Backup Recovery Codes (8 characters each)
+        const rawCodes = [];
+        const hashedCodes = [];
+        for (let i = 0; i < 8; i++) {
+            const code = crypto.randomBytes(4).toString('hex');
+            rawCodes.push(code);
+            hashedCodes.push(await bcrypt.hash(code, 10)); // Save hashed for security
+        }
+        
+        user.twoFactorRecoveryCodes = hashedCodes;
+        await user.save();
+        
+        // Send them to a special page to copy their backup codes!
+        res.render('pages/2fa-recovery-codes', { codes: rawCodes });
+
+    } catch (e) { 
+        console.error("2FA Enable Error:", e);
+        res.redirect('/account/2fa/setup?error=Server error.'); 
+    }
+});
+
+// --- Update 2FA Login Challenge to Accept Backup Codes ---
+app.post('/login/2fa/verify', async (req, res, next) => {
+    if (!req.session.pending2faUserId) return res.redirect('/login');
+    try {
+        const { token } = req.body;
+        const user = await User.findById(req.session.pending2faUserId);
+
+        let isValid = false;
+        let usedRecoveryCodeIndex = -1;
+
+        // 1. Check if it's an 8-character Backup Code
+        if (token.length === 8 && user.twoFactorRecoveryCodes && user.twoFactorRecoveryCodes.length > 0) {
+            for (let i = 0; i < user.twoFactorRecoveryCodes.length; i++) {
+                if (await bcrypt.compare(token, user.twoFactorRecoveryCodes[i])) {
+                    isValid = true;
+                    usedRecoveryCodeIndex = i;
+                    break;
+                }
+            }
+        } 
+        // 2. Otherwise, check TOTP
+        else if (user.twoFactorMethod === 'totp') {
+            isValid = otplib.authenticator.check(token, user.twoFactorSecret);
+        } 
+        // 3. Otherwise, check Email OTP
+        else if (user.twoFactorMethod === 'email') {
+            isValid = (user.verificationOtp === token && user.otpExpires > Date.now());
+        }
+
+        if (!isValid) return res.redirect('/login/2fa?error=Invalid code. Please try again.');
+
+        // Cleanup: Remove used recovery code or email OTP
+        if (usedRecoveryCodeIndex !== -1) {
+            user.twoFactorRecoveryCodes.splice(usedRecoveryCodeIndex, 1);
+        }
+        if (user.twoFactorMethod === 'email') {
+            user.verificationOtp = undefined;
+            user.otpExpires = undefined;
+        }
+        await user.save();
+
+        // Finalize Login!
+        req.logIn(user, (err) => {
+            if (err) return next(err);
+            req.session.pending2faUserId = null; 
+            
+            let tempSession = req.session.passport;
+            req.session.regenerate(() => {
+                req.session.passport = tempSession;
+                req.session.save(() => res.redirect('/home?message=Login successful!'));
+            });
+        });
+    } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
+});
+
+app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
+    await User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: false, twoFactorMethod: 'none', twoFactorSecret: '' });
+    res.redirect('/profile?success=2FA Disabled.');
+});
+// --- ENABLE SOCIAL 2FA ---
+app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => {
+    const { provider } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+        twoFactorEnabled: true,
+        twoFactorMethod: 'social',
+        twoFactorSocialProvider: provider
+    });
+    // Remember to generate and show backup codes here just like TOTP!
+    res.redirect('/profile?success=Social 2FA Enabled. Please save your backup codes!');
+});
+
+// --- PASSKEY SETUP ROUTES ---
+const rpName = 'GPL Mods';
+
+app.get('/account/2fa/passkey/generate-options', ensureAuthenticated, async (req, res) => {
+    try {
+        const rpID = req.hostname; // 'localhost' or 'gplmods.webredirect.org'
+        const options = await generateRegistrationOptions({
+            rpName,
+            rpID,
+            userID: req.user._id.toString(),
+            userName: req.user.username,
+            attestationType: 'none',
+            authenticatorSelection: { userVerification: 'preferred' }
+        });
+        
+        await User.findByIdAndUpdate(req.user._id, { webAuthnChallenge: options.challenge });
+        res.json(options);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        const verification = await verifyRegistrationResponse({
+            response: req.body,
+            expectedChallenge: user.webAuthnChallenge,
+            expectedOrigin: process.env.BASE_URL || `http://${req.headers.host}`,
+            expectedRPID: req.hostname,
+        });
+
+        if (verification.verified) {
+            const { credentialPublicKey, credentialID } = verification.registrationInfo;
+            user.passkeys.push({
+                credentialID: Buffer.from(credentialID).toString('base64url'),
+                credentialPublicKey: Buffer.from(credentialPublicKey).toString('base64url'),
+                counter: 0
+            });
+            user.twoFactorEnabled = true;
+            user.twoFactorMethod = 'passkey';
+            user.webAuthnChallenge = undefined;
+            await user.save();
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ error: 'Verification failed' });
+        }
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- PASSKEY LOGIN CHALLENGE ROUTES ---
+app.get('/login/2fa/passkey/options', async (req, res) => {
+    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending session'});
+    const user = await User.findById(req.session.pending2faUserId);
+    
+    const options = await generateAuthenticationOptions({
+        rpID: req.hostname,
+        allowCredentials: user.passkeys.map(key => ({
+            id: Buffer.from(key.credentialID, 'base64url'),
+            type: 'public-key',
+        })),
+        userVerification: 'preferred',
+    });
+    
+    user.webAuthnChallenge = options.challenge;
+    await user.save();
+    res.json(options);
+});
+
+app.post('/login/2fa/passkey/verify', async (req, res, next) => {
+    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No session'});
+    const user = await User.findById(req.session.pending2faUserId);
+    
+    try {
+        const passkey = user.passkeys.find(k => k.credentialID === req.body.id);
+        if (!passkey) throw new Error('Passkey not found');
+
+        const verification = await verifyAuthenticationResponse({
+            response: req.body,
+            expectedChallenge: user.webAuthnChallenge,
+            expectedOrigin: process.env.BASE_URL || `http://${req.headers.host}`,
+            expectedRPID: req.hostname,
+            authenticator: {
+                credentialPublicKey: Buffer.from(passkey.credentialPublicKey, 'base64url'),
+                credentialID: Buffer.from(passkey.credentialID, 'base64url'),
+                counter: passkey.counter,
+            },
+        });
+
+        if (verification.verified) {
+            passkey.counter = verification.authenticationInfo.newCounter;
+            user.webAuthnChallenge = undefined;
+            await user.save();
+            
+            // Login successful!
+            req.logIn(user, (err) => {
+                if (err) return next(err);
+                req.session.pending2faUserId = null;
+                let tempSession = req.session.passport;
+                req.session.regenerate(() => {
+                    req.session.passport = tempSession;
+                    req.session.save(() => res.json({ success: true, redirect: '/home' }));
+                });
+            });
+        }
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// --- 3. 2FA Login Challenge ---
+app.get('/login/2fa', async (req, res) => {
+    if (!req.session.pending2faUserId) return res.redirect('/login');
+    const user = await User.findById(req.session.pending2faUserId);
+    res.render('pages/2fa-challenge', { method: user.twoFactorMethod, error: req.query.error });
+});
+
+app.post('/login/2fa/verify', async (req, res, next) => {
+    if (!req.session.pending2faUserId) return res.redirect('/login');
+    try {
+        const { token } = req.body;
+        const user = await User.findById(req.session.pending2faUserId);
+
+        let isValid = false;
+        if (user.twoFactorMethod === 'totp') {
+            isValid = otplib.authenticator.check(token, user.twoFactorSecret);
+        } else if (user.twoFactorMethod === 'email') {
+            isValid = (user.verificationOtp === token && user.otpExpires > Date.now());
+        }
+
+        if (!isValid) return res.redirect('/login/2fa?error=Invalid code. Please try again.');
+
+        // Clean up
+        if (user.twoFactorMethod === 'email') {
+            user.verificationOtp = undefined;
+            user.otpExpires = undefined;
+            await user.save();
+        }
+
+        req.logIn(user, (err) => {
+            if (err) return next(err);
+            req.session.pending2faUserId = null; // Clear pending state
+            
+            let tempSession = req.session.passport;
+            req.session.regenerate(() => {
+                req.session.passport = tempSession;
+                req.session.save(() => res.redirect('/home?message=Login successful!'));
+            });
+        });
+    } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
+});
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     try {
         const userId = req.user._id;
         const username = req.user.username;
         const preserveMods = req.body.preserveMods === 'true';
 
-        if (preserveMods) {
-            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
-        } else {
-            await File.deleteMany({ uploader: username });
+        // 1. DELETE AVATAR FROM B2 CLOUD
+        if (req.user.profileImageKey) {
+            await deleteFromB2(req.user.profileImageKey);
         }
+
+        // 2. WIPE MODS & MOD DATA
+        if (preserveMods) {
+            // Keep the files, but anonymize the uploader
+            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
+            
+            // 🔥 CRITICAL: If they preserve mods, we must still delete all the "Uploader Replies" they made on comments for those mods!
+            const userFiles = await File.find({ uploader: 'GPL Community' }); // Now owned by community
+            const fileIds = userFiles.map(f => f._id);
+            await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
+            
+        } else {
+            // Delete EVERYTHING related to their mods from the Cloud and DB
+            const userFiles = await File.find({ uploader: username }).populate('olderVersions');
+            for (const f of userFiles) {
+                await deleteFromB2(f.fileKey);
+                await deleteFromB2(f.iconKey);
+                if (f.screenshotKeys) {
+                    for (const sk of f.screenshotKeys) await deleteFromB2(sk);
+                }
+                if (f.olderVersions) {
+                    for (const ov of f.olderVersions) {
+                        await deleteFromB2(ov.fileKey);
+                        await File.findByIdAndDelete(ov._id);
+                    }
+                }
+                await File.findByIdAndDelete(f._id);
+                await Review.deleteMany({ file: f._id }); // Delete all reviews on their mods
+                await Report.updateMany({ file: f._id }, { status: 'resolved' });
+            }
+        }
+
+        // 3. DELETE THEIR PERSONAL REVIEWS/COMMENTS
         await Review.deleteMany({ user: userId });
+
+        // 4. DELETE THEIR CHAT HISTORY FROM MEMORY
+        recentMessages = recentMessages.filter(msg => msg.username !== username);
+
+        // ======== 5. NEWSLETTER UNSUBSCRIBE (Custom Local DB) ========
+        try {
+            // We use mongoose.models to safely access your Subscriber model 
+            // in case it's imported under a slightly different name at the top.
+            const SubscriberModel = mongoose.models.Subscriber || require('./models/subscriber');
+            
+            if (SubscriberModel) {
+                // Delete the subscriber record matching this user's email
+                await SubscriberModel.deleteOne({ email: req.user.email.toLowerCase() });
+                console.log(`Unsubscribed ${req.user.email} from newsletter during account deletion.`);
+            }
+        } catch (subErr) {
+            console.error("Failed to delete subscriber record:", subErr);
+        }
+        // ===============================================================
+
+        // 6. DELETE THE USER ACCOUNT
         await User.findByIdAndDelete(userId);
 
         req.logout(function(err) {
             if (err) return next(err);
-            res.redirect('/?message=Your account has been successfully deleted.');
+            res.redirect('/?message=Your account and all associated data have been permanently wiped.');
         });
-    } catch (error) { return next(error); }
+    } catch (error) { 
+        console.error("Deep Wipe Deletion Error:", error);
+        return next(error); 
+    }
 });
 // ===================================
 // 7. FILE UPLOAD & MANAGEMENT
@@ -3215,6 +3967,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         if (actionType === 'draft') {
             res.redirect(`/upload-details/${fileId}?success=Draft saved successfully! You can return to finish it later.`);
         } else {
+        // ======== NEW: AWARD POINTS FOR UPLOADING ========
+        // Give the user 50 points for contributing a mod!
+        await User.findOneAndUpdate(
+            { username: req.user.username }, 
+            { $inc: { forumPoints: 50 } }
+        );
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -3457,7 +4215,7 @@ app.post('/api/subscribe', async (req, res) => {
                 subscriber.isSubscribed = true;
                 subscriber.subscribedAt = Date.now();
                 await subscriber.save();
-                return res.json({ message: 'Welcome back! You have been successfully re-subscribed.' });
+                return res.json({ message: 'Welcome back! You have been successfully re subscribed.' });
             }
         }
 
@@ -3687,6 +4445,9 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         const cleanComment = global.profanityFilter.clean(req.body.comment);
         const newReview = new Review({ file: req.params.fileId, user: req.user._id, username: req.user.username, rating: parseInt(rating), comment: cleanComment });
         await newReview.save();
+        // ======== NEW: AWARD POINTS FOR WRITING A REVIEW ========
+        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 20 } });
+        // ========================================================
         
         const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(req.params.fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
         if (stats.length > 0) {
@@ -3695,17 +4456,177 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         res.redirect(`/mods/${req.params.fileId}`);
     } catch (e) { res.status(500).send("Error."); }
 });
+// --- HELPER to recalculate ratings ---
+async function recalculateRating(fileId) {
+    const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
+    if (stats.length > 0) {
+        await File.findByIdAndUpdate(fileId, { averageRating: stats[0].avg.toFixed(1), ratingCount: stats[0].count });
+    } else {
+        await File.findByIdAndUpdate(fileId, { averageRating: 0, ratingCount: 0 });
+    }
+}
 
+// 1. User Deletes their own comment
+app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(403).send("Unauthorized");
+        
+        await Review.findByIdAndDelete(review._id);
+        await recalculateRating(review.file);
+        res.redirect('back');
+    } catch (e) { res.status(500).send("Error"); }
+});
+
+// 2. User Edits their own comment
+app.post('/reviews/:id/edit', ensureAuthenticated, async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        const review = await Review.findById(req.params.id);
+        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(403).send("Unauthorized");
+        
+        review.rating = parseInt(rating);
+        review.comment = comment;
+        await review.save();
+        await recalculateRating(review.file);
+        res.redirect('back');
+    } catch (e) { res.status(500).send("Error"); }
+});
+
+// 3. Uploader Replies to a comment
+app.post('/reviews/:id/reply', ensureAuthenticated, async (req, res) => {
+    try {
+        const review = await Review.findById(req.params.id).populate('file');
+        if (!review || review.file.uploader !== req.user.username) return res.status(403).send("Unauthorized");
+
+        review.uploaderReply = { text: req.body.replyText, createdAt: new Date() };
+        await review.save();
+        res.redirect('back');
+    } catch (e) { res.status(500).send("Error"); }
+});
+
+// 4. Uploader Deletes their reply
+app.post('/reviews/:id/reply/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const review = await Review.findById(req.params.id).populate('file');
+        if (!review || review.file.uploader !== req.user.username) return res.status(403).send("Unauthorized");
+
+        review.uploaderReply = undefined; // Unset the reply
+        await review.save();
+        res.redirect('back');
+    } catch (e) { res.status(500).send("Error"); }
+});
+app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
+    try {
+        const reviewId = req.params.reviewId;
+        const userId = req.user._id;
+
+        const review = await Review.findById(reviewId);
+        if (!review) return res.status(404).send("Review not found.");
+
+        if (review.votedBy.includes(userId)) {
+            return res.redirect(`/mods/${review.file}`);
+        }
+
+        review.votedBy.push(userId);
+        review.isHelpfulCount += 1;
+        await review.save();
+
+        // ======== NEW: REWARD THE AUTHOR OF THE HELPFUL REVIEW ========
+        // Notice we are updating 'review.user', NOT 'req.user._id'
+        await User.findByIdAndUpdate(review.user, { $inc: { forumPoints: 10 } });
+        // ==============================================================
+
+        res.redirect(`/mods/${review.file}`);
+
+    } catch (error) {
+        console.error('Error processing review vote:', error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// ===================================
+// FILE STATUS VOTING ROUTE (SMART TOGGLE)
+// ===================================
 app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => {
     try {
-        const { voteType } = req.body;
-        const file = await File.findById(req.params.fileId);
+        const fileId = req.params.fileId;
+        const userId = req.user._id;
+        const { voteType } = req.body; // 'working' or 'not-working'
+
+        if (!['working', 'not-working'].includes(voteType)) {
+            return res.status(400).send("Invalid vote type.");
+        }
+        
+        const file = await File.findById(fileId);
+        if (!file) return res.status(404).send("File not found.");
+        
+        // Check current voting status
+        const hasVotedWorking = file.votedWorkingBy.includes(userId);
+        const hasVotedNotWorking = file.votedNotWorkingBy.includes(userId);
+
+        let updateQuery = {};
+
+        // SCENARIO 1: User clicked "Working"
+        if (voteType === 'working') {
+            if (hasVotedWorking) {
+                // TOGGLE OFF: They already voted working, so remove their vote
+                updateQuery = { 
+                    $pull: { votedWorkingBy: userId }, 
+                    $inc: { workingVoteCount: -1 } 
+                };
+            } else {
+                // ADD VOTE: Add to working, and if they previously voted not-working, remove that
+                updateQuery = { 
+                    $push: { votedWorkingBy: userId }, 
+                    $inc: { workingVoteCount: 1 } 
+                };
+                if (hasVotedNotWorking) {
+                    updateQuery.$pull = { votedNotWorkingBy: userId };
+                    updateQuery.$inc.notWorkingVoteCount = -1;
+                }
+            }
+        } 
+        
+        // SCENARIO 2: User clicked "Not Working"
+        else if (voteType === 'not-working') {
+            if (hasVotedNotWorking) {
+                // TOGGLE OFF: They already voted not-working, so remove their vote
+                updateQuery = { 
+                    $pull: { votedNotWorkingBy: userId }, 
+                    $inc: { notWorkingVoteCount: -1 } 
+                };
+            } else {
+                // ADD VOTE: Add to not-working, and if they previously voted working, remove that
+                updateQuery = { 
+                    $push: { votedNotWorkingBy: userId }, 
+                    $inc: { notWorkingVoteCount: 1 } 
+                };
+                if (hasVotedWorking) {
+                    updateQuery.$pull = { votedWorkingBy: userId };
+                    updateQuery.$inc.workingVoteCount = -1;
+                }
+            }
+        }
+
+        // Execute the smart update
+        await File.findByIdAndUpdate(fileId, updateQuery);
+
+        res.redirect(`/mods/${fileId}`);
+        // This 'if' ensures they haven't voted on this mod before
         if (file && !file.votedOnStatusBy.includes(req.user._id)) {
             const update = voteType === 'working' ? { $inc: { workingVoteCount: 1 } } : { $inc: { notWorkingVoteCount: 1 } };
             await File.findByIdAndUpdate(req.params.fileId, { ...update, $push: { votedOnStatusBy: req.user._id } });
+
+            // ======== NEW: AWARD POINTS FOR VOTING ON STATUS ========
+            await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 5 } });
+            // ========================================================
         }
-        res.redirect(`/mods/${req.params.fileId}`);
-    } catch (e) { res.status(500).send("Error."); }
+        
+    } catch (error) {
+        console.error("Error processing file status vote:", error);
+        res.status(500).send("Server Error");
+    }
 });
 
 app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
@@ -3782,10 +4703,14 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
             // UNFOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $pull: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $pull: { followers: currentUserId } });
+                $pull: { followers: currentUserId },
+                $inc: { forumPoints: -10 } // Deduct points
         } else {
             // FOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $push: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $push: { followers: currentUserId } });
+                $push: { followers: currentUserId },
+                $inc: { forumPoints: 10 } // Award points
             
             // Optional: Send a notification to the user that they got a new follower
             // await new UserNotification({ user: targetUserId, title: "New Follower", message: `${req.user.username} started following you!`, type: 'info' }).save();
@@ -3926,20 +4851,17 @@ app.get('/membership', (req, res) => {
     });
 });
 
-// --- NEW: DOCUMENTATION SYSTEM ROUTE ---
+// --- UPDATED: DOCUMENTATION SYSTEM ROUTE ---
 app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
     try {
         const requestedSlug = req.params.slug;
 
-        // Fetch categories and pages, sorting by the 'order' field
         const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
         const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
 
-        // Build the hierarchical structure for the sidebar
         const sidebarStructure = allCategories.map(cat => {
             return {
                 ...cat,
-                // Filter pages that belong to this category ID
                 pages: allPages.filter(p => p.category && p.category._id.toString() === cat._id.toString())
             };
         });
@@ -3947,24 +4869,25 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
         let currentPage = null;
 
         if (requestedSlug) {
-            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category');
+            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category').lean(); // Use lean() to allow editing the object
             
             if (!currentPage) {
-                // ✅ FIX: Removed "return return next(error);;" 
-                // and replaced it with the proper 404 error page render
-                return res.status(404).render('pages/error', {
-                    errorCode: '404',
-                    errorTitle: 'Doc <span>Not Found</span>',
-                    errorMessage: "The documentation page you are looking for does not exist."
-                });
+                return res.status(404).render('pages/404'); // Using your standard 404
             }
         } else {
-            // ✅ FIX: If they just visit /docs, find the very first page in the first category
             if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
                 currentPage = sidebarStructure[0].pages[0];
                 return res.redirect(`/docs/${currentPage.slug}`);
             }
         }
+
+        // ======== NEW: PROCESS THE FEATURED IMAGE ========
+        if (currentPage && currentPage.featuredImageKey) {
+            // Assuming getSmartImageUrl is available in this file. 
+            // If this is in a separate router file, make sure to import the helper!
+            currentPage.featuredImageUrl = await getSmartImageUrl(currentPage.featuredImageKey);
+        }
+        // =================================================
 
         res.render('pages/docs', {
             sidebarStructure: sidebarStructure,
@@ -3973,7 +4896,7 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
 
     } catch (error) {
         console.error("Docs Engine Error:", error);
-        return next(error); // ✅ FIX: Correct syntax for passing the error to the 500 handler
+        return next(error);
     }
 });
 
@@ -4100,6 +5023,12 @@ app.get('/ai-directory', async (req, res) => {
 
 const REPO_BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
 
+// ======== ✅ FIX: ADD THESE TWO REDIRECTS ========
+// If a user pastes the base URL into a web browser, redirect them to the actual data 
+// so they see the raw code instead of a 404 error!
+app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
+app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v1.json'));
+// =================================================
 // -----------------------------------------------
 // A. iOS JAILBREAK REPO ENGINE (APT & Sileo Native)
 // -----------------------------------------------

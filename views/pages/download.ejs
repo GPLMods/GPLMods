@@ -91,34 +91,46 @@
 }
         .meta-info { list-style: none; text-align: left; color: var(--silver); }
         
-        /* ✅ FIX: Improved responsive layout for all meta information rows */
+        /* ✅ ULTIMATE FIX: Bulletproof Responsive Layout for Meta Info */
         .meta-info li { 
             padding: 12px 0; 
             border-bottom: 1px solid #2a2a2a;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start; /* Aligns text to the top for multi-line content */
-            gap: 15px; /* Ensures space between the label and the value */
+            display: grid;
+            /* Column 1 is auto-sized to fit the label. Column 2 takes up the rest of the space */
+            grid-template-columns: auto 1fr; 
+            align-items: start; /* Aligns text to the top if it wraps */
+            gap: 15px; 
+            width: 100%;
         }
         
-        /* The label on the left (e.g., "Version:", "Architecture:") */
-        .meta-info li > :first-child:not(span):not(a):not(div) {
-            flex-shrink: 0; /* Prevents the label from shrinking */
-            min-width: 90px; /* Gives the label a consistent starting width */
+        /* The label on the left (e.g., "Developer:", "Requires:") */
+        .meta-info li > :first-child {
+            color: var(--silver);
+            white-space: nowrap; /* Prevents the label itself from breaking into two lines */
         }
         
-        /* The value on the right (e.g., "1.0", "arm64-v8a") */
-        .meta-info li > span, 
-        .meta-info li > a, 
-        .meta-info li > div {
+        /* The value on the right (e.g., "Mojang >", "arm64-v8a") */
+        .meta-info li > *:last-child {
             text-align: right;
+            
+            /* Forces long words/names to break instead of pushing outside the box */
             word-wrap: break-word;
             overflow-wrap: break-word;
-            flex-grow: 1; /* Allows the value to take up the remaining space */
+            word-break: break-word;
+            min-width: 0; /* CRITICAL FIX: Allows flex/grid children to shrink below their content size! */
+            
             display: flex;
-            flex-wrap: wrap; /* Allows internal elements like badges to wrap */
-            justify-content: flex-end; /* Keeps badges aligned to the right */
+            flex-wrap: wrap; 
+            justify-content: flex-end;
             gap: 5px;
+        }
+
+        /* Specific fix to ensure the arrow icon doesn't cause awkward wrapping */
+        .meta-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
         .meta-info li:last-child { border-bottom: none; }
@@ -532,16 +544,31 @@
                     <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
                     <div class="voting-system">
                         <span class="working-percentage"><%= workingPercentage %></span>
-                        <% if(user && !userHasVotedOnStatus) { %>
+                        
+                        <% if(user) { %>
                         <div class="vote-buttons">
-                            <!-- ✅ FIX: Applied the new Green and Red button classes -->
+                            <!-- Working Button -->
                             <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
                                 <input type="hidden" name="voteType" value="working">
-                                <button type="submit" class="vote-btn-working" title="It works!">✓</button>
+                                <!-- If user voted working, make it solid. Otherwise, make it outlined. -->
+                                <button type="submit" 
+                                    class="vote-btn-working" 
+                                    style="<%= userVotedWorking ? 'background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);' : '' %>"
+                                    title="<%= userVotedWorking ? 'Remove vote' : 'Mark as Working' %>">
+                                    ✓
+                                </button>
                             </form>
+
+                            <!-- Not Working Button -->
                             <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
                                 <input type="hidden" name="voteType" value="not-working">
-                                <button type="submit" class="vote-btn-not-working" title="It doesn't work!">✗</button>
+                                <!-- If user voted not-working, make it solid. Otherwise, make it outlined. -->
+                                <button type="submit" 
+                                    class="vote-btn-not-working" 
+                                    style="<%= userVotedNotWorking ? 'background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);' : '' %>"
+                                    title="<%= userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>">
+                                    ✗
+                                </button>
                             </form>
                         </div>
                         <% } %>
@@ -784,20 +811,105 @@
 
                 <div class="comment-list">
                     <% if(reviews && reviews.length > 0) { %>
-                        <% reviews.forEach(review => { %>
-                        <div class="comment-item">
+                        <% reviews.forEach((review, index) => { %>
+                        <div class="comment-item" style="position: relative;">
+                            
+                            <!-- If it's the current user's comment, show a tiny 'Your Review' badge -->
+                            <% if (user && user._id.toString() === review.user._id.toString()) { %>
+                                <span style="position: absolute; top: -10px; right: 20px; background: var(--gold); color: var(--black); font-size: 0.7em; font-weight: bold; padding: 2px 8px; border-radius: 10px;">Your Review</span>
+                            <% } %>
+
                             <div class="comment-header">
                                 <div class="avatar-wrapper">
-                                    <img src="<%= (review.user && review.user.signedAvatarUrl) ? review.user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar">
+                                    <img src="<%= review.user.signedAvatarUrl || '/images/default-avatar.png' %>" alt="User Avatar">
                                 </div>
                                 <span class="comment-author notranslate"><%= review.username %></span>
-                                <div class="comment-rating rating">
+                                <div class="comment-rating rating" id="display-stars-<%= review._id %>">
                                     <div class="stars-outer">
                                         <div class="stars-inner" style="width: <%= (review.rating / 5) * 100 %>%;"></div>
                                     </div>
                                 </div>
                             </div>
-                            <p class="comment-body"><%- review.comment.replace(/\n/g, '<br>') %></p>
+                            
+                            <!-- Static Display -->
+                            <p class="comment-body" id="display-text-<%= review._id %>"><%- review.comment.replace(/\n/g, '<br>') %></p>
+
+                            <!-- Edit Form (Hidden by Default) -->
+                            <% if (user && user._id.toString() === review.user._id.toString()) { %>
+                                <form action="/reviews/<%= review._id %>/edit" method="POST" id="edit-form-<%= review._id %>" style="display:none; margin-top: 15px; background: #0a0a0a; padding: 15px; border-radius: 8px; border: 1px dashed var(--gold);">
+                                    <textarea name="comment" required style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 5px;"><%= review.comment %></textarea>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                        <div class="rating-input" style="flex-direction: row-reverse;">
+                                            <input type="radio" id="e-star5-<%= review._id %>" name="rating" value="5" <%= review.rating === 5 ? 'checked' : '' %> required><label for="e-star5-<%= review._id %>">☆</label>
+                                            <input type="radio" id="e-star4-<%= review._id %>" name="rating" value="4" <%= review.rating === 4 ? 'checked' : '' %>><label for="e-star4-<%= review._id %>">☆</label>
+                                            <input type="radio" id="e-star3-<%= review._id %>" name="rating" value="3" <%= review.rating === 3 ? 'checked' : '' %>><label for="e-star3-<%= review._id %>">☆</label>
+                                            <input type="radio" id="e-star2-<%= review._id %>" name="rating" value="2" <%= review.rating === 2 ? 'checked' : '' %>><label for="e-star2-<%= review._id %>">☆</label>
+                                            <input type="radio" id="e-star1-<%= review._id %>" name="rating" value="1" <%= review.rating === 1 ? 'checked' : '' %>><label for="e-star1-<%= review._id %>">☆</label>
+                                        </div>
+                                        <div>
+                                            <button type="button" onclick="toggleEdit('<%= review._id %>')" style="background: none; border: none; color: var(--silver); cursor: pointer; margin-right: 10px;">Cancel</button>
+                                            <button type="submit" class="btn btn-primary" style="padding: 5px 15px; font-size: 0.9em;">Save</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            <% } %>
+
+                            <!-- User & Uploader Action Buttons -->
+                            <div style="margin-top: 10px; display: flex; gap: 15px; font-size: 0.85em;">
+                                <!-- If current user is the author of the comment -->
+                                <% if (user && user._id.toString() === review.user._id.toString()) { %>
+                                    <button onclick="toggleEdit('<%= review._id %>')" style="background:none; border:none; color: var(--gold); cursor:pointer;"><i class="fas fa-edit"></i> Edit</button>
+                                    <button onclick="openCommentDelete('<%= review._id %>')" style="background:none; border:none; color: var(--red); cursor:pointer;"><i class="fas fa-trash"></i> Delete</button>
+                                <% } %>
+                                
+                                <!-- If current user is the uploader of the FILE -->
+                                <% if (user && user.username === file.uploader) { %>
+                                    <% if (!review.uploaderReply) { %>
+                                        <button onclick="toggleReplyForm('<%= review._id %>')" style="background:none; border:none; color: var(--blue); cursor:pointer;"><i class="fas fa-reply"></i> Reply as Uploader</button>
+                                    <% } %>
+                                <% } %>
+                            </div>
+
+                            <!-- Uploader Reply Form (Hidden) -->
+                            <% if (user && user.username === file.uploader && !review.uploaderReply) { %>
+                                <form action="/reviews/<%= review._id %>/reply" method="POST" id="reply-form-<%= review._id %>" style="display:none; margin-top: 15px; background: #0a0a0a; padding: 15px; border-left: 3px solid var(--blue); border-radius: 8px;">
+                                    <textarea name="replyText" placeholder="Write your reply as the uploader..." required style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 5px; min-height: 80px;"></textarea>
+                                    <div style="text-align: right; margin-top: 10px;">
+                                        <button type="button" onclick="toggleReplyForm('<%= review._id %>')" style="background: none; border: none; color: var(--silver); cursor: pointer; margin-right: 10px;">Cancel</button>
+                                        <button type="submit" class="btn btn-secondary" style="border-color: var(--blue); color: var(--blue); padding: 5px 15px;">Post Reply</button>
+                                    </div>
+                                </form>
+                            <% } %>
+
+                            <!-- Display Uploader Reply if it exists -->
+                            <% if (review.uploaderReply && review.uploaderReply.text) { %>
+                                <div style="margin-top: 15px; margin-left: 20px; padding: 15px; background: #0a0a0a; border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0; position: relative;">
+                                    <strong style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; margin-bottom: 5px;">
+                                        <i class="fas fa-crown"></i> Uploader's Response
+                                    </strong>
+                                    <p style="color: var(--silver); margin: 0; font-size: 0.95em;"><%= review.uploaderReply.text %></p>
+                                    
+                                    <!-- Edit/Delete Reply actions for uploader -->
+                                    <% if (user && user.username === file.uploader) { %>
+                                        <div style="margin-top: 10px; display: flex; gap: 15px; font-size: 0.8em;">
+                                            <button onclick="toggleReplyForm('<%= review._id %>')" style="background:none; border:none; color: var(--silver); cursor:pointer;">Edit Reply</button>
+                                            <form action="/reviews/<%= review._id %>/reply/delete" method="POST" style="margin:0;">
+                                                <button type="submit" style="background:none; border:none; color: var(--red); cursor:pointer;">Remove Reply</button>
+                                            </form>
+                                        </div>
+
+                                        <!-- Form to Edit Reply -->
+                                        <form action="/reviews/<%= review._id %>/reply" method="POST" id="reply-form-<%= review._id %>" style="display:none; margin-top: 15px;">
+                                            <textarea name="replyText" required style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 5px; min-height: 80px;"><%= review.uploaderReply.text %></textarea>
+                                            <div style="text-align: right; margin-top: 10px;">
+                                                <button type="button" onclick="toggleReplyForm('<%= review._id %>')" style="background: none; border: none; color: var(--silver); cursor: pointer; margin-right: 10px;">Cancel</button>
+                                                <button type="submit" class="btn btn-secondary" style="border-color: var(--gold); color: var(--gold); padding: 5px 15px;">Update Reply</button>
+                                            </div>
+                                        </form>
+                                    <% } %>
+                                </div>
+                            <% } %>
+
                         </div>
                         <% }) %>
                     <% } else { %>
@@ -1136,6 +1248,68 @@
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
+    }
+</script>
+<!-- Custom Comment Delete Modal -->
+<div id="delete-comment-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <lottie-player src="/animations/ban.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin: 0 auto 15px auto;" loop autoplay></lottie-player>
+        
+        <h2 style="color: var(--red); margin-bottom: 15px;">Delete Review?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Are you sure you want to delete your review? This action cannot be undone, and your rating will be removed from the mod's average.
+        </p>
+        
+        <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+            <form id="confirm-delete-comment-form" method="POST" style="margin:0;">
+                <button type="submit" class="policy-button" style="background-color: var(--red); color: var(--white); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-red);">Delete</button>
+            </form>
+            <button type="button" class="policy-button decline" onclick="closeCommentDelete()" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // JS to handle inline toggling of edit/reply forms
+    function toggleEdit(reviewId) {
+        const form = document.getElementById('edit-form-' + reviewId);
+        const displayStars = document.getElementById('display-stars-' + reviewId);
+        const displayText = document.getElementById('display-text-' + reviewId);
+        
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            displayStars.style.display = 'none';
+            displayText.style.display = 'none';
+        } else {
+            form.style.display = 'none';
+            displayStars.style.display = 'block';
+            displayText.style.display = 'block';
+        }
+    }
+
+    function toggleReplyForm(reviewId) {
+        const form = document.getElementById('reply-form-' + reviewId);
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    }
+
+    // Modal Logic
+    const deleteModal = document.getElementById('delete-comment-modal');
+    const deleteForm = document.getElementById('confirm-delete-comment-form');
+
+    function openCommentDelete(reviewId) {
+        deleteForm.action = `/reviews/${reviewId}/delete`; // Set the dynamic action URL
+        deleteModal.style.display = 'flex';
+        setTimeout(() => deleteModal.classList.add('show'), 10);
+    }
+
+    function closeCommentDelete() {
+        deleteModal.classList.remove('show');
+        setTimeout(() => deleteModal.style.display = 'none', 200);
     }
 </script>
 <%- include('../partials/popunder-ads') %>

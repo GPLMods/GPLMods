@@ -1,57 +1,44 @@
-                                <div class="mod-card">
-                                    
-                                    <!-- Certification Tag -->
-                                    <% if (file.certification === 'certified') { %>
-                                        <div class="app-feature-tag">✔ Certified</div>
-                                    <% } else if (file.certification === 'community-tested') { %>
-                                        <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
-                                    <% } %>
-                                    
-                                    <!-- Version Tag -->
-                                    <div class="mod-type-tag"><%= file.version %></div>
-                                    
-                                    <!-- NEW: Image Container Logic -->
-                                    <div class="mod-card-image">
-                                        <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
-                                    </div>
-                                    
-                                    <div class="mod-card-content">
-                                        <!-- The link is placed on the title with the "full-card-link" class -->
-                                        <h3>
-                                            <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= file.name %></a>
-                                        </h3>
-                                        <p><%= file.developer %></p>
-                                        <div class="rating">
-                                            <div class="stars-outer">
-                                                <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
-                                            </div>
-                                            <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
-                                        </div>
-                                        
-                                        <!-- NEW: Platform Tag -->
-                                        <div class="card-footer">
-                                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                                                <%= file.category.toUpperCase().replace('-', ' ') %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="download-overlay">
-                                        <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
-                                        <% if (user) { %>
-                                            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
-                                                <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
-                                                    Add to Whitelist
-                                                </button>
-                                            </form>
-                                        <% } %>
-                                    </div>
-                                </div>
-                                
-                            <% }) %> <!-- Closes the files loop -->
-                        </div>
-                    </section>
-                <% }) %> <!-- Closes the section loop -->
-
+<!-- views/partials/mod-card.ejs -->
+<a href="/mods/<%= file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
+    <div class="mod-card">
+        
+        <!-- Certification Tag -->
+        <% if (file.certification === 'certified') { %>
+            <div class="app-feature-tag">✔ Certified</div>
+        <% } else if (file.certification === 'community-tested') { %>
+            <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+        <% } %>
+        
+        <!-- Version Tag -->
+        <div class="mod-type-tag"><%= file.version %></div>
+        
+        <!-- Image Container Logic -->
+        <div class="mod-card-image">
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+        </div>
+        
+        <div class="mod-card-content">
+            <h3><%= file.name %></h3>
+            
+            <% if (file.modDescription) { %>
+                <p><%= file.modDescription.substring(0, 50) %>...</p> 
+            <% } else { %>
+                 <p>No description provided.</p>
+            <% } %>
+            
+            <div class="rating" style="margin-bottom: 10px;">
+                <div class="stars-outer">
+                    <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                </div>
+                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
             </div>
-        <% }) %> <!-- Closes the category loop -->
+
+            <!-- Platform Tag -->
+            <div class="card-footer">
+                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                </span>
+            </div>
+        </div>
+    </div>
+</a>

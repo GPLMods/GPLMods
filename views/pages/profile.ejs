@@ -22,10 +22,19 @@
                 </p>
 
                 <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section" id="avatar-form">
-                    <div class="avatar-preview-wrapper">
-                        <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview">
+                    <!-- ✅ ADDED: Dynamic Border Color & Lottie Badge -->
+                    <div class="avatar-preview-wrapper" style="position: relative; margin: 0 auto 20px auto; width: 150px; height: 150px;">
+                        <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview"
+                             style="border-color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 25px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
                         
-                        <label for="avatar-input" class="avatar-edit-button" title="Change Avatar">
+                        <!-- Lottie Rank Badge -->
+                        <% if (user.forumRank && user.forumRank.lottie) { %>
+                            <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                                <lottie-player src="/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 45px; height: 45px; transform: scale(1.3);" loop autoplay></lottie-player>
+                            </div>
+                        <% } %>
+
+                        <label for="avatar-input" class="avatar-edit-button" title="Change Avatar" style="z-index: 11;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--black)">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                             </svg>
@@ -36,7 +45,12 @@
                     <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
                 </form>
 
-                <h3 class="current-username notranslate" style="text-align: center;"><%= user.username %></h3>
+                <h3 class="current-username notranslate" style="text-align: center; margin-bottom: 5px;"><%= user.username %></h3>
+                
+                <!-- ✅ ADDED: Display the Rank Name nicely under the Username -->
+                <p style="text-align: center; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 20px; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                    <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints %> pts)
+                </p>
                 <div class="profile-actions">
                     <a href="/my-uploads" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Mod Upload History</a>
                     <a href="/users/<%= slugify(user.username) %>" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Public User Profile</a>
@@ -47,6 +61,19 @@
                 </div>
                 
                 <hr style="border-color: #333; margin: 30px 0;">
+                <!-- 2FA Toggle -->
+                <div style="background-color: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; color: var(--gold);"><i class="fas fa-shield-alt"></i> Two-Factor Auth (2FA)</h3>
+                        <p style="margin: 0; font-size: 0.85em; color: var(--silver);">Add an extra layer of security to your account.</p>
+                    </div>
+                    <form action="<%= user.twoFactorEnabled ? '/account/2fa/disable' : '/account/2fa/setup' %>" method="<%= user.twoFactorEnabled ? 'POST' : 'GET' %>" style="margin: 0;">
+                        <label class="switch">
+                            <input type="checkbox" onChange="this.form.submit()" <%= user.twoFactorEnabled ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </form>
+                </div>
 
                 <form action="/account/update-details" method="POST">
                     <div class="form-group">
@@ -230,18 +257,39 @@
     </div>
 </div>
 
-<!-- ======== CUSTOM DELETE MODAL ======== -->
+<!-- ======== CUSTOM SECURE DELETE MODAL ======== -->
 <div id="delete-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <h2 style="color: var(--red); margin-bottom: 15px;">Delete Account?</h2>
-        <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
-            Are you absolutely sure you want to delete your account? This is a permanent action and cannot be undone.
-        </p>
-        <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-            <button type="button" class="policy-button" id="confirmDeleteBtn" style="background-color: var(--red); color: var(--white); padding: 10px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-red);">Yes, Delete</button>
-            <button type="button" class="policy-button decline" id="cancelDeleteBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
+        
+        <!-- STEP 1: Warning -->
+        <div id="delete-step-1">
+            <h2 style="color: var(--red); margin-bottom: 15px;">Delete Account?</h2>
+            <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
+                Are you sure? We will send an email with a 6-digit confirmation code to verify this request.
+            </p>
+            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+                <button type="button" class="policy-button" id="sendDeleteCodeBtn" style="background-color: var(--red); color: var(--white); border: none;">Send Code</button>
+                <button type="button" class="policy-button decline cancelDeleteBtn">Cancel</button>
+            </div>
         </div>
+
+        <!-- STEP 2: OTP Verification -->
+        <div id="delete-step-2" style="display: none;">
+            <h2 style="color: var(--red); margin-bottom: 15px;">Enter Confirmation Code</h2>
+            <p style="margin-bottom: 20px; color: var(--silver); font-size: 0.9em;">
+                A code was sent to your email. Enter it below to permanently delete your account.
+            </p>
+            <input type="text" id="delete-otp-input" placeholder="000000" style="width: 100%; text-align: center; letter-spacing: 5px; font-size: 1.5em; padding: 15px; border-radius: 8px; border: 1px solid var(--red); background: var(--black); color: var(--white); margin-bottom: 20px;">
+            <p id="delete-error" style="color: var(--red); font-size: 0.85em; display: none; margin-top: -10px; margin-bottom: 10px;"></p>
+            
+            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
+                <button type="button" class="policy-button" id="confirmFinalDeleteBtn" style="background-color: var(--red); color: var(--white); border: none;">Confirm Deletion</button>
+                <button type="button" class="policy-button decline cancelDeleteBtn">Cancel</button>
+            </div>
+        </div>
+
     </div>
+</div>
 </div>
 
 <script>
@@ -274,26 +322,69 @@
             });
         }
 
-        // --- 2. Custom Delete Account Modal Logic ---
+        // --- SECURE DELETE MODAL LOGIC ---
         const deleteForm = document.getElementById('delete-account-form');
         const deleteModal = document.getElementById('delete-modal-container');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const step1 = document.getElementById('delete-step-1');
+        const step2 = document.getElementById('delete-step-2');
+        const sendDeleteCodeBtn = document.getElementById('sendDeleteCodeBtn');
+        const confirmFinalDeleteBtn = document.getElementById('confirmFinalDeleteBtn');
+        const cancelBtns = document.querySelectorAll('.cancelDeleteBtn');
+        const preserveModsCheck = document.getElementById('preserve-mods');
 
         if (deleteForm && deleteModal) {
             deleteForm.addEventListener('submit', function(e) {
                 e.preventDefault(); 
+                step1.style.display = 'block';
+                step2.style.display = 'none';
                 deleteModal.style.display = 'flex';
                 setTimeout(() => { deleteModal.classList.add('show'); }, 10);
             });
 
-            cancelDeleteBtn.addEventListener('click', function() {
+            cancelBtns.forEach(btn => btn.addEventListener('click', function() {
                 deleteModal.classList.remove('show');
                 setTimeout(() => { deleteModal.style.display = 'none'; }, 200); 
+            }));
+
+            // Step 1 -> Send Email
+            sendDeleteCodeBtn.addEventListener('click', async function() {
+                this.textContent = 'Sending...';
+                this.disabled = true;
+                const res = await fetch('/account/delete-request', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    step1.style.display = 'none';
+                    step2.style.display = 'block';
+                } else {
+                    alert("Failed to send email.");
+                    this.textContent = 'Send Code';
+                    this.disabled = false;
+                }
             });
 
-            confirmDeleteBtn.addEventListener('click', function() {
-                deleteForm.submit(); 
+            // Step 2 -> Finalize Deletion
+            confirmFinalDeleteBtn.addEventListener('click', async function() {
+                const otp = document.getElementById('delete-otp-input').value;
+                const preserve = preserveModsCheck ? preserveModsCheck.checked : false;
+                const errorMsg = document.getElementById('delete-error');
+                
+                this.textContent = 'Deleting...';
+                this.disabled = true;
+
+                const res = await fetch('/account/delete-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otp: otp, preserveMods: preserve })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.href = data.redirect; // Redirect home
+                } else {
+                    errorMsg.textContent = data.message;
+                    errorMsg.style.display = 'block';
+                    this.textContent = 'Confirm Deletion';
+                    this.disabled = false;
             });
         }
 

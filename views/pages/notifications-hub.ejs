@@ -144,7 +144,7 @@
             </a>
 
             <!-- Category 3: New Uploads (24h - Visible to Everyone) -->
-            <a href="/notifications/new-uploads" class="category-card">
+            <a href="/notifications/new-uploads" class="category-card" id="new-uploads-card">
                 <div class="category-info">
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/upload.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
@@ -154,11 +154,12 @@
                         <p>Fresh mods added to the platform today.</p>
                     </div>
                 </div>
+                <div class="cat-badge" id="uploads-badge" style="display: none;"></div>
                 <i class="fas fa-chevron-right card-arrow"></i>
             </a>
 
             <!-- Category 4: New Updates (24h - Visible to Everyone) -->
-            <a href="/notifications/new-updates" class="category-card">
+            <a href="/notifications/new-updates" class="category-card" id="new-updates-card">
                 <div class="category-info">
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/sync.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
@@ -168,13 +169,14 @@
                         <p>Existing mods that were updated today.</p>
                     </div>
                 </div>
+                <i class="fas fa-chevron-right card-arrow" id="mods-update-arrow"></i>
                 <i class="fas fa-chevron-right card-arrow"></i>
             </a>
 
             <!-- ✅ FIX: Logged-in Users Only -->
             <% if (user) { %>
                 <!-- Category 5: Following Feed -->
-                <a href="/notifications/following" class="category-card">
+                 <a href="/notifications/following" class="category-card" id="following-card">
                     <div class="category-info">
                         <div class="category-icon" style="background: transparent; border: none;">
                             <lottie-player src="/animations/group.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
@@ -184,6 +186,7 @@
                             <p>Latest uploads and updates from members you follow.</p>
                         </div>
                     </div>
+                    <div class="cat-badge" id="following-badge" style="display: none;"></div>
                     <i class="fas fa-chevron-right card-arrow"></i>
                 </a>
             <% } %>
@@ -194,26 +197,44 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Logic to show the badge on the "Site Updates" card
-        const siteUpdatesCard = document.getElementById('site-updates-card');
-        const globalBadge = document.getElementById('global-badge');
-        const globalArrow = document.getElementById('global-arrow');
-
-        if (siteUpdatesCard && globalBadge) {
-            const currentTotalUpdates = parseInt(siteUpdatesCard.getAttribute('data-total-updates') || '0', 10);
-            const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
+        
+        // Helper function to setup independent badge logic for each card!
+        function setupBadge(cardId, badgeId, arrowId, localStorageKey, currentCount) {
+            const card = document.getElementById(cardId);
+            const badge = document.getElementById(badgeId);
+            const arrow = document.getElementById(arrowId);
             
-            const unreadGlobalCount = currentTotalUpdates - lastSeenTotal;
-
-            if (unreadGlobalCount > 0) {
-                globalBadge.textContent = (unreadGlobalCount > 9 ? '9+' : unreadGlobalCount) + ' New';
-                globalBadge.style.display = 'flex';
-                if (globalArrow) globalArrow.style.display = 'none';
+            if (card && badge) {
+                const lastSeen = parseInt(localStorage.getItem(localStorageKey) || '0', 10);
+                const unread = currentCount - lastSeen;
+                
+                if (unread > 0) {
+                    badge.textContent = (unread > 9 ? '9+' : unread) + ' New';
+                    badge.style.display = 'flex';
+                    if (arrow) arrow.style.display = 'none';
+                }
+                
+                // When they click THIS SPECIFIC card, save the view to localStorage!
+                card.addEventListener('click', () => {
+                    localStorage.setItem(localStorageKey, currentCount.toString());
+                });
             }
+        }
+        
+        // Pass the EJS server variables safely into the JavaScript
+        const totalUpdates = <%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>;
+        const totalUploads = <%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>;
+        const totalModsUpdates = <%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>;
+        const totalFollowing = <%= typeof followingCount !== 'undefined' ? followingCount : 0 %>;
 
-            siteUpdatesCard.addEventListener('click', () => {
-                localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
-            });
+        // Initialize each card independently!
+        setupBadge('site-updates-card', 'global-badge', 'global-arrow', 'lastSeenUpdates', totalUpdates);
+        setupBadge('new-uploads-card', 'uploads-badge', 'uploads-arrow', 'lastSeenUploads', totalUploads);
+        setupBadge('new-updates-card', 'mods-update-badge', 'mods-update-arrow', 'lastSeenModsUpd', totalModsUpdates);
+        
+        // For logged-in users only
+        if (document.getElementById('following-card')) {
+            setupBadge('following-card', 'following-badge', 'following-arrow', 'lastSeenFollowing', totalFollowing);
         }
     });
 </script>

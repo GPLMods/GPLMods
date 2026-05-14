@@ -6,14 +6,44 @@
     <div class="container">
         <header class="profile-header">
             <!-- Avatar with Share Button -->
-            <div class="avatar-container">
-                <img src="<%= profileUser.signedAvatarUrl %>" alt="<%= profileUser.username %>'s Avatar" class="profile-avatar">
-                <button class="share-btn" onclick="shareProfile()" title="Share Profile">
-                    <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+            <!-- Avatar with Dynamic Rank Glow & Badge -->
+            <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 20px;">
+                
+                <!-- 1. The Avatar with Dynamic Border Color -->
+                <img src="<%= profileUser.signedAvatarUrl %>" 
+                     alt="<%= profileUser.username %>'s Avatar" 
+                     class="profile-avatar"
+                     style="border-color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; 
+                            box-shadow: 0 0 25px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;
+                            width: 150px; height: 150px; border-radius: 50%; border-width: 4px; border-style: solid; object-fit: cover;">
+                
+                <!-- 2. The Lottie Rank Animation Badge (Positioned at Top-Left) -->
+                <% if (profileUser.forumRank && profileUser.forumRank.lottie) { %>
+                    <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                        <lottie-player 
+                            src="/animations/<%= profileUser.forumRank.lottie %>" 
+                            background="transparent" 
+                            speed="1" 
+                            style="width: 45px; height: 45px; transform: scale(1.3);" 
+                            loop 
+                            autoplay>
+                        </lottie-player>
+                    </div>
+                <% } %>
+
+                <!-- 3. The Share Button (Positioned at Bottom-Right) -->
+                <button class="share-btn" onclick="shareProfile()" title="Share Profile" style="position: absolute; bottom: 5px; right: 5px; background: var(--gold); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; z-index: 10;">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--black);"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
                 </button>
             </div>
 
             <h1 class="notranslate"><%= profileUser.username %></h1>
+            
+            <!-- 4. Display the Rank Name nicely under the Username -->
+            <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 5px; text-shadow: 0 0 10px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
+                <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %>
+            </p>
+            
             <p class="user-role"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
             
             <!-- ======== NEW: FOLLOW BUTTON ======== -->

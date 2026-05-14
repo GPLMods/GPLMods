@@ -22,8 +22,17 @@
     
     .full-blog-date { color: var(--gold); font-weight: 600; margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em; }
     .full-blog-title { font-size: 2.5em; color: var(--white); margin-bottom: 25px; line-height: 1.2; }
-    .full-blog-body { color: var(--silver); line-height: 1.8; font-size: 1.1em; }
+    
+    /* ✅ FIX: Added word-break properties to force long URLs to stay inside the box */
+    .full-blog-body { 
+        color: var(--silver); 
+        line-height: 1.8; 
+        font-size: 1.1em; 
+        word-wrap: break-word; 
+        overflow-wrap: break-word; 
+    }
     .full-blog-body p { margin-bottom: 15px; }
+    .full-blog-body a { word-break: break-all; color: var(--gold); text-decoration: underline; } /* Specifically target links to wrap */
 </style>
 
 <main class="container">
@@ -45,7 +54,15 @@
             
             <% announcements.forEach((announcement, index) => { %>
                 <div class="blog-card" onclick="openBlogModal(<%= index %>)">
-                    <div class="blog-meta"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></div>
+                <div class="blog-meta">
+                    <%= announcement.createdAt.toLocaleDateString() %> • By 
+                    <!-- ✅ FIX: Added hyperlink with slugify and stopPropagation -->
+                    <a href="/users/<%= slugify(announcement.author) %>" 
+                       style="color: var(--gold); text-decoration: underline; font-weight: bold; position: relative; z-index: 10;" 
+                       onclick="event.stopPropagation();">
+                        <%= announcement.author %>
+                    </a>
+                </div>
                     <h2 class="blog-title"><%= announcement.title %></h2>
                     <div class="blog-excerpt"><%- announcement.content %></div>
                     <span class="read-more">Read Full Update <i class="fas fa-arrow-right"></i></span>
@@ -53,7 +70,12 @@
                 
                 <!-- Hidden Data for Modal Injection -->
                 <div id="blog-data-<%= index %>" style="display:none;">
-                    <span class="d-date"><%= announcement.createdAt.toLocaleDateString() %> • By <%= announcement.author %></span>
+               <span class="d-date">
+                    <%= announcement.createdAt.toLocaleDateString() %> • By 
+                    <a href="/users/<%= slugify(announcement.author) %>" style="color: var(--gold); text-decoration: underline;">
+                        <%= announcement.author %>
+                    </a>
+                </span>
                     <span class="d-title"><%= announcement.title %></span>
                     <div class="d-content"><%- announcement.content.replace(/\n/g, '<br>') %></div>
                 </div>

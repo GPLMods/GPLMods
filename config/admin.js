@@ -23,7 +23,9 @@ const SiteState = require('../models/siteState');
 const Subscriber = require('../models/subscriber');
 const NewsletterCampaign = require('../models/newsletterCampaign');
 const DocCategory = require('../models/docCategory'); // <--- ADD THIS
-const DocPage = require('../models/docPage');         // <--- ADD THIS
+const DocPage = require('../models/docPage');  // <--- ADD THIS
+const Issue = require('../models/issue');     // <--- ADD THIS
+const Reply = require('../models/reply');     // <--- ADD THIS       
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -102,8 +104,8 @@ async function createAdminRouter() {
     // Setting it to 'true' forces AdminJS into production mode.
     const isProduction = true; 
     // --- Define Shared Folders ---
-    const marketingNav = { name: 'Marketing', icon: 'Email' };
-    const docsNav = { name: 'Documentation', icon: 'Catalog' };
+    const marketingNav = { name: 'Marketing', icon: 'Mail' };
+    const docsNav = { name: 'Documentation', icon: 'Book' };
 
     // Configure AdminJS
     const adminJsOptions = {
@@ -119,65 +121,56 @@ async function createAdminRouter() {
             styles: isProduction ? ['/.adminjs/bundle.css'] :[],
             scripts: isProduction ? ['/.adminjs/bundle.js',' /js/image-fallback.js'] :[],
         },
-        // --- DASHBOARD CONFIGURATION (DATA FOR CHARTS) ---
         dashboard: { 
             component: Components.Dashboard,
-            handler: async () => {
-                // --- 1. Define Timeframes ---
-                const now = new Date();
-                const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                
-                // Optional: Compare to last month for growth percentages
-                const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+            // --- NEW: REAL-TIME DATA HANDLER ---
+            handler: async (request, response, context) => {
+                // Get the first day of the current month
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                startOfMonth.setHours(0, 0, 0, 0);
 
-                // --- 2. Calculate All-Time Totals ---
+                // 1. User Stats
                 const totalUsers = await User.countDocuments();
-                const totalMods = await File.countDocuments({ isLatestVersion: true, status: 'live' });
-                
-                // Total Downloads (All-Time)
-                const totalDownloadsData = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
-                const totalDownloads = totalDownloadsData.length > 0 ? totalDownloadsData[0].total : 0;
+                const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
 
-                // --- 3. Calculate "This Month" Metrics ---
-                const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfThisMonth } });
-                const newModsThisMonth = await File.countDocuments({ 
-                    createdAt: { $gte: startOfThisMonth }, 
-                    isLatestVersion: true, 
-                    status: 'live' 
-                });
+                // 2. Mod Stats
+                const totalMods = await File.countDocuments();
+                const newModsThisMonth = await File.countDocuments({ createdAt: { $gte: startOfMonth } });
 
-                // To get "New Downloads This Month", we need a separate tracking collection, 
-                // but since we only store a single 'downloads' integer right now, we can approximate 
-                // by tracking new file uploads vs total files, or just show total downloads for now.
-                // A true "downloads this month" requires a separate DownloadHistory model.
-                // For now, we will show "New Users" and "New Mods".
+                // 3. Download Stats
+                const downloadAgg = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
+                const totalDownloads = downloadAgg.length > 0 ? downloadAgg[0].total : 0;
 
-                // --- 4. Data for Pie Chart (Platform Distribution) ---
-                const modsByPlatform = await File.aggregate([
-                    { $match: { isLatestVersion: true, status: 'live' } },
-                    { $group: { _id: "$category", count: { $sum: 1 } } }
+                // 4. CHART DATA: Mods by Platform (Pie Chart)
+                const platformAgg = await File.aggregate([
+                    { $group: { _id: "$category", value: { $sum: 1 } } }
                 ]);
+                const modsByPlatform = platformAgg.map(p => ({
+                    name: p._id ? p._id.toUpperCase() : 'UNKNOWN',
+                    value: p.value
+                }));
 
-                // --- 5. Data for Line Chart (Last 30 Days of Uploads) ---
-                // We expand this from 7 days to 30 days for a better view
-                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-                const uploadsByDay = await File.aggregate([
-                    { $match: { createdAt: { $gte: thirtyDaysAgo }, isLatestVersion: true } },
-                    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+                // 5. CHART DATA: Uploads Last 7 Days (Line Chart)
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                const recentUploadsAgg = await File.aggregate([
+                    { $match: { createdAt: { $gte: sevenDaysAgo } } },
+                    { $group: { 
+                        _id: { $dateToString: { format: "%m/%d", date: "$createdAt" } }, 
+                        uploads: { $sum: 1 } 
+                    }},
                     { $sort: { _id: 1 } }
                 ]);
+                const uploadChartData = recentUploadsAgg.map(item => ({
+                    name: item._id, 
+                    Uploads: item.uploads
+                }));
 
+                // Return all this data to the React frontend
                 return {
-                    stats: { 
-                        totalUsers, 
-                        newUsersThisMonth,
-                        totalMods, 
-                        newModsThisMonth,
-                        totalDownloads 
-                    },
-                    modsByPlatform: modsByPlatform.map(p => ({ name: p._id || 'unknown', value: p.count })),
-                    chartData: uploadsByDay
+                    stats: { totalUsers, newUsersThisMonth, totalMods, newModsThisMonth, totalDownloads },
+                    modsByPlatform,
+                    uploadChartData
                 };
             }
         },
@@ -196,10 +189,10 @@ async function createAdminRouter() {
             {
                 resource: User,
                 options: {
-                    navigation: { icon: 'Users' }, // ✅ Valid Carbon Icon
-                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'email', 'role', 'isBanned', 'lastSeen'],
+                    navigation: { icon: 'User' }, // ✅ Valid Carbon Icon
+                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isBanned', 'lastSeen'],
                     showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties:['username', 'dateOfBirth', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties:['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
@@ -372,10 +365,92 @@ async function createAdminRouter() {
                                 updatedRecord.params.redirectUrl = vtUrl;
                                 return { record: updatedRecord, notice: { message: 'Opening VirusTotal report...', type: 'success' } };
                             }
+                    },
+                    // ======== NEW: ADMIN VOTE MANAGEMENT ========
+                    manageVotes: {
+                        actionType: 'record',
+                        icon: 'ThumbsUp',
+                        // We use a custom component for the UI of this action
+                        component: Components.ManageVotes, 
+                        handler: async (request, response, context) => {
+                            const file = context.record;
+                            
+                            // If the request method is POST, it means the admin submitted the form
+                            if (request.method === 'post') {
+                                const { actionType, newWorkingCount, newNotWorkingCount } = request.payload;
+
+                                try {
+                                    if (actionType === 'reset') {
+                                        // Reset everything to 0
+                                        await File.findByIdAndUpdate(file.params._id, {
+                                            workingVoteCount: 0,
+                                            notWorkingVoteCount: 0,
+                                            votedWorkingBy: [],
+                                            votedNotWorkingBy:[]
+                                        });
+                                        return {
+                                            record: file.toJSON(context.currentAdmin),
+                                            notice: { message: 'All votes have been successfully reset to 0.', type: 'success' },
+                                            redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
+                                        };
+                                    } 
+                                    else if (actionType === 'override') {
+                                        // Manually set the counts (Warning: this doesn't populate the user arrays, 
+                                        // it just forces the numbers. It's best used after a reset).
+                                        await File.findByIdAndUpdate(file.params._id, {
+                                            workingVoteCount: parseInt(newWorkingCount, 10) || 0,
+                                            notWorkingVoteCount: parseInt(newNotWorkingCount, 10) || 0,
+                                            votedWorkingBy:[], // Clear arrays to prevent sync issues when manually overriding numbers
+                                            votedNotWorkingBy:[]
+                                        });
+                                        return {
+                                            record: file.toJSON(context.currentAdmin),
+                                            notice: { message: 'Vote counts have been manually overridden.', type: 'success' },
+                                            redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
+                                        };
+                                    }
+                                } catch (error) {
+                                    return {
+                                        record: file.toJSON(context.currentAdmin),
+                                        notice: { message: `Error updating votes: ${error.message}`, type: 'error' }
+                                    };
+                                }
+                            }
+                            
+                            // If GET request, just render the component
+                            return {
+                                record: file.toJSON(context.currentAdmin)
+                            };
                         }
-                    } 
-                } 
-            }, 
+                    }
+                    // ============================================
+
+                } // End of actions object
+            }, // End of File resource
+            // ---------------------------------
+            // COMMUNITY FORUM
+            // ---------------------------------
+            {
+                resource: Issue,
+                options: {
+                    listProperties: ['title', 'category', 'status', 'author', 'createdAt'],
+                    showProperties: ['title', 'slug', 'category', 'status', 'views', 'author', 'content', 'createdAt'],
+                    editProperties: ['title', 'slug', 'category', 'status', 'content'],
+                    properties: {
+                        content: { type: 'richtext' } // AdminJS will render a rich text editor for this
+                    }
+                }
+            },
+            {
+                resource: Reply,
+                options: {
+                    listProperties: ['issue', 'author', 'isSolution', 'isAdminReply', 'createdAt'],
+                    editProperties: ['content', 'isSolution', 'isAdminReply'],
+                    properties: {
+                        content: { type: 'richtext' }
+                    }
+                }
+            },
 
             // ---------------------------------
             // GLOBAL SITE CONTROLS
@@ -383,7 +458,7 @@ async function createAdminRouter() {
             {
                 resource: SiteState,
                 options: {
-                    navigation: { icon: 'Settings' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Server' }, // ✅ Valid Carbon Icon
                     actions: {
                         new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
                         delete: { isAccessible: false } 
@@ -455,10 +530,11 @@ async function createAdminRouter() {
                 options: {
                     navigation: docsNav, // ✅ Groups into "Documentation" folder with Catalog icon
                     listProperties:['title', 'category', 'order', 'slug'],
-                    editProperties:['title', 'category', 'order', 'content'], 
-                    showProperties:['title', 'category', 'order', 'slug', 'content', 'createdAt'],
+                    editProperties:['title', 'category', 'order', 'featuredImageKey', 'content'], 
+                    showProperties:['title', 'category', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
                     properties: {
                         content: { type: 'richtext' },
+                        featuredImageKey: {description: 'Optional: Paste a direct image URL (https://...) or B2 Key for the cover image.'},
                         category: { isSortable: true }
                     },
                     actions: {
@@ -488,7 +564,7 @@ async function createAdminRouter() {
             {
                 resource: UserNotification,
                 options: {
-                    navigation: { icon: 'Notification' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Bell' }, // ✅ Valid Carbon Icon
                     listProperties:['user', 'title', 'type', 'isRead', 'createdAt'],
                     showProperties:['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
                     editProperties:['user', 'title', 'message', 'type'], 
@@ -516,7 +592,7 @@ async function createAdminRouter() {
             {
                 resource: AutomatedCampaign,
                 options: {
-                    navigation: { icon: 'Cpu' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Settings' }, // ✅ Valid Carbon Icon
                     listProperties:['title', 'targetGroup', 'scheduledDate', 'status'],
                     properties: { notificationMessage: { type: 'textarea' } }
                 }
@@ -528,7 +604,7 @@ async function createAdminRouter() {
             {
                 resource: DistributorApplication,
                 options: {
-                    navigation: { icon: 'UserCheck' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Users' }, // ✅ Valid Carbon Icon
                     listProperties:['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
                     showProperties:[
                         'status', 'organizationName', 'username', 'email', 
@@ -578,7 +654,7 @@ async function createAdminRouter() {
             {
                 resource: Report,
                 options: {
-                    navigation: { icon: 'X' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'ShieldOff' }, // ✅ Valid Carbon Icon
                     listProperties:['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
@@ -586,7 +662,7 @@ async function createAdminRouter() {
             {
                 resource: Dmca,
                 options: {
-                    navigation: { icon: 'AlertOctagon' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'Slash' }, // ✅ Valid Carbon Icon
                     listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
@@ -606,7 +682,7 @@ async function createAdminRouter() {
             {
                 resource: Announcement,
                 options: {
-                    navigation: { icon: 'Target' }, // ✅ Valid Carbon Icon
+                    navigation: { icon: 'MessageSquare' }, // ✅ Valid Carbon Icon
                     listProperties: ['title', 'author', 'createdAt'],
                     editProperties: ['title', 'author', 'content'],
                     properties: { content: { type: 'richtext' } },

@@ -10,7 +10,7 @@
  * 5. Search History & Suggestions
  * 6. Mobile Navigation Handler
  * 7. Policy Acceptance Banner and PWA  and Newsletter Sequence
- * 8. Robust Sidebar Music Player
+ * 8. Robust Footer Music Player
  * 9. Smart Audio Handler (YouTube/Vimeo pauses BG music)
  * 10. Notifications Logic
  * 11. Newsletter Logic
@@ -584,7 +584,7 @@ function startEngagementSequence() {
 
 /**
  * ==================================================================================
- * 8. ROBUST DUAL-SOURCE MUSIC PLAYER (LOCAL + YOUTUBE)
+ * 8. ROBUST DUAL-SOURCE MUSIC PLAYER WITH TIMELINE
  * ==================================================================================
  */
 function initializeMusicPlayer() {
@@ -598,6 +598,12 @@ function initializeMusicPlayer() {
     const trackNameDisplay = document.getElementById('music-track-name'); 
     const volumeSlider = document.getElementById('music-volume-slider');
     
+    // Timeline Elements
+    const timeline = document.getElementById('music-timeline');
+    const currentTimeDisplay = document.getElementById('music-current-time');
+    const durationDisplay = document.getElementById('music-duration');
+    let ytProgressInterval;
+
     // Premium YT Elements
     const customYtInput = document.getElementById('custom-yt-url');
     const loadYtBtn = document.getElementById('load-yt-btn');
@@ -622,13 +628,21 @@ function initializeMusicPlayer() {
     ];
     
     // --- 3. State Management ---
-    let currentSource = localStorage.getItem('musicSource') || 'local'; // 'local' or 'youtube'
+    let currentSource = localStorage.getItem('musicSource') || 'local';
     let trackIndex = parseInt(localStorage.getItem('musicTrackIndex')) || 0;
     if (trackIndex >= playlist.length || trackIndex < 0) trackIndex = 0;
     
     let ytVideoId = localStorage.getItem('customYtId') || null;
     let ytPlayer = null;
     let isYtReady = false;
+
+    // --- Formatting Helper for Time ---
+    function formatTime(seconds) {
+        if (!seconds || isNaN(seconds)) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
 
     // --- 4. YouTube IFrame API Initialization ---
     const tag = document.createElement('script');
@@ -639,7 +653,7 @@ function initializeMusicPlayer() {
     window.onYouTubeIframeAPIReady = function() {
         ytPlayer = new YT.Player('yt-player-container', {
             height: '0', width: '0',
-            videoId: ytVideoId || '', // Load saved custom track if exists
+            videoId: ytVideoId || '', 
             playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'fs': 0, 'playsinline': 1, 'loop': 1, 'playlist': ytVideoId || '' },
             events: {
                 'onReady': onPlayerReady,
@@ -650,29 +664,25 @@ function initializeMusicPlayer() {
 
     function onPlayerReady(event) {
         isYtReady = true;
-        setGlobalVolume(volumeSlider.value); // Apply default volume to YT
-        // If the site loaded and the state was 'playing' AND source is 'youtube', start it
+        setGlobalVolume(volumeSlider.value); 
         if (currentSource === 'youtube' && localStorage.getItem('musicState') === 'playing') {
             ytPlayer.playVideo();
         }
     }
 
     function onPlayerStateChange(event) {
-        // YT.PlayerState.ENDED == 0. If it ends, loop it.
-        if (event.data === 0) {
-            ytPlayer.playVideo();
-        }
-        // If YT actually plays, fetch the real video title!
+        if (event.data === 0) ytPlayer.playVideo(); // Loop if ended
+
         if (event.data === 1 && currentSource === 'youtube') {
             const videoData = ytPlayer.getVideoData();
-            if (videoData && videoData.title) {
-                trackNameDisplay.textContent = "YT: " + videoData.title;
-            }
+            if (videoData && videoData.title) trackNameDisplay.textContent = "YT: " + videoData.title;
+            startYtProgress(); // Start polling YT time
+        } else {
+            stopYtProgress();
         }
     }
 
-    // --- 5. Core Control Functions (Dual Routing) ---
-    
+    // --- 5. Core Control Functions ---
     function updatePlayIcon(isPlaying) {
         if (!playPauseIcon) return;
         playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
@@ -684,7 +694,8 @@ function initializeMusicPlayer() {
         localStorage.setItem('musicSource', 'local');
         localStorage.setItem('musicTrackIndex', index);
         
-        if (isYtReady) ytPlayer.pauseVideo(); // Ensure YT is dead
+        if (isYtReady) ytPlayer.pauseVideo();
+        stopYtProgress();
         
         const track = playlist[index];
         audioPlayer.src = track.src;
@@ -712,13 +723,60 @@ function initializeMusicPlayer() {
 
     function setGlobalVolume(val) {
         audioPlayer.volume = val;
-        if (isYtReady) ytPlayer.setVolume(val * 100); // YT volume is 0-100
+        if (isYtReady) ytPlayer.setVolume(val * 100); 
         localStorage.setItem('musicVolume', val);
     }
 
-    // --- 6. Event Listeners ---
+    // --- 6. TIMELINE & SEEKING LOGIC ---
+    
+    // A. Local Audio Time Updates
+    audioPlayer.addEventListener('loadedmetadata', () => {
+        if (currentSource === 'local') {
+            timeline.max = audioPlayer.duration;
+            durationDisplay.textContent = formatTime(audioPlayer.duration);
+        }
+    });
 
-    // Play/Pause Button
+    audioPlayer.addEventListener('timeupdate', () => {
+        if (currentSource === 'local') {
+            timeline.value = audioPlayer.currentTime;
+            currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+            if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
+        }
+    });
+
+    // B. YouTube Time Updates (Polling)
+    function startYtProgress() {
+        stopYtProgress();
+        ytProgressInterval = setInterval(() => {
+            if (ytPlayer && ytPlayer.getPlayerState() === 1) {
+                const curr = ytPlayer.getCurrentTime();
+                const dur = ytPlayer.getDuration();
+                timeline.max = dur;
+                timeline.value = curr;
+                currentTimeDisplay.textContent = formatTime(curr);
+                durationDisplay.textContent = formatTime(dur);
+                localStorage.setItem('musicCurrentTime', curr);
+            }
+        }, 1000);
+    }
+    function stopYtProgress() { clearInterval(ytProgressInterval); }
+
+    // C. User Dragging the Timeline (Both Local & YT)
+    if (timeline) {
+        timeline.addEventListener('input', (e) => {
+            const seekTo = parseFloat(e.target.value);
+            currentTimeDisplay.textContent = formatTime(seekTo);
+            
+            if (currentSource === 'local') {
+                audioPlayer.currentTime = seekTo;
+            } else if (currentSource === 'youtube' && isYtReady) {
+                ytPlayer.seekTo(seekTo, true);
+            }
+        });
+    }
+
+    // --- 7. Event Listeners ---
     playPauseBtn.addEventListener('click', () => {
         const isPlaying = (currentSource === 'local' && !audioPlayer.paused) || 
                           (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
@@ -726,7 +784,6 @@ function initializeMusicPlayer() {
         else playMusic();
     });
 
-    // Next/Prev Buttons (Forces back to Local Playlist)
     nextBtn.addEventListener('click', () => {
         trackIndex = (trackIndex + 1) % playlist.length;
         loadLocalTrack(trackIndex);
@@ -740,24 +797,15 @@ function initializeMusicPlayer() {
     });
 
     audioPlayer.addEventListener('ended', () => nextBtn.click());
-    audioPlayer.addEventListener('timeupdate', () => {
-        if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
-    });
-
-    // Volume Slider
-    const savedVol = localStorage.getItem('musicVolume') || 0.25;
-    volumeSlider.value = savedVol;
-    setGlobalVolume(savedVol);
-
+    
     volumeSlider.addEventListener('input', (e) => {
         setGlobalVolume(e.target.value);
     });
 
-    // --- 7. Custom YouTube Input Logic (Premium) ---
+    // Custom YouTube Input Logic
     if (customYtInput && loadYtBtn) {
         loadYtBtn.addEventListener('click', () => {
             const url = customYtInput.value.trim();
-            // Regex extracts ID from standard YT and YT Music links
             const match = url.match(/(?:v=|youtu\.be\/|youtube\.com\/embed\/|music\.youtube\.com\/watch\?v=)([^&?]+)/);
             
             if (match && match[1]) {
@@ -766,7 +814,7 @@ function initializeMusicPlayer() {
                 localStorage.setItem('musicSource', 'youtube');
                 localStorage.setItem('customYtId', ytVideoId);
                 
-                audioPlayer.pause(); // Kill local audio
+                audioPlayer.pause(); 
                 
                 if (isYtReady) {
                     ytPlayer.loadVideoById({videoId: ytVideoId});
@@ -782,7 +830,7 @@ function initializeMusicPlayer() {
         });
     }
 
-    // --- 8. Initialize on Page Load ---
+    // Initialize on Page Load
     if (currentSource === 'local') {
         loadLocalTrack(trackIndex);
         const savedTime = localStorage.getItem('musicCurrentTime');
@@ -790,7 +838,7 @@ function initializeMusicPlayer() {
             audioPlayer.currentTime = parseFloat(savedTime);
         }
     } else {
-        trackNameDisplay.textContent = "Custom YT Track";
+        trackNameDisplay.textContent = "Loading YT Track...";
     }
 
     if (localStorage.getItem('musicState') === 'playing') {
@@ -803,33 +851,9 @@ function initializeMusicPlayer() {
                 });
             }
         }
-        // YT Auto-resume handled in onPlayerReady
     } else {
         updatePlayIcon(false);
     }
-
-    // --- 9. Smart Tab Auto-Pause ---
-    let wasPlayingBeforeHidden = false;
-    document.addEventListener("visibilitychange", () => {
-        const isCurrentlyPlaying = (currentSource === 'local' && !audioPlayer.paused) || 
-                                   (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
-        
-        if (document.hidden) {
-            if (isCurrentlyPlaying) {
-                wasPlayingBeforeHidden = true;
-                if (currentSource === 'local') audioPlayer.pause();
-                if (currentSource === 'youtube' && isYtReady) ytPlayer.pauseVideo();
-            } else {
-                wasPlayingBeforeHidden = false;
-            }
-        } else {
-            if (wasPlayingBeforeHidden) {
-                if (currentSource === 'local') audioPlayer.play().catch(e=>console.warn(e));
-                if (currentSource === 'youtube' && isYtReady) ytPlayer.playVideo();
-                wasPlayingBeforeHidden = false;
-            }
-        }
-    });
 }
 /**
  * ==================================================================================
@@ -863,23 +887,37 @@ function initializeSmartAudioHandler() {
  * ==================================================================================
  */
 function initializeNotificationsAndPWA() {
-    // --- NOTIFICATION BADGE LOGIC (WITH NUMBERS) ---
+    // --- NOTIFICATION BADGE LOGIC (SMART MULTI-CHECK) ---
     const bellLink = document.getElementById('nav-bell-link');
     const badge = document.getElementById('notification-badge');
     
     if (bellLink && badge) {
-        const currentTotalUpdates = parseInt(bellLink.getAttribute('data-total-updates') || '0', 10);
-        const lastSeenTotal = parseInt(localStorage.getItem('lastSeenTotalUpdates') || '0', 10);
-        const unreadCount = currentTotalUpdates - lastSeenTotal;
+        // Fetch current counts from the server (via data attributes)
+        const curUpdates = parseInt(bellLink.getAttribute('data-updates') || '0', 10);
+        const curUploads = parseInt(bellLink.getAttribute('data-uploads') || '0', 10);
+        const curModsUpd = parseInt(bellLink.getAttribute('data-modsupdates') || '0', 10);
+        const curPersonal = parseInt(bellLink.getAttribute('data-personal') || '0', 10);
         
-        if (unreadCount > 0) {
+        // Fetch last seen counts from user's browser
+        const seenUpdates = parseInt(localStorage.getItem('lastSeenUpdates') || '0', 10);
+        const seenUploads = parseInt(localStorage.getItem('lastSeenUploads') || '0', 10);
+        const seenModsUpd = parseInt(localStorage.getItem('lastSeenModsUpd') || '0', 10);
+        
+        // Calculate Total Unread
+        let totalUnread = curPersonal; // Admin messages are tracked by the database, so they are always accurate
+        
+        if (curUpdates > seenUpdates) totalUnread += (curUpdates - seenUpdates);
+        if (curUploads > seenUploads) totalUnread += (curUploads - seenUploads);
+        if (curModsUpd > seenModsUpd) totalUnread += (curModsUpd - seenModsUpd);
+        
+        if (totalUnread > 0) {
             badge.style.display = 'flex';
-            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
         }
         
-        bellLink.addEventListener('click', () => {
-            localStorage.setItem('lastSeenTotalUpdates', currentTotalUpdates.toString());
-        });
+        // ✅ FIX: We removed the event listener here! 
+        // The bell no longer resets itself when clicked. The individual items 
+        // will reset when you click them inside the Hub page!
     }
 
     // Register Service Worker (Keep this outside the sequence so it always registers)

@@ -80,6 +80,12 @@ dateOfBirth: {
         type: Boolean,
         default: false
     },
+    // ======== NEW: COMMUNITY FORUM GAMIFICATION ========
+    forumPoints: {
+        type: Number,
+        default: 0
+    },
+    // ===================================================
 // --- NEW FIELDS FOR DISTRIBUTORS AND ADMIN ---
     organizationName: { type: String },
     // Define the nested object correctly
@@ -104,6 +110,36 @@ dateOfBirth: {
     passwordResetExpires: {
         type: Date
     }
+    // --- NEW: SECURE DELETION ---
+    deletionOtp: { type: String },
+    deletionOtpExpires: { type: Date },
+
+    // --- NEW: TWO-FACTOR AUTHENTICATION ---
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorMethod: { 
+        type: String, 
+        enum: ['none', 'email', 'totp', 'passkey', 'social'],
+        default: 'none' 
+    },
+    twoFactorSecret: { type: String }, // Stores the TOTP secret key
+    // ✅ ADD THIS NEW FIELD:
+    twoFactorRecoveryCodes: [{ type: String }],
+    // --- NEW: SOCIAL 2FA & PASSKEYS ---
+    twoFactorSocialProvider: { 
+        type: String, 
+        enum: ['google', 'github', 'microsoft', 'none'], 
+        default: 'none' 
+    },
+    // Passkeys require storing a credential ID, Public Key, and Counter
+    passkeys: [{
+        credentialID: String,
+        credentialPublicKey: String,
+        counter: Number,
+        transports: [String]
+    }],
+    // Temporary challenge string used during WebAuthn handshakes
+    webAuthnChallenge: { type: String }, 
+    // ----------------------------------------
 }, { timestamps: true }); // <--- Schema closes here, followed by options
 
 // Modern Pre-save hook: No need for 'next' when using async/await!
@@ -122,5 +158,22 @@ UserSchema.pre('save', async function() {
 UserSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
+// --- VIRTUAL: Calculate Forum Rank dynamically based on points ---
+UserSchema.virtual('forumRank').get(function() {
+    const pts = this.forumPoints || 0;
+    
+    // Customize your points thresholds and colors here!
+    if (pts >= 1000) return { name: 'Diamond Expert', color: '#b9f2ff', lottie: 'rank-5.json' };
+    if (pts >= 500)  return { name: 'Platinum Expert', color: '#e5e4e2', lottie: 'rank-4.json' };
+    if (pts >= 250)  return { name: 'Gold Expert', color: '#FFD700', lottie: 'rank-3.json' };
+    if (pts >= 100)  return { name: 'Silver Expert', color: '#c0c0c0', lottie: 'rank-2.json' };
+    if (pts >= 25)   return { name: 'Bronze Member', color: '#cd7f32', lottie: 'rank-1.json' };
+    
+    return { name: 'Novice', color: 'var(--silver)', lottie: null }; // Default
+});
+
+// Ensure virtuals are included when converting to JSON/Objects
+UserSchema.set('toObject', { virtuals: true });
+UserSchema.set('toJSON', { virtuals: true });
 
 module.exports = mongoose.model('User', UserSchema);

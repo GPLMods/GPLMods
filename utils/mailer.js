@@ -142,6 +142,41 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
         console.error("SMTP2GO Password Reset Error:", error.response ? error.response.data : error.message);
     }
 };
+exports.sendDeletionOtpEmail = async (user, otp) => {
+    try {
+        const msg = {
+            sender: process.env.EMAIL_FROM,
+            to: [user.email],
+            subject: 'GPL Mods - Account Deletion Code',
+            html_body: `
+                <h2>Account Deletion Request</h2>
+                <p>Hi ${user.username},</p>
+                <p>We received a request to delete your GPL Mods account. If you initiated this, please use the following code to confirm. <b>This action is irreversible.</b></p>
+                <h1 style="background: #1a1a1a; color: #e53935; padding: 15px; text-align: center; border-radius: 8px; letter-spacing: 5px;">${otp}</h1>
+                <p>If you did not request this, please change your password immediately.</p>
+            `,
+            text_body: `Your account deletion code is: ${otp}`
+        };
+        await s2g.send(msg, options);
+    } catch (error) { console.error("Error sending deletion OTP:", error); }
+};
+
+exports.send2faEmail = async (user, otp) => {
+    try {
+        const msg = {
+            sender: process.env.EMAIL_FROM,
+            to: [user.email],
+            subject: 'GPL Mods - Your Login Code',
+            html_body: `
+                <h2>Your 2FA Login Code</h2>
+                <p>Please enter the following code to complete your login securely:</p>
+                <h1 style="background: #1a1a1a; color: #FFD700; padding: 15px; text-align: center; border-radius: 8px; letter-spacing: 5px;">${otp}</h1>
+                <p>This code expires in 10 minutes.</p>
+            `
+        };
+        await s2g.send(msg, options);
+    } catch (error) { console.error("Error sending 2FA email:", error); }
+};
 /**
  * Background process to handle sending mass emails safely.
  */

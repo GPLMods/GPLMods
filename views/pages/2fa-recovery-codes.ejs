@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 40px 0;">
+    <div style="background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid var(--gold); max-width: 500px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <i class="fas fa-exclamation-triangle" style="font-size: 3em; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px;">Save Your Backup Codes</h2>
+        
+        <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.9em; line-height: 1.6;">
+            Two-Factor Authentication is now enabled! <strong style="color: var(--red);">Please copy these 8 codes and save them in a secure password manager.</strong> If you lose your phone or email access, these are the ONLY way to recover your account. Each code can be used once.
+        </p>
+
+        <div style="background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <% codes.forEach(code => { %>
+                <span style="font-family: monospace; color: var(--gold); font-size: 1.2em; letter-spacing: 2px;"><%= code %></span>
+            <% }) %>
+        </div>
+
+        <a href="/profile?success=2FA successfully activated!" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">I Have Saved These Codes</a>
+    </div>
+</main>
+<%- include('../partials/footer') %>

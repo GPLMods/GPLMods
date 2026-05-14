@@ -161,8 +161,12 @@ platforms: { type: [String], required: function() { return this.status !== 'proc
         type: Number,
         default: 0
     },
-    // Array to store the IDs of users who have voted on this file's status
-    votedOnStatusBy:[{
+    // --- REPLACED 'votedOnStatusBy' WITH THESE TWO ARRAYS ---
+    votedWorkingBy: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    votedNotWorkingBy: [{
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],

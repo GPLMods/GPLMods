@@ -1,0 +1,198 @@
+<%- include('../partials/header') %>
+
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+<style>
+    .forum-container { max-width: 1000px; margin: 4rem auto; }
+    
+    /* Issue Header */
+    .issue-header { margin-bottom: 2rem; border-bottom: 1px solid #333; padding-bottom: 1.5rem; }
+    .issue-title { font-size: 2.2em; color: var(--white); margin-bottom: 10px; line-height: 1.3; }
+    .issue-meta { color: var(--silver); font-size: 0.9em; display: flex; gap: 15px; align-items: center; }
+    
+    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
+    .status-open { background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); }
+    .status-resolved { background: rgba(46, 204, 113, 0.1); color: var(--green); border: 1px solid var(--green); }
+    .status-closed { background: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
+
+    /* Post Cards (Issue & Replies) */
+    .post-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 12px; display: flex; overflow: hidden; margin-bottom: 20px; }
+    .post-sidebar { width: 160px; background-color: #111; padding: 20px 10px; text-align: center; border-right: 1px solid #333; display: flex; flex-direction: column; align-items: center; }
+    .post-body { flex-grow: 1; padding: 25px; display: flex; flex-direction: column; }
+    
+    /* Avatar & Rank Styles */
+    .author-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid; margin-bottom: 10px; position: relative; }
+    .author-name { color: var(--white); font-weight: bold; text-decoration: none; word-break: break-all; }
+    .author-name:hover { text-decoration: underline; color: var(--gold); }
+    .author-rank { font-size: 0.7em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    
+    /* Solution Highlight */
+    .is-solution { border: 2px solid var(--green); box-shadow: 0 0 20px rgba(46, 204, 113, 0.2); }
+    .solution-header { background: rgba(46, 204, 113, 0.15); padding: 10px 25px; color: var(--green); font-weight: bold; border-bottom: 1px solid var(--green); display: flex; align-items: center; gap: 10px; }
+
+    /* Quill Rendered Content Styles */
+    .ql-editor-content { color: var(--silver); line-height: 1.7; font-size: 1.05em; word-wrap: break-word; overflow-wrap: break-word; }
+    .ql-editor-content pre { background: #111; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; color: #a6e22e; }
+    .ql-editor-content blockquote { border-left: 4px solid var(--gold); padding-left: 15px; color: #aaa; font-style: italic; margin-left: 0; }
+    
+    /* Reply Form */
+    .reply-form-container { margin-top: 40px; background: var(--dark-gray); padding: 30px; border-radius: 12px; border: 1px solid #333; }
+    .ql-toolbar.ql-snow { background-color: #222; border-color: #333; border-radius: 8px 8px 0 0; }
+    .ql-container.ql-snow { border-color: #333; border-radius: 0 0 8px 8px; min-height: 150px; color: white; font-family: 'Poppins'; }
+    .btn-submit { background: var(--blue); color: white; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+
+    @media (max-width: 768px) {
+        .post-card { flex-direction: column; }
+        .post-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #333; flex-direction: row; padding: 10px 20px; justify-content: space-between; }
+        .author-avatar { width: 40px; height: 40px; margin: 0; }
+    }
+</style>
+
+<main class="container">
+    <div class="forum-container">
+        
+        <a href="/community" style="color: var(--silver); text-decoration: none; margin-bottom: 20px; display: inline-block;">
+            <i class="fas fa-arrow-left"></i> Back to Community Hub
+        </a>
+
+        <!-- ISSUE HEADER -->
+        <div class="issue-header">
+            <h1 class="issue-title"><%= issue.title %></h1>
+            <div class="issue-meta">
+                <span class="status-badge status-<%= issue.status %>"><%= issue.status %></span>
+                <span><i class="fas fa-folder-open"></i> <%= issue.category.replace('-', ' ').toUpperCase() %></span>
+                <span><i class="fas fa-clock"></i> <%= new Date(issue.createdAt).toLocaleString() %></span>
+                <span><i class="fas fa-eye"></i> <%= issue.views %> Views</span>
+            </div>
+        </div>
+
+        <!-- MAIN ISSUE POST -->
+        <div class="post-card">
+            <!-- Author Sidebar with Rank Logic -->
+            <div class="post-sidebar">
+                <div style="position: relative;">
+                    <img src="<%= issue.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" style="border-color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 15px <%= issue.author.forumRank ? issue.author.forumRank.color : 'transparent' %>;">
+                    
+                    <!-- Lottie Rank Badge -->
+                    <% if (issue.author.forumRank && issue.author.forumRank.lottie) { %>
+                        <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 2px;">
+                            <lottie-player src="/animations/<%= issue.author.forumRank.lottie %>" background="transparent" speed="1" style="width: 35px; height: 35px; transform: scale(1.3);" loop autoplay></lottie-player>
+                        </div>
+                    <% } %>
+                </div>
+                
+                <a href="/users/<%= slugify(issue.author.username) %>" class="author-name"><%= issue.author.username %></a>
+                
+                <span class="author-rank" style="color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>">
+                    <%= issue.author.forumRank ? issue.author.forumRank.name : 'Novice' %>
+                </span>
+                <% if (issue.author.role === 'admin') { %>
+                    <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">ADMIN</span>
+                <% } %>
+            </div>
+
+            <!-- Content Body -->
+            <div class="post-body">
+                <div class="ql-editor-content"><%- issue.content %></div>
+            </div>
+        </div>
+
+        <!-- REPLIES SECTION -->
+        <h3 style="color: var(--white); margin: 30px 0 20px 0; font-size: 1.5em;"><%= replies.length %> Replies</h3>
+
+        <% replies.forEach(reply => { %>
+            <div class="post-card <%= reply.isSolution ? 'is-solution' : '' %>" id="reply-<%= reply._id %>">
+                
+                <% if (reply.isSolution) { %>
+                    <div class="solution-header" style="width: 100%;">
+                        <i class="fas fa-check-circle"></i> Marked as Accepted Solution by Author
+                    </div>
+                <% } %>
+
+                <div style="display: flex; width: 100%; flex-direction: inherit;">
+                    <div class="post-sidebar">
+                        <div style="position: relative;">
+                            <img src="<%= reply.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" style="border-color: <%= reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)' %>;">
+                            <% if (reply.author.forumRank && reply.author.forumRank.lottie) { %>
+                                <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 2px;">
+                                    <lottie-player src="/animations/<%= reply.author.forumRank.lottie %>" background="transparent" speed="1" style="width: 35px; height: 35px; transform: scale(1.3);" loop autoplay></lottie-player>
+                                </div>
+                            <% } %>
+                        </div>
+                        <a href="/users/<%= slugify(reply.author.username) %>" class="author-name"><%= reply.author.username %></a>
+                        <span class="author-rank" style="color: <%= reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)' %>"><%= reply.author.forumRank ? reply.author.forumRank.name : 'Novice' %></span>
+                        <% if (reply.isAdminReply) { %>
+                            <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">ADMIN</span>
+                        <% } %>
+                    </div>
+
+                    <div class="post-body">
+                        <div class="ql-editor-content"><%- reply.content %></div>
+                        
+                        <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 15px;">
+                            <span style="color: #666; font-size: 0.8em;"><%= timeAgo(reply.createdAt) %></span>
+                            
+                            <!-- MARK AS SOLUTION LOGIC -->
+                            <% 
+                                const isIssueAuthor = user && issue.author && (user._id.toString() === issue.author._id.toString());
+                                const isSiteAdmin = user && user.role === 'admin';
+                            %>
+                            <% if (!reply.isSolution && issue.status !== 'closed' && (isIssueAuthor || isSiteAdmin)) { %>
+                                <form action="/community/<%= issue.slug %>/resolve/<%= reply._id %>" method="POST" style="margin: 0;">
+                                    <button type="submit" class="btn" style="background: transparent; border: 1px solid var(--green); color: var(--green); padding: 5px 15px; border-radius: 15px; cursor: pointer; font-size: 0.85em; transition: 0.2s;">
+                                        <i class="fas fa-check"></i> Accept Solution
+                                    </button>
+                                </form>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+
+        <!-- REPLY FORM -->
+        <% if (user) { %>
+            <% if (issue.status !== 'closed') { %>
+                <div class="reply-form-container">
+                    <h3 style="color: var(--white); margin-bottom: 15px;">Post a Reply</h3>
+                    <form action="/community/<%= issue.slug %>/reply" method="POST" id="replyForm">
+                        <div id="reply-editor-container"></div>
+                        <input type="hidden" name="content" id="replyHiddenContent" required>
+                        <button type="submit" class="btn-submit">Submit Reply</button>
+                    </form>
+                </div>
+                
+                <!-- Initialize Quill for Reply -->
+                <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+                <script>
+                    var replyQuill = new Quill('#reply-editor-container', {
+                        theme: 'snow',
+                        placeholder: 'Write your answer or suggestion here...',
+                        modules: {
+                            toolbar: [['bold', 'italic', 'underline', 'strike'], ['code-block'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']]
+                        }
+                    });
+
+                    document.getElementById('replyForm').addEventListener('submit', function(e) {
+                        const contentHtml = replyQuill.root.innerHTML;
+                        if (contentHtml === '<p><br></p>') { e.preventDefault(); alert('Reply cannot be empty.'); return; }
+                        document.getElementById('replyHiddenContent').value = contentHtml;
+                    });
+                </script>
+
+            <% } else { %>
+                <div style="background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 20px; text-align: center; border-radius: 8px; margin-top: 30px; font-weight: bold;">
+                    <i class="fas fa-lock"></i> This thread has been closed by an administrator.
+                </div>
+            <% } %>
+        <% } else { %>
+            <div style="text-align: center; padding: 40px; background: var(--dark-gray); border-radius: 12px; margin-top: 30px;">
+                <p style="color: var(--silver); margin-bottom: 15px;">You must be logged in to post a reply.</p>
+                <a href="/login" class="btn btn-primary" style="padding: 10px 25px; border-radius: 20px; font-weight: bold;">Log In</a>
+            </div>
+        <% } %>
+
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

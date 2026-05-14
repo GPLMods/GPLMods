@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+<main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+    <div style="background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <i class="fas fa-shield-alt" style="font-size: 3em; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 10px;">Security Verification</h2>
+        
+        <% if (error) { %><p style="color: var(--red); margin-bottom: 15px; font-weight: bold;"><%= error %></p><% } %>
+
+        <!-- SCENARIO 1: EMAIL OR TOTP -->
+        <% if (method === 'email' || method === 'totp') { %>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.9em;">
+                <%= method === 'email' ? "We've sent a 6-digit code to your email." : "Open your Authenticator app." %>
+                <br><br><span style="color: #666;">(Lost access? Enter an 8-character Backup Code).</span>
+            </p>
+            <form action="/login/2fa/verify" method="POST">
+                <input type="text" name="token" placeholder="000000" maxlength="8" required autocomplete="off" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid var(--gold); background: var(--black); color: var(--white); text-align: center; font-size: 1.5em; letter-spacing: 5px; margin-bottom: 20px; outline: none;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">Verify & Login</button>
+            </form>
+        
+        <!-- SCENARIO 2: SOCIAL 2FA -->
+        <% } else if (method === 'social') { %>
+            <p style="color: var(--silver); margin-bottom: 25px;">Please verify your identity by logging into your linked social account.</p>
+            <a href="/auth/google" class="btn btn-primary" style="display:block; margin-bottom:10px; padding:15px;"><i class="fab fa-google"></i> Verify with Google</a>
+            <a href="/auth/github" class="btn btn-secondary" style="display:block; margin-bottom:10px; padding:15px;"><i class="fab fa-github"></i> Verify with GitHub</a>
+            <a href="/auth/microsoft" class="btn btn-secondary" style="display:block; padding:15px;"><i class="fab fa-windows"></i> Verify with Microsoft</a>
+
+        <!-- SCENARIO 3: PASSKEY (WEBAUTHN) -->
+        <% } else if (method === 'passkey') { %>
+            <p style="color: var(--silver); margin-bottom: 25px;">Use your device's biometric scanner (FaceID, TouchID) to login.</p>
+            <button id="auth-passkey-btn" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">
+                <i class="fas fa-fingerprint"></i> Scan Passkey
+            </button>
+            
+            <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+            <script>
+                const { startAuthentication } = SimpleWebAuthnBrowser;
+                document.getElementById('auth-passkey-btn').addEventListener('click', async () => {
+                    try {
+                        const resp = await fetch('/login/2fa/passkey/options');
+                        const options = await resp.json();
+                        const asseResp = await startAuthentication(options);
+                        
+                        const verificationResp = await fetch('/login/2fa/passkey/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(asseResp),
+                        });
+                        const verification = await verificationResp.json();
+                        if (verification.success) window.location.href = verification.redirect;
+                        else alert('Passkey verification failed.');
+                    } catch (error) { alert("Passkey login cancelled or failed."); }
+                });
+            </script>
+        <% } %>
+        
+        <!-- UNIVERSAL BACKUP CODE FALLBACK -->
+        <% if (method === 'social' || method === 'passkey') { %>
+            <p style="margin-top: 20px; font-size: 0.9em; color: var(--silver);">Device lost? Use a backup code:</p>
+            <form action="/login/2fa/verify" method="POST" style="margin-top: 10px;">
+                <input type="text" name="token" placeholder="8-char Backup Code" maxlength="8" required style="width: 100%; padding: 10px; background: var(--black); color: var(--white); border: 1px solid #333; text-align: center; margin-bottom: 10px;">
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">Use Backup Code</button>
+            </form>
+        <% } %>
+
+    </div>
+</main>
+<%- include('../partials/footer') %>

@@ -1,10 +1,12 @@
 <%- include('../partials/header') %>
 
+<!-- INSIDE views/pages/docs.ejs -->
+
 <style>
     /* GitBook-Inspired Layout */
     .docs-layout {
         display: flex;
-        min-height: calc(100vh - 80px); /* Fill screen minus header */
+        min-height: calc(100vh - 80px);
         background-color: var(--black);
         border-top: 1px solid #222;
     }
@@ -17,55 +19,29 @@
         padding: 30px 20px;
         overflow-y: auto;
         position: sticky;
-        top: 80px; /* Adjust based on your header height */
+        top: 80px; 
         height: calc(100vh - 80px);
     }
     
-    .docs-sidebar h3 {
-        color: var(--silver);
-        font-size: 0.85em;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 20px 0 10px 0;
-        padding-left: 10px;
-    }
+    .docs-sidebar h3 { color: var(--silver); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; padding-left: 10px; }
     .docs-sidebar h3:first-child { margin-top: 0; }
-
     .docs-sidebar ul { list-style: none; padding: 0; margin: 0; }
-    
-    .docs-sidebar li a {
-        display: block;
-        color: #aaa;
-        text-decoration: none;
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-size: 0.95em;
-        transition: all 0.2s ease;
-        margin-bottom: 2px;
-    }
-    
-    .docs-sidebar li a:hover {
-        background-color: rgba(255, 215, 0, 0.05);
-        color: var(--gold);
-    }
-    
-    /* The active page highlight */
-    .docs-sidebar li a.active {
-        background-color: rgba(255, 215, 0, 0.1);
-        color: var(--gold);
-        font-weight: 600;
-        border-left: 3px solid var(--gold);
-    }
+    .docs-sidebar li a { display: block; color: #aaa; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-size: 0.95em; transition: all 0.2s ease; margin-bottom: 2px; }
+    .docs-sidebar li a:hover { background-color: rgba(255, 215, 0, 0.05); color: var(--gold); }
+    .docs-sidebar li a.active { background-color: rgba(255, 215, 0, 0.1); color: var(--gold); font-weight: 600; border-left: 3px solid var(--gold); }
 
     /* --- MAIN CONTENT STYLES --- */
     .docs-content-area {
         flex-grow: 1;
         padding: 50px 60px;
-        max-width: 900px; /* Readability cap */
+        max-width: 900px; 
         margin: 0 auto;
+        
+        /* ✅ THE MAGIC FIX: Prevents <pre> blocks from blowing out the flex layout */
+        min-width: 0; 
+        width: 100%;
     }
 
-    /* ✅ FIX: Added line-height and word-wrapping so long titles stack beautifully */
     .docs-content-area h1 { 
         font-size: 2.8em; 
         color: var(--white); 
@@ -74,68 +50,81 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
     }
+    
     .docs-content-area .meta { 
         color: var(--silver); 
         font-size: 0.9em; 
-        margin-bottom: 40px; 
-        border-bottom: 1px solid #333; 
+        margin-bottom: 30px; 
         padding-bottom: 20px; 
         line-height: 1.5;
     }
 
-/* Rich Text Formatting (Crucial for AdminJS output) */
+    /* ✅ NEW: Featured Image Style */
+    .docs-featured-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 40px;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    /* Rich Text Formatting */
     .rich-content { 
         color: #ccc; 
         font-size: 1.1em; 
         line-height: 1.8; 
-        
-        /* ✅ FIX: Force long words and URLs to wrap! */
         word-wrap: break-word;
         overflow-wrap: break-word;
-        word-break: break-word;
     }
-    .rich-content h2 { color: var(--gold); margin-top: 40px; margin-bottom: 15px; font-size: 1.8em; }
+    .rich-content h2 { color: var(--gold); margin-top: 40px; margin-bottom: 15px; font-size: 1.8em; border-bottom: 1px solid #222; padding-bottom: 10px;}
     .rich-content h3 { color: var(--white); margin-top: 30px; margin-bottom: 10px; }
     .rich-content p { margin-bottom: 20px; }
     .rich-content a { color: var(--gold); text-decoration: underline; }
     .rich-content ul, .rich-content ol { margin-bottom: 20px; padding-left: 20px; }
     .rich-content li { margin-bottom: 8px; }
     .rich-content img { max-width: 100%; border-radius: 8px; margin: 20px 0; border: 1px solid #333; }
+    
+    /* ✅ FIXED: Code Block Scrolling */
+    .rich-content pre { 
+        background-color: #111; 
+        padding: 20px; 
+        border-radius: 8px; 
+        border: 1px solid #333; 
+        margin-bottom: 20px; 
+        
+        /* Forces horizontal scrolling on mobile instead of page breaking */
+        max-width: 100%;
+        overflow-x: auto; 
+        white-space: pre; 
+    }
+    
+    /* Beautiful Scrollbar for Code Blocks */
+    .rich-content pre::-webkit-scrollbar { height: 8px; }
+    .rich-content pre::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
+    .rich-content pre::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+
     .rich-content code { background-color: #222; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--gold); }
-    .rich-content pre { background-color: #111; padding: 20px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-bottom: 20px; }
     .rich-content pre code { background-color: transparent; padding: 0; color: #a5d6ff; }
-    .rich-content blockquote { border-left: 4px solid var(--gold); margin: 0 0 20px 0; padding: 10px 20px; background-color: #1a1a1a; color: var(--silver); font-style: italic; }
+    .rich-content blockquote { border-left: 4px solid var(--gold); margin: 0 0 20px 0; padding: 15px 20px; background-color: rgba(255, 215, 0, 0.05); color: var(--silver); font-style: italic; border-radius: 0 8px 8px 0; }
 
     /* Mobile Toggle */
     .mobile-docs-toggle { display: none; background: var(--dark-gray); color: var(--gold); padding: 15px 20px; width: 100%; text-align: left; border: none; border-bottom: 1px solid #333; font-weight: bold; font-size: 1.1em; cursor: pointer; }
 
-@media (max-width: 992px) {
+    @media (max-width: 992px) {
         .docs-layout { flex-direction: column; }
         .mobile-docs-toggle { display: block; }
-        .docs-sidebar { 
-            width: 100%; height: auto; position: static; display: none; 
-            border-right: none; border-bottom: 1px solid #222; 
-        }
+        .docs-sidebar { width: 100%; height: auto; position: static; display: none; border-right: none; border-bottom: 1px solid #222; }
         .docs-sidebar.show { display: block; }
         .docs-content-area { padding: 30px 20px; }
     }
 
-    /* ======== ✅ FIX: NEW MOBILE SCALING ======== */
     @media (max-width: 768px) {
-        .docs-content-area h1 {
-            font-size: 1.8em; /* Drastically shrink the title for phone screens */
-            margin-bottom: 15px;
-        }
-        .docs-content-area .meta {
-            font-size: 0.8em; /* Slightly shrink the date/category text */
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-        .rich-content {
-            font-size: 1em; /* Slightly scale down paragraph text for readability */
-        }
+        .docs-content-area h1 { font-size: 2em; margin-bottom: 10px; }
+        .docs-content-area .meta { font-size: 0.85em; padding-bottom: 15px; margin-bottom: 20px; }
+        .rich-content { font-size: 1em; }
     }
-    /* ============================================ */
 </style>
 
 <div class="docs-layout">
@@ -171,27 +160,25 @@
     <div class="docs-content-area">
         <% if (currentPage) { %>
             <h1><%= currentPage.title %></h1>
+            
             <div class="meta">
                 Last updated: <%= new Date(currentPage.updatedAt).toLocaleDateString() %>
-                <% if (currentPage.category) { %> | Category: <%= currentPage.category.name %> <% } %>
+                <% if (currentPage.category) { %> | Category: <span style="color: var(--gold);"><%= currentPage.category.name %></span> <% } %>
             </div>
+
+            <!-- ======== NEW: FEATURED IMAGE ======== -->
+            <% if (currentPage.featuredImageUrl) { %>
+                <img src="<%= currentPage.featuredImageUrl %>" alt="<%= currentPage.title %> Cover" class="docs-featured-image">
+            <% } %>
+            <!-- ===================================== -->
             
-            <!-- The Rich Text content from AdminJS is injected here -->
             <div class="rich-content">
                 <%- currentPage.content %>
             </div>
             
         <% } else { %>
             <div style="text-align: center; padding: 100px 0;">
-                <!-- ======== CUSTOM LOTTIE DOCS ANIMATION (PLAY ONCE) ======== -->
-            <lottie-player 
-                src="/animations/docs.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" 
-               autoplay>
-            </lottie-player>
-            <!-- ========================================================== -->     
+                <lottie-player src="/animations/docs.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" autoplay></lottie-player>
                 <h1 style="color: #555;">Welcome to GPL Docs</h1>
                 <p style="color: #666;">Please select an article from the sidebar.</p>
             </div>

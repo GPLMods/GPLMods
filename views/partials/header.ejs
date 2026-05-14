@@ -81,9 +81,12 @@
                 <!-- ======================================== -->
                 
                 <!-- 1. Notification Bell (Always Visible) -->
-                <a href="/notifications" class="nav-bell" title="Site Notifications" id="nav-bell-link" 
-                   data-total-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
-                   data-unread-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
+                <!-- ✅ FIX: We now pass ALL counts to the header -->
+                <a href="/notifications" class="nav-bell" title="Site Updates" id="nav-bell-link" 
+                   data-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
+                   data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
+                   data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
+                   data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
                     <i class="fas fa-bell"></i>
                     <span id="notification-badge" class="update-badge" style="display: none;"></span>
                 </a>
@@ -133,6 +136,7 @@
             
             <% if (user) { %>
                 <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
+                <li><a href="/community">Community Forums</a></li> <!-- ✅ NEW -->
                 <li><a href="/my-uploads">My Uploads</a></li>
                 <li><a href="/upload">Upload A New Mod</a></li>
                 <li><a href="/community-chat">Community Chat</a></li>
@@ -144,6 +148,7 @@
                 <li><a href="/support">Support Tickets</a></li>
             <% } else { %>
                 <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
+                <li><a href="/community">Community Forums</a></li> <!-- ✅ NEW -->
                 <li><a href="/upload">Upload A New Mod</a></li>
                 <li><a href="/about">About Us!</a></li>
                 <li><a href="/leaderboard">Leaderboard!</a></li>

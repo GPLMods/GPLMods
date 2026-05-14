@@ -1,0 +1,242 @@
+<%- include('../partials/header') %>
+
+<style>
+    .forum-header { text-align: center; padding: 60px 20px; }
+    .forum-header h1 { font-size: 3em; color: var(--white); }
+    .forum-header h1 span { color: var(--blue); text-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
+    
+    .forum-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+    .ask-btn { display: inline-block; background: var(--blue); color: var(--white); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 0 15px rgba(33, 150, 243, 0.4); }
+    .ask-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px rgba(33, 150, 243, 0.6); }
+
+    /* Filter Section (Reusing custom select styles from search) */
+    .filter-section {
+        background-color: var(--dark-gray); padding: 25px; border-radius: 15px; margin-bottom: 40px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 20px; align-items: center; border: 1px solid #333;
+    }
+    .filter-group { display: flex; flex-direction: column; position: relative; }
+    .filter-group label { color: var(--silver); font-size: 0.9em; margin-bottom: 8px; font-weight: 600; }
+    
+    .search-input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #444; background-color: var(--black); color: var(--white); outline: none; transition: border-color 0.3s; }
+    .search-input:focus { border-color: var(--blue); }
+
+    /* Issue List Styles */
+    .issue-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 50px; }
+    .issue-item { 
+        background-color: var(--dark-gray); border: 1px solid #333; border-radius: 10px; padding: 20px; 
+        display: flex; align-items: center; gap: 20px; text-decoration: none; transition: all 0.2s ease; 
+    }
+    .issue-item:hover { border-color: var(--blue); transform: translateX(5px); }
+    
+    .issue-author-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid; flex-shrink: 0; }
+    
+    .issue-content { flex-grow: 1; min-width: 0; }
+    .issue-title { color: var(--white); font-size: 1.2em; margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .issue-meta { color: var(--silver); font-size: 0.85em; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    
+    .issue-stats { display: flex; gap: 15px; flex-shrink: 0; color: var(--silver); font-size: 0.9em; text-align: center; }
+    .stat-box { display: flex; flex-direction: column; align-items: center; min-width: 50px; }
+    .stat-value { font-size: 1.2em; font-weight: bold; color: var(--white); }
+    .stat-label { font-size: 0.7em; text-transform: uppercase; }
+    
+    .status-open { color: var(--gold); }
+    .status-resolved { color: var(--green); }
+    .status-closed { color: var(--red); }
+    
+    .category-badge { background: #222; padding: 2px 8px; border-radius: 12px; font-size: 0.85em; color: var(--silver); text-transform: uppercase; border: 1px solid #444; }
+
+    @media (max-width: 992px) { .filter-section { grid-template-columns: 1fr 1fr; } .filter-group.search-group { grid-column: 1 / -1; } }
+    @media (max-width: 768px) { .filter-section { grid-template-columns: 1fr; } .issue-item { flex-direction: column; align-items: flex-start; } .issue-stats { width: 100%; justify-content: flex-start; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px; } }
+</style>
+
+<!-- Reusing custom select CSS from search.ejs -> style.css -->
+
+<main>
+    <div class="forum-header">
+        <div class="container">
+            <h1>Community <span>Forums</span></h1>
+            <p style="color: var(--silver); font-size: 1.1em; max-width: 600px; margin: 10px auto 0;">Ask questions, share tutorials, report bugs, and help others to earn expert ranks and exclusive badges.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div class="forum-actions">
+            <a href="/community/ask" class="ask-btn"><i class="fas fa-plus-circle" style="margin-right: 8px;"></i> Ask a Question</a>
+            
+            <% if (user) { %>
+                <div style="background: var(--dark-gray); padding: 10px 20px; border-radius: 20px; border: 1px solid #333; display: flex; align-items: center; gap: 15px;">
+                    <img src="<%= user.signedAvatarUrl %>" style="width: 30px; height: 30px; border-radius: 50%;">
+                    <div>
+                        <span style="color: var(--silver); font-size: 0.85em; display: block;">Your Points</span>
+                        <strong style="color: var(--gold);"><i class="fas fa-star"></i> <%= user.forumPoints || 0 %></strong>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Filter Form -->
+        <form action="/community" method="GET" class="filter-section" id="forumFilterForm">
+            
+            <div class="filter-group search-group">
+                <label>Search Forum</label>
+                <input type="text" name="q" value="<%= searchQuery %>" class="search-input" placeholder="Search issues...">
+            </div>
+
+            <!-- Custom Category Dropdown -->
+            <div class="filter-group">
+                <label>Category</label>
+                <select id="category" name="category" style="display: none;">
+                    <option value="all" <%= currentCategory === 'all' ? 'selected' : '' %>>All Categories</option>
+                    <option value="general" <%= currentCategory === 'general' ? 'selected' : '' %>>General Discussion</option>
+                    <option value="mod-help" <%= currentCategory === 'mod-help' ? 'selected' : '' %>>Mod Help</option>
+                    <option value="bug-report" <%= currentCategory === 'bug-report' ? 'selected' : '' %>>Bug Reports</option>
+                    <option value="request" <%= currentCategory === 'request' ? 'selected' : '' %>>Requests</option>
+                    <option value="tutorial" <%= currentCategory === 'tutorial' ? 'selected' : '' %>>Tutorials</option>
+                </select>
+                <div class="custom-select-wrapper" id="wrapper-category">
+                    <div class="custom-select"><span class="selected-text">All Categories</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="all">All Categories</div>
+                        <div class="custom-option" data-value="general">General Discussion</div>
+                        <div class="custom-option" data-value="mod-help">Mod Help</div>
+                        <div class="custom-option" data-value="bug-report">Bug Reports</div>
+                        <div class="custom-option" data-value="request">Requests</div>
+                        <div class="custom-option" data-value="tutorial">Tutorials</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Status Dropdown -->
+            <div class="filter-group">
+                <label>Status</label>
+                <select id="status" name="status" style="display: none;">
+                    <option value="all" <%= currentStatus === 'all' ? 'selected' : '' %>>Any Status</option>
+                    <option value="open" <%= currentStatus === 'open' ? 'selected' : '' %>>Open</option>
+                    <option value="resolved" <%= currentStatus === 'resolved' ? 'selected' : '' %>>Resolved</option>
+                </select>
+                <div class="custom-select-wrapper" id="wrapper-status">
+                    <div class="custom-select"><span class="selected-text">Any Status</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="all">Any Status</div>
+                        <div class="custom-option" data-value="open">Open</div>
+                        <div class="custom-option" data-value="resolved">Resolved</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Sort Dropdown -->
+            <div class="filter-group">
+                <label>Sort By</label>
+                <select id="sort" name="sort" style="display: none;">
+                    <option value="newest" <%= currentSort === 'newest' ? 'selected' : '' %>>Newest First</option>
+                    <option value="oldest" <%= currentSort === 'oldest' ? 'selected' : '' %>>Oldest First</option>
+                    <option value="views" <%= currentSort === 'views' ? 'selected' : '' %>>Most Viewed</option>
+                </select>
+                <div class="custom-select-wrapper" id="wrapper-sort">
+                    <div class="custom-select"><span class="selected-text">Newest First</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="newest">Newest First</div>
+                        <div class="custom-option" data-value="oldest">Oldest First</div>
+                        <div class="custom-option" data-value="views">Most Viewed</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="filter-button" style="background: var(--blue); border: none; padding: 0 25px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; height: 46px; align-self: flex-end;">Filter</button>
+        </form>
+
+        <!-- Issue List -->
+        <div class="issue-list">
+            <% if (issues && issues.length > 0) { %>
+                <% issues.forEach(issue => { %>
+                    <a href="/community/<%= issue.slug %>" class="issue-item">
+                        
+                        <img src="<%= issue.author.signedAvatarUrl %>" alt="Avatar" class="issue-author-avatar" style="border-color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>;">
+                        
+                        <div class="issue-content">
+                            <h3 class="issue-title"><%= issue.title %></h3>
+                            <div class="issue-meta">
+                                <span class="category-badge"><%= issue.category.replace('-', ' ') %></span>
+                                <span><i class="fas fa-user"></i> <%= issue.author.username %></span>
+                                <span><i class="fas fa-clock"></i> <%= timeAgo(issue.createdAt) %></span>
+                                <strong class="status-<%= issue.status %>"><i class="fas fa-circle" style="font-size: 0.6em; vertical-align: middle;"></i> <%= issue.status.toUpperCase() %></strong>
+                            </div>
+                        </div>
+
+                        <div class="issue-stats">
+                            <div class="stat-box">
+                                <span class="stat-value"><%= issue.replyCount %></span>
+                                <span class="stat-label">Replies</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-value"><%= issue.views %></span>
+                                <span class="stat-label">Views</span>
+                            </div>
+                        </div>
+                    </a>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align: center; padding: 50px; color: var(--silver);">
+                    <i class="fas fa-comments" style="font-size: 3em; margin-bottom: 15px; color: #444;"></i>
+                    <h2>No discussions found.</h2>
+                    <p>Try adjusting your filters or be the first to ask a question!</p>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+            <nav class="pagination" style="display: flex; justify-content: center; padding-bottom: 50px;">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <a href="/community?page=<%= i %>&category=<%= currentCategory %>&status=<%= currentStatus %>&sort=<%= currentSort %>&q=<%= searchQuery %>" 
+                       style="padding: 10px 15px; margin: 0 5px; border-radius: 8px; text-decoration: none; border: 1px solid #444; color: var(--silver); <%= currentPage === i ? 'background: var(--blue); color: white; border-color: var(--blue);' : '' %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+            </nav>
+        <% } %>
+
+    </div>
+</main>
+
+<!-- Reusing custom dropdown logic from search.ejs -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function setupCustomSelect(wrapperId, nativeSelectId) {
+            const wrapper = document.getElementById(wrapperId);
+            const nativeSelect = document.getElementById(nativeSelectId);
+            if (!wrapper || !nativeSelect) return;
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            const initialSelectedOption = nativeSelect.options[nativeSelect.selectedIndex];
+            if (initialSelectedOption) selectedText.textContent = initialSelectedOption.text;
+
+            customSelect.addEventListener('click', (e) => {
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => { if (w !== wrapper) w.classList.remove('open'); });
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+                selectedText.textContent = optionEl.textContent;
+                nativeSelect.value = optionEl.getAttribute('data-value');
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+        }
+        setupCustomSelect('wrapper-category', 'category');
+        setupCustomSelect('wrapper-status', 'status');
+        setupCustomSelect('wrapper-sort', 'sort');
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

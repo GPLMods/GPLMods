@@ -6,7 +6,7 @@
  * overall theme, layout, and appearance of common elements.
  *
  * Table of Contents:
- *.policy 1. Root Variables & CSS Reset
+ * 1. Root Variables & CSS Reset
  * 2. Global Typography & Body Styles
  * 3. Reusable Components (Buttons, Containers)
  * 4. Header & Navigation
@@ -50,6 +50,66 @@
             line-height: 1.6;
         }
         .container { width: 90%; max-width: 1200px; margin: auto; }
+    /* Custom Select Wrapper */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background-color: var(--black);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .selected-text { color: var(--white); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
+    
+    /* Custom Options Dropdown */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #1a1a1a;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    /* Individual Options */
+    .custom-option {
+        padding: 12px 15px;
+        color: var(--silver);
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
         
         /* --- Header --- */
         .main-header { padding: 15px 0; border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; background-color: var(--black); z-index: 1000; }
@@ -117,13 +177,27 @@ input[type="search"]::-webkit-search-cancel-button:hover {
     color: var(--gold);
 }
 
-/* --- Responsive Layout Adjustments --- */
 @media (min-width: 768px) {
     /* Tablet View */
-    .search-bar { order: 2; width: auto; max-width: 400px; }
-    .header-right-actions { order: 3; } /* Move to far right after search bar */
+    .header-content {
+        flex-wrap: nowrap; /* Prevent wrapping on tablet to keep everything on one line */
+    }
+    
+    .search-bar { 
+        order: 2; 
+        flex-grow: 1; /* Allow it to grow and fill the space between logo and icons */
+        width: auto; 
+        max-width: 500px; /* Give it a bit more room to breathe on tablets */
+        margin: 0 15px; /* Add margin so it doesn't bump into the logo or icons */
+        display: flex; /* Ensure the internal form aligns correctly */
+        align-items: center; /* Center the input vertically */
+    }
+    
+    .header-right-actions { 
+        order: 3; 
+        flex-shrink: 0; /* Prevent the icon container from shrinking */
+    } 
 }
-
 @media (min-width: 1024px) {
     /* Desktop View */
     .search-bar { flex-grow: 1; max-width: 500px; margin: 0 20px; }
@@ -666,6 +740,12 @@ a.overlay-btn-primary:hover {
     font-size: 0.8em;
     border-radius: 15px;
 }
+/* --- Music Timeline Styles --- */
+            .timeline-container { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 15px; font-size: 0.8em; color: var(--silver); }
+            #music-timeline { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; cursor: pointer; }
+            #music-timeline::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); cursor: pointer; box-shadow: 0 0 5px var(--glow-gold); transition: transform 0.2s; }
+            #music-timeline::-webkit-slider-thumb:hover { transform: scale(1.3); }
+            #music-current-time, #music-duration { min-width: 35px; text-align: center; font-family: monospace; }
 
         /* --- Policy Acceptance Banner --- */
         -banner {

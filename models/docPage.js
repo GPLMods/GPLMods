@@ -23,6 +23,10 @@ const DocPageSchema = new Schema({
         type: String, 
         required: true 
     }, // This will hold the Rich Text HTML
+    featuredImageKey: { 
+        type: String, 
+        description: 'Direct URL or Backblaze B2 key for the cover image' 
+    },
     order: { 
         type: Number, 
         default: 0 

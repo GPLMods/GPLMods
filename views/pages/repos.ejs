@@ -44,11 +44,12 @@
     </div>
 
     <% 
-        // We need the raw domain to build the repo URLs
-        // (Assuming you pass baseUrl or just hardcode for the template logic)
-        const rawDomain = "gplmods.webredirect.org"; 
-        const fullRepoUrl = `https://${rawDomain}`;
+        // Use the dynamically passed baseUrl!
+        const fullRepoUrl = baseUrl;
+        // Strip http:// or https:// for F-Droid schemes if necessary
+        const rawDomain = baseUrl.replace(/^https?:\/\//, ''); 
     %>
+
 
     <!-- ============================================== -->
     <!-- iOS SIDELOADING REPOS (AltStore, Scarlet, etc) -->

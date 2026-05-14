@@ -1,0 +1,121 @@
+<%- include('../partials/header') %>
+<style>
+    .auth-container { max-width: 600px; margin: 40px auto; background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333; }
+    .method-card { background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; }
+    .method-card:hover { border-color: var(--gold); }
+    .qr-box { background: white; padding: 10px; display: inline-block; border-radius: 10px; margin: 20px 0; }
+</style>
+
+<main class="container">
+    <div class="auth-container">
+        <h2 style="color: var(--gold); text-align: center;">Setup 2-Factor Authentication</h2>
+        <p style="color: var(--silver); text-align: center; margin-bottom: 30px;">Choose a method to secure your account.</p>
+
+        <% if (error) { %><p style="color: var(--red); text-align: center;"><%= error %></p><% } %>
+
+        <div id="method-selection">
+            <!-- Email Method -->
+            <form action="/account/2fa/enable" method="POST">
+                <input type="hidden" name="method" value="email">
+                <button type="submit" class="method-card" style="width: 100%; text-align: left;">
+                    <h3 style="color: var(--white); margin: 0;"><i class="fas fa-envelope" style="color: var(--gold);"></i> Email Authentication</h3>
+                    <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">We will email you a code every time you log in.</p>
+                </button>
+            </form>
+
+            <!-- Authenticator App Method -->
+            <div class="method-card" id="btn-setup-totp">
+                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-mobile-alt" style="color: var(--blue);"></i> Authenticator App (TOTP)</h3>
+                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use Google or Microsoft Authenticator for instant codes.</p>
+            </div>
+
+            <!-- Placeholders for future methods -->
+            <div class="method-card" style="opacity: 0.5; cursor: not-allowed;">
+                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-fingerprint" style="color: var(--silver);"></i> Passkeys (WebAuthn) - <span style="color: var(--gold); font-size: 0.8em;">Coming Soon</span></h3>
+                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use your device's fingerprint or FaceID.</p>
+            </div>
+        </div>
+
+        <!-- Hidden TOTP Setup Div -->
+        <div id="totp-setup" style="display: none; text-align: center;">
+            <h3 style="color: var(--white);">Scan this QR Code</h3>
+            <p style="color: var(--silver); font-size: 0.9em;">Open your Authenticator app and scan this code.</p>
+            <div class="qr-box"><img id="qr-img" src="" alt="QR Code"></div>
+            
+            <form action="/account/2fa/enable" method="POST" style="margin-top: 20px;">
+                <input type="hidden" name="method" value="totp">
+                <input type="text" name="token" placeholder="Enter 6-digit code" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--gold); background: var(--black); color: var(--white); text-align: center; font-size: 1.2em; letter-spacing: 5px; margin-bottom: 15px;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px;">Verify & Enable</button>
+            </form>
+        </div>
+
+            <!-- Passkeys (WebAuthn) Method -->
+            <div class="method-card" id="btn-setup-passkey">
+                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-fingerprint" style="color: var(--silver);"></i> Passkey (FaceID/TouchID)</h3>
+                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use your device's biometric scanner to log in instantly.</p>
+            </div>
+
+            <!-- Social 2FA Method -->
+            <% if (user.googleId || user.githubId || user.microsoftId) { %>
+                <form action="/account/2fa/enable-social" method="POST">
+                    <!-- Dropdown to select which linked account to use -->
+                    <select name="provider" required style="width:100%; margin-bottom:10px; padding: 8px; background: var(--black); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px;">
+                        <% if(user.googleId) { %><option value="google">Use Google Account</option><% } %>
+                        <% if(user.githubId) { %><option value="github">Use GitHub Account</option><% } %>
+                        <% if(user.microsoftId) { %><option value="microsoft">Use Microsoft Account</option><% } %>
+                    </select>
+                    <button type="submit" class="method-card" style="width: 100%; text-align: left;">
+                        <h3 style="color: var(--white); margin: 0;"><i class="fas fa-link" style="color: var(--gold);"></i> Social Account Verification</h3>
+                        <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Require a login through your linked provider.</p>
+                    </button>
+                </form>
+            <% } else { %>
+                <div class="method-card" style="opacity: 0.5; cursor: not-allowed;">
+                    <h3 style="color: var(--white); margin: 0;"><i class="fas fa-link" style="color: var(--silver);"></i> Social Account Verification</h3>
+                    <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Link a Google, GitHub, or Microsoft account first to use this.</p>
+                </div>
+            <% } %>
+
+    </div>
+</main>
+
+<script>
+    document.getElementById('btn-setup-totp').addEventListener('click', async () => {
+        const res = await fetch('/account/2fa/generate-totp', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('method-selection').style.display = 'none';
+            document.getElementById('totp-setup').style.display = 'block';
+            document.getElementById('qr-img').src = data.qrCodeUrl;
+        }
+    });
+</script>
+<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+<script>
+    const { startRegistration } = SimpleWebAuthnBrowser;
+
+    document.getElementById('btn-setup-passkey').addEventListener('click', async () => {
+        try {
+            // 1. Get options from server
+            const resp = await fetch('/account/2fa/passkey/generate-options');
+            const options = await resp.json();
+            
+            // 2. Ask browser to create passkey (prompts FaceID/TouchID/Windows Hello)
+            const attResp = await startRegistration(options);
+            
+            // 3. Send passkey to server to save
+            const verificationResp = await fetch('/account/2fa/passkey/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(attResp),
+            });
+            const verification = await verificationResp.json();
+            if (verification.success) {
+                window.location.href = '/profile?success=Passkey Enabled Successfully!';
+            }
+        } catch (error) {
+            alert("Passkey setup failed or cancelled.");
+        }
+    });
+</script>
+<%- include('../partials/footer') %>
