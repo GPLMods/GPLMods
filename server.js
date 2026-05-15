@@ -1837,6 +1837,21 @@ app.get('/:category/:slug', async (req, res, next) => {
 // (The visual pages users click buttons on)
 // ===================================
 
+function getBaseUrl(req) {
+    if (process.env.BASE_URL) {
+        return process.env.BASE_URL.replace(/\/*$/, '');
+    }
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
+    const host = req.get('host');
+    return `${protocol}://${host}`.replace(/\/*$/, '');
+}
+
+const REPO_BASE_URL = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/*$/, '') : null;
+function getRepoBaseUrl(req) {
+    return REPO_BASE_URL || getBaseUrl(req);
+}
+
 // --- 1. Jailbreak Repo Hub Route ---
 app.get('/jailbreak-repos', async (req, res) => {
     try {
@@ -1871,7 +1886,7 @@ app.get('/jailbreak-repos', async (req, res) => {
             else other.push(fileObj);
         }
 
-        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const baseUrl = getBaseUrl(req);
         res.render('pages/jailbreak-repos', { 
             rootless, rootful, roothide, other,
             baseUrl: baseUrl // <-- Pass baseUrl to EJS
@@ -1925,7 +1940,7 @@ app.get('/repos', async (req, res) => {
             return { ...file.toObject(), iconUrl };
         }));
 
-         const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const baseUrl = getBaseUrl(req);
 
         res.render('pages/repos', { 
             androidFiles: androidFiles,
@@ -5021,19 +5036,18 @@ app.get('/ai-directory', async (req, res) => {
 // 15. UNIVERSAL REPOSITORY ENGINE (Automatic, Manual & JSON)
 // ===============================================
 
-const REPO_BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-
 // ======== ✅ FIX: ADD THESE TWO REDIRECTS ========
 // If a user pastes the base URL into a web browser, redirect them to the actual data 
 // so they see the raw code instead of a 404 error!
 app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
-app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v1.json'));
+app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v2.json'));
 // =================================================
 // -----------------------------------------------
 // A. iOS JAILBREAK REPO ENGINE (APT & Sileo Native)
 // -----------------------------------------------
 
-async function generateIosPackages() {
+async function generateIosPackages(req) {
+    const repoBaseUrl = getBaseUrl(req);
     const jbMods = await File.find({ 
         category: 'ios-jailbroken', 
         status: 'live', 
@@ -5063,10 +5077,10 @@ async function generateIosPackages() {
         packagesText += `Description: ${cleanDesc}...\n`;
         
         // Classic Web Depiction (Fallback)
-        packagesText += `Depiction: ${REPO_BASE_URL}/ios-jailbroken/${mod.slug || mod._id}\n`;
+        packagesText += `Depiction: ${repoBaseUrl}/ios-jailbroken/${mod.slug || mod._id}\n`;
         
         // ✅ NEW: Sileo Native JSON Depiction (Lightning Fast Native UI inside Sileo/Zebra)
-        packagesText += `SileoDepiction: ${REPO_BASE_URL}/ios-repo/depiction/${mod._id}.json\n`;
+        packagesText += `SileoDepiction: ${repoBaseUrl}/ios-repo/depiction/${mod._id}.json\n`;
         
         packagesText += `Filename: ${downloadUrl}\n`; 
         packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
@@ -5084,7 +5098,7 @@ app.get('/ios-repo/Release', (req, res) => {
 // 2. Classic Packages Files
 app.get('/ios-repo/Packages', async (req, res) => {
     try {
-        const packagesText = await generateIosPackages();
+        const packagesText = await generateIosPackages(req);
         res.set('Content-Type', 'text/plain');
         res.send(packagesText);
     } catch (e) { res.status(500).send("Error generating Packages file."); }
@@ -5092,7 +5106,7 @@ app.get('/ios-repo/Packages', async (req, res) => {
 
 app.get('/ios-repo/Packages.bz2', async (req, res) => {
     try {
-        const packagesText = await generateIosPackages();
+        const packagesText = await generateIosPackages(req);
         res.set('Content-Type', 'application/x-bzip2');
         res.set('Content-Disposition', 'attachment; filename="Packages.bz2"');
         res.send(packagesText); 
@@ -5102,9 +5116,10 @@ app.get('/ios-repo/Packages.bz2', async (req, res) => {
 // ✅ NEW 3. Sileo Repo Branding JSON
 // Sileo looks for this exact file to get your Repo Icon and Header
 app.get('/ios-repo/sileo-info.json', (req, res) => {
+    const repoBaseUrl = getRepoBaseUrl(req);
     res.json({
         name: "GPL Mods",
-        icon: `${REPO_BASE_URL}/images/icon-512x512.png`,
+        icon: `${repoBaseUrl}/images/icon-512x512.png`,
         description: "100% Safe & Working Mods For All Your Devices!",
         authentication_banner: {
             message: "Support us by upgrading to Premium!",
@@ -5148,6 +5163,7 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
 // --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
 app.get('/ios-repo/apps.json', async (req, res) => {
     try {
+        const repoBaseUrl = getRepoBaseUrl(req);
         const ipaMods = await File.find({ 
             category: 'ios-jailed',
             status: 'live',
@@ -5160,9 +5176,9 @@ app.get('/ios-repo/apps.json', async (req, res) => {
             identifier: "org.webredirect.gplmods.ios",
             subtitle: "100% Safe & Working iOS Mods",
             description: "The ultimate source for tweaked and modded iOS apps and games.",
-            iconURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
-            headerURL: `${REPO_BASE_URL}/images/icon-512x512.png`,
-            website: REPO_BASE_URL,
+            iconURL: `${repoBaseUrl}/images/icon-512x512.png`,
+            headerURL: `${repoBaseUrl}/images/icon-512x512.png`,
+            website: repoBaseUrl,
             tintColor: "#FFD700",
             apps: [], news:[]
         };
@@ -5207,10 +5223,11 @@ app.get('/fdroid/repo/index.xml', async (req, res) => {
     // ... your existing code for index.xml ...
 });
 
-// ✅ NEW 2. Modern Neo Store / Droid-ify JSON Index (index-v1.json)
-// Modern Android clients prefer this over XML. It syncs 10x faster and bypasses Jar verification!
+// ✅ Legacy compatibility endpoint for JSON-based Android clients (index-v1.json)
+// Modern Neo Store / Droid-ify clients now prefer index-v2.json for better compatibility.
 app.get('/fdroid/repo/index-v1.json', async (req, res) => {
     try {
+        const repoBaseUrl = getRepoBaseUrl(req);
         const androidMods = await File.find({ 
             category: 'android',
             status: 'live',
@@ -5222,7 +5239,7 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
             repo: {
                 name: "GPL Mods Android",
                 description: "The ultimate source for safe and working Android mods.",
-                address: `${REPO_BASE_URL}/fdroid/repo`,
+                address: `${repoBaseUrl}/fdroid/repo`,
                 icon: "icon-512x512.png",
                 timestamp: Date.now(),
                 version: 1
@@ -5233,7 +5250,7 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
         };
 
         for (const mod of androidMods) {
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
             if (!downloadUrl) continue;
 
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
@@ -5269,6 +5286,69 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
     } catch (e) { 
         console.error("F-Droid JSON Error:", e);
         res.status(500).json({ error: "Error generating F-Droid JSON index." }); 
+    }
+});
+
+// ✅ Current default endpoint for Neo Store / Droid-ify modern Android repository clients
+app.get('/fdroid/repo/index-v2.json', async (req, res) => {
+    try {
+        const repoBaseUrl = getRepoBaseUrl(req);
+        const androidMods = await File.find({ 
+            category: 'android',
+            status: 'live',
+            isLatestVersion: true,
+            showInRepo: { $ne: false } 
+        }).sort({ createdAt: -1 });
+
+        const repoJson = {
+            repo: {
+                name: "GPL Mods Android",
+                description: "The ultimate source for safe and working Android mods.",
+                address: `${repoBaseUrl}/fdroid/repo`,
+                icon: "icon-512x512.png",
+                timestamp: Date.now(),
+                version: 2
+            },
+            requests: { install: [], uninstall: [] },
+            apps: [],
+            packages: {}
+        };
+
+        for (const mod of androidMods) {
+            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
+            if (!downloadUrl) continue;
+
+            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
+
+            repoJson.apps.push({
+                packageName: bundleId,
+                name: mod.name,
+                summary: `${mod.version} Mod by ${mod.uploader}`,
+                description: cleanDesc,
+                license: "GNU/GPL",
+                categories:["Mods", "Games", "Apps"],
+                added: new Date(mod.createdAt).getTime(),
+                lastUpdated: new Date(mod.updatedAt).getTime()
+            });
+
+            repoJson.packages[bundleId] = [{
+                versionName: mod.version,
+                versionCode: 1,
+                apkName: downloadUrl,
+                hash: mod.virusTotalId && mod.virusTotalId.length === 64 ? mod.virusTotalId : "",
+                hashType: "sha256",
+                size: mod.fileSize || 1048576,
+                added: new Date(mod.createdAt).getTime()
+            }];
+        }
+
+        res.set('Content-Type', 'application/json');
+        res.send(JSON.stringify(repoJson, null, 2));
+
+    } catch (e) {
+        console.error("F-Droid JSON Error:", e);
+        res.status(500).json({ error: "Error generating F-Droid JSON index." });
     }
 });
 

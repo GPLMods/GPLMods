@@ -1,6 +1,6 @@
 AdminJS.UserComponents = {}
 AdminJS.env.NODE_ENV = "production"
-import Dashboard from '../components/dashboard'
+import Dashboard from '../components/CustomDashboard'
 AdminJS.UserComponents.Dashboard = Dashboard
 import SidebarBranding from '../components/SidebarBranding'
 AdminJS.UserComponents.SidebarBranding = SidebarBranding

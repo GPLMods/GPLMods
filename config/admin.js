@@ -118,8 +118,8 @@ async function createAdminRouter() {
         // ✅ FIX 2: Properly pass the env variables into AdminJS
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
-            styles: isProduction ? ['/.adminjs/bundle.css'] :[],
-            scripts: isProduction ? ['/.adminjs/bundle.js',' /js/image-fallback.js'] :[],
+            styles: isProduction ? ['/.adminjs/bundle.css'] : [],
+            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js'] : [],
         },
         dashboard: { 
             component: Components.Dashboard,

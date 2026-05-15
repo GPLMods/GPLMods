@@ -59,42 +59,48 @@ async function runAdminBuilder() {
     console.log('🚀 INITIALIZING ADMINJS PRE-BUILD SEQUENCE');
     console.log('==================================================\n');
 
-    // --- STEP 1: Network Check (Forced via Google DNS) ---
-    process.stdout.write('⏳ Checking network connectivity (via 8.8.8.8)... ');
-    try {
-        // We try to resolve a highly reliable domain (google.com) to verify internet access.
-        // Since we ran setServers() above, this lookup goes directly to 8.8.8.8.
-        await dns.resolve('google.com'); 
-        console.log('✅ Online');
-    } catch (e) {
-        console.log('❌ Offline');
-        console.error('\nCRITICAL: Network resolution failed using Google DNS.');
-        console.error('Error details:', e.message);
-        console.error('Build aborted to prevent partial compilation.\n');
-        process.exit(1);
-    }
+    const skipBuildChecks = process.env.SKIP_ADMIN_BUILD_CHECKS === 'true';
 
-    // --- STEP 2: Database Check ---
-    process.stdout.write('⏳ Checking MongoDB Atlas connection... ');
-    if (!process.env.MONGO_URI) {
-        console.log('❌ Failed');
-        console.error('\nCRITICAL: MONGO_URI environment variable is missing.');
-        console.error('Ensure your .env file exists locally, or environment variables are set in Render.\n');
-        process.exit(1);
-    }
-    
-    try {
-        // A short timeout prevents the script from hanging forever if IP is not whitelisted
-        await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
-        console.log('✅ Connected');
-        await mongoose.disconnect(); 
-    } catch (e) {
-        console.log('❌ Failed');
-        console.error('\nCRITICAL: Could not connect to the database.');
-        console.error('1. Check if the MONGO_URI is correct.');
-        console.error('2. Ensure the server IP (or 0.0.0.0/0) is whitelisted in MongoDB Atlas Network Access.');
-        console.error('Error details:', e.message, '\n');
-        process.exit(1);
+    if (!skipBuildChecks) {
+        // --- STEP 1: Network Check (Forced via Google DNS) ---
+        process.stdout.write('⏳ Checking network connectivity (via 8.8.8.8)... ');
+        try {
+            // We try to resolve a highly reliable domain (google.com) to verify internet access.
+            // Since we ran setServers() above, this lookup goes directly to 8.8.8.8.
+            await dns.resolve('google.com'); 
+            console.log('✅ Online');
+        } catch (e) {
+            console.log('❌ Offline');
+            console.error('\nCRITICAL: Network resolution failed using Google DNS.');
+            console.error('Error details:', e.message);
+            console.error('Build aborted to prevent partial compilation.\n');
+            process.exit(1);
+        }
+
+        // --- STEP 2: Database Check ---
+        process.stdout.write('⏳ Checking MongoDB Atlas connection... ');
+        if (!process.env.MONGO_URI) {
+            console.log('❌ Failed');
+            console.error('\nCRITICAL: MONGO_URI environment variable is missing.');
+            console.error('Ensure your .env file exists locally, or environment variables are set in Render.\n');
+            process.exit(1);
+        }
+
+        try {
+            // A short timeout prevents the script from hanging forever if IP is not whitelisted
+            await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+            console.log('✅ Connected');
+            await mongoose.disconnect(); 
+        } catch (e) {
+            console.log('❌ Failed');
+            console.error('\nCRITICAL: Could not connect to the database.');
+            console.error('1. Check if the MONGO_URI is correct.');
+            console.error('2. Ensure the server IP (or 0.0.0.0/0) is whitelisted in MongoDB Atlas Network Access.');
+            console.error('Error details:', e.message, '\n');
+            process.exit(1);
+        }
+    } else {
+        console.log('⚠️ SKIPPING network and MongoDB checks because SKIP_ADMIN_BUILD_CHECKS=true');
     }
 
     // --- STEP 3: Cache Check & Force Rebuild Option ---
