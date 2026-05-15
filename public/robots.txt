@@ -5,6 +5,17 @@ Allow: /mods/
 Allow: /category/
 Allow: /developer/
 Allow: /users/
+Allow: /ai-directory/
+Allow: /repos/
+Allow: /faq/
+Allow: /about/
+Allow: /community/
+Allow: /privacy-policy/
+Allow: /tos/
+Allow: /refund-policy/
+Allow: /jailbreak-repos/
+Allow: /repos/
+Allow: /donate/
 
 # Disallow indexing of private and admin areas
 Disallow: /admin/
