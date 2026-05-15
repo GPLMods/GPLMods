@@ -365,7 +365,7 @@ async function createAdminRouter() {
                                 updatedRecord.params.redirectUrl = vtUrl;
                                 return { record: updatedRecord, notice: { message: 'Opening VirusTotal report...', type: 'success' } };
                             }
-                    },
+                        },
                     // ======== NEW: ADMIN VOTE MANAGEMENT ========
                     manageVotes: {
                         actionType: 'record',
@@ -426,6 +426,7 @@ async function createAdminRouter() {
                     // ============================================
 
                 } // End of actions object
+            } // End of options object
             }, // End of File resource
             // ---------------------------------
             // COMMUNITY FORUM

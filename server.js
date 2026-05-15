@@ -1557,7 +1557,7 @@ app.post('/community/ask', ensureAuthenticated, async (req, res) => {
         await newIssue.save();
         
         // Award 5 points for asking a question
-        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 5 } });
+        await User.adjustForumPoints(req.user._id, 5);
 
         res.redirect(`/community/${uniqueSlug}`);
     } catch (error) {
@@ -1618,7 +1618,7 @@ app.post('/community/:slug/reply', ensureAuthenticated, async (req, res) => {
         await newReply.save();
 
         // Award 2 points for helping by replying
-        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 2 } });
+        await User.adjustForumPoints(req.user._id, 2);
 
         res.redirect(`/community/${issue.slug}`);
     } catch (error) {
@@ -1651,7 +1651,7 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
 
         // ==== GAMIFICATION: Massive 25 Point Reward for the Solution Provider! ====
         if (reply.author.toString() !== req.user._id.toString()) { // Don't reward if solving own issue
-            await User.findByIdAndUpdate(reply.author, { $inc: { forumPoints: 25 } });
+            await User.adjustForumPoints(reply.author, 25);
         }
 
         res.redirect(`/community/${issue.slug}`);
@@ -1823,7 +1823,6 @@ app.get('/:category/:slug', async (req, res, next) => {
             userHasWhitelisted,
             userVotedWorking,
             userVotedNotWorking,
-            isUploaderDistributor
             isUploaderDistributor
         });
 
@@ -3969,10 +3968,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         } else {
         // ======== NEW: AWARD POINTS FOR UPLOADING ========
         // Give the user 50 points for contributing a mod!
-        await User.findOneAndUpdate(
-            { username: req.user.username }, 
-            { $inc: { forumPoints: 50 } }
-        );
+        await User.adjustForumPoints(req.user._id, 50);
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -4446,7 +4442,7 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         const newReview = new Review({ file: req.params.fileId, user: req.user._id, username: req.user.username, rating: parseInt(rating), comment: cleanComment });
         await newReview.save();
         // ======== NEW: AWARD POINTS FOR WRITING A REVIEW ========
-        await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 20 } });
+        await User.adjustForumPoints(req.user._id, 20);
         // ========================================================
         
         const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(req.params.fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
@@ -4474,6 +4470,7 @@ app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
         
         await Review.findByIdAndDelete(review._id);
         await recalculateRating(review.file);
+        await User.adjustForumPoints(review.user, -20);
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
 });
@@ -4499,8 +4496,12 @@ app.post('/reviews/:id/reply', ensureAuthenticated, async (req, res) => {
         const review = await Review.findById(req.params.id).populate('file');
         if (!review || review.file.uploader !== req.user.username) return res.status(403).send("Unauthorized");
 
+        const hadReply = review.uploaderReply && review.uploaderReply.text;
         review.uploaderReply = { text: req.body.replyText, createdAt: new Date() };
         await review.save();
+        if (!hadReply) {
+            await User.adjustForumPoints(req.user._id, 10);
+        }
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
 });
@@ -4534,9 +4535,7 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
 
         // ======== NEW: REWARD THE AUTHOR OF THE HELPFUL REVIEW ========
         // Notice we are updating 'review.user', NOT 'req.user._id'
-        await User.findByIdAndUpdate(review.user, { $inc: { forumPoints: 10 } });
-        // ==============================================================
-
+        await User.adjustForumPoints(review.user, 10);
         res.redirect(`/mods/${review.file}`);
 
     } catch (error) {
@@ -4562,8 +4561,12 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         if (!file) return res.status(404).send("File not found.");
         
         // Check current voting status
-        const hasVotedWorking = file.votedWorkingBy.includes(userId);
-        const hasVotedNotWorking = file.votedNotWorkingBy.includes(userId);
+        const votedWorkingBy = Array.isArray(file.votedWorkingBy) ? file.votedWorkingBy : [];
+        const votedNotWorkingBy = Array.isArray(file.votedNotWorkingBy) ? file.votedNotWorkingBy : [];
+
+        const hasVotedWorking = votedWorkingBy.includes(userId);
+        const hasVotedNotWorking = votedNotWorkingBy.includes(userId);
+        const hasPreviouslyVotedStatus = hasVotedWorking || hasVotedNotWorking;
 
         let updateQuery = {};
 
@@ -4571,36 +4574,36 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         if (voteType === 'working') {
             if (hasVotedWorking) {
                 // TOGGLE OFF: They already voted working, so remove their vote
-                updateQuery = { 
-                    $pull: { votedWorkingBy: userId }, 
-                    $inc: { workingVoteCount: -1 } 
+                updateQuery = {
+                    $pull: { votedWorkingBy: userId },
+                    $inc: { workingVoteCount: -1 }
                 };
             } else {
                 // ADD VOTE: Add to working, and if they previously voted not-working, remove that
-                updateQuery = { 
-                    $push: { votedWorkingBy: userId }, 
-                    $inc: { workingVoteCount: 1 } 
+                updateQuery = {
+                    $push: { votedWorkingBy: userId },
+                    $inc: { workingVoteCount: 1 }
                 };
                 if (hasVotedNotWorking) {
                     updateQuery.$pull = { votedNotWorkingBy: userId };
                     updateQuery.$inc.notWorkingVoteCount = -1;
                 }
             }
-        } 
-        
+        }
+
         // SCENARIO 2: User clicked "Not Working"
         else if (voteType === 'not-working') {
             if (hasVotedNotWorking) {
                 // TOGGLE OFF: They already voted not-working, so remove their vote
-                updateQuery = { 
-                    $pull: { votedNotWorkingBy: userId }, 
-                    $inc: { notWorkingVoteCount: -1 } 
+                updateQuery = {
+                    $pull: { votedNotWorkingBy: userId },
+                    $inc: { notWorkingVoteCount: -1 }
                 };
             } else {
                 // ADD VOTE: Add to not-working, and if they previously voted working, remove that
-                updateQuery = { 
-                    $push: { votedNotWorkingBy: userId }, 
-                    $inc: { notWorkingVoteCount: 1 } 
+                updateQuery = {
+                    $push: { votedNotWorkingBy: userId },
+                    $inc: { notWorkingVoteCount: 1 }
                 };
                 if (hasVotedWorking) {
                     updateQuery.$pull = { votedWorkingBy: userId };
@@ -4612,20 +4615,19 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         // Execute the smart update
         await File.findByIdAndUpdate(fileId, updateQuery);
 
-        res.redirect(`/mods/${fileId}`);
-        // This 'if' ensures they haven't voted on this mod before
-        if (file && !file.votedOnStatusBy.includes(req.user._id)) {
-            const update = voteType === 'working' ? { $inc: { workingVoteCount: 1 } } : { $inc: { notWorkingVoteCount: 1 } };
-            await File.findByIdAndUpdate(req.params.fileId, { ...update, $push: { votedOnStatusBy: req.user._id } });
+        const isVoteRemoval = (voteType === 'working' && hasVotedWorking) || (voteType === 'not-working' && hasVotedNotWorking);
+        const isVoteAdd = (voteType === 'working' && !hasVotedWorking) || (voteType === 'not-working' && !hasVotedNotWorking);
 
-            // ======== NEW: AWARD POINTS FOR VOTING ON STATUS ========
-            await User.findByIdAndUpdate(req.user._id, { $inc: { forumPoints: 5 } });
-            // ========================================================
+        if (isVoteRemoval) {
+            await User.adjustForumPoints(req.user._id, -5);
+        } else if (isVoteAdd && !hasPreviouslyVotedStatus) {
+            await User.adjustForumPoints(req.user._id, 5);
         }
-        
+
+        return res.redirect(`/mods/${fileId}`);
     } catch (error) {
         console.error("Error processing file status vote:", error);
-        res.status(500).send("Server Error");
+        return res.status(500).send("Server Error");
     }
 });
 
@@ -4703,14 +4705,12 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
             // UNFOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $pull: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $pull: { followers: currentUserId } });
-                $pull: { followers: currentUserId },
-                $inc: { forumPoints: -10 } // Deduct points
+            await User.adjustForumPoints(targetUserId, -10);
         } else {
             // FOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $push: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $push: { followers: currentUserId } });
-                $push: { followers: currentUserId },
-                $inc: { forumPoints: 10 } // Award points
+            await User.adjustForumPoints(targetUserId, 10);
             
             // Optional: Send a notification to the user that they got a new follower
             // await new UserNotification({ user: targetUserId, title: "New Follower", message: `${req.user.username} started following you!`, type: 'info' }).save();

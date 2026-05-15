@@ -109,7 +109,7 @@ dateOfBirth: {
     },
     passwordResetExpires: {
         type: Date
-    }
+    },
     // --- NEW: SECURE DELETION ---
     deletionOtp: { type: String },
     deletionOtpExpires: { type: Date },
@@ -158,6 +158,32 @@ UserSchema.pre('save', async function() {
 UserSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Helper methods for safe forum point adjustments
+UserSchema.statics.adjustForumPoints = async function(userId, delta) {
+    if (!userId || typeof delta !== 'number') return null;
+    const user = await this.findById(userId);
+    if (!user) return null;
+    user.forumPoints = Math.max(0, (user.forumPoints || 0) + delta);
+    await user.save();
+    return user;
+};
+
+UserSchema.statics.awardForumPoints = function(userId, amount = 0) {
+    return this.adjustForumPoints(userId, Math.max(0, amount));
+};
+
+UserSchema.statics.deductForumPoints = function(userId, amount = 0) {
+    return this.adjustForumPoints(userId, -Math.abs(amount));
+};
+
+// Ensure forum points never go negative before saving
+UserSchema.pre('save', async function() {
+    if (typeof this.forumPoints === 'number' && this.forumPoints < 0) {
+        this.forumPoints = 0;
+    }
+});
+
 // --- VIRTUAL: Calculate Forum Rank dynamically based on points ---
 UserSchema.virtual('forumRank').get(function() {
     const pts = this.forumPoints || 0;

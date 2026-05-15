@@ -506,41 +506,48 @@
             <!-- ============================ -->
 
             <ul class="meta-info">
-                <li>Version: <span><%= file.version %></span></li>
-                <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
-                <li>Sutible For:<span><%=file.ageRating%></span></li>
-                <li>
-                <!-- ======== NEW: DEPENDENCY DISPLAYS ======== -->
+                <li><span>Version:</span> <span><%= file.version %></span></li>
+                <li><span>Category:</span> <span><%= file.platforms[0] || 'N/A' %></span></li>
+                
+                <!-- ======== NEW FIELDS WITH PROPER SPAN WRAPPERS ======== -->
+                <% if (file.ageRating) { %>
+                    <li><span>Suitable For:</span> <span><%= file.ageRating %></span></li>
+                <% } %>
+
                 <% if (file.minOsVersion && file.minOsVersion.trim() !== '') { %>
-                    <li>Requires: <span style="color: var(--gold);"><%= file.minOsVersion %>+</span></li>
+                    <li><span>Requires:</span> <span style="color: var(--gold);"><%= file.minOsVersion %>+</span></li>
                 <% } %>
                 
                 <% if (file.architectures && file.architectures.length > 0) { %>
-                    <li>Architecture: 
-                        <span style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-top: 5px;">
+                    <li>
+                        <span>Architecture:</span> 
+                        <span style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-top: 2px;">
                             <% file.architectures.forEach(arch => { %>
-                                <span style="background: #222; border: 1px solid #444; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: var(--silver);"><%= arch %></span>
+                                <span style="background: #222; border: 1px solid #444; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: var(--silver); margin:0;"><%= arch %></span>
                             <% }) %>
                         </span>
                     </li>
                 <% } %>
-                <!-- ======================================== -->
-                    Developer: 
+                <!-- ====================================================== -->
+
+                <li>
+                    <span>Developer:</span> 
                     <% if (file.developer && file.developer !== 'N/A') { %>
-                        <!-- ✅ CHANGED: Now using slugify -->
                         <a href="/developer?name=<%= slugify(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
                     <% } else { %>
                         <span>N/A</span>
                     <% } %>
                 </li>
                 <li>
-                 Uploaded by: <a href="/users/<%= slugify(file.uploader) %>" class="meta-link notranslate"><%= file.uploader %> <span class="arrow">›</span></a>
+                 <span>Uploaded by:</span> 
+                 <a href="/users/<%= slugify(file.uploader) %>" class="meta-link notranslate"><%= file.uploader %> <span class="arrow">›</span></a>
                 </li>
-                <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
-                <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
-                <li>Working?:
+                <li><span>Downloads:</span> <span><%= file.downloads.toLocaleString() %></span></li>
+                <li><span>Updated:</span> <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+                
+                <li>
+                    <span>Working?:</span>
                     <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-                    <!-- ✅ FIX: Moved the % sign inside the logic so it doesn't show N/A% -->
                     <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
                     <div class="voting-system">
                         <span class="working-percentage"><%= workingPercentage %></span>
@@ -550,11 +557,10 @@
                             <!-- Working Button -->
                             <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
                                 <input type="hidden" name="voteType" value="working">
-                                <!-- If user voted working, make it solid. Otherwise, make it outlined. -->
                                 <button type="submit" 
                                     class="vote-btn-working" 
-                                    style="<%= userVotedWorking ? 'background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);' : '' %>"
-                                    title="<%= userVotedWorking ? 'Remove vote' : 'Mark as Working' %>">
+                                    style="<%= typeof userVotedWorking !== 'undefined' && userVotedWorking ? 'background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);' : '' %>"
+                                    title="<%= typeof userVotedWorking !== 'undefined' && userVotedWorking ? 'Remove vote' : 'Mark as Working' %>">
                                     ✓
                                 </button>
                             </form>
@@ -562,11 +568,10 @@
                             <!-- Not Working Button -->
                             <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
                                 <input type="hidden" name="voteType" value="not-working">
-                                <!-- If user voted not-working, make it solid. Otherwise, make it outlined. -->
                                 <button type="submit" 
                                     class="vote-btn-not-working" 
-                                    style="<%= userVotedNotWorking ? 'background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);' : '' %>"
-                                    title="<%= userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>">
+                                    style="<%= typeof userVotedNotWorking !== 'undefined' && userVotedNotWorking ? 'background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);' : '' %>"
+                                    title="<%= typeof userVotedNotWorking !== 'undefined' && userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>">
                                     ✗
                                 </button>
                             </form>

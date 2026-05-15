@@ -38,7 +38,7 @@ const ReviewSchema = new Schema({
     uploaderReply: {
         text: { type: String, trim: true },
         createdAt: { type: Date }
-    }
+    },
     // An array that stores the user IDs of everyone who voted on this review
     // to prevent duplicate voting
     votedBy: {
