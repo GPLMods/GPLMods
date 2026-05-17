@@ -89,56 +89,57 @@
     max-width: 100%;
     height: auto;
 }
-        .meta-info { list-style: none; text-align: left; color: var(--silver); }
+        /* ✅ FIX 2.0: Ultra-Robust Grid layout for the Meta Info list */
+        .meta-info { list-style: none; padding: 0; margin: 0; }
         
-        /* ✅ ULTIMATE FIX: Bulletproof Responsive Layout for Meta Info */
         .meta-info li { 
-            padding: 12px 0; 
+            padding: 15px 0; /* Slightly more padding for breathing room */
             border-bottom: 1px solid #2a2a2a;
+            
+            /* Use CSS Grid for perfect two-column alignment */
             display: grid;
-            /* Column 1 is auto-sized to fit the label. Column 2 takes up the rest of the space */
-            grid-template-columns: auto 1fr; 
-            align-items: start; /* Aligns text to the top if it wraps */
+            grid-template-columns: auto 1fr; /* Label takes what it needs, value takes the rest */
             gap: 15px; 
-            width: 100%;
+            align-items: center; /* Vertically centers single-line items */
         }
         
-        /* The label on the left (e.g., "Developer:", "Requires:") */
-        .meta-info li > :first-child {
+        /* The Label (e.g., "Developer:", "Version:") */
+        .meta-info li > span:first-child {
             color: var(--silver);
             white-space: nowrap; /* Prevents the label itself from breaking into two lines */
+            /* If the value on the right wraps to multiple lines, align the label to the top */
+            align-self: start; 
+            margin-top: 2px; /* Tiny tweak to align the label perfectly with the first line of text */
         }
-        
-        /* The value on the right (e.g., "Mojang >", "arm64-v8a") */
-        .meta-info li > *:last-child {
+
+        /* The Value (e.g., the long developer name) */
+        .meta-info li .meta-value, 
+        .meta-info li a.meta-link {
             text-align: right;
+            color: var(--white);
+            font-weight: 600;
+            line-height: 1.4; /* Improve readability for wrapped text */
             
-            /* Forces long words/names to break instead of pushing outside the box */
+            /* The Magic Formula to force wrapping */
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: break-word;
-            min-width: 0; /* CRITICAL FIX: Allows flex/grid children to shrink below their content size! */
             
-            display: flex;
-            flex-wrap: wrap; 
-            justify-content: flex-end;
-            gap: 5px;
-        }
-
-        /* Specific fix to ensure the arrow icon doesn't cause awkward wrapping */
-        .meta-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .meta-info li:last-child { border-bottom: none; }
-        .meta-link {
-            color: var(--white);
-            text-decoration: none;
-            font-weight: 600;
+            /* Optional: Add a subtle transition for links */
             transition: color 0.2s;
+            display: block; /* Ensures links behave properly in the grid */
+            justify-self: end; /* Pushes the text to the far right edge */
+        }
+
+        .meta-link:hover { color: var(--gold); }
+        
+        /* Specifically fix the Voting row which has a complex nested layout */
+        .meta-info li:has(.voting-system) {
+             align-items: center; /* Keep voting system perfectly centered vertically */
+        }
+        .meta-info li:has(.voting-system) > span:first-child {
+             align-self: center;
+             margin-top: 0;
         }
 </style>
 
@@ -506,8 +507,8 @@
             <!-- ============================ -->
 
             <ul class="meta-info">
-                <li>Version: <span><%= file.version %></span></li>
-                <li>Category: <span><%= file.platforms[0] || 'N/A' %></span></li>
+                <li><span>Version:</span> <span class="meta-value"><%= file.version %></span></li>
+                <li><span>Category:</span> <span class="meta-value"><%= file.platforms[0] || 'N/A' %></span></li>
                 <li>Sutible For:<span><%=file.ageRating%></span></li>
                 <li>
                 <!-- ======== NEW: DEPENDENCY DISPLAYS ======== -->
@@ -525,19 +526,23 @@
                     </li>
                 <% } %>
                 <!-- ======================================== -->
-                    Developer: 
+                    <span>Developer:</span> 
                     <% if (file.developer && file.developer !== 'N/A') { %>
-                        <!-- ✅ CHANGED: Now using slugify -->
                         <a href="/developer?name=<%= slugify(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
                     <% } else { %>
-                        <span>N/A</span>
+                        <span class="meta-value">N/A</span>
                     <% } %>
                 </li>
+                
                 <li>
-                 Uploaded by: <a href="/users/<%= slugify(file.uploader) %>" class="meta-link notranslate"><%= file.uploader %> <span class="arrow">›</span></a>
+                    <span>Uploaded by:</span> 
+                    <a href="/users/<%= slugify(file.uploader) %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
                 </li>
-                <li>Downloads: <span><%= file.downloads.toLocaleString() %></span></li>
-                <li>Updated: <span><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+                
+                <li><span>Downloads:</span> <span class="meta-value"><%= file.downloads.toLocaleString() %></span></li>
+                
+                <li><span>Updated:</span> <span class="meta-value"><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
+                
                 <li>Working?:
                     <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
                     <!-- ✅ FIX: Moved the % sign inside the logic so it doesn't show N/A% -->

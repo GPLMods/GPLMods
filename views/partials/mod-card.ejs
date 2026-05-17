@@ -1,5 +1,5 @@
 <!-- views/partials/mod-card.ejs -->
-<a href="/mods/<%= file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
+<a href="/<%= file.category %>/<%= file.slug || file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
     <div class="mod-card">
         
         <!-- Certification Tag -->
@@ -12,20 +12,34 @@
         <!-- Version Tag -->
         <div class="mod-type-tag"><%= file.version %></div>
         
-        <!-- Image Container Logic -->
+        <!-- Image Container -->
         <div class="mod-card-image">
             <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
         </div>
         
         <div class="mod-card-content">
-            <h3><%= file.name %></h3>
+        <h3 title="<%= file.name %>"><%= truncateText(file.name, 22) %></h3>
             
-            <% if (file.modDescription) { %>
-                <p><%= file.modDescription.substring(0, 50) %>...</p> 
+            <!-- Contextual Information -->
+            <!-- If the page sets 'showUploaderInfo' to true, display the uploader & date (for feeds) -->
+            <% if (typeof showUploaderInfo !== 'undefined' && showUploaderInfo) { %>
+                <p style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; line-height: 1.4;">
+                    <span style="color: var(--silver); font-size: 0.85em;">By: </span>
+                    <strong style="color: var(--gold);">
+                        <span class="meta-link notranslate" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></span>
+                    </strong><br>
+                    <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt || file.createdAt) %></span>
+                </p>
             <% } else { %>
-                 <p>No description provided.</p>
+                <!-- Otherwise, show the description snippet (for Category/Search) -->
+                <% if (file.modDescription) { %>
+                    <p><%= file.modDescription.replace(/<[^>]*>?/gm, '').substring(0, 50) %>...</p> 
+                <% } else { %>
+                     <p style="color: var(--silver); font-style: italic;">No description provided.</p>
+                <% } %>
             <% } %>
             
+            <!-- Star Rating -->
             <div class="rating" style="margin-bottom: 10px;">
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>

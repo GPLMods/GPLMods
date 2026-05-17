@@ -130,12 +130,12 @@
                                         <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
                                     </div>
                                     
-                                    <div class="mod-card-content">
-                                        <!-- The link is placed on the title with the "full-card-link" class -->
-                                        <h3>
-                                            <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= file.name %></a>
-                                        </h3>
-                                        <p><%= file.developer %></p>
+<div class="mod-card-content">
+    <!-- The link is placed on the title with the "full-card-link" class -->
+    <h3 title="<%= file.name %>">
+        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= truncateText(file.name, 22) %></a>
+    </h3>
+    <p><%= file.developer %></p>
                                         <div class="rating">
                                             <div class="stars-outer">
                                                 <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>

@@ -206,6 +206,14 @@ async function getSmartImageUrl(key) {
         return '/images/default-avatar.png';
     }
 }
+// --- NEW HELPER: TRUNCATE LONG TEXT ---
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    // Cut the string and add ellipsis
+    return text.substring(0, maxLength).trim() + '...';
+}
+// -------------------------------------
 
 // --- NEW HELPER: CREATE CLEAN URL SLUGS ---
 function slugify(text) {
@@ -649,6 +657,7 @@ app.use(async (req, res, next) => {
     res.locals.timeAgo = timeAgo;
     res.locals.formatBytes = formatBytes;
     res.locals.slugify = slugify;
+    res.locals.truncateText = truncateText;
     
     // --- Linkvertise & Ad Monetization Helpers ---
     res.locals.linkvertiseId = process.env.LINKVERTISE_ID || '5373913'; 
