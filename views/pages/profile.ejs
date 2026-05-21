@@ -385,6 +385,7 @@
                     errorMsg.style.display = 'block';
                     this.textContent = 'Confirm Deletion';
                     this.disabled = false;
+                } // ✅ FIX: THIS CLOSING BRACKET WAS MISSING!
             });
         }
 
@@ -407,7 +408,12 @@
 
             window.addEventListener('click', function(event) {
                 if (event.target === logoutModal) cancelLogoutBtn.click();
-                if (event.target === deleteModal) cancelDeleteBtn.click();
+                
+                // Extra safety check in case the delete modal is missing
+                const deleteModalCheck = document.getElementById('delete-modal-container');
+                if (deleteModalCheck && event.target === deleteModalCheck) {
+                    cancelBtns.forEach(btn => btn.click());
+                }
             });
         }
         

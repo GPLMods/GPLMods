@@ -166,6 +166,11 @@ function initializeStarRatings() {
  * 4. SEARCH BAR HANDLER (DYNAMIC ANIMATION)
  * ==================================================================================
  */
+/**
+ * ==================================================================================
+ * 4. SEARCH BAR HANDLER (DYNAMIC ANIMATION & SUGGESTIONS)
+ * ==================================================================================
+ */
 async function initializeSearchBar() {
     const searchInput = document.getElementById('searchInput');
     const suggestionsBox = document.getElementById('searchSuggestions');
@@ -174,21 +179,27 @@ async function initializeSearchBar() {
 
     if (!searchInput) return;
 
+    // --- 1. Focus & Blur Handling ---
+    let blurTimeout;
+
     searchInput.addEventListener('focus', () => {
         if(searchBar) searchBar.classList.add('active');
-        displaySearchHistory();
+        // Only show history if the input is empty
+        if (searchInput.value.trim() === '') {
+            displaySearchHistory();
+        }
     });
 
     searchInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (suggestionsBox && searchHistoryBox && !suggestionsBox.contains(document.activeElement) && !searchHistoryBox.contains(document.activeElement)) {
-                 if(searchBar) searchBar.classList.remove('active');
-                 suggestionsBox.style.display = 'none';
-                 searchHistoryBox.style.display = 'none';
-            }
-        }, 200);
+        // Use a timeout to allow clicks inside the dropdown to register first
+        blurTimeout = setTimeout(() => {
+            if (searchBar) searchBar.classList.remove('active');
+            if (suggestionsBox) suggestionsBox.style.display = 'none';
+            if (searchHistoryBox) searchHistoryBox.style.display = 'none';
+        }, 200); 
     });
 
+    // --- 2. Live Typing (Input Handling) ---
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
         if (query.length > 1) {
@@ -196,11 +207,11 @@ async function initializeSearchBar() {
             if(searchHistoryBox) searchHistoryBox.style.display = 'none';
         } else {
             if(suggestionsBox) suggestionsBox.style.display = 'none';
-            displaySearchHistory();
+            if(query.length === 0) displaySearchHistory(); // Show history again if cleared
         }
     });
 
-    // Form submission handler to save search history
+    // --- 3. Form Submission Handling (Desktop Enter Key) ---
     if (searchBar) {
         const searchForm = searchBar.querySelector('form');
         if (searchForm) {
@@ -211,8 +222,51 @@ async function initializeSearchBar() {
         }
     }
 
-    // Dynamic typing animation setup
-    let searchTerms =["Search for mods..."]; 
+    // --- 4. Mobile Keyboard "Enter" Handling ---
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) saveSearchTerm(query);
+        }
+    });
+
+    // --- 5. IMPORTANT FIX: Handle Clicks INSIDE the Dropdown ---
+    // Mousedown fires before blur, ensuring the click is registered
+    const handleDropdownClick = (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            // Cancel the blur timeout so the box doesn't disappear
+            clearTimeout(blurTimeout);
+            
+            // Get the text they clicked on
+            // (Using innerText/textContent might grab HTML if you bolded things, 
+            // so we grab it from the href or a data attribute if available. 
+            // Here, we'll try to extract the clean query from the href)
+            try {
+                const url = new URL(link.href);
+                const queryParam = url.searchParams.get('q');
+                if (queryParam) {
+                    saveSearchTerm(queryParam);
+                }
+            } catch (err) {
+                 // Fallback if URL parsing fails
+                 saveSearchTerm(link.textContent);
+            }
+            
+            // Let the browser follow the link naturally
+        }
+    };
+
+    if (suggestionsBox) {
+        suggestionsBox.addEventListener('mousedown', handleDropdownClick);
+    }
+    if (searchHistoryBox) {
+        searchHistoryBox.addEventListener('mousedown', handleDropdownClick);
+    }
+
+
+    // --- 6. Dynamic Typing Animation ---
+    let searchTerms = ["Search for mods..."]; 
     try {
         const response = await fetch('/api/trending-searches');
         if (response.ok) {
@@ -225,6 +279,7 @@ async function initializeSearchBar() {
 
     const themeColors = ["var(--gold)", "var(--silver)"];
     let termIndex = 0, letterIndex = 0, currentTerm = '', isDeleting = false, typingTimeout;
+    let colorIndex = 0; 
 
     function typeAnimation() {
         if (document.activeElement === searchInput) return;
@@ -247,12 +302,14 @@ async function initializeSearchBar() {
         } else if (isDeleting && letterIndex === 0) {
             isDeleting = false;
             termIndex = (termIndex + 1) % searchTerms.length;
-            searchInput.style.setProperty('--placeholder-color', themeColors[termIndex % themeColors.length]);
+            colorIndex++;
+            searchInput.style.setProperty('--placeholder-color', themeColors[colorIndex % 2]);
             typeSpeed = 300;
         }
         typingTimeout = setTimeout(typeAnimation, typeSpeed);
     }
 
+    searchInput.style.setProperty('--placeholder-color', 'var(--gold)');
     typeAnimation();
 
     searchInput.addEventListener('focus', () => {

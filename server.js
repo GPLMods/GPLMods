@@ -46,6 +46,7 @@ const Filter = require('bad-words');
 const { isbot } = require('isbot');
 const zlib = require('zlib');
 const otplib = require('otplib');
+const cheerio = require('cheerio');
 const qrcode = require('qrcode');
 const { 
     generateRegistrationOptions, 
@@ -1371,16 +1372,18 @@ app.get('/category', async (req, res) => {
     }
 });
 
-// Search Route
-// Helper function to safely escape regex characters
-const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+// ===================================
+// SEARCH ROUTE
+// ===================================
 
-app.get('/search', async (req, res) => {
+// ✅ FIX: Removed \s so it completely ignores spaces!
+const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+
+app.get('/search', async (req, res, next) => {
     try {
         const rawQuery = req.query.q || '';
-        const query = escapeRegex(rawQuery); 
+        const query = escapeRegex(rawQuery); // We use this strictly for the DB search
         
-        // --- NEW: Grab subCategory from the URL query ---
         const platform = req.query.platform || 'all';
         const subCategory = req.query.subCategory || 'all'; 
         const sort = req.query.sort || 'newest';
@@ -1405,7 +1408,7 @@ app.get('/search', async (req, res) => {
             searchQuery.category = platform;
         }
 
-        // 2. --- NEW: Filter by Sub-Category ---
+        // 2. Filter by Sub-Category
         if (subCategory && subCategory !== 'all') {
             searchQuery.platforms = { $in: [subCategory] };
         }
@@ -1421,7 +1424,6 @@ app.get('/search', async (req, res) => {
         const totalResults = await File.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalResults / resultsPerPage);
 
-       // ✅ RAM OPTIMIZATION: Added .lean()
         const searchResults = await File.find(searchQuery)
             .sort(sortQuery)
             .skip((page - 1) * resultsPerPage)
@@ -1434,13 +1436,12 @@ app.get('/search', async (req, res) => {
             if (key) {
                 try {
                     signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
-                } catch (urlError) {
-                    console.error(`Could not get signed URL for key: ${key}`);
-                }
+                } catch (urlError) {}
             }
             return { ...file, iconUrl: signedIconUrl };
         }));
-        // --- 2. SEARCH FOR USERS (This was missing!) ---
+
+        // Search for Users
         const userResultsRaw = await User.find({
             username: { $regex: query, $options: 'i' }
         })
@@ -1463,16 +1464,16 @@ app.get('/search', async (req, res) => {
             return { ...u, isFollowing };
         });
 
-        // --- 3. RENDER THE PAGE ---
+        // --- RENDER THE PAGE ---
         res.render('pages/search', {
             results: resultsWithUrls, 
-            userResults: processedUsers, // <--- NOW PASSING userResults!
-            query: query,
+            userResults: processedUsers, 
+            query: rawQuery, // <--- ✅ FIX: We pass rawQuery back to the EJS template so it shows perfectly normal spaces!
             totalResults: totalResults,
             totalPages: totalPages,
             currentPage: page,
             currentPlatform: platform,
-            currentSubCategory: subCategory, // <--- NOW PASSING subCategory!
+            currentSubCategory: subCategory, 
             currentSort: sort
         });
 
@@ -4005,6 +4006,77 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // ===================================
 // 8. API ROUTES
 // ===================================
+// --- NEW: AUTO-FETCH METADATA SCRAPER API ---
+app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
+    try {
+        const { url, platform } = req.body;
+        
+        if (!url || !platform) {
+            return res.status(400).json({ error: "URL and platform are required." });
+        }
+
+        // We use a generic browser User-Agent so stores don't block the request
+        const axiosConfig = {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            timeout: 8000 // 8 second timeout
+        };
+
+        const response = await axios.get(url, axiosConfig);
+        const $ = cheerio.load(response.data);
+
+        let data = {
+            description: '',
+            whatsNew: '',
+            minOsVersion: '',
+            ageRating: '',
+            developer: ''
+        };
+
+        // --- SCRAPING LOGIC BASED ON PLATFORM ---
+        if (platform === 'playstore') {
+            // Google Play Store
+            data.description = $('meta[name="description"]').attr('content') || '';
+            data.developer = $('a.LkLjBd span').first().text() || '';
+            
+            // "What's New" is tricky on Play Store, usually in a specific div
+            $("div").each((i, el) => {
+                const text = $(el).text();
+                if (text.includes("Requires Android")) data.minOs = text.replace("Requires Android", "").trim();
+                if (text.includes("Content Rating")) data.ageRating = $(el).next().text().trim() || 'Everyone';
+            });
+
+        } else if (platform === 'appstore') {
+            // Apple App Store
+            data.description = $('.section__description p').text() || $('meta[name="description"]').attr('content') || '';
+            data.whatsNew = $('.whats-new__content p').text() || '';
+            data.developer = $('h2.product-header__identity a').text().trim() || '';
+            data.minOsVersion = $('dt:contains("Compatibility")').next('dd').text().trim().replace(/Requires iOS|Requires iPadOS/, 'iOS ') || 'iOS 11.0 or later';
+            data.ageRating = $('dt:contains("Age Rating")').next('dd').text().trim() || '4+';
+
+        } else if (platform === 'steam') {
+            // Steam
+            data.description = $('.game_description_snippet').text().trim() || $('meta[name="description"]').attr('content') || '';
+            data.developer = $('#developers_list a').first().text().trim() || '';
+            data.minOsVersion = $('.sysreq_contents .bb_ul li:contains("OS:")').text().replace("OS:", "").trim() || 'Windows 10';
+
+        } else {
+            // Fallback for Epic Games, WordPress, etc (Rely on meta tags)
+            data.description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || '';
+            data.developer = $('meta[property="og:site_name"]').attr('content') || '';
+        }
+
+        // Clean up the data
+        Object.keys(data).forEach(key => {
+            if (data[key]) data[key] = data[key].trim().replace(/\s{2,}/g, ' ');
+        });
+
+        res.json({ success: true, data });
+
+    } catch (error) {
+        console.error("Scraping Error:", error.message);
+        res.status(500).json({ error: "Failed to fetch data. Make sure the URL is correct and public." });
+    }
+});
 // ===================================
 // 9.2 ADMIN: BULK INDEXNOW & GOOGLE SYNC
 // ===================================

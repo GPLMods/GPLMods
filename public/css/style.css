@@ -111,51 +111,6 @@
     .custom-option:last-child { border-bottom: none; }
     .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
         
-        /* --- Header --- */
-        .main-header { padding: 15px 0; border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; background-color: var(--black); z-index: 1000; }
-        
-        /* ✅ FIX: Use CSS Grid for a much more robust and flexible header layout */
-        .header-content { 
-            display: grid; 
-            grid-template-columns: auto 1fr auto; /* Logo | Search | Actions */
-            align-items: center; 
-            gap: 20px; 
-        }
-        
-        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; white-space: nowrap; }
-        .logo span { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
-        
-        /* ✅ FIX: Search Bar now fluidly fills available space */
-        .search-bar { 
-            width: 100%; 
-            max-width: 600px; /* Prevents it from getting comically large on ultra-wide screens */
-            justify-self: center; /* Centers it in its grid column */
-            position: relative; /* Crucial for positioning the dropdown */
-        }
-        
-        .search-bar form { width: 100%; position: relative; }
-        
-        .search-bar input {
-            width: 100%; padding: 12px 45px; border-radius: 25px; border: 1px solid var(--dark-gray);
-            background-color: var(--dark-gray); color: var(--white); font-size: 1em;
-            transition: all 0.3s ease; --placeholder-color: var(--gold);
-        }
-        .search-bar input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
-        .search-bar input::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
-        input[type="search"]::-webkit-search-cancel-button {
-    -webkit-appearance: none;
-    height: 16px;
-    width: 16px;
-    /* Custom Silver SVG */
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c0c0'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") no-repeat center center;
-    background-size: contain;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-}
-input[type="search"]::-webkit-search-cancel-button:hover {
-    opacity: 1;
-}
 /* ==========================================================================
    SEARCH SUGGESTIONS & HISTORY DROPDOWN
    ========================================================================== */
@@ -277,6 +232,95 @@ input[type="search"]::-webkit-search-results-decoration {
 .hamburger-menu:hover {
     color: var(--gold);
 }
+
+/* --- Responsive Layout Adjustments --- */
+@media (max-width: 992px) {
+    /* Tablet & Mobile View */
+    .header-content {
+        grid-template-columns: 1fr auto; /* Logo on left, Actions on right */
+        grid-template-areas: 
+            "logo actions"
+            "search search"; /* Search bar drops to a new full-width row */
+    }
+    
+    .logo { grid-area: logo; }
+    .header-right-actions { grid-area: actions; justify-content: flex-end; }
+    
+    .search-bar { 
+        grid-area: search; 
+        max-width: 100%; /* Take up full width on mobile row */
+    }
+}
+    
+    .header-right-actions { 
+        order: 3; 
+        flex-shrink: 0; /* Prevent the icon container from shrinking */
+    } 
+}
+@media (min-width: 1024px) {
+    /* Desktop View */
+    .search-bar { flex-grow: 1; max-width: 500px; margin: 0 20px; }
+    
+    /* Reveal the text buttons next to the hamburger menu */
+    .desktop-text-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+}
+/* Add near .hamburger-menu rules */
+.hamburger-menu.open {
+  color: var(--gold);
+  transform: scale(1.1); /* Slight pop effect */
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+    .policy-banner { flex-direction: row; justify-content: center; }
+    .policy-buttons { margin-left: 20px; }
+}
+        /* --- New Header Mobile Actions --- */
+        .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
+        
+        /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
+        .avatar-placeholder {
+            display: block; 
+            width: 35px !important;  /* Force strict width */
+            height: 35px !important; /* Force strict height */
+            min-width: 35px; /* Prevent flexbox from shrinking it */
+            min-height: 35px; 
+            border: 2px solid var(--silver);
+            background-color: var(--black); /* Fallback background */
+            border-radius: 50%; 
+            cursor: pointer; 
+            text-decoration: none;
+            overflow: hidden; /* Ensure image doesn't bleed outside the circle */
+        }
+        
+        /* ✅ FIX: Ensure the image perfectly fills the container */
+        .avatar-placeholder img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important; /* Crop perfectly to the circle */
+            display: block;
+        }
+
+/* Fix default browser styling on search inputs */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance:none;
+}
+        .header-actions { display: none; }
+
+/* --- Header Button Textures (Always Applied) --- */
+.btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
+.btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
+.btn-login:hover { color: var(--gold); border-color: var(--gold); }
+.btn-signup { background: var(--gold); color: var(--black); border: 2px solid var(--gold); }
+.btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
+
+/* --- Notification Bell Styles --- */
+.nav-bell { color: var(--silver); font-size: 1.6em; line-height: 0; transition: color 0.3s ease; }
+.nav-bell:hover { color: var(--gold); }
 
 /* --- Responsive Layout Adjustments --- */
 @media (max-width: 992px) {
