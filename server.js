@@ -47,6 +47,7 @@ const { isbot } = require('isbot');
 const zlib = require('zlib');
 const otplib = require('otplib');
 const cheerio = require('cheerio');
+const AdmZip = require('adm-zip'); 
 const qrcode = require('qrcode');
 const { 
     generateRegistrationOptions, 
@@ -5370,6 +5371,107 @@ app.get('/ios-repo/apps.json', async (req, res) => {
 
 // --- C. ANDROID F-DROID REPO ENGINE ---
 
+// Helper function to safely escape XML characters
+function escapeXml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe.toString().replace(/[<>&'"]/g, function (c) {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+        }
+    });
+}
+
+// Helper to generate the core XML data
+async function generateFDroidXml(req) {
+    const repoBaseUrl = getRepoBaseUrl(req);
+    const androidMods = await File.find({ 
+        category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
+    }).sort({ createdAt: -1 });
+
+    const formatDate = (date) => new Date(date).toISOString().split('T')[0];
+
+    let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
+    xml += '<fdroid>\n';
+    xml += `  <repo icon="icon-512x512.png" name="GPL Mods Android" pubkey="" timestamp="${Date.now()}" url="${escapeXml(repoBaseUrl)}/fdroid/repo" version="17">\n`;
+    xml += `    <description>The ultimate source for safe and working Android mods.</description>\n`;
+    xml += `  </repo>\n`;
+
+    for (const mod of androidMods) {
+        const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
+        if (!downloadUrl) continue;
+
+        const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
+
+        xml += `  <application id="${escapeXml(bundleId)}">\n`;
+        xml += `    <id>${escapeXml(bundleId)}</id>\n`;
+        xml += `    <name>${escapeXml(mod.name)}</name>\n`;
+        xml += `    <summary>${escapeXml(mod.version)} Mod by ${escapeXml(mod.uploader)}</summary>\n`;
+        xml += `    <desc>${escapeXml(cleanDesc)}</desc>\n`;
+        xml += `    <license>GNU/GPL</license>\n`;
+        xml += `    <categories><category>Mods</category></categories>\n`;
+        xml += `    <added>${formatDate(mod.createdAt)}</added>\n`;
+        xml += `    <lastupdated>${formatDate(mod.updatedAt)}</lastupdated>\n`;
+        xml += `    <marketversion>${escapeXml(mod.version)}</marketversion>\n`;
+        xml += `    <marketvercode>1</marketvercode>\n`;
+        xml += `    <package>\n`;
+        xml += `      <version>${escapeXml(mod.version)}</version>\n`;
+        xml += `      <versioncode>1</versioncode>\n`;
+        xml += `      <apkname>${escapeXml(downloadUrl)}</apkname>\n`;
+        
+        if (mod.virusTotalId && mod.virusTotalId.length === 64) {
+            xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`;
+        }
+        
+        xml += `      <size>${mod.fileSize || 1048576}</size>\n`;
+        xml += `      <added>${formatDate(mod.createdAt)}</added>\n`;
+        xml += `    </package>\n`;
+        xml += `  </application>\n`;
+    }
+
+    xml += '</fdroid>';
+    return xml;
+}
+
+// ✅ 1. Classic XML Route
+app.get('/fdroid/repo/index.xml', async (req, res) => {
+    try {
+        const xmlContent = await generateFDroidXml(req);
+        res.set('Content-Type', 'application/xml');
+        res.send(xmlContent);
+    } catch (e) { 
+        console.error("XML Error:", e);
+        res.status(500).send("Error generating index.xml"); 
+    }
+});
+
+// ✅ 2. Classic JAR Route (Zips the XML file dynamically)
+app.get('/fdroid/repo/index.jar', async (req, res) => {
+    try {
+        const xmlContent = await generateFDroidXml(req);
+        
+        // Create an archive in memory
+        const zip = new AdmZip();
+        // Add the XML file into the archive
+        zip.addFile("index.xml", Buffer.from(xmlContent, "utf8"));
+        
+        // Convert to a buffer and send
+        const jarBuffer = zip.toBuffer();
+
+        res.set('Content-Type', 'application/java-archive');
+        res.set('Content-Disposition', 'attachment; filename="index.jar"');
+        res.send(jarBuffer);
+    } catch (e) { 
+        console.error("JAR Error:", e);
+        res.status(500).send("Error generating index.jar"); 
+    }
+});
+
+// ✅ 3. Legacy compatibility endpoint for JSON-based Android clients (index-v1.json)
 app.get('/fdroid/repo/index-v1.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
@@ -5393,7 +5495,7 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
             repoJson.apps.push({
                 packageName: bundleId, name: mod.name, summary: `${mod.version} Mod by ${mod.uploader}`,
                 description: cleanDesc, license: "GNU/GPL", categories:["Mods", "Games", "Apps"],
-                icon: `${repoBaseUrl}/api/icon/${mod._id}`, // ✅ FIX 5: V1 App Icon 
+                icon: `${repoBaseUrl}/api/icon/${mod._id}`, 
                 added: new Date(mod.createdAt).getTime(), lastUpdated: new Date(mod.updatedAt).getTime()
             });
 
@@ -5408,6 +5510,7 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error generating F-Droid JSON index." }); }
 });
 
+// ✅ 4. Current default endpoint for Neo Store / Droid-ify (index-v2.json)
 app.get('/fdroid/repo/index-v2.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
@@ -5420,7 +5523,7 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
                 name: "GPL Mods Android",
                 description: "The ultimate source for safe and working Android mods.",
                 address: `${repoBaseUrl}/fdroid/repo`,
-                icon: { "en-US": { name: "icon-512x512.png" } }, // Will correctly fetch our new catch-all route
+                icon: { "en-US": { name: "icon-512x512.png" } }, 
                 timestamp: Date.now(),
                 version: 2
             },
@@ -5445,7 +5548,6 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
             if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
             if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
 
-            // ✅ FIX 6: Properly format screenshot names for F-Droid v2 schema
             const screenshotArray = [];
             if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
                 mod.screenshotKeys.forEach((_, i) => {
@@ -5462,8 +5564,8 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
                     categories: ["Mods", "Games", "Apps"],
                     developerName: mod.developer || "GPL Mods",
                     authorName: mod.uploader,
-                    icon: { "en-US": { name: `${repoBaseUrl}/api/icon/${mod._id}` } }, // Properly formatted Icon schema
-                    phoneScreenshots: { "en-US": screenshotArray }, // Properly formatted Screenshot array
+                    icon: { "en-US": { name: `${repoBaseUrl}/api/icon/${mod._id}` } }, 
+                    phoneScreenshots: { "en-US": screenshotArray }, 
                     added: new Date(mod.createdAt).getTime(),
                     lastUpdated: new Date(mod.updatedAt).getTime()
                 },
@@ -5489,6 +5591,7 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
         res.status(500).json({ error: "Error generating F-Droid JSON index." });
     }
 });
+
 // --- DMCA PAGE ROUTE ---
 app.post('/dmca-request', async (req, res) => {
     try {
