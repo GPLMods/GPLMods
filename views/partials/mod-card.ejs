@@ -1,58 +1,76 @@
 <!-- views/partials/mod-card.ejs -->
-<a href="/<%= file.category %>/<%= file.slug || file._id %>" class="mod-card-link" data-platform="<%= file.category %>">
-    <div class="mod-card">
-        
-        <!-- Certification Tag -->
-        <% if (file.certification === 'certified') { %>
-            <div class="app-feature-tag">✔ Certified</div>
-        <% } else if (file.certification === 'community-tested') { %>
-            <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
-        <% } %>
-        
-        <!-- Version Tag -->
-        <div class="mod-type-tag"><%= file.version %></div>
-        
-        <!-- Image Container -->
+<div class="mod-card" data-platform="<%= file.category %>">
+    
+    <!-- Certification Tag -->
+    <% if (file.certification === 'certified') { %>
+        <div class="app-feature-tag">✔ Certified</div>
+    <% } else if (file.certification === 'community-tested') { %>
+        <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
+    <% } %>
+    
+    <!-- Version Tag -->
+    <div class="mod-type-tag"><%= file.version %></div>
+    
+    <!-- Image Container (Clickable) -->
+    <a href="/<%= file.category %>/<%= file.slug || file._id %>" style="display: block; text-decoration: none; color: inherit;">
         <div class="mod-card-image">
             <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
         </div>
+    </a>
+    
+    <div class="mod-card-content">
+        <!-- Title (Clickable) -->
+        <h3 title="<%= file.name %>">
+            <a href="/<%= file.category %>/<%= file.slug || file._id %>" style="color: inherit; text-decoration: none;">
+                <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
+            </a>
+        </h3>
         
-        <div class="mod-card-content">
-        <h3 title="<%= file.name %>"><%= truncateText(file.name, 22) %></h3>
-            
-            <!-- Contextual Information -->
-            <!-- If the page sets 'showUploaderInfo' to true, display the uploader & date (for feeds) -->
-            <% if (typeof showUploaderInfo !== 'undefined' && showUploaderInfo) { %>
-                <p style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; line-height: 1.4;">
-                    <span style="color: var(--silver); font-size: 0.85em;">By: </span>
-                    <strong style="color: var(--gold);">
-                        <span class="meta-link notranslate" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></span>
-                    </strong><br>
-                    <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt || file.createdAt) %></span>
-                </p>
+        <!-- Contextual Information -->
+        <% if (typeof showUploaderInfo !== 'undefined' && showUploaderInfo) { %>
+            <p style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; line-height: 1.4;">
+                <span style="color: var(--silver); font-size: 0.85em;">By: </span>
+                <strong style="color: var(--gold);">
+                    <a href="/users/<%= typeof slugify !== 'undefined' ? slugify(file.uploader) : file.uploader %>" class="meta-link notranslate" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></a>
+                </strong><br>
+                <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt || file.createdAt) %></span>
+            </p>
+        <% } else { %>
+            <% if (file.modDescription) { %>
+                <p><%= file.modDescription.replace(/<[^>]*>?/gm, '').substring(0, 50) %>...</p> 
             <% } else { %>
-                <!-- Otherwise, show the description snippet (for Category/Search) -->
-                <% if (file.modDescription) { %>
-                    <p><%= file.modDescription.replace(/<[^>]*>?/gm, '').substring(0, 50) %>...</p> 
-                <% } else { %>
-                     <p style="color: var(--silver); font-style: italic;">No description provided.</p>
-                <% } %>
+                 <p style="color: var(--silver); font-style: italic;">No description provided.</p>
             <% } %>
-            
-            <!-- Star Rating -->
-            <div class="rating" style="margin-bottom: 10px;">
-                <div class="stars-outer">
-                    <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
-                </div>
-                <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+        <% } %>
+        
+        <!-- Star Rating -->
+        <div class="rating" style="margin-bottom: 10px;">
+            <div class="stars-outer">
+                <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
             </div>
+            <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
+        </div>
 
-            <!-- Platform Tag -->
-            <div class="card-footer">
-                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                    <%= file.category.toUpperCase().replace('-', ' ') %>
-                </span>
-            </div>
+        <!-- Platform Tag -->
+        <div class="card-footer">
+            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                <%= file.category.toUpperCase().replace('-', ' ') %>
+            </span>
         </div>
     </div>
-</a>
+
+    <!-- ======== NEW: ANIMATED OVERLAY ======== -->
+    <div class="download-overlay">
+        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
+        
+        <!-- Only show Whitelist button if user is logged in -->
+        <% if (typeof user !== 'undefined' && user) { %>
+            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
+                <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
+                    Add to Whitelist
+                </button>
+            </form>
+        <% } %>
+    </div>
+    <!-- ======================================= -->
+</div>
