@@ -5117,12 +5117,55 @@ app.get('/ai-directory', async (req, res) => {
 // 15. UNIVERSAL REPOSITORY ENGINE (Automatic, Manual & JSON)
 // ===============================================
 
-// ======== ✅ FIX: ADD THESE TWO REDIRECTS ========
 // If a user pastes the base URL into a web browser, redirect them to the actual data 
-// so they see the raw code instead of a 404 error!
 app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
 app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v2.json'));
-// =================================================
+
+function getBaseUrl(req) {
+    if (process.env.BASE_URL) {
+        return process.env.BASE_URL.replace(/\/*$/, '');
+    }
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol = forwardedProto ? forwardedProto.split(',')[0].trim() : req.protocol;
+    const host = req.get('host');
+    return `${protocol}://${host}`.replace(/\/*$/, '');
+}
+
+const REPO_BASE_URL = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/*$/, '') : null;
+function getRepoBaseUrl(req) {
+    return REPO_BASE_URL || getBaseUrl(req);
+}
+
+
+// ======== ✅ FIX 1: PERMANENT IMAGE REDIRECTS ========
+// Prevents 404 crashes in Droid-ify, Sileo, and AltStore caused by expired B2 URLs.
+app.get('/api/icon/:id', async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.redirect('/images/default-avatar.png');
+        const key = file.iconUrl || file.iconKey;
+        const signedUrl = await getSmartImageUrl(key);
+        res.redirect(signedUrl);
+    } catch(e) { res.redirect('/images/default-avatar.png'); }
+});
+
+app.get('/api/screenshot/:id/:index', async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file || !file.screenshotKeys || !file.screenshotKeys[req.params.index]) return res.status(404).send('Not found');
+        const key = file.screenshotKeys[req.params.index];
+        const signedUrl = await getSmartImageUrl(key);
+        res.redirect(signedUrl);
+    } catch(e) { res.status(404).send('Not found'); }
+});
+
+// Catch-all Repo Logos (Clients request these specific paths blindly)
+app.get('/fdroid/repo/icon-512x512.png', (req, res) => res.redirect('/images/icon-512x512.png'));
+app.get('/ios-repo/CydiaIcon.png', (req, res) => res.redirect('/images/icon-512x512.png'));
+app.get('/ios-repo/Icon.png', (req, res) => res.redirect('/images/icon-512x512.png'));
+// =====================================================
+
+
 // -----------------------------------------------
 // A. iOS JAILBREAK REPO ENGINE (APT & Sileo Native)
 // -----------------------------------------------
@@ -5156,27 +5199,23 @@ async function generateIosPackages(req) {
         packagesText += `Author: ${mod.uploader}\n`;
         packagesText += `Section: Tweaks\n`;
         packagesText += `Description: ${cleanDesc}...\n`;
-        
-        // Classic Web Depiction (Fallback)
+        // ✅ FIX 2: Added the Icon URL so tweaks show logos in Sileo/Zebra lists
+        packagesText += `Icon: ${repoBaseUrl}/api/icon/${mod._id}\n`;
         packagesText += `Depiction: ${repoBaseUrl}/ios-jailbroken/${mod.slug || mod._id}\n`;
-        
-        // ✅ NEW: Sileo Native JSON Depiction (Lightning Fast Native UI inside Sileo/Zebra)
         packagesText += `SileoDepiction: ${repoBaseUrl}/ios-repo/depiction/${mod._id}.json\n`;
-        
         packagesText += `Filename: ${downloadUrl}\n`; 
         packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
     }
     return packagesText;
 }
 
-// 1. Classic Release File
 app.get('/ios-repo/Release', (req, res) => {
-    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\n`;
+    // ✅ FIX 3: Added Icon to Release file for Cydia/Zebra Repo Header
+    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\nIcon: ${getBaseUrl(req)}/images/icon-512x512.png\n`;
     res.set('Content-Type', 'text/plain');
     res.send(releaseText);
 });
 
-// 2. Classic Packages Files
 app.get('/ios-repo/Packages', async (req, res) => {
     try {
         const packagesText = await generateIosPackages(req);
@@ -5194,8 +5233,6 @@ app.get('/ios-repo/Packages.bz2', async (req, res) => {
     } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
 });
 
-// ✅ NEW 3. Sileo Repo Branding JSON
-// Sileo looks for this exact file to get your Repo Icon and Header
 app.get('/ios-repo/sileo-info.json', (req, res) => {
     const repoBaseUrl = getRepoBaseUrl(req);
     res.json({
@@ -5209,115 +5246,75 @@ app.get('/ios-repo/sileo-info.json', (req, res) => {
     });
 });
 
-// ✅ UPGRADED: Sileo Native Depiction JSON (Rich Layout)
 app.get('/ios-repo/depiction/:id.json', async (req, res) => {
     try {
         const mod = await File.findById(req.params.id);
         if (!mod) return res.status(404).json({});
 
+        const repoBaseUrl = getRepoBaseUrl(req);
         const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '');
         const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
-        const cleanWhatsNew = (mod.whatsNew || 'Bug fixes and performance improvements.').replace(/<[^>]*>?/gm, '');
-        const cleanOfficial = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
+        const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
         const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
 
-        // Safely parse screenshots
         let screenshots = [];
         if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
-            screenshots = await Promise.all(mod.screenshotKeys.map(async key => {
-                const url = await getSmartImageUrl(key);
-                return { url: url, accessibilityText: "Screenshot" };
-            }));
+            screenshots = mod.screenshotKeys.map((_, index) => {
+                return { url: `${repoBaseUrl}/api/screenshot/${mod._id}/${index}`, accessibilityText: "Screenshot" };
+            });
         }
 
-        // Build the native views array dynamically
         let detailsViews = [
             { class: "DepictionHeaderView", title: mod.name },
             { class: "DepictionSubheaderView", title: `Version ${mod.version}` }
         ];
 
-        // 1. Add Screenshots if they exist
         if (screenshots.length > 0) {
-            detailsViews.push({
-                class: "DepictionScreenshotsView",
-                itemCornerRadius: 8,
-                itemSize: "{160, 346}", // Standard iOS screenshot aspect ratio
-                screenshots: screenshots
-            });
+            detailsViews.push({ class: "DepictionScreenshotsView", itemCornerRadius: 8, itemSize: "{160, 346}", screenshots: screenshots });
             detailsViews.push({ class: "DepictionSeparatorView" });
         }
 
-        // 2. Add Description
         detailsViews.push({ class: "DepictionMarkdownView", markdown: `**Description**\n\n${cleanDesc}` });
         detailsViews.push({ class: "DepictionSeparatorView" });
 
-        // ✅ NEW: Add Important Note (If it exists) right after Description
         if (cleanImportantNote) {
             detailsViews.push({ class: "DepictionMarkdownView", markdown: `**🚨 IMPORTANT NOTE:**\n\n${cleanImportantNote}` });
             detailsViews.push({ class: "DepictionSeparatorView" });
         }
-
-        // 3. Add Features if they exist
         if (cleanFeatures) {
             detailsViews.push({ class: "DepictionMarkdownView", markdown: `**Features**\n\n${cleanFeatures}` });
             detailsViews.push({ class: "DepictionSeparatorView" });
         }
 
-        // 4. Add Important Notes (using Official Description field if you don't have a dedicated notes field)
-        if (cleanOfficial) {
-            detailsViews.push({ class: "DepictionMarkdownView", markdown: `**Important Notes**\n\n${cleanOfficial}` });
-            detailsViews.push({ class: "DepictionSeparatorView" });
-        }
-
-        // 5. Developer Info Table
         detailsViews.push(
             { class: "DepictionTableTextView", title: "Developer", text: mod.developer || "GPL Mods" },
             { class: "DepictionTableTextView", title: "Uploader", text: mod.uploader },
             { class: "DepictionTableTextView", title: "Updated", text: new Date(mod.updatedAt).toLocaleDateString() }
         );
 
-        // Build the What's New Tab
-        let whatsNewViews = [
-            { class: "DepictionMarkdownView", markdown: `**Version ${mod.version}**\n\n${cleanWhatsNew}` }
-        ];
-
-        // Final JSON Structure
         res.json({
             minVersion: "0.1",
             class: "DepictionTabView",
             tintColor: "#FFD700",
-            headerImage: `${getRepoBaseUrl(req)}/images/icon-512x512.png`,
+            headerImage: `${repoBaseUrl}/images/icon-512x512.png`,
             tabs: [
-                {
-                    tabname: "Details",
-                    class: "DepictionStackView",
-                    views: detailsViews
-                },
-                {
-                    tabname: "Changelog",
-                    class: "DepictionStackView",
-                    views: whatsNewViews
-                }
+                { tabname: "Details", class: "DepictionStackView", views: detailsViews },
+                { tabname: "Changelog", class: "DepictionStackView", views: [{ class: "DepictionMarkdownView", markdown: `**Version ${mod.version}**\n\n${cleanWhatsNew}` }] }
             ]
         });
-
-    } catch (e) { 
-        console.error("Sileo Depiction Error:", e);
-        res.status(500).json({}); 
-    }
+    } catch (e) { res.status(500).json({}); }
 });
 
 // --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
 app.get('/ios-repo/apps.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
-        
-        // Fetch valid iOS Jailed mods
         const ipaMods = await File.find({ 
             category: 'ios-jailed',
             status: 'live',
             isLatestVersion: true,
-            showInRepo: { $ne: false } 
+            showInRepo: { $ne: false },
+            $or:[ { directDownloadUrl: { $exists: true, $ne: '' } }, { externalDownloadUrl: { $exists: true, $ne: '' } } ]
         }).sort({ createdAt: -1 });
 
         const sourceJson = {
@@ -5329,99 +5326,67 @@ app.get('/ios-repo/apps.json', async (req, res) => {
             headerURL: `${repoBaseUrl}/images/icon-512x512.png`,
             website: repoBaseUrl,
             tintColor: "#FFD700",
-            apps: [], 
-            news: []
+            apps: [], news: []
         };
 
         for (const mod of ipaMods) {
             const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
             if (!downloadUrl) continue;
 
-            const iconKey = mod.iconUrl || mod.iconKey;
-            const iconUrl = await getSmartImageUrl(iconKey);
-            
-            // 1. Process Screenshots
-            let screenshotUrls = [];
-            if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
-                screenshotUrls = await Promise.all(mod.screenshotKeys.map(key => getSmartImageUrl(key)));
-            }
-
-            // 2. Clean Text Fields
             const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
             const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanWhatsNew = (mod.whatsNew || 'New update available.').replace(/<[^>]*>?/gm, '');
             const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
             
-            // 3. Combine into Rich Markdown for AltStore/Scarlet
             let fullMarkdownDesc = `${cleanDesc}\n\n`;
-            if (cleanFeatures) fullMarkdownDesc += `**Mod Features:**\n${cleanFeatures}\n\n`;
-            if (cleanNotes) fullMarkdownDesc += `**Important Notes:**\n${cleanNotes}\n\n`;
             if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
+            if (cleanFeatures) fullMarkdownDesc += `**Mod Features:**\n${cleanFeatures}\n\n`;
+            if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
 
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 
-            // 4. Push the fully detailed App Object
+            // ✅ FIX 4: Implemented Permanent Image APIs
+            const iconUrl = `${repoBaseUrl}/api/icon/${mod._id}`;
+            const screenshotUrls = (mod.screenshotKeys || []).map((_, i) => `${repoBaseUrl}/api/screenshot/${mod._id}/${i}`);
+
             sourceJson.apps.push({
                 name: mod.name,
                 bundleIdentifier: bundleId,
                 developerName: mod.developer || mod.uploader,
                 subtitle: `Version ${mod.version} by ${mod.uploader}`,
-                localizedDescription: fullMarkdownDesc, // Main description area
+                localizedDescription: fullMarkdownDesc, 
                 iconURL: iconUrl,
                 tintColor: "#FFD700",
                 size: mod.fileSize || 1048576,
-                screenshotURLs: screenshotUrls, // <--- ADDED SCREENSHOTS
+                screenshotURLs: screenshotUrls,
                 versions: [{
                     version: mod.version,
                     date: new Date(mod.updatedAt).toISOString(),
-                    localizedDescription: cleanWhatsNew, // <--- AltStore uses this for "What's New" / Changelog
+                    localizedDescription: cleanWhatsNew, 
                     downloadURL: downloadUrl,
                     size: mod.fileSize || 1048576
                 }]
             });
         }
-        
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(sourceJson, null, 2));
-
-    } catch (e) { 
-        console.error("AltStore JSON Error:", e);
-        res.status(500).json({ error: "Error generating Source JSON." }); 
-    }
+    } catch (e) { res.status(500).json({ error: "Error generating Source JSON." }); }
 });
 
 // --- C. ANDROID F-DROID REPO ENGINE ---
 
-// 1. Classic XML Fallback
-app.get('/fdroid/repo/index.xml', async (req, res) => {
-    // ... your existing code for index.xml ...
-});
-
-// ✅ Legacy compatibility endpoint for JSON-based Android clients (index-v1.json)
-// Modern Neo Store / Droid-ify clients now prefer index-v2.json for better compatibility.
 app.get('/fdroid/repo/index-v1.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
         const androidMods = await File.find({ 
-            category: 'android',
-            status: 'live',
-            isLatestVersion: true,
-            showInRepo: { $ne: false } 
+            category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
         }).sort({ createdAt: -1 });
 
         const repoJson = {
-            repo: {
-                name: "GPL Mods Android",
-                description: "The ultimate source for safe and working Android mods.",
-                address: `${repoBaseUrl}/fdroid/repo`,
-                icon: "icon-512x512.png",
-                timestamp: Date.now(),
-                version: 1
-            },
+            repo: { name: "GPL Mods Android", description: "Safe and working Android mods.", address: `${repoBaseUrl}/fdroid/repo`, icon: "icon-512x512.png", timestamp: Date.now(), version: 1 },
             requests: { install: [], uninstall: [] },
-            apps:[],
-            packages: {}
+            apps:[], packages: {}
         };
 
         for (const mod of androidMods) {
@@ -5431,48 +5396,29 @@ app.get('/fdroid/repo/index-v1.json', async (req, res) => {
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
             const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
 
-            // App Metadata
             repoJson.apps.push({
-                packageName: bundleId,
-                name: mod.name,
-                summary: `${mod.version} Mod by ${mod.uploader}`,
-                description: cleanDesc,
-                license: "GNU/GPL",
-                categories:["Mods", "Games", "Apps"],
-                added: new Date(mod.createdAt).getTime(),
-                lastUpdated: new Date(mod.updatedAt).getTime()
+                packageName: bundleId, name: mod.name, summary: `${mod.version} Mod by ${mod.uploader}`,
+                description: cleanDesc, license: "GNU/GPL", categories:["Mods", "Games", "Apps"],
+                icon: `${repoBaseUrl}/api/icon/${mod._id}`, // ✅ FIX 5: V1 App Icon 
+                added: new Date(mod.createdAt).getTime(), lastUpdated: new Date(mod.updatedAt).getTime()
             });
 
-            // Package Download Data
             repoJson.packages[bundleId] =[{
-                versionName: mod.version,
-                versionCode: 1, // Auto-incrementing isn't strictly necessary for a mod hub
-                apkName: downloadUrl,
+                versionName: mod.version, versionCode: 1, apkName: downloadUrl,
                 hash: mod.virusTotalId && mod.virusTotalId.length === 64 ? mod.virusTotalId : "",
-                hashType: "sha256",
-                size: mod.fileSize || 1048576,
-                added: new Date(mod.createdAt).getTime()
+                hashType: "sha256", size: mod.fileSize || 1048576, added: new Date(mod.createdAt).getTime()
             }];
         }
-
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(repoJson, null, 2));
-
-    } catch (e) { 
-        console.error("F-Droid JSON Error:", e);
-        res.status(500).json({ error: "Error generating F-Droid JSON index." }); 
-    }
+    } catch (e) { res.status(500).json({ error: "Error generating F-Droid JSON index." }); }
 });
 
-// ✅ UPGRADED: Current default endpoint for Neo Store / Droid-ify modern Android repository clients
 app.get('/fdroid/repo/index-v2.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
         const androidMods = await File.find({ 
-            category: 'android',
-            status: 'live',
-            isLatestVersion: true,
-            showInRepo: { $ne: false } 
+            category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
         }).sort({ createdAt: -1 });
 
         const repoJson = {
@@ -5480,12 +5426,7 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
                 name: "GPL Mods Android",
                 description: "The ultimate source for safe and working Android mods.",
                 address: `${repoBaseUrl}/fdroid/repo`,
-                icon: {
-                    "en-US": {
-                        name: "icon-512x512.png",
-                        sha256: "" // Optional, clients usually ignore if empty
-                    }
-                },
+                icon: { "en-US": { name: "icon-512x512.png" } }, // Will correctly fetch our new catch-all route
                 timestamp: Date.now(),
                 version: 2
             },
@@ -5499,29 +5440,25 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
 
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
             
-            // Clean up text
             const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
             const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
             const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
 
-            // Build a rich Markdown description
             let fullMarkdownDesc = `${cleanDesc}\n\n`;
-            if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
-            if (cleanNotes) fullMarkdownDesc += `**Important Notes:**\n${cleanNotes}\n\n`;
             if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
+            if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
+            if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
 
-            // Process Images
-            const iconKey = mod.iconUrl || mod.iconKey;
-            const iconUrl = await getSmartImageUrl(iconKey);
-            
-            let screenshotUrls = [];
+            // ✅ FIX 6: Properly format screenshot names for F-Droid v2 schema
+            const screenshotArray = [];
             if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
-                screenshotUrls = await Promise.all(mod.screenshotKeys.map(key => getSmartImageUrl(key)));
+                mod.screenshotKeys.forEach((_, i) => {
+                    screenshotArray.push({ name: `${repoBaseUrl}/api/screenshot/${mod._id}/${i}` });
+                });
             }
 
-            // Define the package entry
             repoJson.packages[bundleId] = {
                 metadata: {
                     name: { "en-US": mod.name },
@@ -5531,9 +5468,8 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
                     categories: ["Mods", "Games", "Apps"],
                     developerName: mod.developer || "GPL Mods",
                     authorName: mod.uploader,
-                    icon: { "en-US": iconUrl },
-                    // Pass screenshot array directly
-                    phoneScreenshots: { "en-US": screenshotUrls }, 
+                    icon: { "en-US": { name: `${repoBaseUrl}/api/icon/${mod._id}` } }, // Properly formatted Icon schema
+                    phoneScreenshots: { "en-US": screenshotArray }, // Properly formatted Screenshot array
                     added: new Date(mod.createdAt).getTime(),
                     lastUpdated: new Date(mod.updatedAt).getTime()
                 },
@@ -5541,14 +5477,11 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
                     [mod.version]: {
                         added: new Date(mod.updatedAt).getTime(),
                         file: {
-                            name: downloadUrl, // Neo Store uses this as the URL if it contains http
+                            name: downloadUrl,
                             sha256: mod.virusTotalId && mod.virusTotalId.length === 64 ? mod.virusTotalId : "",
                             size: mod.fileSize || 1048576
                         },
-                        // F-Droid v2 format for what's new
-                        releaseNotes: {
-                            "en-US": cleanWhatsNew
-                        }
+                        releaseNotes: { "en-US": cleanWhatsNew }
                     }
                 }
             };
