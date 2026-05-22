@@ -5131,12 +5131,6 @@ function getBaseUrl(req) {
     return `${protocol}://${host}`.replace(/\/*$/, '');
 }
 
-const REPO_BASE_URL = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/*$/, '') : null;
-function getRepoBaseUrl(req) {
-    return REPO_BASE_URL || getBaseUrl(req);
-}
-
-
 // ======== ✅ FIX 1: PERMANENT IMAGE REDIRECTS ========
 // Prevents 404 crashes in Droid-ify, Sileo, and AltStore caused by expired B2 URLs.
 app.get('/api/icon/:id', async (req, res) => {
