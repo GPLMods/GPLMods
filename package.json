@@ -42,6 +42,7 @@
     "bad-words": "^3.0.4",
     "bcryptjs": "^2.4.3",
     "cashfree-pg": "^5.1.0",
+    "cheerio": "^1.2.0",
     "connect-mongodb-session": "^5.0.0",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
