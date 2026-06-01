@@ -125,42 +125,71 @@
                                     <!-- Version Tag -->
                                     <div class="mod-type-tag"><%= file.version %></div>
                                     
-                                    <!-- NEW: Image Container Logic -->
+                                    <!-- Image Container Logic (Prevents Cropping) -->
                                     <div class="mod-card-image">
                                         <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
                                     </div>
                                     
-<div class="mod-card-content">
-    <!-- The link is placed on the title with the "full-card-link" class -->
-    <h3 title="<%= file.name %>">
-        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= truncateText(file.name, 22) %></a>
-    </h3>
-    <p><%= file.developer %></p>
-                                        <div class="rating">
+                                    <div class="mod-card-content">
+                                        <!-- ✅ FIX: The link is placed ONLY on the title, NOT the whole card -->
+                                        <h3 title="<%= file.name %>">
+                                            <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link" style="color: inherit; text-decoration: none;">
+                                                <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
+                                            </a>
+                                        </h3>
+                                        <p><%= file.developer %></p>
+                                        <div class="rating" style="margin-bottom: 10px;">
                                             <div class="stars-outer">
                                                 <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
                                             </div>
                                             <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
                                         </div>
                                         
-                                        <!-- NEW: Platform Tag -->
-                                        <div class="card-footer">
+                                        <!-- Platform Tag & View Count -->
+                                        <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 10;">
                                             <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
                                                 <%= file.category.toUpperCase().replace('-', ' ') %>
                                             </span>
+                                            
+                                            <div class="view-count" style="display: flex; align-items: center; gap: 5px; color: var(--silver); font-size: 0.85em; font-weight: 600;" title="<%= file.views || 0 %> Views">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                                </svg>
+                                                <%= typeof formatCompactNumber !== 'undefined' ? formatCompactNumber(file.views) : (file.views || 0) %>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="download-overlay">
-                                        <a href="/mods/<%= file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
-                                        <% if (user) { %>
-                                            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
-                                                <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
-                                                    Add to Whitelist
-                                                </button>
+                                    <!-- ======== ANIMATED OVERLAY ======== -->
+                                    <div class="download-overlay" style="pointer-events: auto;">
+                                        
+                                        <!-- View Mod Button -->
+                                        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
+                                        
+                                        <!-- Add to Wishlist Button -->
+                                        <% if (typeof user !== 'undefined' && user && user.whitelist) { %>
+                                            <% 
+                                                const isWhitelisted = user.whitelist.some(w => w.toString() === file._id.toString() || (w._id && w._id.toString() === file._id.toString())); 
+                                            %>
+                                            
+                                            <!-- ✅ FIX: Z-index 30 ensures this form is the top-most clickable element -->
+                                            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 30;">
+                                                <input type="hidden" name="redirectUrl" value="back">
+                                                <% if (isWhitelisted) { %>
+                                                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit; color: var(--red); border-color: var(--red);">
+                                                        Remove from Wishlist
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
+                                                        Add to Wishlist
+                                                    </button>
+                                                <% } %>
                                             </form>
+                                        <% } else { %>
+                                            <a href="/login" class="overlay-button overlay-btn-secondary" style="position: relative; z-index: 30;">Login to Wishlist</a>
                                         <% } %>
                                     </div>
+                                    
                                 </div>
                                 
                             <% }) %> <!-- Closes the files loop -->

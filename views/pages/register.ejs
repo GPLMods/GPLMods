@@ -281,6 +281,12 @@
                         <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access mature content.</p>
                     </div>
                     <!-- ========================================== -->
+                    <!-- ======== NEW: REFERRAL CODE INPUT ======== -->
+                    <div class="form-group">
+                        <label for="referralCode">Referral Code <span style="color: var(--silver); font-weight: normal;">(Optional)</span></label>
+                        <input type="text" id="referralCode" name="referralCode" placeholder="Enter code if you have one" style="text-transform: uppercase;">
+                    </div>
+                    <!-- ========================================== -->
 
                     <!-- UPDATED: ReCAPTCHA and Terms -->
                     <div class="form-group">
@@ -420,6 +426,18 @@
                 }
             }, 500); // 500ms delay
         });
+        // --- Auto-fill Referral Code from URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            const refInput = document.getElementById('referralCode');
+            if (refInput) {
+                refInput.value = refCode.toUpperCase();
+                // Optional: Make it read-only so they don't accidentally change it
+                // refInput.readOnly = true; 
+                // refInput.style.opacity = '0.7';
+            }
+        }
     </script>
 
     <!-- ✅ FIXED: Footer is now safely inside the body tag! -->

@@ -48,6 +48,21 @@ isBanned: {
         enum: ['free', 'premium'],
         default: 'free'
     },
+    // ======== NEW: REFERRAL SYSTEM ========
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true // Allows nulls while ensuring uniqueness for existing codes
+    },
+    referredBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    referralCount: {
+        type: Number,
+        default: 0
+    },
+    // ======================================
 profileImageKey: {
     type: String // Stores the path like 'avatars/12345-image.png'
 },
@@ -56,7 +71,7 @@ profileImageKey: {
         trim: true,
         maxlength: 250
     },
-dateOfBirth: {
+ dateOfBirth: {
         type: Date
     },
     lastSeen: {
@@ -80,6 +95,22 @@ dateOfBirth: {
         type: Boolean,
         default: false
     },
+    // --- NEW: VERIFIED ACCOUNT BADGE ---
+    isVerifiedAccount: {
+        type: Boolean,
+        default: false
+    },
+    verifiedBadgeText: {
+        type: String,
+        trim: true,
+        default: 'Verified Mod Distributor'
+    },
+    // --- NEW: COUNTRY ---
+    country: {
+        type: String,
+        trim: true,
+        default: '' // Empty means no country selected
+    },
     // ======== NEW: COMMUNITY FORUM GAMIFICATION ========
     forumPoints: {
         type: Number,
@@ -100,8 +131,17 @@ dateOfBirth: {
     verificationOtp: {
         type: String
     },
+    // --- ADD THIS NEW FIELD ---
+    isSubscribedToNewsletter: {
+        type: Boolean,
+        default: false
+    },
     otpExpires: {
         type: Date
+    },
+// --- ADD THIS NEW FIELD ---
+    activeSessionId: {
+        type: String
     },
     // --- NEW FIELDS ADDED FOR PASSWORD RESET ---
     passwordResetToken: {
@@ -189,11 +229,11 @@ UserSchema.virtual('forumRank').get(function() {
     const pts = this.forumPoints || 0;
     
     // Customize your points thresholds and colors here!
-    if (pts >= 1000) return { name: 'Diamond Expert', color: '#b9f2ff', lottie: 'rank-5.json' };
-    if (pts >= 500)  return { name: 'Platinum Expert', color: '#e5e4e2', lottie: 'rank-4.json' };
-    if (pts >= 250)  return { name: 'Gold Expert', color: '#FFD700', lottie: 'rank-3.json' };
-    if (pts >= 100)  return { name: 'Silver Expert', color: '#c0c0c0', lottie: 'rank-2.json' };
-    if (pts >= 25)   return { name: 'Bronze Member', color: '#cd7f32', lottie: 'rank-1.json' };
+    if (pts >= 1000) return { name: 'Diamond Expert', color: '#003e54', lottie: 'level-5.json' };
+    if (pts >= 500)  return { name: 'Platinum Expert', color: '#770087', lottie: 'level-4.json' };
+    if (pts >= 250)  return { name: 'Gold Expert', color: '#FFD700', lottie: 'level-3.json' };
+    if (pts >= 100)  return { name: 'Silver Expert', color: '#c0c0c0', lottie: 'level-2.json' };
+    if (pts >= 25)   return { name: 'Bronze Member', color: '#cd7f32', lottie: 'level-1.json' };
     
     return { name: 'Novice', color: 'var(--silver)', lottie: null }; // Default
 });

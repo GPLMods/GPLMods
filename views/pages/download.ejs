@@ -141,6 +141,36 @@
              align-self: center;
              margin-top: 0;
         }
+    /* --- ✅ NEW: Styles for 1-Click Install Buttons & PNG Icons --- */
+    .install-btn {
+        padding: 8px 12px; 
+        font-size: 0.85em; 
+        border: 1px solid #333; 
+        color: var(--silver); 
+        background: #1a1a1a; 
+        border-radius: 8px;
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .install-btn:hover {
+        background: var(--dark-gray);
+        color: var(--white);
+        border-color: var(--gold);
+        transform: translateY(-2px);
+    }
+    .repo-icon-small {
+        width: 18px; 
+        height: 18px;
+        min-width: 18px;
+        max-width: 18px;
+        object-fit: contain;
+        display: block;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+    }
 </style>
 
 <main class="container">
@@ -359,54 +389,55 @@
                             
                             <% if (file.category === 'ios-jailed') { %>
                                 <!-- JAILED IPA APPS -->
-                                <a href="apple-magnifier://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-magic" style="color: #007AFF;"></i> TrollStore
+                                <a href="apple-magnifier://install?url=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/trollstore.png" alt="TrollStore" class="repo-icon-small"> TrollStore
                                 </a>
-                                <a href="sidestore://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-store" style="color: #5E5CE6;"></i> SideStore
+                                <a href="sidestore://install?url=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/sidestore.png" alt="SideStore" class="repo-icon-small"> SideStore
                                 </a>
-                                <a href="altstore://install?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-box" style="color: #34C759;"></i> AltStore
+                                <a href="altstore://install?url=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/altstore.png" alt="AltStore" class="repo-icon-small"> AltStore
                                 </a>
-                                <a href="esign://import?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-pen-nib" style="color: #FF2D55;"></i> E-Sign
+                                <a href="esign://import?url=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/esign.png" alt="E-Sign" class="repo-icon-small"> E-Sign
                                 </a>
-                                <a href="feather://import/<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-feather-alt" style="color: #FF9500;"></i> Feather
+                                <a href="feather://import/<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/feather.png" alt="Feather" class="repo-icon-small"> Feather
                                 </a>
-                                <a href="scarlet://install=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                    <i class="fas fa-spider" style="color: #FF3B30;"></i> Scarlet
+                                <a href="scarlet://install=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/scarlet.png" alt="Scarlet" class="repo-icon-small"> Scarlet
                                 </a>
-                                <a href="livecontainer://install-ipa?url=<%= base64Url %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
-                                    <i class="fas fa-box-open" style="color: var(--gold);"></i> Live Container
+                                <a href="purepkg://install?url=<%= rawUrl %>" class="install-btn">
+                                    <img src="/images/icons/purepkg.png" alt="PurePKG" class="repo-icon-small"> PurePKG
                                 </a>
-                                <a href="ksign://import?url=<%= rawUrl %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a; grid-column: 1 / -1;">
-                                    <i class="fas fa-signature" style="color: #AF52DE;"></i> Ksign
+                                <a href="livecontainer://install-ipa?url=<%= base64Url %>" class="install-btn">
+                                    <img src="/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon-small"> LiveContainer
+                                </a>
+                                <a href="ksign://import?url=<%= rawUrl %>" class="install-btn" style="grid-column: 1 / -1;">
+                                    <img src="/images/icons/ksign.png" alt="Ksign" class="repo-icon-small"> Ksign
                                 </a>
 
                             <% } else if (file.category === 'ios-jailbroken') { %>
                                 <!-- JAILBROKEN REPO / DEB APPS -->
-                                <% 
-                                   // We dynamically grab the domain name
-                                   const hostDomain = "https://gplmods.webredirect.org/ios-repo"; 
-                                %>
+                                <% const hostDomain = "https://gplmods.webredirect.org/ios-repo"; %>
 
                                 <% if (file.iosPackageId) { %>
-                                    <!-- They provided a Package ID! Show Direct Tweak Links -->
-                                    <a href="sileo://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                        <i class="fas fa-wind" style="color: #5AC8FA;"></i> Sileo
+                                    <a href="sileo://package/<%= file.iosPackageId %>" class="install-btn">
+                                        <img src="/images/icons/sileo.png" alt="Sileo" class="repo-icon-small"> Sileo
                                     </a>
-                                    <a href="zbra://package/<%= file.iosPackageId %>?source=<%= hostDomain %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                        <i class="fas fa-horse-head" style="color: #000000; background: #fff; padding: 2px; border-radius: 4px;"></i> Zebra
+                                    <a href="zbra://package/<%= file.iosPackageId %>?source=<%= hostDomain %>" class="install-btn">
+                                        <img src="/images/icons/zebra.png" alt="Zebra" class="repo-icon-small"> Zebra
                                     </a>
-                                    <a href="cydia://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                        <i class="fas fa-cube" style="color: #8E8E93;"></i> Cydia
+                                    <a href="saily://package/<%= file.iosPackageId %>" class="install-btn">
+                                        <img src="/images/icons/saily.png" alt="Saily" class="repo-icon-small"> Saily
                                     </a>
-                                    <a href="installer://package/<%= file.iosPackageId %>" class="btn btn-secondary" style="padding: 8px; font-size: 0.8em; border-color: #333; color: var(--silver); background: #1a1a1a;">
-                                        <i class="fas fa-download" style="color: #34C759;"></i> Installer
+                                    <a href="cydia://package/<%= file.iosPackageId %>" class="install-btn">
+                                        <img src="/images/icons/cydia.png" alt="Cydia" class="repo-icon-small"> Cydia
+                                    </a>
+                                    <a href="installer://package/<%= file.iosPackageId %>" class="install-btn" style="grid-column: 1 / -1;">
+                                        <img src="/images/icons/installer.png" alt="Installer" class="repo-icon-small"> Installer
                                     </a>
                                 <% } else { %>
-                                    <!-- Fallback: Just show basic info if they forgot the ID -->
                                     <p style="color: var(--silver); font-size: 0.85em; grid-column: 1 / -1; margin: 0;">Add our repo to your package manager to install this tweak.</p>
                                 <% } %>
                             <% } %>

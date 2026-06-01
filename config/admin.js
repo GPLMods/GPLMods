@@ -25,7 +25,8 @@ const NewsletterCampaign = require('../models/newsletterCampaign');
 const DocCategory = require('../models/docCategory'); // <--- ADD THIS
 const DocPage = require('../models/docPage');  // <--- ADD THIS
 const Issue = require('../models/issue');     // <--- ADD THIS
-const Reply = require('../models/reply');     // <--- ADD THIS       
+const Reply = require('../models/reply');     // <--- ADD THIS
+const PointHistory = require('../models/pointHistory');       
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -60,6 +61,12 @@ const deleteFromB2Admin = async (fileKey) => {
     try {
         await s3ClientAdmin.send(new DeleteObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: fileKey }));
         console.log(`AdminJS deleted ${fileKey} from B2.`);
+        
+        // ✅ TRIGGER BACKUP DELETE HERE
+        // Note: You will need to import deleteFromFTP at the top of admin.js!
+        const { deleteFromFTP } = require('../utils/ftpSync');
+        deleteFromFTP(fileKey).catch(e => console.error("Admin FTP delete failed", e));
+        
     } catch (error) {
         console.error(`AdminJS failed to delete ${fileKey}:`, error.message);
     }
@@ -190,9 +197,9 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: { icon: 'User' }, // ✅ Valid Carbon Icon
-                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isBanned', 'lastSeen'],
-                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties:['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
+                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties:['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
@@ -222,6 +229,38 @@ async function createAdminRouter() {
                     }
                 }
             },
+        // ---------------------------------
+        // GAMIFICATION & POINT HISTORY
+        // ---------------------------------
+        {
+            resource: PointHistory,
+            options: {
+                listProperties: ['user', 'amount', 'reason', 'createdAt'],
+                showProperties: ['user', 'amount', 'reason', 'customMessage', 'createdAt'],
+                editProperties: ['user', 'amount', 'reason', 'customMessage'],
+                properties: {
+                    customMessage: { type: 'richtext', description: 'Optional message to the user explaining why they got/lost these points.' },
+                    amount: { description: 'Use positive numbers to add points (e.g., 50) and negative to deduct (e.g., -10).' }
+                },
+                actions: {
+                    new: {
+                        // When an admin creates a manual point record, physically update the user's total balance
+                        after: async (response, request, context) => {
+                            if (request.method === 'post' && response.record && !Object.keys(response.record.errors || {}).length) {
+                                const amount = Number(response.record.params.amount);
+                                const userId = response.record.params.user;
+                                // Find the user and apply the math
+                                const User = require('../models/user');
+                                await User.findByIdAndUpdate(userId, { $inc: { forumPoints: amount } });
+                            }
+                            return response;
+                        }
+                    },
+                    edit: { isAccessible: false }, // Prevent editing history to maintain ledger integrity
+                    delete: { isAccessible: false } 
+                }
+            }
+        },
             
             // ---------------------------------
             // FILE (MOD) MANAGEMENT

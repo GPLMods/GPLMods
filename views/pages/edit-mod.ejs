@@ -1,8 +1,8 @@
 <%- include('../partials/header') %>
 
-<!-- ✅ ADD QUILL.JS STYLES AND SCRIPT -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<!-- ✅ DOWNGRADE TO STABLE QUILL v1.3.7 -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
 <style>
     :root {
@@ -47,20 +47,22 @@
     .status-banner { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
     .status-banner.rejected { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); }
 
-    /* Custom styles to make Quill match our dark theme */
+    /* --- Custom Styles for Quill v1.3.7 --- */
     .ql-toolbar.ql-snow { background-color: #333; border-color: #444; border-radius: 8px 8px 0 0; }
     .ql-container.ql-snow { background-color: var(--black); border-color: #444; border-radius: 0 0 8px 8px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; min-height: 250px; }
-    .ql-editor.ql-blank::before { color: #888; }
+    .ql-editor.ql-blank::before { color: #888; font-style: normal; } /* Fixed placeholder color */
     .ql-snow .ql-stroke { stroke: var(--silver); }
     .ql-snow .ql-fill { fill: var(--silver); }
     .ql-snow .ql-picker { color: var(--silver); }
+    .ql-snow.ql-toolbar button:hover .ql-stroke, .ql-snow .ql-toolbar button:hover .ql-stroke { stroke: var(--gold); }
+    .ql-snow.ql-toolbar button:hover .ql-fill, .ql-snow .ql-toolbar button:hover .ql-fill { fill: var(--gold); }
     
     /* --- Force Quill Editors to be responsive on mobile --- */
     .ql-toolbar, .ql-container { max-width: 100% !important; box-sizing: border-box !important; }
-    .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 10px !important; }
+    .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 15px !important; }
     .upload-form-container { max-width: 100%; overflow-x: hidden; }
 
-    /* --- ✅ CUSTOM SELECT DROPDOWN CSS --- */
+    /* --- CUSTOM SELECT DROPDOWN CSS --- */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
     .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px; background-color: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; color: var(--silver); font-size: 1em; transition: all 0.3s ease; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
@@ -129,7 +131,6 @@
                 <!-- Platform Custom Dropdown -->
                 <div class="form-group">
                     <label>Platform*</label>
-                    <!-- HIDDEN - REQUIRED REMOVED to prevent silent submission failure -->
                     <select id="modPlatform" name="modPlatform" style="display: none;">
                         <option value="" disabled <%= !file.category ? 'selected' : '' %>>Select a platform...</option>
                         <option value="android" <%= file.category === 'android' ? 'selected' : '' %>>Android</option>
@@ -156,7 +157,6 @@
 
                 <div class="form-group">
                     <label for="ageRating">Age Rating*</label>
-                    <!-- HIDDEN - REQUIRED REMOVED -->
                     <select id="ageRating" name="ageRating" style="display: none;">
                         <option value="NA" <%= (typeof file !== 'undefined' && file.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
                         <option value="3+" <%= (typeof file !== 'undefined' && file.ageRating === '3+') ? 'selected' : '' %>>3+ (Everyone)</option>
@@ -196,7 +196,6 @@
                 <!-- Category Custom Dropdown -->
                 <div class="form-group">
                     <label>Sub-Category*</label>
-                    <!-- HIDDEN - REQUIRED REMOVED -->
                     <select id="modCategory" name="modCategory" disabled style="display: none;">
                         <option value="<%= file.platforms[0] || '' %>" selected><%= file.platforms[0] || 'Select category...' %></option>
                     </select>
@@ -220,7 +219,7 @@
                             <span class="selected-text" id="archSelectedText">Select architectures...</span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
-                        <div class="custom-options" id="archOptionsContainer">
+                        <div class="custom-options" id="archOptionsContainer" style="max-height: 250px; overflow-y: auto;">
                             <!-- Multi-select checkboxes will be dynamically populated here -->
                         </div>
                     </div>
@@ -239,6 +238,47 @@
             
             <fieldset class="form-section">
                 <legend>Descriptions</legend>
+                
+                <!-- ======== ✅ UPGRADED: AUTO-FETCH METADATA UI ======== -->
+                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                    <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 5px;">Platform Source</label>
+                        <!-- Native Select (Hidden) -->
+                        <select id="fetchPlatform" name="fetchPlatform" style="display: none;">
+                            <option value="playstore" selected>Google Play Store</option>
+                            <option value="appstore">Apple App Store</option>
+                            <option value="steam">Steam</option>
+                            <option value="epic">Epic Games Store</option>
+                            <option value="wordpress">WordPress.org</option>
+                        </select>
+                        
+                        <!-- Custom Select UI -->
+                        <div class="custom-select-wrapper" id="fetchPlatformWrapper">
+                            <div class="custom-select" style="padding: 10px 15px;">
+                                <span class="selected-text" style="color: var(--white);">Google Play Store</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <div class="custom-option selected" data-value="playstore">Google Play Store</div>
+                                <div class="custom-option" data-value="appstore">Apple App Store</div>
+                                <div class="custom-option" data-value="steam">Steam</div>
+                                <div class="custom-option" data-value="epic">Epic Games Store</div>
+                                <div class="custom-option" data-value="wordpress">WordPress.org</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="url" id="fetchUrl" placeholder="Paste the store link here (e.g., https://play.google.com/...)" style="flex-grow: 1; padding: 12px 15px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none; transition: border-color 0.3s;">
+                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 25px; font-weight: bold; cursor: pointer; transition: transform 0.2s;">
+                            Fetch Data
+                        </button>
+                    </div>
+                    <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
+                </div>
+                <!-- ======================================================== -->
 
                 <!-- HIDDEN TEXTAREAS - REQUIRED REMOVED to prevent silent browser failures -->
                 <div class="form-group">
@@ -274,23 +314,19 @@
                 </div>
             </fieldset>
 
-                <!-- ======== ✅ FIX: UNIVERSAL DIRECT CLOUD LINK ======== -->
+                <!-- DIRECT CLOUD LINK -->
                 <div class="form-group" id="direct-link-group" style="background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
                     <label for="directDownloadUrl" style="color: var(--white);"><i class="fas fa-link"></i> Direct Cloud Link (Dropbox, etc.) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                    <!-- ✅ FIX: Data MUST be in the 'value' attribute, not 'populated' -->
                     <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.zip?dl=1" value="<%= file.directDownloadUrl || '' %>">
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">A direct streamable link. Enables 1-Click repo installs for iOS/Android, and acts as a fast mirror for all platforms.</span>
                 </div>
-                <!-- ======================================================== -->
                 
-                <!-- ======== ✅ FIX: JAILBREAK PACKAGE ID ======== -->
+                <!-- JAILBREAK PACKAGE ID -->
                 <div class="form-group" id="pkg-id-group" style="display: none; background: rgba(255, 149, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #FF9500; margin-bottom: 25px;">
                     <label for="iosPackageId" style="color: var(--white);"><i class="fas fa-box-open"></i> Jailbreak Package ID <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                    <!-- ✅ FIX: Added value attribute here too -->
                     <input type="text" id="iosPackageId" name="iosPackageId" placeholder="e.g., com.spark.snowboard" value="<%= file.iosPackageId || '' %>">
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable direct Sileo/Zebra package installation buttons. Must exactly match the ID in your control file.</span>
                 </div>
-                <!-- =========================================== -->
 
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
                 <fieldset class="form-section">
@@ -471,23 +507,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. CUSTOM SELECT LOGIC (DYNAMIC)
     // ==========================================
-    const platformWrapper = document.getElementById('platformWrapper');
-    const nativePlatformSelect = document.getElementById('modPlatform');
-    const categoryWrapper = document.getElementById('categoryWrapper');
-    const nativeCategorySelect = document.getElementById('modCategory');
-    const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
-    
-    const ageRatingWrapper = document.getElementById('ageRatingWrapper');
-    const nativeAgeRatingSelect = document.getElementById('ageRating');
-    
-    const archWrapper = document.getElementById('archWrapper');
-    const archCustomSelect = document.getElementById('archCustomSelect');
-    
-    // UI Display Elements
-    const pkgIdGroup = document.getElementById('pkg-id-group');
-
-    function setupCustomSelect(wrapper, nativeSelect) {
+    const setupCustomSelect = (wrapperId, nativeSelectId) => {
+        const wrapper = document.getElementById(wrapperId);
+        const nativeSelect = document.getElementById(nativeSelectId);
         if (!wrapper || !nativeSelect) return;
+
         const customSelect = wrapper.querySelector('.custom-select');
         const selectedText = wrapper.querySelector('.selected-text');
         
@@ -521,8 +545,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-    }
+    };
 
+    // Initialize the setup for the static dropdowns
+    setupCustomSelect('platformWrapper', 'modPlatform');
+    setupCustomSelect('fetchPlatformWrapper', 'fetchPlatform');
+    setupCustomSelect('ageRatingWrapper', 'ageRating');
+    
+    // ArchWrapper needs its own toggle listener because its options are generated dynamically
+    const archWrapper = document.getElementById('archWrapper');
+    const archCustomSelect = document.getElementById('archCustomSelect');
     if (archCustomSelect && archWrapper) {
         archCustomSelect.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -535,13 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    setupCustomSelect(platformWrapper, nativePlatformSelect);
-    setupCustomSelect(categoryWrapper, nativeCategorySelect);
-    setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
-
     // ✅ SAFE INITIALIZATION: Age Rating
+    const nativeAgeRatingSelect = document.getElementById('ageRating');
+    const ageRatingWrapper = document.getElementById('ageRatingWrapper');
     if (nativeAgeRatingSelect && ageRatingWrapper) {
-        // Use JSON.stringify to safely inject string data
         const currentAgeRating = <%- JSON.stringify(file.ageRating || '') %>;
         if (currentAgeRating) {
             const opt = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentAgeRating}"]`);
@@ -564,6 +593,11 @@ document.addEventListener('DOMContentLoaded', () => {
         windows:['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
         wordpress:['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
     };
+
+    const nativePlatformSelect = document.getElementById('modPlatform');
+    const nativeCategorySelect = document.getElementById('modCategory');
+    const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
+    const categoryWrapper = document.getElementById('categoryWrapper');
 
     function populateCategories() {
         if (!nativePlatformSelect || !nativeCategorySelect || !categoryOptionsContainer || !categoryWrapper) return;
@@ -615,6 +649,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     nativeCategorySelect.value = currentCategory;
                 }
             }
+
+            // We must re-bind the click listener for these dynamically created elements
+            setupCustomSelect('categoryWrapper', 'modCategory');
+
         } else {
             nativeCategorySelect.disabled = true;
             categoryWrapper.classList.add('disabled');
@@ -641,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const archReqStar = document.getElementById('arch-req-star');
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
+            const pkgIdGroup = document.getElementById('pkg-id-group');
 
             // ✅ SAFE INITIALIZATION: Architecture array
             const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;
@@ -730,9 +769,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (preSelectedPlatform) {
             const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
             if(optionToSelect) {
-                optionToSelect.click(); // This fires the logic to set up the rest of the form!
+                optionToSelect.click(); 
             } else {
-                // Fallback just in case custom UI fails
                 nativePlatformSelect.value = preSelectedPlatform;
                 nativePlatformSelect.dispatchEvent(new Event('change'));
             }
@@ -740,22 +778,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3. QUILL RICH TEXT EDITORS & SUBMISSION
+    // 3. QUILL v1.3.7 RICH TEXT EDITORS
     // ==========================================
+    // Quill v1.3.7 is extremely stable but initializes slightly differently 
+    // than v2 when dealing with dynamic HTML content.
+    
     const toolbarOptions = [['bold', 'italic', 'underline', 'strike'],[{ 'list': 'ordered'}, { 'list': 'bullet' }],['clean']];
 
     let quillDesc, quillFeat, quillOff, quillNew, quillNote;
 
-    // ✅ FIX: Use setTimeout to ensure the DOM is completely ready before Quill attaches
+    // Use a small timeout to ensure the DOM elements are fully painted before attaching Quill
     setTimeout(() => {
-        if (document.getElementById('editor-modDescription')) quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        if (document.getElementById('editor-modFeatures')) quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        if (document.getElementById('editor-officialDescription')) quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        if (document.getElementById('editor-whatsNew')) quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        if (document.getElementById('editor-importantNote')) quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-    }, 50);
+        if (document.getElementById('editor-modDescription')) {
+            quillDesc = new Quill('#editor-modDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        }
+        if (document.getElementById('editor-modFeatures')) {
+            quillFeat = new Quill('#editor-modFeatures', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        }
+        if (document.getElementById('editor-officialDescription')) {
+            quillOff = new Quill('#editor-officialDescription', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        }
+        if (document.getElementById('editor-whatsNew')) {
+            quillNew = new Quill('#editor-whatsNew', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        }
+        if (document.getElementById('editor-importantNote')) {
+            quillNote = new Quill('#editor-importantNote', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+        }
+    }, 100); // 100ms is perfectly safe
 
     function syncQuillData() {
+        // Quill v1.3.7 uses root.innerHTML, exactly as you had it, but we double-check 
+        // to prevent saving empty placeholder tags.
         if(quillDesc) document.getElementById('modDescription').value = quillDesc.root.innerHTML === '<p><br></p>' ? '' : quillDesc.root.innerHTML;
         if(quillFeat) document.getElementById('modFeatures').value = quillFeat.root.innerHTML === '<p><br></p>' ? '' : quillFeat.root.innerHTML;
         if(quillOff) document.getElementById('officialDescription').value = quillOff.root.innerHTML === '<p><br></p>' ? '' : quillOff.root.innerHTML;
@@ -763,6 +816,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML === '<p><br></p>' ? '' : quillNote.root.innerHTML;
     }
 
+    // ==========================================
+    // 4. SUBMISSION LOGIC
+    // ==========================================
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');
     const actionTypeInput = document.getElementById('actionType');
@@ -841,8 +897,77 @@ document.addEventListener('DOMContentLoaded', () => {
             mainForm.submit(); 
         });
     }
+
+    // ==========================================
+    // 5. AUTO-FETCH LOGIC (USING NEW CUSTOM DROPDOWN)
+    // ==========================================
+    const fetchBtn = document.getElementById('fetchBtn');
+    if (fetchBtn) {
+        fetchBtn.addEventListener('click', async function() {
+            // ✅ We pull the value from the native select which is updated by our custom wrapper
+            const platform = document.getElementById('fetchPlatform').value; 
+            const url = document.getElementById('fetchUrl').value;
+            const statusSpan = document.getElementById('fetchStatus');
+
+            if (!url) {
+                statusSpan.textContent = 'Please enter a URL first.';
+                statusSpan.style.color = 'var(--red)';
+                return;
+            }
+
+            fetchBtn.disabled = true;
+            fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+            statusSpan.textContent = '';
+
+            try {
+                const response = await fetch('/api/fetch-metadata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, platform })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    statusSpan.textContent = 'Data fetched successfully!';
+                    statusSpan.style.color = 'var(--green)';
+                    
+                    // Auto-fill existing inputs
+                    if (result.data.developer && document.getElementById('developerName')) document.getElementById('developerName').value = result.data.developer;
+                    if (result.data.minOsVersion && document.getElementById('minOsVersion')) document.getElementById('minOsVersion').value = result.data.minOsVersion;
+                    
+                    // Carefully handle age rating to map properly to our custom dropdown
+                    if (result.data.ageRating && document.getElementById('ageRatingWrapper')) {
+                        let ageVal = 'NA';
+                        const fetchedAge = result.data.ageRating.toLowerCase();
+                        if (fetchedAge.includes('3')) ageVal = '3+';
+                        if (fetchedAge.includes('7')) ageVal = '7+';
+                        if (fetchedAge.includes('12')) ageVal = '12+';
+                        if (fetchedAge.includes('16')) ageVal = '16+';
+                        if (fetchedAge.includes('18')) ageVal = '18+';
+                        
+                        const optToSelect = document.getElementById('ageRatingWrapper').querySelector(`.custom-option[data-value="${ageVal}"]`);
+                        if(optToSelect) optToSelect.click();
+                    }
+
+                    // Update Quill Editors!
+                    // Quill v1 uses pasteHTML to programmatically insert content
+                    if (result.data.description && quillOff) quillOff.clipboard.dangerouslyPasteHTML(result.data.description);
+                    if (result.data.whatsNew && quillNew) quillNew.clipboard.dangerouslyPasteHTML(result.data.whatsNew);
+
+                } else {
+                    statusSpan.textContent = result.error || 'Failed to fetch data.';
+                    statusSpan.style.color = 'var(--red)';
+                }
+            } catch (err) {
+                statusSpan.textContent = 'Server error.';
+                statusSpan.style.color = 'var(--red)';
+            } finally {
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = 'Fetch Data';
+            }
+        });
+    }
 });
-</script>
 </script>
 
 <%- include('../partials/footer') %>

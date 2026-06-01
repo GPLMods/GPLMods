@@ -1,34 +1,119 @@
 <%- include('../partials/header') %>
-<main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
-    <div style="background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+<style>
+    /* Styling to match the rest of the Auth forms */
+    .challenge-container { 
+        background: var(--dark-gray); 
+        padding: 40px; 
+        border-radius: 15px; 
+        border: 1px solid #2a2a2a; 
+        max-width: 450px; 
+        width: 100%; 
+        text-align: center; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    
+    .social-verify-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 12px;
+        background-color: transparent; 
+        border: 2px solid var(--silver); 
+        color: var(--silver);           
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .social-verify-btn:hover {
+        background-color: var(--gold);
+        border-color: var(--gold);
+        color: var(--black); 
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .social-verify-btn i { font-size: 1.2em; }
+
+    /* The input field for TOTP/Backup codes */
+    .code-input {
+        width: 100%; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border: 1px solid var(--gold); 
+        background: var(--black); 
+        color: var(--white); 
+        text-align: center; 
+        font-size: 1.5em; 
+        letter-spacing: 5px; 
+        margin-bottom: 20px; 
+        outline: none;
+        transition: box-shadow 0.3s ease;
+        font-family: monospace;
+    }
+    .code-input:focus {
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+
+    .divider {
+        text-align: center;
+        margin: 25px 0 15px 0;
+        position: relative;
+        color: #666;
+        font-size: 0.9em;
+    }
+    .divider::before, .divider::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 25%;
+        height: 1px;
+        background: #333;
+    }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+</style>
+
+<main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 75vh; padding: 40px 0;">
+    <div class="challenge-container">
         
-        <i class="fas fa-shield-alt" style="font-size: 3em; color: var(--gold); margin-bottom: 20px;"></i>
+        <i class="fas fa-shield-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));"></i>
         <h2 style="color: var(--white); margin-bottom: 10px;">Security Verification</h2>
         
-        <% if (error) { %><p style="color: var(--red); margin-bottom: 15px; font-weight: bold;"><%= error %></p><% } %>
+        <% if (error) { %>
+            <p style="background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 0.9em;">
+                <%= error %>
+            </p>
+        <% } %>
 
         <!-- SCENARIO 1: EMAIL OR TOTP -->
         <% if (method === 'email' || method === 'totp') { %>
-            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.9em;">
-                <%= method === 'email' ? "We've sent a 6-digit code to your email." : "Open your Authenticator app." %>
-                <br><br><span style="color: #666;">(Lost access? Enter an 8-character Backup Code).</span>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em; line-height: 1.5;">
+                <%= method === 'email' ? "We've sent a secure 6-digit code to your email address." : "Please open your Authenticator app to view your 6-digit code." %>
             </p>
             <form action="/login/2fa/verify" method="POST">
-                <input type="text" name="token" placeholder="000000" maxlength="8" required autocomplete="off" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid var(--gold); background: var(--black); color: var(--white); text-align: center; font-size: 1.5em; letter-spacing: 5px; margin-bottom: 20px; outline: none;">
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">Verify & Login</button>
+                <!-- Can accept either 6 digit TOTP or 8 char Backup Code -->
+                <input type="text" name="token" class="code-input" placeholder="000000" maxlength="8" required autocomplete="off">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; font-weight: bold;">Verify & Login</button>
             </form>
+            <p style="margin-top: 15px; font-size: 0.85em; color: #666;">Lost device access? You can enter one of your 8-character backup codes above.</p>
         
         <!-- SCENARIO 2: SOCIAL 2FA -->
         <% } else if (method === 'social') { %>
-            <p style="color: var(--silver); margin-bottom: 25px;">Please verify your identity by logging into your linked social account.</p>
-            <a href="/auth/google" class="btn btn-primary" style="display:block; margin-bottom:10px; padding:15px;"><i class="fab fa-google"></i> Verify with Google</a>
-            <a href="/auth/github" class="btn btn-secondary" style="display:block; margin-bottom:10px; padding:15px;"><i class="fab fa-github"></i> Verify with GitHub</a>
-            <a href="/auth/microsoft" class="btn btn-secondary" style="display:block; padding:15px;"><i class="fab fa-windows"></i> Verify with Microsoft</a>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em;">Please verify your identity by logging into your linked social account.</p>
+            
+            <!-- We only show the button for the provider they selected during setup -->
+            <a href="/auth/google" class="social-verify-btn"><i class="fab fa-google"></i> Verify with Google</a>
+            <a href="/auth/github" class="social-verify-btn"><i class="fab fa-github"></i> Verify with GitHub</a>
+            <a href="/auth/microsoft" class="social-verify-btn"><i class="fab fa-windows"></i> Verify with Microsoft</a>
 
         <!-- SCENARIO 3: PASSKEY (WEBAUTHN) -->
         <% } else if (method === 'passkey') { %>
-            <p style="color: var(--silver); margin-bottom: 25px;">Use your device's biometric scanner (FaceID, TouchID) to login.</p>
-            <button id="auth-passkey-btn" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em;">Use your device's biometric scanner (FaceID, TouchID) to login securely.</p>
+            <button id="auth-passkey-btn" class="social-verify-btn" style="border-color: var(--gold); color: var(--gold);">
                 <i class="fas fa-fingerprint"></i> Scan Passkey
             </button>
             
@@ -49,17 +134,21 @@
                         const verification = await verificationResp.json();
                         if (verification.success) window.location.href = verification.redirect;
                         else alert('Passkey verification failed.');
-                    } catch (error) { alert("Passkey login cancelled or failed."); }
+                    } catch (error) { 
+                        // Often throws if user cancels the prompt
+                        console.log("Passkey login cancelled or failed."); 
+                    }
                 });
             </script>
         <% } %>
         
-        <!-- UNIVERSAL BACKUP CODE FALLBACK -->
+        <!-- UNIVERSAL BACKUP CODE FALLBACK (Only for Social/Passkey, since TOTP/Email share the main input) -->
         <% if (method === 'social' || method === 'passkey') { %>
-            <p style="margin-top: 20px; font-size: 0.9em; color: var(--silver);">Device lost? Use a backup code:</p>
-            <form action="/login/2fa/verify" method="POST" style="margin-top: 10px;">
-                <input type="text" name="token" placeholder="8-char Backup Code" maxlength="8" required style="width: 100%; padding: 10px; background: var(--black); color: var(--white); border: 1px solid #333; text-align: center; margin-bottom: 10px;">
-                <button type="submit" class="btn btn-secondary" style="width: 100%;">Use Backup Code</button>
+            <div class="divider">Device Lost?</div>
+            <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Use one of your 8-character backup codes.</p>
+            <form action="/login/2fa/verify" method="POST">
+                <input type="text" name="token" placeholder="Backup Code" maxlength="8" required style="width: 100%; padding: 12px; background: var(--black); color: var(--gold); border: 1px solid #333; text-align: center; margin-bottom: 15px; border-radius: 8px; font-family: monospace; font-size: 1.2em; outline: none; letter-spacing: 2px;">
+                <button type="submit" class="btn btn-secondary" style="width: 100%; padding: 10px; border: 2px solid #555; background: transparent; color: var(--silver); transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--white)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#555'; this.style.color='var(--silver)';">Use Backup Code</button>
             </form>
         <% } %>
 

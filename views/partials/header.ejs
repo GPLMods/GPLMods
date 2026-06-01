@@ -245,7 +245,7 @@
                 <div class="header-mobile-actions" style="display: flex; align-items: center; gap: 15px;">
                     <% if (user) { %>
                         <!-- ✅ FIX: Restored the "avatar-placeholder" class and removed inline styles! -->
-                        <a href="/profile" class="avatar-placeholder">
+                        <a href="/dashboard" class="avatar-placeholder">
                             <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
                         </a>
                     <% } %>
@@ -287,7 +287,6 @@
             <% if (user) { %>
                 <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
                 <li><a href="/community">Community Forums</a></li>
-                <li><a href="/my-uploads">My Uploads</a></li>
                 <li><a href="/upload">Upload A New Mod</a></li>
                 <li><a href="/community-chat">Community Chat</a></li>
                 <li><a href="/membership">Membership</a></li>

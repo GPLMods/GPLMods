@@ -32,8 +32,8 @@
                 
             </div>
 
-            <!-- ✅ FIX: Reliable Close Button (Hidden initially) -->
-            <button id="manual-close-btn" class="btn btn-secondary" style="display: none; margin-top: 15px; border: 1px solid #555; background: transparent; color: var(--silver); padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+            <!-- The Close Button -->
+            <button id="manual-close-btn" class="btn btn-secondary" style="display: none; margin-top: 15px; border: 1px solid #555; background: transparent; color: var(--silver); padding: 10px 20px; border-radius: 8px; transition: all 0.3s ease;">
                 Close & Continue
             </button>
             
@@ -48,6 +48,7 @@
             const playerContainer = document.getElementById('ad-player-container');
             const manualCloseBtn = document.getElementById('manual-close-btn');
             const backgroundAudio = document.getElementById('background-audio');
+            const videoEl = document.getElementById('fluid-video-id');
 
             if (!videoModal || !watchBtn || !playerContainer) return;
 
@@ -68,14 +69,18 @@
             }
 
             if (getCookie(adCookieName) === 'true') {
-                console.log("User watched video ad recently. Skipping.");
-                return; 
+                return; // Already watched recently
             }
 
             let myFP = null;
 
-            // --- 2. SHOW MODAL & PAUSE MUSIC ---
+            // --- 2. SHOW MODAL (Delayed by 1.5 Minutes = 90000ms) ---
+            const MODAL_DELAY_MS = 90000; 
+            
             setTimeout(() => { 
+                // Double check cookie in case they opened multiple tabs
+                if (getCookie(adCookieName) === 'true') return;
+
                 videoModal.style.display = 'flex';
                 setTimeout(() => videoModal.classList.add('show'), 10);
                 document.body.style.overflow = 'hidden'; 
@@ -84,7 +89,7 @@
                     backgroundAudio.dataset.adPaused = 'true';
                     backgroundAudio.pause();
                 }
-            }, 500);
+            }, MODAL_DELAY_MS);
 
             // --- 3. CLOSE MODAL LOGIC ---
             function closeAdModal() {
@@ -94,7 +99,7 @@
                 videoModal.classList.remove('show');
                 document.body.style.overflow = 'auto'; 
                 
-                setAdCookie(); // Set cookie when closed
+                setAdCookie(); // Set cookie when successfully closed
                 
                 setTimeout(() => { 
                     videoModal.style.display = 'none';
@@ -105,14 +110,20 @@
                 }, 300);
             }
 
-            // Bind the close function to the new manual button
             manualCloseBtn.addEventListener('click', closeAdModal);
 
-            // --- 4. HANDLE "PLAY VIDEO" CLICK ---
+            // --- 4. HANDLE "PLAY VIDEO" CLICK & SMART TIMERS ---
             watchBtn.addEventListener('click', () => {
                 
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
+
+                // Display close button immediately, but visually disable it
+                manualCloseBtn.style.display = 'inline-block';
+                manualCloseBtn.disabled = true;
+                manualCloseBtn.style.opacity = '0.4';
+                manualCloseBtn.style.cursor = 'not-allowed';
+                manualCloseBtn.textContent = 'Loading ad...';
 
                 myFP = fluidPlayer('fluid-video-id', {
                     "layoutControls": {
@@ -139,11 +150,68 @@
                     }
                 });
 
-                // ✅ FIX: Show the Close button after 8 seconds, regardless of what the ad is doing.
-                // This guarantees the user is never trapped, even if the ad throws a DOMException or fails to load.
-                setTimeout(() => {
-                    manualCloseBtn.style.display = 'inline-block';
-                }, 15000);
+                let adStarted = false;
+                let countdownTimer = null;
+                let countdownLeft = 30; // 30 second required watch time
+
+                // Helper function to unlock the button
+                function enableCloseButton() {
+                    clearInterval(countdownTimer);
+                    manualCloseBtn.disabled = false;
+                    manualCloseBtn.style.opacity = '1';
+                    manualCloseBtn.style.cursor = 'pointer';
+                    manualCloseBtn.style.borderColor = 'var(--gold)';
+                    manualCloseBtn.style.color = 'var(--gold)';
+                    manualCloseBtn.textContent = 'Close & Continue';
+                }
+
+                // 🔴 20-SECOND FALLBACK TIMER
+                // If ad blockers break the player entirely and it never plays, unlock after 20s
+                const fallbackTimer = setTimeout(() => {
+                    if (!adStarted) {
+                        console.log("Ad failed to load. Fallback triggered.");
+                        enableCloseButton();
+                    }
+                }, 20000);
+
+                // 🟢 30-SECOND COUNTDOWN TIMER
+                // Starts only when the video successfully begins playing
+                function startCountdown() {
+                    manualCloseBtn.textContent = `You can close in ${countdownLeft}s...`;
+                    countdownTimer = setInterval(() => {
+                        countdownLeft--;
+                        if (countdownLeft > 0) {
+                            manualCloseBtn.textContent = `You can close in ${countdownLeft}s...`;
+                        } else {
+                            enableCloseButton();
+                        }
+                    }, 1000);
+                }
+
+                // Hook into standard video events to detect player status
+                if (videoEl) {
+                    // Triggers when the ad (or fallback media) actually starts playing
+                    videoEl.addEventListener('playing', () => {
+                        if (!adStarted) {
+                            adStarted = true;
+                            clearTimeout(fallbackTimer); // Kill the 20s fallback
+                            startCountdown(); // Start the 30s countdown
+                        }
+                    });
+
+                    // If the video ends BEFORE the 30s countdown finishes, just unlock it instantly
+                    videoEl.addEventListener('ended', () => {
+                        enableCloseButton();
+                    });
+
+                    // If the video element throws a hard error, unlock it instantly
+                    videoEl.addEventListener('error', () => {
+                        if (!adStarted) {
+                            clearTimeout(fallbackTimer);
+                            enableCloseButton();
+                        }
+                    });
+                }
             });
         });
     </script>

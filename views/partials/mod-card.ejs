@@ -1,4 +1,6 @@
 <!-- views/partials/mod-card.ejs -->
+
+<!-- ✅ FIX 1: Removed the <a href="..."> wrapper from around the whole card! -->
 <div class="mod-card" data-platform="<%= file.category %>">
     
     <!-- Certification Tag -->
@@ -11,7 +13,7 @@
     <!-- Version Tag -->
     <div class="mod-type-tag"><%= file.version %></div>
     
-    <!-- Image Container (Clickable) -->
+    <!-- ✅ FIX 2: Wrapped ONLY the Image container in a link -->
     <a href="/<%= file.category %>/<%= file.slug || file._id %>" style="display: block; text-decoration: none; color: inherit;">
         <div class="mod-card-image">
             <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
@@ -19,9 +21,9 @@
     </a>
     
     <div class="mod-card-content">
-        <!-- Title (Clickable) -->
+        <!-- ✅ FIX 3: Wrapped ONLY the Title in a link -->
         <h3 title="<%= file.name %>">
-            <a href="/<%= file.category %>/<%= file.slug || file._id %>" style="color: inherit; text-decoration: none;">
+            <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link" style="color: inherit; text-decoration: none;">
                 <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
             </a>
         </h3>
@@ -31,7 +33,8 @@
             <p style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333; line-height: 1.4;">
                 <span style="color: var(--silver); font-size: 0.85em;">By: </span>
                 <strong style="color: var(--gold);">
-                    <a href="/users/<%= typeof slugify !== 'undefined' ? slugify(file.uploader) : file.uploader %>" class="meta-link notranslate" style="color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></a>
+                    <!-- Note: Z-index ensures this link is clickable over the title link -->
+                    <a href="/users/<%= typeof slugify !== 'undefined' ? slugify(file.uploader) : file.uploader %>" class="meta-link notranslate" style="position: relative; z-index: 20; color: inherit; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'"><%= file.uploader %></a>
                 </strong><br>
                 <span style="color: var(--silver); font-size: 0.8em; font-style: italic;"><%= timeAgo(file.updatedAt || file.createdAt) %></span>
             </p>
@@ -51,26 +54,52 @@
             <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
         </div>
 
-        <!-- Platform Tag -->
-        <div class="card-footer">
+        <!-- Platform Tag & View Count -->
+        <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center;">
             <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
                 <%= file.category.toUpperCase().replace('-', ' ') %>
             </span>
+            
+            <div class="view-count" style="display: flex; align-items: center; gap: 5px; color: var(--silver); font-size: 0.85em; font-weight: 600;" title="<%= file.views || 0 %> Views">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+                <%= typeof formatCompactNumber !== 'undefined' ? formatCompactNumber(file.views) : (file.views || 0) %>
+            </div>
         </div>
-    </div>
-
-    <!-- ======== NEW: ANIMATED OVERLAY ======== -->
-    <div class="download-overlay">
-        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
         
-        <!-- Only show Whitelist button if user is logged in -->
-        <% if (typeof user !== 'undefined' && user) { %>
-            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
-                <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
-                    Add to Whitelist
-                </button>
+    </div> <!-- Closes mod-card-content -->
+
+    <!-- ======== ANIMATED OVERLAY ======== -->
+    <!-- ✅ FIX 4: Ensure high z-index and point-events to allow clicks -->
+    <div class="download-overlay" style="pointer-events: auto;">
+        
+        <!-- View Mod Button -->
+        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
+        
+        <!-- Add to Wishlist Button -->
+        <% if (typeof user !== 'undefined' && user && user.whitelist) { %>
+            <% 
+                const isWhitelisted = user.whitelist.some(w => w.toString() === file._id.toString() || (w._id && w._id.toString() === file._id.toString())); 
+            %>
+            
+            <!-- ✅ FIX 5: Z-index 30 ensures this form is the top-most clickable element -->
+            <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 30;">
+                
+                <!-- We pass a hidden redirect url so the backend knows where to send us back to! -->
+                <input type="hidden" name="redirectUrl" value="back">
+
+                <% if (isWhitelisted) { %>
+                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit; color: var(--red); border-color: var(--red);">
+                        Remove from Wishlist
+                    </button>
+                <% } else { %>
+                    <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit;">
+                        Add to Wishlist
+                    </button>
+                <% } %>
             </form>
         <% } %>
     </div>
-    <!-- ======================================= -->
+    
 </div>

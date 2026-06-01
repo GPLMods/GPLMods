@@ -9,13 +9,74 @@
             Two-Factor Authentication is now enabled! <strong style="color: var(--red);">Please copy these 8 codes and save them in a secure password manager.</strong> If you lose your phone or email access, these are the ONLY way to recover your account. Each code can be used once.
         </p>
 
+        <!-- The Codes Grid -->
         <div style="background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <% codes.forEach(code => { %>
-                <span style="font-family: monospace; color: var(--gold); font-size: 1.2em; letter-spacing: 2px;"><%= code %></span>
+                <span class="recovery-code-item" style="font-family: monospace; color: var(--gold); font-size: 1.2em; letter-spacing: 2px;"><%= code %></span>
             <% }) %>
         </div>
 
-        <a href="/profile?success=2FA successfully activated!" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">I Have Saved These Codes</a>
+        <!-- Buttons Section -->
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- ✅ FIX: Added Download Button with proper texture -->
+            <button id="download-codes-btn" class="btn btn-secondary" style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid var(--silver); background: transparent; color: var(--silver); cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-file-download" style="margin-right: 8px;"></i> Download as .txt
+            </button>
+
+            <!-- Original Confirmation Button -->
+            <a href="/profile?success=2FA successfully activated!" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; text-decoration: none; font-weight: bold; transition: all 0.3s ease;">
+                I Have Saved These Codes
+            </a>
+        </div>
     </div>
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const downloadBtn = document.getElementById('download-codes-btn');
+
+        // Add hover effects for the secondary button dynamically
+        downloadBtn.addEventListener('mouseover', function() {
+            this.style.borderColor = 'var(--white)';
+            this.style.color = 'var(--white)';
+        });
+        downloadBtn.addEventListener('mouseout', function() {
+            this.style.borderColor = 'var(--silver)';
+            this.style.color = 'var(--silver)';
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            // 1. Gather all the codes from the HTML
+            const codeElements = document.querySelectorAll('.recovery-code-item');
+            let codesText = "GPL Mods - 2FA Recovery Backup Codes\n\n";
+            codesText += "Keep these safe! If you lose access to your authenticator or email, you will need these to log in.\nEach code can only be used ONCE.\n\n";
+            
+            codeElements.forEach((el, index) => {
+                codesText += `${index + 1}. ${el.textContent}\n`;
+            });
+
+            // 2. Create a "Blob" of text data
+            const blob = new Blob([codesText], { type: "text/plain" });
+
+            // 3. Create a temporary, invisible link
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `GPL_Mods_Recovery_Codes_${new Date().toISOString().split('T')[0]}.txt`; // e.g., GPL_Mods_Recovery_Codes_2026-05-22.txt
+
+            // 4. Force a click on the link to trigger the browser download
+            document.body.appendChild(link);
+            link.click();
+
+            // 5. Clean up the invisible link
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+
+            // Change button text to show it worked
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<i class="fas fa-check" style="color: var(--green); margin-right: 8px;"></i> Downloaded!';
+            setTimeout(() => { downloadBtn.innerHTML = originalText; }, 3000);
+        });
+    });
+</script>
+
 <%- include('../partials/footer') %>

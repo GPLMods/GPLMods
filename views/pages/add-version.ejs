@@ -1,53 +1,39 @@
 <%- include('../partials/header') %>
+<!-- Quill.js Theme (Snow) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
 <style>
-    /* ✅ FIX: Reusing the exact styles from upload.ejs for perfect consistency */
-    .upload-container { 
-        max-width: 700px; 
-        margin: 4rem auto; 
-        padding: 3rem 2rem; 
-        background-color: var(--dark-gray); 
-        border-radius: 12px; 
-        text-align: center;
-        border: 1px solid #333;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .form-group { text-align: left; margin-bottom: 20px; }
+    .upload-container { max-width: 700px; margin: 4rem auto; padding: 3rem 2rem; background-color: var(--dark-gray); border-radius: 12px; text-align: center; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .form-group { text-align: left; margin-bottom: 20px; position: relative; }
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
-    .form-group input[type="text"], .form-group input[type="url"], .form-group textarea {
-        width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333;
-        background-color: var(--black); color: var(--white); font-size: 1.1em;
-        font-family: 'Poppins', sans-serif; transition: all 0.3s ease; outline: none;
-    }
+    .form-group input[type="text"], .form-group input[type="url"], .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; outline: none; }
     .form-group input:focus, .form-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
-    .form-group textarea { min-height: 120px; resize: vertical; }
-    
-    .file-input-label { 
-        display: inline-block; padding: 15px 30px; background: transparent; 
-        color: var(--gold); border: 2px dashed var(--gold); border-radius: 8px; 
-        cursor: pointer; transition: all 0.3s ease; font-size: 1.2em; 
-        margin-bottom: 1rem; width: 100%; text-align: center;
-    }
+    .file-input-label { display: inline-block; padding: 15px 30px; background: transparent; color: var(--gold); border: 2px dashed var(--gold); border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-size: 1.2em; margin-bottom: 1rem; width: 100%; text-align: center; }
     .file-input-label:hover { background: rgba(255, 215, 0, 0.1); }
-    
-    .submit-button { 
-        display: block; width: 100%; background: var(--gold); color: var(--black); 
-        padding: 15px 20px; border-radius: 8px; font-weight: 700; font-size: 1.2em; 
-        border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); 
-        margin-top: 2rem; 
-    }
+    .submit-button { display: block; width: 100%; background: var(--gold); color: var(--black); padding: 15px 20px; border-radius: 8px; font-weight: 700; font-size: 1.2em; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); margin-top: 2rem; }
     .submit-button:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--glow-gold); }
     .submit-button:disabled { background-color: #555; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; }
-    
     #file-name-display { margin-top: 15px; color: var(--white); font-weight: 600; font-size: 1.1em; text-align: center; }
     
-    /* --- LIVE PROGRESS BAR STYLES --- */
+    /* Live Progress Bar */
     .progress-wrapper { display: none; margin-top: 25px; text-align: left; }
     .progress-container { width: 100%; background-color: var(--black); border: 1px solid #444; border-radius: 8px; height: 25px; overflow: hidden; position: relative; }
     .progress-bar { height: 100%; width: 0%; background-color: var(--gold); transition: width 0.2s ease; display: flex; align-items: center; justify-content: center; color: var(--black); font-weight: bold; font-size: 0.85em; white-space: nowrap; }
     .status-text { color: var(--silver); margin-top: 10px; font-size: 0.95em; text-align: center; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     .processing-pulse { animation: pulse 1.5s infinite; }
+
+    /* Custom Dropdown Styles */
+    .custom-select-wrapper { position: relative; user-select: none; width: 150px; }
+    .custom-select { position: relative; display: flex; flex-direction: column; background: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; padding: 12px 15px; color: var(--white); transition: border-color 0.3s; }
+    .custom-select-wrapper.open .custom-select { border-color: var(--blue); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(33, 150, 243, 0.3); }
+    .custom-select-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); transition: transform 0.3s; color: var(--silver); }
+    .custom-select-wrapper.open .custom-select-arrow { transform: translateY(-50%) rotate(180deg); color: var(--blue); }
+    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--blue); border-top: none; border-radius: 0 0 8px 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .custom-select-wrapper.open .custom-options { display: block; }
+    .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; }
+    .custom-option:hover { background-color: rgba(33, 150, 243, 0.2); color: var(--white); }
+    .custom-option.selected { color: var(--blue); font-weight: bold; }
 </style>
 
 <div class="container">
@@ -55,170 +41,174 @@
         <h2 style="color: var(--white); margin-bottom: 10px; font-size: 2.2em;">Update <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);"><%= parentFile.name %></span></h2>
         <p style="color: var(--silver); margin-bottom: 2.5rem;">Uploading a new version will make this file the primary download.</p>
         
-        <% if (typeof error !== 'undefined' && error) { %>
-            <div style="background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold;"><%= error %></div>
-        <% } %>
-
-        <!-- ✅ FIX: Added Distributor / Admin UI Logic -->
-        <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
-            <p style="color: var(--silver); margin-bottom: 1.5rem;">
-                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Account Active ★</span><br>
-                Choose your update method below.
-            </p>
+        <!-- ONE UNIFIED FORM -->
+        <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="unifiedAddVersionForm">
             
-            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
-                <button type="button" class="btn btn-primary" id="btn-show-link" style="flex: 1; padding: 10px;">Paste External Link(s)</button>
-                <button type="button" class="btn btn-secondary" id="btn-show-file" style="flex: 1; padding: 10px;">Upload to Cloud</button>
+            <!-- AUTO-FETCH TOGGLE -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: rgba(255, 215, 0, 0.05); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                <label class="switch" style="margin-bottom: 0;">
+                    <input type="checkbox" id="toggleAutoFetch">
+                    <span class="slider round"></span>
+                </label>
+                <label for="toggleAutoFetch" style="margin: 0; color: var(--gold); cursor: pointer; font-size: 1.1em;">Auto-Fetch Latest App Data from Store</label>
             </div>
 
-            <!-- External Link Form -->
-            <form action="/mods/<%= parentFile._id %>/add-version" method="POST" id="distributorUploadForm">
-                
-                <!-- We need these text fields for BOTH options -->
+            <!-- AUTO-FETCH CONTAINER -->
+            <div id="autoFetchContainer" style="display: none; background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the store link to automatically grab the latest "What's New" notes and requirements.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div class="filter-group">
+                        <select id="fetchPlatform" style="display: none;">
+                            <option value="playstore" selected>Play Store</option>
+                            <option value="appstore">App Store</option>
+                            <option value="steam">Steam</option>
+                            <option value="epic">Epic Games</option>
+                            <option value="wordpress">WordPress</option>
+                        </select>
+                        <div class="custom-select-wrapper" id="wrapper-fetchPlatform">
+                            <div class="custom-select"><span class="selected-text">Play Store</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                            <div class="custom-options">
+                                <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                <div class="custom-option" data-value="appstore">App Store</div>
+                                <div class="custom-option" data-value="steam">Steam</div>
+                                <div class="custom-option" data-value="epic">Epic Games</div>
+                                <div class="custom-option" data-value="wordpress">WordPress</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1;">
+                    <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch</button>
+                </div>
+                <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
+            </div>
+
+            <!-- CORE DETAILS -->
+            <div class="form-group">
+                <label for="softwareVersion">New Version Number*</label>
+                <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>What's New in this Version? (Optional)</label>
+                <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
+                <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
+                <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
-                    <label for="softwareVersion">New Version Number*</label>
-                    <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
+                    <label for="minOs">Minimum OS Required</label>
+                    <input type="text" id="minOs" name="minOs" value="<%= parentFile.minOs || '' %>">
                 </div>
                 <div class="form-group">
-                    <label for="whatsNew">What's New in this Version? (Optional)</label>
-                    <textarea id="whatsNew" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
+                    <label for="minAge">Age Rating</label>
+                    <input type="text" id="minAge" name="minAge" value="<%= parentFile.minAge || '' %>">
                 </div>
-            <!-- ONLY SHOW TO DISTRIBUTORS AND ADMINS -->
+            </div>
+
+            <!-- DISTRIBUTOR / ADMIN TOGGLES -->
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
-                <fieldset class="form-section">
-                    <legend>Security Scan Overrides</legend>
-                    <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Provide direct links to file scans (e.g., MalwareBazaar, VirusTotal File Scan) if the automated URL scanner cannot reach the actual file.</p>
-                    
-                    <div class="form-group">
-                        <label for="manualFileScanUrl">Manual File Scan URL (Optional)</label>
-                        <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" placeholder="https://virustotal.com/gui/file/...">
+                <div style="margin: 30px 0 20px 0; border-top: 1px solid #333; padding-top: 20px;">
+                    <p style="color: var(--silver); margin-bottom: 1.5rem;">
+                        <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Upload Method ★</span>
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
+                        <button type="button" class="btn btn-secondary" id="btn-show-file" style="flex: 1; padding: 10px;">Upload to Cloud</button>
+                        <button type="button" class="btn btn-primary" id="btn-show-link" style="flex: 1; padding: 10px;">Paste External Link(s)</button>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="manualSiteScanUrl">Manual Site Scan URL (Optional)</label>
-                        <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" placeholder="https://virustotal.com/gui/url/...">
-                    </div>
-                </fieldset>
-            <% } %>
+                </div>
 
-                <div class="form-group" style="text-align: left; margin-bottom: 15px; margin-top: 30px;">
-                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
-                        <label class="switch">
-                            <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
-                            <span class="slider round"></span>
-                        </label>
-                        <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">This update requires multiple download links (Multi-Part)</label>
+                <!-- External Link Section (Hidden by Default) -->
+                <div id="distributor-section" style="display: none;">
+                    <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                        <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
+                            <label class="switch">
+                                <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
+                                <span class="slider round"></span>
+                            </label>
+                            <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">Multiple links (Multi-Part)</label>
+                        </div>
                     </div>
 
-                    <div id="single-link-group" class="form-group" style="margin-top: 15px;">
+                    <div id="single-link-group" class="form-group">
                         <label for="externalUrl">External Download Link*</label>
-                        <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." required>
+                        <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/...">
                     </div>
                     
-                    <div id="multi-link-group" class="form-group" style="display: none; margin-top: 15px;">
+                    <div class="form-group" id="ipa-link-group">
+                        <label for="ipaDirectDownloadUrl">Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
+                        <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl">
+                    </div>
+                    
+                    <div id="multi-link-group" class="form-group" style="display: none;">
                         <label>Add Download Parts (Min 2)*</label>
                         <div id="parts-container">
-                            <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="margin-bottom: 10px;">
-                            <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="margin-bottom: 10px;">
+                            <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
+                            <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
                         </div>
-                        <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em; margin-top: 5px;">+ Add Another Part</button>
+                        <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em;">+ Add Part</button>
                     </div>
 
-                    <div class="form-group" style="margin-top: 15px;">
+                    <div class="form-group">
                         <label for="originalFilename">File Name (for display purposes)*</label>
-                        <input type="text" id="originalFilename" name="originalFilename" required value="<%= parentFile.name %>_Update">
+                        <!-- Pre-filled for convenience on updates -->
+                        <input type="text" id="originalFilename" name="originalFilename" value="<%= parentFile.originalFilename || parentFile.name %>">
                     </div>
+                    
+                    <% if (user.role === 'admin') { %>
+                        <div class="form-group" style="border: 1px solid #444; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <label style="color: var(--gold);">Admin Override: Security Scan Links</label>
+                            <input type="url" name="manualFileScanUrl" placeholder="File Scan URL (Optional)" style="margin-bottom: 10px;">
+                            <input type="url" name="manualSiteScanUrl" placeholder="Site Scan URL (Optional)">
+                        </div>
+                    <% } %>
                 </div>
+            <% } %>
 
-                <button type="submit" class="submit-button" id="distributorSubmitBtn">Publish Update</button>
-            </form>
-            
-            <!-- Standard File Upload Form (Hidden initially) -->
-            <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="initialUploadForm" style="display: none;">
-                
-                <!-- Text fields for file upload -->
-                <div class="form-group">
-                    <label for="softwareVersion2">New Version Number*</label>
-                    <input type="text" id="softwareVersion2" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="whatsNew2">What's New in this Version? (Optional)</label>
-                    <textarea id="whatsNew2" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
-                </div>
-
-                <p style="color: var(--silver); margin: 2rem 0 1rem 0; font-size: 0.9em;">Max File Size: Unlimited</p>
-                <div class="form-group">
-                    <label for="modFile" class="file-input-label" id="drop-zone">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
-                        Click to Choose New File
-                    </label>
-                    <input type="file" id="modFile" name="modFile" required style="display:none;" data-limit="999999999999">
-                    <div id="file-name-display">No file selected</div>
-                </div>
-                
-                <div class="progress-wrapper" id="progressWrapper">
-                    <div class="progress-container"><div class="progress-bar" id="progressBar">0%</div></div>
-                    <p class="status-text" id="statusText">Starting upload...</p>
-                </div>
-                <button type="submit" class="submit-button" id="submitBtn">Upload New Version</button>
-            </form>
-
-        <% } else { %>
-            <!-- ========================================== -->
-            <!-- STANDARD USER UPLOAD FORM (File Upload)    -->
-            <!-- ========================================== -->
-            <% 
-                let limitText = (user && user.membership === 'premium') ? "1 GB" : "300 MB";
-                let limitBytes = (user && user.membership === 'premium') ? 1073741824 : 314572800; 
-            %>
-            
-            <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="initialUploadForm">
-                
-                <div class="form-group">
-                    <label for="softwareVersion">New Version Number*</label>
-                    <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="whatsNew">What's New in this Version? (Optional)</label>
-                    <textarea id="whatsNew" name="whatsNew" placeholder="List the changes, bug fixes, or new features in this update."></textarea>
-                </div>
-
-                <p style="color: var(--gold); font-weight: bold; margin: 2rem 0 1rem 0;">Max File Size: <%= limitText %></p>
+            <!-- FILE UPLOAD SECTION (Visible by default) -->
+            <div id="file-upload-section">
+                <% 
+                    let limitText = (user && user.membership === 'premium') ? "1 GB" : "300 MB"; 
+                    let limitBytes = (user && user.membership === 'premium') ? 1073741824 : 314572800;
+                    if (user && (user.role === 'admin' || user.role === 'distributor')) { limitText = "Unlimited"; limitBytes = 999999999999; }
+                %>
+                <p style="color: var(--gold); font-weight: bold; margin: 1rem 0;">Max File Size: <%= limitText %></p>
                 
                 <div class="form-group">
                     <label for="modFile" class="file-input-label" id="drop-zone">
                         <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                         Click to Choose New File
                     </label>
-                    <!-- ✅ FIX: Passed the size limits correctly to the input -->
-                    <input type="file" id="modFile" name="modFile" required style="display:none;" data-limit="<%= limitBytes %>">
+                    <input type="file" id="modFile" name="modFile" style="display:none;" data-limit="<%= limitBytes %>">
                     <div id="file-name-display">No file selected</div>
                 </div>
                 
+                <!-- LIVE PROGRESS BAR UI -->
                 <div class="progress-wrapper" id="progressWrapper">
                     <div class="progress-container"><div class="progress-bar" id="progressBar">0%</div></div>
                     <p class="status-text" id="statusText">Starting upload...</p>
                 </div>
+            </div>
 
-                <button type="submit" class="submit-button" id="submitBtn">Upload New Version</button>
-            </form>
-        <% } %>
+            <button type="submit" class="submit-button" id="submitBtn">Publish Update</button>
+        </form>
     </div>
 </div>
 
-<!-- ======== NEW: CUSTOM ERROR MODAL ======== -->
+<!-- ERROR MODAL -->
 <div id="error-modal" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <i class="fas fa-exclamation-triangle" style="font-size: 3em; color: var(--red); margin-bottom: 15px;"></i>
         <h2 style="color: var(--white); margin-bottom: 15px;">Upload Error</h2>
         <p id="error-modal-msg" style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;"></p>
-        <button type="button" class="btn btn-primary" onclick="closeErrorModal()" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1.1em; background-color: var(--red); border: none;">Okay</button>
+        <button type="button" class="btn btn-primary" onclick="closeErrorModal()" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1.1em; background-color: var(--red); border: none; cursor: pointer;">Okay</button>
     </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
 <script>
-    // Helper to control the Error Modal
     function showErrorModal(message) {
         document.getElementById('error-modal-msg').textContent = message;
         const modal = document.getElementById('error-modal');
@@ -232,167 +222,120 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Role-Based Size Limit Check & Live Progress Bar ---
-        const fileInput = document.getElementById('modFile');
-        const fileNameDisplay = document.getElementById('file-name-display');
-        const form = document.getElementById('initialUploadForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const dropZone = document.getElementById('drop-zone');
-        const progressWrapper = document.getElementById('progressWrapper');
-        const progressBar = document.getElementById('progressBar');
-        const statusText = document.getElementById('statusText');
+        // --- 1. Quill Editor Init ---
+        var quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'List changes... If left blank, the old notes will be used.',
+            modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean'] ] }
+        });
+        const qlToolbar = document.querySelector('.ql-toolbar');
+        const qlContainer = document.querySelector('.ql-container');
+        if (qlToolbar) { qlToolbar.style.backgroundColor = '#222'; qlToolbar.style.borderColor = '#333'; qlToolbar.style.borderTopLeftRadius = '8px'; qlToolbar.style.borderTopRightRadius = '8px'; }
+        if (qlContainer) { qlContainer.style.borderColor = '#333'; qlContainer.style.borderBottomLeftRadius = '8px'; qlContainer.style.borderBottomRightRadius = '8px'; qlContainer.style.minHeight = '150px'; qlContainer.style.color = 'var(--white)'; qlContainer.style.fontFamily = "'Poppins', sans-serif"; qlContainer.style.fontSize = '1em'; }
 
-        if (fileInput && form && dropZone) {
-            fileInput.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    const file = this.files[0];
-                    const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                    const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
-                    
-                    if (file.size > maxLimit) {
-                        showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
-                        this.value = ''; 
-                        fileNameDisplay.textContent = 'No file selected';
-                        dropZone.style.borderColor = 'var(--red)';
-                        dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
-                        return;
-                    }
+        // --- 2. Custom Dropdown Init ---
+        function setupCustomSelect(wrapperId, nativeSelectId) {
+            const wrapper = document.getElementById(wrapperId);
+            const nativeSelect = document.getElementById(nativeSelectId);
+            if (!wrapper || !nativeSelect) return;
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
 
-                    fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
-                    dropZone.style.borderColor = 'var(--gold)';
-                    dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
-                }
+            customSelect.addEventListener('click', (e) => {
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
             });
 
-            // ✅ FIX: AJAX Form Submission for TRUE End-to-End Live Progress
-            form.addEventListener('submit', function(e) {
-                e.preventDefault(); 
-                if (fileInput.files.length === 0) return showErrorModal("Please select a file.");
-                
-                // Get the extra fields
-                const softwareVersion = document.getElementById(form.querySelector('input[name="softwareVersion"]').id).value;
-                const whatsNew = document.getElementById(form.querySelector('textarea[name="whatsNew"]').id).value;
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+                selectedText.textContent = optionEl.textContent;
+                nativeSelect.value = optionEl.getAttribute('data-value');
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+        }
+        setupCustomSelect('wrapper-fetchPlatform', 'fetchPlatform');
+        document.addEventListener('click', () => {
+            const w = document.getElementById('wrapper-fetchPlatform');
+            if (w) w.classList.remove('open');
+        });
 
-                if (!softwareVersion) return showErrorModal("Please provide the new version number.");
+        // --- 3. Auto Fetch Logic ---
+        const toggleAutoFetch = document.getElementById('toggleAutoFetch');
+        const autoFetchContainer = document.getElementById('autoFetchContainer');
+        const fetchBtn = document.getElementById('fetchBtn');
 
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Uploading...';
-                progressWrapper.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                progressBar.classList.remove('processing-pulse');
-                statusText.innerHTML = 'Uploading file to server...';
-
-                const formData = new FormData();
-                formData.append('modFile', fileInput.files[0]);
-                formData.append('softwareVersion', softwareVersion);
-                formData.append('whatsNew', whatsNew);
-                
-                const uploadId = 'up_' + Date.now();
-                formData.append('uploadId', uploadId);
-
-                const socket = io();
-                socket.on(`b2_progress_${uploadId}`, (data) => {
-                    const totalPercent = 50 + Math.round(data.percent / 2);
-                    progressBar.style.width = totalPercent + '%';
-                    progressBar.textContent = totalPercent + '%';
-                    statusText.innerHTML = `Transferring to Cloud Storage: ${data.loaded} MB / ${data.total} MB...`;
-                    
-                    if (data.percent === 100) {
-                        progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Finalizing update... Almost done!';
-                    }
-                });
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', form.action, true);
-
-                // --- 1. The Progress Tracking (Fixed) ---
-                xhr.upload.addEventListener('progress', function(event) {
-                    if (event.lengthComputable) {
-                        // The file uploading to YOUR server (RAM) is the first 50%
-                        const percentComplete = Math.round((event.loaded / event.total) * 50);
-                        progressBar.style.width = percentComplete + '%';
-                        progressBar.textContent = percentComplete + '%';
-
-                        if (percentComplete === 50) {
-                            statusText.innerHTML = 'Securing file in memory... connecting to cloud.';
-                        } else {
-                            statusText.innerHTML = `Uploading to Server RAM: ${percentComplete * 2}%`;
-                        }
-                    }
-                });
-
-                // --- 2. The Success/Redirect Handler (Fixed) ---
-                xhr.onload = function() {
-                    if (xhr.status >= 200 && xhr.status < 400) {
-                        // ✅ FIX: Force the browser to parse the response as JSON
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            
-                            if (res.success && res.redirectUrl) {
-                                // IMPORTANT: We must redirect to the NEW URL provided by the server!
-                                window.location.href = res.redirectUrl; 
-                            } else {
-                                showErrorModal(res.message || 'Upload finished, but server did not provide a redirect URL.');
-                                resetUI();
-                            }
-                        } catch(e) {
-                            // If JSON parsing fails completely, the server might have crashed
-                            // or returned an HTML error page instead of JSON.
-                            console.error("Failed to parse server response:", xhr.responseText);
-                            showErrorModal('Server returned an unexpected response. Please check your uploads dashboard.');
-                            resetUI();
-                        }
-                    } else {
-                        // Server returned a 400 or 500 error code
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            showErrorModal(res.message || 'Upload failed.');
-                        } catch(e) {
-                            showErrorModal(`Server error (${xhr.status}). The file might be too large.`);
-                        }
-                        resetUI();
-                    }
-                };
-
-                xhr.onerror = function() { 
-                    showErrorModal('A network error occurred. Please check your internet connection.'); 
-                    resetUI(); 
-                };
-                
-                // 3. Finally, send the data!
-                xhr.send(formData);
-
-            function resetUI() {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Upload New Version';
-                progressWrapper.style.display = 'none';
-                progressBar.classList.remove('processing-pulse');
-            }
+        if (toggleAutoFetch && autoFetchContainer) {
+            toggleAutoFetch.addEventListener('change', function() {
+                autoFetchContainer.style.display = this.checked ? 'block' : 'none';
+            });
         }
 
-        // --- 2. Distributor Form Toggles ---
+        if (fetchBtn) {
+            fetchBtn.addEventListener('click', async function() {
+                const platform = document.getElementById('fetchPlatform').value;
+                const url = document.getElementById('fetchUrl').value;
+                const statusSpan = document.getElementById('fetchStatus');
+
+                if (!url) { statusSpan.textContent = 'Please enter a URL first.'; statusSpan.style.color = 'var(--red)'; return; }
+
+                fetchBtn.disabled = true; fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...'; statusSpan.textContent = '';
+
+                try {
+                    const response = await fetch('/api/fetch-metadata', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url, platform })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        statusSpan.textContent = 'Data fetched successfully!'; statusSpan.style.color = 'var(--green)';
+                        if (result.data.whatsNew) quill.root.innerHTML = result.data.whatsNew;
+                        if (result.data.minOs) { const mo = document.getElementById('minOs'); if(mo) mo.value = result.data.minOs; }
+                        if (result.data.minAge) { const ma = document.getElementById('minAge'); if(ma) ma.value = result.data.minAge; }
+                    } else {
+                        statusSpan.textContent = result.error || 'Failed to fetch data.'; statusSpan.style.color = 'var(--red)';
+                    }
+                } catch (err) { statusSpan.textContent = 'Server error.'; statusSpan.style.color = 'var(--red)';
+                } finally { fetchBtn.disabled = false; fetchBtn.textContent = 'Fetch Data'; }
+            });
+        }
+
+        // --- 4. Distributor Toggles & Logic ---
         const btnShowLink = document.getElementById('btn-show-link');
         const btnShowFile = document.getElementById('btn-show-file');
-        const distLinkLib = document.getElementById('distributorUploadForm');
-        
-        if (btnShowLink && btnShowFile && distLinkLib && form) {
+        const fileSection = document.getElementById('file-upload-section');
+        const distSection = document.getElementById('distributor-section');
+        const modFileInput = document.getElementById('modFile');
+        const extUrlInput = document.getElementById('externalUrl');
+        const origNameInput = document.getElementById('originalFilename');
+        let currentMode = 'file'; 
+
+        if (btnShowLink && btnShowFile && distSection && fileSection) {
             btnShowLink.addEventListener('click', () => {
+                currentMode = 'link';
                 btnShowLink.classList.replace('btn-secondary', 'btn-primary');
                 btnShowFile.classList.replace('btn-primary', 'btn-secondary');
-                distLinkLib.style.display = 'block';
-                form.style.display = 'none';
+                distSection.style.display = 'block';
+                fileSection.style.display = 'none';
+                modFileInput.required = false; 
+                extUrlInput.required = true;
+                origNameInput.required = true;
             });
             btnShowFile.addEventListener('click', () => {
+                currentMode = 'file';
                 btnShowFile.classList.replace('btn-secondary', 'btn-primary');
                 btnShowLink.classList.replace('btn-primary', 'btn-secondary');
-                form.style.display = 'block';
-                distLinkLib.style.display = 'none';
+                fileSection.style.display = 'block';
+                distSection.style.display = 'none';
+                modFileInput.required = true; 
+                extUrlInput.required = false;
+                origNameInput.required = false;
             });
         }
 
-        // --- 3. Distributor Multi-Part Link Logic ---
         const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
         if (multiPartCheckbox) {
             const singleLinkGroup = document.getElementById('single-link-group');
@@ -427,6 +370,114 @@
                 partsContainer.appendChild(newInput);
             });
         }
+
+        // --- 5. File Selection & Form Submission Logic ---
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const form = document.getElementById('unifiedAddVersionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const dropZone = document.getElementById('drop-zone');
+        const progressWrapper = document.getElementById('progressWrapper');
+        const progressBar = document.getElementById('progressBar');
+        const statusText = document.getElementById('statusText');
+
+        modFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const file = this.files[0];
+                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
+                
+                if (file.size > maxLimit) {
+                    showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
+                    this.value = ''; 
+                    fileNameDisplay.textContent = 'No file selected';
+                    dropZone.style.borderColor = 'var(--red)';
+                    dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
+                    return;
+                }
+                fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
+                dropZone.style.borderColor = 'var(--gold)';
+                dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            
+            const contentHtml = quill.root.innerHTML;
+            document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
+
+            if (currentMode === 'file' && modFileInput.files.length === 0) {
+                return showErrorModal("Please select a file to upload.");
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Processing...';
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action, true);
+
+            // ONLY show progress bar if we are actually uploading a file
+            if (currentMode === 'file') {
+                progressWrapper.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.classList.remove('processing-pulse');
+                statusText.innerHTML = 'Uploading file to server...';
+
+                xhr.upload.addEventListener('progress', function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100); 
+                        progressBar.style.width = percentComplete + '%';
+                        progressBar.textContent = percentComplete + '%';
+                        if (percentComplete === 100) {
+                            progressBar.classList.add('processing-pulse');
+                            statusText.innerHTML = 'Processing update... Almost done!';
+                        }
+                    }
+                });
+            }
+
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success && res.redirectUrl) {
+                            window.location.href = res.redirectUrl; 
+                        } else {
+                            showErrorModal('Update finished, but server did not provide a redirect URL.');
+                            resetUI();
+                        }
+                    } catch(e) {
+                        window.location.href = '/my-uploads'; 
+                    }
+                } else {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        showErrorModal(res.message || 'Update failed.');
+                    } catch(e) {
+                        showErrorModal(`Server error (${xhr.status}).`);
+                    }
+                    resetUI();
+                }
+            };
+
+            xhr.onerror = function() { 
+                showErrorModal('A network error occurred. Please check your internet connection.'); 
+                resetUI(); 
+            };
+            
+            xhr.send(formData);
+
+            function resetUI() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Publish Update';
+                if (currentMode === 'file') {
+                    progressWrapper.style.display = 'none';
+                    progressBar.classList.remove('processing-pulse');
+                }
+            }
+        });
     });
 </script>
 

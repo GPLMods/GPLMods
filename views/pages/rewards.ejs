@@ -1,0 +1,218 @@
+<%- include('../partials/header') %>
+
+<style>
+    .rewards-container { max-width: 900px; margin: 4rem auto; }
+    
+    /* Header & Progress Box */
+    .status-box { background: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden; margin-bottom: 40px; }
+    .rank-glow { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 200px; height: 200px; border-radius: 50%; filter: blur(60px); opacity: 0.15; pointer-events: none; }
+    
+    .current-rank-title { font-size: 2.5em; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+    .points-display { font-size: 1.5em; color: var(--silver); margin-bottom: 30px; }
+    
+    /* Progress Bar */
+    .progress-bar-container { background: var(--black); border: 1px solid #444; border-radius: 20px; height: 30px; width: 100%; max-width: 600px; margin: 0 auto 15px auto; overflow: hidden; position: relative; }
+    .progress-fill { height: 100%; transition: width 1s ease-in-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: var(--black); font-weight: bold; font-size: 0.85em; }
+    .progress-labels { display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto; font-size: 0.9em; color: var(--silver); }
+
+    /* Rules & History Tables */
+    .info-section { background: var(--dark-gray); border-radius: 12px; padding: 25px; margin-bottom: 30px; border: 1px solid #333; }
+    .info-section h3 { color: var(--gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+    
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th, .history-table td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+    .history-table th { color: var(--silver); font-size: 0.9em; text-transform: uppercase; }
+    .history-table tr:hover { background: #1a1a1a; }
+    
+    .amt-positive { color: var(--green); font-weight: bold; }
+    .amt-negative { color: var(--red); font-weight: bold; }
+    .admin-note { display: block; font-size: 0.85em; color: var(--gold); margin-top: 5px; font-style: italic; background: rgba(255,215,0,0.05); padding: 5px 10px; border-left: 2px solid var(--gold); }
+
+    /* Custom Toast Notification */
+    #copy-toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px); /* Hidden by default */
+        background-color: var(--gold);
+        color: var(--black);
+        padding: 12px 25px;
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 1.1em;
+        box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+        z-index: 10000;
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    #copy-toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+</style>
+
+<main class="container">
+    <div class="rewards-container">
+        
+        <!-- ✅ NEW: Dynamic Back Button -->
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
+        </a>
+
+        <!-- Live Status & Progress Bar -->
+        <div class="status-box">
+            <div class="rank-glow" style="background-color: <%= currentRank.color %>;"></div>
+            
+            <% if (currentRank.lottie) { %>
+                <lottie-player src="/animations/<%= currentRank.lottie %>" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto;" loop autoplay></lottie-player>
+            <% } else { %>
+                <i class="fas fa-medal" style="font-size: 4em; color: <%= currentRank.color %>; margin-bottom: 20px;"></i>
+            <% } %>
+
+            <h1 class="current-rank-title" style="color: <%= currentRank.color %>; text-shadow: 0 0 15px <%= currentRank.color %>;"><%= currentRank.name %></h1>
+            <div class="points-display"><strong><%= currentPoints %></strong> Total Points</div>
+
+            <% if (nextRank) { %>
+                <div class="progress-bar-container">
+                    <div class="progress-fill" style="width: <%= progressPercent %>%; background-color: <%= currentRank.color %>;">
+                        <%= progressPercent %>%
+                    </div>
+                </div>
+                <div class="progress-labels">
+                    <span><%= currentRank.name %></span>
+                    <span><strong><%= pointsNeeded %> pts</strong> to <%= nextRank.name %></span>
+                </div>
+            <% } else { %>
+                <p style="color: var(--gold); font-weight: bold;">You have reached the maximum rank! Incredible work!</p>
+            <% } %>
+        </div>
+
+        <!-- How to Earn Points -->
+        <div class="info-section">
+            <h3>How to Earn Points</h3>
+            <ul style="color: var(--silver); line-height: 1.8; list-style-type: none; padding: 0;">
+                <li><strong style="color: var(--green);">+50 pts</strong> : Upload a new, working mod.</li>
+                <li><strong style="color: var(--green);">+25 pts</strong> : Provide an "Accepted Solution" in the Community Forums.</li>
+                <li><strong style="color: var(--green);">+20 pts</strong> : Write a detailed mod review.</li>
+                <li><strong style="color: var(--green);">+10 pts</strong> : Someone marks your review as Helpful.</li>
+                <li><strong style="color: var(--green);">+10 pts</strong> : Gain a new follower (Lose 10 if they unfollow).</li>
+                <li><strong style="color: var(--green);">+5 pts</strong> : Ask a new question in the Forums.</li>
+                <li><strong style="color: var(--green);">+2 pts</strong> : Reply to a question to help someone.</li>
+            </ul>
+        </div>
+
+        <!-- ======== UPDATED: REFERRAL SYSTEM ======== -->
+        <div class="info-section">
+            <h3 style="color: var(--gold); border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                <i class="fas fa-user-friends"></i> Refer & Earn
+            </h3>
+            
+            <p style="color: var(--silver); line-height: 1.6; margin-bottom: 25px;">
+                Invite your friends to GPL Mods and earn <strong><span style="color: var(--green);">+5 pts</span></strong> for every user who signs up and verifies their email!
+            </p>
+
+            <!-- Changed to Flex Column to stack nicely on Mobile -->
+            <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px;">
+                
+                <!-- 1. The Code & Stats (Now on Top) -->
+                <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-around;">
+                    <div style="text-align: center;">
+                        <span style="display: block; color: var(--silver); font-size: 0.85em; text-transform: uppercase;">Your Code</span>
+                        <strong style="color: var(--white); font-size: 1.8em; letter-spacing: 2px;"><%= user.referralCode || 'N/A' %></strong>
+                    </div>
+                    <div style="width: 1px; height: 50px; background-color: #333;"></div>
+                    <div style="text-align: center;">
+                        <span style="display: block; color: var(--silver); font-size: 0.85em; text-transform: uppercase;">Successful Referrals</span>
+                        <strong style="color: var(--green); font-size: 1.8em;"><%= user.referralCount || 0 %></strong>
+                    </div>
+                </div>
+
+                <!-- 2. The Link & Clipboard Button (Now on Bottom) -->
+                <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px dashed #444;">
+                    <label style="display: block; color: var(--silver); font-size: 0.9em; margin-bottom: 10px;">Your Referral Link</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="refLinkInput" readonly value="https://gplmods.webredirect.org/register?ref=<%= user.referralCode %>" style="width: 100%; padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: var(--gold); font-family: monospace; font-size: 1em; outline: none;">
+                        
+                        <!-- Clipboard Icon Button -->
+                        <button onclick="copyRefLink()" class="btn btn-primary" style="padding: 0 20px; font-size: 1.2em; border-radius: 6px; display: flex; align-items: center; justify-content: center;" title="Copy to Clipboard">
+                            <i class="fas fa-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            
+            <p style="font-size: 0.8em; color: #666; font-style: italic; text-align: center;">* Points are awarded automatically when your referred user successfully verifies their email address.</p>
+        </div>
+        <!-- ======================================== -->
+
+        <!-- Point History Ledger -->
+        <div class="info-section">
+            <h3>Your Point History</h3>
+            <% if (history && history.length > 0) { %>
+                <div style="overflow-x: auto;">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Activity</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% history.forEach(log => { %>
+                                <tr>
+                                    <td style="color: #888; font-size: 0.9em;"><%= new Date(log.createdAt).toLocaleDateString() %></td>
+                                    <td>
+                                        <strong style="color: var(--white);"><%= log.reason %></strong>
+                                        <% if (log.customMessage) { %>
+                                            <span class="admin-note"><i class="fas fa-crown"></i> Admin Note: <%= log.customMessage %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="<%= log.amount > 0 ? 'amt-positive' : 'amt-negative' %>">
+                                        <%= log.amount > 0 ? '+' : '' %><%= log.amount %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p style="text-align: center; color: #666; padding: 20px;">You haven't earned any points yet. Start contributing to see your history!</p>
+            <% } %>
+        </div>
+
+    </div>
+</main>
+
+<!-- ======== CUSTOM COPY TOAST NOTIFICATION ======== -->
+<div id="copy-toast">
+    <i class="fas fa-check-circle"></i> Referral Link Copied!
+</div>
+<!-- ================================================ -->
+
+<script>
+    function copyRefLink() {
+        // 1. Copy the text to clipboard
+        const copyText = document.getElementById("refLinkInput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        navigator.clipboard.writeText(copyText.value);
+        
+        // 2. Trigger the beautiful Toast Notification
+        const toast = document.getElementById("copy-toast");
+        
+        // Add the 'show' class to slide it up and fade it in
+        toast.classList.add("show");
+        
+        // Remove the 'show' class after 3 seconds to slide it back down
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3000);
+    }
+</script>
+
+<%- include('../partials/footer') %>

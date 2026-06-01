@@ -1,8 +1,8 @@
 <%- include('../partials/header') %>
 
-<!-- ✅ ADD QUILL.JS STYLES AND SCRIPT -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<!-- ✅ DOWNGRADED TO QUILL V1.3.7 FOR STABILITY -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
 
 <style>
     /* Your custom theme styles are now integrated */
@@ -339,7 +339,7 @@
         overflow-x: hidden;
     }
 
-    /* Custom styles for Quill */
+    /* ✅ UPDATED: Custom styles for Quill v1.3.7 */
     .ql-toolbar.ql-snow {
         background-color: #333;
         border-color: #444;
@@ -354,10 +354,22 @@
         font-size: 1em;
         min-height: 250px; 
     }
-    .ql-editor.ql-blank::before { color: #888; }
-    .ql-snow .ql-stroke { stroke: var(--silver); }
-    .ql-snow .ql-fill { fill: var(--silver); }
-    .ql-snow .ql-picker { color: var(--silver); }
+    .ql-editor.ql-blank::before { color: #888; font-style: normal; }
+    /* Fix toolbar icons colors */
+    .ql-snow .ql-stroke { stroke: var(--silver) !important; }
+    .ql-snow .ql-fill { fill: var(--silver) !important; }
+    .ql-snow .ql-picker { color: var(--silver) !important; }
+    .ql-snow .ql-picker-options { background-color: var(--dark-gray); border-color: #444; }
+    .ql-snow .ql-picker-item { color: var(--white); }
+    .ql-snow .ql-picker-item:hover { color: var(--gold); }
+    .ql-snow.ql-toolbar button:hover .ql-stroke, 
+    .ql-snow .ql-toolbar button:hover .ql-stroke, 
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke, 
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke { stroke: var(--gold) !important; }
+    .ql-snow.ql-toolbar button:hover .ql-fill, 
+    .ql-snow .ql-toolbar button:hover .ql-fill, 
+    .ql-snow.ql-toolbar button.ql-active .ql-fill, 
+    .ql-snow .ql-toolbar button.ql-active .ql-fill { fill: var(--gold) !important; }
 </style>
 
 <div class="container">
@@ -482,7 +494,7 @@
                     </div>
                 </div>
 
-                <!-- ======== NEW: DEPENDENCIES SECTION (WITH CUSTOM WRAPPER) ======== -->
+                <!-- ======== DEPENDENCIES SECTION ======== -->
                 <div class="form-group" id="arch-group" style="display: none; background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px;">
                     <label style="color: var(--gold);"><i class="fas fa-microchip"></i> Architecture Support <span id="arch-req-star" style="color: var(--red); display: none;">*</span></label>
                     <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Select all hardware architectures this file supports.</p>
@@ -512,21 +524,39 @@
             
             <fieldset class="form-section">
                 <legend>Descriptions</legend>
-<!-- ======== NEW: AUTO-FETCH METADATA UI ======== -->
+
+                <!-- ======== AUTO-FETCH METADATA UI ======== -->
                 <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                     <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
                     <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
                     
+                    <!-- ✅ UPDATED: Fetch Platform now uses custom-select -->
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <select id="fetchPlatform" style="padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none; width: 150px;">
-                            <option value="playstore">Play Store</option>
-                            <option value="appstore">App Store</option>
-                            <option value="steam">Steam</option>
-                            <option value="epic">Epic Games</option>
-                            <option value="wordpress">WordPress</option>
-                        </select>
-                        <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1; padding: 10px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
-                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch Data</button>
+                        <div style="width: 160px; z-index: 10;">
+                            <select id="fetchPlatform" style="display: none;">
+                                <option value="playstore" selected>Play Store</option>
+                                <option value="appstore">App Store</option>
+                                <option value="steam">Steam</option>
+                                <option value="epic">Epic Games</option>
+                                <option value="wordpress">WordPress</option>
+                            </select>
+                            <div class="custom-select-wrapper" id="fetchPlatformWrapper">
+                                <div class="custom-select" style="padding: 10px; height: 45px;">
+                                    <span class="selected-text" style="color: var(--white);">Play Store</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow" style="font-size: 0.8em;"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                    <div class="custom-option" data-value="appstore">App Store</div>
+                                    <div class="custom-option" data-value="steam">Steam</div>
+                                    <div class="custom-option" data-value="epic">Epic Games</div>
+                                    <div class="custom-option" data-value="wordpress">WordPress</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
+                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; height: 45px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch Data</button>
                     </div>
                     <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
                 </div>
@@ -563,15 +593,14 @@
                 </div>
             </fieldset>
 
-                <!-- ======== ✅ FIX: UNIVERSAL DIRECT CLOUD LINK ======== -->
+                <!-- ======== DIRECT CLOUD LINK ======== -->
                 <div class="form-group" id="direct-link-group" style="background: rgba(0, 122, 255, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #007AFF; margin-bottom: 25px;">
                     <label for="directDownloadUrl" style="color: var(--white);"><i class="fas fa-link"></i> Direct Cloud Link (Dropbox, etc.) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                    <!-- Make sure the value attribute is populated for the edit-mod.ejs page -->
                     <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.zip?dl=1" value="<%= typeof file !== 'undefined' ? file.directDownloadUrl : '' %>">
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">A direct streamable link. Enables 1-Click repo installs for iOS/Android, and acts as a fast mirror for all platforms.</span>
                 </div>
                 <!-- ======================================================== -->
-                <!-- ======== NEW: JAILBREAK PACKAGE ID ======== -->
+                <!-- ======== JAILBREAK PACKAGE ID ======== -->
                 <div class="form-group" id="pkg-id-group" style="display: none; background: rgba(255, 149, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #FF9500; margin-bottom: 25px;">
                     <label for="iosPackageId" style="color: var(--white);"><i class="fas fa-box-open"></i> Jailbreak Package ID <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
                     <input type="text" id="iosPackageId" name="iosPackageId" placeholder="e.g., com.spark.snowboard">
@@ -792,6 +821,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const nativeAgeRatingSelect = document.getElementById('ageRating');
     const archWrapper = document.getElementById('archWrapper');
     const archCustomSelect = document.getElementById('archCustomSelect');
+    // --- ✅ ADDED FOR FETCH SELECT ---
+    const fetchPlatformWrapper = document.getElementById('fetchPlatformWrapper');
+    const nativeFetchPlatformSelect = document.getElementById('fetchPlatform');
 
     function setupCustomSelect(wrapper, nativeSelect) {
         if (!wrapper || !nativeSelect) return;
@@ -848,6 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(platformWrapper, nativePlatformSelect);
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
+    setupCustomSelect(fetchPlatformWrapper, nativeFetchPlatformSelect); // ✅ INIT FETCH DROPDOWN
 
     if (nativeAgeRatingSelect && ageRatingWrapper) {
         const currentValue = nativeAgeRatingSelect.value;
@@ -935,7 +968,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
             const pkgIdGroup = document.getElementById('pkg-id-group');
-            // const ipaLinkGroup = document.getElementById('ipa-link-group'); // Uncomment if you add this back
 
             if (archMap[selectedPlatform]) {
                 if(archGroup) archGroup.style.display = 'block';
@@ -1000,7 +1032,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (pkgIdGroup) pkgIdGroup.style.display = (selectedPlatform === 'ios-jailbroken') ? 'block' : 'none';
-            // if (ipaLinkGroup) ipaLinkGroup.style.display = (selectedPlatform === 'ios-jailed') ? 'block' : 'none';
         });
 
         // Initial trigger

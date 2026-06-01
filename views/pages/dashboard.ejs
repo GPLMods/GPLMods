@@ -1,0 +1,101 @@
+<%- include('../partials/header') %>
+<style>
+    .dashboard-header { text-align: center; padding: 50px 20px 30px; }
+    .dashboard-header h1 { font-size: 2.5em; color: var(--white); }
+    .dashboard-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    
+    .dashboard-user-card { display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 900px; margin: 0 auto 40px auto; }
+    .dashboard-user-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); }
+    .dashboard-user-info { min-width: 0; /* ✅ FIX: Allows text wrapping inside flex containers */ flex-grow: 1; }
+    .dashboard-user-info h2 { margin: 0; color: var(--white); font-size: 1.5em; word-wrap: break-word; }
+    
+    /* ✅ FIX: Force long email addresses to wrap to the next line! */
+    .dashboard-user-info p { 
+        margin: 0; 
+        color: var(--silver); 
+        word-wrap: break-word; 
+        overflow-wrap: break-word; 
+        word-break: break-all; /* Best for emails */
+    }
+    
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto 60px auto; }
+    .dash-card { background: var(--dark-gray); border: 1px solid #333; border-radius: 12px; padding: 25px 20px; text-align: center; text-decoration: none; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .dash-card:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 5px 20px var(--glow-gold); }
+    .dash-card i { font-size: 2.5em; color: var(--gold); margin-bottom: 10px; }
+    .dash-card h3 { color: var(--white); margin: 0; font-size: 1.2em; }
+    .dash-card p { color: var(--silver); margin: 0; font-size: 0.85em; }
+
+    @media (max-width: 480px) {
+        .dashboard-user-card { flex-direction: column; text-align: center; }
+    }
+</style>
+
+<main class="container">
+    <div class="dashboard-header">
+        <h1>Your <span>Dashboard</span></h1>
+    </div>
+
+    <!-- ✅ ADDED: Dynamic Back Button -->
+    <div style="max-width: 900px; margin: 0 auto 20px auto;">
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
+        </a>
+    </div>
+
+    <div class="dashboard-user-card">
+        <img src="<%= user.signedAvatarUrl %>" alt="Avatar">
+        <div class="dashboard-user-info">
+            <h2>Welcome back, <%= user.username %>!</h2>
+            <p><%= user.email %></p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <a href="/profile" class="dash-card">
+            <i class="fas fa-user-edit"></i>
+            <h3>Edit My Profile</h3>
+            <p>Update avatar, bio, and details.</p>
+        </a>
+        <a href="/my-uploads" class="dash-card">
+            <i class="fas fa-cloud-upload-alt" style="color: var(--blue);"></i>
+            <h3>My Uploads</h3>
+            <p>Manage your submitted mods.</p>
+        </a>
+        <a href="/wishlist" class="dash-card">
+            <i class="fas fa-heart" style="color: var(--red);"></i>
+            <h3>My Wishlist</h3>
+            <p>View your saved mods.</p>
+        </a>
+        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
+            <i class="fas fa-id-badge" style="color: var(--silver);"></i>
+            <h3>Public Profile</h3>
+            <p>See how others view your page.</p>
+        </a>
+        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
+            <i class="fas fa-users" style="color: #9c27b0;"></i>
+            <h3>Community / Followers</h3>
+            <p>View your audience.</p>
+        </a>
+        <a href="/notifications" class="dash-card">
+            <i class="fas fa-envelope" style="color: #4caf50;"></i>
+            <h3>Inbox & Alerts</h3>
+            <p>Admin messages and updates.</p>
+        </a>
+        <a href="/rewards" class="dash-card">
+            <i class="fas fa-star" style="color: #ff9800;"></i>
+            <h3>Points History</h3>
+            <p>View your forum rank progress.</p>
+        </a>
+        <a href="/my-stats" class="dash-card">
+            <i class="fas fa-chart-bar" style="color: #00bcd4;"></i>
+            <h3>Statistics</h3>
+            <p>Analytics for your uploads.</p>
+        </a>
+        <a href="/settings" class="dash-card" style="border-color: #555;">
+            <i class="fas fa-cog" style="color: var(--silver);"></i>
+            <h3>Additional Settings</h3>
+            <p>2FA, Newsletter, Logout & Security.</p>
+        </a>
+    </div>
+</main>
+<%- include('../partials/footer') %>

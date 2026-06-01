@@ -1,5 +1,23 @@
 <%- include('../partials/header') %>    
 
+<style>
+    /* Custom Dropdown Styles (Reused from forum-ask) */
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .custom-select { position: relative; display: flex; flex-direction: column; background: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; padding: 12px 15px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: border-color 0.3s; }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+    .custom-select-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); transition: transform 0.3s; color: var(--silver); }
+    .custom-select-wrapper.open .custom-select-arrow { transform: translateY(-50%) rotate(180deg); color: var(--gold); }
+    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 20; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .custom-select-wrapper.open .custom-options { display: block; }
+    .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; }
+    .custom-option:hover { background-color: rgba(255, 215, 0, 0.1); color: var(--white); }
+    .custom-option.selected { color: var(--gold); font-weight: bold; }
+    
+    /* Layout Adjustments */
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
+    .email-note { font-size: 0.85rem; color: #ffadad; margin-top: 8px; font-style: italic; }
+</style>
+
 <main>
     <div class="page-header">
         <div class="container">
@@ -8,32 +26,21 @@
     </div>
     
     <div class="container">
+        
+        <!-- ✅ ADDED: Dynamic Back Button -->
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
+        </a>
+
         <div class="edit-profile-layout">
             <!-- Profile Details Form -->
             <section class="form-section">
-                <h2>Profile Details</h2>
                 
-                <!-- ✅ ADDED: The Missing Public Profile Link -->
-                <p style="text-align: center; font-size: 0.9em; color: var(--silver); margin-bottom: 20px;">
-                    Your public profile is available at:<br>
-                    <a href="/users/<%= slugify(user.username) %>" target="_blank" style="color: var(--gold); text-decoration: underline;">
-                        gplmods.webredirect.org/users/<%= slugify(user.username) %>
-                    </a>
-                </p>
-
                 <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section" id="avatar-form">
-                    <!-- ✅ ADDED: Dynamic Border Color & Lottie Badge -->
                     <div class="avatar-preview-wrapper" style="position: relative; margin: 0 auto 20px auto; width: 150px; height: 150px;">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview"
                              style="border-color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 25px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
                         
-                        <!-- Lottie Rank Badge -->
-                        <% if (user.forumRank && user.forumRank.lottie) { %>
-                            <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                                <lottie-player src="/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 45px; height: 45px; transform: scale(1.3);" loop autoplay></lottie-player>
-                            </div>
-                        <% } %>
-
                         <label for="avatar-input" class="avatar-edit-button" title="Change Avatar" style="z-index: 11;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--black)">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -41,71 +48,94 @@
                         </label>
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>
-                    
                     <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
                 </form>
 
-                <h3 class="current-username notranslate" style="text-align: center; margin-bottom: 5px;"><%= user.username %></h3>
-                
-                <!-- ✅ ADDED: Display the Rank Name nicely under the Username -->
-                <p style="text-align: center; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 20px; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
-                    <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints %> pts)
-                </p>
-                <div class="profile-actions">
-                    <a href="/my-uploads" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Mod Upload History</a>
-                    <a href="/users/<%= slugify(user.username) %>" class="submit-button secondary-button" style="text-align: center; text-decoration: none;">View Your Public User Profile</a>
-                    
-                    <button type="button" id="logout-btn" class="submit-button" style="text-align: center; text-decoration: none; background: transparent; border: 2px solid var(--red); color: var(--red); box-shadow: none; margin-top: 10px; font-family: inherit; cursor: pointer;">
-                        <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Log Out Securely
-                    </button>
-                </div>
-                
-                <hr style="border-color: #333; margin: 30px 0;">
-                <!-- 2FA Toggle -->
-                <div style="background-color: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3 style="margin: 0; color: var(--gold);"><i class="fas fa-shield-alt"></i> Two-Factor Auth (2FA)</h3>
-                        <p style="margin: 0; font-size: 0.85em; color: var(--silver);">Add an extra layer of security to your account.</p>
+                <% if (user.forumRank && user.forumRank.lottie) { %>
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
+                        <lottie-player src="/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
                     </div>
-                    <form action="<%= user.twoFactorEnabled ? '/account/2fa/disable' : '/account/2fa/setup' %>" method="<%= user.twoFactorEnabled ? 'POST' : 'GET' %>" style="margin: 0;">
-                        <label class="switch">
-                            <input type="checkbox" onChange="this.form.submit()" <%= user.twoFactorEnabled ? 'checked' : '' %>>
-                            <span class="slider round"></span>
-                        </label>
-                    </form>
-                </div>
+                <% } %>
+
+                <h3 class="current-username notranslate" style="text-align: center; margin-bottom: 5px; font-size: 2em;"><%= user.username %></h3>
+                <p style="text-align: center; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 30px; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                    <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints || 0 %> pts)
+                </p>
 
                 <form action="/account/update-details" method="POST">
+                    
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text" id="username" name="username" value="<%= user.username %>" required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="bio">Your Bio</label>
                         <textarea id="bio" name="bio" placeholder="Tell us a little about yourself..."><%= user.bio || '' %></textarea>
                     </div>
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label for="age">Your Age</label>
-                        <input type="number" id="age" name="age" value="<%= user.age || '' %>" min="13" max="120" style="...">
-                        <p style="font-size: 0.8rem; color: var(--silver);">Required to download 18+ content.</p>
-                    </div>
+
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" value="<%= user.email %>" required>
-                         <p class="email-note">Note: Changing your email will require re-verification and you will be logged out.</p>
+                         <p class="email-note"><i class="fas fa-exclamation-triangle"></i> Changing your email will require re-verification and log you out.</p>
                     </div>
-    <!-- ======== NEW: Date of Birth Input ======== -->
-    <div class="form-group" style="margin-bottom: 1rem;">
-        <label for="dateOfBirth">Date of Birth</label>
-        <!-- Extract just the YYYY-MM-DD part for the input value -->
-        <input type="date" id="dateOfBirth" name="dateOfBirth" value="<%= user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : '' %>" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; color-scheme: dark;">
-        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access 18+ content.</p>
-    </div>
-    <!-- ========================================== -->
-                    <button type="submit" class="submit-button">Save Profile Changes</button>
+
+                    <div class="form-group">
+                        <label for="dateOfBirth">Date of Birth</label>
+                        <input type="date" id="dateOfBirth" name="dateOfBirth" value="<%= user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '' %>" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; color-scheme: dark;">
+                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access 18+ content.</p>
+                    </div>
+
+                    <!-- ======== CUSTOM COUNTRY SELECTOR ======== -->
+                    <div class="form-group">
+                        <label for="country">Country (Optional)</label>
+                        
+                        <!-- Hidden native select for form submission -->
+                        <select id="country" name="country" style="display: none;">
+                            <option value="" <%= !user.country ? 'selected' : '' %>>Select your country...</option>
+                            <option value="US" <%= user.country === 'US' ? 'selected' : '' %>>United States 🇺🇸</option>
+                            <option value="IN" <%= user.country === 'IN' ? 'selected' : '' %>>India 🇮🇳</option>
+                            <option value="GB" <%= user.country === 'GB' ? 'selected' : '' %>>United Kingdom 🇬🇧</option>
+                            <option value="BR" <%= user.country === 'BR' ? 'selected' : '' %>>Brazil 🇧🇷</option>
+                            <option value="ID" <%= user.country === 'ID' ? 'selected' : '' %>>Indonesia 🇮🇩</option>
+                            <option value="RU" <%= user.country === 'RU' ? 'selected' : '' %>>Russia 🇷🇺</option>
+                            <option value="GLOBAL" <%= user.country === 'GLOBAL' ? 'selected' : '' %>>Earth 🌍</option>
+                        </select>
+
+                        <!-- Custom UI Wrapper -->
+                        <div class="custom-select-wrapper" id="wrapper-country">
+                            <div class="custom-select">
+                                <span class="selected-text">
+                                    <% 
+                                        let currentDisplay = 'Select your country...';
+                                        if (user.country === 'US') currentDisplay = 'United States 🇺🇸';
+                                        if (user.country === 'IN') currentDisplay = 'India 🇮🇳';
+                                        if (user.country === 'GB') currentDisplay = 'United Kingdom 🇬🇧';
+                                        if (user.country === 'BR') currentDisplay = 'Brazil 🇧🇷';
+                                        if (user.country === 'ID') currentDisplay = 'Indonesia 🇮🇩';
+                                        if (user.country === 'RU') currentDisplay = 'Russia 🇷🇺';
+                                        if (user.country === 'GLOBAL') currentDisplay = 'Earth 🌍';
+                                    %>
+                                    <%= currentDisplay %>
+                                </span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <div class="custom-option <%= user.country === 'US' ? 'selected' : '' %>" data-value="US">United States 🇺🇸</div>
+                                <div class="custom-option <%= user.country === 'IN' ? 'selected' : '' %>" data-value="IN">India 🇮🇳</div>
+                                <div class="custom-option <%= user.country === 'GB' ? 'selected' : '' %>" data-value="GB">United Kingdom 🇬🇧</div>
+                                <div class="custom-option <%= user.country === 'BR' ? 'selected' : '' %>" data-value="BR">Brazil 🇧🇷</div>
+                                <div class="custom-option <%= user.country === 'ID' ? 'selected' : '' %>" data-value="ID">Indonesia 🇮🇩</div>
+                                <div class="custom-option <%= user.country === 'RU' ? 'selected' : '' %>" data-value="RU">Russia 🇷🇺</div>
+                                <div class="custom-option <%= user.country === 'GLOBAL' ? 'selected' : '' %>" data-value="GLOBAL">Earth 🌍</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ======================================= -->
+
+                    <button type="submit" class="submit-button" style="margin-top: 30px;">Save Profile Changes</button>
                 </form>
             </section>
-
             <!-- Change Password Form -->
             <section class="form-section">
                 <% if (user.password) { %>
@@ -142,161 +172,49 @@
                     </form>
                 <% } %>
             </section>
-
- <!-- ======== NEW: WHITELIST / FAVORITES SECTION ======== -->
-            <section class="form-section" style="grid-column: 1 / -1; padding-bottom: 40px;">
-                <h2>Your Whitelist</h2>
-                <p style="color: var(--silver); margin-bottom: 20px;">Mods you have saved for later.</p>
-                
-                <% if (user.whitelist && user.whitelist.length > 0) { %>
-                    <!-- Reusing the horizontal carousel from the homepage -->
-                    <div class="mod-carousel" style="padding-bottom: 20px;">
-                        <% user.whitelist.forEach(file => { %>
-                            
-                            <div class="mod-card" style="flex: 0 0 250px; max-width: 250px;">
-                                
-                                <% if (file.certification === 'certified') { %>
-                                    <div class="app-feature-tag">✔ Certified</div>
-                                <% } else if (file.certification === 'community-tested') { %>
-                                    <div class="app-feature-tag" style="background-color: var(--silver);">Community Tested</div>
-                                <% } %>
-                                
-                                <div class="mod-type-tag"><%= file.version %></div>
-                                
-                                <div class="mod-card-image">
-                                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
-                                </div>
-                                
-                                <div class="mod-card-content">
-                                    <h3>
-                                        <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link"><%= file.name %></a>
-                                    </h3>
-                                    <p><%= file.developer %></p>
-                                    <div class="rating">
-                                        <div class="stars-outer">
-                                            <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
-                                        </div>
-                                        <span class="rating-text"><%= file.averageRating.toFixed(1) %></span>
-                                    </div>
-                                    
-                                    <div class="card-footer">
-                                        <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                                            <%= file.category.toUpperCase().replace('-', ' ') %>
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <div class="download-overlay">
-                                    <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 10;">View Mod</a>
-                                    <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin: 0; width: 100%; position: relative; z-index: 10;">
-                                        <button type="submit" class="overlay-button overlay-btn-secondary" style="width: 100%; border: none; cursor: pointer; font-family: inherit; color: var(--red); border-color: var(--red);">
-                                            Remove from Whitelist
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            
-                        <% }) %>
-                    </div>
-                <% } else { %>
-                    <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed #444;">
-                        <!-- ======== CUSTOM LOTTIE BROKEN HEART ANIMATION ======== -->
-            <lottie-player 
-                src="/animations/broken-heart.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 0, 0.5));" 
-               loop autoplay>
-            </lottie-player>
-            <!-- ========================================================== -->
-                        <h3 style="color: var(--silver);">Your Whitelist is Empty</h3>
-                        <p style="color: #777; font-size: 0.9em;">Explore the site and click "Add to Whitelist" on any mod to save it here!</p>
-                    </div>
-                <% } %>
-            </section>
-
-            <!-- Danger Zone for Deleting Account -->
-            <section class="form-section danger-zone">
-                <h2>Danger Zone</h2>
-                <p>Deleting your account is a permanent action. All of your uploaded mods, comments, and personal data will be removed forever. This action cannot be undone.</p>
-                <form action="/account/delete" method="POST" id="delete-account-form">
-                    
-                    <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                        <label class="switch">
-                            <input type="checkbox" id="preserve-mods" name="preserveMods" value="true">
-                            <span class="slider round"></span>
-                        </label>
-                        <label for="preserve-mods" style="margin-bottom: 0; cursor: pointer; color: var(--white);">Preserve my uploaded mods.</label>
-                    </div>
-                    
-                    <p>If checked, your uploads will remain on the site and the author will be changed to "GPL Community". Otherwise, all your uploads will be deleted with your account.</p>
-                    
-                    <!-- Moved the button OUTSIDE the checkbox group -->
-                    <button type="submit" class="submit-button delete-button" style="margin-top: 20px;">Delete My Account</button>
-                </form>
-            </section>
         </div>
     </div>
 </main>
 
-<!-- ======== CUSTOM LOGOUT MODAL ======== -->
-<div id="logout-modal-container" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        
-        <i class="fas fa-sign-out-alt" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
-        <h2 style="color: var(--white); margin-bottom: 15px;">Ready to leave?</h2>
-        
-        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
-            Are you sure you want to log out of your account? You will need to enter your credentials next time you visit.
-        </p>
-        
-        <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-            <a href="/logout" class="policy-button" style="background-color: var(--gold); color: var(--black); padding: 10px 25px; border-radius: 20px; font-weight: bold; text-decoration: none; cursor: pointer; font-size: 1em; box-shadow: 0 0 15px var(--glow-gold);">Yes, Log Out</a>
-            <button type="button" class="policy-button decline" id="cancelLogoutBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 1em;">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- ======== CUSTOM SECURE DELETE MODAL ======== -->
-<div id="delete-modal-container" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        
-        <!-- STEP 1: Warning -->
-        <div id="delete-step-1">
-            <h2 style="color: var(--red); margin-bottom: 15px;">Delete Account?</h2>
-            <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">
-                Are you sure? We will send an email with a 6-digit confirmation code to verify this request.
-            </p>
-            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-                <button type="button" class="policy-button" id="sendDeleteCodeBtn" style="background-color: var(--red); color: var(--white); border: none;">Send Code</button>
-                <button type="button" class="policy-button decline cancelDeleteBtn">Cancel</button>
-            </div>
-        </div>
-
-        <!-- STEP 2: OTP Verification -->
-        <div id="delete-step-2" style="display: none;">
-            <h2 style="color: var(--red); margin-bottom: 15px;">Enter Confirmation Code</h2>
-            <p style="margin-bottom: 20px; color: var(--silver); font-size: 0.9em;">
-                A code was sent to your email. Enter it below to permanently delete your account.
-            </p>
-            <input type="text" id="delete-otp-input" placeholder="000000" style="width: 100%; text-align: center; letter-spacing: 5px; font-size: 1.5em; padding: 15px; border-radius: 8px; border: 1px solid var(--red); background: var(--black); color: var(--white); margin-bottom: 20px;">
-            <p id="delete-error" style="color: var(--red); font-size: 0.85em; display: none; margin-top: -10px; margin-bottom: 10px;"></p>
-            
-            <div class="policy-buttons" style="display: flex; gap: 15px; justify-content: center;">
-                <button type="button" class="policy-button" id="confirmFinalDeleteBtn" style="background-color: var(--red); color: var(--white); border: none;">Confirm Deletion</button>
-                <button type="button" class="policy-button decline cancelDeleteBtn">Cancel</button>
-            </div>
-        </div>
-
-    </div>
-</div>
-</div>
-
 <script>
-    // ✅ FIX: ENTIRE SCRIPT IS NOW PROPERLY NESTED INSIDE ONE DOMContentLoaded FUNCTION
     document.addEventListener('DOMContentLoaded', function() {
         
-        // --- 1. Live Avatar Preview Logic ---
+        // --- Custom Dropdown Logic ---
+        const wrapper = document.getElementById('wrapper-country');
+        const nativeSelect = document.getElementById('country');
+        
+        if (wrapper && nativeSelect) {
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            customSelect.addEventListener('click', (e) => {
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+                
+                // Update UI text
+                selectedText.textContent = optionEl.textContent;
+                // Update hidden select value
+                nativeSelect.value = optionEl.getAttribute('data-value');
+                
+                // Update styling
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+
+            // Close dropdown if clicking outside
+            document.addEventListener('click', () => {
+                wrapper.classList.remove('open');
+            });
+        }
+
+        // --- Live Avatar Preview Logic ---
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
         const saveAvatarBtn = document.getElementById('save-avatar-btn');
@@ -321,102 +239,6 @@
                  saveAvatarBtn.textContent = 'Uploading...';
             });
         }
-
-        // --- SECURE DELETE MODAL LOGIC ---
-        const deleteForm = document.getElementById('delete-account-form');
-        const deleteModal = document.getElementById('delete-modal-container');
-        const step1 = document.getElementById('delete-step-1');
-        const step2 = document.getElementById('delete-step-2');
-        const sendDeleteCodeBtn = document.getElementById('sendDeleteCodeBtn');
-        const confirmFinalDeleteBtn = document.getElementById('confirmFinalDeleteBtn');
-        const cancelBtns = document.querySelectorAll('.cancelDeleteBtn');
-        const preserveModsCheck = document.getElementById('preserve-mods');
-
-        if (deleteForm && deleteModal) {
-            deleteForm.addEventListener('submit', function(e) {
-                e.preventDefault(); 
-                step1.style.display = 'block';
-                step2.style.display = 'none';
-                deleteModal.style.display = 'flex';
-                setTimeout(() => { deleteModal.classList.add('show'); }, 10);
-            });
-
-            cancelBtns.forEach(btn => btn.addEventListener('click', function() {
-                deleteModal.classList.remove('show');
-                setTimeout(() => { deleteModal.style.display = 'none'; }, 200); 
-            }));
-
-            // Step 1 -> Send Email
-            sendDeleteCodeBtn.addEventListener('click', async function() {
-                this.textContent = 'Sending...';
-                this.disabled = true;
-                const res = await fetch('/account/delete-request', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    step1.style.display = 'none';
-                    step2.style.display = 'block';
-                } else {
-                    alert("Failed to send email.");
-                    this.textContent = 'Send Code';
-                    this.disabled = false;
-                }
-            });
-
-            // Step 2 -> Finalize Deletion
-            confirmFinalDeleteBtn.addEventListener('click', async function() {
-                const otp = document.getElementById('delete-otp-input').value;
-                const preserve = preserveModsCheck ? preserveModsCheck.checked : false;
-                const errorMsg = document.getElementById('delete-error');
-                
-                this.textContent = 'Deleting...';
-                this.disabled = true;
-
-                const res = await fetch('/account/delete-confirm', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ otp: otp, preserveMods: preserve })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    window.location.href = data.redirect; // Redirect home
-                } else {
-                    errorMsg.textContent = data.message;
-                    errorMsg.style.display = 'block';
-                    this.textContent = 'Confirm Deletion';
-                    this.disabled = false;
-                } // ✅ FIX: THIS CLOSING BRACKET WAS MISSING!
-            });
-        }
-
-        // --- 3. CUSTOM LOGOUT MODAL LOGIC ---
-        const logoutBtn = document.getElementById('logout-btn');
-        const logoutModal = document.getElementById('logout-modal-container');
-        const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
-
-        if (logoutBtn && logoutModal) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault(); 
-                logoutModal.style.display = 'flex';
-                setTimeout(() => { logoutModal.classList.add('show'); }, 10);
-            });
-
-            cancelLogoutBtn.addEventListener('click', function() {
-                logoutModal.classList.remove('show');
-                setTimeout(() => { logoutModal.style.display = 'none'; }, 200);
-            });
-
-            window.addEventListener('click', function(event) {
-                if (event.target === logoutModal) cancelLogoutBtn.click();
-                
-                // Extra safety check in case the delete modal is missing
-                const deleteModalCheck = document.getElementById('delete-modal-container');
-                if (deleteModalCheck && event.target === deleteModalCheck) {
-                    cancelBtns.forEach(btn => btn.click());
-                }
-            });
-        }
-        
     });
 </script>
 

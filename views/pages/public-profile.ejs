@@ -1,54 +1,134 @@
 <%- include('../partials/header') %>
+<style>
+/* Tooltip CSS for the Verified Badge */
+    .tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .tooltip-text {
+        visibility: hidden;
+        opacity: 0;
+        width: max-content;
+        background-color: var(--black);
+        color: var(--gold);
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 10px;
+        border: 1px solid var(--gold);
+        font-size: 0.75em;
+        font-weight: bold;
+        
+        position: absolute;
+        z-index: 100;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        
+        transition: opacity 0.3s, visibility 0.3s;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    
+    .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: var(--gold) transparent transparent transparent;
+    }
 
+    .tooltip-container:hover .tooltip-text,
+    .tooltip-container:active .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* Social Links Hover Effect */
+    .profile-social-links a {
+        transition: transform 0.3s ease, filter 0.3s ease;
+        display: inline-block;
+    }
+    .profile-social-links a:hover {
+        transform: translateY(-3px) scale(1.1);
+        filter: brightness(1.2);
+    }
+</style>
 <title><%= profileUser.username %> - GPL Mods</title>
 
 <main>
     <div class="container">
+        
+        <!-- ✅ NEW: Dynamic Back Button -->
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
+        </a>
+
         <header class="profile-header">
-            <!-- Avatar with Share Button -->
             <!-- Avatar with Dynamic Rank Glow & Badge -->
-            <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 20px;">
-                
-                <!-- 1. The Avatar with Dynamic Border Color -->
+            <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 5px;">
                 <img src="<%= profileUser.signedAvatarUrl %>" 
                      alt="<%= profileUser.username %>'s Avatar" 
                      class="profile-avatar"
                      style="border-color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; 
                             box-shadow: 0 0 25px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;
                             width: 150px; height: 150px; border-radius: 50%; border-width: 4px; border-style: solid; object-fit: cover;">
-                
-                <!-- 2. The Lottie Rank Animation Badge (Positioned at Top-Left) -->
-                <% if (profileUser.forumRank && profileUser.forumRank.lottie) { %>
-                    <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                        <lottie-player 
-                            src="/animations/<%= profileUser.forumRank.lottie %>" 
-                            background="transparent" 
-                            speed="1" 
-                            style="width: 45px; height: 45px; transform: scale(1.3);" 
-                            loop 
-                            autoplay>
-                        </lottie-player>
-                    </div>
-                <% } %>
 
-                <!-- 3. The Share Button (Positioned at Bottom-Right) -->
                 <button class="share-btn" onclick="shareProfile()" title="Share Profile" style="position: absolute; bottom: 5px; right: 5px; background: var(--gold); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; z-index: 10;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--black);"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
                 </button>
             </div>
 
-            <h1 class="notranslate"><%= profileUser.username %></h1>
+            <!-- Rank Lottie Animation -->
+            <% if (profileUser.forumRank && profileUser.forumRank.lottie) { %>
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
+                    <lottie-player src="/animations/<%= profileUser.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= profileUser.forumRank.color %>);" loop autoplay></lottie-player>
+                </div>
+            <% } %>
+
+            <!-- ======== USERNAME AND VERIFIED BADGE ======== -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                <h1 class="notranslate" style="margin: 0;"><%= profileUser.username %></h1>
+
+                <% if (profileUser.isVerifiedAccount) { %>
+                    <div class="tooltip-container">
+                        <lottie-player src="/animations/verified.json" background="transparent" speed="1" style="width: 35px; height: 35px; filter: drop-shadow(0 0 5px var(--glow-gold));" loop autoplay></lottie-player>
+                        <span class="tooltip-text"><%= profileUser.verifiedBadgeText %></span>
+                    </div>
+                <% } %>
+            </div>
             
-            <!-- 4. Display the Rank Name nicely under the Username -->
+            <!-- Rank & Role -->
             <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 5px; text-shadow: 0 0 10px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
-                <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %>
+                <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= profileUser.forumPoints || 0 %> pts)
             </p>
+            <p class="user-role" style="margin-bottom: 15px;"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
             
-            <p class="user-role"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
-            
-            <!-- ======== NEW: FOLLOW BUTTON ======== -->
+            <!-- ✅ NEW: SOCIAL LINKS MOVED TO HEADER -->
+            <% if (profileUser.role === 'admin' || profileUser.role === 'distributor') { %>
+                <div class="profile-social-links" style="display: flex; justify-content: center; gap: 20px; font-size: 1.8em; margin-bottom: 25px;">
+                    <% if (profileUser.socialLinks?.telegram) { %>
+                        <a href="<%= profileUser.socialLinks.telegram %>" target="_blank" style="color: #0088cc;"><i class="fab fa-telegram-plane"></i></a>
+                    <% } %>
+                    <% if (profileUser.socialLinks?.discord) { %>
+                        <a href="<%= profileUser.socialLinks.discord %>" target="_blank" style="color: #5865F2;"><i class="fab fa-discord"></i></a>
+                    <% } %>
+                    <% if (profileUser.socialLinks?.website) { %>
+                        <a href="<%= profileUser.socialLinks.website %>" target="_blank" style="color: var(--silver);"><i class="fas fa-globe"></i></a>
+                    <% } %>
+                    <% if (profileUser.socialLinks?.youtube) { %>
+                        <a href="<%= profileUser.socialLinks.youtube %>" target="_blank" style="color: #FF0000;"><i class="fab fa-youtube"></i></a>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <!-- ======== FOLLOW BUTTON ======== -->
             <% if (user && user._id.toString() !== profileUser._id.toString()) { %>
-                <form action="/users/<%= profileUser._id %>/follow" method="POST" style="margin-bottom: 20px;">
+                <form action="/users/<%= profileUser._id %>/follow" method="POST" style="margin-bottom: 25px;">
                     <% if (isFollowing) { %>
                         <button type="submit" class="btn btn-secondary" style="border-color: var(--silver); color: var(--silver);">Unfollow</button>
                     <% } else { %>
@@ -56,16 +136,15 @@
                     <% } %>
                 </form>
             <% } else if (!user) { %>
-                <!-- ✅ FIX 2: Styled the Login to Follow button -->
-                <a href="/login" class="btn" style="margin-bottom: 20px; display: inline-block; background: transparent; border: 2px solid var(--silver); color: var(--silver); padding: 10px 25px; border-radius: 20px;">Login to Follow</a>
+                <a href="/login" class="btn" style="margin-bottom: 25px; display: inline-block; background: transparent; border: 2px solid var(--silver); color: var(--silver); padding: 10px 25px; border-radius: 20px;">Login to Follow</a>
             <% } %>
 
+            <!-- ======== STATS GRID ======== -->
             <div class="profile-stats">
                 <div class="stat-item">
                     <div class="stat-number"><%= uploads.length %></div>
                     <div class="stat-label">Uploads</div>
                 </div>
-                <!-- ======== NEW: FOLLOW STATS ======== -->
                 <div class="stat-item">
                     <div class="stat-number"><%= profileUser.followers.length %></div>
                     <div class="stat-label">Followers</div>
@@ -74,7 +153,26 @@
                     <div class="stat-number"><%= profileUser.following.length %></div>
                     <div class="stat-label">Following</div>
                 </div>
-                <!-- ==================================== -->
+                
+                <!-- ✅ NEW: COUNTRY MOVED TO STATS WITH NAME -->
+                <% if (profileUser.country) { %>
+                    <% 
+                        let flagEmoji = '🌍';
+                        let countryName = 'Unknown';
+                        if (profileUser.country === 'US') { flagEmoji = '🇺🇸'; countryName = 'United States'; }
+                        else if (profileUser.country === 'IN') { flagEmoji = '🇮🇳'; countryName = 'India'; }
+                        else if (profileUser.country === 'GB') { flagEmoji = '🇬🇧'; countryName = 'United Kingdom'; }
+                        else if (profileUser.country === 'BR') { flagEmoji = '🇧🇷'; countryName = 'Brazil'; }
+                        else if (profileUser.country === 'ID') { flagEmoji = '🇮🇩'; countryName = 'Indonesia'; }
+                        else if (profileUser.country === 'RU') { flagEmoji = '🇷🇺'; countryName = 'Russia'; }
+                        else { countryName = profileUser.country; } // Fallback
+                    %>
+                    <div class="stat-item">
+                        <div class="stat-number" style="font-size: 1.5em;"><%= flagEmoji %></div>
+                        <div class="stat-label">Location:<%= countryName %></div>
+                    </div>
+                <% } %>
+
                 <div class="stat-item">
                     <div class="stat-number"><%= timeAgo(profileUser.lastSeen) %></div>
                     <div class="stat-label">Last Online</div>
@@ -86,7 +184,6 @@
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="overview">Overview</button>
                 <button class="tab-button" data-tab="uploads">Uploads</button>
-                <!-- NEW TAB -->
                 <button class="tab-button" data-tab="community">Community</button>
             </div>
 
@@ -100,50 +197,12 @@
                 <% } %>
             </div>
 
-    <!-- ======== NEW: ADMIN/DISTRIBUTOR SOCIAL LINKS ======== -->
-    <% 
-        // Only show for Admins and Distributors
-        if (profileUser.role === 'admin' || profileUser.role === 'distributor') { 
-            // Collect any valid links they have
-            const links =[];
-            if (profileUser.socialLinks?.telegram) links.push({ url: profileUser.socialLinks.telegram, icon: 'fab fa-telegram-plane' });
-            if (profileUser.socialLinks?.discord) links.push({ url: profileUser.socialLinks.discord, icon: 'fab fa-discord' });
-            if (profileUser.socialLinks?.website) links.push({ url: profileUser.socialLinks.website, icon: 'fas fa-globe' });
-            if (profileUser.socialLinks?.youtube) links.push({ url: profileUser.socialLinks.youtube, icon: 'fab fa-youtube' });
-            
-            // If they have at least one link, show the carousel
-            if (links.length > 0) { 
-    %>
-        <div style="margin-top: 20px;">
-            <div class="social-carousel-container" id="profile-social-container">
-                <button id="prof-social-prev" class="social-nav-btn" title="Previous"><i class="fas fa-chevron-left"></i></button>
-                
-                <div class="social-icons-window">
-                    <div id="prof-social-track" class="social-icons-track">
-                        <% links.forEach(link => { %>
-                            <a href="<%= link.url %>" target="_blank" rel="noopener noreferrer">
-                                <i class="<%= link.icon %>"></i>
-                            </a>
-                        <% }) %>
-                    </div>
-                </div>
-
-                <button id="prof-social-next" class="social-nav-btn" title="Next"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </div>
-    <% 
-            } 
-        } 
-    %>
-    <!-- ======== END SOCIAL LINKS ======== -->
-
             <!-- Uploads Tab -->
             <div id="uploads" class="tab-content">
                 <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Uploaded Mods</h2>
                 <% if (uploads && uploads.length > 0) { %>
                     <section class="mod-grid">
                         <% uploads.forEach(file => { %>
-                            <!-- Use the partial! Hide uploader info since we are ALREADY on their profile page. -->
                             <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
                         <% }) %>
                     </section>
@@ -152,10 +211,8 @@
                 <% } %>
             </div>
 
-                        <!-- ======== Community Tab (Followers/Following) ======== -->
+            <!-- Community Tab (Followers/Following) -->
             <div id="community" class="tab-content">
-                
-                <!-- Use a responsive grid or flexbox depending on screen size -->
                 <div style="display: flex; flex-wrap: wrap; gap: 40px;">
                     
                     <!-- Followers List -->
@@ -165,12 +222,8 @@
                             <ul style="list-style: none; padding: 0;">
                                 <% followersList.forEach(follower => { %>
                                     <li style="margin-bottom: 15px;">
-                                        <!-- Using slugify for clean URLs -->
                                         <a href="/users/<%= slugify(follower.username) %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
-                                            
-                                            <!-- ✅ FIX: Now using the signed avatar URL! -->
                                             <img src="<%= follower.signedAvatarUrl %>" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                            
                                             <div>
                                                 <strong style="display: block;"><%= follower.username %></strong>
                                                 <span style="font-size: 0.8em; color: var(--silver);"><%= follower.role %></span>
@@ -192,10 +245,7 @@
                                 <% followingList.forEach(followingUser => { %>
                                     <li style="margin-bottom: 15px;">
                                         <a href="/users/<%= slugify(followingUser.username) %>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--white); background: var(--dark-gray); padding: 10px; border-radius: 8px; border: 1px solid #333; transition: border-color 0.2s;">
-                                            
-                                            <!-- ✅ FIX: Now using the signed avatar URL! -->
                                             <img src="<%= followingUser.signedAvatarUrl %>" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                            
                                             <div>
                                                 <strong style="display: block;"><%= followingUser.username %></strong>
                                                 <span style="font-size: 0.8em; color: var(--silver);"><%= followingUser.role %></span>
@@ -211,8 +261,7 @@
 
                 </div>
             </div>
-            <!-- ======================================================== -->
-        </section> <!-- Properly closing the profile-content section here -->
+        </section> 
     </div>
 </main>
 

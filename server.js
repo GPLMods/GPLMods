@@ -35,11 +35,13 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const http = require('http');
 const { Server } = require("socket.io");
 const crypto = require('crypto');
 const cors = require('cors');
 const fs = require('fs');
+const cron = require('node-cron');
 const FormData = require('form-data');
 const { Upload } = require("@aws-sdk/lib-storage");
 const Filter = require('bad-words');
@@ -48,13 +50,10 @@ const zlib = require('zlib');
 const otplib = require('otplib');
 const cheerio = require('cheerio');
 const AdmZip = require('adm-zip'); 
-const qrcode = require('qrcode');
-const { 
-    generateRegistrationOptions, 
-    verifyRegistrationResponse, 
-    generateAuthenticationOptions, 
-    verifyAuthenticationResponse 
-} = require('@simplewebauthn/server');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
+const { mirrorToFTP, deleteFromFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
@@ -76,13 +75,14 @@ const DistributorApplication = require('./models/distributorApplication');
 const Request = require('./models/request');
 const UserNotification = require('./models/userNotification');
 const SupportTicket = require('./models/supportTicket');
-const cron = require('node-cron');
 const AutomatedCampaign = require('./models/automatedCampaign');
 const SiteState = require('./models/siteState');
 const Subscriber = require('./models/subscriber');
 const DocCategory = require('./models/docCategory');
 const DocPage = require('./models/docPage');
 const Donation = require('./models/donation');
+const DailyStat = require('./models/dailyStat');
+const PointHistory = require('./models/pointHistory');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -170,7 +170,20 @@ function isValidName(str) {
     const regex = /^[a-zA-Z0-9 ]+$/;
     return regex.test(trimmed);
 }
-// ------------------------------------------------------------------
+
+// --- NEW HELPER: RECORD DAILY STATS ---
+async function recordDailyStat(fileId, uploader, type) {
+    try {
+        const dateString = new Date().toISOString().split('T')[0]; // Gets "YYYY-MM-DD"
+        const updateField = type === 'view' ? { views: 1 } : { downloads: 1 };
+        
+        await DailyStat.findOneAndUpdate(
+            { file: fileId, dateString: dateString },
+            { $setOnInsert: { uploader: uploader }, $inc: updateField },
+            { upsert: true, new: true } // Creates the document if it doesn't exist today
+        );
+    } catch (e) { console.error("Stat Tracking Error:", e); }
+}
 
 // Helper: Format Date
 function timeAgo(date) {
@@ -189,7 +202,12 @@ function formatBytes(bytes, decimals = 2) {
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
-// ------------------------------------------------
+// --- NEW HELPER: FORMAT COMPACT NUMBERS (1K, 1.5M) ---
+function formatCompactNumber(number) {
+    if (!number) return '0';
+    // This native JS formatter automatically turns 1500 into 1.5K, 1000000 into 1M, etc.
+    return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(number);
+}
 
 // --- NEW SMART HELPER FOR IMAGES ---
 async function getSmartImageUrl(key) {
@@ -215,7 +233,42 @@ function truncateText(text, maxLength) {
     // Cut the string and add ellipsis
     return text.substring(0, maxLength).trim() + '...';
 }
-// -------------------------------------
+
+// --- NEW HELPER: AWARD POINTS WITH HISTORY ---
+async function awardPoints(userId, amount, reason, customMessage = '') {
+    try {
+        if (amount === 0) return; // Ignore 0 point transactions
+        
+        // 1. Update the user's total points
+        await User.findByIdAndUpdate(userId, { $inc: { forumPoints: amount } });
+        
+        // 2. Log the transaction in the history ledger
+        await new PointHistory({
+            user: userId,
+            amount: amount,
+            reason: reason,
+            customMessage: customMessage
+        }).save();
+        
+    } catch (err) {
+        console.error("Error awarding points:", err);
+    }
+}
+
+// --- NEW HELPER: GENERATE REFERRAL CODE ---
+const generateReferralCode = async (username) => {
+    // Create a base code from the username (alphanumeric only, uppercase, max 6 chars)
+    let baseCode = username.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
+    if (baseCode.length < 3) baseCode = 'GPL' + Math.floor(Math.random() * 999);
+    
+    let code = baseCode + Math.floor(1000 + Math.random() * 9000); // e.g., NOOB1234
+    
+    // Ensure uniqueness
+    while (await User.findOne({ referralCode: code })) {
+        code = baseCode + Math.floor(1000 + Math.random() * 9000);
+    }
+    return code;
+};
 
 // --- NEW HELPER: CREATE CLEAN URL SLUGS ---
 function slugify(text) {
@@ -257,6 +310,15 @@ async function isDisposableEmail(email) {
         // You could also maintain a hardcoded fallback list of domains here.
         return false; 
     }
+}
+// --- NEW HELPER: Generate 2FA Recovery Codes ---
+// Generates an array of 8 random, 8-character alphanumeric codes
+function generateRecoveryCodes() {
+    const codes = [];
+    for (let i = 0; i < 8; i++) {
+        codes.push(crypto.randomBytes(4).toString('hex')); 
+    }
+    return codes;
 }
 // ===============================
 // INDEXNOW SEO PROTOCOL HELPER
@@ -354,6 +416,24 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
         throw error; // Throw the error so the bulk sync loop can count it as a failure
     }
 }
+// --- NEW GLOBAL DELETE HELPER ---
+const deleteCloudFile = async (fileKey) => {
+    if (!fileKey || fileKey === 'external-link') return;
+    try {
+        // 1. Delete from Primary Cloud
+        await s3Client.send(new DeleteObjectCommand({ 
+            Bucket: process.env.B2_BUCKET_NAME, 
+            Key: fileKey 
+        }));
+        console.log(`Deleted ${fileKey} from B2.`);
+        
+        // 2. Delete from Backup Cloud
+        deleteFromFTP(fileKey).catch(e => console.error("Background FTP delete failed", e));
+        
+    } catch (error) {
+        console.error(`Failed to delete ${fileKey} from B2:`, error.message);
+    }
+};
 // --- NEW HELPER: SMART VIRUSTOTAL SCANNER ---
 // Handles files up to 650MB automatically
 async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
@@ -466,6 +546,7 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
 // ===============================
 // 1. Static Files (Safe to be early)
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser());
 
 // ✅ NEW: Serve the pre-built AdminJS assets!
 app.use('/.adminjs', express.static(path.join(__dirname, '.adminjs')));
@@ -647,81 +728,81 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// --- Globals & Notification Cache ---
+// =========================================================
+// CRITICAL FIX: ISOLATED REQUEST GLOBALS & CACHE
+// =========================================================
+
 let cachedTotalUpdates = 0;
 let cachedNewUploads = 0;
 let cachedNewUpdates = 0;
 let lastUpdateCheck = 0;
 
-// ✅ FIX: Added the 'async' keyword right here!
 app.use(async (req, res, next) => {
-    res.locals.user = req.user || null;
-    res.locals.timeAgo = timeAgo;
-    res.locals.formatBytes = formatBytes;
-    res.locals.slugify = slugify;
-    res.locals.truncateText = truncateText;
-    
-    // --- Linkvertise & Ad Monetization Helpers ---
-    res.locals.linkvertiseId = process.env.LINKVERTISE_ID || '5373913'; 
-    res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
-
-    // ✅ FIX: Official Linkvertise Generation Logic
-    res.locals.generateAdLink = (targetUrl) => {
-        if (!targetUrl) return '';
-        
-        // 1. Encode the URI first (Crucial for Linkvertise)
-        const encodedUri = encodeURI(targetUrl);
-        // 2. Convert to binary buffer, then Base64
-        const base64Str = Buffer.from(encodedUri, "binary").toString("base64");
-        
-        // If an admin manually set a DIFFERENT ad network in the dashboard (like ShrinkMe)
-        if (cachedSiteState && cachedSiteState.adNetworkBaseUrl && !cachedSiteState.adNetworkBaseUrl.includes('link-to.net')) {
-             return cachedSiteState.adNetworkBaseUrl.replace('{{ID}}', res.locals.linkvertiseId).replace('{{URL}}', base64Str);
-        }
-
-        // 3. Default: Return the official Linkvertise formatted URL with the required random number
-        const randomNum = Math.random() * 1000;
-        return `https://link-to.net/${res.locals.linkvertiseId}/${randomNum}/dynamic?r=${base64Str}`;
-    };
-    // ---------------------------------------------
-
-    // If the SiteState is cached, pull the ad settings from it
-    if (cachedSiteState) {
-        res.locals.linkvertiseEnabled = cachedSiteState.enableLinkvertise;
-        res.locals.linkvertiseId = cachedSiteState.linkvertiseId;
-        res.locals.adNetworkBaseUrl = cachedSiteState.adNetworkBaseUrl;
-    }
-    // 1. ======== CRAWLER DETECTION LOGIC ========
-    // Use the 'isbot' library to check the User-Agent header
-    const userAgent = req.get('User-Agent');
-    const isCrawler = isbot(userAgent);
-    
-    // We pass this boolean to ALL EJS templates
-    res.locals.isCrawler = isCrawler;
-    // 2. ======== AD DELIVERY & MODAL LOGIC ========
-    let shouldShowAds = true; 
-    let shouldShowModals = true; // Controls Policy, Adblock, Tidio
-
-    // If it's a bot (Google, Bing, Twitter preview, etc.), turn OFF ads and modals
-    if (isCrawler) {
-        shouldShowAds = false;
-        shouldShowModals = false;
-    } else if (req.isAuthenticated() && req.user) {
-        // If it's a real user, check their role/membership
-        const role = req.user.role;
-        const membership = req.user.membership;
-        if (role === 'admin' || role === 'distributor' || membership === 'premium') {
-            shouldShowAds = false; 
-        }
-    }
-
-    res.locals.showAds = shouldShowAds;
-    res.locals.showModals = shouldShowModals; // Pass this new variable
-    // ==============================================
-
-
-    // 3. ======== NOTIFICATIONS LOGIC ========
     try {
+        // 1. ======== BASIC LOCALS & HELPERS ========
+        res.locals.user = req.user || null;
+        res.locals.timeAgo = timeAgo;
+        res.locals.formatCompactNumber = formatCompactNumber;
+        res.locals.formatBytes = formatBytes;
+        res.locals.slugify = slugify;
+        // Make sure truncateText is defined as a helper function elsewhere in your server.js!
+        res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
+        res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
+
+        // 2. ======== CRAWLER DETECTION LOGIC ========
+        // Safely grab the User-Agent header (fallback to empty string if undefined)
+        const userAgent = req.get('User-Agent') || '';
+        const isCrawler = isbot(userAgent);
+        res.locals.isCrawler = isCrawler;
+
+        // 3. ======== AD DELIVERY & MODAL LOGIC ========
+        let shouldShowAds = true; 
+        let shouldShowModals = true; 
+
+        // If it's a bot (Google, Discord, etc.), turn OFF ads and modals for perfect SEO
+        if (isCrawler) {
+            shouldShowAds = false;
+            shouldShowModals = false;
+        } else if (req.isAuthenticated() && req.user) {
+            // If real user, check privileges
+            const role = req.user.role;
+            const membership = req.user.membership;
+            if (role === 'admin' || role === 'distributor' || membership === 'premium') {
+                shouldShowAds = false; 
+            }
+        }
+        res.locals.showAds = shouldShowAds;
+        res.locals.showModals = shouldShowModals;
+
+        // 4. ======== LINKVERTISE & AD MONETIZATION ========
+        let linkvId = process.env.LINKVERTISE_ID || '5373913'; 
+        let adBaseUrl = null;
+        res.locals.linkvertiseEnabled = false;
+
+        // Safely pull from SiteState if you created that feature
+        if (typeof cachedSiteState !== 'undefined' && cachedSiteState) {
+            res.locals.linkvertiseEnabled = cachedSiteState.enableLinkvertise || false;
+            if (cachedSiteState.linkvertiseId) linkvId = cachedSiteState.linkvertiseId;
+            if (cachedSiteState.adNetworkBaseUrl) adBaseUrl = cachedSiteState.adNetworkBaseUrl;
+        }
+        res.locals.linkvertiseId = linkvId;
+
+        res.locals.generateAdLink = (targetUrl) => {
+            if (!targetUrl) return '';
+            
+            const encodedUri = encodeURI(targetUrl);
+            const base64Str = Buffer.from(encodedUri, "binary").toString("base64");
+            
+            if (adBaseUrl && !adBaseUrl.includes('link-to.net')) {
+                 return adBaseUrl.replace('{{ID}}', linkvId).replace('{{URL}}', base64Str);
+            }
+
+            // Fix: Math.random() converted to an integer using Math.floor
+            const randomNum = Math.floor(Math.random() * 1000);
+            return `https://link-to.net/${linkvId}/${randomNum}/dynamic?r=${base64Str}`;
+        };
+
+        // 5. ======== NOTIFICATIONS LOGIC (CACHED) ========
         if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             
@@ -743,17 +824,23 @@ app.use(async (req, res, next) => {
         res.locals.unreadPersonalCount = unreadPersonalCount;
         
         next(); 
+        
     } catch (e) {
         console.error("Global Middleware Error:", e);
-        res.locals.totalUpdatesCount = cachedTotalUpdates;
-        res.locals.newUploadsCount = cachedNewUploads;
-        res.locals.newUpdatesCount = cachedNewUpdates;
+        
+        // Fallbacks: If the DB crashes, the EJS templates still get data so the site doesn't crash completely!
+        res.locals.totalUpdatesCount = cachedTotalUpdates || 0;
+        res.locals.newUploadsCount = cachedNewUploads || 0;
+        res.locals.newUpdatesCount = cachedNewUpdates || 0;
         res.locals.unreadPersonalCount = 0;
+        res.locals.showAds = false;
+        res.locals.showModals = false;
+        res.locals.generateAdLink = (url) => url; // Return normal url if Ad Generator fails
+        
         next(); 
     }
 });
-// --- End of Globals Middleware ---
-
+// =========================================================
 // 7. Banned User Trap
 app.use((req, res, next) => {
     if (req.isAuthenticated() && req.user && req.user.isBanned) {
@@ -867,6 +954,7 @@ passport.use(new GoogleStrategy({
             // Generate the unique # number
             const uniqueUsername = await generateUniqueUsername(requestedName);
             googleUserData.username = uniqueUsername; // Update the data object before creating
+            googleUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(googleUserData);
             done(null, user);
@@ -907,6 +995,7 @@ passport.use(new GitHubStrategy({
             // Generate the unique # number
             const uniqueUsername = await generateUniqueUsername(requestedName);
             githubUserData.username = uniqueUsername; // Update the data object before creating
+            githubUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(githubUserData);
             done(null, user);
@@ -946,6 +1035,7 @@ passport.use(new MicrosoftStrategy({
             // Generate the unique # number
             const uniqueUsername = await generateUniqueUsername(requestedName);
             microsoftUserData.username = uniqueUsername; // Update the data object before creating
+            microsoftUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(microsoftUserData);
             done(null, user);
@@ -1568,7 +1658,7 @@ app.post('/community/ask', ensureAuthenticated, async (req, res) => {
         await newIssue.save();
         
         // Award 5 points for asking a question
-        await User.adjustForumPoints(req.user._id, 5);
+        await User.adjustForumPoints(req.user._id, 5, "Asked a community question");
 
         res.redirect(`/community/${uniqueSlug}`);
     } catch (error) {
@@ -1629,7 +1719,7 @@ app.post('/community/:slug/reply', ensureAuthenticated, async (req, res) => {
         await newReply.save();
 
         // Award 2 points for helping by replying
-        await User.adjustForumPoints(req.user._id, 2);
+        await User.adjustForumPoints(req.user._id, 2, "Helped a user with a reply");
 
         res.redirect(`/community/${issue.slug}`);
     } catch (error) {
@@ -1662,7 +1752,7 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
 
         // ==== GAMIFICATION: Massive 25 Point Reward for the Solution Provider! ====
         if (reply.author.toString() !== req.user._id.toString()) { // Don't reward if solving own issue
-            await User.adjustForumPoints(reply.author, 25);
+            await User.adjustForumPoints(reply.author, 25, "Provided an Accepted Solution!");
         }
 
         res.redirect(`/community/${issue.slug}`);
@@ -1672,10 +1762,11 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
     }
 });
 
-// Single Mod Page
-// --- BUG 1 FIX A: BACKWARD COMPATIBILITY REDIRECT ---
-// This catches any old /mods/12345 links (like from your homepage or old bookmarks)
-// and instantly forwards them to the new SEO-friendly slug route!
+// ==========================================
+// LEGACY MOD PAGE ROUTE (REDIRECT ONLY)
+// ==========================================
+// This catches any old /mods/12345 links and instantly forwards them 
+// to the new SEO-friendly slug route! No other logic is needed here.
 app.get('/mods/:id', async (req, res, next) => {
     try {
         const file = await File.findById(req.params.id);
@@ -1684,11 +1775,13 @@ app.get('/mods/:id', async (req, res, next) => {
         // Redirect to the new format: /android/roblox
         return res.redirect(301, `/${file.category}/${file.slug || file._id}`);
     } catch (error) {
-        next();
+        return next();
     }
 });
 
-// --- ADVANCED: SEO-Friendly "Umbrella" Mod Page Route ---
+// ==========================================
+// ADVANCED: SEO-Friendly "Umbrella" Mod Page Route
+// ==========================================
 app.get('/:category/:slug', async (req, res, next) => {
     try {
         const category = req.params.category.toLowerCase();
@@ -1696,11 +1789,12 @@ app.get('/:category/:slug', async (req, res, next) => {
         const variantId = req.query.variant;
 
         // 1. Prevent this route from capturing system URLs
-        const reservedPaths =[
+        const reservedPaths = [
             'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
             'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
             'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
-            'download-file', 'upload-details', 'reset-password', 'docs',];
+            'download-file', 'upload-details', 'reset-password', 'docs'
+        ];
         
         if (reservedPaths.includes(category)) return next();
 
@@ -1711,26 +1805,24 @@ app.get('/:category/:slug', async (req, res, next) => {
             category: category, 
             slug: slug,
             isLatestVersion: true,
-            isVariant: { $ne: true } // ✅ FIX: Safely catches old mods where this field doesn't exist yet!
+            isVariant: { $ne: true } 
         }).populate('variants');
 
-        // 3. FALLBACK SEARCH: If exact slug fails (e.g. old mods without a slug in DB), 
-        // use RegEx to search the original 'name' field by turning dashes back into spaces.
+        // 3. FALLBACK SEARCH: If exact slug fails, use RegEx on the name field
         if (!masterFile) {
             const nameSearchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
             masterFile = await File.findOne({
                 category: category,
                 name: nameSearchPattern,
                 isLatestVersion: true,
-                isVariant: { $ne: true } // ✅ FIX: Safely catches old mods here too!
+                isVariant: { $ne: true } 
             }).populate('variants');
         }
 
-            // 4. If STILL not found, throw 404
-    if (!masterFile) {
-        return next(); // Passes control to your 404 middleware
-    }
-
+        // 4. If STILL not found, throw 404
+        if (!masterFile) {
+            return next(); 
+        }
 
         // --- Security Check for Drafts/Pending ---
         if (masterFile.status !== 'live') {
@@ -1742,10 +1834,10 @@ app.get('/:category/:slug', async (req, res, next) => {
         let displayFile = masterFile; 
         let isViewingVariant = false;
 
+        // --- VARIANT HANDLING ---
         if (variantId && Types.ObjectId.isValid(variantId)) {
             const requestedVariant = masterFile.variants.find(v => v._id.toString() === variantId && v.status === 'live');
             if (requestedVariant) {
-                // Swap Master data for Variant data seamlessly
                 displayFile = {
                     ...(masterFile.toObject ? masterFile.toObject() : masterFile),
                     _id: requestedVariant._id,
@@ -1773,25 +1865,51 @@ app.get('/:category/:slug', async (req, res, next) => {
             }
         }
 
+        // ==========================================
+        // ✅ BUG 1 & 2 FIXED: VIEW TRACKING MOVED HERE
+        // ==========================================
+        let shouldIncrementView = false;
+        // We use masterFile._id so all variants share the same view count pool
+        const trackingId = masterFile._id.toString(); 
+
+        if (req.isAuthenticated()) {
+            if (!masterFile.viewedBy.includes(req.user._id)) {
+                shouldIncrementView = true;
+                masterFile.viewedBy.push(req.user._id);
+            }
+        } else {
+            const cookieName = `viewed_mod_${trackingId}`;
+            if (!req.cookies[cookieName]) {
+                shouldIncrementView = true;
+                res.cookie(cookieName, 'true', { maxAge: 30 * 60 * 1000, httpOnly: true });
+            }
+        }
+
+        if (shouldIncrementView) {
+            masterFile.views += 1;
+            // Since we updated masterFile, we must save it
+            await masterFile.save();
+            
+            // If we are viewing a variant, ensure the view count displays correctly on the page right now
+            if (isViewingVariant) {
+                displayFile.views = masterFile.views;
+            }
+        }
+        // ==========================================
+
+
+        // --- IMAGE HANDLING ---
         const iconKey = masterFile.iconUrl || masterFile.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
         
         const screenKeys = (masterFile.screenshotUrls && masterFile.screenshotUrls.length > 0)
-            ? masterFile.screenshotUrls : (masterFile.screenshotKeys ||[]);
+            ? masterFile.screenshotUrls : (masterFile.screenshotKeys || []);
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
+        // --- REVIEWS HANDLING ---
         const reviews = await Review.find({ file: displayFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
-        const reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
-        // --- NEW: Sort current user's review to the absolute top (Secretly) ---
-        if (req.user) {
-            reviewsWithAvatars.sort((a, b) => {
-                const isA = a.user._id.toString() === req.user._id.toString();
-                const isB = b.user._id.toString() === req.user._id.toString();
-                if (isA && !isB) return -1; // Push A to top
-                if (!isA && isB) return 1;  // Push B to top
-                return 0; // Keep original chronological sort for others
-            });
-        }
+        
+        let reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
                 try { avatarUrl = await getSmartImageUrl(review.user.profileImageKey); } catch (e) {}
@@ -1799,32 +1917,44 @@ app.get('/:category/:slug', async (req, res, next) => {
             return { ...review.toObject(), user: { ...review.user.toObject(), signedAvatarUrl: avatarUrl } };
         }));
 
-        let versionHistory =[];
+        // ✅ BUG 3 FIXED: SORT REVIEWS *AFTER* MAPPING
+        if (req.user) {
+            reviewsWithAvatars.sort((a, b) => {
+                const isA = a.user._id.toString() === req.user._id.toString();
+                const isB = b.user._id.toString() === req.user._id.toString();
+                if (isA && !isB) return -1; // Push A to top
+                if (!isA && isB) return 1;  // Push B to top
+                return 0; 
+            });
+        }
+        // ----------------------------------------------------
+
+        let versionHistory = [];
         let fileForHistory = await File.findById(displayFile._id).populate('olderVersions');
         if (fileForHistory) {
             versionHistory = [fileForHistory, ...fileForHistory.olderVersions.slice().reverse()];
         }
 
+        // --- USER INTERACTIONS ---
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(displayFile._id) : false;
-        // --- REPLACED 'userHasVotedOnStatus' WITH THESE TWO ---
+        
         let userVotedWorking = false;
         let userVotedNotWorking = false;
         if (req.user) {
-            userVotedWorking = displayFile.votedWorkingBy.includes(req.user._id);
-            userVotedNotWorking = displayFile.votedNotWorkingBy.includes(req.user._id);
+            // Check displayFile instead of currentFile to support variant voting
+            userVotedWorking = (displayFile.votedWorkingBy || []).includes(req.user._id);
+            userVotedNotWorking = (displayFile.votedNotWorkingBy || []).includes(req.user._id);
         }
-        // --------------------------------------------------------
 
-        // ======== NEW: FIND UPLOADER ROLE ========
+        // --- UPLOADER ROLE CHECK ---
         let isUploaderDistributor = false;
-        // Search the DB for the user who uploaded this file
         const uploaderUser = await User.findOne({ username: displayFile.uploader }).lean();
         
         if (uploaderUser && uploaderUser.role === 'distributor') {
             isUploaderDistributor = true;
         }
-        // =========================================
 
+        // --- RENDER ---
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -1839,7 +1969,6 @@ app.get('/:category/:slug', async (req, res, next) => {
 
     } catch (e) {
         console.error("Error on /:category/:slug route:", e);
-        // ✅ FIX: Changed next(error) to next(e) because the caught variable is named 'e'
         return next(e); 
     }
 });
@@ -2049,7 +2178,8 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                 platforms: previousVersion.platforms,
                 tags: previousVersion.tags,
                 uploader: req.user.username,
-                ageRating: previousVersion.ageRating,
+                ageRating: req.body.ageRating || previousVersion.ageRating,
+                minOsVersion: req.body.minOsVersion || previousVersion.minOsVersion,
                 ipaDirectDownloadUrl: ipaDirectDownloadUrl, // <--- SAVE IT
                 // New details
                 version: softwareVersion,
@@ -2202,31 +2332,52 @@ const deleteFromB2 = async (fileKey) => {
         console.error(`Failed to delete ${fileKey} from B2:`, error.message);
     }
 };
-// Download Action - UPDATED for External Links & Presigned URLs
+// Download Action - UPDATED for Anti-Spam & Universal Link Tracking
 app.get('/download-file/:id', async (req, res) => {
     try {
-        const file = await File.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } });
-        if (!file) {
-            return next(error);
+        const fileId = req.params.id;
+        const file = await File.findById(fileId);
+        if (!file) return res.status(404).render('pages/404');
+
+        // ==========================================
+        // DOWNLOAD TRACKING LOGIC (Anti-Spam)
+        // ==========================================
+        let shouldIncrementDownload = false;
+
+        if (req.isAuthenticated()) {
+            if (!file.downloadedBy.includes(req.user._id)) {
+                shouldIncrementDownload = true;
+                file.downloadedBy.push(req.user._id);
+            }
+        } else {
+            const cookieName = `download_mod_${fileId}`;
+            if (!req.cookies[cookieName]) {
+                shouldIncrementDownload = true;
+                res.cookie(cookieName, 'true', { maxAge: 30 * 60 * 1000, httpOnly: true });
+            }
         }
 
-        // --- 1. CHECK FOR EXTERNAL CLOUD LINK FIRST ---
+        if (shouldIncrementDownload) {
+            file.downloads += 1;
+            await file.save();
+            await recordDailyStat(file._id, file.uploader, 'download'); // For the graph!
+        }
+        // ==========================================
+
+        // --- 1. MULTI-PART / ALTERNATIVE URL PASSTHROUGH ---
+        // If a specific URL was passed in the query, we track the download and redirect to it!
+        if (req.query.url) {
+            return res.redirect(req.query.url);
+        }
+
+        // --- 2. EXTERNAL CLOUD LINK FIRST ---
         if (file.externalDownloadUrl) {
-            // If the admin pasted a Mega/Drive/Dropbox link, redirect straight to it!
             return res.redirect(file.externalDownloadUrl);
         }
-        if (file.directDownloadUrl) {
-            // ✅ FIX: If a Dropbox link is provided, redirect the standard download button to it!
-            return res.redirect(file.directDownloadUrl);
-        }
 
-        // --- 2. FALLBACK TO BACKBLAZE B2 ---
+        // --- 3. FALLBACK TO BACKBLAZE B2 ---
         const fileKey = file.fileKey || file.fileUrl; 
-
-        if (!fileKey) {
-            console.error(`File with ID ${file._id} has no fileKey or external URL.`);
-            return res.status(500).send("File record is incomplete and cannot be downloaded.");
-        }
+        if (!fileKey) return res.status(500).send("File record incomplete.");
 
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
@@ -2235,8 +2386,8 @@ app.get('/download-file/:id', async (req, res) => {
         });
         
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
-
         res.redirect(signedUrl);
+
     } catch (e) {
         console.error("Download generation error:", e);
         res.status(500).send("Could not generate download link.");
@@ -2312,7 +2463,13 @@ const processSuccessfulLogin = async (req, res, next, user) => {
                 await send2faEmail(user, otp); 
             } catch (e) { console.error("2FA Email Error:", e); }
         }
-        return res.redirect('/login/2fa');
+        
+        // ✅ CRITICAL FIX: Explicitly SAVE the session to MongoDB before redirecting!
+        req.session.save((err) => {
+            if (err) console.error("Session save error:", err);
+            return res.redirect('/login/2fa');
+        });
+        
     } else {
         // Standard Login
         req.logIn(user, (loginErr) => {
@@ -2420,7 +2577,7 @@ app.get('/register', redirectIfAuthenticated, (req, res) => {
 app.post('/register', verifyRecaptcha, async (req, res) => {
     try {
         // ✅ FIX: Added dateOfBirth to destructuring
-        const { username, email, password, dateOfBirth } = req.body;
+        const { username, email, password, dateOfBirth, referralCode} = req.body;
         if (!username || !email || !password || !dateOfBirth) {
             return res.status(400).send("All fields are required, including Date of Birth.");
         }
@@ -2458,6 +2615,18 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
         // --- NEW: Generate Unique Username (Discriminator) ---
         // We do this BEFORE creating the new user object
         const uniqueUsername = await generateUniqueUsername(username);
+
+        // ✅ NEW: Generate a referral code for this NEW user
+        const newReferralCode = await generateReferralCode(uniqueUsername);
+
+        // ✅ NEW: Process the incoming referral code (if they provided one)
+        let referrerId = null;
+        if (referralCode && referralCode.trim() !== '') {
+            const referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() });
+            if (referrer) {
+                referrerId = referrer._id;
+            }
+        }
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 600000; 
 
@@ -2472,6 +2641,8 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
                 username: uniqueUsername,
                 email: email.toLowerCase(),
                 password,
+                referralCode: newReferralCode, // Assign code
+                referredBy: referrerId,        // Assign referrer
                 dateOfBirth: new Date(dateOfBirth), // ✅ FIX: Save DOB
                 verificationOtp: otp,
                 otpExpires: otpExpires
@@ -2512,6 +2683,27 @@ app.post('/verify-otp', async (req, res) => {
         user.verificationOtp = undefined; 
         user.otpExpires = undefined;
         await user.save();
+
+        // ======== NEW: REWARD THE REFERRER ========
+        if (user.referredBy) {
+            // 1. Award 5 points using our helper
+            await awardPoints(user.referredBy, 5, "Successful Referral", `You referred ${user.username}!`);
+            
+            // 2. Increment the referrer's referralCount
+            await User.findByIdAndUpdate(user.referredBy, { $inc: { referralCount: 1 } });
+            
+            // 3. Optional: Send a notification to the referrer
+            try {
+                const UserNotification = require('./models/userNotification');
+                await new UserNotification({
+                    user: user.referredBy,
+                    title: 'New Referral!',
+                    message: `Awesome! ${user.username} just signed up using your referral code. You earned 5 points!`,
+                    type: 'success'
+                }).save();
+            } catch (err) { console.error("Referral Notif Error:", err); }
+        }
+        // ==========================================
 // ======== NEW: AUTOMATED WELCOME MESSAGE ========
         try {
             const UserNotification = require('./models/userNotification');
@@ -2716,35 +2908,104 @@ app.get('/auth/microsoft/callback',
         res.redirect('/home');
     }
 );
+
 // ===============================
-// 4. PROFILE ROUTES
+// 4. PROFILE & DASHBOARD ROUTES
 // ===============================
 
-// Profile Route
+// --- 1. Main User Dashboard Hub ---
+app.get('/dashboard', ensureAuthenticated, (req, res) => {
+    res.render('pages/dashboard', { user: req.user });
+});
+
+// --- 2. Edit Profile Page (Avatar, Bio, Username, Passwords) ---
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
-        const userWithWhitelist = await User.findById(req.user._id).populate('whitelist');
+        const user = await User.findById(req.user._id);
         
-        // ✅ FIX: Added { virtuals: true } so the forumRank is sent to the frontend!
-        const userObj = userWithWhitelist.toObject({ virtuals: true });
+        // Ensure virtuals (like forumRank) are passed to the frontend
+        const userObj = user.toObject({ virtuals: true });
         userObj.signedAvatarUrl = req.user.signedAvatarUrl; 
 
-        // ✅ BUG 2 FIX: Generate Secure Smart URLs for all Whitelisted Mods!
-        if (userObj.whitelist && userObj.whitelist.length > 0) {
-            userObj.whitelist = await Promise.all(userObj.whitelist.map(async (file) => {
-                const iconKey = file.iconUrl || file.iconKey;
-                const iconUrl = await getSmartImageUrl(iconKey); // Fetch the secure B2 URL
-                return { ...file, iconUrl }; // Attach it to the object
-            }));
-        }
-
-        const userUploads = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
-        
-        res.render('pages/profile', { user: userObj, uploads: userUploads });
+        res.render('pages/profile', { user: userObj });
     } catch (e) { 
         console.error('Profile fetch error:', e);
-        res.status(500).send('Profile fetch error.'); 
+        res.status(500).render('pages/500'); 
     }
+});
+
+// --- 3. Dedicated Wishlist Page ---
+app.get('/wishlist', ensureAuthenticated, async (req, res) => {
+    try {
+        // Fetch the user and populate the whitelist with FULL file details
+        const userWithWhitelist = await User.findById(req.user._id)
+            .populate({
+                path: 'whitelist',
+                match: { isLatestVersion: true, status: 'live' } // Only show live, latest mods
+            });
+            
+        // We need to get signed URLs for the icons in the whitelist
+        const populatedWhitelist = await Promise.all((userWithWhitelist.whitelist || []).map(async (file) => {
+            const key = file.iconUrl || file.iconKey;
+            const signedIconUrl = await getSmartImageUrl(key);
+            return { ...file.toObject(), iconUrl: signedIconUrl };
+        }));
+
+        res.render('pages/wishlist', { whitelistedMods: populatedWhitelist });
+
+    } catch (error) {
+        console.error("Wishlist Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- 4. Additional Settings Page (2FA, Delete Account, Newsletter) ---
+app.get('/settings', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        
+        // Convert to object so we can append custom properties
+        const userObj = user.toObject();
+        // Crucial: Attach the signed avatar URL generated by your global middleware!
+        userObj.signedAvatarUrl = req.user.signedAvatarUrl;
+
+        res.render('pages/settings', { user: userObj });
+    } catch (error) {
+        console.error("Settings page error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- 5. Newsletter Toggle Route ---
+app.post('/account/newsletter', ensureAuthenticated, async (req, res) => {
+    try {
+        const { subscribe } = req.body;
+        const user = await User.findById(req.user._id);
+        
+        user.isSubscribedToNewsletter = (subscribe === 'true');
+        await user.save();
+        
+        res.redirect('/settings?success=Newsletter preferences updated.');
+    } catch (e) {
+        console.error("Newsletter update error:", e);
+        res.redirect('/settings?error=Error updating newsletter preferences.');
+    }
+});
+
+// --- 6. 2FA Recovery Codes Display ---
+app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
+    // Grab the codes from the session
+    const codes = req.session.tempRecoveryCodes;
+    
+    if (!codes || codes.length === 0) {
+        // If they try to go to this page later, kick them back to Settings
+        return res.redirect('/settings'); 
+    }
+
+    // IMMEDIATELY delete the codes from the session so they can never be viewed again
+    req.session.tempRecoveryCodes = null;
+
+    res.render('pages/2fa-recovery-codes', { codes: codes });
 });
 
 // My Uploads Route
@@ -2784,7 +3045,34 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
         return next(error); 
     }
 });
+// --- NEW: Analytics Dashboard Route ---
+app.get('/my-stats', ensureAuthenticated, async (req, res) => {
+    try {
+        // 1. Get all files by this user
+        const myFiles = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
+        
+        // 2. Get the daily time-series data for this user
+        const myDailyStats = await DailyStat.find({ uploader: req.user.username }).sort({ dateString: 1 });
 
+        // 3. Calculate Totals
+        let totalViews = 0;
+        let totalDownloads = 0;
+        myFiles.forEach(f => {
+            totalViews += f.views || 0;
+            totalDownloads += f.downloads || 0;
+        });
+
+        res.render('pages/my-stats', {
+            files: myFiles,
+            dailyStatsJson: JSON.stringify(myDailyStats), // Stringify for Chart.js
+            totalViews,
+            totalDownloads
+        });
+    } catch (e) {
+        console.error("Stats Error:", e);
+        res.status(500).render('pages/500');
+    }
+});
 // ===================================
 // 6.5 PUBLIC PROFILE ROUTE
 // ===================================
@@ -2808,6 +3096,18 @@ app.get('/users/:username', async (req, res, next) => {
                 errorMessage: `We couldn't find a user named "${slug}". They may have changed their name or deleted their account.`
             });
         }
+
+         // --- NEW: Calculate Forum Points and Rank for the Public Profile User ---
+        // 2.5 Calculate their points
+        const userUploadsForPoints = await File.countDocuments({ uploader: targetUser.username, isLatestVersion: true, status: 'live' });
+        const userReviewsForPoints = await Review.countDocuments({ user: targetUser._id });
+        const userFollowersForPoints = targetUser.followers.length;
+        
+        // We set the points on the document. 
+        // Because of your Schema Virtual, Mongoose will automatically 
+        // generate targetUser.forumRank behind the scenes!
+        targetUser.forumPoints = (userUploadsForPoints * 10) + (userReviewsForPoints * 2) + (userFollowersForPoints * 5);
+        // ---------------------------------------------------------
 
         // --- 3. HANDLE BANNED USERS ---
         if (targetUser.isBanned) {
@@ -2884,9 +3184,14 @@ app.get('/users/:username', async (req, res, next) => {
 
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
-        const { username, email, bio } = req.body;
+        const { username, email, bio, dateOfBirth, country } = req.body; 
         const user = await User.findById(req.user.id);
         if (bio !== undefined) user.bio = bio;
+        if (country !== undefined) user.country = country;
+        // 2. Save Date of Birth
+        if (dateOfBirth) {
+            user.dateOfBirth = new Date(dateOfBirth);
+        }
 
         // --- Handle Username Change ---
         if (username && username !== user.username) {
@@ -3036,56 +3341,184 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// --- 2. 2FA Setup Pages ---
+// ✅ KEEP THIS ROUTE ✅
 app.get('/account/2fa/setup', ensureAuthenticated, (req, res) => {
     res.render('pages/2fa-setup', { error: req.query.error, message: req.query.message });
 });
 
+// ==========================================
+// 2FA SETUP GENERATION ROUTES
+// ==========================================
+
+// 1. Generate TOTP (QR Code & Secret)
 app.post('/account/2fa/generate-totp', ensureAuthenticated, async (req, res) => {
     try {
-        const secret = otplib.authenticator.generateSecret();
-        const otpauth = otplib.authenticator.keyuri(req.user.email, 'GPL Mods', secret);
-        const qrCodeUrl = await qrcode.toDataURL(otpauth);
+        const secret = speakeasy.generateSecret({ 
+            name: `GPLMods (${req.user.username})` 
+        });
         
-        // Save secret temporarily
-        await User.findByIdAndUpdate(req.user._id, { twoFactorSecret: secret });
+        req.session.tempTwoFactorSecret = secret.base32;
+        const dataURL = await QRCode.toDataURL(secret.otpauth_url);
         
-        res.json({ success: true, qrCodeUrl, secret });
-    } catch (e) { res.json({ success: false }); }
+        // Force session to save BEFORE responding
+        req.session.save((err) => {
+            if (err) throw err;
+            res.json({ success: true, qrCodeUrl: dataURL, manualCode: secret.base32 });
+        });
+    } catch (e) {
+        console.error("TOTP Gen Error:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
 });
 
-// --- Enable 2FA & Generate Recovery Codes ---
+// 2. Generate Passkey Options
+app.get('/account/2fa/passkey/generate-options', ensureAuthenticated, async (req, res) => {
+    try {
+        const stringId = req.user._id.toString();
+        const uint8UserId = new Uint8Array(Buffer.from(stringId, 'utf8'));
+
+        const options = await generateRegistrationOptions({
+            rpName: 'GPL Mods',
+            rpID: req.hostname, // Matches your dynamic domain
+            userID: uint8UserId,
+            userName: req.user.username,
+            attestationType: 'none',
+            authenticatorSelection: { userVerification: 'preferred' },
+        });
+        
+        req.session.currentChallenge = options.challenge;
+        
+        req.session.save((err) => {
+            if (err) throw err;
+            res.json(options);
+        });
+    } catch (e) {
+        console.error("Passkey Options Error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 3. Verify Passkey Setup
+app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        const expectedChallenge = req.session.currentChallenge;
+
+        if (!expectedChallenge) {
+            return res.status(400).json({ success: false, error: 'Session expired. Please try again.' });
+        }
+
+        const verification = await verifyRegistrationResponse({
+            response: req.body,
+            expectedChallenge,
+            expectedOrigin: req.headers.origin || (process.env.BASE_URL ? process.env.BASE_URL : `http://${req.headers.host}`), 
+            expectedRPID: req.hostname,         
+        });
+
+        if (verification.verified) {
+            const { registrationInfo } = verification;
+            
+            // --- NEW: Handle SimpleWebAuthn Registration Info Safely ---
+            // The library returns these as Uint8Arrays or similar structures in newer versions.
+            // We need to convert them to base64url strings to store them safely in MongoDB.
+            
+            // Function to safely convert Uint8Array/Buffer to base64url
+            const toBase64Url = (buffer) => {
+                if (!buffer) return '';
+                // If it's already a string, assume it's base64url or similar and use it
+                if (typeof buffer === 'string') return buffer;
+                // Otherwise, convert the Uint8Array/Buffer to a standard buffer then to base64url
+                return Buffer.from(buffer).toString('base64url');
+            };
+
+            const credentialIDStr = toBase64Url(registrationInfo.credentialID || registrationInfo.credential.id);
+            const publicKeyStr = toBase64Url(registrationInfo.credentialPublicKey || registrationInfo.credential.publicKey);
+            const counter = registrationInfo.counter || 0;
+            const transports = registrationInfo.credentialDeviceType === 'singleDevice' ? ['internal'] : []; // Optional, but good practice
+
+            if (!credentialIDStr || !publicKeyStr) {
+                throw new Error("Missing credential data from authenticator.");
+            }
+
+            // Push to your Schema's 'passkeys' array
+            user.passkeys.push({
+                credentialID: credentialIDStr,
+                credentialPublicKey: publicKeyStr,
+                counter: counter,
+                transports: transports
+            });
+            
+            user.twoFactorMethod = 'passkey';
+
+            const rawCodes = generateRecoveryCodes();
+            user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+            
+            user.twoFactorEnabled = true;
+
+            await user.save();
+
+            req.session.currentChallenge = null;
+            req.session.tempRecoveryCodes = rawCodes;
+            
+            req.session.save(() => {
+                res.json({ success: true }); 
+            });
+        } else {
+            res.json({ success: false, error: 'Verification failed' });
+        }
+    } catch (err) {
+        console.error("Passkey Verify Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 4. Enable TOTP or Email Verification
 app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
     try {
         const { method, token } = req.body;
         const user = await User.findById(req.user._id);
 
-        if (method === 'totp') {
-            const isValid = otplib.authenticator.check(token, user.twoFactorSecret);
-            if (!isValid) return res.redirect('/account/2fa/setup?error=Invalid Authenticator Code.');
+        // ✅ FIX 1: Strip accidental spaces from the token
+        const cleanToken = token ? token.replace(/\s+/g, '') : '';
+
+        if (method === 'email') {
+            user.twoFactorMethod = 'email';
+        } else if (method === 'totp') {
+            
+            const verified = speakeasy.totp.verify({
+                secret: req.session.tempTwoFactorSecret,
+                encoding: 'base32',
+                token: cleanToken // <-- Use the sanitized token here
+            });
+
+            if (!verified) {
+                return res.redirect('/account/2fa/setup?error=Invalid TOTP code. Please try again.');
+            }
+            
+            user.twoFactorMethod = 'totp';
+            user.twoFactorSecret = req.session.tempTwoFactorSecret;
+            req.session.tempTwoFactorSecret = null; // Clean up
         }
 
+        const rawCodes = generateRecoveryCodes();
+        user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+        
+        // Use your Schema's exact boolean name
         user.twoFactorEnabled = true;
-        user.twoFactorMethod = method;
-
-        // Generate 8 Backup Recovery Codes (8 characters each)
-        const rawCodes = [];
-        const hashedCodes = [];
-        for (let i = 0; i < 8; i++) {
-            const code = crypto.randomBytes(4).toString('hex');
-            rawCodes.push(code);
-            hashedCodes.push(await bcrypt.hash(code, 10)); // Save hashed for security
-        }
         
-        user.twoFactorRecoveryCodes = hashedCodes;
         await user.save();
-        
-        // Send them to a special page to copy their backup codes!
-        res.render('pages/2fa-recovery-codes', { codes: rawCodes });
 
-    } catch (e) { 
-        console.error("2FA Enable Error:", e);
-        res.redirect('/account/2fa/setup?error=Server error.'); 
+        req.session.tempRecoveryCodes = rawCodes; 
+        
+        // ✅ FIX 2: Wait for session to save BEFORE redirecting to avoid a blank recovery codes page
+        req.session.save((err) => {
+            if (err) console.error("Session save error:", err);
+            res.redirect('/account/2fa/recovery-codes');
+        });
+
+    } catch (err) {
+        console.error("2FA Enable Error:", err);
+        res.redirect('/account/2fa/setup?error=An error occurred.');
     }
 });
 
@@ -3093,7 +3526,9 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
 app.post('/login/2fa/verify', async (req, res, next) => {
     if (!req.session.pending2faUserId) return res.redirect('/login');
     try {
-        const { token } = req.body;
+        // ✅ FIX: Extract token and strip any accidental whitespace immediately
+        const token = req.body.token ? req.body.token.replace(/\s+/g, '') : '';
+        
         const user = await User.findById(req.session.pending2faUserId);
 
         let isValid = false;
@@ -3111,8 +3546,13 @@ app.post('/login/2fa/verify', async (req, res, next) => {
         } 
         // 2. Otherwise, check TOTP
         else if (user.twoFactorMethod === 'totp') {
-            isValid = otplib.authenticator.check(token, user.twoFactorSecret);
-        } 
+            // Make sure you use speakeasy here to verify the login!
+            isValid = speakeasy.totp.verify({
+                secret: user.twoFactorSecret,
+                encoding: 'base32',
+                token: token // Using the clean token
+            });
+        }
         // 3. Otherwise, check Email OTP
         else if (user.twoFactorMethod === 'email') {
             isValid = (user.verificationOtp === token && user.otpExpires > Date.now());
@@ -3148,123 +3588,113 @@ app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: false, twoFactorMethod: 'none', twoFactorSecret: '' });
     res.redirect('/profile?success=2FA Disabled.');
 });
-// --- ENABLE SOCIAL 2FA ---
 app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => {
-    const { provider } = req.body;
-    await User.findByIdAndUpdate(req.user._id, {
-        twoFactorEnabled: true,
-        twoFactorMethod: 'social',
-        twoFactorSocialProvider: provider
-    });
-    // Remember to generate and show backup codes here just like TOTP!
-    res.redirect('/profile?success=Social 2FA Enabled. Please save your backup codes!');
+    try {
+        const { provider } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!['google', 'github', 'microsoft'].includes(provider)) {
+            return res.redirect('/account/2fa/setup?error=Invalid provider.');
+        }
+
+        // Ensure they actually have that provider linked
+        if (!user[`${provider}Id`]) {
+             return res.redirect(`/account/2fa/setup?error=You must link a ${provider} account first.`);
+        }
+
+        user.twoFactorMethod = 'social';
+        user.twoFactorProvider = provider; // Save which one they want to use
+
+        // --- THE CRITICAL FIX: GENERATE RECOVERY CODES HERE ---
+        const rawCodes = generateRecoveryCodes();
+        user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+        user.isTwoFactorEnabled = true;
+        
+        await user.save();
+
+        req.session.tempRecoveryCodes = rawCodes;
+        res.redirect('/account/2fa/recovery-codes'); // Redirect to codes page
+
+    } catch (err) {
+        console.error("Social 2FA Enable Error:", err);
+        res.redirect('/account/2fa/setup?error=An error occurred.');
+    }
 });
 
-// --- PASSKEY SETUP ROUTES ---
-const rpName = 'GPL Mods';
 
-app.get('/account/2fa/passkey/generate-options', ensureAuthenticated, async (req, res) => {
+// ==========================================
+// PASSKEY LOGIN CHALLENGE ROUTES
+// ==========================================
+
+// 1. Generate the challenge for the user trying to log in
+app.get('/login/2fa/passkey/options', async (req, res) => {
+    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
+    const user = await User.findById(req.session.pending2faUserId);
+    
+    if (!user || !user.passkey) return res.status(400).json({error: 'No passkey found for user'});
+
     try {
-        const rpID = req.hostname; // 'localhost' or 'gplmods.webredirect.org'
-        const options = await generateRegistrationOptions({
-            rpName,
-            rpID,
-            userID: req.user._id.toString(),
-            userName: req.user.username,
-            attestationType: 'none',
-            authenticatorSelection: { userVerification: 'preferred' }
+        const options = await generateAuthenticationOptions({
+            rpID: process.env.BASE_URL ? new URL(process.env.BASE_URL).hostname : 'localhost',
+            allowCredentials: [{
+                id: Buffer.from(user.passkey.credentialID, 'base64url'),
+                type: 'public-key',
+                transports: ['internal'],
+            }],
+            userVerification: 'preferred',
         });
         
-        await User.findByIdAndUpdate(req.user._id, { webAuthnChallenge: options.challenge });
+        // Save the challenge to the session
+        req.session.currentChallenge = options.challenge;
         res.json(options);
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+        console.error("Passkey Login Options Error:", e);
+        res.status(500).json({ error: e.message });
+    }
 });
 
-app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        const verification = await verifyRegistrationResponse({
-            response: req.body,
-            expectedChallenge: user.webAuthnChallenge,
-            expectedOrigin: process.env.BASE_URL || `http://${req.headers.host}`,
-            expectedRPID: req.hostname,
-        });
-
-        if (verification.verified) {
-            const { credentialPublicKey, credentialID } = verification.registrationInfo;
-            user.passkeys.push({
-                credentialID: Buffer.from(credentialID).toString('base64url'),
-                credentialPublicKey: Buffer.from(credentialPublicKey).toString('base64url'),
-                counter: 0
-            });
-            user.twoFactorEnabled = true;
-            user.twoFactorMethod = 'passkey';
-            user.webAuthnChallenge = undefined;
-            await user.save();
-            res.json({ success: true });
-        } else {
-            res.status(400).json({ error: 'Verification failed' });
-        }
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// --- PASSKEY LOGIN CHALLENGE ROUTES ---
-app.get('/login/2fa/passkey/options', async (req, res) => {
-    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending session'});
-    const user = await User.findById(req.session.pending2faUserId);
-    
-    const options = await generateAuthenticationOptions({
-        rpID: req.hostname,
-        allowCredentials: user.passkeys.map(key => ({
-            id: Buffer.from(key.credentialID, 'base64url'),
-            type: 'public-key',
-        })),
-        userVerification: 'preferred',
-    });
-    
-    user.webAuthnChallenge = options.challenge;
-    await user.save();
-    res.json(options);
-});
-
+// 2. Verify the biometric response from the user's device
 app.post('/login/2fa/passkey/verify', async (req, res, next) => {
-    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No session'});
+    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
     const user = await User.findById(req.session.pending2faUserId);
     
     try {
-        const passkey = user.passkeys.find(k => k.credentialID === req.body.id);
-        if (!passkey) throw new Error('Passkey not found');
-
         const verification = await verifyAuthenticationResponse({
             response: req.body,
-            expectedChallenge: user.webAuthnChallenge,
+            expectedChallenge: req.session.currentChallenge,
             expectedOrigin: process.env.BASE_URL || `http://${req.headers.host}`,
-            expectedRPID: req.hostname,
+            expectedRPID: process.env.BASE_URL ? new URL(process.env.BASE_URL).hostname : 'localhost',
             authenticator: {
-                credentialPublicKey: Buffer.from(passkey.credentialPublicKey, 'base64url'),
-                credentialID: Buffer.from(passkey.credentialID, 'base64url'),
-                counter: passkey.counter,
+                credentialPublicKey: Buffer.from(user.passkey.credentialPublicKey, 'base64url'),
+                credentialID: Buffer.from(user.passkey.credentialID, 'base64url'),
+                counter: user.passkey.counter,
             },
         });
 
         if (verification.verified) {
-            passkey.counter = verification.authenticationInfo.newCounter;
-            user.webAuthnChallenge = undefined;
+            // Update the counter to prevent replay attacks
+            user.passkey.counter = verification.authenticationInfo.newCounter;
             await user.save();
             
-            // Login successful!
+            // Clean up session vars
+            req.session.pending2faUserId = null;
+            req.session.currentChallenge = null;
+            
+            // Login successful! Securely regenerate session.
             req.logIn(user, (err) => {
                 if (err) return next(err);
-                req.session.pending2faUserId = null;
                 let tempSession = req.session.passport;
                 req.session.regenerate(() => {
                     req.session.passport = tempSession;
                     req.session.save(() => res.json({ success: true, redirect: '/home' }));
                 });
             });
+        } else {
+            res.status(400).json({ success: false, error: 'Biometric verification failed' });
         }
     } catch (e) {
-        res.status(400).json({ error: e.message });
+        console.error("Passkey Login Verify Error:", e);
+        res.status(400).json({ success: false, error: e.message });
     }
 });
 
@@ -3309,15 +3739,16 @@ app.post('/login/2fa/verify', async (req, res, next) => {
         });
     } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
 });
+
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
     try {
         const userId = req.user._id;
         const username = req.user.username;
         const preserveMods = req.body.preserveMods === 'true';
 
-        // 1. DELETE AVATAR FROM B2 CLOUD
+        // 1. DELETE AVATAR FROM CLOUD (Uses new dual-cloud helper)
         if (req.user.profileImageKey) {
-            await deleteFromB2(req.user.profileImageKey);
+            await deleteCloudFile(req.user.profileImageKey);
         }
 
         // 2. WIPE MODS & MOD DATA
@@ -3325,29 +3756,38 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
             // Keep the files, but anonymize the uploader
             await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
             
-            // 🔥 CRITICAL: If they preserve mods, we must still delete all the "Uploader Replies" they made on comments for those mods!
-            const userFiles = await File.find({ uploader: 'GPL Community' }); // Now owned by community
+            // If they preserve mods, we must unset their "Uploader Replies" on comments
+            const userFiles = await File.find({ uploader: 'GPL Community' }); 
             const fileIds = userFiles.map(f => f._id);
             await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
             
         } else {
             // Delete EVERYTHING related to their mods from the Cloud and DB
             const userFiles = await File.find({ uploader: username }).populate('olderVersions');
+            
             for (const f of userFiles) {
-                await deleteFromB2(f.fileKey);
-                await deleteFromB2(f.iconKey);
+                // Delete main mod files from Cloud (B2 + FTP)
+                await deleteCloudFile(f.fileKey);
+                await deleteCloudFile(f.iconKey);
+                
                 if (f.screenshotKeys) {
-                    for (const sk of f.screenshotKeys) await deleteFromB2(sk);
+                    for (const sk of f.screenshotKeys) {
+                        await deleteCloudFile(sk);
+                    }
                 }
+                
+                // Delete older versions from Cloud and DB
                 if (f.olderVersions) {
                     for (const ov of f.olderVersions) {
-                        await deleteFromB2(ov.fileKey);
+                        await deleteCloudFile(ov.fileKey);
                         await File.findByIdAndDelete(ov._id);
                     }
                 }
+                
+                // Delete the file entry and its associated data
                 await File.findByIdAndDelete(f._id);
                 await Review.deleteMany({ file: f._id }); // Delete all reviews on their mods
-                await Report.updateMany({ file: f._id }, { status: 'resolved' });
+                await Report.updateMany({ file: f._id }, { status: 'resolved' }); // Resolve reports
             }
         }
 
@@ -3357,34 +3797,89 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
         // 4. DELETE THEIR CHAT HISTORY FROM MEMORY
         recentMessages = recentMessages.filter(msg => msg.username !== username);
 
-        // ======== 5. NEWSLETTER UNSUBSCRIBE (Custom Local DB) ========
+        // 5. NEWSLETTER UNSUBSCRIBE (Custom Local DB)
         try {
-            // We use mongoose.models to safely access your Subscriber model 
-            // in case it's imported under a slightly different name at the top.
             const SubscriberModel = mongoose.models.Subscriber || require('./models/subscriber');
-            
             if (SubscriberModel) {
-                // Delete the subscriber record matching this user's email
                 await SubscriberModel.deleteOne({ email: req.user.email.toLowerCase() });
                 console.log(`Unsubscribed ${req.user.email} from newsletter during account deletion.`);
             }
         } catch (subErr) {
             console.error("Failed to delete subscriber record:", subErr);
         }
-        // ===============================================================
 
         // 6. DELETE THE USER ACCOUNT
         await User.findByIdAndDelete(userId);
 
+        // 7. SECURE LOGOUT & COOKIE CLEAR
         req.logout(function(err) {
             if (err) return next(err);
+            res.clearCookie('connect.sid', { path: '/' }); // Securely clear the session cookie
             res.redirect('/?message=Your account and all associated data have been permanently wiped.');
         });
+        
     } catch (error) { 
         console.error("Deep Wipe Deletion Error:", error);
         return next(error); 
     }
 });
+
+// ===================================
+// USER REWARDS & POINT HISTORY ROUTE
+// ===================================
+app.get('/rewards', ensureAuthenticated, async (req, res) => {
+    try {
+        const currentPoints = req.user.forumPoints || 0;
+        const history = await PointHistory.find({ user: req.user._id }).sort({ createdAt: -1 });
+
+        // Define our Ranks and their thresholds
+        const ranks = [
+            { name: 'Novice', threshold: 0, color: 'var(--silver)', lottie: null },
+            { name: 'Bronze Member', threshold: 25, color: '#cd7f32', lottie: 'rank-1.json' },
+            { name: 'Silver Expert', threshold: 100, color: '#c0c0c0', lottie: 'rank-2.json' },
+            { name: 'Gold Expert', threshold: 250, color: '#FFD700', lottie: 'rank-3.json' },
+            { name: 'Platinum Expert', threshold: 500, color: '#e5e4e2', lottie: 'rank-4.json' },
+            { name: 'Diamond Expert', threshold: 1000, color: '#b9f2ff', lottie: 'rank-5.json' }
+        ];
+
+        // Figure out current rank and the NEXT rank
+        let currentRank = ranks[0];
+        let nextRank = null;
+
+        for (let i = ranks.length - 1; i >= 0; i--) {
+            if (currentPoints >= ranks[i].threshold) {
+                currentRank = ranks[i];
+                nextRank = ranks[i + 1] || null; // Will be null if they are max rank
+                break;
+            }
+        }
+
+        // Calculate Progress Percentage for the Progress Bar
+        let progressPercent = 100;
+        let pointsNeeded = 0;
+
+        if (nextRank) {
+            const pointsRequiredForThisTier = nextRank.threshold - currentRank.threshold;
+            const pointsEarnedInThisTier = currentPoints - currentRank.threshold;
+            progressPercent = Math.floor((pointsEarnedInThisTier / pointsRequiredForThisTier) * 100);
+            pointsNeeded = nextRank.threshold - currentPoints;
+        }
+
+        res.render('pages/rewards', { 
+            history, 
+            currentRank, 
+            nextRank, 
+            progressPercent, 
+            pointsNeeded, 
+            currentPoints 
+        });
+
+    } catch (error) {
+        console.error("Rewards Page Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
 // ===================================
 // 7. FILE UPLOAD & MANAGEMENT
 // ===================================
@@ -3612,6 +4107,16 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         if (!file || file.uploader !== req.user.username) {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
+        // ✅ ADDED: Delete images from BOTH clouds before deleting DB record
+        await deleteCloudFile(file.iconKey);
+        if (file.screenshotKeys) {
+            for (const key of file.screenshotKeys) {
+                await deleteCloudFile(key);
+            }
+        }
+
+        // Delete the file and its associated reviews/reports from the database
+        await File.findByIdAndDelete(fileId);
 
         // --- 1. DELETE FILES FROM BACKBLAZE B2 ---
         
@@ -3994,7 +4499,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         } else {
         // ======== NEW: AWARD POINTS FOR UPLOADING ========
         // Give the user 50 points for contributing a mod!
-        await User.adjustForumPoints(req.user._id, 50);
+        await User.adjustForumPoints(req.user._id, 50, "Uploaded a new mod");
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -4539,7 +5044,7 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         const newReview = new Review({ file: req.params.fileId, user: req.user._id, username: req.user.username, rating: parseInt(rating), comment: cleanComment });
         await newReview.save();
         // ======== NEW: AWARD POINTS FOR WRITING A REVIEW ========
-        await User.adjustForumPoints(req.user._id, 20);
+        await User.adjustForumPoints(req.user._id, 20, "Wrote a detailed review");
         // ========================================================
         
         const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(req.params.fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
@@ -4567,7 +5072,7 @@ app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
         
         await Review.findByIdAndDelete(review._id);
         await recalculateRating(review.file);
-        await User.adjustForumPoints(review.user, -20);
+        await User.adjustForumPoints(review.user, -20, "Deleted your mod review");
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
 });
@@ -4597,7 +5102,7 @@ app.post('/reviews/:id/reply', ensureAuthenticated, async (req, res) => {
         review.uploaderReply = { text: req.body.replyText, createdAt: new Date() };
         await review.save();
         if (!hadReply) {
-            await User.adjustForumPoints(req.user._id, 10);
+            await User.adjustForumPoints(req.user._id, 10, "Replay to a community member");
         }
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
@@ -4632,7 +5137,7 @@ app.post('/reviews/:reviewId/vote', ensureAuthenticated, async (req, res) => {
 
         // ======== NEW: REWARD THE AUTHOR OF THE HELPFUL REVIEW ========
         // Notice we are updating 'review.user', NOT 'req.user._id'
-        await User.adjustForumPoints(review.user, 10);
+        await User.adjustForumPoints(review.user, 10, "Vote a mod");
         res.redirect(`/mods/${review.file}`);
 
     } catch (error) {
@@ -4716,9 +5221,9 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         const isVoteAdd = (voteType === 'working' && !hasVotedWorking) || (voteType === 'not-working' && !hasVotedNotWorking);
 
         if (isVoteRemoval) {
-            await User.adjustForumPoints(req.user._id, -5);
+            await User.adjustForumPoints(req.user._id, -5, "Remove your vote from a mod");
         } else if (isVoteAdd && !hasPreviouslyVotedStatus) {
-            await User.adjustForumPoints(req.user._id, 5);
+            await User.adjustForumPoints(req.user._id, 5, "Voted a mod");
         }
 
         return res.redirect(`/mods/${fileId}`);
@@ -4802,12 +5307,12 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
             // UNFOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $pull: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $pull: { followers: currentUserId } });
-            await User.adjustForumPoints(targetUserId, -10);
+            await User.adjustForumPoints(targetUserId, -10, "Unfollow user");
         } else {
             // FOLLOW LOGIC
             await User.findByIdAndUpdate(currentUserId, { $push: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $push: { followers: currentUserId } });
-            await User.adjustForumPoints(targetUserId, 10);
+            await User.adjustForumPoints(targetUserId, 10, "Follow a new user");
             
             // Optional: Send a notification to the user that they got a new follower
             // await new UserNotification({ user: targetUserId, title: "New Follower", message: `${req.user.username} started following you!`, type: 'info' }).save();
@@ -5810,25 +6315,40 @@ const startServer = async () => {
         // ✅ CRITICAL FIX: Make Socket.IO globally accessible HERE, inside the function!
         app.set('io', io); 
 
-        // Socket.IO logic
+       // Socket.IO logic
         io.on('connection', (socket) => {
             console.log('A user connected to chat');
             socket.emit('chat history', recentMessages);
+            
             socket.on('chat message', (msg) => {
-                // --- NEW: Sanitize chat messages ---
-                const cleanText = global.profanityFilter.clean(msg.text);
+                // --- FIXED: Sanitize chat messages with Try/Catch ---
+                let finalSafeText = msg.text; // Default to original text
+
+                try {
+                    // Try to clean it. If it's just emojis, this might fail.
+                    finalSafeText = global.profanityFilter.clean(msg.text);
+                } catch (error) {
+                    // If the filter crashes (because of emojis), do nothing!
+                    // finalSafeText remains the original emoji string.
+                }
+
                 const messageData = {
                     username: msg.username,
                     avatar: msg.avatar, 
-                    text: msg.text,
+                    
+                    // ✅ FIXED: We are now passing the SAFE text, not the dirty text!
+                    text: finalSafeText, 
+                    
                     timestamp: new Date()
                 };
+                
                 recentMessages.push(messageData);
                 if (recentMessages.length > 50) {
                     recentMessages.shift();
                 }
                 io.emit('chat message', messageData);
             });
+            
             socket.on('disconnect', () => {
                 console.log('User disconnected from chat');
             });

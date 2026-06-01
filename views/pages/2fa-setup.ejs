@@ -1,121 +1,388 @@
 <%- include('../partials/header') %>
 <style>
-    .auth-container { max-width: 600px; margin: 40px auto; background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333; }
-    .method-card { background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; }
-    .method-card:hover { border-color: var(--gold); }
-    .qr-box { background: white; padding: 10px; display: inline-block; border-radius: 10px; margin: 20px 0; }
+    .auth-container { max-width: 600px; margin: 40px auto; background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    .method-card { background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; text-align: left; width: 100%; display: block; position: relative; }
+    .method-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.1); }
+    .method-card:disabled, .method-card.disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; border-color: #333; }
+    
+    .method-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .method-card h3 { color: var(--white); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.2em; }
+    .method-card p { color: var(--silver); font-size: 0.9em; margin: 0 0 0 35px; line-height: 1.4; }
+    
+    /* Info Icon */
+    .info-icon { color: var(--silver); font-size: 1.2em; transition: color 0.2s; padding: 5px; z-index: 10; }
+    .info-icon:hover { color: var(--gold); }
+
+    /* Custom Dropdown Styles (Reused from Forum) */
+    .custom-select-wrapper { position: relative; width: 100%; margin-bottom: 15px; user-select: none; }
+    .custom-select { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background-color: var(--black); border: 1px solid #333; border-radius: 8px; color: var(--white); cursor: pointer; font-size: 1em; transition: all 0.3s ease; }
+    .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .custom-select-arrow { transition: transform 0.3s ease; color: var(--gold); }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); }
+    .custom-options { position: absolute; top: 100%; left: 0; right: 0; background-color: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; display: none; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .custom-select-wrapper.open .custom-options { display: block; }
+    .custom-option { padding: 12px 15px; color: var(--silver); transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .custom-option:hover { background-color: #222; color: var(--gold); }
+    .custom-option.selected { background-color: rgba(255, 215, 0, 0.1); color: var(--gold); font-weight: bold; }
+
+    .qr-box { background: white; padding: 15px; display: inline-block; border-radius: 10px; margin: 15px 0; border: 2px solid var(--gold); }
+    
+    /* Cancel Main Setup Button */
+    .cancel-setup-btn { background: transparent; color: var(--silver); border: 1px solid #444; width: 100%; padding: 12px; border-radius: 8px; margin-top: 20px; transition: all 0.3s; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 1em; font-weight: bold; }
+    .cancel-setup-btn:hover { background: rgba(229, 57, 53, 0.1); border-color: var(--red); color: var(--red); }
 </style>
 
 <main class="container">
     <div class="auth-container">
-        <h2 style="color: var(--gold); text-align: center;">Setup 2-Factor Authentication</h2>
-        <p style="color: var(--silver); text-align: center; margin-bottom: 30px;">Choose a method to secure your account.</p>
+        <h2 style="color: var(--gold); text-align: center; margin-bottom: 10px; font-size: 2em;">Secure Your Account</h2>
+        <p style="color: var(--silver); text-align: center; margin-bottom: 30px;">Choose a Two-Factor Authentication method.</p>
 
-        <% if (error) { %><p style="color: var(--red); text-align: center;"><%= error %></p><% } %>
+        <% if (error) { %>
+            <div style="background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: bold;">
+                <%= error %>
+            </div>
+        <% } %>
 
         <div id="method-selection">
-            <!-- Email Method -->
-            <form action="/account/2fa/enable" method="POST">
+            
+            <!-- 1. Email Method -->
+            <form action="/account/2fa/enable" method="POST" id="form-email-2fa">
                 <input type="hidden" name="method" value="email">
-                <button type="submit" class="method-card" style="width: 100%; text-align: left;">
-                    <h3 style="color: var(--white); margin: 0;"><i class="fas fa-envelope" style="color: var(--gold);"></i> Email Authentication</h3>
-                    <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">We will email you a code every time you log in.</p>
-                </button>
+                <div class="method-card">
+                    <div class="method-header">
+                        <h3 onclick="document.getElementById('form-email-2fa').submit()"><i class="fas fa-envelope" style="color: var(--gold); width: 25px;"></i> Email Auth</h3>
+                        <i class="fas fa-info-circle info-icon" data-info="email" title="Learn More"></i>
+                    </div>
+                    <p onclick="document.getElementById('form-email-2fa').submit()">We will email you a secure 6-digit code every time you log in.</p>
+                </div>
             </form>
 
-            <!-- Authenticator App Method -->
-            <div class="method-card" id="btn-setup-totp">
-                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-mobile-alt" style="color: var(--blue);"></i> Authenticator App (TOTP)</h3>
-                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use Google or Microsoft Authenticator for instant codes.</p>
+            <!-- 2. Authenticator App Method -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3 id="btn-setup-totp"><i class="fas fa-mobile-alt" style="color: var(--blue); width: 25px;"></i> Authenticator App</h3>
+                    <i class="fas fa-info-circle info-icon" data-info="totp" title="Learn More"></i>
+                </div>
+                <p id="btn-setup-totp-p">Use Google or Microsoft Authenticator for instant codes without internet.</p>
             </div>
 
-            <!-- Placeholders for future methods -->
-            <div class="method-card" style="opacity: 0.5; cursor: not-allowed;">
-                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-fingerprint" style="color: var(--silver);"></i> Passkeys (WebAuthn) - <span style="color: var(--gold); font-size: 0.8em;">Coming Soon</span></h3>
-                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use your device's fingerprint or FaceID.</p>
+            <!-- 3. Passkeys (WebAuthn) Method -->
+            <div class="method-card">
+                <div class="method-header">
+                    <h3 id="btn-setup-passkey"><i class="fas fa-fingerprint" style="color: var(--silver); width: 25px;"></i> Passkey</h3>
+                    <i class="fas fa-info-circle info-icon" data-info="passkey" title="Learn More"></i>
+                </div>
+                <p id="btn-setup-passkey-p">Use your device's biometric scanner for the fastest and most secure login.</p>
             </div>
+
+            <!-- 4. Social 2FA Method -->
+            <% if (user.googleId || user.githubId || user.microsoftId) { %>
+                <form action="/account/2fa/enable-social" method="POST" style="background: var(--black); padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 15px;">
+                    <div class="method-header" style="margin-bottom: 15px;">
+                        <h3 style="color: var(--white); margin: 0; font-size: 1.2em;"><i class="fas fa-link" style="color: #2ecc71; width: 25px;"></i> Social Verification</h3>
+                        <i class="fas fa-info-circle info-icon" data-info="social" title="Learn More"></i>
+                    </div>
+                    <p style="color: var(--silver); font-size: 0.9em; margin: 0 0 15px 0; line-height: 1.4;">Require an immediate secondary login through your linked provider.</p>
+                    
+                    <!-- CUSTOM SELECT DROPDOWN -->
+                    <select name="provider" id="social-provider" style="display: none;" required>
+                        <% if(user.googleId) { %><option value="google">Google Account</option><% } %>
+                        <% if(user.githubId) { %><option value="github">GitHub Account</option><% } %>
+                        <% if(user.microsoftId) { %><option value="microsoft">Microsoft Account</option><% } %>
+                    </select>
+                    
+                    <div class="custom-select-wrapper" id="wrapper-social-provider">
+                        <div class="custom-select">
+                            <span class="selected-text" style="display: flex; align-items: center; gap: 8px;">Select linked account...</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <% if(user.googleId) { %><div class="custom-option" data-value="google"><i class="fab fa-google"></i> Google Account</div><% } %>
+                            <% if(user.githubId) { %><div class="custom-option" data-value="github"><i class="fab fa-github"></i> GitHub Account</div><% } %>
+                            <% if(user.microsoftId) { %><div class="custom-option" data-value="microsoft"><i class="fab fa-windows" style="color:#00a4ef;"></i> Microsoft Account</div><% } %>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Enable Social 2FA</button>
+                </form>
+            <% } else { %>
+                <div class="method-card disabled">
+                    <div class="method-header">
+                        <h3><i class="fas fa-link" style="color: var(--silver); width: 25px;"></i> Social Verification</h3>
+                    </div>
+                    <p>Link a Google, GitHub, or Microsoft account on your profile first to use this method.</p>
+                </div>
+            <% } %>
+
+            <!-- CANCEL BUTTON -->
+            <button class="cancel-setup-btn" id="trigger-cancel-modal">Cancel 2FA Setup</button>
         </div>
 
         <!-- Hidden TOTP Setup Div -->
         <div id="totp-setup" style="display: none; text-align: center;">
-            <h3 style="color: var(--white);">Scan this QR Code</h3>
-            <p style="color: var(--silver); font-size: 0.9em;">Open your Authenticator app and scan this code.</p>
-            <div class="qr-box"><img id="qr-img" src="" alt="QR Code"></div>
+            <h3 style="color: var(--white); margin-bottom: 10px;">Setup Authenticator</h3>
+            <p style="color: var(--silver); font-size: 0.9em;">1. Scan the QR code below using Google or Microsoft Authenticator.</p>
             
-            <form action="/account/2fa/enable" method="POST" style="margin-top: 20px;">
-                <input type="hidden" name="method" value="totp">
-                <input type="text" name="token" placeholder="Enter 6-digit code" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--gold); background: var(--black); color: var(--white); text-align: center; font-size: 1.2em; letter-spacing: 5px; margin-bottom: 15px;">
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px;">Verify & Enable</button>
-            </form>
-        </div>
-
-            <!-- Passkeys (WebAuthn) Method -->
-            <div class="method-card" id="btn-setup-passkey">
-                <h3 style="color: var(--white); margin: 0;"><i class="fas fa-fingerprint" style="color: var(--silver);"></i> Passkey (FaceID/TouchID)</h3>
-                <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Use your device's biometric scanner to log in instantly.</p>
+            <div class="qr-box"><img id="qr-img" src="" alt="QR Code" style="width: 200px; height: 200px;"></div>
+            
+            <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 5px;">
+                2. Or, enter this manual setup key:
+            </p>
+            
+            <!-- ✅ FIX: A flexible container that forces the text to wrap and adds a copy button -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; background: #222; border: 1px solid #444; border-radius: 8px; padding: 10px; max-width: 100%; overflow: hidden;">
+                
+                <!-- The code itself, set to break-all so it wraps on mobile -->
+                <strong id="manual-code" style="color: var(--gold); letter-spacing: 1px; user-select: all; font-size: 0.9em; word-break: break-all; flex-grow: 1; text-align: left;">LOADING...</strong>
+                
+                <!-- The Copy Button -->
+                <button type="button" id="copy-code-btn" title="Copy to Clipboard" style="background: none; border: none; color: var(--silver); font-size: 1.2em; cursor: pointer; transition: color 0.2s ease; padding: 5px;">
+                    <i class="far fa-copy"></i>
+                </button>
             </div>
 
-            <!-- Social 2FA Method -->
-            <% if (user.googleId || user.githubId || user.microsoftId) { %>
-                <form action="/account/2fa/enable-social" method="POST">
-                    <!-- Dropdown to select which linked account to use -->
-                    <select name="provider" required style="width:100%; margin-bottom:10px; padding: 8px; background: var(--black); color: var(--gold); border: 1px solid var(--gold); border-radius: 8px;">
-                        <% if(user.googleId) { %><option value="google">Use Google Account</option><% } %>
-                        <% if(user.githubId) { %><option value="github">Use GitHub Account</option><% } %>
-                        <% if(user.microsoftId) { %><option value="microsoft">Use Microsoft Account</option><% } %>
-                    </select>
-                    <button type="submit" class="method-card" style="width: 100%; text-align: left;">
-                        <h3 style="color: var(--white); margin: 0;"><i class="fas fa-link" style="color: var(--gold);"></i> Social Account Verification</h3>
-                        <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Require a login through your linked provider.</p>
-                    </button>
-                </form>
-            <% } else { %>
-                <div class="method-card" style="opacity: 0.5; cursor: not-allowed;">
-                    <h3 style="color: var(--white); margin: 0;"><i class="fas fa-link" style="color: var(--silver);"></i> Social Account Verification</h3>
-                    <p style="color: var(--silver); font-size: 0.9em; margin: 5px 0 0 0;">Link a Google, GitHub, or Microsoft account first to use this.</p>
-                </div>
-            <% } %>
+            <form action="/account/2fa/enable" method="POST" style="margin-top: 20px;">
+                <input type="hidden" name="method" value="totp">
+                <input type="text" name="token" placeholder="000000" maxlength="6" required autocomplete="off" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid var(--gold); background: var(--black); color: var(--gold); text-align: center; font-size: 1.5em; letter-spacing: 10px; margin-bottom: 20px; outline: none;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">Verify Code & Enable</button>
+                <button type="button" id="btn-cancel-totp" class="btn btn-secondary" style="width: 100%; padding: 15px; margin-top: 10px; border: none;">Go Back</button>
+            </form>
+        </div>
 
     </div>
 </main>
 
-<script>
-    document.getElementById('btn-setup-totp').addEventListener('click', async () => {
-        const res = await fetch('/account/2fa/generate-totp', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('method-selection').style.display = 'none';
-            document.getElementById('totp-setup').style.display = 'block';
-            document.getElementById('qr-img').src = data.qrCodeUrl;
-        }
-    });
-</script>
+<!-- ============================================== -->
+<!-- INFO MODALS FOR EACH METHOD                    -->
+<!-- ============================================== -->
+<div id="info-modal-email" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; border-top: 3px solid var(--gold);">
+        <i class="fas fa-envelope" style="font-size: 3em; color: var(--gold); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 10px;">Email Authentication</h2>
+        <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px; text-align: left;">Every time you log in, we will send a temporary 6-digit code to your registered email address. This prevents anyone from accessing your account even if they steal your password. It is highly secure, but requires you to have access to your email inbox.</p>
+        <button class="btn btn-primary close-info-modal" style="width: 100%; padding: 10px;">Understood</button>
+    </div>
+</div>
+
+<div id="info-modal-totp" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; border-top: 3px solid var(--blue);">
+        <i class="fas fa-mobile-alt" style="font-size: 3em; color: var(--blue); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 10px;">Authenticator App</h2>
+        <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px; text-align: left;">You will need to download an app like <strong>Google Authenticator</strong> or <strong>Authy</strong> on your phone. When logging in, you open the app to get a 6-digit code that changes every 30 seconds. This is the fastest and most secure method because it works even if your phone has no internet connection.</p>
+        <button class="btn btn-primary close-info-modal" style="width: 100%; padding: 10px;">Understood</button>
+    </div>
+</div>
+
+<div id="info-modal-passkey" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; border-top: 3px solid var(--silver);">
+        <i class="fas fa-fingerprint" style="font-size: 3em; color: var(--silver); margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 10px;">Passkeys</h2>
+        <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px; text-align: left;">Passkeys replace passwords and codes entirely. Your device will securely link a biometric signature (like your FaceID, TouchID, or Windows Hello PIN) to your GPL Mods account. No codes to type, just scan your fingerprint and you are in!</p>
+        <button class="btn btn-primary close-info-modal" style="width: 100%; padding: 10px;">Understood</button>
+    </div>
+</div>
+
+<div id="info-modal-social" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; border-top: 3px solid #2ecc71;">
+        <i class="fas fa-link" style="font-size: 3em; color: #2ecc71; margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 10px;">Social Verification</h2>
+        <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px; text-align: left;">If you log in with your email and password, we will force you to immediately click a button and verify your identity through your linked Google, GitHub, or Microsoft account. It leverages the massive security of those tech giants to protect your account here.</p>
+        <button class="btn btn-primary close-info-modal" style="width: 100%; padding: 10px;">Understood</button>
+    </div>
+</div>
+
+<!-- ======== CANCEL SETUP MODAL ======== -->
+<div id="cancel-setup-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; border-top: 3px solid var(--red);">
+        <h2 style="color: var(--red); margin-bottom: 15px;">Cancel 2FA Setup?</h2>
+        <p style="color: var(--silver); margin-bottom: 25px; line-height: 1.6;">Are you sure you want to cancel? Your account will remain at risk without Two-Factor Authentication.</p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <a href="/profile" class="btn btn-secondary" style="color: var(--red); border: 2px solid var(--red); background: transparent; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none;">Yes, Cancel</a>
+            <button type="button" class="btn btn-primary" id="stay-on-setup-btn" style="padding: 10px 20px; border-radius: 8px;">No, Set Up 2FA</button>
+        </div>
+    </div>
+</div>
+
+
 <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
 <script>
-    const { startRegistration } = SimpleWebAuthnBrowser;
+    document.addEventListener('DOMContentLoaded', () => {
+        const methodSelection = document.getElementById('method-selection');
+        const totpSetup = document.getElementById('totp-setup');
+        
+        // --- 1. Custom Select Dropdown Logic ---
+        const wrapper = document.getElementById('wrapper-social-provider');
+        const nativeSelect = document.getElementById('social-provider');
+        if (wrapper && nativeSelect) {
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
 
-    document.getElementById('btn-setup-passkey').addEventListener('click', async () => {
-        try {
-            // 1. Get options from server
-            const resp = await fetch('/account/2fa/passkey/generate-options');
-            const options = await resp.json();
-            
-            // 2. Ask browser to create passkey (prompts FaceID/TouchID/Windows Hello)
-            const attResp = await startRegistration(options);
-            
-            // 3. Send passkey to server to save
-            const verificationResp = await fetch('/account/2fa/passkey/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(attResp),
-            });
-            const verification = await verificationResp.json();
-            if (verification.success) {
-                window.location.href = '/profile?success=Passkey Enabled Successfully!';
+            const firstOption = nativeSelect.options[1]; 
+            if (firstOption) {
+                nativeSelect.value = firstOption.value;
+                const matchCustomOpt = optionsContainer.querySelector(`[data-value="${firstOption.value}"]`);
+                if (matchCustomOpt) {
+                    selectedText.innerHTML = matchCustomOpt.innerHTML;
+                    matchCustomOpt.classList.add('selected');
+                }
             }
-        } catch (error) {
-            alert("Passkey setup failed or cancelled.");
+
+            customSelect.addEventListener('click', (e) => {
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+                
+                selectedText.innerHTML = optionEl.innerHTML;
+                nativeSelect.value = optionEl.getAttribute('data-value');
+                
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+            
+            document.addEventListener('click', () => wrapper.classList.remove('open'));
         }
+
+        // --- 2. Info Modals Logic ---
+        const infoIcons = document.querySelectorAll('.info-icon');
+        const closeInfoBtns = document.querySelectorAll('.close-info-modal');
+        
+        infoIcons.forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); 
+                const modalId = `info-modal-${icon.dataset.info}`;
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('show'), 10);
+                }
+            });
+        });
+
+        closeInfoBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const modal = btn.closest('.policy-modal');
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 200);
+            });
+        });
+
+
+        // --- 3. Cancel Setup Modal Logic ---
+        const cancelBtn = document.getElementById('trigger-cancel-modal');
+        const cancelModal = document.getElementById('cancel-setup-modal');
+        const stayBtn = document.getElementById('stay-on-setup-btn');
+
+        if (cancelBtn && cancelModal) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                cancelModal.style.display = 'flex';
+                setTimeout(() => cancelModal.classList.add('show'), 10);
+            });
+            stayBtn.addEventListener('click', () => {
+                cancelModal.classList.remove('show');
+                setTimeout(() => cancelModal.style.display = 'none', 200);
+            });
+        }
+
+        // --- 4. TOTP Setup Logic ---
+        const setupTotpTriggers = [document.getElementById('btn-setup-totp'), document.getElementById('btn-setup-totp-p')];
+        setupTotpTriggers.forEach(el => {
+            if(!el) return;
+            el.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('info-icon')) return;
+
+                const btnText = el.tagName === 'H3' ? el : el.previousElementSibling;
+                const originalHTML = btnText.innerHTML;
+                btnText.innerHTML = '<i class="fas fa-spinner fa-spin" style="color: var(--blue); width: 25px;"></i> Loading...';
+
+                try {
+                    const res = await fetch('/account/2fa/generate-totp', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        methodSelection.style.display = 'none';
+                        totpSetup.style.display = 'block';
+                        document.getElementById('qr-img').src = data.qrCodeUrl;
+                        document.getElementById('manual-code').textContent = data.manualCode;
+                    } else {
+                        alert("Failed to generate QR Code. Please check server logs.");
+                    }
+                } catch (error) {
+                    alert("Network error.");
+                } finally {
+                    btnText.innerHTML = originalHTML;
+                }
+            });
+        });
+
+        document.getElementById('btn-cancel-totp').addEventListener('click', () => {
+            totpSetup.style.display = 'none';
+            methodSelection.style.display = 'block';
+        });
+
+        // ✅ NEW: Copy to Clipboard Logic for the TOTP Setup Key
+        const copyBtn = document.getElementById('copy-code-btn');
+        const manualCodeText = document.getElementById('manual-code');
+        
+        if (copyBtn && manualCodeText) {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    const textToCopy = manualCodeText.textContent;
+                    await navigator.clipboard.writeText(textToCopy);
+                    
+                    copyBtn.innerHTML = '<i class="fas fa-check" style="color: var(--green);"></i>';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="far fa-copy"></i>';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    alert("Failed to copy. Please select the text manually.");
+                }
+            });
+        }
+
+        // --- 5. Passkey (WebAuthn) Setup Logic ---
+        const setupPasskeyTriggers = [document.getElementById('btn-setup-passkey'), document.getElementById('btn-setup-passkey-p')];
+        setupPasskeyTriggers.forEach(el => {
+            if(!el) return;
+            el.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('info-icon')) return;
+
+                const { startRegistration } = SimpleWebAuthnBrowser;
+                try {
+                    const resp = await fetch('/account/2fa/passkey/generate-options');
+                    if (!resp.ok) throw new Error("Backend route missing or failed.");
+                    
+                    const options = await resp.json();
+                    const attResp = await startRegistration(options);
+                    
+                    const verificationResp = await fetch('/account/2fa/passkey/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(attResp),
+                    });
+                    
+                    const verification = await verificationResp.json();
+                    if (verification.success) {
+                        window.location.href = '/account/2fa/recovery-codes';
+                    } else {
+                        alert("Failed to save passkey on server.");
+                    }
+                } catch (error) {
+                    console.error("Passkey Error:", error);
+                    alert("Passkey setup failed or was cancelled by user.");
+                }
+            });
+        });
     });
 </script>
 <%- include('../partials/footer') %>

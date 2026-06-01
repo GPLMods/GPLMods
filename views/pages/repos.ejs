@@ -11,6 +11,37 @@
     /* Repo Box */
     .repo-box { background: var(--black); border: 1px solid var(--gold); border-radius: 12px; padding: 25px; margin-bottom: 30px; text-align: center; box-shadow: 0 5px 20px rgba(255, 215, 0, 0.05); }
     .repo-box h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.3em; }
+    .repo-btn { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 10px; 
+        background: #1a1a1a; 
+        color: var(--silver); 
+        border: 1px solid #444; 
+        padding: 12px 15px; 
+        border-radius: 8px; 
+        text-decoration: none; 
+        font-weight: bold; 
+        transition: all 0.3s ease; 
+    }
+    .repo-btn:hover { 
+        background: var(--gold); 
+        color: var(--black); 
+        border-color: var(--gold); 
+        transform: translateY(-3px); 
+        box-shadow: 0 5px 15px var(--glow-gold); 
+    }
+    /* ✅ FIX: Perfect scaling for custom SVG icons inside buttons */
+.repo-icon {
+        width: 24px;         
+        height: 24px;        
+        min-width: 24px;     
+        max-width: 24px;     
+        object-fit: contain; /* This makes PNGs scale perfectly! */
+        display: block;      
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); 
+    }
     
     .repo-url-display { 
         display: inline-block; 
@@ -65,27 +96,34 @@
             <div class="repo-url-display"><%= fullRepoUrl %>/ios-repo/apps.json</div>
             
             <div class="repo-buttons-grid">
-                <!-- ✅ FIX: Updated all hrefs to point to apps.json -->
+                <!-- ✅ FIX: Using local SVGs with the .repo-icon class -->
                 <a href="altstore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-box" style="color: #34C759;"></i> Add to AltStore
+                    <img src="/images/icons/altstore.png" alt="AltStore" class="repo-icon"> Add to AltStore
                 </a>
+                
                 <a href="sidestore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-store" style="color: #5E5CE6;"></i> Add to SideStore
+                    <img src="/images/icons/sidestore.png" alt="SideStore" class="repo-icon"> Add to SideStore
                 </a>
+                
                 <a href="scarlet://repo=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-spider" style="color: #FF3B30;"></i> Add to Scarlet
+                    <img src="/images/icons/scarlet.png" alt="Scarlet" class="repo-icon"> Add to Scarlet
                 </a>
+                
                 <a href="esign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-pen-nib" style="color: #FF2D55;"></i> Add to E-Sign
+                    <img src="/images/icons/esign.png" alt="E-Sign" class="repo-icon"> Add to E-Sign
                 </a>
+                
                 <a href="feather://import/<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-feather-alt" style="color: #FF9500;"></i> Add to Feather
+                    <img src="/images/icons/feather.png" alt="Feather" class="repo-icon"> Add to Feather
                 </a>
+                
+                <!-- If you don't have SVGs for some, you can leave FontAwesome or use a generic icon -->
                 <a href="livecontainer://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-box-open" style="color: var(--gold);"></i> Add to LiveContainer
+                    <img src="/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon"> Add to LiveContainer
                 </a>
+                
                 <a href="ksign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <i class="fas fa-signature" style="color: #AF52DE;"></i> Add to Ksign
+                    <img src="/images/icons/ksign.png" alt="Ksign" class="repo-icon"> Add to Ksign
                 </a>
             </div>
         </div>
@@ -124,17 +162,22 @@
             </p>
         </div>
 
-        <div class="repo-box" style="border-color: var(--android-color);">
+<div class="repo-box" style="border-color: var(--android-color);">
             <h3 style="color: var(--android-color);">Add Android Source</h3>
             
-            <!-- The Dynamic Repo URL -->
             <div class="repo-url-display"><%= fullRepoUrl %>/fdroid/repo</div>
             
-            <div class="repo-buttons-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <!-- Standard FDroid scheme -->
+            <!-- ✅ FIX: Separated buttons with local SVGs -->
+            <div class="repo-buttons-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                
                 <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn" style="border-color: var(--android-color);">
-                    <i class="fas fa-robot" style="color: var(--android-color);"></i> Add to Droid-ify / Neo Store
+                    <img src="/images/icons/droidify.png" alt="Droid-ify" class="repo-icon"> Add to Droid-ify
                 </a>
+                
+                <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn" style="border-color: var(--android-color);">
+                    <img src="/images/icons/neostore.png" alt="Neo Store" class="repo-icon"> Add to Neo Store
+                </a>
+
             </div>
         </div>
 

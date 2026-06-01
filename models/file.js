@@ -143,6 +143,16 @@ platforms: { type: [String], required: function() { return this.status !== 'proc
         type: Number, 
         default: 0 
     },
+    // --- NEW: VIEW COUNT SYSTEM ---
+    views: { 
+        type: Number, 
+        default: 0 
+    },
+    viewedBy: [{ 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    }],
+     downloadedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     ratingCount: { 
         type: Number, 
         default: 0 

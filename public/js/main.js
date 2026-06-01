@@ -15,7 +15,8 @@
  * 10. Notifications Logic
  * 11. Newsletter Logic
  * 12. REUSABLE SOCIAL CAROUSEL LOGIC
- * 13. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
+ * 13. GLOBAL CUSTOM SELECT DROPDOWNS
+ * 14. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
  * ==================================================================================
  */
 
@@ -1117,7 +1118,64 @@ function initializeSocialCarousels() {
 }
 /**
  * ==================================================================================
- * 13. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
+ * 13. GLOBAL CUSTOM SELECT DROPDOWNS
+ * Replaces native <select> elements with stylable divs.
+ * ==================================================================================
+ */
+function setupCustomSelect(wrapperId, nativeSelectId) {
+    const wrapper = document.getElementById(wrapperId);
+    const nativeSelect = document.getElementById(nativeSelectId);
+    if (!wrapper || !nativeSelect) return;
+    
+    const customSelect = wrapper.querySelector('.custom-select');
+    const selectedText = wrapper.querySelector('.selected-text');
+    const optionsContainer = wrapper.querySelector('.custom-options');
+
+    // Hide the native select
+    nativeSelect.style.display = 'none';
+
+    // Set initial text
+    const initialSelectedOption = nativeSelect.options[nativeSelect.selectedIndex];
+    if (initialSelectedOption) {
+        selectedText.textContent = initialSelectedOption.text;
+    }
+
+    // Toggle dropdown
+    customSelect.addEventListener('click', (e) => {
+        // Close others
+        document.querySelectorAll('.custom-select-wrapper.open').forEach(w => { 
+            if (w !== wrapper) w.classList.remove('open'); 
+        });
+        wrapper.classList.toggle('open');
+        e.stopPropagation(); 
+    });
+
+    // Handle selection
+    optionsContainer.addEventListener('click', (e) => {
+        const optionEl = e.target.closest('.custom-option');
+        if (!optionEl) return;
+        
+        // Update UI
+        selectedText.textContent = optionEl.textContent;
+        wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+        optionEl.classList.add('selected');
+        wrapper.classList.remove('open');
+        
+        // Update the hidden native select value!
+        nativeSelect.value = optionEl.getAttribute('data-value');
+        
+        // Disptach a 'change' event on the native select in case other scripts are listening to it!
+        nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+}
+
+// Close dropdowns if clicked outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+});
+/**
+ * ==================================================================================
+ * 14. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
  * ==================================================================================
  */
 

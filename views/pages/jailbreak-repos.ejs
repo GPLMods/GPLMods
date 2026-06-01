@@ -7,6 +7,39 @@
     .arch-section { margin-bottom: 60px; background: var(--dark-gray); padding: 30px; border-radius: 15px; border: 1px solid #333; }
     .arch-title { display: flex; align-items: center; gap: 15px; font-size: 1.8em; color: var(--white); margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 15px; }
     .arch-desc { color: var(--silver); margin-bottom: 25px; font-size: 1.05em; }
+    /* ✅ NEW: Styling for custom PNG icons inside repo buttons */
+    .repo-icon {
+        width: 24px;         /* Fixed width */
+        height: 24px;        /* Fixed height */
+        min-width: 24px;     /* Prevents flexbox from squishing it */
+        max-width: 24px;     /* Prevents it from growing */
+        object-fit: contain; /* Ensures the whole icon is visible */
+        display: block;      /* Removes inline spacing bugs */
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); /* Adds depth */
+    }
+
+    /* Update repo-btn to align the new images properly */
+    .repo-btn { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 10px; 
+        background: #1a1a1a; 
+        color: var(--silver); 
+        border: 1px solid #444; 
+        padding: 12px 15px; 
+        border-radius: 8px; 
+        text-decoration: none; 
+        font-weight: bold; 
+        transition: all 0.3s ease; 
+    }
+    .repo-btn:hover { 
+        background: var(--gold); 
+        color: var(--black); 
+        border-color: var(--gold); 
+        transform: translateY(-3px); 
+        box-shadow: 0 5px 15px var(--glow-gold); 
+    }
 </style>
 
 <main class="container">
@@ -29,18 +62,37 @@
         </div>
 
         <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-            <a href="sileo://source/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
-                <i class="fas fa-wind" style="color: #5AC8FA;"></i> Add to Sileo
+            
+            <!-- Sileo -->
+            <a href="sileo://source/<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/sileo.png" alt="Sileo" class="repo-icon"> Add to Sileo
             </a>
-            <a href="zbra://sources/add/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
-                <i class="fas fa-horse-head" style="color: #000; background: #fff; padding: 2px; border-radius: 4px;"></i> Add to Zebra
+            
+            <!-- Zebra -->
+            <a href="zbra://sources/add/<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/zebra.png" alt="Zebra" class="repo-icon"> Add to Zebra
             </a>
-            <a href="cydia://url/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
-                <i class="fas fa-cube" style="color: #8E8E93;"></i> Add to Cydia
+            
+            <!-- Cydia -->
+            <a href="cydia://url/https://cydia.saurik.com/api/share#?source=<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/cydia.png" alt="Cydia" class="repo-icon"> Add to Cydia
             </a>
-            <a href="installer://add/<%= fullRepoUrl %>" class="btn btn-secondary" style="padding: 10px 20px; background: #1a1a1a; border: 1px solid #333;">
-                <i class="fas fa-download" style="color: #34C759;"></i> Add to Installer
+
+            <!-- PurePKG -->
+            <a href="purepkg://repo/add?url=<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/purepkg.png" alt="PurePKG" class="repo-icon"> Add to PurePKG
             </a>
+            
+            <!-- Installer -->
+            <a href="installer://add/<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/installer.png" alt="Installer" class="repo-icon"> Add to Installer
+            </a>
+
+            <!-- ✅ NEW: Saily Support -->
+            <a href="saily://addRepo?url=<%= fullRepoUrl %>" class="repo-btn">
+                <img src="/images/icons/saily.png" alt="Saily" class="repo-icon"> Add to Saily
+            </a>
+
         </div>
     </section>
 
