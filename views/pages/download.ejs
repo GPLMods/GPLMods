@@ -520,6 +520,9 @@
                         <a href="<%= vtUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
                             <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
                         </a>
+                       <button onclick="shareMod()" class="action-btn">
+                       <i class="fas fa-share-alt"></i> Share Mod
+                       </button>
                     <% } %>
                 </div>
             </div>
@@ -1346,6 +1349,23 @@
     function closeCommentDelete() {
         deleteModal.classList.remove('show');
         setTimeout(() => deleteModal.style.display = 'none', 200);
+    }
+</script>
+<script>
+    function shareMod() {
+        const currentPath = window.location.pathname; // gets "/mods/12345"
+        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${currentPath}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: '<%= file.name %> on GPL Mods',
+                text: 'Download <%= file.name %> safely on GPL Mods!',
+                url: gatewayShareUrl
+            });
+        } else {
+            navigator.clipboard.writeText(gatewayShareUrl);
+            alert("Mod link copied!");
+        }
     }
 </script>
 <%- include('../partials/popunder-ads') %>

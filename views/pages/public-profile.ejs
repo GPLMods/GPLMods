@@ -280,18 +280,25 @@
         });
     });
 
-    // Share Profile Function
+    // Share Profile Function - UPDATED TO USE NETLIFY GATEWAY
     function shareProfile() {
+        // 1. Get the path the user is currently on (e.g., "/users/Admin")
+        const currentPath = window.location.pathname;
+        
+        // 2. Build the Gateway URL! 
+        // We combine the Netlify URL with the "?dest=" parameter
+        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${currentPath}`;
+
         if (navigator.share) {
             navigator.share({
                 title: '<%= profileUser.username %>\'s Profile on GPL Mods',
                 text: 'Check out <%= profileUser.username %> on GPL Mods!',
-                url: window.location.href
+                url: gatewayShareUrl // <-- Using the Gateway URL here
             }).then(() => console.log('Successful share'))
             .catch((error) => console.log('Error sharing', error));
         } else {
-            alert("Profile link copied to clipboard: " + window.location.href);
-            navigator.clipboard.writeText(window.location.href);
+            alert("Profile link copied to clipboard:\n\n" + gatewayShareUrl);
+            navigator.clipboard.writeText(gatewayShareUrl);
         }
     }
 </script>

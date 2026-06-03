@@ -745,6 +745,7 @@ app.use(async (req, res, next) => {
         res.locals.formatCompactNumber = formatCompactNumber;
         res.locals.formatBytes = formatBytes;
         res.locals.slugify = slugify;
+        res.locals.cdnUrl = process.env.CDN_URL || ''; 
         // Make sure truncateText is defined as a helper function elsewhere in your server.js!
         res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
