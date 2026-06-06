@@ -36,6 +36,7 @@
     "@aws-sdk/lib-storage": "^3.1022.0",
     "@aws-sdk/s3-request-presigner": "^3.975.0",
     "@gitbook/embed": "^0.4.0",
+    "@google-cloud/translate": "^9.4.2",
     "@simplewebauthn/server": "^13.3.0",
     "adm-zip": "^0.5.17",
     "adminjs": "^7.8.17",

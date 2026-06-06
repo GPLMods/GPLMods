@@ -66,6 +66,10 @@ isBanned: {
 profileImageKey: {
     type: String // Stores the path like 'avatars/12345-image.png'
 },
+    // --- NEW: SINGLE SESSION TRACKING ---
+    currentSessionId: {
+        type: String
+    },
     bio: {
         type: String,
         trim: true,
@@ -235,7 +239,7 @@ UserSchema.virtual('forumRank').get(function() {
     if (pts >= 100)  return { name: 'Silver Expert', color: '#c0c0c0', lottie: 'level-2.json' };
     if (pts >= 25)   return { name: 'Bronze Member', color: '#cd7f32', lottie: 'level-1.json' };
     
-    return { name: 'Novice', color: 'var(--silver)', lottie: null }; // Default
+    return { name: 'Novice', color: '#FFFFFF', lottie: null }; // Default
 });
 
 // Ensure virtuals are included when converting to JSON/Objects

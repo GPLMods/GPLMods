@@ -3,9 +3,10 @@
  * GPL MODS GLOBAL JAVASCRIPT
  * ==================================================================================
  * Table of Contents:
- * 1. Document Ready Initializer (with Try/Catch Safety)
- * 2. Homepage Tab Navigation
- * 3. Star Rating System
+ * 0. Document Ready Initializer (with Try/Catch Safety)
+ * 1. Homepage Tab Navigation
+ * 2. Star Rating System
+ * 3. VPN DETECTION SYSTEM (Timezone Mismatch Method)
  * 4. Search Bar Handler (Dynamic Animation)
  * 5. Search History & Suggestions
  * 6. Mobile Navigation Handler
@@ -23,7 +24,7 @@
 console.log("GPL Mods main.js is loading...");
 
 // ==================================================================================
-// 1. DOCUMENT READY INITIALIZER
+// 0. DOCUMENT READY INITIALIZER
 // ==================================================================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM loaded. Running initializers...");
@@ -37,6 +38,7 @@ try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error
 try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); }
 try { initializeNewsletter(); } catch (e) { console.error("Newsletter Error:", e); }
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); }
+try { initializeVpnDetector(); } catch (e) { console.error("VPN Detector Error:", e); }
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
 try { initializeLanguageSystem(); } catch (e) { console.error("Language System Error:", e); }
 try { initializeSocialCarousels(); } catch (e) { console.error("Carousel Error:", e); }
@@ -48,7 +50,7 @@ try { initializeSocialCarousels(); } catch (e) { console.error("Carousel Error:"
 
 /**
  * ==================================================================================
- * 2. HOMEPAGE 2-TIER TAB NAVIGATION
+ * 1. HOMEPAGE 2-TIER TAB NAVIGATION
  * Handles main tabs and iOS sub-tabs
  * ==================================================================================
  */
@@ -137,7 +139,7 @@ function initializeHomepageTabs() {
 
 /**
  * ==================================================================================
- * 3. STAR RATING SYSTEM
+ * 2. STAR RATING SYSTEM
  * ==================================================================================
  */
 function initializeStarRatings() {
@@ -164,9 +166,86 @@ function initializeStarRatings() {
 
 /**
  * ==================================================================================
- * 4. SEARCH BAR HANDLER (DYNAMIC ANIMATION)
+ * 3. VPN DETECTION SYSTEM (Reliable API Database Method)
  * ==================================================================================
  */
+async function initializeVpnDetector() {
+    const vpnModal = document.getElementById('vpn-modal-container');
+    const understoodBtn = document.getElementById('understoodVpnBtn');
+
+    // 1. Check if they already dismissed it
+    if (!vpnModal || !understoodBtn || localStorage.getItem('gplmods_vpn_dismissed') === 'true') {
+        return; 
+    }
+
+    try {
+        // 2. We use a free API that specifically checks against a database of known VPNs, Datacenters, and Proxies.
+        // It's much more reliable than checking timezones.
+        const response = await fetch('https://ip-api.com/json/?fields=status,proxy,hosting');
+        const data = await response.json();
+
+        if (data && data.status === 'success') {
+            
+            // 3. 'proxy' is true if it's a known VPN/Proxy. 
+            // 'hosting' is true if the IP belongs to a datacenter (like AWS/DigitalOcean/Render) 
+            // which usually means someone is routing traffic through a custom VPN.
+            if (data.proxy === true || data.hosting === true) {
+                console.log("VPN/Proxy/Datacenter IP Detected by API.");
+                
+                // Show the modal
+                vpnModal.style.display = 'flex'; 
+                vpnModal.classList.add('show');
+                
+                setTimeout(() => {
+                    const contentBox = vpnModal.querySelector('.policy-modal-content');
+                    if (contentBox) contentBox.classList.add('active');
+                }, 10);
+            } else {
+                console.log("Clean IP detected. No VPN active.");
+            }
+        }
+    } catch (error) {
+        console.error("VPN detection API failed silently.", error);
+    }
+
+    // 6. Handle the "Understood!" Button Click and Confetti
+    understoodBtn.addEventListener('click', () => {
+        localStorage.setItem('gplmods_vpn_dismissed', 'true');
+        
+        const contentBox = vpnModal.querySelector('.policy-modal-content');
+        if (contentBox) contentBox.classList.remove('active');
+        
+        setTimeout(() => {
+            vpnModal.classList.remove('show');
+            vpnModal.style.display = 'none'; 
+        }, 300);
+
+        // Trigger the Colorful Party Popper (Confetti) Effect!
+        const duration = 2000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#FFD700', '#c0c0c0', '#2196F3', '#e53935', '#43a047'] 
+            });
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#FFD700', '#c0c0c0', '#2196F3', '#e53935', '#43a047']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    });
+}
 /**
  * ==================================================================================
  * 4. SEARCH BAR HANDLER (DYNAMIC ANIMATION & SUGGESTIONS)
@@ -1175,89 +1254,113 @@ document.addEventListener('click', () => {
 });
 /**
  * ==================================================================================
- * 14. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
+ * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA GOOGLE CLOUD API)
  * ==================================================================================
  */
-
-// This global function is called by the Google script once it loads
-window.googleTranslateElementInit = function() {
-    new google.translate.TranslateElement({
-        pageLanguage: 'en', // Your website's default language
-        autoDisplay: false
-    }, 'google_translate_element');
-};
-
 function initializeLanguageSystem() {
     const langBtn = document.getElementById('lang-btn');
     const langMenu = document.getElementById('lang-menu');
     
     if (!langBtn || !langMenu) return;
 
-    // --- 1. Cookie Helpers ---
-    function getCookie(name) {
-        const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-        return v ? v[2] : null;
-    }
-    
-    function setLangCookie(langCode) {
-        // Sets the specific cookie Google Translate looks for
-        document.cookie = `googtrans=/auto/${langCode}; path=/; max-age=2592000`; // 30 days
-        document.cookie = `googtrans=/auto/${langCode}; path=/; domain=${window.location.hostname}; max-age=2592000`;
-    }
-
-    function clearLangCookie() {
-        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
-    }
-
-    // --- 2. Auto-Detect Device Language ---
-    // If the user hasn't explicitly chosen a language (no cookie exists)
-    if (!getCookie('googtrans')) {
-        const userLangRaw = navigator.language || navigator.userLanguage;
-        const userLangCode = userLangRaw.split('-')[0]; // e.g., 'es-ES' becomes 'es'
-        
-        // If their device isn't English, auto-set their language
-        if (userLangCode !== 'en') {
-            setLangCookie(userLangCode);
-            // We don't reload here so the page loads smoothly; the script inject below will catch it.
-        }
-    }
-
-    // --- 3. Inject the Google Translate Engine ---
-    // We do this dynamically so it doesn't slow down the initial page load
-    const gtScript = document.createElement('script');
-    gtScript.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-    gtScript.async = true;
-    document.body.appendChild(gtScript);
-
-    // --- 4. Custom Dropdown UI Logic ---
+    // --- 1. Custom UI Logic ---
     langBtn.addEventListener('click', (e) => {
         e.preventDefault();
         langMenu.classList.toggle('show');
     });
 
-    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
         if (!langBtn.contains(e.target) && !langMenu.contains(e.target)) {
             langMenu.classList.remove('show');
         }
     });
 
-    // Handle language selection
+    // --- 2. Change Language ---
     const langOptions = langMenu.querySelectorAll('a');
     langOptions.forEach(opt => {
         opt.addEventListener('click', (e) => {
             e.preventDefault();
             const selectedLang = opt.getAttribute('data-lang');
-            
-            if (selectedLang === 'en') {
-                clearLangCookie(); // Go back to default English
-            } else {
-                setLangCookie(selectedLang); // Set target language
-            }
-            
-            // Reload the page to apply the translation engine smoothly
-            window.location.reload();
+            localStorage.setItem('site_language', selectedLang);
+            window.location.reload(); // Reload to translate from fresh English DOM
         });
     });
+
+    // --- 3. DOM Text Extraction & Translation Execution ---
+    const currentLang = localStorage.getItem('site_language');
+
+    // Auto-detect if no language is set
+    if (!currentLang) {
+        const userLangRaw = navigator.language || navigator.userLanguage;
+        const userLangCode = userLangRaw.split('-')[0];
+        if (userLangCode !== 'en' && Array.from(langOptions).some(a => a.dataset.lang === userLangCode)) {
+            localStorage.setItem('site_language', userLangCode);
+            // Translate on next tick
+            setTimeout(() => executeTranslation(userLangCode), 100);
+        }
+    } 
+    // Translate if language is set and is not English
+    else if (currentLang !== 'en') {
+        executeTranslation(currentLang);
+    }
+}
+
+async function executeTranslation(targetLang, rootElement = document.body) {
+    console.log(`Translating to ${targetLang}...`);
+    
+    // 1. Traverse the DOM to find all visible Text Nodes
+    const textNodes = [];
+    const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    
+    // Elements we DO NOT want to translate
+    const ignoreTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE'];
+
+    while (node = walker.nextNode()) {
+        const parentElement = node.parentElement;
+        if (!parentElement) continue;
+
+        const parentTag = parentElement.tagName;
+        const text = node.nodeValue.trim();
+        
+        // ✅ THE FIX: Check if this element or ANY of its parents have the 'notranslate' class
+        const isNotranslate = parentElement.closest('.notranslate') !== null;
+        
+        // Only push if it has text, isn't an ignored tag, AND isn't marked as notranslate
+        if (text && !ignoreTags.includes(parentTag) && !isNotranslate) {
+            textNodes.push(node);
+        }
+    }
+
+    if (textNodes.length === 0) return;
+
+    // Extract the raw string values
+    const textsToTranslate = textNodes.map(n => n.nodeValue);
+
+    // 2. Send to our Backend API in chunks
+    const CHUNK_SIZE = 100; 
+    
+    for (let i = 0; i < textsToTranslate.length; i += CHUNK_SIZE) {
+        const chunk = textsToTranslate.slice(i, i + CHUNK_SIZE);
+        const nodeChunk = textNodes.slice(i, i + CHUNK_SIZE);
+
+        try {
+            const response = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texts: chunk, targetLanguage: targetLang })
+            });
+
+            const data = await response.json();
+
+            if (data.translations) {
+                // 3. Replace the original text nodes with translated text
+                data.translations.forEach((translatedText, index) => {
+                    nodeChunk[index].nodeValue = translatedText; 
+                });
+            }
+        } catch (err) {
+            console.error('Translation chunk failed:', err);
+        }
+    }
 }

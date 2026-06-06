@@ -91,6 +91,13 @@
 </style>
 
 <main class="container">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div style="margin-bottom: 20px;">
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+        </a>
+    </div>
+    <!-- ======================================== -->
     <h2 style="margin-top: 1rem; text-align:center;">Community Chat</h2>
     <ul id="messages"></ul>
 </main>
@@ -162,22 +169,21 @@
     });
 
     // --- Function to create and append a message element ---
+    // --- Function to create and append a message element ---
     function appendMessage(msg) {
         const item = document.createElement('li');
         
-        // ======== NEW: Wrap avatar in a link to public profile ========
         const avatarLink = document.createElement('a');
-        avatarLink.href = `/users/${msg.username}`; // Point to the public profile route
-        avatarLink.target = '_blank'; // Open in a new tab so they don't lose their chat place
+        avatarLink.href = `/users/${msg.username}`; 
+        avatarLink.target = '_blank'; 
         avatarLink.title = `View ${msg.username}'s Profile`;
-        avatarLink.className = 'avatar-link'; // Added class for potential future styling
+        avatarLink.className = 'avatar-link'; 
         
         const avatarImg = document.createElement('img');
         avatarImg.src = msg.avatar;
         avatarImg.className = 'avatar';
         
         avatarLink.appendChild(avatarImg);
-        // ===============================================================
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
@@ -185,33 +191,35 @@
         const headerDiv = document.createElement('div');
         headerDiv.className = 'message-header';
 
-        // ======== NEW: Wrap username in a link to public profile (Optional, but good UX) ========
         const usernameLink = document.createElement('a');
         usernameLink.href = `/users/${msg.username}`;
         usernameLink.target = '_blank';
-                usernameLink.className = 'username notranslate'; 
+        
+        // ✅ ALREADY CORRECT: 'notranslate' class ensures the API ignores this name!
+        usernameLink.className = 'username notranslate'; 
         usernameLink.textContent = msg.username;
-        usernameLink.style.textDecoration = 'none'; // Keep the username looking clean
+        usernameLink.style.textDecoration = 'none'; 
 
         const timestampSpan = document.createElement('span');
-        timestampSpan.className = 'timestamp';
+        timestampSpan.className = 'timestamp notranslate'; // Added notranslate to time as well
         timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         const textNode = document.createElement('span');
         textNode.textContent = msg.text;
 
-        // Append the LINK instead of the SPAN
         headerDiv.appendChild(usernameLink);
         headerDiv.appendChild(timestampSpan);
         contentDiv.appendChild(headerDiv);
         contentDiv.appendChild(textNode);
         
-        // Append the avatar LINK instead of just the image
         item.appendChild(avatarLink);
         item.appendChild(contentDiv);
 
         messages.appendChild(item);
         messages.scrollTop = messages.scrollHeight;
+
+        // RETURN the item so we can translate it if needed
+        return item; 
     }
 
     // --- Handle Form Submission ---
@@ -227,19 +235,30 @@
         }
     });
     
-    // --- NEW: Listen for message history on connection ---
+    // --- Listen for message history on connection ---
     socket.on('chat history', function(history) {
-        // Clear any existing messages first
         messages.innerHTML = '';
-        // Append all messages from history
         history.forEach(msg => {
             appendMessage(msg);
         });
+
+        // ✅ NEW: Translate the entire history bulk if user is using a different language
+        const currentLang = localStorage.getItem('site_language');
+        if (currentLang && currentLang !== 'en') {
+            executeTranslation(currentLang, messages);
+        }
     });
 
-    // --- Listen for new incoming messages ---
+    // --- Listen for NEW incoming live messages ---
     socket.on('chat message', function(msg) {
-        appendMessage(msg);
+        const newItem = appendMessage(msg); // Get the newly created message element
+
+        // ✅ NEW: Live Translate the specific new message instantly!
+        const currentLang = localStorage.getItem('site_language');
+        if (currentLang && currentLang !== 'en') {
+            // We pass 'newItem' to only translate this one message, not the whole page again!
+            executeTranslation(currentLang, newItem);
+        }
     });
 </script>
 

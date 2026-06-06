@@ -54,6 +54,7 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
 const { mirrorToFTP, deleteFromFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
+const { Translate } = require('@google-cloud/translate').v2;
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
@@ -83,6 +84,8 @@ const DocPage = require('./models/docPage');
 const Donation = require('./models/donation');
 const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
+const TranslationCache = require('./models/translationCache');
+const TranslationQuota = require('./models/translationQuota');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -90,6 +93,7 @@ const PointHistory = require('./models/pointHistory');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const { Types } = mongoose;
+const translateClient = new Translate({ key: process.env.GOOGLE_TRANSLATE_API_KEY });
 
 // Initialize the profanity filter
 const profanityFilter = new Filter();
@@ -692,6 +696,22 @@ app.use(session({
 // 1. Initialize Passport (MUST come right after Session)
 app.use(passport.initialize());
 app.use(passport.session());
+// --- NEW: KICKED OUT SESSION MIDDLEWARE ---
+// If the user's session has been flagged by a new login, log them out instantly!
+app.use((req, res, next) => {
+    if (req.session && req.session.kickedOut) {
+        req.logout((err) => {
+            req.session.destroy(() => {
+                // Clear the session cookie from their old browser
+                res.clearCookie('connect.sid', { path: '/' });
+                // Redirect to login with the red error popup!
+                return res.redirect('/login?error=' + encodeURIComponent('Your session got expired because you logged in from another device. Please relogin again.'));
+            });
+        });
+        return;
+    }
+    next();
+});
 
 // 2. Passport Serialization
 passport.serializeUser((user, done) => done(null, user.id));
@@ -2434,22 +2454,49 @@ app.get('/mods/:id/parts', async (req, res) => {
 });
 
 // ===============================
-// 3.5. AUTH ROUTES
+// 3.5. AUTH ROUTES & 2FA SYSTEM
 // ===============================
 
-// ✅ FIX 1: Added redirectIfAuthenticated
-app.get('/login', (req, res) => {
-    res.render('pages/login', {
-        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
-        message: req.query.message || null,
-        error: req.query.error || null // <--- ADD THIS
+// --- 1. SINGLE SESSION CONCURRENCY HELPER ---
+async function finalizeLogin(req, res, user, redirectUrl) {
+    let tempSession = req.session.passport;
+    
+    // Generate a brand new, secure Session ID for this device
+    req.session.regenerate(async (err) => {
+        if (err) console.error("Session Regen Error:", err);
+        
+        req.session.passport = tempSession; // Restore login state
+        
+        // Check if the user already has an active session on another device
+        if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
+            req.sessionStore.get(user.currentSessionId, (storeErr, oldSession) => {
+                if (oldSession) {
+                    oldSession.kickedOut = true;
+                    req.sessionStore.set(user.currentSessionId, oldSession, (setErr) => {});
+                }
+            });
+        }
+        
+        // Save the new Session ID
+        user.currentSessionId = req.sessionID;
+        await user.save();
+
+        // Save the cookie and redirect
+        req.session.save((saveErr) => {
+            if (saveErr) console.error("Session save error:", saveErr);
+            // Set the CDN bypass cookie
+            res.cookie('is_logged_in', 'true', { 
+                maxAge: 1000 * 60 * 60 * 24 * 3, // 3 Days
+                path: '/', 
+                secure: process.env.NODE_ENV === 'production', 
+                sameSite: 'lax'
+            });
+            res.redirect(redirectUrl);
+        });
     });
-});
-// ===============================
-// 3.6. AUTH ROUTES & 2FA INTERCEPTOR
-// ===============================
+}
 
-// --- REFACTORED: CENTRALIZED LOGIN SUCCESS HANDLER ---
+// --- 2. CENTRALIZED LOGIN SUCCESS HANDLER (INTERCEPTS FOR 2FA) ---
 const processSuccessfulLogin = async (req, res, next, user) => {
     if (user.twoFactorEnabled) {
         // Place user in 2FA limbo
@@ -2465,35 +2512,40 @@ const processSuccessfulLogin = async (req, res, next, user) => {
             } catch (e) { console.error("2FA Email Error:", e); }
         }
         
-        // ✅ CRITICAL FIX: Explicitly SAVE the session to MongoDB before redirecting!
+        // Explicitly SAVE the session to MongoDB before redirecting!
         req.session.save((err) => {
             if (err) console.error("Session save error:", err);
             return res.redirect('/login/2fa');
         });
         
     } else {
-        // Standard Login
+        // Standard Login (No 2FA required)
         req.logIn(user, (loginErr) => {
             if (loginErr) return next(loginErr);
-            let tempSession = req.session.passport;
-            req.session.regenerate(() => {
-                req.session.passport = tempSession;
-                req.session.save(() => res.redirect('/home?message=Welcome back!'));
-            });
+            finalizeLogin(req, res, user, '/home?message=Welcome back!');
         });
     }
 };
 
-// --- LOCAL LOGIN ---
+// --- 3. LOCAL LOGIN ROUTE ---
+app.get('/login', (req, res) => {
+    res.render('pages/login', {
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
+        message: req.query.message || null,
+        error: req.query.error || null 
+    });
+});
+
 app.post('/login', verifyRecaptcha, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) return next(err);
         if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
+        
         processSuccessfulLogin(req, res, next, user); 
     })(req, res, next);
 });
 
-// --- SOCIAL CALLBACK HANDLER (Handles both Fresh Logins AND Social 2FA) ---
+// --- 4. SOCIAL CALLBACK HANDLER (Handles Fresh Logins AND Social 2FA) ---
 const handleSocialCallback = (provider) => {
     return (req, res, next) => {
         passport.authenticate(provider, async (err, user, info) => {
@@ -2504,17 +2556,14 @@ const handleSocialCallback = (provider) => {
             if (req.session.pending2faUserId) {
                 const pendingUser = await User.findById(req.session.pending2faUserId);
                 
-                // Check if the social account they just logged into belongs to the pending account
+                // Check if the social account matches the pending account
                 if (pendingUser && pendingUser._id.toString() === user._id.toString()) {
                     // Match! 2FA is successful!
                     req.logIn(pendingUser, (loginErr) => {
                         if (loginErr) return next(loginErr);
                         req.session.pending2faUserId = null;
-                        let tempSession = req.session.passport;
-                        req.session.regenerate(() => {
-                            req.session.passport = tempSession;
-                            req.session.save(() => res.redirect('/home?message=2FA Verified via Social Login!'));
-                        });
+                        
+                        finalizeLogin(req, res, pendingUser, '/home?message=2FA Verified via Social Login!');
                     });
                     return;
                 } else {
@@ -2529,45 +2578,18 @@ const handleSocialCallback = (provider) => {
     };
 };
 
+// --- SOCIAL ROUTES ---
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/auth/google/callback', handleSocialCallback('google'));
+
+app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
 app.get('/auth/github/callback', handleSocialCallback('github'));
+
+app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
 app.get('/auth/microsoft/callback', handleSocialCallback('microsoft'));
 
-// 3.7. LOGIN SYSTEM
-app.post('/login', verifyRecaptcha, (req, res, next) => {
-    passport.authenticate('local', async (err, user, info) => {
-        if (err) return next(err);
-        if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
 
-        // --- NEW: 2FA INTERCEPT ---
-        if (user.twoFactorEnabled) {
-            // Save their ID temporarily in the session, but DO NOT log them in yet
-            req.session.pending2faUserId = user._id;
-            
-            // If they use Email 2FA, generate and send the code right now
-            if (user.twoFactorMethod === 'email') {
-                const otp = Math.floor(100000 + Math.random() * 900000).toString();
-                user.verificationOtp = otp;
-                user.otpExpires = Date.now() + 600000; // 10 mins
-                await user.save();
-                await send2faEmail(user, otp);
-            }
-            
-            return res.redirect('/login/2fa');
-        }
-
-        // --- Standard Login (If 2FA is disabled) ---
-        req.logIn(user, (loginErr) => {
-            if (loginErr) return next(loginErr);
-            processSuccessfulLogin(req, res, next); // <-- Use the interceptor here
-            let tempSession = req.session.passport;
-            req.session.regenerate((regenErr) => {
-                req.session.passport = tempSession;
-                req.session.save(() => res.redirect('/home?message=Welcome back!'));
-            });
-        });
-    })(req, res, next);
-});
+// --- 5. REGISTRATION ROUTES ---
 app.get('/register', redirectIfAuthenticated, (req, res) => {
     res.render('pages/register', { 
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '', 
@@ -2575,31 +2597,30 @@ app.get('/register', redirectIfAuthenticated, (req, res) => {
         error: req.query.error || null
     });
 });
-app.post('/register', verifyRecaptcha, async (req, res) => {
+
+app.post('/register', verifyRecaptcha, async (req, res, next) => {
     try {
-        // ✅ FIX: Added dateOfBirth to destructuring
         const { username, email, password, dateOfBirth, referralCode} = req.body;
         if (!username || !email || !password || !dateOfBirth) {
             return res.status(400).send("All fields are required, including Date of Birth.");
         }
-        // ========  VALIDATION CHECK ========
+        
+        // Validation Check
         if (!isValidName(username)) {
             return res.status(400).send("Username can only contain letters, numbers, and spaces. No emojis.");
         }
-        // ===========================================
 
-
-        // --- NEW: Security Check (Reserved Names) ---
+        // Security Check (Reserved Names)
         if (isNameReserved(username)) {
             return res.status(400).send("That username is reserved and cannot be used.");
         }
 
+        // Profanity Check
         if (global.profanityFilter.isProfane(username)) {
              return res.status(400).send("That username contains inappropriate language.");
         }
 
-        let user = await User.findOne({ email: email.toLowerCase() });
-        // ======== NEW: ANTI-TEMP MAIL CHECK ========
+        // Anti-Temp Mail Check
         const isTempMail = await isDisposableEmail(email.toLowerCase());
         if (isTempMail) {
             return res.status(400).render('pages/register', { 
@@ -2608,19 +2629,19 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
                 error: "Registration failed. Disposable or temporary email addresses are not allowed. Please use a valid, permanent email." 
             });
         }
-        // ===========================================
+
+        let user = await User.findOne({ email: email.toLowerCase() });
         if (user && user.isVerified) {
             return res.status(400).send("An account with this email already exists.");
         }
 
-        // --- NEW: Generate Unique Username (Discriminator) ---
-        // We do this BEFORE creating the new user object
+        // Generate Unique Username (Discriminator)
         const uniqueUsername = await generateUniqueUsername(username);
 
-        // ✅ NEW: Generate a referral code for this NEW user
+        // Generate a referral code for this NEW user
         const newReferralCode = await generateReferralCode(uniqueUsername);
 
-        // ✅ NEW: Process the incoming referral code (if they provided one)
+        // Process the incoming referral code (if provided)
         let referrerId = null;
         if (referralCode && referralCode.trim() !== '') {
             const referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() });
@@ -2628,23 +2649,25 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
                 referrerId = referrer._id;
             }
         }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 600000; 
 
-
         if (user && !user.isVerified) {
+            // Update unverified user
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
             user.username = uniqueUsername;
-            user.dateOfBirth = new Date(dateOfBirth); // ✅ FIX: Save DOB
+            user.dateOfBirth = new Date(dateOfBirth); 
         } else {
+            // Create new user
             user = new User({
                 username: uniqueUsername,
                 email: email.toLowerCase(),
                 password,
-                referralCode: newReferralCode, // Assign code
-                referredBy: referrerId,        // Assign referrer
-                dateOfBirth: new Date(dateOfBirth), // ✅ FIX: Save DOB
+                referralCode: newReferralCode, 
+                referredBy: referrerId,        
+                dateOfBirth: new Date(dateOfBirth), 
                 verificationOtp: otp,
                 otpExpires: otpExpires
             });
@@ -2657,12 +2680,13 @@ app.post('/register', verifyRecaptcha, async (req, res) => {
 
     } catch (e) {
         console.error("Registration error:", e);
-        return next(error);
+        return next(e);
     }
 });
 
-// --- UPDATED Verify Route ---
-app.post('/verify-otp', async (req, res) => {
+
+// --- 6. OTP VERIFICATION (Used for Registration) ---
+app.post('/verify-otp', async (req, res, next) => {
     try {
         const { otp, email } = req.body; 
 
@@ -2673,7 +2697,6 @@ app.post('/verify-otp', async (req, res) => {
         });
 
         if (!user) {
-            // FIX: Render the page again with an error message!
             return res.render('pages/please-verify', { 
                 email: email, 
                 error: 'Invalid or expired verification code. Please try again.' 
@@ -2685,15 +2708,11 @@ app.post('/verify-otp', async (req, res) => {
         user.otpExpires = undefined;
         await user.save();
 
-        // ======== NEW: REWARD THE REFERRER ========
+        // REWARD THE REFERRER
         if (user.referredBy) {
-            // 1. Award 5 points using our helper
             await awardPoints(user.referredBy, 5, "Successful Referral", `You referred ${user.username}!`);
-            
-            // 2. Increment the referrer's referralCount
             await User.findByIdAndUpdate(user.referredBy, { $inc: { referralCount: 1 } });
             
-            // 3. Optional: Send a notification to the referrer
             try {
                 const UserNotification = require('./models/userNotification');
                 await new UserNotification({
@@ -2704,42 +2723,26 @@ app.post('/verify-otp', async (req, res) => {
                 }).save();
             } catch (err) { console.error("Referral Notif Error:", err); }
         }
-        // ==========================================
-// ======== NEW: AUTOMATED WELCOME MESSAGE ========
+
+        // AUTOMATED WELCOME MESSAGE
         try {
             const UserNotification = require('./models/userNotification');
-            
-            // Check if we already sent a welcome message (to prevent duplicates on re-verification)
-            const existingWelcome = await UserNotification.findOne({ 
-                user: user._id, 
-                title: 'Welcome to GPL Mods!' 
-            });
+            const existingWelcome = await UserNotification.findOne({ user: user._id, title: 'Welcome to GPL Mods!' });
 
             if (!existingWelcome) {
                 await new UserNotification({
                     user: user._id,
                     title: 'Welcome to GPL Mods!',
                     message: `Hi ${user.username},\n\nWelcome to the community! We're thrilled to have you here. \n\nFeel free to explore our massive library of safe, working mods, or start uploading your own to build your reputation.\n\nIf you need any help, check out the FAQ or submit a Support Ticket.\n\nHappy Modding,\nThe GPL Community Team`,
-                    type: 'success' // Green icon
+                    type: 'success' 
                 }).save();
             }
-        } catch (notifErr) {
-            console.error("Failed to send automated welcome message:", notifErr);
-            // We don't want a notification failure to stop the login process
-        }
+        } catch (notifErr) { console.error("Welcome message error:", notifErr); }
         
+        // Log them in and finalize session
         req.login(user, (err) => {
             if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
-            
-            let tempSession = req.session.passport;
-            req.session.regenerate((regenErr) => {
-                req.session.passport = tempSession;
-                req.session.save(() => {
-                    // ✅ FIX: Set a readable cookie for the frontend CDN bypass
-                    res.cookie('is_logged_in', 'true', { maxAge: 1000 * 60 * 60 * 24 * 3 });
-                    return res.redirect('/profile?success=Account verified successfully!');
-                });
-            });
+            finalizeLogin(req, res, user, '/profile?success=Account verified successfully!');
         });
 
     } catch (error) {
@@ -2747,21 +2750,20 @@ app.post('/verify-otp', async (req, res) => {
     }
 });
 
-app.get('/forgot-password', (req, res) => {
-    // This looks in views/pages/forgot-password.ejs
-    res.render('pages/forgot-password'); 
-}); // <--- THIS CLOSING BRACKET WAS MISSING!
 
-// --- NEW Route to handle Resend Button ---
+// --- 7. PASSWORD RESET ROUTES ---
+app.get('/forgot-password', (req, res) => {
+    res.render('pages/forgot-password'); 
+});
+
 app.post('/resend-otp', async (req, res) => {
     try {
         const { email } = req.body;
-        // ======== NEW: ANTI-TEMP MAIL CHECK ========
+        // ANTI-TEMP MAIL CHECK 
         const isTempMail = await isDisposableEmail(email.toLowerCase());
         if (isTempMail) {
             return res.redirect('/forgot-password?error=Invalid email domain.');
         }
-        // ===========================================
         const user = await User.findOne({ email: email.toLowerCase() });
         
         if (user && !user.isVerified) {
@@ -2784,7 +2786,6 @@ app.post('/forgot-password', async (req, res) => {
         const user = await User.findOne({ email: email });
         
         if (!user) {
-            // Security best practice: don't reveal if email exists or not
             return res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
         }
 
@@ -2793,10 +2794,7 @@ app.post('/forgot-password', async (req, res) => {
         user.passwordResetExpires = Date.now() + 3600000; // 1 hour
         await user.save();
         
-        // FIX 1: Smart URL generation using the actual host domain
         const resetURL = `https://${req.get('host')}/reset-password/${resetToken}`;
-        
-        // FIX 2: Actually trigger the email to send!
         await sendPasswordResetEmail(user, resetURL);
 
         res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
@@ -2838,18 +2836,23 @@ app.post('/reset-password/:token', async (req, res, next) => {
 
         req.login(user, (err) => {
             if (err) return next(err);
-            res.redirect('/?message=Password has been reset successfully!');
+            finalizeLogin(req, res, user, '/home?message=Password has been reset successfully!');
         });
     } catch (e) { res.redirect('/forgot-password?error=An error occurred.'); }
 });
 
-app.get('/logout', (req, res, next) => {
+// --- 8. LOGOUT ROUTE ---
+app.get('/logout', async (req, res, next) => {
+    if (req.user) {
+        // Clear the active session from the database
+        await User.findByIdAndUpdate(req.user._id, { $unset: { currentSessionId: "" } });
+    }
     req.logout(err => { 
         if (err) return next(err); 
         
         req.session.destroy(() => {
             res.clearCookie('connect.sid', { path: '/' });
-            // ✅ FIX: Clear the readable cookie on logout
+            // Clear the readable cookie on logout
             res.clearCookie('is_logged_in', { path: '/' }); 
             res.redirect('/?message=You have been successfully logged out.'); 
         });
@@ -2915,8 +2918,46 @@ app.get('/auth/microsoft/callback',
 // ===============================
 
 // --- 1. Main User Dashboard Hub ---
-app.get('/dashboard', ensureAuthenticated, (req, res) => {
-    res.render('pages/dashboard', { user: req.user });
+app.get('/dashboard', ensureAuthenticated, async (req, res) => {
+    try {
+        // 1. Fetch the user and fully populate their followers and following lists
+        const userWithCommunity = await User.findById(req.user._id)
+            .populate('following', 'username profileImageKey role')
+            .populate('followers', 'username profileImageKey role');
+
+        // 2. Helper function to generate signed Avatar URLs for the lists
+        const mapCommunityUsers = async (usersArray) => {
+            return await Promise.all(usersArray.map(async (u) => {
+                let avatarUrl = '/images/default-avatar.png';
+                if (u.profileImageKey) {
+                    try {
+                        avatarUrl = await getSmartImageUrl(u.profileImageKey);
+                    } catch (e) { console.error("Avatar sign error", e); }
+                }
+                return { 
+                    _id: u._id, 
+                    username: u.username, 
+                    role: u.role, 
+                    signedAvatarUrl: avatarUrl 
+                };
+            }));
+        };
+
+        // 3. Process the lists
+        const followersList = await mapCommunityUsers(userWithCommunity.followers);
+        const followingList = await mapCommunityUsers(userWithCommunity.following);
+
+        // 4. Render the page with the new data
+        res.render('pages/dashboard', { 
+            user: req.user,
+            followers: followersList,
+            following: followingList
+        });
+
+    } catch (error) {
+        console.error("Dashboard community fetch error:", error);
+        res.status(500).render('pages/500');
+    }
 });
 
 // --- 2. Edit Profile Page (Avatar, Bio, Username, Passwords) ---
@@ -3830,17 +3871,35 @@ app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
 // ===================================
 app.get('/rewards', ensureAuthenticated, async (req, res) => {
     try {
+        // --- NEW: SILENT REFERRAL CODE BACKFILL ---
+        // If an old user visits this page and doesn't have a code, generate one now.
+        if (!req.user.referralCode) {
+            console.log(`Backfilling referral code for old user: ${req.user.username}`);
+            const newCode = await generateReferralCode(req.user.username);
+            
+            // Save it to the database
+            await User.findByIdAndUpdate(req.user._id, { referralCode: newCode });
+            
+            // Crucial: Update the session object so the page renders correctly immediately
+            req.user.referralCode = newCode;
+            
+            // Re-save the session to ensure it persists
+            req.session.passport.user = req.user; 
+            req.session.save();
+        }
+        // ------------------------------------------
+
         const currentPoints = req.user.forumPoints || 0;
         const history = await PointHistory.find({ user: req.user._id }).sort({ createdAt: -1 });
 
         // Define our Ranks and their thresholds
         const ranks = [
-            { name: 'Novice', threshold: 0, color: 'var(--silver)', lottie: null },
-            { name: 'Bronze Member', threshold: 25, color: '#cd7f32', lottie: 'rank-1.json' },
-            { name: 'Silver Expert', threshold: 100, color: '#c0c0c0', lottie: 'rank-2.json' },
-            { name: 'Gold Expert', threshold: 250, color: '#FFD700', lottie: 'rank-3.json' },
-            { name: 'Platinum Expert', threshold: 500, color: '#e5e4e2', lottie: 'rank-4.json' },
-            { name: 'Diamond Expert', threshold: 1000, color: '#b9f2ff', lottie: 'rank-5.json' }
+            { name: 'Novice', threshold: 0, color: '#FFFFFF', lottie: null },
+            { name: 'Bronze Member', threshold: 25, color: '#cd7f32', lottie: 'level-1.json' },
+            { name: 'Silver Expert', threshold: 100, color: '#c0c0c0', lottie: 'level-2.json' },
+            { name: 'Gold Expert', threshold: 250, color: '#FFD700', lottie: 'level-3.json' },
+            { name: 'Platinum Expert', threshold: 500, color: '#770087', lottie: 'level-4.json' },
+            { name: 'Diamond Expert', threshold: 1000, color: '#003e54', lottie: 'level-5.json' }
         ];
 
         // Figure out current rank and the NEXT rank
@@ -4513,6 +4572,186 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // ===================================
 // 8. API ROUTES
 // ===================================
+// --- SMART TRANSLATION API WITH CACHING & FREE-TIER SAFEGUARDS ---
+app.post('/api/translate', async (req, res) => {
+    try {
+        const { texts, targetLanguage } = req.body;
+
+        if (!texts || !Array.isArray(texts) || texts.length === 0 || !targetLanguage) {
+            return res.status(400).json({ error: "Invalid request payload." });
+        }
+
+        if (targetLanguage === 'en') {
+            return res.json({ translations: texts });
+        }
+
+        const finalTranslations = [];
+        const textsToTranslate = [];
+        const indicesToTranslate = [];
+
+        // 1. Check the Database Cache First (Costs $0)
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            
+            if (!text.trim() || !isNaN(text.trim())) {
+                finalTranslations[i] = text;
+                continue;
+            }
+
+            const cached = await TranslationCache.findOne({ originalText: text, targetLanguage: targetLanguage });
+
+            if (cached) {
+                finalTranslations[i] = cached.translatedText; // Use free cached translation
+            } else {
+                textsToTranslate.push(text);
+                indicesToTranslate.push(i);
+            }
+        }
+
+        // 2. Safely Call Google API for missing texts
+        if (textsToTranslate.length > 0) {
+            // Count exactly how many characters we are about to ask Google to translate
+            const newCharsLength = textsToTranslate.join('').length;
+            
+            // Get current month string (e.g., "2026-06")
+            const currentMonthYear = new Date().toISOString().slice(0, 7);
+            
+            // Find or create the quota record for this month
+            let quota = await TranslationQuota.findOne({ monthYear: currentMonthYear });
+            if (!quota) {
+                quota = new TranslationQuota({ monthYear: currentMonthYear, characterCount: 0 });
+            }
+
+            const FREE_TIER_LIMIT = 500000; // 500,000 characters
+
+            // --- THE FAILSAFE CHECK ---
+            if (quota.characterCount + newCharsLength <= FREE_TIER_LIMIT) {
+                // We have enough free quota! Send to Google.
+                const [apiTranslations] = await translateClient.translate(textsToTranslate, targetLanguage);
+                
+                const newCacheEntries = [];
+
+                for (let j = 0; j < apiTranslations.length; j++) {
+                    const original = textsToTranslate[j];
+                    const translated = apiTranslations[j];
+                    
+                    finalTranslations[indicesToTranslate[j]] = translated;
+
+                    newCacheEntries.push({
+                        originalText: original,
+                        targetLanguage: targetLanguage,
+                        translatedText: translated
+                    });
+                }
+
+                // Save to cache so we never pay for these words again
+                if (newCacheEntries.length > 0) {
+                    await TranslationCache.insertMany(newCacheEntries, { ordered: false }).catch(e => {});
+                }
+
+                // Update the monthly usage counter
+                quota.characterCount += newCharsLength;
+                await quota.save();
+
+            } else {
+                // --- LIMIT REACHED: FAIL GRACEFULLY ---
+                console.warn(`[TRANSLATION LIMIT] Stopped API call. Used: ${quota.characterCount}/${FREE_TIER_LIMIT}. Tried to add: ${newCharsLength}`);
+                
+                // Instead of crashing, just return the original English text for the missing chunks
+                for (let j = 0; j < textsToTranslate.length; j++) {
+                    finalTranslations[indicesToTranslate[j]] = textsToTranslate[j];
+                }
+            }
+        }
+
+        res.json({ translations: finalTranslations });
+
+    } catch (error) {
+        console.error("Translation API Error:", error);
+        res.status(500).json({ error: "Translation failed." });
+    }
+});
+// --- NEW: SMART TRANSLATION API WITH DB CACHING ---
+app.post('/api/translate', async (req, res) => {
+    try {
+        const { texts, targetLanguage } = req.body;
+
+        if (!texts || !Array.isArray(texts) || texts.length === 0 || !targetLanguage) {
+            return res.status(400).json({ error: "Invalid request payload." });
+        }
+
+        if (targetLanguage === 'en') {
+            return res.json({ translations: texts }); // No translation needed for default
+        }
+
+        const finalTranslations = [];
+        const textsToTranslate = [];
+        const indicesToTranslate = [];
+
+        // 1. Check the Database Cache First
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            
+            // Skip empty or purely numeric strings
+            if (!text.trim() || !isNaN(text.trim())) {
+                finalTranslations[i] = text;
+                continue;
+            }
+
+            const cached = await TranslationCache.findOne({ 
+                originalText: text, 
+                targetLanguage: targetLanguage 
+            });
+
+            if (cached) {
+                // We have it in the DB! Free translation!
+                finalTranslations[i] = cached.translatedText;
+            } else {
+                // We need to ask Google for this one
+                textsToTranslate.push(text);
+                indicesToTranslate.push(i);
+            }
+        }
+
+        // 2. Call Google API for missing texts
+        if (textsToTranslate.length > 0) {
+            // Google Translate accepts an array of strings
+            const [apiTranslations] = await translateClient.translate(textsToTranslate, targetLanguage);
+            
+            const newCacheEntries = [];
+
+            for (let j = 0; j < apiTranslations.length; j++) {
+                const original = textsToTranslate[j];
+                const translated = apiTranslations[j];
+                
+                // Map the new translation back to its correct index in the final array
+                finalTranslations[indicesToTranslate[j]] = translated;
+
+                // Prepare to save to database
+                newCacheEntries.push({
+                    originalText: original,
+                    targetLanguage: targetLanguage,
+                    translatedText: translated
+                });
+            }
+
+            // 3. Save new translations to Database Cache in bulk
+            if (newCacheEntries.length > 0) {
+                // Use insertMany with ordered:false to silently ignore accidental duplicates
+                await TranslationCache.insertMany(newCacheEntries, { ordered: false }).catch(e => {
+                    // Ignore duplicate key errors, it just means another request cached it first
+                });
+            }
+        }
+
+        // Return the fully translated array
+        res.json({ translations: finalTranslations });
+
+    } catch (error) {
+        console.error("Translation API Error:", error);
+        res.status(500).json({ error: "Translation failed." });
+    }
+});
 // --- NEW: AUTO-FETCH METADATA SCRAPER API ---
 app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
     try {

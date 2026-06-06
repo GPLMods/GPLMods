@@ -28,7 +28,21 @@
                 .social-icons-track a {
                     color: var(--silver); font-size: 1.8em; text-decoration: none; transition: all 0.3s ease; background-color: transparent; border: none; width: auto; height: auto; padding: 0; flex-shrink: 0; 
                 }
-                .social-icons-track a:hover { color: var(--gold); transform: scale(1.2); }
+            .social-icons-track a:hover { color: var(--gold); transform: scale(1.2); }
+            .newsletter-popup { position: fixed; bottom: 20px; left: 20px; background-color: var(--dark-gray); border: 1px solid var(--gold); border-radius: 12px; padding: 25px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 9998; transform: translateX(-150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+            .newsletter-popup.show { transform: translateX(0); }
+            .newsletter-close { position: absolute; top: 10px; right: 15px; color: var(--silver); cursor: pointer; font-size: 1.5em; line-height: 1; transition: color 0.2s; }
+            .newsletter-close:hover { color: var(--red); }
+            .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
+            .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
+            .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
+            .newsletter-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: var(--black); color: var(--white); outline: none; font-family: 'Poppins', sans-serif; }
+            .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
+            .newsletter-btn { background-color: var(--gold); color: var(--black); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
+            .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
+            .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
+            .newsletter-msg.success { color: var(--green); display: block; }
+            .newsletter-msg.error { color: var(--red); display: block; }
             </style>
 
             <!-- ======== SOCIAL ICONS CAROUSEL ======== -->
@@ -114,7 +128,7 @@
                 }
                 window.addEventListener("load", checkUserAdblockStatus);
             </script>
-        <% } %> <!-- End of showAds check -->
+        <% } %> 
 
         <!-- ======== UNIFIED POLICY MODAL ======== -->
         <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
@@ -127,24 +141,34 @@
                 </div>
             </div>
         </div>
+<!-- ======== VPN DETECTION MODAL ======== -->
+    <div id="vpn-modal-container" class="policy-modal">
+        <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid #2196F3; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <!-- The Blue Lottie Animation -->
+            <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/vpn.json" background="transparent" speed="1" style="width: 120px; height: 120px;" loop autoplay></lottie-player>
+            </div>
+            
+            <h2 style="color: #2196F3; margin-bottom: 15px; font-size: 1.8em;">VPN Detected!</h2>
+            
+            <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6; font-size: 1em;">
+                It looks like you are using a VPN. It is recommended to disable it, otherwise it will slow down the mods download and upload speed. <br><br>
+                <span style="font-size: 0.9em; opacity: 0.8;">Otherwise, if the site is blocked in your country, you can continue to use it.</span>
+            </p>
+            
+            <button type="button" id="understoodVpnBtn" class="submit-button" style="background-color: var(--gold); color: var(--black); padding: 12px 25px; border-radius: 20px; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; width: 100%; box-shadow: 0 0 15px var(--glow-gold);">
+                Understood!
+            </button>
+        </div>
+    </div>
+<!-- ===================================== -->
+
+<!-- Import Canvas Confetti for the Party Popper Effect -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 
         <!-- ======== NEWSLETTER POPUP ======== -->
-        <style>
-            .newsletter-popup { position: fixed; bottom: 20px; left: 20px; background-color: var(--dark-gray); border: 1px solid var(--gold); border-radius: 12px; padding: 25px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 9998; transform: translateX(-150%); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-            .newsletter-popup.show { transform: translateX(0); }
-            .newsletter-close { position: absolute; top: 10px; right: 15px; color: var(--silver); cursor: pointer; font-size: 1.5em; line-height: 1; transition: color 0.2s; }
-            .newsletter-close:hover { color: var(--red); }
-            .newsletter-popup h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4em; }
-            .newsletter-popup p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5; }
-            .newsletter-form { display: flex; flex-direction: column; gap: 10px; }
-            .newsletter-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: var(--black); color: var(--white); outline: none; font-family: 'Poppins', sans-serif; }
-            .newsletter-input:focus { border-color: var(--gold); box-shadow: 0 0 8px var(--glow-gold); }
-            .newsletter-btn { background-color: var(--gold); color: var(--black); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
-            .newsletter-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-gold); }
-            .newsletter-msg { margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: center; display: none; }
-            .newsletter-msg.success { color: var(--green); display: block; }
-            .newsletter-msg.error { color: var(--red); display: block; }
-        </style>
         <div id="newsletter-popup" class="newsletter-popup">
             <span class="newsletter-close" id="newsletter-close-btn">&times;</span>
             <h3><i class="fas fa-envelope-open-text" style="margin-right: 8px;"></i> Get Updates</h3>

@@ -26,7 +26,8 @@ const DocCategory = require('../models/docCategory'); // <--- ADD THIS
 const DocPage = require('../models/docPage');  // <--- ADD THIS
 const Issue = require('../models/issue');     // <--- ADD THIS
 const Reply = require('../models/reply');     // <--- ADD THIS
-const PointHistory = require('../models/pointHistory');       
+const PointHistory = require('../models/pointHistory');
+const TranslationQuota = require('../models/translationQuota');     
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -517,6 +518,16 @@ async function createAdminRouter() {
                     }
                 }
             },
+        {
+            resource: TranslationQuota,
+            options: {
+                listProperties: ['monthYear', 'characterCount', 'updatedAt'],
+                actions: {
+                    new: { isAccessible: false }, // System handles creation
+                    delete: { isAccessible: false }
+                }
+            }
+        },
 
             // ---------------------------------
             // NEWSLETTER & MARKETING

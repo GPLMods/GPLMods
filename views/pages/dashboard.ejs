@@ -6,28 +6,33 @@
     
     .dashboard-user-card { display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 900px; margin: 0 auto 40px auto; }
     .dashboard-user-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); }
-    .dashboard-user-info { min-width: 0; /* ✅ FIX: Allows text wrapping inside flex containers */ flex-grow: 1; }
+    .dashboard-user-info { min-width: 0; flex-grow: 1; }
     .dashboard-user-info h2 { margin: 0; color: var(--white); font-size: 1.5em; word-wrap: break-word; }
-    
-    /* ✅ FIX: Force long email addresses to wrap to the next line! */
-    .dashboard-user-info p { 
-        margin: 0; 
-        color: var(--silver); 
-        word-wrap: break-word; 
-        overflow-wrap: break-word; 
-        word-break: break-all; /* Best for emails */
-    }
+    .dashboard-user-info p { margin: 0; color: var(--silver); word-wrap: break-word; overflow-wrap: break-word; word-break: break-all; }
     
     .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto 60px auto; }
-    .dash-card { background: var(--dark-gray); border: 1px solid #333; border-radius: 12px; padding: 25px 20px; text-align: center; text-decoration: none; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .dash-card { background: var(--dark-gray); border: 1px solid #333; border-radius: 12px; padding: 25px 20px; text-align: center; text-decoration: none; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
     .dash-card:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 5px 20px var(--glow-gold); }
     .dash-card i { font-size: 2.5em; color: var(--gold); margin-bottom: 10px; }
     .dash-card h3 { color: var(--white); margin: 0; font-size: 1.2em; }
     .dash-card p { color: var(--silver); margin: 0; font-size: 0.85em; }
 
-    @media (max-width: 480px) {
-        .dashboard-user-card { flex-direction: column; text-align: center; }
-    }
+    /* Modal Specific Styles */
+    .community-search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid #444; background: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; outline: none; margin-bottom: 20px; transition: border-color 0.3s; }
+    .community-search-input:focus { border-color: #9c27b0; box-shadow: 0 0 10px rgba(156, 39, 176, 0.3); }
+    .com-tab-btn { flex: 1; padding: 12px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--silver); cursor: pointer; font-size: 1.1em; transition: all 0.2s; }
+    .com-tab-btn.active { color: #9c27b0; border-bottom-color: #9c27b0; font-weight: bold; }
+    
+    /* Scrollbar for User List */
+    .user-list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; }
+    .user-list-container::-webkit-scrollbar { width: 6px; }
+    .user-list-container::-webkit-scrollbar-track { background: var(--black); border-radius: 10px; }
+    .user-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+    
+    .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--black); border-radius: 10px; margin-bottom: 10px; border: 1px solid #222; transition: border-color 0.2s; }
+    .user-list-item:hover { border-color: #444; }
+
+    @media (max-width: 480px) { .dashboard-user-card { flex-direction: column; text-align: center; } }
 </style>
 
 <main class="container">
@@ -35,7 +40,6 @@
         <h1>Your <span>Dashboard</span></h1>
     </div>
 
-    <!-- ✅ ADDED: Dynamic Back Button -->
     <div style="max-width: 900px; margin: 0 auto 20px auto;">
         <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
             <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
@@ -71,11 +75,14 @@
             <h3>Public Profile</h3>
             <p>See how others view your page.</p>
         </a>
-        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
+        
+        <!-- ✅ MODIFIED: Now triggers the modal -->
+        <div id="open-community-modal" class="dash-card">
             <i class="fas fa-users" style="color: #9c27b0;"></i>
             <h3>Community / Followers</h3>
-            <p>View your audience.</p>
-        </a>
+            <p>Manage your audience.</p>
+        </div>
+        
         <a href="/notifications" class="dash-card">
             <i class="fas fa-envelope" style="color: #4caf50;"></i>
             <h3>Inbox & Alerts</h3>
@@ -98,4 +105,166 @@
         </a>
     </div>
 </main>
+
+<!-- ======== COMMUNITY MODAL ======== -->
+<div id="community-modal" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 25px; border-radius: 15px; max-width: 500px; width: 95%; border-top: 4px solid #9c27b0; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: #9c27b0; margin: 0; font-size: 1.8em;">Community</h2>
+            <span class="close-community" style="color: var(--silver); font-size: 28px; cursor: pointer; transition: color 0.2s;">&times;</span>
+        </div>
+        
+        <!-- Live Search Bar -->
+        <input type="text" id="community-search" class="community-search-input" placeholder="Search by username...">
+        
+        <!-- Tabs -->
+        <div style="display: flex; border-bottom: 1px solid #333; margin-bottom: 15px;">
+            <button class="com-tab-btn active" data-target="followers-list">Followers (<%= followers.length %>)</button>
+            <button class="com-tab-btn" data-target="following-list">Following (<%= following.length %>)</button>
+        </div>
+        
+        <!-- Followers List -->
+        <div id="followers-list" class="com-tab-content user-list-container">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <% if(followers.length > 0) { %>
+                    <% followers.forEach(f => { %>
+                        <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="<%= f.signedAvatarUrl %>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
+                                <div style="text-align: left;">
+                                    <a href="/users/<%= slugify(f.username) %>" style="color: var(--white); font-weight: bold; text-decoration: none;"><%= f.username %></a>
+                                    <div style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;"><%= f.role %></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Check if we follow them back to determine button style -->
+                            <% const isFollowingBack = following.some(u => u._id.toString() === f._id.toString()); %>
+                            <button class="btn ajax-follow-btn <%= isFollowingBack ? 'btn-secondary' : 'btn-primary' %>" data-id="<%= f._id %>" style="padding: 6px 15px; font-size: 0.8em;">
+                                <%= isFollowingBack ? 'Unfollow' : 'Follow Back' %>
+                            </button>
+                        </li>
+                    <% }) %>
+                <% } else { %>
+                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You don't have any followers yet.</p>
+                <% } %>
+            </ul>
+        </div>
+        
+        <!-- Following List -->
+        <div id="following-list" class="com-tab-content user-list-container" style="display: none;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <% if(following.length > 0) { %>
+                    <% following.forEach(f => { %>
+                        <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="<%= f.signedAvatarUrl %>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
+                                <div style="text-align: left;">
+                                    <a href="/users/<%= slugify(f.username) %>" style="color: var(--white); font-weight: bold; text-decoration: none;"><%= f.username %></a>
+                                    <div style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;"><%= f.role %></div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary ajax-follow-btn" data-id="<%= f._id %>" style="padding: 6px 15px; font-size: 0.8em;">Unfollow</button>
+                        </li>
+                    <% }) %>
+                <% } else { %>
+                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You aren't following anyone.</p>
+                <% } %>
+            </ul>
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Modal Open/Close Logic
+    const openBtn = document.getElementById('open-community-modal');
+    const modal = document.getElementById('community-modal');
+    const closeBtn = document.querySelector('.close-community');
+
+    openBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 200); // Wait for CSS transition
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) closeBtn.click();
+    });
+
+    // 2. Tab Switching Logic
+    const comTabBtns = document.querySelectorAll('.com-tab-btn');
+    const comTabContents = document.querySelectorAll('.com-tab-content');
+
+    comTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Reset styles
+            comTabBtns.forEach(b => b.classList.remove('active'));
+            comTabContents.forEach(c => c.style.display = 'none');
+            
+            // Activate clicked
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.target).style.display = 'block';
+        });
+    });
+
+    // 3. Live Search Filtering Logic
+    const searchInput = document.getElementById('community-search');
+    const userItems = document.querySelectorAll('.user-list-item');
+
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        
+        userItems.forEach(item => {
+            // We stored the lowercase username in the data-name attribute
+            if (item.dataset.name.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+
+    // 4. AJAX Live Follow/Unfollow Logic
+    const followBtns = document.querySelectorAll('.ajax-follow-btn');
+    
+    followBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const userId = btn.dataset.id;
+            
+            // Determine current state based on button text
+            const isCurrentlyFollowing = btn.textContent.trim() === 'Unfollow';
+
+            // Optimistic UI Update (Change it instantly so it feels blazing fast)
+            if (isCurrentlyFollowing) {
+                btn.textContent = 'Follow';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.textContent = 'Unfollow';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+            }
+
+            try {
+                // Fire the fetch request in the background
+                // We don't care about the redirect response because we are staying in the modal
+                await fetch(`/users/${userId}/follow`, { method: 'POST' });
+            } catch (err) {
+                console.error("AJAX follow failed", err);
+                alert("Network error updating follow status.");
+                // If you wanted to be super safe, you could revert the button colors here if it failed
+            }
+        });
+    });
+});
+</script>
+
 <%- include('../partials/footer') %>
