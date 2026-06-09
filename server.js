@@ -2386,9 +2386,26 @@ app.get('/download-file/:id', async (req, res) => {
         // ==========================================
 
         // --- 1. MULTI-PART / ALTERNATIVE URL PASSTHROUGH ---
-        // If a specific URL was passed in the query, we track the download and redirect to it!
+        // If a mirror URL was passed in the query, count the download and redirect only to an approved mirror URL.
         if (req.query.url) {
-            return res.redirect(req.query.url);
+            const requestedUrl = req.query.url;
+            const allowedMirrorUrls = [];
+
+            if (file.alternativeLinks && file.alternativeLinks.length > 0) {
+                file.alternativeLinks.forEach(mirror => {
+                    allowedMirrorUrls.push(mirror.url);
+                    if (res.locals.showAds && res.locals.linkvertiseEnabled && !isUploaderDistributor) {
+                        allowedMirrorUrls.push(res.locals.generateAdLink(mirror.url));
+                    }
+                });
+            }
+
+            if (!allowedMirrorUrls.includes(requestedUrl)) {
+                console.warn(`Rejected invalid mirror redirect for file ${fileId}: ${requestedUrl}`);
+                return res.status(400).send("Invalid download URL.");
+            }
+
+            return res.redirect(requestedUrl);
         }
 
         // --- 2. EXTERNAL CLOUD LINK FIRST ---
@@ -2460,6 +2477,12 @@ app.get('/mods/:id/parts', async (req, res) => {
 // --- 1. SINGLE SESSION CONCURRENCY HELPER ---
 async function finalizeLogin(req, res, user, redirectUrl) {
     let tempSession = req.session.passport;
+    if (req.session.pending2faUserId) {
+        req.session.pending2faUserId = null;
+    }
+    if (req.session.currentChallenge) {
+        req.session.currentChallenge = null;
+    }
     
     // Generate a brand new, secure Session ID for this device
     req.session.regenerate(async (err) => {
@@ -3609,13 +3632,7 @@ app.post('/login/2fa/verify', async (req, res, next) => {
         // Finalize Login!
         req.logIn(user, (err) => {
             if (err) return next(err);
-            req.session.pending2faUserId = null; 
-            
-            let tempSession = req.session.passport;
-            req.session.regenerate(() => {
-                req.session.passport = tempSession;
-                req.session.save(() => res.redirect('/home?message=Login successful!'));
-            });
+            finalizeLogin(req, res, user, '/home?message=Login successful!');
         });
     } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
 });
@@ -3716,14 +3733,10 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
             req.session.pending2faUserId = null;
             req.session.currentChallenge = null;
             
-            // Login successful! Securely regenerate session.
+            // Login successful! Use centralized session finalization.
             req.logIn(user, (err) => {
                 if (err) return next(err);
-                let tempSession = req.session.passport;
-                req.session.regenerate(() => {
-                    req.session.passport = tempSession;
-                    req.session.save(() => res.json({ success: true, redirect: '/home' }));
-                });
+                finalizeLogin(req, res, user, '/home?message=Login successful!');
             });
         } else {
             res.status(400).json({ success: false, error: 'Biometric verification failed' });
@@ -3739,41 +3752,6 @@ app.get('/login/2fa', async (req, res) => {
     if (!req.session.pending2faUserId) return res.redirect('/login');
     const user = await User.findById(req.session.pending2faUserId);
     res.render('pages/2fa-challenge', { method: user.twoFactorMethod, error: req.query.error });
-});
-
-app.post('/login/2fa/verify', async (req, res, next) => {
-    if (!req.session.pending2faUserId) return res.redirect('/login');
-    try {
-        const { token } = req.body;
-        const user = await User.findById(req.session.pending2faUserId);
-
-        let isValid = false;
-        if (user.twoFactorMethod === 'totp') {
-            isValid = otplib.authenticator.check(token, user.twoFactorSecret);
-        } else if (user.twoFactorMethod === 'email') {
-            isValid = (user.verificationOtp === token && user.otpExpires > Date.now());
-        }
-
-        if (!isValid) return res.redirect('/login/2fa?error=Invalid code. Please try again.');
-
-        // Clean up
-        if (user.twoFactorMethod === 'email') {
-            user.verificationOtp = undefined;
-            user.otpExpires = undefined;
-            await user.save();
-        }
-
-        req.logIn(user, (err) => {
-            if (err) return next(err);
-            req.session.pending2faUserId = null; // Clear pending state
-            
-            let tempSession = req.session.passport;
-            req.session.regenerate(() => {
-                req.session.passport = tempSession;
-                req.session.save(() => res.redirect('/home?message=Login successful!'));
-            });
-        });
-    } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
 });
 
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
