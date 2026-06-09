@@ -204,6 +204,9 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         
+        const currentUserId = '<%= user ? user._id : 'guest' %>';
+        const storagePrefix = `gplmods_notifications_${currentUserId}_`;
+
         // Helper function to setup independent badge logic for each card!
         function setupBadge(cardId, badgeId, arrowId, localStorageKey, currentCount) {
             const card = document.getElementById(cardId);
@@ -211,7 +214,7 @@
             const arrow = document.getElementById(arrowId);
             
             if (card && badge) {
-                const lastSeen = parseInt(localStorage.getItem(localStorageKey) || '0', 10);
+                const lastSeen = parseInt(localStorage.getItem(storagePrefix + localStorageKey) || '0', 10);
                 const unread = currentCount - lastSeen;
                 
                 if (unread > 0) {
@@ -222,7 +225,7 @@
                 
                 // When they click THIS SPECIFIC card, save the view to localStorage!
                 card.addEventListener('click', () => {
-                    localStorage.setItem(localStorageKey, currentCount.toString());
+                    localStorage.setItem(storagePrefix + localStorageKey, currentCount.toString());
                 });
             }
         }

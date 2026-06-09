@@ -3123,12 +3123,10 @@ app.get('/users/:username', async (req, res, next) => {
         const slug = req.params.username;
         const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
-        // --- 1. OPTIMIZED FETCH ---
-        // ✅ ADDED .lean() to save massive amounts of RAM
+        // --- 1. FETCH USER WITH POPULATES ---
         const targetUser = await User.findOne({ username: searchPattern })
             .populate('following', 'username profileImageKey role')
-            .populate('followers', 'username profileImageKey role')
-            .lean(); // <--- CRITICAL OPTIMIZATION HERE
+            .populate('followers', 'username profileImageKey role');
 
         // --- 2. HANDLE USER NOT FOUND ---
         if (!targetUser) {
@@ -3139,17 +3137,17 @@ app.get('/users/:username', async (req, res, next) => {
             });
         }
 
-         // --- NEW: Calculate Forum Points and Rank for the Public Profile User ---
-        // 2.5 Calculate their points
-        const userUploadsForPoints = await File.countDocuments({ uploader: targetUser.username, isLatestVersion: true, status: 'live' });
-        const userReviewsForPoints = await Review.countDocuments({ user: targetUser._id });
-        const userFollowersForPoints = targetUser.followers.length;
-        
-        // We set the points on the document. 
-        // Because of your Schema Virtual, Mongoose will automatically 
-        // generate targetUser.forumRank behind the scenes!
-        targetUser.forumPoints = (userUploadsForPoints * 10) + (userReviewsForPoints * 2) + (userFollowersForPoints * 5);
-        // ---------------------------------------------------------
+        // --- 3. USE STORED FORUM POINTS AND RANK ---
+        // The public profile should match the same persisted point totals
+        // and computed rank used on /profile and /rewards.
+        if (targetUser.forumPoints == null) {
+            const userUploadsForPoints = await File.countDocuments({ uploader: targetUser.username, isLatestVersion: true, status: 'live' });
+            const userReviewsForPoints = await Review.countDocuments({ user: targetUser._id });
+            const userFollowersForPoints = targetUser.followers.length;
+            targetUser.forumPoints = (userUploadsForPoints * 10) + (userReviewsForPoints * 2) + (userFollowersForPoints * 5);
+        }
+
+        const targetUserObj = targetUser.toObject({ virtuals: true });
 
         // --- 3. HANDLE BANNED USERS ---
         if (targetUser.isBanned) {
@@ -3161,20 +3159,19 @@ app.get('/users/:username', async (req, res, next) => {
         }
 
         // --- 4. GET AVATAR URL ---
-        if (targetUser.profileImageKey) {
+        if (targetUserObj.profileImageKey) {
             try {
-                targetUser.signedAvatarUrl = await getSmartImageUrl(targetUser.profileImageKey);
-            } catch (e) { 
-                targetUser.signedAvatarUrl = '/images/default-avatar.png'; 
+                targetUserObj.signedAvatarUrl = await getSmartImageUrl(targetUserObj.profileImageKey);
+            } catch (e) {
+                targetUserObj.signedAvatarUrl = '/images/default-avatar.png';
             }
         } else {
-            targetUser.signedAvatarUrl = '/images/default-avatar.png';
+            targetUserObj.signedAvatarUrl = '/images/default-avatar.png';
         }
 
         // --- 5. GET LATEST UPLOADS ---
-        // ✅ ALREADY OPTIMIZED WITH .lean()
         const uploads = await File.find({ 
-            uploader: targetUser.username, 
+            uploader: targetUserObj.username, 
             isLatestVersion: true,
             status: 'live' 
         })
@@ -3184,32 +3181,29 @@ app.get('/users/:username', async (req, res, next) => {
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(key);
-            // .toObject() removed because we used .lean()
             return { ...file, iconUrl }; 
         }));
 
         // --- 6. OPTIMIZED FOLLOWERS & FOLLOWING ---
-        // ✅ FIX: Removed .toObject() because targetUser was fetched with .lean()
-        const followersWithAvatars = await Promise.all(targetUser.followers.map(async (follower) => {
+        const followersWithAvatars = await Promise.all(targetUserObj.followers.map(async (follower) => {
             const avatarUrl = await getSmartImageUrl(follower.profileImageKey);
             return { ...follower, signedAvatarUrl: avatarUrl }; 
         }));
 
-        const followingWithAvatars = await Promise.all(targetUser.following.map(async (followingUser) => {
+        const followingWithAvatars = await Promise.all(targetUserObj.following.map(async (followingUser) => {
             const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
             return { ...followingUser, signedAvatarUrl: avatarUrl };
         }));        
 
         // --- 7. CHECK FOLLOW STATUS ---
         let isFollowing = false;
-        // Ensure req.user and req.user.following exist before checking
         if (req.isAuthenticated() && req.user && req.user.following) {
-            isFollowing = req.user.following.includes(targetUser._id);
+            isFollowing = req.user.following.some((id) => id.toString() === targetUser._id.toString());
         }
 
         // --- 8. RENDER PAGE ---
         res.render('pages/public-profile', { 
-            profileUser: targetUser, 
+            profileUser: targetUserObj, 
             uploads: uploadsWithUrls,
             followersList: followersWithAvatars, 
             followingList: followingWithAvatars,

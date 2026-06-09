@@ -291,22 +291,26 @@ async function initializeSearchBar() {
         }
     });
 
-    // --- 3. Form Submission Handling (Desktop Enter Key) ---
+    // --- 3. Form Submission Handling ---
     if (searchBar) {
         const searchForm = searchBar.querySelector('form');
         if (searchForm) {
-            searchForm.addEventListener('submit', () => {
+            searchForm.addEventListener('submit', (e) => {
                 const query = searchInput.value.trim();
-                if (query) saveSearchTerm(query);
+                if (query) {
+                    saveSearchTerm(normalizeSearchTerm(query));
+                }
             });
         }
     }
 
-    // --- 4. Mobile Keyboard "Enter" Handling ---
+    // --- 4. Keyboard "Enter" Handling ---
     searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.key === 'Go' || e.key === 'Search') {
             const query = searchInput.value.trim();
-            if (query) saveSearchTerm(query);
+            if (query) {
+                saveSearchTerm(normalizeSearchTerm(query));
+            }
         }
     });
 
@@ -422,10 +426,17 @@ function getSearchHistory() {
     return historyJSON ? JSON.parse(historyJSON) :[];
 }
 
+function normalizeSearchTerm(term) {
+    return term.replace(/\s+/g, ' ').trim();
+}
+
 function saveSearchTerm(term) {
+    const normalized = normalizeSearchTerm(term);
+    if (!normalized) return;
+
     let history = getSearchHistory();
-    history = history.filter(item => item.toLowerCase() !== term.toLowerCase());
-    history.unshift(term);
+    history = history.filter(item => item.toLowerCase() !== normalized.toLowerCase());
+    history.unshift(normalized);
     if (history.length > MAX_HISTORY_ITEMS) history.pop();
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
 }
@@ -1029,17 +1040,19 @@ function initializeNotificationsAndPWA() {
     const badge = document.getElementById('notification-badge');
     
     if (bellLink && badge) {
+        const userId = bellLink.dataset.userId || 'guest';
+        const storageKey = (key) => `gplmods_notifications_${userId}_${key}`;
+
         // Fetch current counts from the server (via data attributes)
         const curUpdates = parseInt(bellLink.getAttribute('data-updates') || '0', 10);
         const curUploads = parseInt(bellLink.getAttribute('data-uploads') || '0', 10);
         const curModsUpd = parseInt(bellLink.getAttribute('data-modsupdates') || '0', 10);
         const curPersonal = parseInt(bellLink.getAttribute('data-personal') || '0', 10);
         
-        // Fetch last seen counts from user's browser
-        const seenUpdates = parseInt(localStorage.getItem('lastSeenUpdates') || '0', 10);
-        const seenUploads = parseInt(localStorage.getItem('lastSeenUploads') || '0', 10);
-        const seenModsUpd = parseInt(localStorage.getItem('lastSeenModsUpd') || '0', 10);
-        
+        // Fetch last seen counts from user's browser using namespaced keys
+        const seenUpdates = parseInt(localStorage.getItem(storageKey('lastSeenUpdates')) || '0', 10);
+        const seenUploads = parseInt(localStorage.getItem(storageKey('lastSeenUploads')) || '0', 10);
+        const seenModsUpd = parseInt(localStorage.getItem(storageKey('lastSeenModsUpd')) || '0', 10);
         // Calculate Total Unread
         let totalUnread = curPersonal; // Admin messages are tracked by the database, so they are always accurate
         

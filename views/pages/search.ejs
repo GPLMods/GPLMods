@@ -340,7 +340,7 @@
             <nav class="pagination">
                 <% for(let i = 1; i <= totalPages; i++) { %>
                     <!-- UPDATED PAGINATION LINK to include subCategory -->
-                    <a href="/search?q=<%= query %>&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
+                    <a href="/search?q=<%= encodeURIComponent(query) %>&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
                        class="<%= currentPage === i ? 'active' : '' %>">
                         <%= i %>
                     </a>
