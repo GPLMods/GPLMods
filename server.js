@@ -698,18 +698,38 @@ app.use(passport.initialize());
 app.use(passport.session());
 // --- NEW: KICKED OUT SESSION MIDDLEWARE ---
 // If the user's session has been flagged by a new login, log them out instantly!
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
+    // Check in-memory flag first
     if (req.session && req.session.kickedOut) {
         req.logout((err) => {
             req.session.destroy(() => {
-                // Clear the session cookie from their old browser
                 res.clearCookie('connect.sid', { path: '/' });
-                // Redirect to login with the red error popup!
                 return res.redirect('/login?error=' + encodeURIComponent('Your session got expired because you logged in from another device. Please relogin again.'));
             });
         });
         return;
     }
+    
+    // Also check MongoDB directly in case the flag was just set by another login
+    if (req.sessionID) {
+        try {
+            const sessionsCollection = mongoose.connection.collection('sessions');
+            const sessionDoc = await sessionsCollection.findOne({ _id: req.sessionID });
+            if (sessionDoc && sessionDoc.kickedOut) {
+                console.log(`[Session] Detected kickedOut flag in MongoDB for session ${req.sessionID}`);
+                req.logout((err) => {
+                    req.session.destroy(() => {
+                        res.clearCookie('connect.sid', { path: '/' });
+                        return res.redirect('/login?error=' + encodeURIComponent('Your session got expired because you logged in from another device. Please relogin again.'));
+                    });
+                });
+                return;
+            }
+        } catch (err) {
+            console.error(`[Session] Error checking kickedOut flag: ${err.message}`);
+        }
+    }
+    
     next();
 });
 
@@ -2492,12 +2512,18 @@ async function finalizeLogin(req, res, user, redirectUrl) {
         
         // Check if the user already has an active session on another device
         if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
-            req.sessionStore.get(user.currentSessionId, (storeErr, oldSession) => {
-                if (oldSession) {
-                    oldSession.kickedOut = true;
-                    req.sessionStore.set(user.currentSessionId, oldSession, (setErr) => {});
-                }
-            });
+            try {
+                // ✅ FIX: Directly update MongoDB to mark the old session as kicked out
+                // This ensures persistence before we continue
+                const sessionsCollection = mongoose.connection.collection('sessions');
+                await sessionsCollection.updateOne(
+                    { _id: user.currentSessionId },
+                    { $set: { kickedOut: true } }
+                );
+                console.log(`[Session] Marked old session ${user.currentSessionId} as kickedOut for user ${user.username}`);
+            } catch (err) {
+                console.error(`[Session] Failed to invalidate old session: ${err.message}`);
+            }
         }
         
         // Save the new Session ID
@@ -3733,10 +3759,46 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
             req.session.pending2faUserId = null;
             req.session.currentChallenge = null;
             
-            // Login successful! Use centralized session finalization.
+            // Login successful! Use centralized session finalization with JSON callback
             req.logIn(user, (err) => {
-                if (err) return next(err);
-                finalizeLogin(req, res, user, '/home?message=Login successful!');
+                if (err) return res.status(500).json({ success: false, error: err.message });
+                
+                // ✅ FIX: For passkey (JSON response), use a custom finalization
+                let tempSession = req.session.passport;
+                
+                // Invalidate old session if exists
+                if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
+                    try {
+                        const sessionsCollection = mongoose.connection.collection('sessions');
+                        sessionsCollection.updateOne(
+                            { _id: user.currentSessionId },
+                            { $set: { kickedOut: true } }
+                        ).catch(err => console.error(`[Session] Failed to invalidate old session: ${err.message}`));
+                        console.log(`[Session] Marked old session ${user.currentSessionId} as kickedOut for user ${user.username}`);
+                    } catch (err) {
+                        console.error(`[Session] Error invalidating old session: ${err.message}`);
+                    }
+                }
+                
+                // Regenerate session for new device
+                req.session.regenerate((rErr) => {
+                    if (rErr) return res.status(500).json({ success: false, error: 'Session error' });
+                    
+                    req.session.passport = tempSession;
+                    user.currentSessionId = req.sessionID;
+                    user.save().catch(err => console.error('User save error:', err));
+                    
+                    req.session.save((sErr) => {
+                        if (sErr) console.error('Session save error:', sErr);
+                        res.cookie('is_logged_in', 'true', { 
+                            maxAge: 1000 * 60 * 60 * 24 * 3,
+                            path: '/', 
+                            secure: process.env.NODE_ENV === 'production', 
+                            sameSite: 'lax'
+                        });
+                        res.json({ success: true, redirect: '/home?message=Login successful!' });
+                    });
+                });
             });
         } else {
             res.status(400).json({ success: false, error: 'Biometric verification failed' });
