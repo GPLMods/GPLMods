@@ -3665,7 +3665,7 @@ app.post('/login/2fa/verify', async (req, res, next) => {
 
 app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: false, twoFactorMethod: 'none', twoFactorSecret: '' });
-    res.redirect('/profile?success=2FA Disabled.');
+    res.redirect('/dashboard?success=2FA Disabled.');
 });
 app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => {
     try {

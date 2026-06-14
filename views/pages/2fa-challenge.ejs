@@ -81,7 +81,7 @@
     <div class="challenge-container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
     <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+        <a href="/login" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
             <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
         </a>
     </div>
@@ -127,6 +127,31 @@
             <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
             <script>
                 const { startAuthentication } = SimpleWebAuthnBrowser;
+
+                const bufferToBase64URLString = (buffer) => {
+                    const bytes = new Uint8Array(buffer);
+                    let binary = '';
+                    for (let i = 0; i < bytes.byteLength; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    return btoa(binary)
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=+$/, '');
+                };
+
+                const serializeAuthResponse = (response) => {
+                    return JSON.stringify(response, (key, value) => {
+                        if (value instanceof ArrayBuffer) {
+                            return bufferToBase64URLString(value);
+                        }
+                        if (ArrayBuffer.isView(value)) {
+                            return bufferToBase64URLString(value.buffer);
+                        }
+                        return value;
+                    });
+                };
+
                 document.getElementById('auth-passkey-btn').addEventListener('click', async () => {
                     try {
                         const resp = await fetch('/login/2fa/passkey/options');
@@ -136,14 +161,18 @@
                         const verificationResp = await fetch('/login/2fa/passkey/verify', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(asseResp),
+                            body: serializeAuthResponse(asseResp),
                         });
+
                         const verification = await verificationResp.json();
-                        if (verification.success) window.location.href = verification.redirect;
-                        else alert('Passkey verification failed.');
-                    } catch (error) { 
-                        // Often throws if user cancels the prompt
-                        console.log("Passkey login cancelled or failed."); 
+                        if (verification.success) {
+                            window.location.href = verification.redirect;
+                        } else {
+                            alert('Passkey verification failed. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Passkey login cancelled or failed:', error);
+                        alert('Passkey verification failed or was cancelled.');
                     }
                 });
             </script>

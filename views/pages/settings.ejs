@@ -18,11 +18,11 @@
             <h1 style="color: var(--white); font-size: 2.8em; margin-bottom: 10px;">Account <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Settings</span></h1>
         </div>
 
-        <!-- ✅ FIX: Corrected link from /dashboard to /profile -->
+        <!-- ✅ Use a back action so this only returns when the user presses Go Back -->
         <div style="margin-bottom: 30px;">
-            <a href="/dashboard" class="btn btn-secondary" style="background: transparent; border: 2px solid #333; color: var(--silver); padding: 8px 20px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--silver)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#333'; this.style.color='var(--silver)';">
+            <button type="button" class="btn btn-secondary" style="background: transparent; border: 2px solid #333; color: var(--silver); padding: 8px 20px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.borderColor='var(--silver)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#333'; this.style.color='var(--silver)';" onclick="history.back();">
                 <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back to Dashboard
-            </a>
+            </button>
         </div>
 
         <!-- 2FA Settings (RESTORED) -->
