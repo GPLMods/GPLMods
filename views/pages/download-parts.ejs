@@ -244,6 +244,13 @@
                             <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
                         </a>
                     <% } %>
+
+                    <!-- Show False Positive Guide when any scan reports positives -->
+                    <% if (file.virusTotalPositiveCount > 0 || file.manualFileScanPositive || file.manualSiteScanPositive) { %>
+                        <a href="/understanding-scans" target="_blank" style="color: var(--gold); font-size: 0.8em; margin-top: 12px; display: block; text-align: center; font-style: italic; text-decoration: none;">
+                            <i class="fas fa-info-circle"></i> Why are there detections? Read our False Positive Guide.
+                        </a>
+                    <% } %>
                 </div>
             </div>
         <% } %>

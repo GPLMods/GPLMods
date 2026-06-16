@@ -1,0 +1,191 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .features-page-header { text-align: center; padding: 60px 20px 20px 20px; }
+    .features-page-header h1 { font-size: 3.2em; color: var(--white); margin-bottom: 10px; line-height: 1.2; }
+    .features-page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .features-page-header p { color: var(--silver); font-size: 1.15em; max-width: 800px; margin: 15px auto 30px auto; line-height: 1.6; }
+
+    /* Policy Warning Banner */
+    .policy-warning {
+        background-color: rgba(33, 150, 243, 0.1);
+        border: 1px solid var(--blue);
+        color: #90caf9;
+        max-width: 800px;
+        margin: 0 auto 50px auto;
+        padding: 15px 25px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        text-align: left;
+        font-size: 0.95em;
+    }
+    .policy-warning i { font-size: 1.8em; color: var(--blue); }
+    .policy-warning a { color: var(--white); font-weight: bold; text-decoration: underline; transition: color 0.3s; }
+    .policy-warning a:hover { color: var(--gold); }
+
+    /* The Feature Grid */
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 30px;
+        margin: 0 auto 60px auto;
+        max-width: 1200px;
+        padding: 0 20px;
+    }
+
+    .feature-card {
+        background-color: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 15px;
+        padding: 35px 25px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--gold);
+        box-shadow: 0 15px 35px rgba(255, 215, 0, 0.15);
+    }
+
+    .feature-icon-wrapper {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #222, #111);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        color: var(--gold);
+        margin-bottom: 25px;
+        border: 2px solid #444;
+        box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon-wrapper {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 20px var(--glow-gold);
+    }
+
+    .feature-card h3 { color: var(--white); font-size: 1.3em; margin-bottom: 15px; }
+    .feature-card p { color: var(--silver); font-size: 0.95em; line-height: 1.6; margin: 0; }
+
+    /* Bottom CTA Area */
+    .partner-cta-area { text-align: center; margin-bottom: 80px; padding: 50px 20px; background: linear-gradient(to bottom, transparent, var(--dark-gray)); border-radius: 20px; border-bottom: 2px solid var(--gold); max-width: 1000px; margin-left: auto; margin-right: auto; }
+    .partner-cta-area h2 { color: var(--white); font-size: 2.2em; margin-bottom: 15px; }
+    .apply-btn { display: inline-block; background-color: var(--gold); color: var(--black); padding: 18px 50px; border-radius: 30px; font-weight: 800; font-size: 1.2em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 0 20px var(--glow-gold); margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .apply-btn:hover { transform: translateY(-5px); box-shadow: 0 0 30px var(--glow-gold); background-color: #fff; }
+
+    @media (max-width: 768px) {
+        .features-page-header h1 { font-size: 2.5em; }
+        .feature-grid { grid-template-columns: 1fr; }
+        .policy-warning { flex-direction: column; text-align: center; }
+    }
+</style>
+
+<main>
+    <div class="features-page-header">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div style="margin-bottom: 20px;">
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+        </a>
+    </div>
+    <!-- ======================================== -->
+        <div class="container">
+            <h1>Distributor <span>Partnership Program</span></h1>
+            <p>Scale your audience, monetize your links, and distribute your content to thousands of daily users on the GPL Mods platform. Designed exclusively for modding teams, channels, and established creators.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Policy Agreement Warning -->
+        <div class="policy-warning">
+            <i class="fas fa-file-contract"></i>
+            <div>
+                <strong>Important Notice:</strong> By submitting an application and joining the Distributor Program, you explicitly agree to adhere to our <a href="/partnership-policy" target="_blank">Distributor Partnership & Distribution Policy</a>. Strict compliance regarding link safety and malware-free content is required.
+            </div>
+        </div>
+    </div>
+
+    <div class="feature-grid">
+        
+        <!-- Feature 1 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-money-bill-wave"></i></div>
+            <h3>Total Monetization Freedom</h3>
+            <p>Utilize your own Pay-Per-Download (PPD) services or link shorteners (e.g., Linkvertise, Shrink.io, Work.ink, 10drives, DevUploads). We take 0% commission on the revenue you generate.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-project-diagram"></i></div>
+            <h3>Brand Expansion & Traffic</h3>
+            <p>Promote your official Website, Telegram Channel, Discord Server, and YouTube directly on your public profile page. Drive highly targeted traffic back to your own ecosystems.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-check-circle"></i></div>
+            <h3>Verified Organization Badge</h3>
+            <p>Stand out instantly. Your profile and all your uploaded mods will feature the exclusive "Verified Distributor" badge, establishing immediate trust and credibility with our user base.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-crown"></i></div>
+            <h3>Lifetime Premium Access</h3>
+            <p>All distributors automatically receive a complimentary, lifetime upgrade to <strong>GPL Mods+</strong>. Enjoy a 100% ad-free experience, custom profile options, and priority support.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-server"></i></div>
+            <h3>Complete Mirror Control</h3>
+            <p>No need to re-upload massive files. Retain full ownership of your distribution by linking directly to your existing hosted mirrors on Dropbox, Google Drive, Mega, or your private servers.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-star"></i></div>
+            <h3>Premium User Targeting</h3>
+            <p>Enhance the ecosystem by offering seamless, ad-free direct download links specifically for our GPL Mods+ users, while keeping your monetized links active for standard members.</p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+            <h3>Zero Ad Interference</h3>
+            <p>We guarantee a clean bridge to your content. GPL Mods will never inject our own secondary ads, pop-ups, or intermediary link-shorteners over your provided destination URLs.</p>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+            <div class="feature-icon-wrapper"><i class="fas fa-balance-scale"></i></div>
+            <h3>Dedicated Moderation Track</h3>
+            <p>Benefit from a specialized moderation queue. Distributors experience faster review times and a significantly reduced risk of automated bans, ensuring fair treatment of your content.</p>
+        </div>
+
+    </div>
+
+    <div class="container">
+        <div class="partner-cta-area">
+            <h2>Ready to Expand Your Reach?</h2>
+            <p style="color: var(--silver); margin-bottom: 20px; font-size: 1.1em;">Join the leading network of verified mod distributors today.</p>
+            <a href="/partnership" class="apply-btn">Apply For Access Now</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../../partials/footer') %>

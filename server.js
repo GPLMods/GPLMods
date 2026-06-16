@@ -5720,6 +5720,10 @@ app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
 app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
 app.get('/refund-policy', (req, res) => res.render('pages/static/refund-policy'));
 app.get('/donate', (req, res) => res.render('pages/static/donate'));
+app.get('/partnership-policy', (req, res) => res.render('pages/static/partnership-policy'));
+app.get('/distributor-features', (req, res) => res.render('pages/static/distributor-features'));
+app.get('/why-choose-us', (req, res) => res.render('pages/static/why-choose-us'));
+app.get('/understanding-scans', (req, res) => res.render('pages/static/understanding-scans'));
 app.get('/membership', (req, res) => {
     // If you use Stripe/Cashfree keys in this view, pass them here
     res.render('pages/membership', {

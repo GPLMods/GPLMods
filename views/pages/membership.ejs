@@ -256,10 +256,9 @@
             <div class="pricing-card card-distributor">
                 <h2 class="tier-name" style="color: var(--blue);">Distributor</h2>
                 
-                <!-- ✅ UPGRADE: Clear clarification that this is for organizations -->
                 <p class="tier-desc"><strong>For Mod Distributors & Organizations only.</strong> Not for individual users.</p>
                 <div class="distributor-notice">
-                    <i class="fas fa-info-circle"></i> Requires manual application & approval with one-time mods destribution fee.
+                    <i class="fas fa-info-circle"></i> Requires manual application & approval with a one-time setup fee.
                 </div>
 
                 <div class="price-container">
@@ -272,6 +271,18 @@
                     <li><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
                     <li><i class="fas fa-check"></i> Bypass B2 Upload & Scan Waits</li>
                 </ul>
+                
+                <!-- ======== NEW: RESOURCE LINKS ======== -->
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px dashed #444;">
+                    <a href="/distributor-features" target="_blank" style="color: var(--blue); text-decoration: none; font-size: 0.9em; font-weight: 600; transition: color 0.2s;">
+                        <i class="fas fa-list-ul" style="margin-right: 8px; width: 15px;"></i> View Full Feature List
+                    </a>
+                    <a href="/partnership-policy" target="_blank" style="color: var(--silver); text-decoration: none; font-size: 0.9em; transition: color 0.2s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                        <i class="fas fa-file-contract" style="margin-right: 8px; width: 15px;"></i> Read Partnership Policy
+                    </a>
+                </div>
+                <!-- ===================================== -->
+
                 <% if (!user) { %>
                     <a href="/login?message=Please log in to apply for Partnership." class="plan-btn btn-blue">Log in to Apply</a>
                 <% } else if (user.role === 'distributor') { %>

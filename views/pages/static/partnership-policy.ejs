@@ -1,0 +1,162 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .policy-page-header { text-align: center; padding: 60px 20px 20px 20px; }
+    .policy-page-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
+    .policy-page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .policy-page-header p { color: var(--silver); font-size: 1.1em; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+
+    .policy-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+        margin: 40px auto 60px auto;
+        max-width: 1100px;
+        padding: 0 20px;
+    }
+
+    .policy-card {
+        background-color: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 25px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .policy-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--gold);
+        box-shadow: 0 10px 25px rgba(255, 215, 0, 0.1);
+    }
+
+    /* Subtle top border glow for the cards */
+    .policy-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+        opacity: 0.5;
+    }
+
+    .policy-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background-color: var(--black);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        color: var(--gold);
+        margin-bottom: 20px;
+        border: 1px solid #333;
+    }
+
+    .policy-card h3 { color: var(--white); font-size: 1.25em; margin-bottom: 12px; }
+    .policy-card p { color: var(--silver); font-size: 0.95em; line-height: 1.6; margin: 0; }
+
+    .policy-footer-cta { text-align: center; margin-bottom: 60px; padding: 40px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; max-width: 800px; margin-left: auto; margin-right: auto; }
+    
+    .apply-btn { display: inline-block; background-color: var(--gold); color: var(--black); padding: 15px 40px; border-radius: 30px; font-weight: bold; font-size: 1.2em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); margin-top: 20px; }
+    .apply-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); background-color: #fff; }
+
+    @media (max-width: 768px) {
+        .policy-page-header h1 { font-size: 2.2em; }
+        .policy-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<main>
+    <div class="policy-page-header">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div style="margin-bottom: 20px;">
+        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+        </a>
+    </div>
+    <!-- ======================================== -->
+        <div class="container">
+            <h1>Distributor <span>Partnership Policy</span></h1>
+            <p>By joining the GPL Mods Distributor Partnership Program, you agree to adhere strictly to the following guidelines. Our priority is the safety and trust of our community.</p>
+        </div>
+    </div>
+
+    <div class="policy-grid">
+        
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-link"></i></div>
+            <h3>1. Link Integrity & Accuracy</h3>
+            <p>All distributed links must directly lead to the stated file. Misleading links, bait-and-switch tactics, or directing users to incorrect or unrelated files are strictly prohibited.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>2. Safe Routing Destinations</h3>
+            <p>Monetization portals, landing pages, and intermediate routing (such as link shorteners) must be completely free of malware, intrusive pop-ups, and malicious background scripts.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-bug" style="color: var(--red);"></i></div>
+            <h3>3. Zero Tolerance for Malware</h3>
+            <p>The final downloadable modifications must be 100% clean. Distributing spyware, worms, Trojans, ransomware, or any other malicious software will result in an immediate, permanent ban.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-sync-alt"></i></div>
+            <h3>4. Link Maintenance & Updates</h3>
+            <p>Partners are solely responsible for ensuring their links remain active. Expired, dead, or broken download links must be updated promptly upon discovery or admin request.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-user-shield"></i></div>
+            <h3>5. Admin Audit Access</h3>
+            <p>For security and verification purposes, partners must provide a direct, ad-free download link to the administration team upon request for file safety testing prior to or after public approval.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-balance-scale"></i></div>
+            <h3>6. Limitation of Liability</h3>
+            <p>GPL Mods acts solely as a directory. We are not liable for any damages, brand reputation loss, or legal disputes arising from the hosting or distribution of your links on our platform.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-ban" style="color: var(--red);"></i></div>
+            <h3>7. Enforcement & Termination</h3>
+            <p>Participation in the Partnership Program does not grant immunity from our moderation systems. We reserve the right to suspend or permanently ban any partner account that violates these terms.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-id-badge"></i></div>
+            <h3>8. Identity Verification</h3>
+            <p>Partners must verify their identity as an established group or individual distributor by providing active, verifiable links to their official website, Telegram channel, Discord server, or other social media.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-gavel"></i></div>
+            <h3>9. Moderation & DMCA Compliance</h3>
+            <p>We reserve the right to temporarily or permanently remove your links during site maintenance, security audits, or in response to Digital Millennium Copyright Act (DMCA) takedown notices.</p>
+        </div>
+
+        <div class="policy-card">
+            <div class="policy-icon"><i class="fas fa-hand-holding-usd" style="color: #2ecc71;"></i></div>
+            <h3>10. Monetization & Revenue</h3>
+            <p>GPL Mods does not compensate partners directly, nor do we claim any percentage of your revenue. 100% of the earnings generated through your approved Pay-Per-Download (PPD) or monetized links belong entirely to you.</p>
+        </div>
+
+    </div>
+
+    <div class="container">
+        <div class="policy-footer-cta">
+            <h2 style="color: var(--white); margin-bottom: 10px;">Ready to collaborate?</h2>
+            <p style="color: var(--silver); margin-bottom: 20px;">If your organization meets these standards, we'd love to have you on board.</p>
+            <a href="/partnership" class="apply-btn">Apply for Partnership</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../../partials/footer') %>

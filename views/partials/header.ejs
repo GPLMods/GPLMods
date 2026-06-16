@@ -160,9 +160,12 @@
         /* Desktop Breakpoint */
         @media (min-width: 1024px) {
             .desktop-text-buttons { display: flex; align-items: center; gap: 10px; }
-            .hamburger-menu { display: none !important; }
-            /* Hides mobile avatar circle when viewing full text desktop buttons */
-            .header-mobile-actions .avatar-placeholder { display: none; } 
+            /* Keep hamburger visible on desktop as requested */
+            .hamburger-menu { display: block !important; font-size: 1.6em; }
+            /* Show avatar on desktop too */
+            .header-mobile-actions .avatar-placeholder { display: block; }
+            /* Slightly reduce spacing so both avatar and desktop buttons fit */
+            .header-right-actions { gap: 10px; }
         }
 
         /* Mobile Breakpoint (Drops Search Bar to bottom row) */
@@ -254,11 +257,9 @@
                 <!-- Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
-                        <a href="/docs" class="btn btn-login" style="border: none; padding: 8px 15px;">Docs</a>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
                     <% } else { %>
-                        <a href="/docs" class="btn btn-login" style="border: none; padding: 8px 15px;">Docs</a>                    
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/login" class="btn btn-login">Login</a>
                         <a href="/register" class="btn btn-signup">Sign Up</a>
