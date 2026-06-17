@@ -2190,116 +2190,90 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
     }
 });
 app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
-    
     try {
         const parentFileId = req.params.id;
         const previousVersion = await File.findById(parentFileId);
+        if (!previousVersion) {
+            return res.status(404).json({ success: false, message: 'Parent file not found.' });
+        }
 
-        // Security check: Must be uploader or admin
         const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
         const isAdmin = req.user.role === 'admin';
         if (!isUploader && !isAdmin) {
             return res.status(403).json({ success: false, message: "Forbidden: You don't have permission to edit this mod." });
         }
 
-        // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link / Multi-Part) ---
-        if ((req.user.role === 'distributor' || req.user.role === 'admin') && (req.body.externalUrl || req.body.isMultiPart)) {
-            const { externalUrl, isMultiPart, partUrls, softwareVersion, whatsNew, originalFilename, ipaDirectDownloadUrl } = req.body;
-            
-            const newVersion = new File({
-                // Copy details from previous
-                name: previousVersion.name,
-                developer: previousVersion.developer,
-                iconKey: previousVersion.iconKey,
-                screenshotKeys: previousVersion.screenshotKeys,
-                modDescription: previousVersion.modDescription,
-                officialDescription: previousVersion.officialDescription,
-                modFeatures: previousVersion.modFeatures,
-                category: previousVersion.category,
-                platforms: previousVersion.platforms,
-                tags: previousVersion.tags,
-                uploader: req.user.username,
-                ageRating: req.body.ageRating || previousVersion.ageRating,
-                minOsVersion: req.body.minOsVersion || previousVersion.minOsVersion,
-                ipaDirectDownloadUrl: ipaDirectDownloadUrl, // <--- SAVE IT
-                // New details
-                version: softwareVersion,
-                whatsNew: whatsNew,
-            // --- NEW: ADD MANUAL SCANS TO NEW VERSION ---
-            manualFileScanUrl: req.body.manualFileScanUrl,
-            manualSiteScanUrl: req.body.manualSiteScanUrl,
-                originalFilename: originalFilename || previousVersion.originalFilename,
-                fileKey: 'external-link', 
-                fileSize: 0, 
-                
-                isLatestVersion: false, 
-                parentFile: parentFileId,
-                status: 'live' 
-            });
+        const formData = req.body;
+        let isMultiPart = formData.isMultiPart === 'true' || formData.isMultiPart === true;
+        let downloadParts = [];
+        let newFileKey = 'external-link';
+        let actualFileSize = 0;
+        let originalFilename = formData.originalFilename || req.file?.originalname || 'Update';
 
-            if (isMultiPart === 'true' && partUrls && partUrls.length >= 2) {
-                newVersion.isMultiPart = true;
-                const cleanParts = partUrls.filter(url => url.trim() !== '');
-                newVersion.downloadParts = cleanParts.map((url, index) => ({
-                    partName: `Part ${index + 1}`,
-                    partUrl: url
-                }));
-            } else {
-                newVersion.externalDownloadUrl = externalUrl;
+        if (isMultiPart && (formData.partUrls || formData.partNames)) {
+            const pNames = formData.partNames
+                ? (Array.isArray(formData.partNames) ? formData.partNames : [formData.partNames])
+                : [];
+            const pUrls = formData.partUrls
+                ? (Array.isArray(formData.partUrls) ? formData.partUrls : [formData.partUrls])
+                : [];
+            const m1Prov = formData.mirror1Provider
+                ? (Array.isArray(formData.mirror1Provider) ? formData.mirror1Provider : [formData.mirror1Provider])
+                : [];
+            const m1Url = formData.mirror1Url
+                ? (Array.isArray(formData.mirror1Url) ? formData.mirror1Url : [formData.mirror1Url])
+                : [];
+            const m2Prov = formData.mirror2Provider
+                ? (Array.isArray(formData.mirror2Provider) ? formData.mirror2Provider : [formData.mirror2Provider])
+                : [];
+            const m2Url = formData.mirror2Url
+                ? (Array.isArray(formData.mirror2Url) ? formData.mirror2Url : [formData.mirror2Url])
+                : [];
+            const daLink = formData.directAdminLink
+                ? (Array.isArray(formData.directAdminLink) ? formData.directAdminLink : [formData.directAdminLink])
+                : [];
+            const mfScan = formData.partManualFileScanUrl
+                ? (Array.isArray(formData.partManualFileScanUrl) ? formData.partManualFileScanUrl : [formData.partManualFileScanUrl])
+                : [];
+            const msScan = formData.partManualSiteScanUrl
+                ? (Array.isArray(formData.partManualSiteScanUrl) ? formData.partManualSiteScanUrl : [formData.partManualSiteScanUrl])
+                : [];
+
+            for (let i = 0; i < pUrls.length; i++) {
+                const partUrl = pUrls[i] ? pUrls[i].trim() : '';
+                if (!partUrl) continue;
+
+                downloadParts.push({
+                    partName: pNames[i] && pNames[i].trim() !== '' ? pNames[i].trim() : `Part ${downloadParts.length + 1}`,
+                    partUrl,
+                    mirror1Provider: m1Prov[i] ? m1Prov[i].trim() : '',
+                    mirror1Url: m1Url[i] ? m1Url[i].trim() : '',
+                    mirror2Provider: m2Prov[i] ? m2Prov[i].trim() : '',
+                    mirror2Url: m2Url[i] ? m2Url[i].trim() : '',
+                    directAdminLink: daLink[i] ? daLink[i].trim() : '',
+                    manualFileScanUrl: mfScan[i] ? mfScan[i].trim() : '',
+                    manualSiteScanUrl: msScan[i] ? msScan[i].trim() : ''
+                });
             }
-            
-            await newVersion.save();
-            await File.findByIdAndUpdate(parentFileId, {
-                $push: { olderVersions: newVersion._id },
-                isLatestVersion: false
-            });
-            newVersion.isLatestVersion = true;
-            await newVersion.save();
-        // --- INDEXNOW PING ---
-        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        const newModUrl = `${baseUrl}/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
-        notifyIndexNow([newModUrl]);
-        notifyGoogle(newModUrl, 'URL_UPDATED'); // Tell Google about the new version!
+        } else if (req.file && req.file.size > 100) {
+            const fileSize = req.file.size;
+            actualFileSize = fileSize;
+            const isPremium = req.user.membership === 'premium';
+            const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
 
-            // We use JSON here so the frontend AJAX knows what to do
-            return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
+            if (!isAdminOrDist) {
+                if (!isPremium && fileSize > 314572800) {
+                    return res.status(413).json({ success: false, message: 'File exceeds 300MB limit.' });
+                }
+                if (isPremium && fileSize > 1073741824) {
+                    return res.status(413).json({ success: false, message: 'File exceeds 1GB limit.' });
+                }
+            }
+
+            const io = req.app.get('io');
+            newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId);
         }
 
-
-        // --- SCENARIO 2: STANDARD UPLOAD (Physical File) ---
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "No file uploaded." });
-        }
-
-        const fileSize = req.file.size;
-        const isPremium = req.user.membership === 'premium';
-        const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
-        
-        const limit300MB = 314572800;
-        const limit1GB = 1073741824;
-
-        if (!isAdminOrDist) {
-            if (!isPremium && fileSize > limit300MB) {
-                return res.status(413).json({ success: false, message: "File exceeds your 300MB limit. Please upgrade to Premium." });
-            }
-            if (isPremium && fileSize > limit1GB) {
-                 return res.status(413).json({ success: false, message: "File exceeds the 1GB Premium limit." });
-            }
-        }
-
-        // Add Socket.IO reporting for B2 upload progress
-        const uploadId = req.body.uploadId;
-        const io = req.app.get('socketio'); // Assuming you attach `io` to your Express app!
-        
-        // Custom uploadToB2 with progress tracking (inline for this specific route)
-        // Note: For a true live bar here, you need to modify your uploadToB2 helper to accept the 'io' object and 'uploadId'
-        // For now, we will do a basic upload and rely on the frontend 50% jump.
-        
-        console.log("Uploading new version to B2 from memory buffer...");
-        const newFileKey = await uploadToB2(req.file, 'mods'); 
-        console.log("Upload to B2 complete.");
-
-        // Create new record
         const newVersion = new File({
             name: previousVersion.name,
             developer: previousVersion.developer,
@@ -2311,49 +2285,57 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             category: previousVersion.category,
             platforms: previousVersion.platforms,
             tags: previousVersion.tags,
+            architectures: previousVersion.architectures,
+            minOsVersion: previousVersion.minOsVersion,
+            ageRating: previousVersion.ageRating,
+            importantNote: formData.importantNote || previousVersion.importantNote,
             uploader: req.user.username,
             version: req.body.softwareVersion,
             whatsNew: req.body.whatsNew,
             fileKey: newFileKey,
-            fileSize: req.file.size,
-            originalFilename: req.file.originalname,
-            isLatestVersion: false, 
+            fileSize: actualFileSize,
+            originalFilename: originalFilename,
+            isMultiPart: isMultiPart,
+            downloadParts: downloadParts,
+            externalDownloadUrl: !isMultiPart ? (formData.externalDownloadUrl || '') : '',
+            directDownloadUrl: formData.directDownloadUrl || '',
+            ipaDirectDownloadUrl: formData.ipaDirectDownloadUrl || '',
+            manualFileScanUrl: !isMultiPart ? (formData.manualFileScanUrl || '') : '',
+            manualSiteScanUrl: !isMultiPart ? (formData.manualSiteScanUrl || '') : '',
+            isLatestVersion: false,
             parentFile: parentFileId,
-            status: 'live' 
+            status: 'live'
         });
-        
+
         await newVersion.save();
-        
-        // Update linkage
         await File.findByIdAndUpdate(parentFileId, {
             $push: { olderVersions: newVersion._id },
-            isLatestVersion: false 
+            isLatestVersion: false
         });
 
         newVersion.isLatestVersion = true;
         await newVersion.save();
-        
-        // Background VT Scan
-        (async () => {
-            try {
-                const vtFormData = new FormData();
-                vtFormData.append('file', req.file.buffer, req.file.originalname);
-                const vtResponse = await axios.post('https://www.virustotal.com/api/v3/files', vtFormData, {
-                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY, ...vtFormData.getHeaders() }
-                });
-                const analysisId = vtResponse.data.data.id;
-                await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
-            } catch (vtError) {
-                console.error(`VT scan failed for new version:`, vtError.message);
-            } 
-        })(); 
 
-        // ✅ FIX: Reply with JSON so the AJAX script can redirect cleanly
+        if (req.file && req.file.size > 100) {
+            (async () => {
+                try {
+                    const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
+                    await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
+                } catch (error) {
+                    console.error('VirusTotal submission failed for new version:', error.message || error);
+                }
+            })();
+        }
+
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const modUrl = `${baseUrl}/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
+        notifyIndexNow([modUrl]);
+        notifyGoogle(modUrl, 'URL_UPDATED');
+
         return res.json({ success: true, redirectUrl: `/mods/${newVersion._id}` });
-        
     } catch (error) {
-        console.error("Error adding new version:", error);
-        res.status(500).json({ success: false, message: "A server error occurred during upload." });
+        console.error('Error adding new version:', error);
+        return res.status(500).json({ success: false, message: 'A server error occurred during upload.' });
     }
 });
 // --- NEW: HELPER TO DELETE FILES FROM BACKBLAZE B2 ---
@@ -4181,7 +4163,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             filesize: pendingFile.fileSize,
             defaultName: cleanName,
             defaultVersion: defaultVersion,
-            defaultPlatform: defaultPlatform
+            defaultPlatform: defaultPlatform,
+            file: pendingFile
         });
 
     } catch (error) {
@@ -4405,6 +4388,50 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.platforms =[formData.modCategory];
         }
 
+        // --- MULTI-PART ARRAY PARSING LOGIC (Edit Route) ---
+        try {
+            const editIsMultiPart = (formData.isMultiPart === 'true' || formData.isMultiPart === true);
+            const editDownloadParts = [];
+
+            if (editIsMultiPart && (formData.partUrls || formData.partNames)) {
+                const pNames = Array.isArray(formData.partNames) ? formData.partNames : (formData.partNames ? [formData.partNames] : []);
+                const pUrls = Array.isArray(formData.partUrls) ? formData.partUrls : (formData.partUrls ? [formData.partUrls] : []);
+                const m1Prov = Array.isArray(formData.mirror1Providers) ? formData.mirror1Providers : (formData.mirror1Providers ? [formData.mirror1Providers] : []);
+                const m1Url = Array.isArray(formData.mirror1Urls) ? formData.mirror1Urls : (formData.mirror1Urls ? [formData.mirror1Urls] : []);
+                const m2Prov = Array.isArray(formData.mirror2Providers) ? formData.mirror2Providers : (formData.mirror2Providers ? [formData.mirror2Providers] : []);
+                const m2Url = Array.isArray(formData.mirror2Urls) ? formData.mirror2Urls : (formData.mirror2Urls ? [formData.mirror2Urls] : []);
+                const daLink = Array.isArray(formData.directAdminLinks) ? formData.directAdminLinks : (formData.directAdminLinks ? [formData.directAdminLinks] : []);
+                const mfScan = Array.isArray(formData.manualFileScanUrls) ? formData.manualFileScanUrls : (formData.manualFileScanUrls ? [formData.manualFileScanUrls] : []);
+                const msScan = Array.isArray(formData.manualSiteScanUrls) ? formData.manualSiteScanUrls : (formData.manualSiteScanUrls ? [formData.manualSiteScanUrls] : []);
+
+                const len = Math.max(pUrls.length, pNames.length);
+                for (let i = 0; i < len; i++) {
+                    if (!pUrls[i]) continue;
+                    editDownloadParts.push({
+                        partName: pNames[i] || `Part ${i + 1}`,
+                        partUrl: pUrls[i],
+                        mirror1Provider: m1Prov[i] || '',
+                        mirror1Url: m1Url[i] || '',
+                        mirror2Provider: m2Prov[i] || '',
+                        mirror2Url: m2Url[i] || '',
+                        directAdminLink: daLink[i] || '',
+                        manualFileScanUrl: mfScan[i] || '',
+                        manualSiteScanUrl: msScan[i] || '',
+                        partVirusTotalId: '',
+                        partVirusTotalScanDate: null,
+                        partVirusTotalPositiveCount: 0,
+                        partVirusTotalTotalScans: 0
+                    });
+                }
+            }
+
+            // Apply parsed multipart data to the file model
+            file.isMultiPart = editIsMultiPart;
+            if (editDownloadParts.length > 0) file.downloadParts = editDownloadParts;
+        } catch (e) {
+            console.error('Multipart parsing error (edit):', e);
+        }
+
 // 4. IMPORTANT: Status Logic
         if (actionType === 'draft') {
             // If they saved a draft, change the status to processing, taking it offline
@@ -4501,6 +4528,42 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
         }
 
+        // --- MULTI-PART ARRAY PARSING LOGIC ---
+        let isMultiPart = (formData.isMultiPart === 'true' || formData.isMultiPart === true);
+        let downloadParts = [];
+
+        if (isMultiPart && (formData.partUrls || formData.partNames)) {
+            const pNames = Array.isArray(formData.partNames) ? formData.partNames : (formData.partNames ? [formData.partNames] : []);
+            const pUrls = Array.isArray(formData.partUrls) ? formData.partUrls : (formData.partUrls ? [formData.partUrls] : []);
+            const m1Prov = Array.isArray(formData.mirror1Providers) ? formData.mirror1Providers : (formData.mirror1Providers ? [formData.mirror1Providers] : []);
+            const m1Url = Array.isArray(formData.mirror1Urls) ? formData.mirror1Urls : (formData.mirror1Urls ? [formData.mirror1Urls] : []);
+            const m2Prov = Array.isArray(formData.mirror2Providers) ? formData.mirror2Providers : (formData.mirror2Providers ? [formData.mirror2Providers] : []);
+            const m2Url = Array.isArray(formData.mirror2Urls) ? formData.mirror2Urls : (formData.mirror2Urls ? [formData.mirror2Urls] : []);
+            const daLink = Array.isArray(formData.directAdminLinks) ? formData.directAdminLinks : (formData.directAdminLinks ? [formData.directAdminLinks] : []);
+            const mfScan = Array.isArray(formData.manualFileScanUrls) ? formData.manualFileScanUrls : (formData.manualFileScanUrls ? [formData.manualFileScanUrls] : []);
+            const msScan = Array.isArray(formData.manualSiteScanUrls) ? formData.manualSiteScanUrls : (formData.manualSiteScanUrls ? [formData.manualSiteScanUrls] : []);
+
+            const len = Math.max(pUrls.length, pNames.length);
+            for (let i = 0; i < len; i++) {
+                if (!pUrls[i]) continue; // skip empty parts
+                downloadParts.push({
+                    partName: pNames[i] || `Part ${i + 1}`,
+                    partUrl: pUrls[i],
+                    mirror1Provider: m1Prov[i] || '',
+                    mirror1Url: m1Url[i] || '',
+                    mirror2Provider: m2Prov[i] || '',
+                    mirror2Url: m2Url[i] || '',
+                    directAdminLink: daLink[i] || '',
+                    manualFileScanUrl: mfScan[i] || '',
+                    manualSiteScanUrl: msScan[i] || '',
+                    partVirusTotalId: '',
+                    partVirusTotalScanDate: null,
+                    partVirusTotalPositiveCount: 0,
+                    partVirusTotalTotalScans: 0
+                });
+            }
+        }
+
         // --- VALIDATION FOR SUBMISSION ONLY ---
         // If they are submitting for review, enforce required fields.
         // If they are just saving a draft, allow missing fields.
@@ -4530,7 +4593,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanName = global.profanityFilter.clean(formData.modName);
         const cleanDescription = global.profanityFilter.clean(formData.modDescription);
         const cleanFeatures = global.profanityFilter.clean(formData.modFeatures || '');
-        const cleanWhatsNew = global.profanityFilter.clean(formData.whatsNew || ''); is
+        const cleanWhatsNew = global.profanityFilter.clean(formData.whatsNew || '');
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
@@ -4566,6 +4629,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             // ------------------------------          
             status: finalStatus // 'processing' (draft) or 'pending' (submitted)
         };
+
+        // Attach multipart fields when present
+        updateData.isMultiPart = isMultiPart;
+        if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
 
         if (isVariant) {
             updateData.isVariant = true;

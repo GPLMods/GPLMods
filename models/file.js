@@ -54,16 +54,21 @@ importantNote: { type: String, trim: true },
         type: Boolean,
         default: false
     },
-        // --- NEW: MULTI-PART DOWNLOADS ---
-    isMultiPart: {
-        type: Boolean,
-        default: false
-    },
     downloadParts: [{
-        partName: { type: String, required: true }, 
+        partName: { type: String, required: true },
         partUrl: { type: String, required: true },
-        // --- ADD THESE NEW FIELDS FOR EACH PART ---
-        partVirusTotalId: { type: String, trim: true }, // The Hash or Analysis ID
+        // Mirrors and alternate providers
+        mirror1Provider: { type: String, trim: true },
+        mirror1Url: { type: String, trim: true },
+        mirror2Provider: { type: String, trim: true },
+        mirror2Url: { type: String, trim: true },
+        // Direct admin bypass link
+        directAdminLink: { type: String, trim: true },
+        // Manual scan links for each part
+        manualFileScanUrl: { type: String, trim: true },
+        manualSiteScanUrl: { type: String, trim: true },
+        // VirusTotal / analysis metadata per-part
+        partVirusTotalId: { type: String, trim: true },
         partVirusTotalScanDate: { type: Date },
         partVirusTotalPositiveCount: { type: Number, default: 0 },
         partVirusTotalTotalScans: { type: Number, default: 0 }

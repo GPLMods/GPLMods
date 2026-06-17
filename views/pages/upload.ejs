@@ -89,32 +89,75 @@
                     </div>
                 </div>
 
-                <div id="single-link-group" class="form-group">
-                    <label for="externalUrl">External Download Link*</label>
-                    <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." required>
+                <!-- Single Link Input (Default) -->
+                <div id="single-link-group" class="form-group" style="text-align: left;">
+                    <label for="externalUrl" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">External Download Link*</label>
+                    <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/..." style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
                 </div>
-                <!-- ======== NEW: DIRECT IPA LINK FOR SIDELOADING ======== -->
-                <div class="form-group" id="ipa-link-group" style="text-align: left; display: none;">
-                    <label for="ipaDirectDownloadUrl" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">
-                        Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span>
-                    </label>
-                    <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl" placeholder="e.g., https://www.dropbox.com/s/.../app.ipa?dl=1" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
-                    <span style="font-size: 0.85em; color: #888; display: block; margin-top: 5px;">Required to enable TrollStore/AltStore install buttons for Premium users. Must be a direct streamable link (like Dropbox).</span>
-                </div>
-                <!-- ======================================================== -->
                 
-                <div id="multi-link-group" class="form-group" style="display: none;">
-                    <label>Add Download Parts (Min 2)*</label>
-                    <div id="parts-container">
-                        <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="margin-bottom: 10px;">
-                        <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="margin-bottom: 10px;">
+                <!-- Multi-Part Info Box (Shown when checked) -->
+                <div id="multi-link-group" class="form-group" style="text-align: left; display: none;">
+                    <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); padding: 15px; border-radius: 8px;">
+                        <p style="color: var(--gold); font-weight: bold; margin: 0; font-size: 1.1em;"><i class="fas fa-layer-group"></i> Multi-Part Configurator</p>
+                        <p style="color: var(--silver); margin-top: 5px; margin-bottom: 10px; font-size: 0.95em;">Add parts below. Each part may include mirrors, a direct admin link, and scan references. You can add unlimited parts.</p>
+                        <div id="parts-container">
+                            <!-- Part template: Part 1 -->
+                            <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
+                                <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                                <input type="text" name="partNames[]" placeholder="Part 1 (e.g., main, data)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                                <input type="url" name="partUrls[]" placeholder="https://.../part1" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                <div style="display:flex; gap:8px;">
+                                    <div style="flex:1;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
+                                        <input type="text" name="mirror1Providers[]" placeholder="Google Drive" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                    <div style="flex:2;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 URL</label>
+                                        <input type="url" name="mirror1Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <div style="flex:1;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 Provider</label>
+                                        <input type="text" name="mirror2Providers[]" placeholder="Mega" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                    <div style="flex:2;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 URL</label>
+                                        <input type="url" name="mirror2Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                </div>
+                                <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Direct Admin Link</label>
+                                <input type="url" name="directAdminLinks[]" placeholder="https://admin.example.com/direct/" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                <div style="display:flex; gap:8px;">
+                                    <div style="flex:1;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual File Scan URL</label>
+                                        <input type="url" name="manualFileScanUrls[]" placeholder="https://www.virustotal.com/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual Site Scan URL</label>
+                                        <input type="url" name="manualSiteScanUrls[]" placeholder="https://sitecheck.sucuri.net/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Part template: Part 2 -->
+                            <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
+                                <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                                <input type="text" name="partNames[]" placeholder="Part 2 (e.g., split-1)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                                <input type="url" name="partUrls[]" placeholder="https://.../part2" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.95em;">+ Add Another Part</button>
+                            <button type="button" id="remove-part-btn" class="btn btn-danger" style="padding: 8px 14px; font-size: 0.95em;">- Remove Last Part</button>
+                        </div>
                     </div>
-                    <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em; margin-top: 5px;">+ Add Another Part</button>
                 </div>
 
                 <div class="form-group" style="margin-top: 15px;">
-                    <label for="originalFilename">File Name (for display purposes)*</label>
-                    <input type="text" id="originalFilename" name="originalFilename" required placeholder="e.g., Minecraft_Mod_v1.2.apk">
+                    <label for="originalFilename" style="color: var(--silver); font-weight: 600; margin-bottom: 8px; display: block;">File Name (for display purposes)*</label>
+                    <input type="text" id="originalFilename" name="originalFilename" required placeholder="e.g., Minecraft_Mod_v1.2.apk" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
                 </div>
 
                 <button type="submit" class="submit-button" id="distributorSubmitBtn">Continue to Details</button>
@@ -337,31 +380,88 @@
             const singleInput = document.getElementById('externalUrl');
             const partsContainer = document.getElementById('parts-container');
             const addPartBtn = document.getElementById('add-part-btn');
+            const removePartBtn = document.getElementById('remove-part-btn');
+
+            function setPartsRequired(required) {
+                partsContainer.querySelectorAll('input').forEach(i => {
+                    // require only the part URL fields, keep mirrors optional
+                    if (i.name === 'partUrls[]') i.required = required;
+                });
+            }
 
             multiPartCheckbox.addEventListener('change', function() {
                 if (this.checked) {
                     singleLinkGroup.style.display = 'none';
                     singleInput.required = false;
                     multiLinkGroup.style.display = 'block';
-                    partsContainer.querySelectorAll('input').forEach(i => i.required = true);
+                    setPartsRequired(true);
                 } else {
                     singleLinkGroup.style.display = 'block';
                     singleInput.required = true;
                     multiLinkGroup.style.display = 'none';
-                    partsContainer.querySelectorAll('input').forEach(i => i.required = false);
+                    setPartsRequired(false);
                 }
             });
 
-            let partCount = 2;
+            function createPartBlock(index) {
+                const block = document.createElement('div');
+                block.className = 'part-block';
+                block.style.cssText = 'border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;';
+                block.innerHTML = `
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                    <input type="text" name="partNames[]" placeholder="Part ${index} (optional)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                    <input type="url" name="partUrls[]" placeholder="https://.../part${index}" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
+                            <input type="text" name="mirror1Providers[]" placeholder="Google Drive" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:2;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 URL</label>
+                            <input type="url" name="mirror1Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 Provider</label>
+                            <input type="text" name="mirror2Providers[]" placeholder="Mega" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:2;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 URL</label>
+                            <input type="url" name="mirror2Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Direct Admin Link</label>
+                    <input type="url" name="directAdminLinks[]" placeholder="https://admin.example.com/direct/" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual File Scan URL</label>
+                            <input type="url" name="manualFileScanUrls[]" placeholder="https://www.virustotal.com/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual Site Scan URL</label>
+                            <input type="url" name="manualSiteScanUrls[]" placeholder="https://sitecheck.sucuri.net/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                `;
+                return block;
+            }
+
+            // Add / Remove handlers
             addPartBtn.addEventListener('click', () => {
-                partCount++;
-                const newInput = document.createElement('input');
-                newInput.type = 'url';
-                newInput.name = 'partUrls[]';
-                newInput.placeholder = `Part ${partCount} URL...`;
-                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;';
-                newInput.required = true;
-                partsContainer.appendChild(newInput);
+                const currentCount = partsContainer.querySelectorAll('.part-block').length;
+                const nextIndex = currentCount + 1;
+                const blk = createPartBlock(nextIndex);
+                partsContainer.appendChild(blk);
+                setPartsRequired(true);
+            });
+
+            removePartBtn.addEventListener('click', () => {
+                const blocks = partsContainer.querySelectorAll('.part-block');
+                if (blocks.length > 2) {
+                    blocks[blocks.length - 1].remove();
+                }
             });
         }
     });

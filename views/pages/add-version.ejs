@@ -95,6 +95,8 @@
                 <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
             </div>
 
+            <input type="hidden" name="uploadId" id="uploadId" value="">
+
             <div class="form-group">
                 <label>What's New in this Version? (Optional)</label>
                 <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
@@ -104,13 +106,19 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
-                    <label for="minOs">Minimum OS Required</label>
-                    <input type="text" id="minOs" name="minOs" value="<%= parentFile.minOs || '' %>">
+                    <label for="minOsVersion">Minimum OS Required</label>
+                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>">
                 </div>
                 <div class="form-group">
-                    <label for="minAge">Age Rating</label>
-                    <input type="text" id="minAge" name="minAge" value="<%= parentFile.minAge || '' %>">
+                    <label for="ageRating">Age Rating</label>
+                    <input type="text" id="ageRating" name="ageRating" value="<%= parentFile.ageRating || '' %>">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
+                <textarea id="importantNote" name="importantNote" rows="4" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; outline: none; resize: vertical;"><%= parentFile.importantNote || '' %></textarea>
+                <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
 
             <!-- DISTRIBUTOR / ADMIN TOGGLES -->
@@ -139,7 +147,7 @@
 
                     <div id="single-link-group" class="form-group">
                         <label for="externalUrl">External Download Link*</label>
-                        <input type="url" id="externalUrl" name="externalUrl" placeholder="https://linkvertise.com/...">
+                        <input type="url" id="externalUrl" name="externalDownloadUrl" placeholder="https://linkvertise.com/...">
                     </div>
                     
                     <div class="form-group" id="ipa-link-group">
@@ -147,6 +155,12 @@
                         <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl">
                     </div>
                     
+                    <div class="form-group">
+                        <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
+                        <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="https://www.dropbox.com/s/.../app.zip?dl=1">
+                        <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Optional direct link for faster downloads and 1-click install flows.</span>
+                    </div>
+
                     <div id="multi-link-group" class="form-group" style="display: none;">
                         <label>Add Download Parts (Min 2)*</label>
                         <div id="parts-container">
@@ -300,8 +314,14 @@
                     if (result.success) {
                         statusSpan.textContent = 'Data fetched successfully!'; statusSpan.style.color = 'var(--green)';
                         if (result.data.whatsNew) quill.root.innerHTML = result.data.whatsNew;
-                        if (result.data.minOs) { const mo = document.getElementById('minOs'); if(mo) mo.value = result.data.minOs; }
-                        if (result.data.minAge) { const ma = document.getElementById('minAge'); if(ma) ma.value = result.data.minAge; }
+                        if (result.data.minOsVersion || result.data.minOs) {
+                            const mo = document.getElementById('minOsVersion');
+                            if (mo) mo.value = result.data.minOsVersion || result.data.minOs;
+                        }
+                        if (result.data.ageRating || result.data.minAge) {
+                            const ma = document.getElementById('ageRating');
+                            if (ma) ma.value = result.data.ageRating || result.data.minAge;
+                        }
                     } else {
                         statusSpan.textContent = result.error || 'Failed to fetch data.'; statusSpan.style.color = 'var(--red)';
                     }
@@ -318,6 +338,7 @@
         const modFileInput = document.getElementById('modFile');
         const extUrlInput = document.getElementById('externalUrl');
         const origNameInput = document.getElementById('originalFilename');
+        const uploadIdInput = document.getElementById('uploadId');
         let currentMode = 'file'; 
 
         if (btnShowLink && btnShowFile && distSection && fileSection) {
@@ -341,6 +362,10 @@
                 extUrlInput.required = false;
                 origNameInput.required = false;
             });
+        }
+
+        if (uploadIdInput && !uploadIdInput.value) {
+            uploadIdInput.value = 'up_' + Date.now();
         }
 
         const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
@@ -419,6 +444,10 @@
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = 'Processing...';
+
+            if (uploadIdInput && !uploadIdInput.value) {
+                uploadIdInput.value = 'up_' + Date.now();
+            }
 
             const formData = new FormData(form);
             const xhr = new XMLHttpRequest();

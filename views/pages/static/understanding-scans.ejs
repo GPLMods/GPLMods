@@ -6,29 +6,37 @@
     .explainer-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .explainer-header p { color: var(--silver); font-size: 1.15em; max-width: 800px; margin: 15px auto 40px auto; line-height: 1.6; }
 
-    .content-wrapper { max-width: 900px; margin: 0 auto 60px auto; padding: 0 20px; }
+    .content-wrapper { max-width: 1000px; margin: 0 auto 60px auto; padding: 0 20px; }
     
     .explainer-box { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px; margin-bottom: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .explainer-box h2 { color: var(--gold); font-size: 1.8em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; gap: 15px; }
     .explainer-box p { color: var(--silver); line-height: 1.7; font-size: 1.05em; margin-bottom: 20px; }
 
-    /* Layout for Text + Image */
-    .text-image-split { display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: center; }
-    .explainer-image { width: 100%; border-radius: 10px; border: 2px solid #444; box-shadow: 0 5px 15px rgba(0,0,0,0.5); object-fit: cover; background: var(--black); }
+    /* Layout for Text + Lottie */
+    .text-image-split { display: grid; grid-template-columns: 1fr 250px; gap: 40px; align-items: center; }
     
     /* Code Highlights Grid */
-    .code-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
-    .code-card { background-color: var(--black); border: 1px solid #444; border-left: 4px solid var(--red); padding: 20px; border-radius: 8px; transition: transform 0.2s; }
-    .code-card:hover { transform: translateY(-5px); border-left-color: var(--gold); }
-    .code-card code { display: block; background: #222; color: #ffadad; padding: 8px 12px; border-radius: 5px; font-family: monospace; font-size: 1.1em; margin-bottom: 15px; border: 1px solid #333; }
-    .code-card h4 { color: var(--white); margin-bottom: 10px; }
-    .code-card p { color: #aaa; font-size: 0.9em; margin: 0; line-height: 1.5; }
+    .code-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+    .code-card { background-color: var(--black); border: 1px solid #444; border-left: 4px solid var(--red); padding: 20px; border-radius: 8px; transition: transform 0.2s, border-color 0.3s; display: flex; flex-direction: column; }
+    .code-card:hover { transform: translateY(-5px); border-left-color: var(--gold); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.1); }
+    
+    .code-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .code-platform { font-size: 0.75em; font-weight: bold; padding: 3px 8px; border-radius: 12px; color: var(--black); }
+    .code-platform.android { background-color: var(--android-color); }
+    .code-platform.ios { background-color: var(--white); }
+    .code-platform.windows { background-color: var(--windows-color); color: var(--white); }
+    .code-platform.all { background-color: var(--silver); }
 
-    .trust-banner { background: rgba(46, 204, 113, 0.1); border: 1px solid var(--green); padding: 25px; border-radius: 12px; text-align: center; margin-top: 40px; }
-    .trust-banner h3 { color: var(--green); margin-bottom: 10px; }
+    .code-card code { display: block; background: #222; color: #ffadad; padding: 10px 12px; border-radius: 5px; font-family: monospace; font-size: 0.95em; margin-bottom: 15px; border: 1px solid #333; word-wrap: break-word; }
+    .code-card h4 { color: var(--white); margin-bottom: 10px; font-size: 1.1em; }
+    .code-card p { color: #aaa; font-size: 0.9em; margin: 0; line-height: 1.6; flex-grow: 1; }
+
+    .trust-banner { background: rgba(46, 204, 113, 0.1); border: 1px solid var(--green); padding: 30px; border-radius: 12px; text-align: center; margin-top: 50px; box-shadow: 0 0 20px rgba(46, 204, 113, 0.1); }
+    .trust-banner h3 { color: var(--green); margin-bottom: 15px; font-size: 1.5em; }
 
     @media (max-width: 768px) {
-        .text-image-split { grid-template-columns: 1fr; }
+        .text-image-split { grid-template-columns: 1fr; text-align: center; }
+        .text-image-split lottie-player { margin: 0 auto; }
         .explainer-header h1 { font-size: 2.2em; }
         .explainer-box { padding: 25px; }
     }
@@ -36,16 +44,9 @@
 
 <main>
     <div class="explainer-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
         <div class="container">
             <h1>Understanding <span>Antivirus Detections</span></h1>
-            <p>Why do safe mods sometimes get flagged by security software? Learn about "False Positives" and how to read VirusTotal scan results like a pro.</p>
+            <p>Why do safe mods sometimes get flagged by security software like VirusTotal? Learn the science behind "False Positives" and how to read scan results like a pro.</p>
         </div>
     </div>
 
@@ -56,43 +57,59 @@
             <h2><i class="fas fa-search-shield"></i> What is a False Positive?</h2>
             <div class="text-image-split">
                 <div>
-                    <p>When software developers create an app, they lock it with a "Digital Signature." To create a mod (like unlocking premium features or adding a mod menu), our creators have to unpack the app, modify its code, and repackage it.</p>
-                    <p>Modern Antivirus (AV) scanners are designed to flag <strong>any file that has had its original signature broken or altered</strong>. Because modding fundamentally alters the code, many automated AV engines will flag the file as "suspicious" or "malicious," even if the modification is 100% safe. This is known as a <strong>False Positive</strong>.</p>
+                    <p>When software developers create an application, they lock it with an encrypted "Digital Signature." To create a working mod (like unlocking premium features or adding a mod menu), our developers must decompile the app, modify the code, and repackage it without that original lock.</p>
+                    <p>Modern Antivirus (AV) scanners are strictly designed to flag <strong>any file that has had its original signature broken or altered</strong>. Because modding fundamentally alters the code structure, highly sensitive AV engines will automatically flag the file as "suspicious," even if the modification is 100% safe. This is known in the cybersecurity industry as a <strong>False Positive</strong>.</p>
                 </div>
-                <!-- Placeholder Image: You can replace this src with a graphic explaining decompiling -->
-                <img src="/images/av-explainer-1.jpg" alt="How Modding Works" class="explainer-image" onerror="this.src='https://via.placeholder.com/300x200/1a1a1a/FFD700?text=Signature+Bypass+Diagram'">
+                <!-- ✅ UPGRADE: Professional Lottie Animation instead of broken image -->
+                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 250px; height: 250px; filter: drop-shadow(0 0 15px var(--glow-gold));" loop autoplay></lottie-player>
             </div>
         </div>
 
         <!-- Section 2: Common Scary Codes -->
         <div class="explainer-box">
             <h2><i class="fas fa-bug"></i> Common "Scary" Codes Explained</h2>
-            <p>If you check a VirusTotal scan for a mod, you might see 3 or 4 engines flagging the file. Don't panic! Look at the <strong>names</strong> of the detections. If you see the codes below, they are harmless flags caused by the modding process itself.</p>
+            <p>If a mod receives 3 or 4 flags on VirusTotal, don't panic! Look closely at the <strong>names</strong> of the detections. If you see variations of the codes below, they are harmless flags caused entirely by the modding process.</p>
             
             <div class="code-grid">
                 
+                <!-- Android Signature Flags -->
                 <div class="code-card">
-                    <code>Android.PUA.DebugKey</code>
-                    <h4>Public Signature Flag</h4>
-                    <p><strong>Platform:</strong> Android (APK)<br><strong>Meaning:</strong> When a modder alters an APK, they cannot use the original Google Play developer key. They use a "Debug Key" to re-sign it. AVs flag this simply to tell you the app wasn't signed by the original creator.</p>
+                    <div class="code-card-header">
+                        <h4>Public Signature Flag</h4>
+                        <span class="code-platform android">Android</span>
+                    </div>
+                    <code>Android.Riskware.TestKey.rA<br>PUA.AndroidOS.ApkSignatureKiller</code>
+                    <p><strong>Meaning:</strong> The original Google Play developer signature was removed. To make the mod installable, the creator used a public "Test Key" to re-sign it. Antiviruses flag this simply to inform you that the app wasn't signed by the original corporate developer.</p>
                 </div>
 
+                <!-- Android PUP Flags -->
                 <div class="code-card">
-                    <code>HackTool:Win32/Patch</code>
-                    <h4>License Bypass Flag</h4>
-                    <p><strong>Platform:</strong> Windows (.exe / .zip)<br><strong>Meaning:</strong> The mod contains code designed to bypass premium license checks or DRM. The AV flags it as a "HackTool" because it circumvents copyright protections, not because it hurts your PC.</p>
+                    <div class="code-card-header">
+                        <h4>Unwanted Program (PUP)</h4>
+                        <span class="code-platform android">Android</span>
+                    </div>
+                    <code>PUP/Android.Malct.1151236<br>PUP/Android.Moda.1297228</code>
+                    <p><strong>Meaning:</strong> "PUP" stands for Potentially Unwanted Program. This is a generic, low-level heuristic warning. It is typically triggered by modified premium features, integrated ad-blockers, or floating cheat menus that behave differently than a standard app.</p>
                 </div>
 
+                <!-- iOS Dylib/Memory Injection Flags -->
                 <div class="code-card">
-                    <code>PUP.Optional.Bundle</code>
-                    <h4>Potentially Unwanted Program</h4>
-                    <p><strong>Platform:</strong> All<br><strong>Meaning:</strong> "PUP" stands for Potentially Unwanted Program. It is a very generic, low-level warning. It simply means the file acts differently than a standard, unmodified application.</p>
+                    <div class="code-card-header">
+                        <h4>Dylib Injection (False Trojan)</h4>
+                        <span class="code-platform ios">iOS / macOS</span>
+                    </div>
+                    <code>OSX/GM.Stealer.KK<br>OSX.Trojan.Agent.ELJ669<br>MacOS:Agent-BDU [Susp]</code>
+                    <p><strong>Meaning:</strong> iOS mods rely on "Dylib Injection" to bypass App Store sandboxes and unlock features. Because the tweak actively hooks into the app's memory to change its behavior, aggressive scanners mistake this code injection for a "Stealer" or "Trojan." It is a classic false positive.</p>
                 </div>
 
+                <!-- Windows Patch Flags -->
                 <div class="code-card">
-                    <code>IOS/Jailbreak.AppSync</code>
-                    <h4>Sideloading Flag</h4>
-                    <p><strong>Platform:</strong> iOS (.ipa / .deb)<br><strong>Meaning:</strong> Flagged because the IPA has been injected with tweaks (like Dylibs) or signed in a way that allows it to bypass Apple's strict App Store sandboxing for sideloading.</p>
+                    <div class="code-card-header">
+                        <h4>License Bypass Flag</h4>
+                        <span class="code-platform windows">Windows</span>
+                    </div>
+                    <code>HackTool:Win32/Patch<br>Crack.Activator</code>
+                    <p><strong>Meaning:</strong> The mod contains scripts designed to bypass premium license checks or DRM verifications. The AV flags it as a "HackTool" because it circumvents copyright protections, not because it damages your PC.</p>
                 </div>
 
             </div>
@@ -101,8 +118,8 @@
         <!-- Section 3: How GPL Mods Protects You -->
         <div class="trust-banner">
             <h3><i class="fas fa-check-circle"></i> The GPL Mods Safety Guarantee</h3>
-            <p style="color: var(--white); margin: 0; line-height: 1.6;">
-                We don't just rely on automated scanners. Files marked with our <strong>✔ Certified</strong> badge have been manually tested by our administration team in secure sandbox environments. Furthermore, our community-driven <strong>"Working/Not Working"</strong> voting system ensures that if a file genuinely causes issues, the community will flag it instantly.
+            <p style="color: var(--white); margin: 0; line-height: 1.6; font-size: 1.05em;">
+                We don't just rely on automated scanners. Files marked with our <strong><span style="color: var(--gold);">✔ Certified</span></strong> badge have been manually audited by our administration team. Furthermore, our community-driven <strong>"Working Vote"</strong> system ensures that if a file genuinely causes issues, our thousands of daily users will flag it instantly.
             </p>
         </div>
 

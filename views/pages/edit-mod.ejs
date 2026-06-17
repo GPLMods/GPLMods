@@ -337,14 +337,45 @@
 
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
                 <fieldset class="form-section">
-                    <legend>Security Scan Overrides</legend>
-                    <div class="form-group">
-                        <label for="manualFileScanUrl">Manual File Scan URL</label>
-                        <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="https://virustotal.com/gui/file/...">
+                    <legend>Links & Parts Management</legend>
+
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <button type="button" id="btn-single-link" class="btn <%= file.isMultiPart ? 'btn-secondary' : 'btn-primary' %>" style="flex:1; padding:10px;">Single External Link</button>
+                        <button type="button" id="btn-multi-part" class="btn <%= file.isMultiPart ? 'btn-primary' : 'btn-secondary' %>" style="flex:1; padding:10px;">Multi-Part Download</button>
                     </div>
-                    <div class="form-group">
-                        <label for="manualSiteScanUrl">Manual Site Scan URL</label>
-                        <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" value="<%= file.manualSiteScanUrl || '' %>" placeholder="https://virustotal.com/gui/url/...">
+
+                    <input type="hidden" id="isMultiPartHidden" name="isMultiPart" value="<%= file.isMultiPart ? 'true' : 'false' %>">
+
+                    <div id="single-link-container" style="display: <%= file.isMultiPart ? 'none' : 'block' %>">
+                        <div class="form-group">
+                            <label for="externalDownloadUrl">Main External URL*</label>
+                            <input type="url" id="externalDownloadUrl" name="externalDownloadUrl" value="<%= file.externalDownloadUrl || '' %>" class="link-req-single" placeholder="https://linkvertise.com/...">
+                        </div>
+
+                        <div style="margin-top:10px; border-top:1px solid #333; padding-top:10px;">
+                            <p style="color:var(--silver); margin-bottom:8px; font-weight:600;">Admin & Safety Overrides</p>
+                            <div class="form-group">
+                                <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
+                                <input type="url" id="directDownloadUrl" name="directDownloadUrl" value="<%= file.directDownloadUrl || '' %>" placeholder="Direct Cloud Link (Dropbox, Mega...) for Admin 1-Click">
+                            </div>
+                            <div class="form-group">
+                                <label for="manualFileScanUrl">Manual File Scan URL</label>
+                                <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="Manual File Scan URL">
+                            </div>
+                            <div class="form-group">
+                                <label for="manualSiteScanUrl">Manual Site Scan URL</label>
+                                <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" value="<%= file.manualSiteScanUrl || '' %>" placeholder="Manual Site Scan URL">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="multi-part-container" style="display: <%= file.isMultiPart ? 'block' : 'none' %>">
+                        <div id="parts-wrapper">
+                            <!-- JS will populate existing parts -->
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button type="button" id="add-part-btn" class="btn btn-secondary">+ Add New Part</button>
+                        </div>
                     </div>
                 </fieldset>
             <% } %>
@@ -392,6 +423,124 @@
         </form>
     </div>
 </div>
+
+            <script>
+            // --- ADVANCED LINK & PARTS MANAGEMENT LOGIC (Edit Page) ---
+            document.addEventListener('DOMContentLoaded', () => {
+                const btnSingleLink = document.getElementById('btn-single-link');
+                const btnMultiPart = document.getElementById('btn-multi-part');
+                const singleLinkContainer = document.getElementById('single-link-container');
+                const multiPartContainer = document.getElementById('multi-part-container');
+                const isMultiPartHidden = document.getElementById('isMultiPartHidden');
+                const partsWrapper = document.getElementById('parts-wrapper');
+                const addPartBtn = document.getElementById('add-part-btn');
+
+                function createPartCard(part = {}, index = 0) {
+                    const div = document.createElement('div');
+                    div.className = 'part-card';
+                    div.style.cssText = 'background: rgba(255,255,255,0.03); border:1px solid #333; padding:12px; border-radius:8px; margin-bottom:12px;';
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <strong>Part <span class="part-index">${index + 1}</span></strong>
+                            <button type="button" class="remove-part-btn btn btn-danger" style="padding:6px 10px;">Remove</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Part Name</label>
+                            <input type="text" name="partNames[]" class="link-req-multi" value="${part.partName || ''}" placeholder="e.g., main, split-1">
+                        </div>
+                        <div class="form-group">
+                            <label>Main URL*</label>
+                            <input type="url" name="partUrls[]" class="link-req-multi" value="${part.partUrl || ''}" placeholder="https://...">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <div style="flex:1;">
+                                <label>Mirror 1 Provider</label>
+                                <input type="text" name="mirror1Providers[]" value="${part.mirror1Provider || ''}" placeholder="Google Drive">
+                            </div>
+                            <div style="flex:2;">
+                                <label>Mirror 1 URL</label>
+                                <input type="url" name="mirror1Urls[]" value="${part.mirror1Url || ''}" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <div style="flex:1;">
+                                <label>Mirror 2 Provider</label>
+                                <input type="text" name="mirror2Providers[]" value="${part.mirror2Provider || ''}" placeholder="Mega">
+                            </div>
+                            <div style="flex:2;">
+                                <label>Mirror 2 URL</label>
+                                <input type="url" name="mirror2Urls[]" value="${part.mirror2Url || ''}" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:8px;">
+                            <label>Direct Admin Link</label>
+                            <input type="url" name="directAdminLinks[]" value="${part.directAdminLink || ''}" placeholder="https://admin.example.com/direct/...">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <div style="flex:1;">
+                                <label>Manual File Scan URL</label>
+                                <input type="url" name="manualFileScanUrls[]" value="${part.manualFileScanUrl || ''}" placeholder="https://virustotal.com/...">
+                            </div>
+                            <div style="flex:1;">
+                                <label>Manual Site Scan URL</label>
+                                <input type="url" name="manualSiteScanUrls[]" value="${part.manualSiteScanUrl || ''}" placeholder="https://sitecheck.sucuri.net/...">
+                            </div>
+                        </div>
+                    `;
+
+                    div.querySelector('.remove-part-btn').addEventListener('click', () => { div.remove(); updatePartIndices(); });
+                    return div;
+                }
+
+                function updatePartIndices() {
+                    partsWrapper.querySelectorAll('.part-card').forEach((card, idx) => card.querySelector('.part-index').textContent = idx + 1);
+                }
+
+                if (!btnSingleLink || !btnMultiPart || !partsWrapper) return;
+
+                btnSingleLink.addEventListener('click', () => {
+                    btnSingleLink.classList.replace('btn-secondary','btn-primary');
+                    btnMultiPart.classList.replace('btn-primary','btn-secondary');
+                    singleLinkContainer.style.display = 'block';
+                    multiPartContainer.style.display = 'none';
+                    isMultiPartHidden.value = 'false';
+                    document.querySelectorAll('.link-req-single').forEach(el => el.required = true);
+                    document.querySelectorAll('.link-req-multi').forEach(el => el.required = false);
+                });
+
+                btnMultiPart.addEventListener('click', () => {
+                    btnMultiPart.classList.replace('btn-secondary','btn-primary');
+                    btnSingleLink.classList.replace('btn-primary','btn-secondary');
+                    multiPartContainer.style.display = 'block';
+                    singleLinkContainer.style.display = 'none';
+                    isMultiPartHidden.value = 'true';
+                    document.querySelectorAll('.link-req-single').forEach(el => el.required = false);
+                    document.querySelectorAll('.link-req-multi').forEach(el => el.required = true);
+                });
+
+                const existingParts = <%- JSON.stringify(file.downloadParts || []) %>;
+                if (existingParts && existingParts.length > 0) {
+                    existingParts.forEach((p, idx) => partsWrapper.appendChild(createPartCard(p, idx)));
+                } else {
+                    partsWrapper.appendChild(createPartCard({}, 0));
+                    partsWrapper.appendChild(createPartCard({}, 1));
+                }
+
+                addPartBtn.addEventListener('click', () => {
+                    const count = partsWrapper.querySelectorAll('.part-card').length;
+                    partsWrapper.appendChild(createPartCard({}, count));
+                    if (isMultiPartHidden.value === 'true') partsWrapper.lastElementChild.querySelectorAll('.link-req-multi').forEach(el => el.required = true);
+                });
+
+                if (isMultiPartHidden.value === 'true') {
+                    document.querySelectorAll('.link-req-single').forEach(el => el.required = false);
+                    document.querySelectorAll('.link-req-multi').forEach(el => el.required = true);
+                } else {
+                    document.querySelectorAll('.link-req-single').forEach(el => el.required = true);
+                    document.querySelectorAll('.link-req-multi').forEach(el => el.required = false);
+                }
+            });
+            </script>
 
 <!-- ======== DYNAMIC STATUS MESSAGE BOX ======== -->
 <div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
