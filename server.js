@@ -773,6 +773,7 @@ app.use(async (req, res, next) => {
 // =========================================================
 
 let cachedTotalUpdates = 0;
+let cachedRecentAnnouncements = 0;
 let cachedNewUploads = 0;
 let cachedNewUpdates = 0;
 let lastUpdateCheck = 0;
@@ -848,12 +849,14 @@ app.use(async (req, res, next) => {
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             
             cachedTotalUpdates = await Announcement.countDocuments();
+            cachedRecentAnnouncements = await Announcement.countDocuments({ createdAt: { $gte: oneDayAgo } });
             cachedNewUploads = await File.countDocuments({ status: 'live', isLatestVersion: true, createdAt: { $gte: oneDayAgo } });
             cachedNewUpdates = await File.countDocuments({ status: 'live', isLatestVersion: true, updatedAt: { $gte: oneDayAgo } });
             
             lastUpdateCheck = Date.now();
         }
         res.locals.totalUpdatesCount = cachedTotalUpdates;
+        res.locals.recentAnnouncementsCount = cachedRecentAnnouncements;
         res.locals.newUploadsCount = cachedNewUploads;
         res.locals.newUpdatesCount = cachedNewUpdates;
 
@@ -871,6 +874,7 @@ app.use(async (req, res, next) => {
         
         // Fallbacks: If the DB crashes, the EJS templates still get data so the site doesn't crash completely!
         res.locals.totalUpdatesCount = cachedTotalUpdates || 0;
+        res.locals.recentAnnouncementsCount = cachedRecentAnnouncements || 0;
         res.locals.newUploadsCount = cachedNewUploads || 0;
         res.locals.newUpdatesCount = cachedNewUpdates || 0;
         res.locals.unreadPersonalCount = 0;

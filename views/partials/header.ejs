@@ -235,7 +235,7 @@
                 <!-- Notification Bell -->
                 <a href="/notifications" class="nav-bell" title="Site Updates" id="nav-bell-link" 
                    data-user-id="<%= user ? user._id : '' %>"
-                   data-updates="<%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>"
+                   data-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>"
                    data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
                    data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
                    data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">

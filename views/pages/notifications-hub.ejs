@@ -136,7 +136,7 @@
             <% } %>
 
             <!-- Category 2: Site Updates (Global - Visible to Everyone) -->
-            <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= typeof totalGlobalUpdates !== 'undefined' ? totalGlobalUpdates : 0 %>">
+            <a href="/notifications/site-updates" class="category-card" id="site-updates-card" data-total-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>">
                 <div class="category-info">
                     <div class="category-icon" style="background: transparent; border: none;">
                         <lottie-player src="/animations/update.json" background="transparent" speed="1" style="width: 80px; height: 80px; transform: scale(1.5);" loop autoplay></lottie-player>
@@ -231,7 +231,7 @@
         }
         
         // Pass the EJS server variables safely into the JavaScript
-        const totalUpdates = <%= typeof totalUpdatesCount !== 'undefined' ? totalUpdatesCount : 0 %>;
+        const totalUpdates = <%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>;
         const totalUploads = <%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>;
         const totalModsUpdates = <%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>;
         const totalFollowing = <%= typeof followingCount !== 'undefined' ? followingCount : 0 %>;
