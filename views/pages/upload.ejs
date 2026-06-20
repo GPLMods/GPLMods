@@ -274,49 +274,59 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
                 if (fileInput.files.length === 0) {
-                    // ✅ FIX: Using the Custom Modal instead of alert()
                     return showErrorModal("Please select a file to upload first.");
                 }
                 
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Uploading...';
+                submitBtn.innerHTML = 'Uploading... Please wait';
                 progressWrapper.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 progressBar.classList.remove('processing-pulse');
-                statusText.innerHTML = 'Uploading file to server...';
+                
+                // ✅ FIX: Simplified, generic status text to hide B2 infrastructure
+                statusText.innerHTML = 'Uploading file... Do not close this page.';
 
                 const formData = new FormData(form);
                 
                 const uploadId = 'up_' + Date.now();
                 formData.append('uploadId', uploadId);
 
+                // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
                 const socket = io();
                 socket.on(`b2_progress_${uploadId}`, (data) => {
+                    // Map the 0-100% B2 progress to the 50-100% portion of our visual bar
                     const totalPercent = 50 + Math.round(data.percent / 2);
+                    
                     progressBar.style.width = totalPercent + '%';
                     progressBar.textContent = totalPercent + '%';
-                    statusText.innerHTML = `Transferring to Cloud Storage: ${data.loaded} MB / ${data.total} MB...`;
+                    
+                    // Keep the text generic
+                    statusText.innerHTML = `Uploading... ${totalPercent}%`;
                     
                     if (data.percent === 100) {
                         progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Scan & Finalizing... Almost done!';
+                        statusText.innerHTML = 'Finalizing and scanning... Almost done!';
                     }
                 });
 
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', form.action, true);
 
+                // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
                 xhr.upload.addEventListener('progress', function(event) {
                     if (event.lengthComputable) {
+                        // Map the 0-100% browser upload to the 0-50% portion of our visual bar
                         const percentComplete = Math.round((event.loaded / event.total) * 50);
+                        
                         progressBar.style.width = percentComplete + '%';
                         progressBar.textContent = percentComplete + '%';
 
                         if (percentComplete === 50) {
-                            statusText.innerHTML = 'Securing file in memory... connecting to cloud.';
+                            // When the browser finishes sending, we wait for the Socket.IO events to take over
+                            statusText.innerHTML = 'Processing upload... Do not close this page.';
                         } else {
-                            statusText.innerHTML = `Uploading to Server RAM: ${percentComplete * 2}%`;
+                            statusText.innerHTML = `Uploading... ${percentComplete}%`;
                         }
                     }
                 });
@@ -325,7 +335,6 @@
                     if (xhr.status >= 200 && xhr.status < 400) {
                         window.location.href = xhr.responseURL; 
                     } else {
-                        // ✅ FIX: Enhanced error handling using the Custom Modal
                         try {
                             const res = JSON.parse(xhr.responseText);
                             showErrorModal(res.message || 'Upload failed.');
@@ -337,10 +346,10 @@
                 };
 
                 xhr.onerror = function() { 
-                    // ✅ FIX: Using the Custom Modal
                     showErrorModal('A network error occurred. Please check your internet connection.'); 
                     resetUI(); 
                 };
+                
                 xhr.send(formData);
             });
 

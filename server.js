@@ -54,7 +54,6 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
 const { mirrorToFTP, deleteFromFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
-const { Translate } = require('@google-cloud/translate').v2;
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
@@ -86,6 +85,8 @@ const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
 const TranslationCache = require('./models/translationCache');
 const TranslationQuota = require('./models/translationQuota');
+const IosDns = require('./models/iosDns');
+const IosCert = require('./models/iosCert');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -93,7 +94,6 @@ const TranslationQuota = require('./models/translationQuota');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const { Types } = mongoose;
-const translateClient = new Translate({ key: process.env.GOOGLE_TRANSLATE_API_KEY });
 
 // Initialize the profanity filter
 const profanityFilter = new Filter();
@@ -500,43 +500,66 @@ const sanitizeFilename = (filename) => {
 
 // --- UPDATED HELPER: Tracks B2 Upload Progress ---
 
-const uploadToB2 = async (file, folder, io = null, uploadId = null) => {
-    
-    // ✅ FIX: We only expect a buffer now because we switched to memoryStorage
+// --- UPDATED HELPER: Tracks B2 Upload Progress & Creates Clean Slugs ---
+// Added 'baseName' to the parameters
+const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = null) => {
     if (!file || !file.buffer) {
         throw new Error("File data (buffer) not found.");
     }
 
-    const sanitizedFilename = sanitizeFilename(file.originalname);
-    const fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
-    
+    let finalFilename = '';
+
+    // If a baseName is provided, construct a clean slug
+    if (baseName) {
+        // e.g., 'minecraft', 'icon', 'png' -> 'minecraft-icon.png'
+        const ext = path.extname(file.originalname).toLowerCase() || ''; 
+        
+        // Handle screenshots differently to allow multiples
+        if (folder === 'screenshots') {
+            // e.g., 'minecraft-screenshot-1715000000.png'
+            finalFilename = `${slugify(baseName)}-screenshot-${Date.now()}${ext}`;
+        } else if (folder === 'avatars') {
+            // e.g., 'johndoe-avatar.png'
+            finalFilename = `${slugify(baseName)}-avatar${ext}`;
+            // For avatars, we might overwrite the old one, but adding Date ensures uniqueness
+            // If you want to overwrite, remove the Date.now() here. Let's keep it unique for cache-busting.
+             finalFilename = `${slugify(baseName)}-avatar-${Date.now()}${ext}`;
+        } else {
+            // For icons or main files: 'minecraft-icon.png' or 'minecraft-v1.2.apk'
+            // We append Date to prevent accidental overwrites of identical versions
+            finalFilename = `${slugify(baseName)}-${Date.now()}${ext}`;
+        }
+    } else {
+        // Fallback to old behavior if no baseName is provided
+        const sanitizedFilename = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.\-_]/g, '');
+        finalFilename = `${Date.now()}-${sanitizedFilename}`;
+    }
+
+    const fileName = `${folder}/${finalFilename}`;
     console.log(`Uploading ${fileName} to B2...`);
     
-    // Use lib-storage for chunked uploads and live progress tracking
+    const { Upload } = require("@aws-sdk/lib-storage");
+
     const parallelUploads3 = new Upload({
         client: s3Client,
         params: { 
             Bucket: process.env.B2_BUCKET_NAME, 
             Key: fileName, 
-            Body: file.buffer, // Use the buffer directly
+            Body: file.buffer,
             ContentType: file.mimetype 
         },
-        partSize: 5 * 1024 * 1024, // Uploads in 5MB chunks (faster!)
+        partSize: 5 * 1024 * 1024, 
         queueSize: 4 
     });
 
     parallelUploads3.on("httpUploadProgress", (progress) => {
-        if (progress.total) {
+        if (progress.total && io && uploadId) {
             const percent = Math.round((progress.loaded / progress.total) * 100);
-            
-            // If we have an active Socket connection, pipe it to the frontend!
-            if (io && uploadId) {
-                io.emit(`b2_progress_${uploadId}`, {
-                    percent: percent,
-                    loaded: (progress.loaded / (1024 * 1024)).toFixed(2),
-                    total: (progress.total / (1024 * 1024)).toFixed(2)
-                });
-            }
+            io.emit(`b2_progress_${uploadId}`, {
+                percent: percent,
+                loaded: (progress.loaded / (1024 * 1024)).toFixed(2),
+                total: (progress.total / (1024 * 1024)).toFixed(2)
+            });
         }
     });
 
@@ -786,7 +809,15 @@ app.use(async (req, res, next) => {
         res.locals.formatCompactNumber = formatCompactNumber;
         res.locals.formatBytes = formatBytes;
         res.locals.slugify = slugify;
-        res.locals.cdnUrl = process.env.CDN_URL || ''; 
+    const cookies = req.headers.cookie || '';    
+    const isCdnDown = cookies.includes('cdn_down=true');
+    if (isCdnDown || !process.env.CDN_URL) {
+        res.locals.cdnUrl = ''; // Fallback: Use local Render server
+    } else {
+        res.locals.cdnUrl = process.env.CDN_URL; // Normal: Use Cloudflare CDN
+    }    
+    // We pass the Raw Url to the frontend so our JS knows what to search & replace
+    res.locals.rawCdnUrl = process.env.CDN_URL || ''; 
         // Make sure truncateText is defined as a helper function elsewhere in your server.js!
         res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
@@ -2275,7 +2306,9 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             }
 
             const io = req.app.get('io');
-            newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId);
+            // Pass the parent file's name and the new version as the base
+            const versionBaseName = `${previousVersion.name}-${req.body.softwareVersion}`;
+            newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId, versionBaseName);
         }
 
         const newVersion = new File({
@@ -3333,7 +3366,17 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
         if (!req.file) return res.redirect('/profile?error=No image file was selected.');
         if (!req.file.mimetype.startsWith('image/')) return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
         
-        const imageKey = await uploadToB2(req.file, 'avatars');
+        // ======== NEW: DELETE OLD AVATAR ========
+        // Before we upload the new one, delete the old one from B2 to save space!
+        if (req.user.profileImageKey) {
+            await deleteFromB2(req.user.profileImageKey);
+        }
+        // ========================================
+
+        // Upload new avatar with slugified name
+        const avatarBaseName = `${req.user._id}-${req.user.username}`;
+        const imageKey = await uploadToB2(req.file, 'avatars', null, null, avatarBaseName);
+        
         const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
         
         req.login(updatedUser, (err) => {
@@ -4340,12 +4383,30 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         // ✅ NEW: Determine if saving as draft or submitting
         const actionType = formData.actionType || 'submit';
 
-        // 1. Update images ONLY IF new ones were uploaded
+               // 1. Update images ONLY IF new ones were uploaded
+        const baseName = formData.modName || file.name;
+        
+        // --- HANDLE ICON OVERWRITE ---
         if (softwareIcon && softwareIcon.length > 0) {
-            file.iconKey = await uploadToB2(softwareIcon[0], 'icons');
+            // Delete the old icon from B2 first
+            if (file.iconKey) {
+                await deleteFromB2(file.iconKey);
+            }
+            // Upload the new one
+            file.iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${baseName}-icon`);
         }
+
+        // --- HANDLE SCREENSHOTS OVERWRITE ---
         if (screenshots && screenshots.length > 0) {
-            file.screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+            // If they uploaded new screenshots, they are replacing the gallery.
+            // Delete ALL old screenshots from B2 first.
+            if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+                for (const oldShotKey of file.screenshotKeys) {
+                    await deleteFromB2(oldShotKey);
+                }
+            }
+            // Upload the new ones
+            file.screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, baseName)));
         }
 
         // 2. Format tags
@@ -4356,7 +4417,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
         // ===========================================
 
-// 3. Update all text fields
+       // 3. Update all text fields
         file.name = formData.modName || file.name;
         file.version = formData.modVersion || file.version;
         file.developer = formData.developerName || file.developer;
@@ -4525,11 +4586,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const archData = formData.architectures ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) :[];
 
         // --- PROCESS IMAGES ---
+        // Pass the modName (e.g., 'Minecraft') and '-icon' as the base
         if (!isVariant && softwareIcon && softwareIcon.length > 0) {
-            iconKey = await uploadToB2(softwareIcon[0], 'icons');
+            iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${formData.modName}-icon`);
         }
         if (screenshots && screenshots.length > 0) {
-            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots')));
+            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, formData.modName)));
         }
 
         // --- MULTI-PART ARRAY PARSING LOGIC ---
@@ -4677,7 +4739,24 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // ===================================
 // 8. API ROUTES
 // ===================================
-// --- SMART TRANSLATION API WITH CACHING & FREE-TIER SAFEGUARDS ---
+
+// --- NEW: iOS Store API Endpoint ---
+app.get('/api/ios-store', async (req, res) => {
+    try {
+        const dnsProfiles = await IosDns.find().sort({ isRecommended: -1, createdAt: -1 });
+        const certificates = await IosCert.find().sort({ createdAt: -1 });
+        
+        res.json({
+            dns: dnsProfiles,
+            certificates: certificates
+        });
+    } catch (error) {
+        console.error("iOS Store API Error:", error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// CUSTOM MULTI-LANGUAGE ENGINE (MICROSOFT AZURE)
 app.post('/api/translate', async (req, res) => {
     try {
         const { texts, targetLanguage } = req.body;
@@ -4686,8 +4765,9 @@ app.post('/api/translate', async (req, res) => {
             return res.status(400).json({ error: "Invalid request payload." });
         }
 
+        // If English, return original texts
         if (targetLanguage === 'en') {
-            return res.json({ translations: texts });
+            return res.json({ translations: texts }); 
         }
 
         const finalTranslations = [];
@@ -4698,6 +4778,7 @@ app.post('/api/translate', async (req, res) => {
         for (let i = 0; i < texts.length; i++) {
             const text = texts[i];
             
+            // Skip empty strings or numbers to save quota
             if (!text.trim() || !isNaN(text.trim())) {
                 finalTranslations[i] = text;
                 continue;
@@ -4713,32 +4794,53 @@ app.post('/api/translate', async (req, res) => {
             }
         }
 
-        // 2. Safely Call Google API for missing texts
+        // 2. Call Microsoft Azure API for missing texts
         if (textsToTranslate.length > 0) {
-            // Count exactly how many characters we are about to ask Google to translate
-            const newCharsLength = textsToTranslate.join('').length;
             
-            // Get current month string (e.g., "2026-06")
+            const newCharsLength = textsToTranslate.join('').length;
             const currentMonthYear = new Date().toISOString().slice(0, 7);
             
-            // Find or create the quota record for this month
             let quota = await TranslationQuota.findOne({ monthYear: currentMonthYear });
             if (!quota) {
                 quota = new TranslationQuota({ monthYear: currentMonthYear, characterCount: 0 });
             }
 
-            const FREE_TIER_LIMIT = 500000; // 500,000 characters
+            // --- MICROSOFT FREE TIER LIMIT: 2 MILLION CHARACTERS ---
+            const FREE_TIER_LIMIT = 2000000; 
 
-            // --- THE FAILSAFE CHECK ---
             if (quota.characterCount + newCharsLength <= FREE_TIER_LIMIT) {
-                // We have enough free quota! Send to Google.
-                const [apiTranslations] = await translateClient.translate(textsToTranslate, targetLanguage);
                 
+                // Format the array into Microsoft's required object structure: [{ "Text": "Hello" }]
+                const msBody = textsToTranslate.map(t => ({ "Text": t }));
+
+                // Call Microsoft Translator API
+                const response = await axios({
+                    baseURL: 'https://api.cognitive.microsofttranslator.com',
+                    url: '/translate',
+                    method: 'post',
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATOR_KEY,
+                        'Ocp-Apim-Subscription-Region': process.env.MS_TRANSLATOR_REGION,
+                        'Content-type': 'application/json',
+                        'X-ClientTraceId': crypto.randomUUID() // Built-in Node.js UUID generator
+                    },
+                    params: {
+                        'api-version': '3.0',
+                        'from': 'en',
+                        'to': targetLanguage
+                    },
+                    data: msBody,
+                    responseType: 'json'
+                });
+
+                const apiTranslations = response.data;
                 const newCacheEntries = [];
 
                 for (let j = 0; j < apiTranslations.length; j++) {
                     const original = textsToTranslate[j];
-                    const translated = apiTranslations[j];
+                    
+                    // Extract the translated text from Microsoft's response structure
+                    const translated = apiTranslations[j].translations[0].text;
                     
                     finalTranslations[indicesToTranslate[j]] = translated;
 
@@ -4749,9 +4851,11 @@ app.post('/api/translate', async (req, res) => {
                     });
                 }
 
-                // Save to cache so we never pay for these words again
+                // Save to cache so we never pay/use quota for these words again
                 if (newCacheEntries.length > 0) {
-                    await TranslationCache.insertMany(newCacheEntries, { ordered: false }).catch(e => {});
+                    await TranslationCache.insertMany(newCacheEntries, { ordered: false }).catch(e => {
+                        // Safely ignore duplicate keys if two users hit it simultaneously
+                    });
                 }
 
                 // Update the monthly usage counter
@@ -4760,9 +4864,9 @@ app.post('/api/translate', async (req, res) => {
 
             } else {
                 // --- LIMIT REACHED: FAIL GRACEFULLY ---
-                console.warn(`[TRANSLATION LIMIT] Stopped API call. Used: ${quota.characterCount}/${FREE_TIER_LIMIT}. Tried to add: ${newCharsLength}`);
+                console.warn(`[TRANSLATION LIMIT] Microsoft Quota Reached. Used: ${quota.characterCount}/${FREE_TIER_LIMIT}.`);
                 
-                // Instead of crashing, just return the original English text for the missing chunks
+                // Return original English text for missing chunks so site doesn't crash
                 for (let j = 0; j < textsToTranslate.length; j++) {
                     finalTranslations[indicesToTranslate[j]] = textsToTranslate[j];
                 }
@@ -4772,88 +4876,8 @@ app.post('/api/translate', async (req, res) => {
         res.json({ translations: finalTranslations });
 
     } catch (error) {
-        console.error("Translation API Error:", error);
-        res.status(500).json({ error: "Translation failed." });
-    }
-});
-// --- NEW: SMART TRANSLATION API WITH DB CACHING ---
-app.post('/api/translate', async (req, res) => {
-    try {
-        const { texts, targetLanguage } = req.body;
-
-        if (!texts || !Array.isArray(texts) || texts.length === 0 || !targetLanguage) {
-            return res.status(400).json({ error: "Invalid request payload." });
-        }
-
-        if (targetLanguage === 'en') {
-            return res.json({ translations: texts }); // No translation needed for default
-        }
-
-        const finalTranslations = [];
-        const textsToTranslate = [];
-        const indicesToTranslate = [];
-
-        // 1. Check the Database Cache First
-        for (let i = 0; i < texts.length; i++) {
-            const text = texts[i];
-            
-            // Skip empty or purely numeric strings
-            if (!text.trim() || !isNaN(text.trim())) {
-                finalTranslations[i] = text;
-                continue;
-            }
-
-            const cached = await TranslationCache.findOne({ 
-                originalText: text, 
-                targetLanguage: targetLanguage 
-            });
-
-            if (cached) {
-                // We have it in the DB! Free translation!
-                finalTranslations[i] = cached.translatedText;
-            } else {
-                // We need to ask Google for this one
-                textsToTranslate.push(text);
-                indicesToTranslate.push(i);
-            }
-        }
-
-        // 2. Call Google API for missing texts
-        if (textsToTranslate.length > 0) {
-            // Google Translate accepts an array of strings
-            const [apiTranslations] = await translateClient.translate(textsToTranslate, targetLanguage);
-            
-            const newCacheEntries = [];
-
-            for (let j = 0; j < apiTranslations.length; j++) {
-                const original = textsToTranslate[j];
-                const translated = apiTranslations[j];
-                
-                // Map the new translation back to its correct index in the final array
-                finalTranslations[indicesToTranslate[j]] = translated;
-
-                // Prepare to save to database
-                newCacheEntries.push({
-                    originalText: original,
-                    targetLanguage: targetLanguage,
-                    translatedText: translated
-                });
-            }
-
-            // 3. Save new translations to Database Cache in bulk
-            if (newCacheEntries.length > 0) {
-                // Use insertMany with ordered:false to silently ignore accidental duplicates
-                await TranslationCache.insertMany(newCacheEntries, { ordered: false }).catch(e => {
-                    // Ignore duplicate key errors, it just means another request cached it first
-                });
-            }
-        }
-
-        // Return the fully translated array
-        res.json({ translations: finalTranslations });
-
-    } catch (error) {
-        console.error("Translation API Error:", error);
+        // Detailed error logging for Azure
+        console.error("Microsoft API Error:", error.response ? error.response.data : error.message);
         res.status(500).json({ error: "Translation failed." });
     }
 });
@@ -5374,7 +5398,18 @@ app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
         const fileUpdate = isWhitelisted ? { $inc: { whitelistCount: -1 } } : { $inc: { whitelistCount: 1 } };
         await User.findByIdAndUpdate(req.user._id, update);
         await File.findByIdAndUpdate(req.params.fileId, fileUpdate);
-        res.redirect(`/mods/${req.params.fileId}`);
+        // Honor optional redirectUrl from the form. If it's "back", use the Referer header.
+        const requestedRedirect = (req.body && req.body.redirectUrl) ? req.body.redirectUrl : null;
+        let redirectTarget = `/mods/${req.params.fileId}`;
+        if (requestedRedirect) {
+            if (requestedRedirect === 'back') {
+                redirectTarget = req.get('Referer') || redirectTarget;
+            } else {
+                // Basic safety: only allow relative redirects within this site
+                if (requestedRedirect.startsWith('/')) redirectTarget = requestedRedirect;
+            }
+        }
+        res.redirect(redirectTarget);
     } catch (e) { res.status(500).send("Error."); }
 });
 

@@ -17,7 +17,7 @@
  * 11. Newsletter Logic
  * 12. REUSABLE SOCIAL CAROUSEL LOGIC
  * 13. GLOBAL CUSTOM SELECT DROPDOWNS
- * 14. MULTI-LANGUAGE & LIVE TRANSLATION ENGINE
+ * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA MICROSOFT AZURE API)
  * ==================================================================================
  */
 
@@ -1335,7 +1335,7 @@ document.addEventListener('click', () => {
 });
 /**
  * ==================================================================================
- * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA GOOGLE CLOUD API)
+ * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA MICROSOFT AZURE API)
  * ==================================================================================
  */
 function initializeLanguageSystem() {

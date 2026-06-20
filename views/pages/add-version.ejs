@@ -433,77 +433,96 @@
         });
 
         form.addEventListener('submit', function(e) {
-            e.preventDefault(); 
-            
-            const contentHtml = quill.root.innerHTML;
-            document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
+                e.preventDefault(); 
+                
+                const contentHtml = quill.root.innerHTML;
+                document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
 
-            if (currentMode === 'file' && modFileInput.files.length === 0) {
-                return showErrorModal("Please select a file to upload.");
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Processing...';
-
-            if (uploadIdInput && !uploadIdInput.value) {
-                uploadIdInput.value = 'up_' + Date.now();
-            }
-
-            const formData = new FormData(form);
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', form.action, true);
-
-            // ONLY show progress bar if we are actually uploading a file
-            if (currentMode === 'file') {
-                progressWrapper.style.display = 'block';
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                progressBar.classList.remove('processing-pulse');
-                statusText.innerHTML = 'Uploading file to server...';
-
-                xhr.upload.addEventListener('progress', function(event) {
-                    if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100); 
-                        progressBar.style.width = percentComplete + '%';
-                        progressBar.textContent = percentComplete + '%';
-                        if (percentComplete === 100) {
-                            progressBar.classList.add('processing-pulse');
-                            statusText.innerHTML = 'Processing update... Almost done!';
-                        }
-                    }
-                });
-            }
-
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 400) {
-                    try {
-                        const res = JSON.parse(xhr.responseText);
-                        if (res.success && res.redirectUrl) {
-                            window.location.href = res.redirectUrl; 
-                        } else {
-                            showErrorModal('Update finished, but server did not provide a redirect URL.');
-                            resetUI();
-                        }
-                    } catch(e) {
-                        window.location.href = '/my-uploads'; 
-                    }
-                } else {
-                    try {
-                        const res = JSON.parse(xhr.responseText);
-                        showErrorModal(res.message || 'Update failed.');
-                    } catch(e) {
-                        showErrorModal(`Server error (${xhr.status}).`);
-                    }
-                    resetUI();
+                if (currentMode === 'file' && modFileInput.files.length === 0) {
+                    return showErrorModal("Please select a file to upload.");
                 }
-            };
 
-            xhr.onerror = function() { 
-                showErrorModal('A network error occurred. Please check your internet connection.'); 
-                resetUI(); 
-            };
-            
-            xhr.send(formData);
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Processing...';
+
+                if (uploadIdInput && !uploadIdInput.value) {
+                    uploadIdInput.value = 'up_' + Date.now();
+                }
+
+                const formData = new FormData(form);
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+
+                // ONLY show progress bar if we are actually uploading a file
+                if (currentMode === 'file') {
+                    progressWrapper.style.display = 'block';
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                    progressBar.classList.remove('processing-pulse');
+                    statusText.innerHTML = 'Uploading file... Do not close this page.';
+
+                    // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
+                    const uploadId = uploadIdInput.value;
+                    const socket = io();
+                    socket.on(`b2_progress_${uploadId}`, (data) => {
+                        const totalPercent = 50 + Math.round(data.percent / 2);
+                        progressBar.style.width = totalPercent + '%';
+                        progressBar.textContent = totalPercent + '%';
+                        statusText.innerHTML = `Uploading... ${totalPercent}%`;
+                        
+                        if (data.percent === 100) {
+                            progressBar.classList.add('processing-pulse');
+                            statusText.innerHTML = 'Finalizing and scanning... Almost done!';
+                        }
+                    });
+
+                    // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
+                    xhr.upload.addEventListener('progress', function(event) {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 50); 
+                            progressBar.style.width = percentComplete + '%';
+                            progressBar.textContent = percentComplete + '%';
+                            
+                            if (percentComplete === 50) {
+                                statusText.innerHTML = 'Processing upload... Do not close this page.';
+                            } else {
+                                statusText.innerHTML = `Uploading... ${percentComplete}%`;
+                            }
+                        }
+                    });
+                }
+
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.success && res.redirectUrl) {
+                                window.location.href = res.redirectUrl; 
+                            } else {
+                                showErrorModal('Update finished, but server did not provide a redirect URL.');
+                                resetUI();
+                            }
+                        } catch(e) {
+                            // Fallback if response isn't JSON
+                            window.location.href = xhr.responseURL || '/my-uploads'; 
+                        }
+                    } else {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            showErrorModal(res.message || 'Update failed.');
+                        } catch(e) {
+                            showErrorModal(`Server error (${xhr.status}).`);
+                        }
+                        resetUI();
+                    }
+                };
+
+                xhr.onerror = function() { 
+                    showErrorModal('A network error occurred. Please check your internet connection.'); 
+                    resetUI(); 
+                };
+                
+                xhr.send(formData);
 
             function resetUI() {
                 submitBtn.disabled = false;

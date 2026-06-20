@@ -31,6 +31,23 @@
     .code-card h4 { color: var(--white); margin-bottom: 10px; font-size: 1.1em; }
     .code-card p { color: #aaa; font-size: 0.9em; margin: 0; line-height: 1.6; flex-grow: 1; }
 
+    /* Sandbox Grid Styles */
+    .sandbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 30px; }
+    .sandbox-card { background-color: var(--black); border: 1px solid #444; border-radius: 8px; padding: 20px; transition: transform 0.2s, border-color 0.3s; }
+    .sandbox-card:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.05); }
+    .sandbox-card h4 { color: var(--white); margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .sandbox-links { list-style: none; padding: 0; margin: 0; }
+    .sandbox-links li { margin-bottom: 12px; }
+    .sandbox-links li:last-child { margin-bottom: 0; }
+    .sandbox-links a { color: var(--silver); text-decoration: none; display: flex; align-items: center; justify-content: space-between; transition: color 0.2s; font-size: 0.95em; }
+    .sandbox-links a:hover { color: var(--gold); }
+    .sandbox-links a i { font-size: 0.8em; color: #666; transition: color 0.2s; }
+    .sandbox-links a:hover i { color: var(--gold); }
+    
+    /* Disclaimer Banner */
+    .disclaimer-banner { background: rgba(255, 215, 0, 0.1); border-left: 4px solid var(--gold); padding: 20px; border-radius: 8px; margin-bottom: 30px; font-size: 0.95em; color: var(--silver); line-height: 1.6; }
+    .disclaimer-banner strong { color: var(--gold); display: block; margin-bottom: 5px; font-size: 1.1em; }
+
     .trust-banner { background: rgba(46, 204, 113, 0.1); border: 1px solid var(--green); padding: 30px; border-radius: 12px; text-align: center; margin-top: 50px; box-shadow: 0 0 20px rgba(46, 204, 113, 0.1); }
     .trust-banner h3 { color: var(--green); margin-bottom: 15px; font-size: 1.5em; }
 
@@ -60,8 +77,7 @@
                     <p>When software developers create an application, they lock it with an encrypted "Digital Signature." To create a working mod (like unlocking premium features or adding a mod menu), our developers must decompile the app, modify the code, and repackage it without that original lock.</p>
                     <p>Modern Antivirus (AV) scanners are strictly designed to flag <strong>any file that has had its original signature broken or altered</strong>. Because modding fundamentally alters the code structure, highly sensitive AV engines will automatically flag the file as "suspicious," even if the modification is 100% safe. This is known in the cybersecurity industry as a <strong>False Positive</strong>.</p>
                 </div>
-                <!-- ✅ UPGRADE: Professional Lottie Animation instead of broken image -->
-                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 250px; height: 250px; filter: drop-shadow(0 0 15px var(--glow-gold));" loop autoplay></lottie-player>
+                <lottie-player src="/animations/scan.json" background="transparent" speed="1" style="width: 250px; height: 250px; filter: drop-shadow(0 0 15px var(--glow-gold));" loop autoplay></lottie-player>
             </div>
         </div>
 
@@ -72,7 +88,6 @@
             
             <div class="code-grid">
                 
-                <!-- Android Signature Flags -->
                 <div class="code-card">
                     <div class="code-card-header">
                         <h4>Public Signature Flag</h4>
@@ -82,7 +97,6 @@
                     <p><strong>Meaning:</strong> The original Google Play developer signature was removed. To make the mod installable, the creator used a public "Test Key" to re-sign it. Antiviruses flag this simply to inform you that the app wasn't signed by the original corporate developer.</p>
                 </div>
 
-                <!-- Android PUP Flags -->
                 <div class="code-card">
                     <div class="code-card-header">
                         <h4>Unwanted Program (PUP)</h4>
@@ -92,7 +106,6 @@
                     <p><strong>Meaning:</strong> "PUP" stands for Potentially Unwanted Program. This is a generic, low-level heuristic warning. It is typically triggered by modified premium features, integrated ad-blockers, or floating cheat menus that behave differently than a standard app.</p>
                 </div>
 
-                <!-- iOS Dylib/Memory Injection Flags -->
                 <div class="code-card">
                     <div class="code-card-header">
                         <h4>Dylib Injection (False Trojan)</h4>
@@ -102,7 +115,6 @@
                     <p><strong>Meaning:</strong> iOS mods rely on "Dylib Injection" to bypass App Store sandboxes and unlock features. Because the tweak actively hooks into the app's memory to change its behavior, aggressive scanners mistake this code injection for a "Stealer" or "Trojan." It is a classic false positive.</p>
                 </div>
 
-                <!-- Windows Patch Flags -->
                 <div class="code-card">
                     <div class="code-card-header">
                         <h4>License Bypass Flag</h4>
@@ -115,7 +127,64 @@
             </div>
         </div>
 
-        <!-- Section 3: How GPL Mods Protects You -->
+        <!-- NEW SECTION: Sandbox Testing -->
+        <div class="explainer-box">
+            <h2><i class="fas fa-laptop-code"></i> Safe Testing in a Sandbox</h2>
+            <p>If you want to be 100% sure a mod behaves exactly as expected before installing it on your personal phone or computer, you can use a "Sandbox" or a Cloud Emulator. These are isolated, virtual environments that run software safely without putting your real device at risk.</p>
+            
+            <div class="disclaimer-banner">
+                <strong><i class="fas fa-exclamation-triangle"></i> Third-Party Service Disclaimer</strong>
+                The platforms listed below are independent, third-party services and are <strong>not affiliated with GPL Mods</strong>. They may offer free tiers or require paid subscriptions. We are not responsible for their availability, data policies, or if complex mods fail to run within their virtual environments due to emulator restrictions.
+            </div>
+
+            <div class="sandbox-grid">
+                
+                <!-- Android Sandbox Links -->
+                <div class="sandbox-card">
+                    <h4><i class="fab fa-android" style="color: var(--android-color);"></i> Android Emulators</h4>
+                    <ul class="sandbox-links">
+                        <li><a href="https://firebase.google.com/docs/test-lab" target="_blank" rel="noopener noreferrer">Google Firebase Test Lab <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://developer.samsung.com/remote-test-lab" target="_blank" rel="noopener noreferrer">Samsung Remote Test Lab <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://www.myandroid.org/" target="_blank" rel="noopener noreferrer">MyAndroid Online <i class="fas fa-external-link-alt"></i></a></li>
+                    </ul>
+                </div>
+
+                <!-- Multi-Platform Links -->
+                <div class="sandbox-card">
+                    <h4><i class="fas fa-mobile-alt" style="color: var(--white);"></i> Multi-Device (iOS/Web)</h4>
+                    <ul class="sandbox-links">
+                        <li><a href="https://www.onworks.net/" target="_blank" rel="noopener noreferrer">OnWorks <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://www.browserstack.com/" target="_blank" rel="noopener noreferrer">BrowserStack <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://saucelabs.com/" target="_blank" rel="noopener noreferrer">SauceLabs <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://www.lambdatest.com/" target="_blank" rel="noopener noreferrer">LambdaTest <i class="fas fa-external-link-alt"></i></a></li>
+                    </ul>
+                </div>
+
+                <!-- Windows Sandbox Links -->
+                <div class="sandbox-card">
+                    <h4><i class="fab fa-windows" style="color: var(--windows-color);"></i> Windows Sandboxes</h4>
+                    <ul class="sandbox-links">
+                        <li><a href="https://www.apponfly.com/" target="_blank" rel="noopener noreferrer">AppOnFly VPS <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://puter.com/" target="_blank" rel="noopener noreferrer">Puter Cloud OS <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://github.com/microsoft/Windows-Sandbox" target="_blank" rel="noopener noreferrer">MS Windows Sandbox (Local) <i class="fas fa-external-link-alt"></i></a></li>
+                    </ul>
+                </div>
+
+                <!-- WordPress Links -->
+                <div class="sandbox-card">
+                    <h4><i class="fab fa-wordpress" style="color: var(--wordpress-color);"></i> WordPress Testing</h4>
+                    <ul class="sandbox-links">
+                        <li><a href="https://tastewp.com/" target="_blank" rel="noopener noreferrer">TasteWP <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://instawp.com/" target="_blank" rel="noopener noreferrer">InstaWP <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://wpsandbox.net/" target="_blank" rel="noopener noreferrer">WPSandbox <i class="fas fa-external-link-alt"></i></a></li>
+                        <li><a href="https://playground.wordpress.net/" target="_blank" rel="noopener noreferrer">WP Playground <i class="fas fa-external-link-alt"></i></a></li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 4: How GPL Mods Protects You -->
         <div class="trust-banner">
             <h3><i class="fas fa-check-circle"></i> The GPL Mods Safety Guarantee</h3>
             <p style="color: var(--white); margin: 0; line-height: 1.6; font-size: 1.05em;">

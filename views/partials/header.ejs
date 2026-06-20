@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
     
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
+    <link rel="apple-touch-icon" href="<%= cdnUrl %>/favicon.png">
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0a0a0a">
@@ -26,8 +26,46 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <link rel="stylesheet" href="/css/style.css">
-    <script src="/js/image-fallback.js"></script>
+        <!-- ======== CDN CIRCUIT BREAKER SCRIPT ======== -->
+    <script>
+        function triggerCdnFallback() {
+            // 1. Set the cookie to expire in exactly 12 hours (43200 seconds)
+            // This tells the backend to stop sending CDN URLs for the next 12 hours.
+            document.cookie = "cdn_down=true; max-age=43200; path=/";
+            console.warn("CDN Failure Detected! Switched to Local Server for the next 12 hours.");
+            
+            // 2. Fix the assets currently on this page that have already failed
+            const fixPageAssets = () => {
+                const cdnUrl = "<%= rawCdnUrl %>";
+                if (!cdnUrl) return; // If no CDN was configured, do nothing
+                
+                // Find all Lottie players, images, and audio tags
+                const elements = document.querySelectorAll('lottie-player, img, audio, source');
+                
+                elements.forEach(el => {
+                    const src = el.getAttribute('src');
+                    // If the source contains the broken CDN URL, strip it out so it loads locally
+                    if (src && src.startsWith(cdnUrl)) {
+                        el.setAttribute('src', src.replace(cdnUrl, ''));
+                    }
+                });
+            };
+
+            // Run immediately for elements already loaded
+            fixPageAssets();
+            
+            // Run again when the whole page finishes loading to catch everything at the bottom
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fixPageAssets);
+            }
+        }
+    </script>
+    <!-- ============================================ -->
+
+    <!-- ✅ Apply the trigger to your CSS file -->
+    <link rel="stylesheet" href="<%= cdnUrl %>/css/style.css" onerror="this.onerror=null; this.href='/css/style.css'; triggerCdnFallback();">
+
+    <script src="<%= cdnUrl %>/js/main.js" onerror="this.onerror=null; this.src='/js/image-fallback.js'; triggerCdnFallback();"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 
@@ -226,7 +264,8 @@
                         <a href="#" data-lang="fr">🇫🇷 Français</a>
                         <a href="#" data-lang="hi">🇮🇳 हिन्दी</a>
                         <a href="#" data-lang="ar">🇸🇦 العربية</a>
-                        <a href="#" data-lang="zh-CN">🇨🇳 中文</a>
+                        <!-- ✅ THE FIX: Changed 'zh-CN' to Microsoft's 'zh-Hans' for Simplified Chinese -->
+                        <a href="#" data-lang="zh-Hans">🇨🇳 中文</a>
                         <a href="#" data-lang="pt">🇧🇷 Português</a>
                         <a href="#" data-lang="ru">🇷🇺 Русский</a>
                         <a href="#" data-lang="id">🇮🇩 Indonesia</a>

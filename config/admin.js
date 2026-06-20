@@ -1,5 +1,6 @@
 // config/admin.js
 const bcrypt = require('bcryptjs');
+const axios = require('axios');
 
 // 1. IMPORT THE SINGLETON LOADER
 // --- ✅ FIX 1: ADD THIS LINE TO IMPORT THE AWS SDK ---
@@ -27,7 +28,10 @@ const DocPage = require('../models/docPage');  // <--- ADD THIS
 const Issue = require('../models/issue');     // <--- ADD THIS
 const Reply = require('../models/reply');     // <--- ADD THIS
 const PointHistory = require('../models/pointHistory');
-const TranslationQuota = require('../models/translationQuota');     
+const TranslationQuota = require('../models/translationQuota');
+const IosDns = require('../models/iosDns');
+const IosCert = require('../models/iosCert');
+    
 
 // --- Helper Function ---
 function extractVTId(input) {
@@ -56,6 +60,18 @@ const s3ClientAdmin = new S3Client({
         secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
     }
 });
+
+// Helper to trigger Cloudflare rebuild
+const triggerCloudflareRebuild = async () => {
+    try {
+        // REPLACE WITH YOUR CLOUDFLARE DEPLOY HOOK URL
+        const webhookUrl = 'https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/YOUR_SECRET_UUID';
+        await axios.post(webhookUrl);
+        console.log("Cloudflare rebuild triggered successfully.");
+    } catch (e) {
+        console.error("Failed to trigger Cloudflare rebuild:", e.message);
+    }
+};
 
 const deleteFromB2Admin = async (fileKey) => {
     if (!fileKey || fileKey === 'external-link') return;
@@ -726,6 +742,33 @@ async function createAdminRouter() {
                     editProperties:['status'],
                 }
             },
+
+          {
+            resource: IosCert,
+            options: {
+                listProperties: ['name', 'status', 'updatedAt'],
+                actions: {
+                    new: {
+                        after: async (response, request, context) => {
+                            if (request.method === 'post') await triggerCloudflareRebuild();
+                            return response;
+                        }
+                    },
+                    edit: {
+                        after: async (response, request, context) => {
+                            if (request.method === 'post') await triggerCloudflareRebuild();
+                            return response;
+                        }
+                    },
+                    delete: {
+                        after: async (response, request, context) => {
+                            if (request.method === 'post') await triggerCloudflareRebuild();
+                            return response;
+                        }
+                    }
+                }
+            }
+        },
 
             // ---------------------------------
             // SITE CONTENT RESOURCE
