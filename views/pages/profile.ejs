@@ -53,7 +53,7 @@
 
                 <% if (user.forumRank && user.forumRank.lottie) { %>
                     <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                        <lottie-player src="/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
+                        <lottie-player src="<%= cdnUrl %>/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
                     </div>
                 <% } %>
 

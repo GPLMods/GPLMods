@@ -86,7 +86,7 @@
             <!-- Rank Lottie Animation -->
             <% if (profileUser.forumRank && profileUser.forumRank.lottie) { %>
                 <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                    <lottie-player src="/animations/<%= profileUser.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= profileUser.forumRank.color %>);" loop autoplay></lottie-player>
+                    <lottie-player src="<%= cdnUrl %>/animations/<%= profileUser.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= profileUser.forumRank.color %>);" loop autoplay></lottie-player>
                 </div>
             <% } %>
 
@@ -96,7 +96,7 @@
 
                 <% if (profileUser.isVerifiedAccount) { %>
                     <div class="tooltip-container">
-                        <lottie-player src="/animations/verified.json" background="transparent" speed="1" style="width: 35px; height: 35px; filter: drop-shadow(0 0 5px var(--glow-gold));" loop autoplay></lottie-player>
+                        <lottie-player src="<%= cdnUrl %>/animations/verified.json" background="transparent" speed="1" style="width: 35px; height: 35px; filter: drop-shadow(0 0 5px var(--glow-gold));" loop autoplay></lottie-player>
                         <span class="tooltip-text"><%= profileUser.verifiedBadgeText %></span>
                     </div>
                 <% } %>

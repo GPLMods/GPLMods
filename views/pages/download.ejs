@@ -198,14 +198,14 @@
 
             <% if (file.certification === 'certified') { %>
             <div class="safety-badge">
-                <lottie-player src="/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
+                <lottie-player src="<%= cdnUrl %>/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">100% Safe & Admin Certified</span>
             </div>
             <% } %>
 
            <% if (file.certification === 'community-tested') { %>
             <div class="safety-badge">
-                <lottie-player src="/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
+                <lottie-player src="<%= cdnUrl %>/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">Highly Rated By Community</span>
             </div>
             <% } %>
@@ -396,31 +396,31 @@
                             <% if (file.category === 'ios-jailed') { %>
                                 <!-- JAILED IPA APPS -->
                                 <a href="apple-magnifier://install?url=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/trollstore.png" alt="TrollStore" class="repo-icon-small"> TrollStore
+                                    <img src="<%= cdnUrl %>/images/icons/trollstore.png" alt="TrollStore" class="repo-icon-small"> TrollStore
                                 </a>
                                 <a href="sidestore://install?url=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/sidestore.png" alt="SideStore" class="repo-icon-small"> SideStore
+                                    <img src="<%= cdnUrl %>/images/icons/sidestore.png" alt="SideStore" class="repo-icon-small"> SideStore
                                 </a>
                                 <a href="altstore://install?url=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/altstore.png" alt="AltStore" class="repo-icon-small"> AltStore
+                                    <img src="<%= cdnUrl %>/images/icons/altstore.png" alt="AltStore" class="repo-icon-small"> AltStore
                                 </a>
                                 <a href="esign://import?url=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/esign.png" alt="E-Sign" class="repo-icon-small"> E-Sign
+                                    <img src="<%= cdnUrl %>/images/icons/esign.png" alt="E-Sign" class="repo-icon-small"> E-Sign
                                 </a>
                                 <a href="feather://import/<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/feather.png" alt="Feather" class="repo-icon-small"> Feather
+                                    <img src="<%= cdnUrl %>/images/icons/feather.png" alt="Feather" class="repo-icon-small"> Feather
                                 </a>
                                 <a href="scarlet://install=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/scarlet.png" alt="Scarlet" class="repo-icon-small"> Scarlet
+                                    <img src="<%= cdnUrl %>/images/icons/scarlet.png" alt="Scarlet" class="repo-icon-small"> Scarlet
                                 </a>
                                 <a href="purepkg://install?url=<%= rawUrl %>" class="install-btn">
-                                    <img src="/images/icons/purepkg.png" alt="PurePKG" class="repo-icon-small"> PurePKG
+                                    <img src="<%= cdnUrl %>/images/icons/purepkg.png" alt="PurePKG" class="repo-icon-small"> PurePKG
                                 </a>
                                 <a href="livecontainer://install-ipa?url=<%= base64Url %>" class="install-btn">
-                                    <img src="/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon-small"> LiveContainer
+                                    <img src="<%= cdnUrl %>/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon-small"> LiveContainer
                                 </a>
                                 <a href="ksign://import?url=<%= rawUrl %>" class="install-btn" style="grid-column: 1 / -1;">
-                                    <img src="/images/icons/ksign.png" alt="Ksign" class="repo-icon-small"> Ksign
+                                    <img src="<%= cdnUrl %>/images/icons/ksign.png" alt="Ksign" class="repo-icon-small"> Ksign
                                 </a>
 
                             <% } else if (file.category === 'ios-jailbroken') { %>
@@ -429,19 +429,19 @@
 
                                 <% if (file.iosPackageId) { %>
                                     <a href="sileo://package/<%= file.iosPackageId %>" class="install-btn">
-                                        <img src="/images/icons/sileo.png" alt="Sileo" class="repo-icon-small"> Sileo
+                                        <img src="<%= cdnUrl %>/images/icons/sileo.png" alt="Sileo" class="repo-icon-small"> Sileo
                                     </a>
                                     <a href="zbra://package/<%= file.iosPackageId %>?source=<%= hostDomain %>" class="install-btn">
-                                        <img src="/images/icons/zebra.png" alt="Zebra" class="repo-icon-small"> Zebra
+                                        <img src="<%= cdnUrl %>/images/icons/zebra.png" alt="Zebra" class="repo-icon-small"> Zebra
                                     </a>
                                     <a href="saily://package/<%= file.iosPackageId %>" class="install-btn">
-                                        <img src="/images/icons/saily.png" alt="Saily" class="repo-icon-small"> Saily
+                                        <img src="<%= cdnUrl %>/images/icons/saily.png" alt="Saily" class="repo-icon-small"> Saily
                                     </a>
                                     <a href="cydia://package/<%= file.iosPackageId %>" class="install-btn">
-                                        <img src="/images/icons/cydia.png" alt="Cydia" class="repo-icon-small"> Cydia
+                                        <img src="<%= cdnUrl %>/images/icons/cydia.png" alt="Cydia" class="repo-icon-small"> Cydia
                                     </a>
                                     <a href="installer://package/<%= file.iosPackageId %>" class="install-btn" style="grid-column: 1 / -1;">
-                                        <img src="/images/icons/installer.png" alt="Installer" class="repo-icon-small"> Installer
+                                        <img src="<%= cdnUrl %>/images/icons/installer.png" alt="Installer" class="repo-icon-small"> Installer
                                     </a>
                                 <% } else { %>
                                     <p style="color: var(--silver); font-size: 0.85em; grid-column: 1 / -1; margin: 0;">Add our repo to your package manager to install this tweak.</p>
@@ -467,6 +467,7 @@
             <div class="action-buttons">
                 <% if (user) { %>
                     <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin:0;">
+                        <input type="hidden" name="redirectUrl" value="back">
                         <button type="submit" class="action-btn">
                             <i class="fas fa-heart"></i>
                             <%= userHasWhitelisted ? 'In Wishlist' : 'Add to Wishlist' %>
@@ -703,7 +704,7 @@
                                     <li>
                                         <!-- The Lottie Animation -->
                                         <div class="lottie-icon-wrapper">
-                                            <lottie-player src="/animations/ticmark.json" background="transparent" speed="1" loop autoplay></lottie-player>
+                                            <lottie-player src="<%= cdnUrl %>/animations/ticmark.json" background="transparent" speed="1" loop autoplay></lottie-player>
                                         </div>
                                         <div class="feature-text">
                                             <!-- Output the raw HTML of the list item so bolding/italics still work -->
@@ -747,7 +748,7 @@
                                 <li>
                                     <!-- The Red Lottie Arrow Wrapper -->
                                     <div class="lottie-icon-wrapper">
-                                        <lottie-player src="/animations/arrow.json" background="transparent" speed="1" loop autoplay style="width: 100%; height: 100%; transform: scale(1.8);"></lottie-player>
+                                        <lottie-player src="<%= cdnUrl %>/animations/arrow.json" background="transparent" speed="1" loop autoplay style="width: 100%; height: 100%; transform: scale(1.8);"></lottie-player>
                                     </div>
                                     <div class="feature-text" style="color: var(--white); font-weight: 500;">
                                         <!-- Output the raw HTML of the list item so bolding/italics still work -->
@@ -786,7 +787,7 @@
                             %>
                                 <li>
                                     <div class="lottie-icon-wrapper">
-                                        <lottie-player src="/animations/dot.json" background="transparent" speed="1" loop autoplay></lottie-player>
+                                        <lottie-player src="<%= cdnUrl %>/animations/dot.json" background="transparent" speed="1" loop autoplay></lottie-player>
                                     </div>
                                     <div class="feature-text">
                                         <span><%- cleanUpdateText %></span>
@@ -1307,7 +1308,7 @@
 <div id="delete-comment-modal" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 3px solid var(--red); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         
-        <lottie-player src="/animations/ban.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin: 0 auto 15px auto;" loop autoplay></lottie-player>
+        <lottie-player src="<%= cdnUrl %>/animations/ban.json" background="transparent" speed="1" style="width: 100px; height: 100px; margin: 0 auto 15px auto;" loop autoplay></lottie-player>
         
         <h2 style="color: var(--red); margin-bottom: 15px;">Delete Review?</h2>
         <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">

@@ -129,13 +129,14 @@
                                 
                                 <% if (user) { %>
                                     <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
+                                        <input type="hidden" name="redirectUrl" value="back">
                                         <button type="submit" class="featured-button btn-secondary">
                                             <i class="fas fa-heart"></i> Wishlist
                                         </button>
                                     </form>
                                 <% } else { %>
                                     <a href="/login" class="featured-button btn-secondary">
-                                        <i class="fas fa-heart"></i> Wishlist
+                                        <i class="fas fa-heart"></i> Login to Wishlist
                                     </a>
                                 <% } %>
                             </div>

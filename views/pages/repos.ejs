@@ -105,32 +105,32 @@
             <div class="repo-buttons-grid">
                 <!-- ✅ FIX: Using local SVGs with the .repo-icon class -->
                 <a href="altstore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/altstore.png" alt="AltStore" class="repo-icon"> Add to AltStore
+                    <img src="<%= cdnUrl %>/images/icons/altstore.png" alt="AltStore" class="repo-icon"> Add to AltStore
                 </a>
                 
                 <a href="sidestore://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/sidestore.png" alt="SideStore" class="repo-icon"> Add to SideStore
+                    <img src="<%= cdnUrl %>/images/icons/sidestore.png" alt="SideStore" class="repo-icon"> Add to SideStore
                 </a>
                 
                 <a href="scarlet://repo=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/scarlet.png" alt="Scarlet" class="repo-icon"> Add to Scarlet
+                    <img src="<%= cdnUrl %>/images/icons/scarlet.png" alt="Scarlet" class="repo-icon"> Add to Scarlet
                 </a>
                 
                 <a href="esign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/esign.png" alt="E-Sign" class="repo-icon"> Add to E-Sign
+                    <img src="<%= cdnUrl %>/images/icons/esign.png" alt="E-Sign" class="repo-icon"> Add to E-Sign
                 </a>
                 
                 <a href="feather://import/<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/feather.png" alt="Feather" class="repo-icon"> Add to Feather
+                    <img src="<%= cdnUrl %>/images/icons/feather.png" alt="Feather" class="repo-icon"> Add to Feather
                 </a>
                 
                 <!-- If you don't have SVGs for some, you can leave FontAwesome or use a generic icon -->
                 <a href="livecontainer://source?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon"> Add to LiveContainer
+                    <img src="<%= cdnUrl %>/images/icons/livecontainer.png" alt="LiveContainer" class="repo-icon"> Add to LiveContainer
                 </a>
                 
                 <a href="ksign://import?url=<%= fullRepoUrl %>/ios-repo/apps.json" class="repo-btn">
-                    <img src="/images/icons/ksign.png" alt="Ksign" class="repo-icon"> Add to Ksign
+                    <img src="<%= cdnUrl %>/images/icons/ksign.png" alt="Ksign" class="repo-icon"> Add to Ksign
                 </a>
             </div>
         </div>
@@ -178,11 +178,11 @@
             <div class="repo-buttons-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                 
                 <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn" style="border-color: var(--android-color);">
-                    <img src="/images/icons/droidify.png" alt="Droid-ify" class="repo-icon"> Add to Droid-ify
+                    <img src="<%= cdnUrl %>/images/icons/droidify.png" alt="Droid-ify" class="repo-icon"> Add to Droid-ify
                 </a>
                 
                 <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn" style="border-color: var(--android-color);">
-                    <img src="/images/icons/neostore.png" alt="Neo Store" class="repo-icon"> Add to Neo Store
+                    <img src="<%= cdnUrl %>/images/icons/neostore.png" alt="Neo Store" class="repo-icon"> Add to Neo Store
                 </a>
 
             </div>
