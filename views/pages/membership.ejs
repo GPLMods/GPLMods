@@ -14,13 +14,76 @@
         margin-bottom: -15px;
     }
 
-    /* Currency Switcher */
-    .currency-selector { margin-bottom: 40px; display: inline-flex; align-items: center; gap: 10px; background: var(--dark-gray); padding: 10px 20px; border-radius: 25px; border: 1px solid #333; }
-    .currency-selector label { color: var(--silver); font-weight: 600; }
-    .currency-selector select { background: var(--black); color: var(--gold); border: 1px solid var(--gold); padding: 5px 15px; border-radius: 15px; outline: none; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; }
+    /* --- NEW: Custom Currency Switcher Styles --- */
+    .currency-selector-container { margin-bottom: 40px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .currency-selector-container label { color: var(--silver); font-weight: 600; font-size: 0.95em; }
+
+    /* Custom Select Wrapper */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 140px; /* Fixed width for the currency dropdown */
+        text-align: left;
+        z-index: 50; /* Ensures it drops over the pricing cards */
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        border-radius: 25px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    
+    .selected-text { color: var(--gold); font-size: 1em; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
+    
+    /* Custom Options Dropdown */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #1a1a1a;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .custom-option {
+        padding: 12px 20px;
+        color: var(--silver);
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
+    /* ------------------------------------------- */
 
     /* Duration Switcher (Monthly / Yearly / Lifetime) */
-    .duration-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+    .duration-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; position: relative; z-index: 10;}
     .duration-btn { background: transparent; color: var(--silver); border: 2px solid #444; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: 'Poppins', sans-serif; }
     .duration-btn:hover { border-color: var(--gold); color: var(--gold); }
     .duration-btn.active { background: var(--gold); color: var(--black); border-color: var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
@@ -28,23 +91,15 @@
     /* Pricing Grid */
     .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; align-items: stretch; }
     
-    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
     .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     
     /* Specific Card Styling */
     .card-guest { border-top: 4px solid #555; }
     .card-member { border-top: 4px solid var(--silver); }
+    .card-premium { border: 2px solid var(--gold); transform: scale(1.05); z-index: 5; box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); overflow: visible;} /* Changed z-index & overflow to fix dropdown overlap */
     .card-distributor { border-top: 4px solid var(--blue); }
 
-    /* ✅ UPGRADE: Animated Premium Card */
-    .card-premium { 
-        transform: scale(1.05); 
-        z-index: 10; 
-        background: var(--dark-gray);
-        border: none;
-        position: relative;
-    }
-    
     /* Animated Gradient Border Magic */
     .card-premium::before {
         content: '';
@@ -72,7 +127,7 @@
         100% { background-position: 0% 50%; }
     }
 
-    .popular-badge { position: absolute; top: 20px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     .save-badge { background: var(--green); color: var(--white); font-size: 0.7em; padding: 3px 8px; border-radius: 10px; margin-left: 10px; vertical-align: middle; }
 
     .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
@@ -135,7 +190,7 @@
         <!-- ✅ UPGRADE: Premium Lottie Animation Header -->
         <div class="premium-animation-wrapper">
             <!-- Using a standard premium crown lottie file -->
-            <lottie-player src="<%= cdnUrl %>/animations/crown.json" background="transparent" speed="1" style="width: 120px; height: 120px;" loop autoplay></lottie-player>
+            <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/crown.json" background="transparent" speed="1" style="width: 120px; height: 120px;" loop autoplay></lottie-player>
         </div>
 
         <div class="membership-header">
@@ -143,16 +198,33 @@
             <p>Whether you're just browsing, an active community member, or a professional mod distributor, we have a plan for you.</p>
         </div>
 
-        <!-- Currency Switcher -->
-        <div class="currency-selector">
+        <!-- ======== CUSTOM CURRENCY SWITCHER ======== -->
+        <div class="currency-selector-container">
             <label for="currency-select">Display prices in:</label>
-            <select id="currency-select">
+            
+            <!-- Hidden Native Select (Used by logic) -->
+            <select id="currency-select" style="display: none;">
                 <option value="INR" selected>₹ INR</option>
                 <option value="USD">$ USD</option>
                 <option value="EUR">€ EUR</option>
                 <option value="GBP">£ GBP</option>
             </select>
+            
+            <!-- Custom UI Wrapper -->
+            <div class="custom-select-wrapper" id="wrapper-currency">
+                <div class="custom-select">
+                    <span class="selected-text">₹ INR</span>
+                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                </div>
+                <div class="custom-options">
+                    <div class="custom-option selected" data-value="INR">₹ INR</div>
+                    <div class="custom-option" data-value="USD">$ USD</div>
+                    <div class="custom-option" data-value="EUR">€ EUR</div>
+                    <div class="custom-option" data-value="GBP">£ GBP</div>
+                </div>
+            </div>
         </div>
+        <!-- ========================================== -->
 
         <!-- Duration Switcher -->
         <div class="duration-selector">
@@ -176,7 +248,7 @@
                     <li><i class="fas fa-check"></i> View VirusTotal Scans</li>
                     <li class="missing"><i class="fas fa-times"></i> Upload Mods</li>
                     <li class="missing"><i class="fas fa-times"></i> Post Reviews & Comments</li>
-                    <li class="missing"><i class="fas fa-times"></i> Request For Mods Mods And Updates</li>
+                    <li class="missing"><i class="fas fa-times"></i> Request For Mods & Updates</li>
                 </ul>
                 <% if (!user) { %>
                     <button class="plan-btn btn-outline" disabled style="opacity: 0.5;">Your Current Status</button>
@@ -199,7 +271,7 @@
                     <li><i class="fas fa-check"></i> Create a Whitelist</li>
                     <li><i class="fas fa-check"></i> Standard Support</li>
                     <li class="missing"><i class="fas fa-times"></i> 1-Click IPA/DEB Installs</li>
-                   <li class="missing"><i class="fas fa-times"></i>Custom YT Background Music Player and Add Free Mirror's</strong></li>
+                   <li class="missing"><i class="fas fa-times"></i> Custom YT BG Music & Ad-Free Mirrors</li>
                 </ul>
                 <% if (!user) { %>
                     <a href="/register" class="plan-btn btn-silver">Sign Up Free</a>
@@ -309,7 +381,55 @@
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Currency Switcher Logic ---
+        // --- 1. Custom Dropdown Logic (Imported from Search/Donate Page) ---
+        function setupCustomSelect(wrapperId, nativeSelectId) {
+            const wrapper = document.getElementById(wrapperId);
+            const nativeSelect = document.getElementById(nativeSelectId);
+            if (!wrapper || !nativeSelect) return;
+
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            // Click to open/close
+            customSelect.addEventListener('click', (e) => {
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            // Delegate click events for options
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+
+                const value = optionEl.getAttribute('data-value');
+                const text = optionEl.textContent;
+
+                selectedText.textContent = text;
+                nativeSelect.value = value;
+                
+                // CRITICAL: Manually trigger the 'change' event on the native select
+                // so the pricing logic further down the script knows it changed!
+                nativeSelect.dispatchEvent(new Event('change'));
+
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) {
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+
+        // Initialize the custom dropdown
+        setupCustomSelect('wrapper-currency', 'currency-select');
+
+
+        // --- 2. Pricing & Currency Logic ---
         const currencySelect = document.getElementById('currency-select');
         const priceValueElements = document.querySelectorAll('.price-value');
         const currencySymbols = document.querySelectorAll('[data-currency]');
@@ -332,6 +452,7 @@
             if (premiumPeriodEl) premiumPeriodEl.textContent = periods[currentDuration];
         }
 
+        // Fired by the custom dropdown logic!
         currencySelect.addEventListener('change', function() {
             currentCurrency = this.value;
             updatePricingUI();
@@ -347,9 +468,10 @@
             });
         });
 
+        // Initialize Pricing UI on load
         updatePricingUI();
 
-        // --- 2. Cashfree Payment Logic ---
+        // --- 3. Cashfree Payment Logic ---
         const cashfree = new Cashfree();
         const submitButton = document.getElementById('premium-purchase-btn');
         const errorMessage = document.getElementById('payment-error-message');

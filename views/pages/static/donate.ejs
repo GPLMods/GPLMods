@@ -6,10 +6,72 @@
     .donate-wrapper h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
     .donate-wrapper p { color: var(--silver); line-height: 1.8; font-size: 1.1em; margin-bottom: 30px; }
     
-    /* Currency Switcher */
-    .currency-selector { margin-bottom: 30px; display: inline-flex; align-items: center; gap: 10px; background: var(--black); padding: 10px 20px; border-radius: 25px; border: 1px solid #333; }
-    .currency-selector label { color: var(--silver); font-weight: 600; font-size: 0.9em; }
-    .currency-selector select { background: transparent; color: var(--gold); border: none; outline: none; font-family: 'Poppins', sans-serif; font-weight: bold; cursor: pointer; font-size: 1em; }
+    /* --- NEW: Custom Currency Switcher Styles --- */
+    .currency-selector-container { margin-bottom: 30px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .currency-selector-container label { color: var(--silver); font-weight: 600; font-size: 0.95em; }
+
+    /* Custom Select Wrapper (Imported from search page & adapted) */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 140px; /* Fixed width for the currency dropdown */
+        text-align: left;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        border-radius: 25px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    
+    .selected-text { color: var(--gold); font-size: 1em; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
+    
+    /* Custom Options Dropdown */
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #1a1a1a;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .custom-option {
+        padding: 12px 20px;
+        color: var(--silver);
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        border-bottom: 1px solid #2a2a2a;
+    }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
+    /* ------------------------------------------- */
 
     /* Preset Donation Buttons */
     .donation-options { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
@@ -48,7 +110,6 @@
     /* Terms */
     .terms-box { background: rgba(0,0,0,0.3); border: 1px dashed #444; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 0.85em; color: var(--silver); line-height: 1.5; }
     .terms-box i { color: var(--red); margin-right: 5px; }
-
 </style>
 
 <main class="container">
@@ -59,22 +120,40 @@
         </a>
     </div>
     <!-- ======================================== -->
+    
     <div class="donate-wrapper">
         <h1>Support <span>GPL Mods</span></h1>
         <p>
             If you find this site useful, please consider making a donation. Your support helps cover our heavy server costs and allows us to continue building new features for the community!
         </p>
 
-        <!-- Currency Switcher -->
-        <div class="currency-selector">
-            <label for="currency-select">Currency:</label>
-            <select id="currency-select">
+        <!-- ======== CUSTOM CURRENCY SWITCHER ======== -->
+        <div class="currency-selector-container">
+            <label for="currency-select">Select Currency:</label>
+            
+            <!-- Hidden Native Select (Used by logic) -->
+            <select id="currency-select" style="display: none;">
                 <option value="INR" selected>₹ INR</option>
                 <option value="USD">$ USD</option>
                 <option value="EUR">€ EUR</option>
                 <option value="GBP">£ GBP</option>
             </select>
+            
+            <!-- Custom UI Wrapper -->
+            <div class="custom-select-wrapper" id="wrapper-currency">
+                <div class="custom-select">
+                    <span class="selected-text">₹ INR</span>
+                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                </div>
+                <div class="custom-options">
+                    <div class="custom-option selected" data-value="INR">₹ INR</div>
+                    <div class="custom-option" data-value="USD">$ USD</div>
+                    <div class="custom-option" data-value="EUR">€ EUR</div>
+                    <div class="custom-option" data-value="GBP">£ GBP</div>
+                </div>
+            </div>
         </div>
+        <!-- ========================================== -->
 
         <!-- Preset Buttons -->
         <div id="donation-form" class="donation-options">
@@ -122,7 +201,55 @@
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Element Selection ---
+        // --- 1. Custom Dropdown Logic (Imported from Search Page) ---
+        function setupCustomSelect(wrapperId, nativeSelectId) {
+            const wrapper = document.getElementById(wrapperId);
+            const nativeSelect = document.getElementById(nativeSelectId);
+            if (!wrapper || !nativeSelect) return;
+
+            const customSelect = wrapper.querySelector('.custom-select');
+            const selectedText = wrapper.querySelector('.selected-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            // Click to open/close
+            customSelect.addEventListener('click', (e) => {
+                wrapper.classList.toggle('open');
+                e.stopPropagation(); 
+            });
+
+            // Delegate click events for options
+            optionsContainer.addEventListener('click', (e) => {
+                const optionEl = e.target.closest('.custom-option');
+                if (!optionEl) return;
+
+                const value = optionEl.getAttribute('data-value');
+                const text = optionEl.textContent;
+
+                selectedText.textContent = text;
+                nativeSelect.value = value;
+                
+                // CRITICAL: Manually trigger the 'change' event on the native select
+                // so the pricing logic further down the script knows it changed!
+                nativeSelect.dispatchEvent(new Event('change'));
+
+                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionEl.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) {
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+
+        // Initialize the custom dropdown
+        setupCustomSelect('wrapper-currency', 'currency-select');
+
+
+        // --- 2. Element Selection for Pricing ---
         const currencySelect = document.getElementById('currency-select');
         const donationButtons = document.querySelectorAll('.donation-btn');
         const customInput = document.getElementById('custom-amount');
@@ -134,8 +261,7 @@
         const maxLimitText = document.getElementById('max-limit-text');
         const errorMessage = document.getElementById('error-message');
         
-        // --- 2. Configuration & Limits ---
-        // We define limits based on the currency so the rules make sense globally
+        // --- 3. Configuration & Limits ---
         const limits = {
             'INR': { min: 500, max: 5000, symbol: '₹' },
             'USD': { min: 5, max: 100, symbol: '$' },
@@ -143,7 +269,6 @@
             'GBP': { min: 5, max: 100, symbol: '£' }
         };
 
-        // Helper to update the limits text and input restrictions
         function updateLimits(currency) {
             const rules = limits[currency];
             customInput.min = rules.min;
@@ -152,7 +277,6 @@
             maxLimitText.textContent = rules.symbol + rules.max;
         }
 
-        // Helper to sync the big yellow button with the current input value
         function syncFinalButton() {
             let val = parseFloat(customInput.value);
             const currency = currencySelect.value;
@@ -163,7 +287,6 @@
             btnSymbol.textContent = rules.symbol;
             btnAmountValue.textContent = val;
 
-            // Basic frontend validation to disable the button if out of bounds
             if (val < rules.min || val > rules.max) {
                 finalDonateBtn.disabled = true;
                 errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
@@ -173,25 +296,22 @@
             }
         }
 
-        // --- 3. Event Listeners ---
+        // --- 4. Event Listeners ---
 
-        // A. Currency Switcher
+        // A. Currency Switcher (Fired by the custom dropdown logic!)
         currencySelect.addEventListener('change', function() {
             const selectedCurrency = this.value;
             const rules = limits[selectedCurrency];
 
-            // Update preset button symbols and values
             donationButtons.forEach(btn => {
                 btn.querySelector('.currency-symbol').textContent = rules.symbol;
                 const newPrice = btn.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
                 if (newPrice) btn.querySelector('.price-value').textContent = newPrice;
             });
 
-            // Update the input symbol and limits
             inputSymbol.textContent = rules.symbol;
             updateLimits(selectedCurrency);
 
-            // Automatically select the middle button's value as the new default
             const middleBtnVal = document.querySelector('.donation-btn.selected').getAttribute(`data-${selectedCurrency.toLowerCase()}`);
             customInput.value = middleBtnVal;
 
@@ -201,12 +321,9 @@
         // B. Preset Buttons Click
         donationButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // Remove 'selected' class from all buttons
                 donationButtons.forEach(btn => btn.classList.remove('selected'));
-                // Add 'selected' class to clicked button
                 this.classList.add('selected');
                 
-                // Update the custom input with this button's value
                 const currency = currencySelect.value;
                 const value = this.getAttribute(`data-${currency.toLowerCase()}`);
                 customInput.value = value;
@@ -217,28 +334,24 @@
 
         // C. Custom Input Typing
         customInput.addEventListener('input', function() {
-            // Unselect preset buttons because the user is typing a custom amount
             donationButtons.forEach(btn => btn.classList.remove('selected'));
             syncFinalButton();
         });
 
-        // --- 4. Initialization ---
-        // Run once on load to set the initial state correctly
+        // Initialize on load
         updateLimits('INR');
         syncFinalButton();
 
         // --- 5. Cashfree Payment Logic ---
-        const cashfree = Cashfree({ mode: "sandbox" }); // Change to production later
+        const cashfree = Cashfree({ mode: "sandbox" }); 
 
         finalDonateBtn.addEventListener('click', function(event) {
             event.preventDefault();
             
-            // Get final values
             const amount = parseFloat(customInput.value);
             const currency = currencySelect.value;
             const rules = limits[currency];
 
-            // Double check limits before sending to server
             if (isNaN(amount) || amount < rules.min || amount > rules.max) {
                 errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
                 return;

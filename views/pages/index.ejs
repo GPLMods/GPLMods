@@ -42,12 +42,26 @@
                             <div class="featured-buttons">
                                 <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
                                 
-                                <% if (user) { %>
+                                <% if (typeof user !== 'undefined' && user && user.whitelist) { %>
+                                    <% 
+                                        // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
+                                        const isWhitelisted = user.whitelist.some(w => 
+                                            w.toString() === mod._id.toString() || 
+                                            (w._id && w._id.toString() === mod._id.toString())
+                                        ); 
+                                    %>
+                                    
                                     <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
                                         <input type="hidden" name="redirectUrl" value="back">
-                                        <button type="submit" class="featured-button btn-secondary">
-                                            <i class="fas fa-heart"></i> Wishlist
-                                        </button>
+                                        <% if (isWhitelisted) { %>
+                                            <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
+                                                <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                            </button>
+                                        <% } else { %>
+                                            <button type="submit" class="featured-button btn-secondary">
+                                                <i class="fas fa-heart"></i> Add Wishlist
+                                            </button>
+                                        <% } %>
                                     </form>
                                 <% } else { %>
                                     <a href="/login" class="featured-button btn-secondary">

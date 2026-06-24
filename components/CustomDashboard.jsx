@@ -96,21 +96,31 @@ const Dashboard = () => {
         </a>
       </div>
 
+      {/* --- STATS GRID --- */}
       <div style={grid}>
         <div style={card}>
           <div style={label}>Total Users</div>
           <p style={value}>{(stats.totalUsers || 0).toLocaleString()}</p>
           <div style={note}>{(stats.newUsersThisMonth || 0).toLocaleString()} new users this month</div>
         </div>
+        
         <div style={card}>
           <div style={label}>Total Mods</div>
           <p style={value}>{(stats.totalMods || 0).toLocaleString()}</p>
           <div style={note}>{(stats.newModsThisMonth || 0).toLocaleString()} new mods this month</div>
         </div>
+        
         <div style={card}>
           <div style={label}>Total Downloads</div>
           <p style={value}>{(stats.totalDownloads || 0).toLocaleString()}</p>
           <div style={note}>Lifetime downloads across the platform</div>
+        </div>
+
+        {/* ✅ NEW: TOTAL VIEWS CARD ADDED HERE */}
+        <div style={card}>
+          <div style={label}>Total Views</div>
+          <p style={value}>{(stats.totalViews || 0).toLocaleString()}</p>
+          <div style={note}>All-time global views across the platform</div>
         </div>
       </div>
 

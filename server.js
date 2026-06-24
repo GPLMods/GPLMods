@@ -327,7 +327,7 @@ function generateRecoveryCodes() {
 // ===============================
 // INDEXNOW SEO PROTOCOL HELPER
 // ===============================
-const indexNowKey = process.env.INDEXNOW_KEY || 'gplmods-indexnow-key-2026-secure';
+const indexNowKey = process.env.INDEXNOW_KEY || '4387532a48904cbaae6f8ba7ad35d790';
 
 // 1. Verification Route: Search engines check this to verify ownership
 app.get(`/${indexNowKey}.txt`, (req, res) => {
@@ -4961,7 +4961,7 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
         let urlsToPing =[];
 
         // 1. Static Pages
-        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate'];
+        const staticPages = ['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
         staticPages.forEach(page => {
             urlsToPing.push(`${baseUrl}${page}`);
         });
@@ -5836,7 +5836,6 @@ app.get('/membership', (req, res) => {
         // e.g., stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     });
 });
-
 // --- UPDATED: DOCUMENTATION SYSTEM ROUTE ---
 app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
     try {
@@ -5885,11 +5884,12 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
         return next(error);
     }
 });
+// ==================================================
+// SEO, ROBOTS.TXT & SITEMAP GENERATION
+// ==================================================
 
-// ======== THE BULLETPROOF, SEO-OPTIMIZED SITEMAP ========
-
-// 1. Helper function to ensure XML strictness
 const escapeXML = (str) => {
+    if (!str) return '';
     return str.replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
@@ -5897,121 +5897,236 @@ const escapeXML = (str) => {
               .replace(/'/g, '&apos;');
 };
 
-app.get('/sitemap.xml', async (req, res) => {
+// 1. Dynamic robots.txt
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+    
+    res.send(`User-agent: *
+Allow: /
+Allow: /ai-directory
+Allow: /about
+Allow: /faq
+Allow: /tos
+Allow: /dmca
+Allow: /privacy-policy
+Allow: /refund-policy
+Allow: /donate
+Allow: /partnership-policy
+Allow: /distributor-features
+Allow: /why-choose-us
+Allow: /understanding-scans
+Allow: /membership
+Allow: /docs/
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password/
+Disallow: /profile
+Disallow: /my-uploads
+Disallow: /settings
+Disallow: /wishlist
+Disallow: /support
+Disallow: /partnership
+Disallow: /upload
+Disallow: /upload-initial
+Disallow: /upload-finalize/
+Disallow: /upload-details/
+Disallow: /account/
+Disallow: /community-chat
+Disallow: /notifications/
+Disallow: /download-file/
+Disallow: /repos/
+Disallow: /jailbreak-repos/
+
+Sitemap: ${baseUrl}/sitemap_index.xml`);
+});
+
+// 2. Master Sitemap Index (Points to all other sitemaps)
+app.get('/sitemap_index.xml', (req, res) => {
+    res.set('Content-Type', 'text/xml');
+    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+    
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    
+    const sitemaps = ['pages', 'mods', 'users', 'developers', 'docs'];
+    
+    sitemaps.forEach(map => {
+        xml += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${map}.xml</loc>\n    <lastmod>${new Date().toISOString()}</lastmod>\n  </sitemap>\n`;
+    });
+    
+    xml += '</sitemapindex>';
+    res.send(xml);
+});
+
+// Redirect old sitemap.xml to the new index
+app.get('/sitemap.xml', (req, res) => res.redirect(301, '/sitemap_index.xml'));
+// 3a. Static Pages & Categories Sitemap
+app.get('/sitemap-pages.xml', (req, res) => {
+    res.set('Content-Type', 'text/xml');
+    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+    const staticPages = ['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/ai-directory', '/membership'];
+    staticPages.forEach(page => {
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + page)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+    });
+
+    const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+    categories.forEach(cat => {
+         xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    });
+
+    xml += '</urlset>';
+    res.send(xml);
+});
+
+// 3b. Mods Sitemap (WITH IMAGE AND VIDEO EXTENSIONS)
+app.get('/sitemap-mods.xml', async (req, res) => {
     try {
-        // Set the correct XML header so browsers & Google know how to read it
         res.set('Content-Type', 'text/xml');
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         
+        // Notice the added namespaces for image and video!
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n';
 
-        // 1. Static Pages
-        const staticPages =['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/docs'];
-        staticPages.forEach(page => {
-            const pageUrl = `${baseUrl}${page}`;
-            xml += `  <url>\n    <loc>${escapeXML(pageUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-        });
-
-        // 2. Category Pages
-        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
-        categories.forEach(cat => {
-             // encodeURIComponent ensures special chars in categories are handled safely
-             const catUrl = `${baseUrl}/category?platform=${encodeURIComponent(cat)}`;
-             xml += `  <url>\n    <loc>${escapeXML(catUrl)}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
-        });
-
-        // 3. Live Mods
         const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' })
-            .select('_id category slug updatedAt')
+            .select('_id category slug name modDescription videoUrl updatedAt')
             .lean(); 
             
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
+            const modUrl = `${baseUrl}/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`;
             
-            // encodeURIComponent safely converts emojis, +, @, and # to be URL-safe!
-            const safeCategory = encodeURIComponent(mod.category);
-            const safeSlug = encodeURIComponent(mod.slug || mod._id.toString());
-            const modUrl = `${baseUrl}/${safeCategory}/${safeSlug}`;
+            xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
             
-            xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
-        });
-
-        // 4. Developer Pages
-        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
-        uniqueDevelopers.forEach(dev => {
-            if (dev && dev !== 'N/A') {
-                // Using encodeURIComponent instead of slugify ensures emojis and special characters 
-                // in company names (like "DevGroup #1 🚀") are properly indexed by Google!
-                const devUrl = `${baseUrl}/developer?name=${encodeURIComponent(dev)}`;
-                xml += `  <url>\n    <loc>${escapeXML(devUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+            // IF the mod has a YouTube video, tell Google about it!
+            if (mod.videoUrl && mod.videoUrl.includes('youtube.com')) {
+                xml += `    <video:video>\n`;
+                xml += `      <video:title>${escapeXML(mod.name + ' Mod Video')}</video:title>\n`;
+                xml += `      <video:description>${escapeXML(mod.modDescription ? mod.modDescription.substring(0, 100) : mod.name)}</video:description>\n`;
+                xml += `      <video:player_loc>${escapeXML(mod.videoUrl)}</video:player_loc>\n`;
+                xml += `    </video:video>\n`;
             }
-        });
-
-        // 5. Public User Profiles
-        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
-        uniqueUploaders.forEach(uploader => {
-             // This fixes the Noob#1 bug! The # is safely converted to %23 so the URL doesn't break.
-             const userUrl = `${baseUrl}/users/${encodeURIComponent(uploader)}`;
-             xml += `  <url>\n    <loc>${escapeXML(userUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
-        });
-
-        // 6. Dynamic Documentation Pages
-        const allDocPages = await DocPage.find().select('slug updatedAt').lean();
-        allDocPages.forEach(doc => {
-            let lastDocDate = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
-            const docUrl = `${baseUrl}/docs/${encodeURIComponent(doc.slug)}`;
-            xml += `  <url>\n    <loc>${escapeXML(docUrl)}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            
+            xml += `  </url>\n`;
         });
 
         xml += '</urlset>';
         res.send(xml);
-        
-    } catch (error) {
-        console.error("Sitemap generation error:", error);
-        res.status(500).send('Error generating sitemap');
-    }
+    } catch (error) { res.status(500).send('Error'); }
 });
-// ======== HTML SITEMAP (FOR TIDIO LYRO & AI CRAWLERS) ========
+
+// 3c. Public Users Sitemap
+app.get('/sitemap-users.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
+        uniqueUploaders.forEach(uploader => {
+             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/users/' + encodeURIComponent(uploader))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        });
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// 3d. Developers Sitemap
+app.get('/sitemap-developers.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
+        uniqueDevelopers.forEach(dev => {
+            if (dev && dev !== 'N/A') {
+                xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/developer?name=' + encodeURIComponent(dev))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+            }
+        });
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// 3e. Docs Sitemap
+app.get('/sitemap-docs.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        
+        // (Assuming you have a DocPage model based on your prompt)
+        if (typeof DocPage !== 'undefined') {
+            const allDocPages = await DocPage.find().select('slug updatedAt').lean();
+            allDocPages.forEach(doc => {
+                let lastDocDate = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
+                xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/docs/' + encodeURIComponent(doc.slug))}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            });
+        }
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// ======== HTML SITEMAP (FOR TIDIO LYRO & AI CRAWLERS & SEO) ========
 app.get('/ai-directory', async (req, res) => {
     try {
-        // Fetch all active, latest version mods. 
-        // We only need the fields required to build the URL and title.
+        // 1. Fetch live mods with extended data (Description, Image Keys, Dates)
         const liveMods = await File.find({ 
             status: 'live', 
             isLatestVersion: true,
             showInSitemap: { $ne: false }
         })
-        .select('name category slug developer') // Only grab what we need to make it fast
-        .sort({ category: 1, name: 1 }); // Sort alphabetically by category, then name
+        .select('name category slug developer uploader modDescription iconKey iconUrl updatedAt') 
+        .lean()
+        .sort({ category: 1, name: 1 }); 
 
-        // Group mods by category so the AI understands the site structure better
+        // 2. Generate the viewable Image URLs for the crawlers
+        const modsWithUrls = await Promise.all(liveMods.map(async (mod) => {
+            const key = mod.iconUrl || mod.iconKey;
+            const signedIconUrl = await getSmartImageUrl(key);
+            return { ...mod, iconUrl: signedIconUrl };
+        }));
+
+        // 3. Group by Category
         const modsByCategory = {};
-        liveMods.forEach(mod => {
+        modsWithUrls.forEach(mod => {
             if (!modsByCategory[mod.category]) {
                 modsByCategory[mod.category] = [];
             }
             modsByCategory[mod.category].push(mod);
         });
 
+        // 4. Fetch Unique Developers & Uploaders for the User/Dev Directory
+        const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
+
         res.render('pages/ai-directory', { 
-            modsByCategory: modsByCategory 
+            modsByCategory: modsByCategory,
+            developers: uniqueDevelopers.filter(d => d && d !== 'N/A'), // Remove empty/N/A
+            uploaders: uniqueUploaders.filter(u => u) // Remove empty
         });
 
     } catch (error) {
         console.error("AI Directory generation error:", error);
-        res.status(500).send('Error generating AI directory');
+        res.status(500).render('pages/500');
     }
 });
 // ===============================================
 // 15. UNIVERSAL REPOSITORY ENGINE (Automatic, Manual & JSON)
 // ===============================================
 
-// If a user pastes the base URL into a web browser, redirect them to the actual data 
-app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
-app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v2.json'));
-
-function getBaseUrl(req) {
+// Helper: Ensure we always have the correct Base URL for external repo clients
+function getRepoBaseUrl(req) {
     if (process.env.BASE_URL) {
         return process.env.BASE_URL.replace(/\/*$/, '');
     }
@@ -6021,8 +6136,13 @@ function getBaseUrl(req) {
     return `${protocol}://${host}`.replace(/\/*$/, '');
 }
 
-// ======== ✅ FIX 1: PERMANENT IMAGE REDIRECTS ========
-// Prevents 404 crashes in Droid-ify, Sileo, and AltStore caused by expired B2 URLs.
+// Redirect base paths to the actual index files
+app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
+app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v2.json'));
+
+
+// ======== PERMANENT IMAGE REDIRECTS FOR ALL REPOS ========
+// Repo clients expect static URLs. We redirect these static URLs to the temporary B2 signed URLs.
 app.get('/api/icon/:id', async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
@@ -6047,7 +6167,6 @@ app.get('/api/screenshot/:id/:index', async (req, res) => {
 app.get('/fdroid/repo/icon-512x512.png', (req, res) => res.redirect('/images/icon-512x512.png'));
 app.get('/ios-repo/CydiaIcon.png', (req, res) => res.redirect('/images/icon-512x512.png'));
 app.get('/ios-repo/Icon.png', (req, res) => res.redirect('/images/icon-512x512.png'));
-// =====================================================
 
 
 // -----------------------------------------------
@@ -6055,24 +6174,29 @@ app.get('/ios-repo/Icon.png', (req, res) => res.redirect('/images/icon-512x512.p
 // -----------------------------------------------
 
 async function generateIosPackages(req) {
-    const repoBaseUrl = getBaseUrl(req);
-    const jbMods = await File.find({ 
+    const repoBaseUrl = getRepoBaseUrl(req);
+    
+    // ✅ FIX 1: Fetch ALL live versions of iOS jailbroken mods, not just the latest!
+    // This is what enables the "Downgrade" feature in Sileo/Zebra.
+    const allJbMods = await File.find({ 
         category: 'ios-jailbroken', 
         status: 'live', 
-        isLatestVersion: true,
         showInRepo: { $ne: false } 
     }).sort({ createdAt: -1 });
 
     let packagesText = '';
 
-    for (const mod of jbMods) {
-        const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${REPO_BASE_URL}/download-file/${mod._id}` : null);
+    for (const mod of allJbMods) {
+        const downloadUrl = mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
         if (!downloadUrl) continue;
 
         let aptArch = 'iphoneos-arm';
         if (mod.architectures && mod.architectures.includes('arm64')) aptArch = 'iphoneos-arm64';
 
-        const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        // The Bundle ID must be identical across all versions of the same tweak
+        const baseModName = mod.isLatestVersion ? mod.name : (await File.findById(mod.parentFile)).name;
+        const bundleId = `com.gplmods.${(mod.slug || baseModName).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        
         const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
 
         packagesText += `Package: ${bundleId}\n`;
@@ -6083,8 +6207,8 @@ async function generateIosPackages(req) {
         packagesText += `Author: ${mod.uploader}\n`;
         packagesText += `Section: Tweaks\n`;
         packagesText += `Description: ${cleanDesc}...\n`;
-        // ✅ FIX 2: Added the Icon URL so tweaks show logos in Sileo/Zebra lists
         packagesText += `Icon: ${repoBaseUrl}/api/icon/${mod._id}\n`;
+        // Point depictions to the specific version ID
         packagesText += `Depiction: ${repoBaseUrl}/ios-jailbroken/${mod.slug || mod._id}\n`;
         packagesText += `SileoDepiction: ${repoBaseUrl}/ios-repo/depiction/${mod._id}.json\n`;
         packagesText += `Filename: ${downloadUrl}\n`; 
@@ -6094,8 +6218,7 @@ async function generateIosPackages(req) {
 }
 
 app.get('/ios-repo/Release', (req, res) => {
-    // ✅ FIX 3: Added Icon to Release file for Cydia/Zebra Repo Header
-    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\nIcon: ${getBaseUrl(req)}/images/icon-512x512.png\n`;
+    const releaseText = `Origin: GPL Mods\nLabel: GPL Mods\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: 100% Safe & Working Mods For All Your Devices!\nIcon: ${getRepoBaseUrl(req)}/images/icon-512x512.png\n`;
     res.set('Content-Type', 'text/plain');
     res.send(releaseText);
 });
@@ -6117,17 +6240,117 @@ app.get('/ios-repo/Packages.bz2', async (req, res) => {
     } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
 });
 
-app.get('/ios-repo/sileo-info.json', (req, res) => {
-    const repoBaseUrl = getRepoBaseUrl(req);
-    res.json({
-        name: "GPL Mods",
-        icon: `${repoBaseUrl}/images/icon-512x512.png`,
-        description: "100% Safe & Working Mods For All Your Devices!",
-        authentication_banner: {
-            message: "Support us by upgrading to Premium!",
-            button: "Go Premium"
+app.get('/ios-repo/sileo-info.json', async (req, res) => {
+    try {
+        const repoBaseUrl = getRepoBaseUrl(req);
+        
+        // 1. Fetch data to populate the home screen
+        // Get Editors Choice for the Featured Banner
+        const featuredMods = await File.find({ 
+            category: 'ios-jailbroken', 
+            status: 'live', 
+            isLatestVersion: true,
+            isEditorsChoice: true 
+        }).limit(5);
+
+        // Get Most Downloaded for "Hot Right Now"
+        const hotMods = await File.find({ 
+            category: 'ios-jailbroken', 
+            status: 'live', 
+            isLatestVersion: true 
+        }).sort({ downloads: -1 }).limit(6);
+
+        // Get Newest for "Recently Updated"
+        const newMods = await File.find({ 
+            category: 'ios-jailbroken', 
+            status: 'live', 
+            isLatestVersion: true 
+        }).sort({ updatedAt: -1 }).limit(6);
+
+
+        // 2. Build the Sileo Native UI JSON
+        const sileoTabs = [];
+
+        // --- FEATURED BANNERS ---
+        if (featuredMods.length > 0) {
+            const banners = featuredMods.map(mod => ({
+                url: `depiction-${mod._id}`, // Special Sileo internal link format
+                title: mod.name,
+                // We use the first screenshot as the banner background, fallback to icon
+                url2: (mod.screenshotKeys && mod.screenshotKeys.length > 0) ? `${repoBaseUrl}/api/screenshot/${mod._id}/0` : `${repoBaseUrl}/api/icon/${mod._id}`,
+                hideShadow: false
+            }));
+            
+            sileoTabs.push({
+                class: "DepictionFeaturedView",
+                itemCornerRadius: 12,
+                itemSize: "{280, 140}", // Wide aspect ratio for banners
+                spacing: 16,
+                banners: banners
+            });
         }
-    });
+
+        // --- HOT RIGHT NOW ---
+        if (hotMods.length > 0) {
+            sileoTabs.push({ class: "DepictionHeaderView", title: "Hot Right Now" });
+            const hotPackages = hotMods.map(mod => `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`);
+            sileoTabs.push({
+                class: "DepictionPackageListView",
+                packages: hotPackages
+            });
+        }
+
+        // --- RECENTLY UPDATED ---
+        if (newMods.length > 0) {
+            sileoTabs.push({ class: "DepictionHeaderView", title: "Recently Updated" });
+            const newPackages = newMods.map(mod => `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`);
+            sileoTabs.push({
+                class: "DepictionPackageListView",
+                packages: newPackages
+            });
+        }
+
+        // --- FOOTER BUTTONS ---
+        sileoTabs.push(
+            { class: "DepictionSeparatorView" },
+            {
+                class: "DepictionButtonView",
+                text: "Join our Discord",
+                action: "https://discord.gg/mmr3r2W2ak",
+                tintColor: "#5865F2"
+            },
+            {
+                class: "DepictionButtonView",
+                text: "Visit GPL Mods Website",
+                action: repoBaseUrl,
+                tintColor: "#FFD700"
+            }
+        );
+
+        res.json({
+            name: "GPL Mods",
+            icon: `${repoBaseUrl}/images/icon-512x512.png`,
+            description: "100% Safe & Working Mods For All Your Devices!",
+            tintColor: "#FFD700",
+            headerImage: `${repoBaseUrl}/images/icon-512x512.png`,
+            authentication_banner: {
+                message: "Support us by upgrading to Premium!",
+                button: "Go Premium"
+            },
+            class: "DepictionTabView",
+            tabs: [
+                {
+                    tabname: "Featured",
+                    class: "DepictionStackView",
+                    views: sileoTabs
+                }
+            ]
+        });
+
+    } catch (e) {
+        console.error("Sileo Info JSON Error:", e);
+        res.status(500).json({});
+    }
 });
 
 app.get('/ios-repo/depiction/:id.json', async (req, res) => {
@@ -6136,10 +6359,15 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
         if (!mod) return res.status(404).json({});
 
         const repoBaseUrl = getRepoBaseUrl(req);
+        
+        // --- 1. Clean HTML tags for native Markdown rendering in Sileo ---
         const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '');
         const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
         const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
+        
+        // ✅ NEW: Added Important Note & Official Description
         const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
+        const cleanOfficialDesc = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
 
         let screenshots = [];
         if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
@@ -6150,30 +6378,59 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
 
         let detailsViews = [
             { class: "DepictionHeaderView", title: mod.name },
-            { class: "DepictionSubheaderView", title: `Version ${mod.version}` }
+            { class: "DepictionSubheaderView", title: `Version ${mod.version}` },
+            { class: "DepictionRatingView", rating: mod.averageRating || 5 }
         ];
 
         if (screenshots.length > 0) {
-            detailsViews.push({ class: "DepictionScreenshotsView", itemCornerRadius: 8, itemSize: "{160, 346}", screenshots: screenshots });
-            detailsViews.push({ class: "DepictionSeparatorView" });
+            detailsViews.push(
+                { class: "DepictionScreenshotsView", itemCornerRadius: 10, itemSize: "{160, 346}", screenshots: screenshots },
+                { class: "DepictionSeparatorView" }
+            );
         }
 
-        detailsViews.push({ class: "DepictionMarkdownView", markdown: `**Description**\n\n${cleanDesc}` });
-        detailsViews.push({ class: "DepictionSeparatorView" });
-
+        // ✅ NEW: 1. Important Note (Placed at the very top so users don't miss it!)
         if (cleanImportantNote) {
-            detailsViews.push({ class: "DepictionMarkdownView", markdown: `**🚨 IMPORTANT NOTE:**\n\n${cleanImportantNote}` });
-            detailsViews.push({ class: "DepictionSeparatorView" });
-        }
-        if (cleanFeatures) {
-            detailsViews.push({ class: "DepictionMarkdownView", markdown: `**Features**\n\n${cleanFeatures}` });
-            detailsViews.push({ class: "DepictionSeparatorView" });
+            detailsViews.push(
+                { class: "DepictionMarkdownView", markdown: `**🚨 IMPORTANT NOTE:**\n\n${cleanImportantNote}` },
+                { class: "DepictionSeparatorView" }
+            );
         }
 
+        // 2. Mod Description
         detailsViews.push(
+            { class: "DepictionMarkdownView", markdown: `**Description**\n\n${cleanDesc}` },
+            { class: "DepictionSeparatorView" }
+        );
+
+        // 3. Mod Features
+        if (cleanFeatures) {
+            detailsViews.push(
+                { class: "DepictionMarkdownView", markdown: `**Features**\n\n${cleanFeatures}` },
+                { class: "DepictionSeparatorView" }
+            );
+        }
+
+        // ✅ NEW: 4. Official App Store Description
+        if (cleanOfficialDesc) {
+            detailsViews.push(
+                { class: "DepictionMarkdownView", markdown: `**App Store Info**\n\n${cleanOfficialDesc}` },
+                { class: "DepictionSeparatorView" }
+            );
+        }
+
+        // Footer / Meta Info
+        detailsViews.push(
+            { class: "DepictionHeaderView", title: "Information" },
             { class: "DepictionTableTextView", title: "Developer", text: mod.developer || "GPL Mods" },
             { class: "DepictionTableTextView", title: "Uploader", text: mod.uploader },
+            { class: "DepictionTableTextView", title: "Category", text: mod.platforms.join(', ') || "Tweak" },
             { class: "DepictionTableTextView", title: "Updated", text: new Date(mod.updatedAt).toLocaleDateString() }
+        );
+
+        detailsViews.push(
+            { class: "DepictionSeparatorView" },
+            { class: "DepictionButtonView", text: "View on GPL Mods", action: `${repoBaseUrl}/ios-jailbroken/${mod.slug || mod._id}`, tintColor: "#FFD700" }
         );
 
         res.json({
@@ -6189,61 +6446,78 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
     } catch (e) { res.status(500).json({}); }
 });
 
-// --- B. iOS SIDELOADING REPO ENGINE (AltStore / Scarlet / Feather JSON) ---
+// -----------------------------------------------
+// B. iOS SIDELOADING REPO ENGINE (AltStore / SideStore / Scarlet)
+// -----------------------------------------------
 app.get('/ios-repo/apps.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
+        
+        // 1. Fetch all LIVE, LATEST VERSION IPA mods
         const ipaMods = await File.find({ 
             category: 'ios-jailed',
             status: 'live',
             isLatestVersion: true,
             showInRepo: { $ne: false },
-            $or:[ { directDownloadUrl: { $exists: true, $ne: '' } }, { externalDownloadUrl: { $exists: true, $ne: '' } } ]
+            // Ensure there is actually a file to download
+            $or:[ { directDownloadUrl: { $exists: true, $ne: '' } }, { externalDownloadUrl: { $exists: true, $ne: '' } }, { fileKey: { $exists: true, $ne: '' } } ]
         }).sort({ createdAt: -1 });
 
+        // 2. Fetch the latest Site Announcements for the SideStore News Feed
+        const recentNews = await Announcement.find().sort({ createdAt: -1 }).limit(5);
+
+        // 3. Initialize the Core JSON Structure
         const sourceJson = {
             name: "GPL Mods",
             identifier: "org.webredirect.gplmods.ios",
             subtitle: "100% Safe & Working iOS Mods",
-            description: "The ultimate source for tweaked and modded iOS apps and games.",
+            description: "The ultimate source for tweaked and modded iOS apps and games. Enjoy premium features without a jailbreak.",
             iconURL: `${repoBaseUrl}/images/icon-512x512.png`,
             headerURL: `${repoBaseUrl}/images/icon-512x512.png`,
             website: repoBaseUrl,
-            tintColor: "#FFD700",
-            apps: [], news: []
+            tintColor: "#FFD700", // GPL Gold
+            featuredApps: [], // We can highlight Editor's Choice here
+            apps: [], 
+            news: [] // The new SideStore News section
         };
 
+        // 4. Populate the Apps Array
         for (const mod of ipaMods) {
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
+            const downloadUrl = mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
             if (!downloadUrl) continue;
 
+            // Clean up the text by removing HTML tags (SideStore expects Markdown/Plain text)
             const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
             const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
-            const cleanWhatsNew = (mod.whatsNew || 'New update available.').replace(/<[^>]*>?/gm, '');
             const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
+            const cleanWhatsNew = (mod.whatsNew || 'New update available.').replace(/<[^>]*>?/gm, '');
             
+            // Build a comprehensive, Markdown-formatted description
             let fullMarkdownDesc = `${cleanDesc}\n\n`;
             if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
             if (cleanFeatures) fullMarkdownDesc += `**Mod Features:**\n${cleanFeatures}\n\n`;
             if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
 
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-
-            // ✅ FIX 4: Implemented Permanent Image APIs
             const iconUrl = `${repoBaseUrl}/api/icon/${mod._id}`;
             const screenshotUrls = (mod.screenshotKeys || []).map((_, i) => `${repoBaseUrl}/api/screenshot/${mod._id}/${i}`);
 
-            sourceJson.apps.push({
+            const appData = {
                 name: mod.name,
                 bundleIdentifier: bundleId,
-                developerName: mod.developer || mod.uploader,
+                developerName: mod.developer || "GPL Mods",
                 subtitle: `Version ${mod.version} by ${mod.uploader}`,
                 localizedDescription: fullMarkdownDesc, 
                 iconURL: iconUrl,
                 tintColor: "#FFD700",
                 size: mod.fileSize || 1048576,
                 screenshotURLs: screenshotUrls,
+                // Add app permissions if you track them (SideStore feature)
+                permissions: {
+                    "background-audio": "Allows the app to play audio in the background.",
+                    "networking": "Allows the app to access the internet."
+                },
                 versions: [{
                     version: mod.version,
                     date: new Date(mod.updatedAt).toISOString(),
@@ -6251,30 +6525,65 @@ app.get('/ios-repo/apps.json', async (req, res) => {
                     downloadURL: downloadUrl,
                     size: mod.fileSize || 1048576
                 }]
+            };
+
+            // If it's an editor's choice, feature it at the top of the AltStore/SideStore home screen
+            if (mod.isEditorsChoice) {
+                sourceJson.featuredApps.push(bundleId);
+            }
+
+            sourceJson.apps.push(appData);
+        }
+
+        // 5. Populate the News Array (SideStore Exclusive Feature)
+        for (const newsItem of recentNews) {
+            sourceJson.news.push({
+                title: newsItem.title,
+                identifier: `org.webredirect.gplmods.news.${newsItem._id}`,
+                caption: `Posted by ${newsItem.author}`,
+                date: new Date(newsItem.createdAt).toISOString(),
+                tintColor: "#FFD700",
+                imageURL: `${repoBaseUrl}/images/icon-512x512.png`, // Fallback to site logo
+                // If you add an image field to your Announcements later, put it here:
+                // imageURL: newsItem.imageUrl || `${repoBaseUrl}/images/icon-512x512.png`, 
+                url: `${repoBaseUrl}/updates`, // Where clicking the news takes them
+                notify: true // Tells SideStore to push a notification for this news!
             });
         }
+
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(sourceJson, null, 2));
-    } catch (e) { res.status(500).json({ error: "Error generating Source JSON." }); }
+
+    } catch (e) { 
+        console.error("SideStore JSON Error:", e);
+        res.status(500).json({ error: "Error generating Source JSON." }); 
+    }
 });
 
-// --- C. ANDROID F-DROID REPO ENGINE ---
 
-// Helper function to safely escape XML characters
+// -----------------------------------------------
+// C. ANDROID F-DROID REPO ENGINE
+// -----------------------------------------------
+
+// Helper function to safely escape XML characters and strip HTML tags
 function escapeXml(unsafe) {
     if (!unsafe) return '';
-    return unsafe.toString().replace(/[<>&'"]/g, function (c) {
+    // First, strip all HTML tags as F-Droid XML does not support HTML
+    let text = unsafe.toString().replace(/<[^>]*>?/gm, '');
+    // Then escape XML special characters
+    return text.replace(/[<>&'"]/g, function (c) {
         switch (c) {
             case '<': return '&lt;';
             case '>': return '&gt;';
             case '&': return '&amp;';
             case '\'': return '&apos;';
             case '"': return '&quot;';
+            default: return c;
         }
     });
 }
 
-// Helper to generate the core XML data
+// Helper to generate the core XML data (index.xml)
 async function generateFDroidXml(req) {
     const repoBaseUrl = getRepoBaseUrl(req);
     const androidMods = await File.find({ 
@@ -6290,19 +6599,26 @@ async function generateFDroidXml(req) {
     xml += `  </repo>\n`;
 
     for (const mod of androidMods) {
-        const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
+        const downloadUrl = mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
         if (!downloadUrl) continue;
 
         const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
+        
+        // Compile a rich description for the XML
+        let fullDesc = mod.modDescription || '';
+        if (mod.modFeatures) fullDesc += `\n\nFeatures:\n${mod.modFeatures}`;
+        if (mod.officialDescription) fullDesc += `\n\nApp Info:\n${mod.officialDescription}`;
+        if (mod.importantNote) fullDesc += `\n\nIMPORTANT:\n${mod.importantNote}`;
 
         xml += `  <application id="${escapeXml(bundleId)}">\n`;
         xml += `    <id>${escapeXml(bundleId)}</id>\n`;
         xml += `    <name>${escapeXml(mod.name)}</name>\n`;
         xml += `    <summary>${escapeXml(mod.version)} Mod by ${escapeXml(mod.uploader)}</summary>\n`;
-        xml += `    <desc>${escapeXml(cleanDesc)}</desc>\n`;
+        xml += `    <desc>${escapeXml(fullDesc)}</desc>\n`;
         xml += `    <license>GNU/GPL</license>\n`;
         xml += `    <categories><category>Mods</category></categories>\n`;
+        xml += `    <icon>${escapeXml(repoBaseUrl)}/api/icon/${mod._id}</icon>\n`;
+        xml += `    <author>${escapeXml(mod.developer || 'GPL Mods')}</author>\n`; // Map Developer to Author
         xml += `    <added>${formatDate(mod.createdAt)}</added>\n`;
         xml += `    <lastupdated>${formatDate(mod.updatedAt)}</lastupdated>\n`;
         xml += `    <marketversion>${escapeXml(mod.version)}</marketversion>\n`;
@@ -6326,7 +6642,7 @@ async function generateFDroidXml(req) {
     return xml;
 }
 
-// ✅ 1. Classic XML Route
+// 1. Classic XML Route
 app.get('/fdroid/repo/index.xml', async (req, res) => {
     try {
         const xmlContent = await generateFDroidXml(req);
@@ -6338,17 +6654,12 @@ app.get('/fdroid/repo/index.xml', async (req, res) => {
     }
 });
 
-// ✅ 2. Classic JAR Route (Zips the XML file dynamically)
+// 2. Classic JAR Route (Zips the XML file dynamically)
 app.get('/fdroid/repo/index.jar', async (req, res) => {
     try {
         const xmlContent = await generateFDroidXml(req);
-        
-        // Create an archive in memory
         const zip = new AdmZip();
-        // Add the XML file into the archive
         zip.addFile("index.xml", Buffer.from(xmlContent, "utf8"));
-        
-        // Convert to a buffer and send
         const jarBuffer = zip.toBuffer();
 
         res.set('Content-Type', 'application/java-archive');
@@ -6360,46 +6671,7 @@ app.get('/fdroid/repo/index.jar', async (req, res) => {
     }
 });
 
-// ✅ 3. Legacy compatibility endpoint for JSON-based Android clients (index-v1.json)
-app.get('/fdroid/repo/index-v1.json', async (req, res) => {
-    try {
-        const repoBaseUrl = getRepoBaseUrl(req);
-        const androidMods = await File.find({ 
-            category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
-        }).sort({ createdAt: -1 });
-
-        const repoJson = {
-            repo: { name: "GPL Mods Android", description: "Safe and working Android mods.", address: `${repoBaseUrl}/fdroid/repo`, icon: "icon-512x512.png", timestamp: Date.now(), version: 1 },
-            requests: { install: [], uninstall: [] },
-            apps:[], packages: {}
-        };
-
-        for (const mod of androidMods) {
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
-            if (!downloadUrl) continue;
-
-            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
-
-            repoJson.apps.push({
-                packageName: bundleId, name: mod.name, summary: `${mod.version} Mod by ${mod.uploader}`,
-                description: cleanDesc, license: "GNU/GPL", categories:["Mods", "Games", "Apps"],
-                icon: `${repoBaseUrl}/api/icon/${mod._id}`, 
-                added: new Date(mod.createdAt).getTime(), lastUpdated: new Date(mod.updatedAt).getTime()
-            });
-
-            repoJson.packages[bundleId] =[{
-                versionName: mod.version, versionCode: 1, apkName: downloadUrl,
-                hash: mod.virusTotalId && mod.virusTotalId.length === 64 ? mod.virusTotalId : "",
-                hashType: "sha256", size: mod.fileSize || 1048576, added: new Date(mod.createdAt).getTime()
-            }];
-        }
-        res.set('Content-Type', 'application/json');
-        res.send(JSON.stringify(repoJson, null, 2));
-    } catch (e) { res.status(500).json({ error: "Error generating F-Droid JSON index." }); }
-});
-
-// ✅ 4. Current default endpoint for Neo Store / Droid-ify (index-v2.json)
+// 3. Current default endpoint for Neo Store / Droid-ify (index-v2.json)
 app.get('/fdroid/repo/index-v2.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
@@ -6409,8 +6681,8 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
 
         const repoJson = {
             repo: {
-                name: "GPL Mods Android",
-                description: "The ultimate source for safe and working Android mods.",
+                name: { "en-US": "GPL Mods Android" },
+                description: { "en-US": "The ultimate source for safe and working Android mods." },
                 address: `${repoBaseUrl}/fdroid/repo`,
                 icon: { "en-US": { name: "icon-512x512.png" } }, 
                 timestamp: Date.now(),
@@ -6421,17 +6693,19 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
         };
 
         for (const mod of androidMods) {
-            const downloadUrl = mod.directDownloadUrl || mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
+            const downloadUrl = mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
             if (!downloadUrl) continue;
 
             const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
             
+            // F-Droid JSON v2 supports Markdown, so we can preserve formatting, but NOT HTML
             const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
             const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
             const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
 
+            // Build a comprehensive Markdown description
             let fullMarkdownDesc = `${cleanDesc}\n\n`;
             if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
             if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
@@ -6440,6 +6714,7 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
             const screenshotArray = [];
             if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
                 mod.screenshotKeys.forEach((_, i) => {
+                    // F-Droid expects an object with a 'name' property pointing to the image URL
                     screenshotArray.push({ name: `${repoBaseUrl}/api/screenshot/${mod._id}/${i}` });
                 });
             }
