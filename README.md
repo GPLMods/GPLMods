@@ -138,21 +138,39 @@ You must be a registered member to share mods. After logging in, you can find an
   
   <br>
 
-  <!-- Official Social Links -->
-  <div style="font-size: 24px; padding-top: 20px;">
-    <a href="https://youtube.com/@gplmods" target="_blank" title="YouTube" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-youtube"></i></a>
-    <a href="https://discord.gg/d7FEDp4vm" target="_blank" title="Discord" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-discord"></i></a>
-    <a href="https://github.com/GPLMods-Team" target="_blank" title="GitHub" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-github"></i></a>
-    <a href="https://x.com/GPLMods" target="_blank" title="Twitter" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-twitter"></i></a>
-    <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank" title="Linkedin" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fa fa-linkedin-square"></i></a>
-    <a href="https://www.reddit.com/user/GPLMods" target="_blank" title="Reddit" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-reddit"></i></a>
-    <a href="https://www.instagram.com/gplmods" target="_blank" title="Instagram" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fab fa-instagram"></i></a>
-    <a href="https://www.facebook.com/profile.php?id=61572148715492" target="_blank" title="Facebook" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fa-brands fa-facebook-f"></i></a>
-    <a href="https://threads.net/gplmods" target="_blank" title="Threads" style="margin: 0 10px; color: inherit; text-decoration: none;"><i class="fa-brands fa-threads"></i></a>
-    <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank" title="Gravatar" style="margin: 0 10px; color: inherit; text-decoration: none;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
-            <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
-        </svg>
+  <!-- Official Social Links with Alternating Gold/Silver Theme -->
+  <div>
+    <a href="https://youtube.com/@gplmods" target="_blank">
+      <img src="https://img.shields.io/badge/YouTube-1A1A1A?style=for-the-badge&logo=youtube&logoColor=FFD700" alt="YouTube"/>
+    </a>
+    <a href="https://discord.gg/d7FEDp4vm" target="_blank">
+      <img src="https://img.shields.io/badge/Discord-1A1A1A?style=for-the-badge&logo=discord&logoColor=C0C0C0" alt="Discord"/>
+    </a>
+    <a href="https://github.com/GPLMods-Team" target="_blank">
+      <img src="https://img.shields.io/badge/GitHub-1A1A1A?style=for-the-badge&logo=github&logoColor=FFD700" alt="GitHub"/>
+    </a>
+    <a href="https://x.com/GPLMods" target="_blank">
+      <img src="https://img.shields.io/badge/X-1A1A1A?style=for-the-badge&logo=x&logoColor=C0C0C0" alt="X (Twitter)"/>
+    </a>
+    <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank">
+      <img src="https://img.shields.io/badge/LinkedIn-1A1A1A?style=for-the-badge&logo=linkedin&logoColor=FFD700" alt="LinkedIn"/>
+    </a>
+  </div>
+  <div style="margin-top: 5px;">
+    <a href="https://www.reddit.com/user/GPLMods" target="_blank">
+      <img src="https://img.shields.io/badge/Reddit-1A1A1A?style=for-the-badge&logo=reddit&logoColor=C0C0C0" alt="Reddit"/>
+    </a>
+    <a href="https://www.instagram.com/gplmods" target="_blank">
+      <img src="https://img.shields.io/badge/Instagram-1A1A1A?style=for-the-badge&logo=instagram&logoColor=FFD700" alt="Instagram"/>
+    </a>
+    <a href="https://www.facebook.com/profile.php?id=61572148715492" target="_blank">
+      <img src="https://img.shields.io/badge/Facebook-1A1A1A?style=for-the-badge&logo=facebook&logoColor=C0C0C0" alt="Facebook"/>
+    </a>
+    <a href="https://threads.net/gplmods" target="_blank">
+      <img src="https://img.shields.io/badge/Threads-1A1A1A?style=for-the-badge&logo=threads&logoColor=FFD700" alt="Threads"/>
+    </a>
+    <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank">
+      <img src="https://img.shields.io/badge/Gravatar-1A1A1A?style=for-the-badge&logo=gravatar&logoColor=C0C0C0" alt="Gravatar"/>
     </a>
   </div>
 </div>
