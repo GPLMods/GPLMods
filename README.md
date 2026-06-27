@@ -153,7 +153,7 @@ You must be a registered member to share mods. After logging in, you can find an
       <img src="https://img.shields.io/badge/X-1A1A1A?style=for-the-badge&logo=x&logoColor=C0C0C0" alt="X (Twitter)"/>
     </a>
     <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank">
-      <img src="https://img.shields.io/badge/LinkedIn-1A1A1A?style=for-the-badge&logo=linkedin&logoColor=FFD700" alt="LinkedIn"/>
+      <img src="https://img.shields.io/badge/Linkedin-1A1A1A?style=for-the-badge&logo=linkedin&logoColor=FFD700" alt="LinkedIn"/>
     </a>
   </div>
   <div style="margin-top: 5px;">
