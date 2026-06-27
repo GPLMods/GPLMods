@@ -138,7 +138,7 @@ You must be a registered member to share mods. After logging in, you can find an
   
   <br>
 
-  <!-- Official Social Links with Alternating Gold/Silver Theme -->
+  <!-- Official Social Links with Alternating Gold/Silver Theme and Custom Base64 LinkedIn -->
   <div>
     <a href="https://youtube.com/@gplmods" target="_blank">
       <img src="https://img.shields.io/badge/YouTube-1A1A1A?style=for-the-badge&logo=youtube&logoColor=FFD700" alt="YouTube"/>
@@ -153,7 +153,7 @@ You must be a registered member to share mods. After logging in, you can find an
       <img src="https://img.shields.io/badge/X-1A1A1A?style=for-the-badge&logo=x&logoColor=C0C0C0" alt="X (Twitter)"/>
     </a>
     <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank">
-      <svg xmlns="http://www.w3.org/2000/svg" width="124" height="32" viewBox="0 0 124 32"><rect fill="#1A1A1A" width="124" height="32" rx="4"/><text x="62" y="21" font-size="11" font-family="Arial" font-weight="bold" fill="#FFD700" text-anchor="middle">Linkedin</text><circle cx="20" cy="16" r="3" fill="#FFD700"/><line x1="23" y1="10" x2="27" y2="10" stroke="#FFD700" stroke-width="1.5"/><line x1="23" y1="16" x2="27" y2="16" stroke="#FFD700" stroke-width="1.5"/><line x1="23" y1="22" x2="27" y2="22" stroke="#FFD700" stroke-width="1.5"/></svg>
+      <img src="https://img.shields.io/badge/LinkedIn-1A1A1A?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMjU2JyBoZWlnaHQ9JzI1NicgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSd4TWlkWU1pZCcgdmlld0JveD0nMCAwIDI1NiAyNTYnPjxwYXRoIGQ9J00yMTguMTIzIDIxOC4xMjdoLTM3LjkzMXYtNTkuNDAzYzAtMTQuMTY1LS4yNTMtMzIuNC0xOS43MjgtMzIuNC0xOS43NTYgMC0yMi43NzkgMTUuNDM0LTIyLjc3OSAzMS4zNjl2NjAuNDNoLTM3LjkzVjk1Ljk2N2gzNi40MTN2MTYuNjk0aC41MWEzOS45MDcgMzkuOTA3IDAgMCAxIDM1LjkyOC0xOS43MzNjMzguNDQ1IDAgNDUuNTMzIDI1LjI4OCA0NS41MzMgNTguMTg2bC0uMDE2IDY3LjAxM1pNNTYuOTU1IDc5LjI3Yy0xMi4xNTcuMDAyLTIyLjAxNC05Ljg1Mi0yMi4wMTYtMjIuMDA5LS4wMDItMTIuMTU3IDkuODUxLTIyLjAxNCAyMi4wMDgtMjIuMDE2IDEyLjE1Ny0uMDAzIDIyLjAxNCA5Ljg1MSAyMi4wMTYgMjIuMDA4QTIyLjAxMyAyMi4wMTMgMCAwIDEgNTYuOTU1IDc5LjI3bTE4Ljk2NiAxMzguODU4SDM3Ljk1Vjk1Ljk2N2gzNy45N3YxMjIuMTZaTTIzNy4wMzMuMDE4SDE4Ljg5QzguNTgtLjA5OC4xMjUgOC4xNjEtLjAwMSAxOC40NzF2MjE5LjA1M2MuMTIyIDEwLjMxNSA4LjU3NiAxOC41ODIgMTguODkgMTguNDc0aDIxOC4xNDRjMTAuMzM2LjEyOCAxOC44MjMtOC4xMzkgMTguOTY2LTE4LjQ3NFYxOC40NTRjLS4xNDctMTAuMzMtOC42MzUtMTguNTg4LTE4Ljk2Ni0xOC40NTMnIGZpbGw9JyNGRkQ3MDAnLz48L3N2Zz4=" alt="LinkedIn"/>
     </a>
   </div>
   <div style="margin-top: 5px;">
