@@ -1,0 +1,220 @@
+<%- include('../../../partials/header') %>
+
+<style>
+    body { padding-bottom: 50px; }
+    .policy-wrapper { max-width: 900px; margin: 40px auto; }
+    
+    .policy-header { text-align: center; margin-bottom: 40px; }
+    .policy-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
+    .policy-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .policy-header p { color: var(--silver); font-size: 1.1em; line-height: 1.6; }
+
+    .policy-section { 
+        background-color: var(--dark-gray); 
+        padding: 35px; 
+        border-radius: 15px; 
+        margin-bottom: 30px; 
+        border: 1px solid #333;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .policy-section-title { 
+        font-size: 1.6em; 
+        color: var(--gold); 
+        margin-bottom: 25px; 
+        display: flex; 
+        align-items: center; 
+        gap: 15px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 15px;
+    }
+    .policy-section-title i { font-size: 1.2em; color: var(--white); }
+
+    .policy-list { list-style: none; padding: 0; margin: 0; }
+    .policy-list li { 
+        margin-bottom: 25px; 
+        padding-left: 35px; 
+        position: relative; 
+        color: var(--silver);
+        line-height: 1.7;
+    }
+    .policy-list li:last-child { margin-bottom: 0; }
+    
+    /* Custom Gold Checkmark Bullet */
+    .policy-list li::before {
+        content: '\f00c';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        left: 0;
+        top: 3px;
+        color: var(--gold);
+        font-size: 1.1em;
+    }
+
+    .policy-list strong { color: var(--white); font-weight: 600; font-size: 1.05em; display: block; margin-bottom: 5px; }
+
+    /* --- Distributor Specific Section --- */
+    .distributor-section {
+        background: linear-gradient(145deg, #111 0%, #1a1a1a 100%);
+        border: 2px solid var(--blue);
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.15);
+    }
+    .distributor-section .policy-section-title { color: var(--blue); border-bottom-color: rgba(33, 150, 243, 0.3); }
+    .distributor-section .policy-list li::before { color: var(--blue); }
+    
+    .link-example-box {
+        background-color: var(--black);
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 1px solid #333;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .link-example { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .link-example:last-child { margin-bottom: 0; }
+    .status-cross { color: var(--red); font-weight: bold; }
+    .status-check { color: var(--green); font-weight: bold; }
+    .arrow { color: #555; }
+
+    .policy-note {
+        background-color: rgba(255, 215, 0, 0.1);
+        border-left: 4px solid var(--gold);
+        padding: 15px 20px;
+        border-radius: 4px;
+        margin-top: 30px;
+        color: var(--white);
+        font-size: 0.95em;
+    }
+
+    @media (max-width: 768px) {
+        .policy-section { padding: 25px; }
+    }
+</style>
+
+<main class="container">
+    <div class="policy-wrapper">
+        
+        <div class="policy-header">
+            <h1>Upload & <span>Update Policy</span></h1>
+            <p>By uploading files, updates, or variant mods to the GPL Mods platform, you legally agree to adhere to the following community guidelines and terms of service.</p>
+        </div>
+
+        <!-- Section 1: Copyright & Licensing -->
+        <section class="policy-section">
+            <h2 class="policy-section-title"><i class="fas fa-file-contract"></i> Copyright & Licensing</h2>
+            <ul class="policy-list">
+                <li>
+                    <strong>User-Generated Content</strong>
+                    All files are classified as User-Generated Content (UGC) and are provided entirely by registered community users.
+                </li>
+                <li>
+                    <strong>Open-Source Distribution</strong>
+                    You agree that all files and respective updates are distributed under open-source licenses (GPLv2, GPLv3, or MIT) intended strictly for personal use, educational purposes, or community modification.
+                </li>
+                <li>
+                    <strong>Copyright & Royalty Free</strong>
+                    By uploading, you declare that your files and images are 100% copyright-free, royalty-free, and protected against DMCA claims. You grant the community an irrevocable, warranty-free right to use, remix, modify, display on video platforms, and distribute these assets freely.
+                </li>
+                <li>
+                    <strong>Voluntary Contribution</strong>
+                    GPL Mods does not provide monetary compensation for uploaded files or images. Your uploads are voluntary contributions designed to support and enrich the community.
+                </li>
+            </ul>
+        </section>
+
+        <!-- Section 2: Security & Prohibited Content -->
+        <section class="policy-section">
+            <h2 class="policy-section-title"><i class="fas fa-shield-virus"></i> Security & Prohibited Content</h2>
+            <ul class="policy-list">
+                <li>
+                    <strong>Zero Tolerance for Malware & PII</strong>
+                    You are strictly prohibited from uploading any files or updates containing Personally Identifiable Information (PII), malware, spyware, worms, Trojans, or any other malicious code.
+                </li>
+                <li>
+                    <strong>Security Scanning & Infrastructure</strong>
+                    You acknowledge that your uploaded files are aggressively scanned using the VirusTotal API. Files are not hosted on local servers, but securely routed to our MongoDB database and Backblaze B2 cloud storage.
+                </li>
+                <li>
+                    <strong>Account Termination</strong>
+                    Uploading malicious software or exposing personal information will result in immediate disciplinary action, including the permanent suspension or deletion of your GPL Mods account.
+                </li>
+                <li>
+                    <strong>Platform Moderation Rights</strong>
+                    GPL Mods reserves the absolute right to remove, modify, or permanently delete any uploaded files, updates, or images at any time to mitigate suspicious activity or comply with DMCA notices.
+                </li>
+            </ul>
+        </section>
+
+        <!-- Section 3: Quality Standards -->
+        <section class="policy-section">
+            <h2 class="policy-section-title"><i class="fas fa-medal"></i> Quality Standards & Review Process</h2>
+            <ul class="policy-list">
+                <li>
+                    <strong>Maintenance & Updates</strong>
+                    To ensure a smooth user experience, you agree to provide timely updates for your uploaded mods, particularly if a mod breaks due to core app/game updates.
+                </li>
+                <li>
+                    <strong>Submission Quality</strong>
+                    All uploads must include accurate, detailed information. Submissions require a minimum of 1 and a maximum of 4 screenshots. Including a video showcase is highly encouraged.
+                </li>
+                <li>
+                    <strong>Limits & Approval Queue</strong>
+                    Standard accounts are subject to daily upload limits to ensure fair community participation. Submissions enter a review queue requiring 3–14 days for security testing. Administrators may edit your description for clarity or reject submissions that are misleading, non-functional, or violate quality standards.
+                </li>
+                <li>
+                    <strong>Liability & Marketing</strong>
+                    GPL Mods assumes no liability for device damage or data loss resulting from the use of user-uploaded mods. False marketing or misrepresentation of our platform or hosted mods is strictly forbidden.
+                </li>
+            </ul>
+            
+            <div class="policy-note">
+                <strong>Note:</strong> All policies outlined above apply equally to primary mod files and any variant or update files associated with them.
+            </div>
+        </section>
+
+        <!-- Section 4: DISTRIBUTOR ONLY -->
+        <section class="policy-section distributor-section">
+            <h2 class="policy-section-title"><i class="fas fa-handshake"></i> Distributor Partnership Rules</h2>
+            <p style="color: var(--silver); margin-bottom: 25px; line-height: 1.6;">The following rules apply <strong>exclusively</strong> to users who have been granted the official Distributor role. Standard daily upload limits do not apply to Distributors.</p>
+            
+            <ul class="policy-list">
+                <li>
+                    <strong>Monetization & Link Chaining</strong>
+                    Link chaining (using multiple URL shorteners consecutively) is strictly prohibited. You may use exactly ONE (1) URL shortener per file. This shortener may redirect to a Pay-Per-Download (PPD) service or direct cloud hosting.
+                    
+                    <div class="link-example-box">
+                        <div class="link-example">
+                            <span class="status-cross">✗ [BANNED]</span>
+                            Linkvertise <span class="arrow">→</span> Work.ink <span class="arrow">→</span> Mod File
+                        </div>
+                        <div class="link-example">
+                            <span class="status-cross">✗ [BANNED]</span>
+                            Linkvertise <span class="arrow">→</span> Linkplayz <span class="arrow">→</span> Mod File
+                        </div>
+                        <div class="link-example">
+                            <span class="status-check">✓ [ALLOWED]</span>
+                            Linkvertise <span class="arrow">→</span> Mod file hosted on your site / Dropbox / Mega
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <strong>Administrative Verification</strong>
+                    Distributors must provide direct, un-monetized file links and accompanying VirusTotal scan results to the administration team upon request for safety verification.
+                </li>
+                <li>
+                    <strong>Partnership Termination</strong>
+                    GPL Mods reserves the right to suspend or revoke Distributor privileges and account access if suspicious activity is detected. No refunds for the Distributor license will be processed outside of the standard refund window.
+                </li>
+                <li>
+                    <strong>Revenue Independence</strong>
+                    GPL Mods does not issue payouts to Distributors. Conversely, GPL Mods claims 0% of the revenue generated through your approved external links. GPL Mods will never inject its own advertisements into your link traffic.
+                </li>
+            </ul>
+        </section>
+
+    </div>
+</main>
+
+<%- include('../../../partials/footer') %>

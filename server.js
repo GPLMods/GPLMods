@@ -4961,7 +4961,7 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
         let urlsToPing =[];
 
         // 1. Static Pages
-        const staticPages = ['', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
+        const staticPages = ['', 'upload-policy', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
         staticPages.forEach(page => {
             urlsToPing.push(`${baseUrl}${page}`);
         });
@@ -5829,6 +5829,7 @@ app.get('/donate', (req, res) => res.render('pages/static/donate'));
 app.get('/partnership-policy', (req, res) => res.render('pages/static/partnership-policy'));
 app.get('/distributor-features', (req, res) => res.render('pages/static/distributor-features'));
 app.get('/why-choose-us', (req, res) => res.render('pages/static/why-choose-us'));
+app.get('/upload-policy', (req, res) => res.render('pages/static/upload-policy'));
 app.get('/understanding-scans', (req, res) => res.render('pages/static/understanding-scans'));
 app.get('/membership', (req, res) => {
     // If you use Stripe/Cashfree keys in this view, pass them here
@@ -5918,6 +5919,7 @@ Allow: /why-choose-us
 Allow: /understanding-scans
 Allow: /membership
 Allow: /docs/
+Allow: /upload-policy/
 
 Disallow: /admin/
 Disallow: /api/
@@ -5972,7 +5974,7 @@ app.get('/sitemap-pages.xml', (req, res) => {
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-    const staticPages = ['', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/ai-directory', '/membership'];
+    const staticPages = ['', 'upload-policy', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
     staticPages.forEach(page => {
         xml += `  <url>\n    <loc>${escapeXML(baseUrl + page)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
     });

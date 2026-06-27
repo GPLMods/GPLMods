@@ -11,7 +11,7 @@
 
 **The Ultimate Open-Source Modding Hub. 100% Safe, Cross-Platform, and Community-Driven.**
 
-[Visit Website](https://gplmods.webredirect.org) &nbsp; &middot; &nbsp; [Report Bug](https://github.com/GPLMods-Team/GPLMods/issues) &nbsp; &middot; &nbsp; [Request Feature](https://github.com/GPLMods-Team/GPLMods/issues)
+[Visit Website](https://gplmods.webredirect.org) &nbsp; &middot; &nbsp; [Report Bug](https://github.com/GPLMods-Team/GPLMods/issues) &nbsp; &middot; &nbsp; [Request Feature](https://github.com/GPLMods-Team/GPLMods/discussions)
 
 <br>
 </div>
@@ -43,7 +43,7 @@
 *   **24/7 AI Active Support:** Instant, intelligent assistance for users via integrated chatbot architecture (Tidio).
 *   **Powerful Admin Panel:** A fully customized back-office powered by **AdminJS** for total community, user, and content management.
 *   **Live VirusTotal Integration:** Real-time API scans display exact threat metrics for every uploaded file.
-*   **100% Safe Cross-Platform Mods:** Strict moderation ensures all mods (Android `.apk`, iOS `.ipa`/`.deb`, Windows `.exe`, WordPress `.zip`) function perfectly without malicious payloads. 14+ days of testing yields authentic "Certified Safe" badges.
+*   **100% Safe Cross-Platform Mods:** Strict moderation ensures all mods (Android `.apk`, iOS `.ipa`/`.deb`, Windows `.exe`, WordPress `.zip`) function perfectly without malicious payloads. 14+ days of testing per mod.
 *   **Rich Media Support:** Native integration with **Fluid Player** for fast video previews and **QuillJS** for rich-text descriptions and dynamic mod features.
 
 ---
@@ -54,25 +54,25 @@
 
 | Feature Area | GPL Mods (Our Standard) | Traditional Mod Sites |
 | :--- | :--- | :--- |
-| **Security & Transparency** | **Live VirusTotal Integration:** Real-time API scans with exact threat metrics. Authentic "Certified Safe" badges. | **Fake Certifications:** Scans are hidden, faked, or bypassed. High risk of injected malware and spyware. |
-| **Platform Openness** | **Open-Source & Community-Driven:** Architecture is transparent. Code is publicly available to audit. | **Closed-Source Agendas:** Run by shadowy groups designed to harvest data without user knowledge. |
-| **Download Experience** | **One-Click Direct Downloads:** Lightning-fast cloud servers. Premium members skip all distributor ads. | **Infinite Ad-Loops:** Dead mirrors, endless redirects, and aggressive PPD barriers. Malicious pop-unders. |
-| **Community Metrics** | **Authentic Statistics:** Downloads, star ratings, and "Working" votes are driven by real, registered users. | **Manipulated Statistics:** Fake download counts and bot-generated reviews designed to mislead visitors. |
-| **iOS / App Integration** | **Seamless Third-Party Support:** Dedicated integrations for SideStore, AltStore, Esign, F-Droid, and Neo Store. | **Fragmented Support:** Files provided raw, forcing users to install untrusted profile configurations. |
-| **Creator Empowerment** | **Distributor Partnership Program:** Organizations can monetize their own links while leveraging our massive user base. | **No Creator Control:** Uploaders have zero sovereignty over their files or data once submitted. |
+| **Security & Transparency** | **Live VirusTotal Integration:** Real-time API scans with exact threat metrics. Authentic "Certified Safe" badges. | **Fake Certifications:** Scans are hidden, faked, or non-existent. |
+| **Platform Openness** | **Open-Source & Community-Driven:** Architecture is transparent. Code is publicly available to audit. | **Closed-Source Agendas:** Run by shadowy groups designed to harvest data. |
+| **Download Experience** | **One-Click Direct Downloads:** Lightning-fast cloud servers. Premium members skip all distributor ads. | **Infinite Ad-Loops:** Dead mirrors, endless redirects, and aggressive pop-ups. |
+| **Community Metrics** | **Authentic Statistics:** Downloads, star ratings, and "Working" votes are driven by real, registered users. | **Manipulated Statistics:** Fake download counts and bot-generated ratings. |
+| **iOS / App Integration** | **Seamless Third-Party Support:** Dedicated integrations for SideStore, AltStore, Esign, F-Droid, and Neo Store. | **Fragmented Support:** Files provided raw, forcing users to troubleshoot themselves. |
+| **Creator Empowerment** | **Distributor Partnership Program:** Organizations can monetize their own links while leveraging our massive user base. | **No Creator Control:** Uploaders have zero sovereignty over their distributions. |
 
 ---
 
 <h2 align="center">Our Core Principles</h2>
 
 **Commitment to Safety**  
-Your safety is our absolute priority. We provide mods only after 14+ days of rigorous testing. Every single file is scanned by over 100 antivirus engines via the VirusTotal API. If a harmful mod is detected, it is removed instantly, and the community is notified immediately.
+Your safety is our absolute priority. We provide mods only after 14+ days of rigorous testing. Every single file is scanned by over 100 antivirus engines via the VirusTotal API. If a harmful mod is detected, it is immediately removed.
 
 **The Power of Community**  
-GPL Mods doesn't just host files; we are a community hub. Mods are uploaded by members and trusted sources, strictly distributed under the GNU/GPL spirit. We are a platform run by the people, for the people, ensuring 100% working content.
+GPL Mods doesn't just host files; we are a community hub. Mods are uploaded by members and trusted sources, strictly distributed under the GNU/GPL spirit. We are a platform run by the people, for the people.
 
 **Open-Source Philosophy**  
-We believe in absolute transparency. GPL Mods embraces the open-source philosophy to its core. Our platform's infrastructure and the mods we distribute thrive on community collaboration, allowing developers to audit, contribute, and improve the ecosystem securely.
+We believe in absolute transparency. GPL Mods embraces the open-source philosophy to its core. Our platform's infrastructure and the mods we distribute thrive on community collaboration, allowing developers to contribute, audit, and improve our services.
 
 ---
 
@@ -97,31 +97,31 @@ We believe in absolute transparency. GPL Mods embraces the open-source philosoph
 <details>
 <summary><strong>Are all the mods available on GPL MODS safe to use/download?</strong></summary>
 <br>
-Safety is our first priority for every user. We check our mods with multiple antiviruses, and all mods provided here are tested for more than 14 days by our community members before receiving a Certified badge.
+Safety is our first priority for every user. We check our mods with multiple antiviruses, and all mods provided here are tested for more than 14 days by our community members before receiving a Certified Safe badge.
 </details>
 
 <details>
 <summary><strong>How do I install/download a .XAPK file?</strong></summary>
 <br>
-A .XAPK file is a special type of Android file that contains both the APK and OBB data. It cannot be installed by the default Android package installer. You will need a dedicated XAPK installer app from the Play Store to install these files.
+A .XAPK file is a special type of Android file that contains both the APK and OBB data. It cannot be installed by the default Android package installer. You will need a dedicated XAPK installer app from the Play Store to install it.
 </details>
 
 <details>
 <summary><strong>How do I install an .APK file?</strong></summary>
 <br>
-To install an APK file, locate the downloaded file on your device. When you tap to open it, you may be prompted to "Enable unknown sources" in your device's security settings. After enabling this, you can proceed with the installation.
+To install an APK file, locate the downloaded file on your device. When you tap to open it, you may be prompted to "Enable unknown sources" in your device's security settings. After enabling this, you can proceed with installation.
 </details>
 
 <details>
 <summary><strong>A mod I downloaded isn't working. What should I do?</strong></summary>
 <br>
-First, ensure the mod you downloaded is compatible with your device and operating system (e.g., an iOS mod won't work on Android). For WordPress, check for version compatibility. For jailbroken tweaks, ensure your device's jailbreak status matches the tweak's requirements. You can also vote "Not Working" on the mod page to alert the community.
+First, ensure the mod you downloaded is compatible with your device and operating system (e.g., an iOS mod won't work on Android). For WordPress, check for version compatibility. For jailbroken tweaks, ensure your device is on a supported iOS version.
 </details>
 
 <details>
 <summary><strong>How do I upload a mod to GPL Mods?</strong></summary>
 <br>
-You must be a registered member to share mods. After logging in, you can find an "Upload A New Mod" button in the header or on your profile page. Your submission will be tested by our team, and if it passes all safety checks, it will be made available to the community.
+You must be a registered member to share mods. After logging in, you can find an "Upload A New Mod" button in the header or on your profile page. Your submission will be tested by our team, and if it meets our safety standards, it will be published.
 </details>
 
 <br>
@@ -138,7 +138,7 @@ You must be a registered member to share mods. After logging in, you can find an
   
   <br>
 
-  <!-- Official Social Links with Alternating Gold/Silver Theme -->
+  <!-- Official Social Links with Alternating Gold/Silver Theme and Custom Base64 LinkedIn -->
   <div>
     <a href="https://youtube.com/@gplmods" target="_blank">
       <img src="https://img.shields.io/badge/YouTube-1A1A1A?style=for-the-badge&logo=youtube&logoColor=FFD700" alt="YouTube"/>
@@ -153,7 +153,7 @@ You must be a registered member to share mods. After logging in, you can find an
       <img src="https://img.shields.io/badge/X-1A1A1A?style=for-the-badge&logo=x&logoColor=C0C0C0" alt="X (Twitter)"/>
     </a>
     <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank">
-      <img src="https://img.shields.io/badge/LinkedIn-1A1A1A?style=for-the-badge&logo=linkedin&logoColor=FFD700" alt="LinkedIn"/>
+      <img src="https://img.shields.io/badge/LinkedIn-1A1A1A?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMjU2JyBoZWlnaHQ9JzI1NicgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSd4TWlkWU1pZCcgdmlld0JveD0nMCAwIDI1NiAyNTYnPjxwYXRoIGQ9J00yMTguMTIzIDIxOC4xMjdoLTM3LjkzMXYtNTkuNDAzYzAtMTQuMTY1LS4yNTMtMzIuNC0xOS43MjgtMzIuNC0xOS43NTYgMC0yMi43NzkgMTUuNDM0LTIyLjc3OSAzMS4zNjl2NjAuNDNoLTM3LjkzVjk1Ljk2N2gzNi40MTN2MTYuNjk0aC41MWEzOS45MDcgMzkuOTA3IDAgMCAxIDM1LjkyOC0xOS43MzNjMzguNDQ1IDAgNDUuNTMzIDI1LjI4OCA0NS41MzMgNTguMTg2bC0uMDE2IDY3LjAxM1pNNTYuOTU1IDc5LjI3Yy0xMi4xNTcuMDAyLTIyLjAxNC05Ljg1Mi0yMi4wMTYtMjIuMDA5LS4wMDItMTIuMTU3IDkuODUxLTIyLjAxNCAyMi4wMDgtMjIuMDE2IDEyLjE1Ny0uMDAzIDIyLjAxNCA5Ljg1MSAyMi4wMTYgMjIuMDA4QTIyLjAxMyAyMi4wMTMgMCAwIDEgNTYuOTU1IDc5LjI3bTE4Ljk2NiAxMzguODU4SDM3Ljk1Vjk1Ljk2N2gzNy45N3YxMjIuMTZaTTIzNy4wMzMuMDE4SDE4Ljg5QzguNTgtLjA5OC4xMjUgOC4xNjEtLjAwMSAxOC40NzF2MjE5LjA1M2MuMTIyIDEwLjMxNSA4LjU3NiAxOC41ODIgMTguODkgMTguNDc0aDIxOC4xNDRjMTAuMzM2LjEyOCAxOC44MjMtOC4xMzkgMTguOTY2LTE4LjQ3NFYxOC40NTRjLS4xNDctMTAuMzMtOC42MzUtMTguNTg4LTE4Ljk2Ni0xOC40NTMnIGZpbGw9JyNGRkQ3MDAnLz48L3N2Zz4=" alt="LinkedIn"/>
     </a>
   </div>
   <div style="margin-top: 5px;">

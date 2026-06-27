@@ -47,6 +47,7 @@
     <div class="upload-container">
         <h2 style="color: var(--white); margin-bottom: 10px; font-size: 2.2em;">Update <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);"><%= parentFile.name %></span></h2>
         <p style="color: var(--silver); margin-bottom: 2.5rem;">Uploading a new version will make this file the primary download.</p>
+        <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 2rem;">By uploading, you agree to our <a href="/upload-policy" target="_blank" style="color: var(--gold); text-decoration: underline;">Upload & Update Policy</a>.</p>
         
         <!-- ONE UNIFIED FORM -->
         <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="unifiedAddVersionForm">
