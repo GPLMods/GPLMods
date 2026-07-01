@@ -224,6 +224,23 @@
                 }
             %>
 
+            <%
+                let mainDownloadUrl = `/download-file/${file._id}`;
+                let isMainAdSupported = false;
+
+                if (showAds) {
+                    if (file.customAdLink) {
+                        mainDownloadUrl = `/leave?url=${encodeURIComponent(file.customAdLink)}&name=${encodeURIComponent(file.name)}`;
+                        isMainAdSupported = true;
+                    } else if (linkvertiseEnabled && !isUploaderDistributor && !file.isMultiPart) {
+                        const fullDownloadRoute = `${baseUrl}/download-file/${file._id}`;
+                        const adLink = generateAdLink(fullDownloadRoute);
+                        mainDownloadUrl = `/leave?url=${encodeURIComponent(adLink)}&name=${encodeURIComponent(file.name)}`;
+                        isMainAdSupported = true;
+                    }
+                }
+            %>
+
             <% if (file.ageRating === '18+') { %>
                 <!-- === IT IS AN 18+ FILE === -->
                 
@@ -231,24 +248,6 @@
                     <!-- LOGGED IN USER -->
                     <% if (hasDOB && userAge >= 18) { %>
                         <!-- THEY ARE 18+: Show Download Buttons -->
-            <!-- Pre-calculate the main download URL and whether it's wrapped in ads -->
-            <%
-                let mainDownloadUrl = `/download-file/${file._id}`;
-                let isMainAdSupported = false;
-
-                if (showAds) {
-                    if (file.customAdLink) {
-                        // 1. Manual Admin Override
-                        mainDownloadUrl = file.customAdLink;
-                        isMainAdSupported = true;
-                    } else if (linkvertiseEnabled && !isUploaderDistributor && !file.isMultiPart) {
-                        // ✅ FIX: Use our new global helper
-                        const fullDownloadRoute = `${baseUrl}/download-file/${file._id}`;
-                        mainDownloadUrl = generateAdLink(fullDownloadRoute);
-                        isMainAdSupported = true;
-                    }
-                }
-            %>
 
             <!-- Standard Download Button Logic (Inside your Age Gate checks) -->
             <% if (file.isMultiPart) { %>
@@ -264,7 +263,7 @@
                 </a>
             <% } else { %>
                 <!-- Standard Single-File Download from B2 -->
-                <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                <a href="<%= mainDownloadUrl %>" class="download-button" style="text-align: center;">
                     <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
                 </a>
             <% } %>
@@ -303,7 +302,7 @@
                                 <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
                             </a>
                         <% } else { %>
-                            <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                            <a href="<%= mainDownloadUrl %>" class="download-button" style="text-align: center;">
                                 <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
                             </a>
                         <% } %>
@@ -322,7 +321,7 @@
                         <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
                     </a>
                 <% } else { %>
-                    <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                    <a href="<%= mainDownloadUrl %>" class="download-button" style="text-align: center;">
                         <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
                     </a>
                 <% } %>
@@ -340,17 +339,14 @@
                         <% file.alternativeLinks.forEach(mirror => { %>
                             
                             <% 
-                                // --- DYNAMIC AD NETWORK ROUTING LOGIC ---
                                 let finalMirrorUrl = mirror.url;
-                                
-                                // If Viewer sees ads AND System is Enabled AND Uploader isn't a distributor
                                 if (showAds && linkvertiseEnabled && !isUploaderDistributor) {
-                                    // ✅ FIX: Use our new global helper
                                     finalMirrorUrl = generateAdLink(mirror.url);
                                 }
+                                const warningUrl = `/leave?url=${encodeURIComponent(finalMirrorUrl)}&name=${encodeURIComponent(file.name + ' - ' + mirror.providerName)}`;
                             %>
                
-                           <a href="/download-file/<%= file._id %>?url=<%= encodeURIComponent(finalMirrorUrl) %>" target="_blank" rel="noopener noreferrer" 
+                           <a href="<%= warningUrl %>" target="_blank" rel="noopener noreferrer" 
                                style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; text-decoration: none; color: var(--white); font-size: 0.9em; border: 1px solid #333; transition: all 0.2s;">
                                 
                                 <span>

@@ -53,7 +53,7 @@ const AdmZip = require('adm-zip');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
-const { mirrorToFTP, deleteFromFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
+const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
@@ -431,8 +431,10 @@ const deleteCloudFile = async (fileKey) => {
         }));
         console.log(`Deleted ${fileKey} from B2.`);
         
-        // 2. Delete from Backup Cloud
-        deleteFromFTP(fileKey).catch(e => console.error("Background FTP delete failed", e));
+        // 2. Delete from Backup Cloud (images only)
+        if (shouldMirrorToFTP(fileKey)) {
+            deleteFromFTP(fileKey).catch(e => console.error("Background FTP delete failed", e));
+        }
         
     } catch (error) {
         console.error(`Failed to delete ${fileKey} from B2:`, error.message);
@@ -565,6 +567,11 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 
     await parallelUploads3.done();
     console.log(`Finished uploading ${fileName} to B2.`);
+
+    if (shouldMirrorToFTP(fileName)) {
+        mirrorToFTP(file.buffer, fileName).catch(e => console.error("Background FTP mirror failed", e));
+    }
+
     return fileName;
 };
 
@@ -1540,6 +1547,32 @@ app.get('/category', async (req, res) => {
 });
 
 // ===================================
+// EXTERNAL LINK WARNING ROUTE
+// ===================================
+app.get('/leave', (req, res) => {
+    try {
+        const targetUrl = req.query.url;
+        const filename = req.query.name || 'External File';
+
+        if (!targetUrl) return res.redirect('/');
+
+        // Extract the hostname (e.g., "linkvertise.com", "mega.nz") to show the user
+        const urlObj = new URL(targetUrl);
+        const destinationHost = urlObj.hostname.replace('www.', '');
+
+        res.render('pages/leave', { 
+            targetUrl: targetUrl, 
+            filename: filename,
+            destination: destinationHost
+        });
+    } catch (e) {
+        // If the URL is invalid, just send them home
+        console.error("Invalid URL passed to /leave:", e);
+        res.redirect('/');
+    }
+});
+
+// ===================================
 // SEARCH ROUTE
 // ===================================
 
@@ -2387,12 +2420,16 @@ const deleteFromB2 = async (fileKey) => {
         console.log(`Deleting ${fileKey} from B2...`);
         await s3Client.send(new DeleteObjectCommand(params));
         console.log(`Successfully deleted ${fileKey} from B2.`);
+
+        if (shouldMirrorToFTP(fileKey)) {
+            deleteFromFTP(fileKey).catch(e => console.error("Background FTP delete failed", e));
+        }
     } catch (error) {
         // We log the error but don't crash the server. If a file is already gone, that's okay.
         console.error(`Failed to delete ${fileKey} from B2:`, error.message);
     }
 };
-// Download Action - UPDATED for Anti-Spam & Universal Link Tracking
+// Download Action - UPDATED for External Links & Presigned URLs
 app.get('/download-file/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
@@ -2420,12 +2457,18 @@ app.get('/download-file/:id', async (req, res) => {
         if (shouldIncrementDownload) {
             file.downloads += 1;
             await file.save();
-            await recordDailyStat(file._id, file.uploader, 'download'); // For the graph!
+            await recordDailyStat(file._id, file.uploader, 'download');
         }
         // ==========================================
 
-        // --- 1. MULTI-PART / ALTERNATIVE URL PASSTHROUGH ---
-        // If a mirror URL was passed in the query, count the download and redirect only to an approved mirror URL.
+        // --- 1. CHECK FOR EXTERNAL CLOUD LINK FIRST ---
+        if (file.externalDownloadUrl) {
+            const encodedUrl = encodeURIComponent(file.externalDownloadUrl);
+            const encodedName = encodeURIComponent(file.originalFilename || file.name);
+            return res.redirect(`/leave?url=${encodedUrl}&name=${encodedName}`);
+        }
+
+        // --- 2. MULTI-PART / ALTERNATIVE URL PASSTHROUGH ---
         if (req.query.url) {
             const requestedUrl = req.query.url;
             const allowedMirrorUrls = [];
@@ -2445,11 +2488,6 @@ app.get('/download-file/:id', async (req, res) => {
             }
 
             return res.redirect(requestedUrl);
-        }
-
-        // --- 2. EXTERNAL CLOUD LINK FIRST ---
-        if (file.externalDownloadUrl) {
-            return res.redirect(file.externalDownloadUrl);
         }
 
         // --- 3. FALLBACK TO BACKBLAZE B2 ---

@@ -138,31 +138,33 @@
                 <% file.downloadParts.forEach((part, index) => { %>
                     
                     <% 
-                        // --- DYNAMIC AD NETWORK ROUTING LOGIC FOR PARTS ---
-                        let finalPartUrl = part.partUrl;
+                        // --- DYNAMIC AD & EXTERNAL LINK LOGIC FOR PARTS ---
+                        let rawPartUrl = part.partUrl;
                         let isPartAdSupported = false;
                         
-                        // Check if it's an external link (not starting with a relative path or your domain)
-                        // This is a basic check. You can refine it based on how you store your links.
-                        const isExternalLink = finalPartUrl && (finalPartUrl.startsWith('http://') || finalPartUrl.startsWith('https://'));
+                        const isExternalLink = rawPartUrl && (rawPartUrl.startsWith('http://') || rawPartUrl.startsWith('https://'));
 
                         if (showAds) {
                             if (part.customAdLink) {
-                                finalPartUrl = part.customAdLink;
+                                rawPartUrl = part.customAdLink;
                                 isPartAdSupported = true;
                             } else if (linkvertiseEnabled && !isUploaderDistributor) {
-                                // Use global helper for the main part URL
-                                finalPartUrl = generateAdLink(part.partUrl);
+                                rawPartUrl = generateAdLink(part.partUrl);
                                 isPartAdSupported = true;
                             }
                         }
 
-                        // Helper for Mirrors
-                        const getMirrorUrl = (mirrorUrl) => {
+                        let finalPartUrl = rawPartUrl;
+                        if (isPartAdSupported || isExternalLink) {
+                            finalPartUrl = `/leave?url=${encodeURIComponent(rawPartUrl)}&name=${encodeURIComponent(file.name + ' - ' + part.partName)}`;
+                        }
+
+                        const getMirrorWarningUrl = (mirrorUrl, providerName) => {
+                            let mUrl = mirrorUrl;
                             if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
-                                return generateAdLink(mirrorUrl);
+                                mUrl = generateAdLink(mirrorUrl);
                             }
-                            return mirrorUrl;
+                            return `/leave?url=${encodeURIComponent(mUrl)}&name=${encodeURIComponent(file.name + ' - ' + providerName)}`;
                         };
                     %>
 
@@ -180,14 +182,14 @@
                             
                             <!-- Optional Mirror 1 -->
                             <% if (part.mirror1Url) { %>
-                                <a href="<%= getMirrorUrl(part.mirror1Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                <a href="<%= getMirrorWarningUrl(part.mirror1Url, part.mirror1Provider || 'Mirror 1') %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
                                     <i class="fas fa-external-link-alt"></i> <%= part.mirror1Provider || 'Mirror 1' %>
                                 </a>
                             <% } %>
 
                             <!-- Optional Mirror 2 -->
                             <% if (part.mirror2Url) { %>
-                                <a href="<%= getMirrorUrl(part.mirror2Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                <a href="<%= getMirrorWarningUrl(part.mirror2Url, part.mirror2Provider || 'Mirror 2') %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
                                     <i class="fas fa-external-link-alt"></i> <%= part.mirror2Provider || 'Mirror 2' %>
                                 </a>
                             <% } %>

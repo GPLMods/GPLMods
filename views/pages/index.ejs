@@ -109,7 +109,14 @@
         </nav>
     </div>
     
-    <% if (typeof filesByCategory !== 'undefined' && Object.keys(filesByCategory).length > 0) { %>
+    <% 
+        const hasAnyMods = typeof filesByCategory !== 'undefined' && filesByCategory && Object.keys(filesByCategory).some(category => {
+            const sections = filesByCategory[category] || {};
+            return Object.keys(sections).some(section => Array.isArray(sections[section]) && sections[section].length > 0);
+        });
+    %>
+
+    <% if (hasAnyMods) { %>
         <!-- Loop through each category provided from the backend -->
         <% Object.keys(filesByCategory).forEach(category => { %>
             <div id="<%= category %>-mods" class="tab-content <%= category === 'android' ? 'active' : '' %>">
