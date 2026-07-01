@@ -1,0 +1,111 @@
+<%- include('../partials/header') %>
+
+<style>
+    .leave-container {
+        max-width: 650px;
+        margin: 5rem auto;
+        padding: 3rem 2rem;
+        background-color: var(--dark-gray);
+        border-radius: 15px;
+        text-align: center;
+        border-top: 4px solid var(--gold);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    .warning-icon {
+        font-size: 4em;
+        color: var(--gold);
+        margin-bottom: 20px;
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+    }
+
+    .leave-container h1 { color: var(--white); font-size: 2.2em; margin-bottom: 10px; }
+    
+    .file-details-box {
+        background-color: var(--black);
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 25px 0;
+        text-align: left;
+    }
+    
+    .detail-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .detail-row:last-child { margin-bottom: 0; }
+    .detail-label { color: var(--silver); font-weight: 600; min-width: 90px; }
+    .detail-value { color: var(--white); font-family: monospace; word-break: break-all; }
+    .detail-value.highlight { color: var(--gold); font-weight: bold; font-family: 'Poppins', sans-serif; }
+
+    .warning-text {
+        color: var(--silver);
+        line-height: 1.6;
+        font-size: 0.95em;
+        margin-bottom: 30px;
+        background: rgba(229, 57, 53, 0.1);
+        border-left: 3px solid var(--red);
+        padding: 15px;
+        border-radius: 4px;
+        text-align: left;
+    }
+
+    .action-buttons { display: flex; gap: 15px; flex-direction: column; }
+    
+    .btn-continue {
+        background-color: var(--gold);
+        color: var(--black);
+        padding: 15px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1.1em;
+        text-decoration: none;
+        box-shadow: 0 0 15px var(--glow-gold);
+        transition: transform 0.2s;
+    }
+    .btn-continue:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
+    
+    .btn-cancel {
+        background-color: transparent;
+        color: var(--silver);
+        border: 2px solid var(--silver);
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-cancel:hover { background-color: var(--silver); color: var(--black); }
+
+    @media (min-width: 768px) {
+        .action-buttons { flex-direction: row; }
+        .btn-continue, .btn-cancel { width: 50%; }
+    }
+</style>
+
+<main class="container">
+    <div class="leave-container">
+        <i class="fas fa-external-link-alt warning-icon"></i>
+        <h1>You Are Leaving GPL Mods</h1>
+        
+        <div class="file-details-box">
+            <div class="detail-row">
+                <span class="detail-label">File:</span>
+                <span class="detail-value highlight"><%= filename %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Destination:</span>
+                <span class="detail-value"><%= destination %></span>
+            </div>
+        </div>
+
+        <div class="warning-text">
+            <strong>Please Note:</strong> You are being redirected to a Distributor's website or an external cloud storage provider. These links are not hosted by GPL Mods and may contain third-party advertisements, pop-ups, or require you to complete tasks (like viewing articles) to unlock the download. <strong>Proceed with caution and do not provide personal information on third-party sites.</strong>
+        </div>
+
+        <div class="action-buttons">
+            <a href="javascript:history.back()" class="btn-cancel">Go Back</a>
+            <a href="<%= targetUrl %>" class="btn-continue" rel="noopener noreferrer">Continue to Download</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

@@ -216,9 +216,11 @@
         <% }) %> <!-- Closes the category loop -->
     <% } else { %>
         <!-- This block will display if filesByCategory is empty or not defined -->
-        <div class="no-results" style="padding: 3rem; text-align: center;">
-            <h2>Could not load mods.</h2>
-            <p>There was an error fetching content for the homepage. Please try again later.</p>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <i class="fas fa-box-open" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+            <h2 style="color: var(--silver); margin-bottom: 10px;">No Mods Found</h2>
+            <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">It looks like there aren't any mods available right now. Check back soon or be the first to contribute!</p>
+            <a href="/upload" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Upload a Mod</a>
         </div>
     <% } %>
 

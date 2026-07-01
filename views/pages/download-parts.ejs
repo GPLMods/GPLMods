@@ -131,6 +131,9 @@
        <!-- Links List -->
         <div class="download-links-section">
             <h2>Download Links</h2>
+        <!-- Links List -->
+        <div class="download-links-section">
+            <h2>Download Links</h2>
             <div class="parts-list">
                 <% file.downloadParts.forEach((part, index) => { %>
                     
@@ -138,13 +141,17 @@
                         // --- DYNAMIC AD NETWORK ROUTING LOGIC FOR PARTS ---
                         let finalPartUrl = part.partUrl;
                         let isPartAdSupported = false;
+                        
+                        // Check if it's an external link (not starting with a relative path or your domain)
+                        // This is a basic check. You can refine it based on how you store your links.
+                        const isExternalLink = finalPartUrl && (finalPartUrl.startsWith('http://') || finalPartUrl.startsWith('https://'));
 
                         if (showAds) {
                             if (part.customAdLink) {
                                 finalPartUrl = part.customAdLink;
                                 isPartAdSupported = true;
                             } else if (linkvertiseEnabled && !isUploaderDistributor) {
-                                // ✅ FIX: Use our new global helper for the main part URL
+                                // Use global helper for the main part URL
                                 finalPartUrl = generateAdLink(part.partUrl);
                                 isPartAdSupported = true;
                             }
@@ -153,7 +160,6 @@
                         // Helper for Mirrors
                         const getMirrorUrl = (mirrorUrl) => {
                             if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
-                                // ✅ FIX: Use our new global helper for the part mirrors
                                 return generateAdLink(mirrorUrl);
                             }
                             return mirrorUrl;
@@ -175,22 +181,28 @@
                             <!-- Optional Mirror 1 -->
                             <% if (part.mirror1Url) { %>
                                 <a href="<%= getMirrorUrl(part.mirror1Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                    <i class="fas fa-link"></i> <%= part.mirror1Provider || 'Mirror 1' %>
+                                    <i class="fas fa-external-link-alt"></i> <%= part.mirror1Provider || 'Mirror 1' %>
                                 </a>
                             <% } %>
 
                             <!-- Optional Mirror 2 -->
                             <% if (part.mirror2Url) { %>
                                 <a href="<%= getMirrorUrl(part.mirror2Url) %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                    <i class="fas fa-link"></i> <%= part.mirror2Provider || 'Mirror 2' %>
+                                    <i class="fas fa-external-link-alt"></i> <%= part.mirror2Provider || 'Mirror 2' %>
                                 </a>
                             <% } %>
 
-                            <!-- Main Part Download -->
+                            <!-- ======== DYNAMIC MAIN PART DOWNLOAD BUTTON ======== -->
                             <a href="<%= finalPartUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
-                                <% if (!isPartAdSupported) { %> <i class="fas fa-bolt" style="margin-right: 5px;"></i> <% } %>
-                                Download Part <%= index + 1 %>
+                                <% if (isPartAdSupported || isExternalLink) { %>
+                                    <!-- Show external link icon for ads or external cloud links -->
+                                    <i class="fas fa-external-link-alt" style="margin-right: 5px;"></i> External Download
+                                <% } else { %>
+                                    <!-- Show download icon for direct/internal links -->
+                                    <i class="fas fa-download" style="margin-right: 5px;"></i> Download Part <%= index + 1 %>
+                                <% } %>
                             </a>
+                            <!-- =================================================== -->
                         </div>
                     </div>
                 <% }) %>

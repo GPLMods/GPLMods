@@ -327,13 +327,25 @@
             </section>
         <% } %>
 
-        <!-- Show the "No Results" message if there are no results -->
-        <% if(results.length === 0) { %>
-            <section class="no-results" id="no-results-message">
-                <h2>No Mods Found</h2>
-                <p>We couldn't find any mods matching your search. Please try a different keyword or adjust your filters.</p>
-            </section>
+        <!-- ======== NO RESULTS FALLBACK ======== -->
+        <!-- Show this ONLY if there are no mods AND no users found -->
+        <% if (results.length === 0 && (!userResults || userResults.length === 0)) { %>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <i class="fas fa-search-minus" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                <h2 style="color: var(--silver); margin-bottom: 10px;">No Results Found</h2>
+                <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
+                    We couldn't find any mods or community members matching "<strong><%= query %></strong>".<br>
+                    Try adjusting your filters or using different keywords.
+                </p>
+                <!-- If they have filters active, suggest clearing them -->
+                <% if (currentPlatform !== 'all' || currentSubCategory !== 'all') { %>
+                    <a href="/search?q=<%= encodeURIComponent(query) %>" class="btn" style="display: inline-block; background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.background='var(--gold)'; this.style.color='var(--black)';" onmouseout="this.style.background='transparent'; this.style.color='var(--gold)';">Clear Filters</a>
+                <% } else { %>
+                    <a href="/" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Return Home</a>
+                <% } %>
+            </div>
         <% } %>
+        <!-- ===================================== -->
 
         <!-- Pagination -->
         <% if (totalPages > 1) { %>
@@ -358,11 +370,11 @@
         
         // 1. Data mapping for sub-categories
         const categoriesByPlatform = {
-            android: ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Puzzle', 'Game - RPG', 'App - Productivity', 'App - Social', 'App - Tools', 'Other'],
-            'ios-jailbroken': ['Tweak', 'Theme', 'Utility', 'Widget', 'Other'],
-            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Game', 'Other'],
-            wordpress: ['Plugin - SEO', 'Plugin - Security', 'Plugin - E-commerce', 'Plugin - Page Builder', 'Theme - Portfolio', 'Theme - E-commerce', 'Theme - Blog', 'Other']
+            android: ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
+            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
+            'ios-jailbroken': ['Tweak - Accessibility', 'Tweak - Audio', 'Tweak - Battery', 'Tweak - File Management', 'Tweak - Lock Screen', 'Tweak - Messaging', 'Tweak - Notifications', 'Tweak - Security', 'Tweak - Settings', 'Tweak - UI', 'Tweak - Utilities', 'Theme - Icon', 'Theme - Lock Screen', 'Theme - SpringBoard', 'Theme - Widget', 'Utility - System', 'Utility - Scripting', 'Utility - Development', 'Widget - Clock', 'Widget - Music', 'Widget - Productivity', 'Widget - Weather', 'Other'],
+            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Software - Business', 'Software - Design', 'Software - Education', 'Software - Office', 'Software - Productivity', 'Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Other'],
+            wordpress: ['Plugin - Analytics', 'Plugin - Backup', 'Plugin - Contact Form', 'Plugin - E-commerce', 'Plugin - Email Marketing', 'Plugin - Membership', 'Plugin - Multilingual', 'Plugin - Performance', 'Plugin - Page Builder', 'Plugin - SEO', 'Plugin - Security', 'Plugin - Social', 'Plugin - WooCommerce', 'Plugin - Utilities', 'Theme - Agency', 'Theme - Blog', 'Theme - Business', 'Theme - Corporate', 'Theme - Education', 'Theme - E-commerce', 'Theme - Landing Page', 'Theme - Magazine', 'Theme - Minimal', 'Theme - Multipurpose', 'Theme - Portfolio', 'Theme - Restaurant', 'Theme - WooCommerce', 'Theme - Personal', 'Other']
         };
 
         // 2. Setup a specific Custom Dropdown

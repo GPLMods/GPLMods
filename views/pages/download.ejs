@@ -253,14 +253,21 @@
             <!-- Standard Download Button Logic (Inside your Age Gate checks) -->
             <% if (file.isMultiPart) { %>
                 <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
-                    <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
+                    <!-- ✅ Changed to external link icon for multi-part -->
+                    <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> View Download Links
                     <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
                 </a>
-                        <% } else { %>
-                            <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
-                                <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
-                            </a>
-                        <% } %>
+            <% } else if (file.externalDownloadUrl) { %>
+                <!-- ✅ New: Handle direct external links (Distributor/Admin) -->
+                <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                    <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
+                </a>
+            <% } else { %>
+                <!-- Standard Single-File Download from B2 -->
+                <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                    <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
+                </a>
+            <% } %>
                     <% } else { %>
                         <!-- THEY ARE TOO YOUNG OR NO DOB SET -->
                         <div style="background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
@@ -288,8 +295,12 @@
                     <div id="hidden-download-buttons" style="display: none;">
                         <% if (file.isMultiPart) { %>
                             <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
-                                <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
+                                <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> View Download Links
                                 <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
+                            </a>
+                        <% } else if (file.externalDownloadUrl) { %>
+                            <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                                <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
                             </a>
                         <% } else { %>
                             <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
@@ -303,8 +314,12 @@
                 <!-- === NOT AN 18+ FILE: Just show normal buttons === -->
                 <% if (file.isMultiPart) { %>
                     <a href="/mods/<%= file._id %>/parts" class="download-button" style="text-align: center;">
-                        <i class="fas fa-layer-group" style="margin-right: 10px;"></i> View Download Links
+                        <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> View Download Links
                         <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">(File is split into <%= file.downloadParts.length %> parts)</span>
+                    </a>
+                <% } else if (file.externalDownloadUrl) { %>
+                    <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
+                        <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
                     </a>
                 <% } else { %>
                     <a href="/download-file/<%= file._id %>" class="download-button" style="text-align: center;">
@@ -312,7 +327,6 @@
                     </a>
                 <% } %>
             <% } %>
-
             <!-- ========================================================= -->
 
             <!-- ======== NEW: ALTERNATIVE LINKS (MIRRORS) ======== -->
