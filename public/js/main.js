@@ -831,6 +831,7 @@ function initializeMusicPlayer() {
 
     // --- 2. Default Playlist ---
     const playlist =[
+        { title: 'You are Good Enough', src: '/audio/bgm-0.mp3' },
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'Nekozilla', src: '/audio/bgm-2.mp3' },
         { title: 'Heroes Tonight', src: '/audio/bgm-3.mp3' },
