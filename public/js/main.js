@@ -830,7 +830,8 @@ function initializeMusicPlayer() {
     }
 
     // --- 2. Default Playlist ---
-    const playlist =[    
+    const playlist =[ 
+        { title: 'You are Good Enough', src: '/audio/bgm-0.mp3' },
         { title: 'Whoopty', src: '/audio/bgm-1.mp3' },
         { title: 'Nekozilla', src: '/audio/bgm-2.mp3' },
         { title: 'Heroes Tonight', src: '/audio/bgm-3.mp3' },
@@ -838,9 +839,8 @@ function initializeMusicPlayer() {
         { title: 'Royalty', src: '/audio/bgm-5.mp3' },
         { title: 'Mortals', src: '/audio/bgm-6.mp3' },
         { title: 'On & On', src: '/audio/bgm-7.mp3' },
-        { title: 'Faded', src: '/audio/bgm-8.mp3' },
-        { title: 'Alone', src: '/audio/bgm-9.mp3' },
-        { title: 'You are Good Enough', src: '/audio/bgm-10.mp3' }
+        { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
+        { title: 'Wrong Side Out', src: '/audio/bgm-9.mp3' }        
     ];
     
     // --- 3. State Management ---
