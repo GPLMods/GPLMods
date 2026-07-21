@@ -411,6 +411,7 @@
                 </div>
             </fieldset>
             
+            <input type="hidden" name="fileSize" id="fileSize" value="<%= file.fileSize || 0 %>">
             <input type="hidden" name="actionType" id="actionType" value="submit">
 
             <div class="button-group" style="display: flex; gap: 15px; margin-top: 30px;">
@@ -981,6 +982,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainForm = document.getElementById('details-form');
     const draftModal = document.getElementById('draft-confirm-modal');
     const submitModal = document.getElementById('submit-confirm-modal');
+    const fileSizeInput = document.getElementById('fileSize');
+    const userIsDistributor = <%= user && user.role === 'distributor' ? 'true' : 'false' %> === 'true';
+
+    const getFirstTruthyValue = (selector) => {
+        const fields = document.querySelectorAll(selector);
+        for (const field of fields) {
+            if (field && field.value && field.value.trim()) {
+                return field.value.trim();
+            }
+        }
+        return '';
+    };
 
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
@@ -1028,6 +1041,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (descInput && !descInput.value.trim()) { showStatusAlert('Error: Mod Description is required.', 'error'); return; }
             if (featInput && !featInput.value.trim()) { showStatusAlert('Error: Mod Features are required.', 'error'); return; }
+            if (userIsDistributor) {
+                const directLink = getFirstTruthyValue('input[name="directDownloadUrl"]');
+                if (!directLink) {
+                    showStatusAlert('Distributor uploads require a direct download link before publishing.', 'error');
+                    return;
+                }
+            }
+            const parsedFileSize = fileSizeInput ? parseInt(fileSizeInput.value, 10) : 0;
+            if (parsedFileSize > 640 * 1024 * 1024) {
+                const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');
+                if (!hasScan) {
+                    showStatusAlert('Files larger than 640MB require a VirusTotal or manual scan URL before publishing.', 'error');
+                    return;
+                }
+            }
 
             if (!mainForm.checkValidity()) {
                 mainForm.reportValidity();
@@ -1107,7 +1135,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Update Quill Editors!
                     // Quill v1 uses pasteHTML to programmatically insert content
-                    if (result.data.description && quillOff) quillOff.clipboard.dangerouslyPasteHTML(result.data.description);
+                    if (result.data.officialDescription && quillOff) {
+                        quillOff.clipboard.dangerouslyPasteHTML(result.data.officialDescription);
+                    } else if (result.data.description && quillOff) {
+                        quillOff.clipboard.dangerouslyPasteHTML(result.data.description);
+                    }
                     if (result.data.whatsNew && quillNew) quillNew.clipboard.dangerouslyPasteHTML(result.data.whatsNew);
 
                 } else {

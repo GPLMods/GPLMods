@@ -4418,7 +4418,23 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const formData = req.body;
         const { softwareIcon, screenshots } = req.files || {};
         
-        // ✅ NEW: Determine if saving as draft or submitting
+        // Normalize duplicate inputs and preserve known values.
+        const normalizeInput = (value) => {
+            if (Array.isArray(value)) {
+                return value.find(v => typeof v === 'string' && v.trim())?.trim() || '';
+            }
+            return typeof value === 'string' ? value.trim() : '';
+        };
+
+        const directDownloadUrlValue = normalizeInput(formData.directDownloadUrl);
+        const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
+            ? normalizeInput(formData.manualFileScanUrl)
+            : file.manualFileScanUrl;
+        const manualSiteScanUrlValue = formData.manualSiteScanUrl !== undefined
+            ? normalizeInput(formData.manualSiteScanUrl)
+            : file.manualSiteScanUrl;
+        const isDistributor = req.user.role === 'distributor';
+        const currentFileSize = file.fileSize || 0;
         const actionType = formData.actionType || 'submit';
 
                // 1. Update images ONLY IF new ones were uploaded
@@ -4453,6 +4469,16 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (formData.modName && !isValidName(formData.modName)) {
             return res.redirect(`/mods/${file._id}/edit?error=Mod Name can only contain letters, numbers, and spaces.`);
         }
+
+        const LARGE_FILE_THRESHOLD = 640 * 1024 * 1024;
+        if (actionType === 'submit') {
+            if (isDistributor && !directDownloadUrlValue) {
+                return res.redirect(`/mods/${file._id}/edit?error=Distributor uploads must include a direct download link before publishing.`);
+            }
+            if (currentFileSize > LARGE_FILE_THRESHOLD && !manualFileScanUrlValue && !manualSiteScanUrlValue) {
+                return res.redirect(`/mods/${file._id}/edit?error=Files larger than 640MB require a VirusTotal or manual scan URL before publishing.`);
+            }
+        }
         // ===========================================
 
        // 3. Update all text fields
@@ -4473,7 +4499,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
         }
         if (formData.directDownloadUrl !== undefined) {
-            file.directDownloadUrl = formData.directDownloadUrl;
+            file.directDownloadUrl = directDownloadUrlValue;
         }
         // ✅ ADDED: Update the Package ID on edit
         if (formData.iosPackageId !== undefined) {
@@ -4481,8 +4507,8 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
         file.tags = processedTags;
         // --- NEW: UPDATE MANUAL SCANS (allow clearing them) ---
-        if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = formData.manualFileScanUrl;
-        if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = formData.manualSiteScanUrl;
+        if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = manualFileScanUrlValue;
+        if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = manualSiteScanUrlValue;
         
         // ✅ FIX: Added "file." to save it properly, and replaced the comma with a semicolon!
         file.ageRating = req.body.ageRating || file.ageRating; 
@@ -4574,7 +4600,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
     { name: 'screenshots', maxCount: 4 }
-]), async (req, res) => {
+]), async (req, res, next) => {
     try {
         const fileId = req.params.fileId;
         const fileToUpdate = await File.findById(fileId);
@@ -4586,7 +4612,21 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const { softwareIcon, screenshots } = req.files || {}; // Default to empty object if no files
         const formData = req.body; 
         
-        // ✅ NEW: Determine what the user wants to do (Save Draft vs Submit)
+        // Normalize direct download/scans for duplicate or array values.
+        const normalizeSingleValue = (value) => {
+            if (Array.isArray(value)) {
+                return value.find(v => typeof v === 'string' && v.trim())?.trim() || '';
+            }
+            return typeof value === 'string' ? value.trim() : '';
+        };
+        const directDownloadUrlValue = normalizeSingleValue(formData.directDownloadUrl);
+        const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
+            ? normalizeSingleValue(formData.manualFileScanUrl)
+            : null;
+        const manualSiteScanUrlValue = formData.manualSiteScanUrl !== undefined
+            ? normalizeSingleValue(formData.manualSiteScanUrl)
+            : null;
+        const isDistributor = req.user.role === 'distributor';
         const actionType = formData.actionType || 'submit'; // 'draft' or 'submit'
 
         // --- 1. THE VARIANT CHECK ---
@@ -4606,10 +4646,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             isVariant = true;
             masterFileId = existingMasterFile._id;
             // No unlinkSync needed here anymore!
-        } else {
-            if (!softwareIcon || !screenshots) {
-                return res.redirect(`/upload-details/${fileId}?error=Icon and screenshots are required for new mods.`);
-            }
+        }
+
+        if (actionType === 'draft' && (!formData.modName || !formData.modName.trim())) {
+            return res.redirect(`/upload-details/${fileId}?error=Mod Name is required to save a draft.`);
         }
         // ======== ADD THIS VALIDATION CHECK ========
         if (!isValidName(formData.modName)) {
@@ -4672,14 +4712,39 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // If they are submitting for review, enforce required fields.
         // If they are just saving a draft, allow missing fields.
         if (actionType === 'submit') {
-            if (!isVariant && !iconKey) {
-                return res.redirect(`/upload-details/${fileId}?error=An icon is required to submit the mod.`);
-            }
             if (!formData.modPlatform || !formData.modCategory) {
                 return res.redirect(`/upload-details/${fileId}?error=Platform and Category are required to submit.`);
             }
-            // Add any other strict requirements here
+            if (!formData.modVersion || !formData.modVersion.trim()) {
+                return res.redirect(`/upload-details/${fileId}?error=Version is required to submit the mod.`);
+            }
+            if (!req.body.ageRating) {
+                return res.redirect(`/upload-details/${fileId}?error=Age Rating is required to submit the mod.`);
+            }
+            if (!formData.modDescription || !formData.modDescription.trim()) {
+                return res.redirect(`/upload-details/${fileId}?error=Mod Description is required to submit the mod.`);
+            }
+            if (!formData.modFeatures || !formData.modFeatures.trim()) {
+                return res.redirect(`/upload-details/${fileId}?error=Mod Features are required to submit the mod.`);
+            }
+            if (!formData.officialDescription || !formData.officialDescription.trim()) {
+                return res.redirect(`/upload-details/${fileId}?error=Official Description is required to submit the mod.`);
+            }
+            if (!isVariant && !iconKey) {
+                return res.redirect(`/upload-details/${fileId}?error=An icon is required to submit the mod.`);
+            }
+            if ((!screenshotKeys || screenshotKeys.length === 0) && (!screenshots || screenshots.length === 0)) {
+                return res.redirect(`/upload-details/${fileId}?error=At least one screenshot is required to submit the mod.`);
+            }
         }
+
+        // --- NEW: Sanitize Mod Details ---
+        const safeClean = (value) => {
+            if (!value || typeof value !== 'string') return '';
+            return global.profanityFilter.clean(value);
+        };
+
+        const cleanName = safeClean(formData.modName || fileToUpdate.name);
 
         // --- GENERATE SLUG ---
         let finalSlug = fileToUpdate.slug; // Keep existing slug if saving a draft
@@ -4692,12 +4757,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 slugCounter++;
             }
         }
-
-        // --- NEW: Sanitize Mod Details ---
-        const cleanName = global.profanityFilter.clean(formData.modName);
-        const cleanDescription = global.profanityFilter.clean(formData.modDescription);
-        const cleanFeatures = global.profanityFilter.clean(formData.modFeatures || '');
-        const cleanWhatsNew = global.profanityFilter.clean(formData.whatsNew || '');
+        const cleanDescription = safeClean(formData.modDescription);
+        const cleanFeatures = safeClean(formData.modFeatures);
+        const cleanWhatsNew = safeClean(formData.whatsNew);
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
@@ -4937,7 +4999,16 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
         const response = await axios.get(url, axiosConfig);
         const $ = cheerio.load(response.data);
 
+        const normalizeText = (value) => {
+            if (!value) return '';
+            return value.toString().trim().replace(/\s{2,}/g, ' ');
+        };
+
+        const getText = (selector) => normalizeText($(selector).first().text());
+        const getAttr = (selector, attr) => normalizeText($(selector).attr(attr));
+
         let data = {
+            title: '',
             description: '',
             whatsNew: '',
             minOsVersion: '',
@@ -4947,41 +5018,72 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
 
         // --- SCRAPING LOGIC BASED ON PLATFORM ---
         if (platform === 'playstore') {
-            // Google Play Store
-            data.description = $('meta[name="description"]').attr('content') || '';
-            data.developer = $('a.LkLjBd span').first().text() || '';
-            
-            // "What's New" is tricky on Play Store, usually in a specific div
-            $("div").each((i, el) => {
-                const text = $(el).text();
-                if (text.includes("Requires Android")) data.minOs = text.replace("Requires Android", "").trim();
-                if (text.includes("Content Rating")) data.ageRating = $(el).next().text().trim() || 'Everyone';
+            data.title = getAttr('meta[itemprop="name"]', 'content') || getAttr('meta[name="title"]', 'content') || getText('h1 span');
+            const descriptionEls = $('div[jsname="sngebd"], div[jsname="bN97Pc"], div[itemprop="description"]');
+            data.description = normalizeText(descriptionEls.map((i, el) => $(el).text()).get().join('\n')) ||
+                getAttr('meta[itemprop="description"]', 'content') ||
+                getAttr('meta[name="description"]', 'content') ||
+                getText('div[jsname]');
+            data.developer = getText('a[href*="/store/apps/dev"]') || getText('div.T32cc.UAO9ie') || getText('div.hrTbp.R8zArc');
+            data.whatsNew = normalizeText($('div.hAyfc:contains("What\'s New")').find('span.htlgb').text()) || normalizeText($('div.W4P4ne .DWPxHb').text());
+
+            $('div.hAyfc').each((i, el) => {
+                const label = normalizeText($(el).find('div.BgcNfc').text());
+                const value = normalizeText($(el).find('span.htlgb').text());
+                if (label.includes('Requires Android')) data.minOsVersion = value;
+                if (label.includes('Content Rating')) data.ageRating = value;
             });
 
         } else if (platform === 'appstore') {
-            // Apple App Store
-            data.description = $('.section__description p').text() || $('meta[name="description"]').attr('content') || '';
-            data.whatsNew = $('.whats-new__content p').text() || '';
-            data.developer = $('h2.product-header__identity a').text().trim() || '';
-            data.minOsVersion = $('dt:contains("Compatibility")').next('dd').text().trim().replace(/Requires iOS|Requires iPadOS/, 'iOS ') || 'iOS 11.0 or later';
-            data.ageRating = $('dt:contains("Age Rating")').next('dd').text().trim() || '4+';
+            data.title = getText('h1.product-header__title') || getText('h1');
+            data.description = getText('section.section__description') || getText('div.section__description') || getAttr('meta[name="description"]', 'content');
+            data.whatsNew = getText('div.whats-new__content p') || getText('section.whats-new') || '';
+            data.developer = getText('h2.product-header__identity a') || getAttr('meta[property="og:site_name"]', 'content');
+            data.minOsVersion = normalizeText($('dt:contains("Compatibility")').next('dd').text()).replace(/Requires (iOS|iPadOS)/i, 'iOS ') || '';
+            data.ageRating = normalizeText($('dt:contains("Age Rating")').next('dd').text()) || '';
 
         } else if (platform === 'steam') {
-            // Steam
-            data.description = $('.game_description_snippet').text().trim() || $('meta[name="description"]').attr('content') || '';
-            data.developer = $('#developers_list a').first().text().trim() || '';
-            data.minOsVersion = $('.sysreq_contents .bb_ul li:contains("OS:")').text().replace("OS:", "").trim() || 'Windows 10';
+            data.title = getText('.apphub_AppName') || getAttr('meta[property="og:title"]', 'content');
+            data.description = getText('.game_description_snippet') || getText('#game_area_description') || getAttr('meta[name="description"]', 'content');
+            data.developer = getText('#developers_list a') || getText('.dev_row .summary');
+            data.minOsVersion = normalizeText($('div.sysreq_contents li').filter((i, el) => $(el).text().includes('OS:')).text().replace('OS:', '')).trim() || '';
+            data.ageRating = normalizeText($('div.game_area_details .age_rating_area').text()) || '';
+
+        } else if (platform === 'epic') {
+            data.title = getAttr('meta[property="og:title"]', 'content') || getText('h1');
+            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content');
+            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.developer-name');
+            data.whatsNew = getText('section.whats-new') || '';
+
+        } else if (platform === 'wordpress') {
+            data.title = getAttr('meta[property="og:title"]', 'content') || getText('title');
+            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || getText('article p').slice(0, 400);
+            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.site-title') || getText('header .site-title');
+            data.whatsNew = '';
 
         } else {
-            // Fallback for Epic Games, WordPress, etc (Rely on meta tags)
-            data.description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || '';
-            data.developer = $('meta[property="og:site_name"]').attr('content') || '';
+            try {
+                const ldJson = JSON.parse($('script[type="application/ld+json"]').first().text() || '{}');
+                if (ldJson.name) data.title = data.title || normalizeText(ldJson.name);
+                if (ldJson.description) data.description = data.description || normalizeText(ldJson.description);
+                if (ldJson.author && ldJson.author.name) data.developer = data.developer || normalizeText(ldJson.author.name);
+            } catch (ldErr) {
+                // ignore parse errors for non-JSON-LD pages
+            }
+            data.title = getAttr('meta[property="og:title"]', 'content') || getText('title');
+            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || '';
+            data.developer = getAttr('meta[property="og:site_name"]', 'content') || '';
         }
 
         // Clean up the data
         Object.keys(data).forEach(key => {
             if (data[key]) data[key] = data[key].trim().replace(/\s{2,}/g, ' ');
         });
+
+        // Compatibility aliases for frontend mapping
+        data.minOs = data.minOsVersion || '';
+        data.minAge = data.ageRating || '';
+        data.officialDescription = data.description || '';
 
         res.json({ success: true, data });
 

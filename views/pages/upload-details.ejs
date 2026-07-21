@@ -394,7 +394,7 @@
                         <span id="iconPlaceholder">Preview</span>
                     </div>
                     <div style="max-width: 250px;">
-                        <input type="file" id="modIcon" name="softwareIcon" accept="image/*" required>
+                        <input type="file" id="modIcon" name="softwareIcon" accept="image/*">
                         <label for="modIcon" class="file-input-label">Choose Icon</label>
                     </div>
                 </div>
@@ -412,7 +412,7 @@
                 <!-- Platform Dropdown -->
                 <div class="form-group">
                     <label>Platform*</label>
-                    <select id="modPlatform" name="modPlatform" required style="display: none;">
+                    <select id="modPlatform" name="modPlatform" style="display: none;">
                         <option value="" disabled selected>Select a platform...</option>
                         <option value="android">Android</option>
                         <option value="ios-jailed">iOS - Jailed (IPA)</option>
@@ -518,7 +518,7 @@
 
                 <div class="form-group">
                     <label for="modVersion">Mod Version*</label>
-                    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" required autocomplete="off">
+                    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" autocomplete="off">
                 </div>
             </fieldset>
             
@@ -564,13 +564,13 @@
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" style="display:none;" required></textarea>
+                    <textarea id="modDescription" name="modDescription" style="display:none;"></textarea>
                     <div id="editor-modDescription"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="modFeatures">Mod Features* (One per line)</label>
-                    <textarea id="modFeatures" name="modFeatures" style="display:none;" required></textarea>
+                    <textarea id="modFeatures" name="modFeatures" style="display:none;"></textarea>
                     <div id="editor-modFeatures"></div>
                 </div>
 
@@ -664,7 +664,7 @@
                 <div class="form-group">
                     <label>Mod Screenshots* (1-4 images)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple required>
+                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple>
                         <label for="screenshots" class="file-input-label">Choose Screenshots</label>
                         <span class="file-name" id="screenshotFileName">No files selected</span>
                     </div>
@@ -1096,6 +1096,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainForm = document.getElementById('mainUploadForm');
     const draftModal = document.getElementById('draft-confirm-modal');
     const submitModal = document.getElementById('submit-confirm-modal');
+    const fileSizeInput = document.getElementById('fileSize');
+    const userIsDistributor = <%= user && user.role === 'distributor' ? 'true' : 'false' %> === 'true';
+
+    const getFirstTruthyValue = (selector) => {
+        const fields = document.querySelectorAll(selector);
+        for (const field of fields) {
+            if (field && field.value && field.value.trim()) {
+                return field.value.trim();
+            }
+        }
+        return '';
+    };
 
     if (saveDraftBtn && draftModal) {
         saveDraftBtn.addEventListener('click', (e) => {
@@ -1110,6 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             syncQuillData();
+            mainForm.noValidate = false;
             
             let hasError = false;
 
@@ -1152,6 +1165,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('modFeatures') && !document.getElementById('modFeatures').value.trim()) {
                 showStatusAlert('Error: Mod Features are required.', 'error'); return;
             }
+            if (document.getElementById('officialDescription') && !document.getElementById('officialDescription').value.trim()) {
+                showStatusAlert('Error: Official Description is required.', 'error'); return;
+            }
+            if (document.getElementById('modVersion') && !document.getElementById('modVersion').value.trim()) {
+                showStatusAlert('Error: Mod Version is required.', 'error'); return;
+            }
+            if (userIsDistributor) {
+                const directLink = getFirstTruthyValue('input[name="directDownloadUrl"]');
+                if (!directLink) {
+                    showStatusAlert('Distributor uploads require a direct download link before publishing.', 'error');
+                    return;
+                }
+            }
+            const parsedFileSize = fileSizeInput ? parseInt(fileSizeInput.value, 10) : 0;
+            if (parsedFileSize > 640 * 1024 * 1024) {
+                const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');
+                if (!hasScan) {
+                    showStatusAlert('Files larger than 640MB require a VirusTotal or manual scan URL before publishing.', 'error');
+                    return;
+                }
+            }
+            if (document.getElementById('ageRating') && !document.getElementById('ageRating').value) {
+                showStatusAlert('Error: Age Rating is required.', 'error'); return;
+            }
+            if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0) {
+                showStatusAlert('Error: An icon is required to publish this mod.', 'error'); return;
+            }
+            if (document.getElementById('screenshots') && document.getElementById('screenshots').files.length === 0) {
+                showStatusAlert('Error: Screenshots are required to publish this mod.', 'error'); return;
+            }
 
             actionTypeInput.value = 'submit';
             submitModal.style.display = 'flex';
@@ -1164,6 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmSubmitBtn.addEventListener('click', () => {
             if(actionTypeInput && mainForm) {
                 actionTypeInput.value = 'submit';
+                mainForm.noValidate = false;
                 mainForm.submit();
             }
         });
@@ -1174,6 +1218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmDraftBtn.addEventListener('click', () => {
             if(actionTypeInput && mainForm) {
                 actionTypeInput.value = 'draft';
+                mainForm.noValidate = true;
                 mainForm.submit();
             }
         });
@@ -1212,7 +1257,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusSpan.textContent = 'Data fetched successfully!';
                     statusSpan.style.color = 'var(--green)';
                     
-                    if (result.data.description && quillOff) {
+                    if (result.data.officialDescription && quillOff) {
+                         quillOff.root.innerHTML = result.data.officialDescription;
+                    } else if (result.data.description && quillOff) {
                          quillOff.root.innerHTML = result.data.description;
                     }
                     if (result.data.whatsNew && quillNew) {

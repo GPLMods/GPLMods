@@ -313,7 +313,9 @@
                     });
                     const result = await response.json();
                     if (result.success) {
-                        statusSpan.textContent = 'Data fetched successfully!'; statusSpan.style.color = 'var(--green)';
+                        statusSpan.textContent = 'Data fetched successfully!';
+                        statusSpan.style.color = 'var(--green)';
+
                         if (result.data.whatsNew) quill.root.innerHTML = result.data.whatsNew;
                         if (result.data.minOsVersion || result.data.minOs) {
                             const mo = document.getElementById('minOsVersion');
@@ -322,6 +324,10 @@
                         if (result.data.ageRating || result.data.minAge) {
                             const ma = document.getElementById('ageRating');
                             if (ma) ma.value = result.data.ageRating || result.data.minAge;
+                        }
+                        if (result.data.developer) {
+                            const devInput = document.getElementById('developerName');
+                            if (devInput) devInput.value = result.data.developer;
                         }
                     } else {
                         statusSpan.textContent = result.error || 'Failed to fetch data.'; statusSpan.style.color = 'var(--red)';
