@@ -405,8 +405,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="developerName">Official Developer / Company</label>
-                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang" autocomplete="off">
+                    <label for="developerName">Official Developer / Company*</label>
+                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang" autocomplete="off" required>
                 </div>
 
                 <!-- Platform Dropdown -->
@@ -513,6 +513,7 @@
                 <div class="form-group">
                     <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
                     <input type="text" id="minOsVersion" name="minOsVersion" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
+                    <div style="font-size: 0.82em; color: var(--silver); margin-top: 6px;">This field is required for submission on supported platforms, especially iOS and Android releases.</div>
                 </div>
                 <!-- =================================================================== -->
 
@@ -575,19 +576,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="officialDescription">Official Description (Optional)</label>
+                    <label for="officialDescription">Official Description*</label>
                     <textarea id="officialDescription" name="officialDescription" style="display:none;"></textarea>
                     <div id="editor-officialDescription"></div>
                 </div>
 
                  <div class="form-group">
-                    <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
+                    <label for="importantNote">Important Note / Installation Instructions*</label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"></textarea>
                     <div id="editor-importantNote"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="whatsNew">What's New (Optional)</label>
+                    <label for="whatsNew">What's New*</label>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"></textarea>
                     <div id="editor-whatsNew"></div>
                 </div>
@@ -632,12 +633,12 @@
                                 <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
                                 <input type="url" id="directDownloadUrl" name="directDownloadUrl" value="<%= file.directDownloadUrl || '' %>" placeholder="Direct Cloud Link (Dropbox, Mega...) for Admin 1-Click">
                             </div>
-                            <div class="form-group">
-                                <label for="manualFileScanUrl">Manual File Scan URL</label>
+                            <div class="form-group" id="manualFileScanGroup" style="display: <%= (typeof file !== 'undefined' && file.fileSize && file.fileSize > 640 * 1024 * 1024) ? 'block' : 'none' %>;">
+                                <label for="manualFileScanUrl">Manual File Scan URL <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Required for files over 640MB</span></label>
                                 <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="Manual File Scan URL">
                             </div>
-                            <div class="form-group">
-                                <label for="manualSiteScanUrl">Manual Site Scan URL</label>
+                            <div class="form-group" id="manualSiteScanGroup" style="display: <%= (typeof file !== 'undefined' && file.directDownloadUrl) ? 'block' : 'none' %>;">
+                                <label for="manualSiteScanUrl">Manual Site Scan URL <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Only shown when a direct link is provided</span></label>
                                 <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" value="<%= file.manualSiteScanUrl || '' %>" placeholder="Manual Site Scan URL">
                             </div>
                         </div>
@@ -657,8 +658,8 @@
             <fieldset class="form-section">
                 <legend>Media & Metadata</legend>
                 <div class="form-group">
-                    <label for="tags">Tags (Optional, comma-separated)</label>
-                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline" autocomplete="off">
+                    <label for="tags">Tags* (comma-separated)</label>
+                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
@@ -672,7 +673,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="videoUrl">Video URL (Optional)</label>
+                    <label for="videoUrl">Video URL*</label>
                     <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                     <div class="preview-container" id="videoPreviewContainer"></div>
                 </div>
@@ -924,6 +925,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const manualFileScanGroup = document.getElementById('manualFileScanGroup');
+    const manualSiteScanGroup = document.getElementById('manualSiteScanGroup');
+    const directDownloadInput = document.getElementById('directDownloadUrl');
+
+    const updateScanFieldVisibility = () => {
+        const hasLargeFile = parsedFileSize > 640 * 1024 * 1024;
+        if (manualFileScanGroup) {
+            manualFileScanGroup.style.display = hasLargeFile ? 'block' : 'none';
+        }
+        if (manualSiteScanGroup) {
+            manualSiteScanGroup.style.display = directDownloadInput && directDownloadInput.value.trim() ? 'block' : 'none';
+        }
+    };
+
     const categoriesByPlatform = {
         android:['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
         'ios-jailed':['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
@@ -974,6 +989,10 @@ document.addEventListener('DOMContentLoaded', () => {
             customSelectedText.textContent = 'Select a platform first...';
             customSelectedText.style.color = 'var(--silver)';
         }
+    }
+
+    if (directDownloadInput) {
+        directDownloadInput.addEventListener('input', updateScanFieldVisibility);
     }
 
     if (nativePlatformSelect) {
@@ -1069,6 +1088,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if(optionToSelect) optionToSelect.click();
         }
     }
+
+    const parsedFileSize = Number(document.getElementById('fileSize')?.value || 0);
+    updateScanFieldVisibility();
 
     // ==========================================
     // 3. QUILL & SUBMISSION
@@ -1168,6 +1190,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('officialDescription') && !document.getElementById('officialDescription').value.trim()) {
                 showStatusAlert('Error: Official Description is required.', 'error'); return;
             }
+            if (document.getElementById('importantNote') && !document.getElementById('importantNote').value.trim()) {
+                showStatusAlert('Error: Important Note is required.', 'error'); return;
+            }
+            if (document.getElementById('whatsNew') && !document.getElementById('whatsNew').value.trim()) {
+                showStatusAlert('Error: What\'s New is required.', 'error'); return;
+            }
+            if (document.getElementById('videoUrl') && !document.getElementById('videoUrl').value.trim()) {
+                showStatusAlert('Error: Video URL is required.', 'error'); return;
+            }
+            if (document.getElementById('tags') && !document.getElementById('tags').value.trim()) {
+                showStatusAlert('Error: At least one tag is required.', 'error'); return;
+            }
             if (document.getElementById('modVersion') && !document.getElementById('modVersion').value.trim()) {
                 showStatusAlert('Error: Mod Version is required.', 'error'); return;
             }
@@ -1182,12 +1216,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parsedFileSize > 640 * 1024 * 1024) {
                 const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');
                 if (!hasScan) {
-                    showStatusAlert('Files larger than 640MB require a VirusTotal or manual scan URL before publishing.', 'error');
+                    showStatusAlert('Files larger than 640MB require a manual scan URL before publishing.', 'error');
                     return;
                 }
             }
             if (document.getElementById('ageRating') && !document.getElementById('ageRating').value) {
                 showStatusAlert('Error: Age Rating is required.', 'error'); return;
+            }
+            if (document.getElementById('developerName') && !document.getElementById('developerName').value.trim()) {
+                showStatusAlert('Error: Developer name is required.', 'error'); return;
             }
             if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0) {
                 showStatusAlert('Error: An icon is required to publish this mod.', 'error'); return;

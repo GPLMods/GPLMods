@@ -54,6 +54,8 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
 const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
+const { normalizeSingleValue } = require('./utils/formHelpers');
+const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
 
 // Custom Utilities & Config
 const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
@@ -324,6 +326,29 @@ function generateRecoveryCodes() {
     }
     return codes;
 }
+
+async function createWelcomeNotification(user) {
+    if (!user || !user._id) return;
+
+    try {
+        const existingWelcome = await UserNotification.findOne({
+            user: user._id,
+            title: 'Welcome to GPL Mods!'
+        });
+
+        if (existingWelcome) return;
+
+        await new UserNotification({
+            user: user._id,
+            title: 'Welcome to GPL Mods!',
+            message: `Hi ${user.username || 'there'},\n\nWelcome to the community! We're thrilled to have you here. \n\nFeel free to explore our massive library of safe, working mods, or start uploading your own to build your reputation.\n\nIf you need any help, check out the FAQ or submit a Support Ticket.\n\nHappy Modding,\nThe GPL Community Team`,
+            type: 'success'
+        }).save();
+    } catch (notifErr) {
+        console.error('Welcome message error:', notifErr);
+    }
+}
+
 // ===============================
 // INDEXNOW SEO PROTOCOL HELPER
 // ===============================
@@ -2780,6 +2805,7 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
         }
         
         await user.save();
+        await createWelcomeNotification(user);
         await sendVerificationEmail(user);
         
         res.render('pages/please-verify', { email: user.email, error: null });
@@ -2831,19 +2857,7 @@ app.post('/verify-otp', async (req, res, next) => {
         }
 
         // AUTOMATED WELCOME MESSAGE
-        try {
-            const UserNotification = require('./models/userNotification');
-            const existingWelcome = await UserNotification.findOne({ user: user._id, title: 'Welcome to GPL Mods!' });
-
-            if (!existingWelcome) {
-                await new UserNotification({
-                    user: user._id,
-                    title: 'Welcome to GPL Mods!',
-                    message: `Hi ${user.username},\n\nWelcome to the community! We're thrilled to have you here. \n\nFeel free to explore our massive library of safe, working mods, or start uploading your own to build your reputation.\n\nIf you need any help, check out the FAQ or submit a Support Ticket.\n\nHappy Modding,\nThe GPL Community Team`,
-                    type: 'success' 
-                }).save();
-            }
-        } catch (notifErr) { console.error("Welcome message error:", notifErr); }
+        await createWelcomeNotification(user);
         
         // Log them in and finalize session
         req.login(user, (err) => {
@@ -4419,19 +4433,12 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const { softwareIcon, screenshots } = req.files || {};
         
         // Normalize duplicate inputs and preserve known values.
-        const normalizeInput = (value) => {
-            if (Array.isArray(value)) {
-                return value.find(v => typeof v === 'string' && v.trim())?.trim() || '';
-            }
-            return typeof value === 'string' ? value.trim() : '';
-        };
-
-        const directDownloadUrlValue = normalizeInput(formData.directDownloadUrl);
+        const directDownloadUrlValue = normalizeSingleValue(formData.directDownloadUrl);
         const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
-            ? normalizeInput(formData.manualFileScanUrl)
+            ? normalizeSingleValue(formData.manualFileScanUrl)
             : file.manualFileScanUrl;
         const manualSiteScanUrlValue = formData.manualSiteScanUrl !== undefined
-            ? normalizeInput(formData.manualSiteScanUrl)
+            ? normalizeSingleValue(formData.manualSiteScanUrl)
             : file.manualSiteScanUrl;
         const isDistributor = req.user.role === 'distributor';
         const currentFileSize = file.fileSize || 0;
@@ -4611,14 +4618,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
         const { softwareIcon, screenshots } = req.files || {}; // Default to empty object if no files
         const formData = req.body; 
+        const actionType = formData.actionType || 'submit'; // 'draft' or 'submit'
         
         // Normalize direct download/scans for duplicate or array values.
-        const normalizeSingleValue = (value) => {
-            if (Array.isArray(value)) {
-                return value.find(v => typeof v === 'string' && v.trim())?.trim() || '';
-            }
-            return typeof value === 'string' ? value.trim() : '';
-        };
         const directDownloadUrlValue = normalizeSingleValue(formData.directDownloadUrl);
         const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
             ? normalizeSingleValue(formData.manualFileScanUrl)
@@ -4627,7 +4629,6 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             ? normalizeSingleValue(formData.manualSiteScanUrl)
             : null;
         const isDistributor = req.user.role === 'distributor';
-        const actionType = formData.actionType || 'submit'; // 'draft' or 'submit'
 
         // --- 1. THE VARIANT CHECK ---
         const existingMasterFile = await File.findOne({
@@ -4651,11 +4652,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         if (actionType === 'draft' && (!formData.modName || !formData.modName.trim())) {
             return res.redirect(`/upload-details/${fileId}?error=Mod Name is required to save a draft.`);
         }
-        // ======== ADD THIS VALIDATION CHECK ========
-        if (!isValidName(formData.modName)) {
+
+        if (actionType === 'draft' && formData.modName && !isValidName(formData.modName)) {
             return res.redirect(`/upload-details/${fileId}?error=Mod Name can only contain letters, numbers, and spaces. No emojis.`);
         }
-        // ===========================================
 
         let iconKey = fileToUpdate.iconKey; // Keep existing if not updating
         let screenshotKeys = fileToUpdate.screenshotKeys || [];
@@ -4708,34 +4708,25 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
         }
 
-        // --- VALIDATION FOR SUBMISSION ONLY ---
-        // If they are submitting for review, enforce required fields.
-        // If they are just saving a draft, allow missing fields.
-        if (actionType === 'submit') {
-            if (!formData.modPlatform || !formData.modCategory) {
-                return res.redirect(`/upload-details/${fileId}?error=Platform and Category are required to submit.`);
-            }
-            if (!formData.modVersion || !formData.modVersion.trim()) {
-                return res.redirect(`/upload-details/${fileId}?error=Version is required to submit the mod.`);
-            }
-            if (!req.body.ageRating) {
-                return res.redirect(`/upload-details/${fileId}?error=Age Rating is required to submit the mod.`);
-            }
-            if (!formData.modDescription || !formData.modDescription.trim()) {
-                return res.redirect(`/upload-details/${fileId}?error=Mod Description is required to submit the mod.`);
-            }
-            if (!formData.modFeatures || !formData.modFeatures.trim()) {
-                return res.redirect(`/upload-details/${fileId}?error=Mod Features are required to submit the mod.`);
-            }
-            if (!formData.officialDescription || !formData.officialDescription.trim()) {
-                return res.redirect(`/upload-details/${fileId}?error=Official Description is required to submit the mod.`);
-            }
-            if (!isVariant && !iconKey) {
-                return res.redirect(`/upload-details/${fileId}?error=An icon is required to submit the mod.`);
-            }
-            if ((!screenshotKeys || screenshotKeys.length === 0) && (!screenshots || screenshots.length === 0)) {
-                return res.redirect(`/upload-details/${fileId}?error=At least one screenshot is required to submit the mod.`);
-            }
+        const validationErrors = getSubmissionValidationErrors({
+            actionType,
+            formData,
+            fileToUpdate,
+            iconKey,
+            screenshotKeys,
+            screenshots,
+            isVariant,
+            isDistributor,
+            ageRating: req.body.ageRating,
+            fileSize: fileToUpdate.fileSize,
+            directDownloadUrlValue,
+            manualFileScanUrlValue,
+            manualSiteScanUrlValue,
+            isValidNameFn: isValidName
+        });
+
+        if (validationErrors.length > 0) {
+            return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(validationErrors[0])}`);
         }
 
         // --- NEW: Sanitize Mod Details ---
@@ -4775,12 +4766,12 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             whatsNew: cleanWhatsNew,          // Use clean what's new
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
-            videoUrl: formData.videoUrl, 
+            videoUrl: normalizeSingleValue(formData.videoUrl), 
             tags: processedTags,
             ageRating: req.body.ageRating,
             // --- NEW: SAVE MANUAL SCANS ---
-            manualFileScanUrl: formData.manualFileScanUrl,
-            manualSiteScanUrl: formData.manualSiteScanUrl,
+            manualFileScanUrl: manualFileScanUrlValue,
+            manualSiteScanUrl: manualSiteScanUrlValue,
 
             
             // Update categories if provided, otherwise keep existing (which might be empty string)

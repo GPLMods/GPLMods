@@ -12,7 +12,8 @@ function normalizeB2Key(b2Key) {
 function shouldMirrorToFTP(b2Key) {
     const normalized = normalizeB2Key(b2Key);
     if (!normalized) return false;
-    return IMAGE_FOLDERS.has(normalized.split('/')[0].toLowerCase());
+    const topLevel = normalized.split('/')[0].toLowerCase();
+    return IMAGE_FOLDERS.has(topLevel);
 }
 
 /**
@@ -45,7 +46,13 @@ async function mirrorToFTP(fileData, b2Key) {
 
         // Ensure the subfolder exists on the FTP server
         if (remoteDir) {
-            await client.ensureDir(remoteDir);
+            try {
+                await client.ensureDir(remoteDir);
+            } catch (dirErr) {
+                if (dirErr?.code !== 550) {
+                    throw dirErr;
+                }
+            }
         }
 
         // Upload the file
@@ -85,7 +92,7 @@ async function deleteFromFTP(b2Key) {
 
         const normalizedKey = normalizeB2Key(b2Key);
         const fullPath = `${process.env.FTP_BASE_PATH || '/htdocs'}/${normalizedKey}`;
-        
+
         await client.remove(fullPath);
         console.log(`[FTP Mirror] Successfully deleted ${normalizedKey} from InfinityFree.`);
 
