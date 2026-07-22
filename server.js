@@ -1065,6 +1065,7 @@ passport.use(new GoogleStrategy({
             googleUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(googleUserData);
+            await createWelcomeNotification(user);
             done(null, user);
         }
     } catch (err) { done(err, null); }
@@ -1106,6 +1107,7 @@ passport.use(new GitHubStrategy({
             githubUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(githubUserData);
+            await createWelcomeNotification(user);
             done(null, user);
         }
     } catch (err) { done(err, null); }
@@ -1146,6 +1148,7 @@ passport.use(new MicrosoftStrategy({
             microsoftUserData.referralCode = await generateReferralCode(uniqueUsername);
 
             user = await User.create(microsoftUserData);
+            await createWelcomeNotification(user);
             done(null, user);
         }
     } catch (err) { done(err, null); }
