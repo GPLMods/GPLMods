@@ -402,13 +402,19 @@ try {
         // 3. Parse the clean JSON
         const credentials = JSON.parse(jsonString);
         
-        // 4. Setup the JWT authentication client (Official Google Method)
-        jwtClient = new google.auth.JWT(
-            credentials.client_email,
-            null,
-            credentials.private_key,['https://www.googleapis.com/auth/indexing'] // Official scope required by the docs
-        );
-        console.log("[Google Indexing] Credentials successfully decoded and loaded!");
+        // 4. Validate credentials and setup the JWT authentication client
+        if (!credentials.client_email || !credentials.private_key) {
+            console.warn("[Google Indexing] Incomplete credentials: client_email or private_key missing. Google sync will be skipped.");
+            jwtClient = null;
+        } else {
+            jwtClient = new google.auth.JWT(
+                credentials.client_email,
+                null,
+                credentials.private_key,
+                ['https://www.googleapis.com/auth/indexing'] // Official scope required by the docs
+            );
+            console.log("[Google Indexing] Credentials successfully decoded and loaded!");
+        }
     } else {
         console.warn("[Google Indexing] GOOGLE_CREDENTIALS_BASE64 not found. Google sync skipped.");
     }
@@ -428,8 +434,13 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
     }
 
     try {
-        await jwtClient.authorize();
-        
+        try {
+            await jwtClient.authorize();
+        } catch (authErr) {
+            console.error(`[Google Error] Authorization failed for ${url}:`, authErr.message || authErr);
+            return; // Don't throw - skip Google indexing if auth fails
+        }
+
         // Official API call per Google documentation
         const response = await google.indexing('v3').urlNotifications.publish({
             auth: jwtClient,
@@ -442,7 +453,7 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
     } catch (error) {
         // If Google rejects it (e.g., quota exceeded, domain not verified in Search Console)
         console.error(`[Google Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
-        throw error; // Throw the error so the bulk sync loop can count it as a failure
+        // Don't throw - indexing failures should not crash the server
     }
 }
 // --- NEW GLOBAL DELETE HELPER ---
@@ -2395,11 +2406,11 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             originalFilename: originalFilename,
             isMultiPart: isMultiPart,
             downloadParts: downloadParts,
-            externalDownloadUrl: !isMultiPart ? (formData.externalDownloadUrl || '') : '',
-            directDownloadUrl: formData.directDownloadUrl || '',
-            ipaDirectDownloadUrl: formData.ipaDirectDownloadUrl || '',
-            manualFileScanUrl: !isMultiPart ? (formData.manualFileScanUrl || '') : '',
-            manualSiteScanUrl: !isMultiPart ? (formData.manualSiteScanUrl || '') : '',
+            externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
+            directDownloadUrl: normalizeSingleValue(formData.directDownloadUrl) || '',
+            ipaDirectDownloadUrl: normalizeSingleValue(formData.ipaDirectDownloadUrl) || '',
+            manualFileScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualFileScanUrl) || '') : '',
+            manualSiteScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualSiteScanUrl) || '') : '',
             isLatestVersion: false,
             parentFile: parentFileId,
             status: 'live'
@@ -3495,12 +3506,54 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
         }
 
         const username = user.username;
+
+        // Gather user's files up-front
+        const userFiles = await File.find({ uploader: username }).populate('olderVersions');
+
         if (preserveMods) {
-            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
+            const fileIds = userFiles.map(f => f._id);
+            if (fileIds.length > 0) {
+                await File.updateMany({ _id: { $in: fileIds } }, { uploader: 'GPL Community' });
+                await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
+            }
         } else {
-            await File.deleteMany({ uploader: username });
+            for (const f of userFiles) {
+                await deleteCloudFile(f.fileKey);
+                await deleteCloudFile(f.iconKey);
+                if (f.screenshotKeys) {
+                    for (const sk of f.screenshotKeys) await deleteCloudFile(sk);
+                }
+
+                if (f.olderVersions) {
+                    for (const ov of f.olderVersions) {
+                        await deleteCloudFile(ov.fileKey);
+                        await File.findByIdAndDelete(ov._id);
+                    }
+                }
+
+                await File.findByIdAndDelete(f._id);
+                await Review.deleteMany({ file: f._id });
+                await Report.updateMany({ file: f._id }, { status: 'resolved' });
+            }
         }
+
+        // Remove user's personal reviews
         await Review.deleteMany({ user: user._id });
+
+        // Clean up related user data
+        try { await UserNotification.deleteMany({ user: user._id }); } catch (e) { console.error('UserNotification cleanup error', e); }
+        try { await PointHistory.deleteMany({ user: user._id }); } catch (e) { console.error('PointHistory cleanup error', e); }
+        try { await SupportTicket.deleteMany({ user: user._id }); } catch (e) { console.error('SupportTicket cleanup error', e); }
+
+        // Attempt to remove sessions for this user
+        try {
+            const sessionsCollection = mongoose.connection.collection('sessions');
+            await sessionsCollection.deleteMany({ session: { $regex: user._id.toString() } });
+        } catch (sessErr) {
+            console.error('Failed to delete sessions for user during account deletion:', sessErr.message || sessErr);
+        }
+
+        // Finally delete the user record
         await User.findByIdAndDelete(user._id);
 
         req.logout(function(err) {
@@ -4294,9 +4347,6 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
             }
         }
 
-        // Delete the file and its associated reviews/reports from the database
-        await File.findByIdAndDelete(fileId);
-
         // --- 1. DELETE FILES FROM BACKBLAZE B2 ---
         
         // A. Delete main file, icon, and screenshots
@@ -4324,6 +4374,7 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         notifyGoogle(deadUrl, 'URL_DELETED'); // Tell Google to REMOVE this from search results!
 
         // --- 2. DELETE FROM DATABASE ---
+        // Delete the master file record (once) and related reviews/reports
         await File.findByIdAndDelete(fileId);
         await Review.deleteMany({ file: fileId });
         await Report.updateMany({ file: fileId }, { status: 'resolved' });
