@@ -4858,12 +4858,13 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
-            directDownloadUrl: formData.directDownloadUrl || '',
+            directDownloadUrl: directDownloadUrlValue || '',
+            externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
             // --- NEW: Save dependencies ---
             architectures: archData,
             minOsVersion: formData.minOsVersion || '',
             // ✅ ADDED: Save the Package ID
-            iosPackageId: formData.iosPackageId || '',
+            iosPackageId: normalizeSingleValue(formData.iosPackageId) || '',
             // ------------------------------          
             status: finalStatus // 'processing' (draft) or 'pending' (submitted)
         };

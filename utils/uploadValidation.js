@@ -59,26 +59,6 @@ function getSubmissionValidationErrors({
         errors.push('Official description is required to submit the mod.');
     }
 
-    const tags = Array.isArray(formData.tags)
-        ? formData.tags.filter(Boolean)
-        : (formData.tags ? String(formData.tags).split(',').map((tag) => tag.trim()).filter(Boolean) : []);
-
-    if (tags.length === 0) {
-        errors.push('At least one tag is required to submit the mod.');
-    }
-
-    if (!formData.importantNote || !formData.importantNote.trim()) {
-        errors.push('Important note is required to submit the mod.');
-    }
-
-    if (!formData.whatsNew || !formData.whatsNew.trim()) {
-        errors.push('What\'s new is required to submit the mod.');
-    }
-
-    if (!formData.videoUrl || !formData.videoUrl.trim()) {
-        errors.push('Video URL is required to submit the mod.');
-    }
-
     if (!ageRating) {
         errors.push('Age rating is required to submit the mod.');
     }
@@ -95,10 +75,6 @@ function getSubmissionValidationErrors({
     const isLargeFile = Number(fileSize || fileToUpdate?.fileSize || 0) > LARGE_FILE_THRESHOLD;
     if (isLargeFile && !manualFileScanUrlValue && !manualSiteScanUrlValue) {
         errors.push('Files larger than 640MB require a manual scan URL before publishing.');
-    }
-
-    if (isDistributor && !directDownloadUrlValue) {
-        errors.push('Distributor uploads must include a direct download link before publishing.');
     }
 
     if (formData.modPlatform === 'ios-jailbroken') {

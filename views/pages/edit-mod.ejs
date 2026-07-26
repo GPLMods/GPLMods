@@ -335,7 +335,7 @@
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable direct Sileo/Zebra package installation buttons. Must exactly match the ID in your control file.</span>
                 </div>
 
-            <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
+            <% if (user && (user.role === 'distributor' || user.role === 'admin') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 
@@ -354,10 +354,6 @@
 
                         <div style="margin-top:10px; border-top:1px solid #333; padding-top:10px;">
                             <p style="color:var(--silver); margin-bottom:8px; font-weight:600;">Admin & Safety Overrides</p>
-                            <div class="form-group">
-                                <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
-                                <input type="url" id="directDownloadUrl" name="directDownloadUrl" value="<%= file.directDownloadUrl || '' %>" placeholder="Direct Cloud Link (Dropbox, Mega...) for Admin 1-Click">
-                            </div>
                             <div class="form-group">
                                 <label for="manualFileScanUrl">Manual File Scan URL</label>
                                 <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="Manual File Scan URL">
@@ -1041,13 +1037,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (descInput && !descInput.value.trim()) { showStatusAlert('Error: Mod Description is required.', 'error'); return; }
             if (featInput && !featInput.value.trim()) { showStatusAlert('Error: Mod Features are required.', 'error'); return; }
-            if (userIsDistributor) {
-                const directLink = getFirstTruthyValue('input[name="directDownloadUrl"]');
-                if (!directLink) {
-                    showStatusAlert('Distributor uploads require a direct download link before publishing.', 'error');
-                    return;
-                }
-            }
             const parsedFileSize = fileSizeInput ? parseInt(fileSizeInput.value, 10) : 0;
             if (parsedFileSize > 640 * 1024 * 1024) {
                 const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');

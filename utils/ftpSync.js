@@ -44,25 +44,18 @@ async function mirrorToFTP(fileData, b2Key) {
         const basePath = process.env.FTP_BASE_PATH || '/htdocs';
         await client.cd(basePath);
 
-        // Ensure the subfolder exists on the FTP server
+        // Ensure the subfolder exists on the FTP server (ensureDir auto-navigates into remoteDir)
         if (remoteDir) {
-            try {
-                await client.ensureDir(remoteDir);
-            } catch (dirErr) {
-                if (dirErr?.code !== 550) {
-                    throw dirErr;
-                }
-            }
+            await client.ensureDir(remoteDir);
         }
 
-        // Upload the file
-        const remotePath = remoteDir ? `${remoteDir}/${fileName}` : fileName;
+        // Upload the file directly using fileName since working directory is now inside remoteDir
         if (Buffer.isBuffer(fileData)) {
             const { Readable } = require('stream');
             const stream = Readable.from(fileData);
-            await client.uploadFrom(stream, remotePath);
+            await client.uploadFrom(stream, fileName);
         } else if (typeof fileData === 'string' && fs.existsSync(fileData)) {
-            await client.uploadFrom(fileData, remotePath);
+            await client.uploadFrom(fileData, fileName);
         }
 
         console.log(`[FTP Mirror] Successfully backed up ${normalizedKey} to InfinityFree.`);
