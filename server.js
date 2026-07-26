@@ -393,33 +393,60 @@ const { google } = require('googleapis');
 let jwtClient = null;
 
 try {
-    // 1. Read the Base64 string from the environment variable
-    if (process.env.GOOGLE_CREDENTIALS_BASE64) {
-        
-        // 2. Decode the Base64 string back into perfectly formatted JSON text
-        const jsonString = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf-8');
-        
-        // 3. Parse the clean JSON
-        const credentials = JSON.parse(jsonString);
-        
-        // 4. Validate credentials and setup the JWT authentication client
-        if (!credentials.client_email || !credentials.private_key) {
-            console.warn("[Google Indexing] Incomplete credentials: client_email or private_key missing. Google sync will be skipped.");
-            jwtClient = null;
-        } else {
-            jwtClient = new google.auth.JWT(
-                credentials.client_email,
-                null,
-                credentials.private_key,
-                ['https://www.googleapis.com/auth/indexing'] // Official scope required by the docs
-            );
-            console.log("[Google Indexing] Credentials successfully decoded and loaded!");
+    let clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_INDEXING_CLIENT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
+    let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_INDEXING_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
+
+    // Support raw JSON, Base64 JSON, or direct environment variables
+    const rawCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON 
+        || process.env.GOOGLE_CREDENTIALS 
+        || process.env.GOOGLE_CREDENTIALS_JSON 
+        || process.env.GOOGLE_CREDENTIALS_BASE64;
+
+    if (rawCredentials && (!clientEmail || !privateKey)) {
+        let jsonString = rawCredentials.trim();
+        let credentials = null;
+
+        // 1. Try direct JSON parsing (for unencoded JSON strings)
+        if (jsonString.startsWith('{')) {
+            try {
+                credentials = JSON.parse(jsonString);
+            } catch (parseErr) {
+                // Ignore and fall back to base64
+            }
         }
+
+        // 2. Try Base64 decoding if direct JSON parsing didn't work
+        if (!credentials) {
+            try {
+                const decodedString = Buffer.from(jsonString, 'base64').toString('utf-8').trim();
+                credentials = JSON.parse(decodedString);
+            } catch (parseErr) {
+                // Ignore
+            }
+        }
+
+        if (credentials && typeof credentials === 'object') {
+            clientEmail = credentials.client_email || clientEmail;
+            privateKey = credentials.private_key || privateKey;
+        }
+    }
+
+    if (!clientEmail || !privateKey) {
+        console.warn("[Google Indexing] Incomplete credentials: client_email or private_key missing. Google sync will be skipped.");
+        jwtClient = null;
     } else {
-        console.warn("[Google Indexing] GOOGLE_CREDENTIALS_BASE64 not found. Google sync skipped.");
+        // Unescape escaped newline characters (\n -> actual newline)
+        const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+
+        jwtClient = new google.auth.JWT({
+            email: clientEmail,
+            key: formattedPrivateKey,
+            scopes: ['https://www.googleapis.com/auth/indexing'] // Official scope required by the docs
+        });
+        console.log("[Google Indexing] Credentials successfully loaded!");
     }
 } catch (e) {
-    console.error("[Google Indexing Error] Failed to decode or parse Base64 credentials.", e.message);
+    console.error("[Google Indexing Error] Failed to load Google credentials:", e.message);
 }
 
 /**
