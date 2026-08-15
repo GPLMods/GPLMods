@@ -240,75 +240,23 @@ async function initializeVpnDetector() {
 }
 
 /**
- * Check VPN status using multiple API sources for better detection
+ * Check VPN status via backend API (vpnapi.io + DB Cache)
  */
 async function checkVpnStatus() {
-    // Try primary API first (ip-api.com)
     try {
-        const response = await fetch('https://ip-api.com/json/?fields=status,proxy,hosting', {
-            method: 'GET'
-        });
-        
+        const response = await fetch('/api/check-vpn');
         if (response.ok) {
             const data = await response.json();
-            console.log("ip-api.com response:", data);
-            
-            if (data && data.status === 'success') {
-                if (data.proxy === true || data.hosting === true) {
-                    console.log("VPN detected via ip-api.com - proxy:", data.proxy, "hosting:", data.hosting);
-                    return true;
-                }
-            }
-        }
-    } catch (error) {
-        console.warn("Primary VPN detection API failed:", error);
-    }
-
-    // Try secondary API (ipqualityscore.com - free tier, no key required)
-    try {
-        const response = await fetch('https://ipqualityscore.com/api/json/ip', {
-            method: 'GET'
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log("ipqualityscore.com response:", data);
-            
-            // Check for VPN/Proxy indicators
-            if (data && (data.proxy === true || data.is_crawler === true || data.is_vpn === true)) {
-                console.log("VPN detected via ipqualityscore.com");
+            console.log("VPN Check API response:", data);
+            if (data && data.success && data.isVpn) {
+                console.log("VPN/Proxy detected for IP:", data.ip, "Security details:", data.security);
                 return true;
             }
         }
     } catch (error) {
-        console.warn("Secondary VPN detection API failed:", error);
+        console.warn("VPN detection API request failed:", error);
     }
 
-    // Try tertiary API (iphub.info - free tier)
-    try {
-        const response = await fetch('https://iphub.info/api/ip', {
-            method: 'GET',
-            headers: {
-                'X-IPHub-Key': 'free' // Free tier uses 'free' as key
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log("iphub.info response:", data);
-            
-            // block: 0 = residential, 1 = non-residential/datacenter, 2 = VPN/Proxy
-            if (data && data.block >= 1) {
-                console.log("VPN/Proxy detected via iphub.info - block level:", data.block);
-                return true;
-            }
-        }
-    } catch (error) {
-        console.warn("Tertiary VPN detection API failed:", error);
-    }
-
-    // If all APIs fail or don't detect VPN, return false
-    console.log("All VPN detection checks completed. No VPN detected.");
     return false;
 }
 /**

@@ -144,38 +144,72 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
 };
 exports.sendDeletionOtpEmail = async (user, otp) => {
     try {
-        const msg = {
-            sender: process.env.EMAIL_FROM,
+        const emailContent = `
+            <h2 style="margin: 0 0 20px 0; color: #e53935; font-size: 24px; text-align: center;">Account Deletion Request</h2>
+            <p style="margin: 0 0 20px 0; color: #c0c0c0; font-size: 16px; line-height: 1.6; text-align: center;">
+                Hi <strong>${user.username}</strong>, we received a request to permanently delete your GPL Mods account. If you initiated this, please enter the confirmation code below. <strong style="color: #e53935;">This action is permanent and irreversible.</strong>
+            </p>
+            
+            <div style="text-align: center; margin: 40px 0;">
+                <span style="display: inline-block; padding: 20px 40px; background-color: #0a0a0a; border: 2px dashed #e53935; color: #e53935; font-size: 38px; font-weight: bold; letter-spacing: 12px; border-radius: 10px; box-shadow: 0 0 20px rgba(229,57,53,0.2);">
+                    ${otp}
+                </span>
+            </div>
+            
+            <p style="margin: 0; color: #888888; font-size: 14px; text-align: center;">
+                For security reasons, this code will expire in <strong>10 minutes</strong>. If you did not request this deletion, please secure your account immediately.
+            </p>
+        `;
+
+        const payload = {
+            api_key: process.env.SMTP2GO_API_KEY,
             to: [user.email],
-            subject: 'GPL Mods - Account Deletion Code',
-            html_body: `
-                <h2>Account Deletion Request</h2>
-                <p>Hi ${user.username},</p>
-                <p>We received a request to delete your GPL Mods account. If you initiated this, please use the following code to confirm. <b>This action is irreversible.</b></p>
-                <h1 style="background: #1a1a1a; color: #e53935; padding: 15px; text-align: center; border-radius: 8px; letter-spacing: 5px;">${otp}</h1>
-                <p>If you did not request this, please change your password immediately.</p>
-            `,
-            text_body: `Your account deletion code is: ${otp}`
+            sender: process.env.EMAIL_FROM,
+            subject: 'GPL Mods - Account Deletion Confirmation Code',
+            text_body: `Your account deletion code is: ${otp}. This code expires in 10 minutes. If you did not request this, please change your password immediately.`,
+            html_body: getBrandedEmailHtml(emailContent)
         };
-        await s2g.send(msg, options);
-    } catch (error) { console.error("Error sending deletion OTP:", error); }
+
+        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        console.log(`Deletion OTP email sent successfully to ${user.email}`);
+    } catch (error) {
+        console.error("SMTP2GO Deletion OTP Error:", error.response ? error.response.data : error.message);
+    }
 };
 
 exports.send2faEmail = async (user, otp) => {
     try {
-        const msg = {
-            sender: process.env.EMAIL_FROM,
+        const emailContent = `
+            <h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 24px; text-align: center;">Your 2FA Security Code</h2>
+            <p style="margin: 0 0 20px 0; color: #c0c0c0; font-size: 16px; line-height: 1.6; text-align: center;">
+                Please enter the security verification code below to complete your login securely:
+            </p>
+            
+            <div style="text-align: center; margin: 40px 0;">
+                <span style="display: inline-block; padding: 20px 40px; background-color: #0a0a0a; border: 2px dashed #FFD700; color: #FFD700; font-size: 38px; font-weight: bold; letter-spacing: 12px; border-radius: 10px; box-shadow: 0 0 20px rgba(255,215,0,0.1);">
+                    ${otp}
+                </span>
+            </div>
+            
+            <p style="margin: 0; color: #888888; font-size: 14px; text-align: center;">
+                This security code is valid for <strong>10 minutes</strong>.
+            </p>
+        `;
+
+        const payload = {
+            api_key: process.env.SMTP2GO_API_KEY,
             to: [user.email],
+            sender: process.env.EMAIL_FROM,
             subject: 'GPL Mods - Your Login Code',
-            html_body: `
-                <h2>Your 2FA Login Code</h2>
-                <p>Please enter the following code to complete your login securely:</p>
-                <h1 style="background: #1a1a1a; color: #FFD700; padding: 15px; text-align: center; border-radius: 8px; letter-spacing: 5px;">${otp}</h1>
-                <p>This code expires in 10 minutes.</p>
-            `
+            text_body: `Your 2FA login code is: ${otp}. Valid for 10 minutes.`,
+            html_body: getBrandedEmailHtml(emailContent)
         };
-        await s2g.send(msg, options);
-    } catch (error) { console.error("Error sending 2FA email:", error); }
+
+        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        console.log(`2FA OTP email sent successfully to ${user.email}`);
+    } catch (error) {
+        console.error("SMTP2GO 2FA Error:", error.response ? error.response.data : error.message);
+    }
 };
 /**
  * Background process to handle sending mass emails safely.

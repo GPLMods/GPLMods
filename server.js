@@ -48,6 +48,7 @@ const Filter = require('bad-words');
 const { isbot } = require('isbot');
 const zlib = require('zlib');
 const otplib = require('otplib');
+const { checkDomain } = require('./utils/tempMailDetector');
 const cheerio = require('cheerio');
 const AdmZip = require('adm-zip'); 
 const speakeasy = require('speakeasy');
@@ -89,6 +90,7 @@ const TranslationCache = require('./models/translationCache');
 const TranslationQuota = require('./models/translationQuota');
 const IosDns = require('./models/iosDns');
 const IosCert = require('./models/iosCert');
+const VpnCache = require('./models/vpnCache');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -286,35 +288,22 @@ function slugify(text) {
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
 }
-// --- NEW: ANTI-TEMP MAIL CHECKER ---
+// --- ANTI-TEMP MAIL CHECKER (TempMailDetector API + MongoDB Cache) ---
 /**
- * Checks if an email address is from a known disposable/temporary domain.
+ * Checks if an email address is from a disposable/temporary domain.
+ * Uses TempMailDetector API with MongoDB caching & default whitelist.
  * @param {string} email - The email address to check.
- * @returns {Promise<boolean>} - True if the email is disposable, False if it is safe.
+ * @returns {Promise<boolean>} - True if disposable/blocked, False if safe.
  */
 async function isDisposableEmail(email) {
     try {
-        // Extract the domain from the email address
-        const domain = email.split('@')[1];
-        if (!domain) return true; // Invalid email format
-
-        // We use a fast, free, open-source API for disposable domain checking.
-        // It returns JSON. If 'disposable' is true, it's a temp mail.
-        const response = await axios.get(`https://open.kickbox.com/v1/disposable/${domain}`);
-        
-        // If the API confirms it is disposable, return true
-        if (response.data && response.data.disposable) {
-            return true;
-        }
-
-        // If it's not listed as disposable, consider it safe
-        return false;
+        if (!email || typeof email !== 'string') return true;
+        const result = await checkDomain(email);
+        return Boolean(result.isDisposable || result.blocked);
     } catch (error) {
-        console.error("Temp Mail Checker API Error:", error.message);
-        // If the API fails, we fail OPEN (allow the registration) to prevent blocking 
-        // legitimate users just because a third-party service is temporarily down.
-        // You could also maintain a hardcoded fallback list of domains here.
-        return false; 
+        console.error("Temp Mail Checker Error:", error.message);
+        // Fallback OPEN to avoid blocking legitimate users on unexpected runtime errors
+        return false;
     }
 }
 // --- NEW HELPER: Generate 2FA Recovery Codes ---
@@ -688,6 +677,108 @@ app.get('/healthz', (req, res) => {
         res.status(503).render('pages/healthz', { isHealthy: false });
     }
 });
+
+// ===============================
+// VPN DETECTION API (vpnapi.io + MongoDB Cache)
+// ===============================
+app.get('/api/check-vpn', async (req, res) => {
+    try {
+        // Extract client IP address from headers or socket
+        let clientIp = req.headers['x-forwarded-for'] 
+            ? req.headers['x-forwarded-for'].split(',')[0].trim() 
+            : (req.socket.remoteAddress || req.ip || '');
+
+        // Remove IPv6 mapping prefix if present
+        if (clientIp.startsWith('::ffff:')) {
+            clientIp = clientIp.replace('::ffff:', '');
+        }
+
+        // Allow query parameter override for testing (e.g., /api/check-vpn?ip=8.8.8.8)
+        if (req.query.ip && typeof req.query.ip === 'string') {
+            clientIp = req.query.ip.trim();
+        }
+
+        // Handle local loopback / private IP addresses
+        const isLocalhost = !clientIp || clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.startsWith('192.168.') || clientIp.startsWith('10.');
+        if (isLocalhost && !req.query.ip) {
+            return res.json({
+                success: true,
+                ip: clientIp || '127.0.0.1',
+                isVpn: false,
+                security: { vpn: false, proxy: false, tor: false, relay: false },
+                location: {},
+                network: {},
+                cached: false,
+                note: 'Local/Internal IP address detected'
+            });
+        }
+
+        // 1. Check MongoDB Database FIRST
+        const existingCache = await VpnCache.findOne({ ip: clientIp });
+        if (existingCache) {
+            console.log(`[VPN API] DB Cache HIT for IP: ${clientIp} (isVpn: ${existingCache.isVpn})`);
+            return res.json({
+                success: true,
+                ip: existingCache.ip,
+                isVpn: existingCache.isVpn,
+                security: existingCache.security,
+                location: existingCache.location,
+                network: existingCache.network,
+                cached: true
+            });
+        }
+
+        // 2. Not in DB -> Query vpnapi.io API
+        console.log(`[VPN API] DB Cache MISS for IP: ${clientIp}. Querying vpnapi.io...`);
+        const apiKey = process.env.VPNAPI_KEY || '58919de8ab5d4a5cbdb0604e31efc9bd';
+        
+        const response = await axios.get(`https://vpnapi.io/api/${clientIp}?key=${apiKey}`, {
+            timeout: 7000
+        });
+
+        const data = response.data || {};
+        const security = data.security || {};
+        const isVpn = Boolean(security.vpn || security.proxy || security.tor || security.relay);
+
+        // 3. Save result to Database
+        const newVpnRecord = new VpnCache({
+            ip: clientIp,
+            isVpn: isVpn,
+            security: {
+                vpn: Boolean(security.vpn),
+                proxy: Boolean(security.proxy),
+                tor: Boolean(security.tor),
+                relay: Boolean(security.relay)
+            },
+            location: data.location || {},
+            network: data.network || {},
+            rawResponse: data
+        });
+
+        await newVpnRecord.save();
+        console.log(`[VPN API] Saved IP ${clientIp} to DB cache (isVpn: ${isVpn}).`);
+
+        return res.json({
+            success: true,
+            ip: clientIp,
+            isVpn: isVpn,
+            security: newVpnRecord.security,
+            location: newVpnRecord.location,
+            network: newVpnRecord.network,
+            cached: false
+        });
+
+    } catch (error) {
+        console.error('[VPN API Error]:', error.response ? error.response.data : error.message);
+        // Fail-open strategy: return isVpn: false on error so user experience isn't broken
+        return res.status(500).json({
+            success: false,
+            isVpn: false,
+            error: 'Failed to verify VPN status'
+        });
+    }
+});
+
 
 // --- DYNAMIC SITE STATE ENGINE (Maintenance / Unavailable) ---
 let cachedSiteState = null;
@@ -1983,7 +2074,31 @@ app.get('/:category/:slug', async (req, res, next) => {
             isVariant: { $ne: true } 
         }).populate('variants');
 
-        // 3. FALLBACK SEARCH: If exact slug fails, use RegEx on the name field
+        // 3. SECONDARY SEARCH: If exact slug fails and slug is a valid ObjectId, search by _id
+        if (!masterFile && Types.ObjectId.isValid(slug)) {
+            const fileById = await File.findById(slug).populate('variants');
+            if (fileById) {
+                // If the file found by ID is a variant, resolve to its master file
+                if (fileById.isVariant && fileById.masterFile) {
+                    const parentMaster = await File.findById(fileById.masterFile).populate('variants');
+                    if (parentMaster) {
+                        const targetSlug = parentMaster.slug || parentMaster._id.toString();
+                        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : `?variant=${fileById._id}`;
+                        return res.redirect(301, `/${parentMaster.category}/${targetSlug}${queryString}`);
+                    }
+                } else {
+                    masterFile = fileById;
+                    // If the file has a slug and it differs from the requested URL parameter (which was the ID),
+                    // perform a 301 redirect to the SEO-friendly slug URL.
+                    if (masterFile.slug && masterFile.slug.toLowerCase() !== slug) {
+                        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+                        return res.redirect(301, `/${masterFile.category}/${masterFile.slug}${queryString}`);
+                    }
+                }
+            }
+        }
+
+        // 4. TERTIARY SEARCH: If exact slug and ID fail, use RegEx on the name field
         if (!masterFile) {
             const nameSearchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
             masterFile = await File.findOne({
@@ -1994,9 +2109,16 @@ app.get('/:category/:slug', async (req, res, next) => {
             }).populate('variants');
         }
 
-        // 4. If STILL not found, throw 404
+        // 5. If STILL not found, throw 404
         if (!masterFile) {
             return next(); 
+        }
+
+        // --- Category Normalization Redirect ---
+        if (masterFile.category && masterFile.category.toLowerCase() !== category) {
+            const targetSlug = masterFile.slug || masterFile._id.toString();
+            const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+            return res.redirect(301, `/${masterFile.category}/${targetSlug}${queryString}`);
         }
 
         // --- Security Check for Drafts/Pending ---
@@ -3515,12 +3637,18 @@ app.post('/account/delete-request', ensureAuthenticated, async (req, res) => {
     try {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User account not found.' });
+        }
         user.deletionOtp = otp;
         user.deletionOtpExpires = Date.now() + 600000; // 10 mins
         await user.save();
         await sendDeletionOtpEmail(user, otp);
-        res.json({ success: true });
-    } catch (e) { res.json({ success: false }); }
+        res.json({ success: true, message: 'Confirmation code sent to your email.' });
+    } catch (e) {
+        console.error("Error in delete-request route:", e);
+        res.status(500).json({ success: false, message: 'Failed to send confirmation code. Please try again.' });
+    }
 });
 
 app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) => {
@@ -3528,66 +3656,104 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
         const { otp, preserveMods } = req.body;
         const user = await User.findById(req.user._id);
 
-        if (!user.deletionOtp || user.deletionOtp !== otp || user.deletionOtpExpires < Date.now()) {
-            return res.json({ success: false, message: 'Invalid or expired code.' });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User account not found.' });
         }
 
+        if (!user.deletionOtp || !otp || user.deletionOtp.trim() !== String(otp).trim() || !user.deletionOtpExpires || user.deletionOtpExpires < Date.now()) {
+            return res.json({ success: false, message: 'Invalid or expired confirmation code. Please check your email or request a new code.' });
+        }
+
+        const userId = user._id;
         const username = user.username;
+        const shouldPreserve = preserveMods === true || preserveMods === 'true';
 
-        // Gather user's files up-front
-        const userFiles = await File.find({ uploader: username }).populate('olderVersions');
+        // 1. DELETE AVATAR FROM CLOUD
+        if (user.profileImageKey) {
+            try { await deleteCloudFile(user.profileImageKey); } catch (e) { console.error("Avatar cloud deletion error:", e); }
+        }
 
-        if (preserveMods) {
+        // 2. WIPE MODS & MOD DATA
+        if (shouldPreserve) {
+            // Keep the files, but anonymize the uploader
+            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
+            
+            // Unset uploader replies on comments for these files
+            const userFiles = await File.find({ uploader: 'GPL Community' }); 
             const fileIds = userFiles.map(f => f._id);
             if (fileIds.length > 0) {
-                await File.updateMany({ _id: { $in: fileIds } }, { uploader: 'GPL Community' });
                 await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
             }
         } else {
+            // Delete EVERYTHING related to their mods from Cloud and DB
+            const userFiles = await File.find({ uploader: username }).populate('olderVersions');
+            
             for (const f of userFiles) {
                 await deleteCloudFile(f.fileKey);
                 await deleteCloudFile(f.iconKey);
+                
                 if (f.screenshotKeys) {
-                    for (const sk of f.screenshotKeys) await deleteCloudFile(sk);
+                    for (const sk of f.screenshotKeys) {
+                        await deleteCloudFile(sk);
+                    }
                 }
-
+                
                 if (f.olderVersions) {
                     for (const ov of f.olderVersions) {
                         await deleteCloudFile(ov.fileKey);
                         await File.findByIdAndDelete(ov._id);
                     }
                 }
-
+                
                 await File.findByIdAndDelete(f._id);
                 await Review.deleteMany({ file: f._id });
                 await Report.updateMany({ file: f._id }, { status: 'resolved' });
             }
         }
 
-        // Remove user's personal reviews
-        await Review.deleteMany({ user: user._id });
+        // 3. DELETE THEIR PERSONAL REVIEWS/COMMENTS
+        await Review.deleteMany({ user: userId });
 
-        // Clean up related user data
-        try { await UserNotification.deleteMany({ user: user._id }); } catch (e) { console.error('UserNotification cleanup error', e); }
-        try { await PointHistory.deleteMany({ user: user._id }); } catch (e) { console.error('PointHistory cleanup error', e); }
-        try { await SupportTicket.deleteMany({ user: user._id }); } catch (e) { console.error('SupportTicket cleanup error', e); }
-
-        // Attempt to remove sessions for this user
-        try {
-            const sessionsCollection = mongoose.connection.collection('sessions');
-            await sessionsCollection.deleteMany({ session: { $regex: user._id.toString() } });
-        } catch (sessErr) {
-            console.error('Failed to delete sessions for user during account deletion:', sessErr.message || sessErr);
+        // 4. DELETE THEIR CHAT HISTORY FROM MEMORY
+        if (typeof recentMessages !== 'undefined' && Array.isArray(recentMessages)) {
+            recentMessages = recentMessages.filter(msg => msg.username !== username);
         }
 
-        // Finally delete the user record
-        await User.findByIdAndDelete(user._id);
+        // 5. NEWSLETTER UNSUBSCRIBE
+        try {
+            const SubscriberModel = mongoose.models.Subscriber || require('./models/subscriber');
+            if (SubscriberModel) {
+                await SubscriberModel.deleteOne({ email: user.email.toLowerCase() });
+            }
+        } catch (subErr) {
+            console.error("Failed to delete subscriber record:", subErr);
+        }
 
+        // 6. USER NOTIFICATIONS, POINT HISTORY, SUPPORT TICKETS & SESSIONS
+        try { await UserNotification.deleteMany({ user: userId }); } catch (e) { console.error('UserNotification cleanup error', e); }
+        try { await PointHistory.deleteMany({ user: userId }); } catch (e) { console.error('PointHistory cleanup error', e); }
+        try { await SupportTicket.deleteMany({ user: userId }); } catch (e) { console.error('SupportTicket cleanup error', e); }
+
+        try {
+            const sessionsCollection = mongoose.connection.collection('sessions');
+            await sessionsCollection.deleteMany({ session: { $regex: userId.toString() } });
+        } catch (sessErr) {
+            console.error('Failed to delete sessions for user:', sessErr.message || sessErr);
+        }
+
+        // 7. FINALLY DELETE THE USER DOCUMENT
+        await User.findByIdAndDelete(userId);
+
+        // 8. LOG OUT AND CLEAR COOKIE
         req.logout(function(err) {
             if (err) return next(err);
-            res.json({ success: true, redirect: '/?message=Account deleted permanently.' });
+            res.clearCookie('connect.sid', { path: '/' });
+            res.json({ success: true, redirect: '/?message=Your account and all associated data have been permanently deleted.' });
         });
-    } catch (error) { res.status(500).json({ success: false }); }
+    } catch (error) {
+        console.error("Deep Wipe Deletion Error:", error);
+        res.status(500).json({ success: false, message: 'An error occurred during account deletion.' });
+    }
 });
 
 // ✅ KEEP THIS ROUTE ✅
@@ -3981,87 +4147,8 @@ app.get('/login/2fa', async (req, res) => {
 });
 
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
-    try {
-        const userId = req.user._id;
-        const username = req.user.username;
-        const preserveMods = req.body.preserveMods === 'true';
-
-        // 1. DELETE AVATAR FROM CLOUD (Uses new dual-cloud helper)
-        if (req.user.profileImageKey) {
-            await deleteCloudFile(req.user.profileImageKey);
-        }
-
-        // 2. WIPE MODS & MOD DATA
-        if (preserveMods) {
-            // Keep the files, but anonymize the uploader
-            await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
-            
-            // If they preserve mods, we must unset their "Uploader Replies" on comments
-            const userFiles = await File.find({ uploader: 'GPL Community' }); 
-            const fileIds = userFiles.map(f => f._id);
-            await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
-            
-        } else {
-            // Delete EVERYTHING related to their mods from the Cloud and DB
-            const userFiles = await File.find({ uploader: username }).populate('olderVersions');
-            
-            for (const f of userFiles) {
-                // Delete main mod files from Cloud (B2 + FTP)
-                await deleteCloudFile(f.fileKey);
-                await deleteCloudFile(f.iconKey);
-                
-                if (f.screenshotKeys) {
-                    for (const sk of f.screenshotKeys) {
-                        await deleteCloudFile(sk);
-                    }
-                }
-                
-                // Delete older versions from Cloud and DB
-                if (f.olderVersions) {
-                    for (const ov of f.olderVersions) {
-                        await deleteCloudFile(ov.fileKey);
-                        await File.findByIdAndDelete(ov._id);
-                    }
-                }
-                
-                // Delete the file entry and its associated data
-                await File.findByIdAndDelete(f._id);
-                await Review.deleteMany({ file: f._id }); // Delete all reviews on their mods
-                await Report.updateMany({ file: f._id }, { status: 'resolved' }); // Resolve reports
-            }
-        }
-
-        // 3. DELETE THEIR PERSONAL REVIEWS/COMMENTS
-        await Review.deleteMany({ user: userId });
-
-        // 4. DELETE THEIR CHAT HISTORY FROM MEMORY
-        recentMessages = recentMessages.filter(msg => msg.username !== username);
-
-        // 5. NEWSLETTER UNSUBSCRIBE (Custom Local DB)
-        try {
-            const SubscriberModel = mongoose.models.Subscriber || require('./models/subscriber');
-            if (SubscriberModel) {
-                await SubscriberModel.deleteOne({ email: req.user.email.toLowerCase() });
-                console.log(`Unsubscribed ${req.user.email} from newsletter during account deletion.`);
-            }
-        } catch (subErr) {
-            console.error("Failed to delete subscriber record:", subErr);
-        }
-
-        // 6. DELETE THE USER ACCOUNT
-        await User.findByIdAndDelete(userId);
-
-        // 7. SECURE LOGOUT & COOKIE CLEAR
-        req.logout(function(err) {
-            if (err) return next(err);
-            res.clearCookie('connect.sid', { path: '/' }); // Securely clear the session cookie
-            res.redirect('/?message=Your account and all associated data have been permanently wiped.');
-        });
-        
-    } catch (error) { 
-        console.error("Deep Wipe Deletion Error:", error);
-        return next(error); 
-    }
+    // Deprecated direct route: direct deletion is not allowed without OTP confirmation
+    return res.redirect('/settings?error=Account deletion requires confirmation via code sent to your email.');
 });
 
 // ===================================
@@ -5084,6 +5171,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             title: '',
             description: '',
             whatsNew: '',
+            tags: '',
             minOsVersion: '',
             ageRating: '',
             developer: ''
@@ -5091,14 +5179,21 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
 
         // --- SCRAPING LOGIC BASED ON PLATFORM ---
         if (platform === 'playstore') {
-            data.title = getAttr('meta[itemprop="name"]', 'content') || getAttr('meta[name="title"]', 'content') || getText('h1 span');
+            data.title = getAttr('meta[itemprop="name"]', 'content') || getAttr('meta[property="og:title"]', 'content') || getText('h1 span') || getText('h1');
             const descriptionEls = $('div[jsname="sngebd"], div[jsname="bN97Pc"], div[itemprop="description"]');
             data.description = normalizeText(descriptionEls.map((i, el) => $(el).text()).get().join('\n')) ||
                 getAttr('meta[itemprop="description"]', 'content') ||
                 getAttr('meta[name="description"]', 'content') ||
                 getText('div[jsname]');
-            data.developer = getText('a[href*="/store/apps/dev"]') || getText('div.T32cc.UAO9ie') || getText('div.hrTbp.R8zArc');
-            data.whatsNew = normalizeText($('div.hAyfc:contains("What\'s New")').find('span.htlgb').text()) || normalizeText($('div.W4P4ne .DWPxHb').text());
+            data.developer = getText('a[href*="/store/apps/dev"]') || getText('a[href*="/store/apps/developer"]') || getText('div.T32cc.UAO9ie') || getText('div.hrTbp.R8zArc');
+            data.whatsNew = normalizeText($('div.hAyfc:contains("What\'s New")').find('span.htlgb').text()) || normalizeText($('div.W4P4ne .DWPxHb').text()) || normalizeText($('section[aria-label="What\'s new"]').text());
+
+            const playTags = [];
+            $('a[href*="/store/apps/category"]').each((i, el) => {
+                const tagText = normalizeText($(el).text());
+                if (tagText && !playTags.includes(tagText)) playTags.push(tagText);
+            });
+            data.tags = playTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
 
             $('div.hAyfc').each((i, el) => {
                 const label = normalizeText($(el).find('div.BgcNfc').text());
@@ -5108,31 +5203,56 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             });
 
         } else if (platform === 'appstore') {
-            data.title = getText('h1.product-header__title') || getText('h1');
+            data.title = getText('h1.product-header__title').replace(/[\d\+\s]+$/, '').trim() || getText('h1');
             data.description = getText('section.section__description') || getText('div.section__description') || getAttr('meta[name="description"]', 'content');
             data.whatsNew = getText('div.whats-new__content p') || getText('section.whats-new') || '';
             data.developer = getText('h2.product-header__identity a') || getAttr('meta[property="og:site_name"]', 'content');
             data.minOsVersion = normalizeText($('dt:contains("Compatibility")').next('dd').text()).replace(/Requires (iOS|iPadOS)/i, 'iOS ') || '';
             data.ageRating = normalizeText($('dt:contains("Age Rating")').next('dd').text()) || '';
 
+            const appStoreCategory = getText('dt:contains("Category") + dd') || getText('a.medium-header__link');
+            data.tags = appStoreCategory || getAttr('meta[name="keywords"]', 'content') || '';
+
         } else if (platform === 'steam') {
-            data.title = getText('.apphub_AppName') || getAttr('meta[property="og:title"]', 'content');
-            data.description = getText('.game_description_snippet') || getText('#game_area_description') || getAttr('meta[name="description"]', 'content');
-            data.developer = getText('#developers_list a') || getText('.dev_row .summary');
+            data.title = getText('.apphub_AppName') || getAttr('meta[property="og:title"]', 'content') || getText('title');
+            data.description = getText('#game_area_description') || getText('.game_description_snippet') || getAttr('meta[name="description"]', 'content');
+            data.developer = getText('#developers_list a') || getText('.dev_row .summary') || getText('.dev_row');
+            data.whatsNew = getText('.game_news_area') || getText('.event_body') || '';
             data.minOsVersion = normalizeText($('div.sysreq_contents li').filter((i, el) => $(el).text().includes('OS:')).text().replace('OS:', '')).trim() || '';
             data.ageRating = normalizeText($('div.game_area_details .age_rating_area').text()) || '';
+
+            const steamTags = [];
+            $('a.app_tag').each((i, el) => {
+                const tagText = normalizeText($(el).text());
+                if (tagText && tagText !== '+' && !steamTags.includes(tagText)) steamTags.push(tagText);
+            });
+            data.tags = steamTags.slice(0, 8).join(', ');
 
         } else if (platform === 'epic') {
             data.title = getAttr('meta[property="og:title"]', 'content') || getText('h1');
             data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content');
-            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.developer-name');
+            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.developer-name') || getText('span:contains("Developer") + span');
             data.whatsNew = getText('section.whats-new') || '';
 
+            const epicTags = [];
+            $('a[href*="/browse?genre="]').each((i, el) => {
+                const tagText = normalizeText($(el).text());
+                if (tagText && !epicTags.includes(tagText)) epicTags.push(tagText);
+            });
+            data.tags = epicTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
+
         } else if (platform === 'wordpress') {
-            data.title = getAttr('meta[property="og:title"]', 'content') || getText('title');
-            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || getText('article p').slice(0, 400);
-            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.site-title') || getText('header .site-title');
-            data.whatsNew = '';
+            data.title = getText('h1.plugin-title') || getAttr('meta[property="og:title"]', 'content') || getText('title');
+            data.description = getText('div.plugin-description') || getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content');
+            data.developer = getText('span.author a') || getText('.site-title') || getAttr('meta[property="og:site_name"]', 'content');
+            data.whatsNew = getText('div#changelog') || getText('div.changelog') || '';
+
+            const wpTags = [];
+            $('div.tags a, a[href*="/tags/"]').each((i, el) => {
+                const tagText = normalizeText($(el).text());
+                if (tagText && !wpTags.includes(tagText)) wpTags.push(tagText);
+            });
+            data.tags = wpTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
 
         } else {
             try {
@@ -5143,9 +5263,9 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             } catch (ldErr) {
                 // ignore parse errors for non-JSON-LD pages
             }
-            data.title = getAttr('meta[property="og:title"]', 'content') || getText('title');
-            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || '';
-            data.developer = getAttr('meta[property="og:site_name"]', 'content') || '';
+            data.title = data.title || getAttr('meta[property="og:title"]', 'content') || getText('title');
+            data.description = data.description || getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || '';
+            data.developer = data.developer || getAttr('meta[property="og:site_name"]', 'content') || '';
         }
 
         // Clean up the data

@@ -106,29 +106,58 @@
 
 <!-- ======== CUSTOM SECURE DELETE MODAL ======== -->
 <div id="delete-modal-container" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 4px solid var(--red); box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 480px; width: 90%; border-top: 4px solid var(--red); box-shadow: 0 15px 40px rgba(0,0,0,0.6); position: relative;">
         
-        <!-- STEP 1: Warning -->
+        <!-- Status Alert Banner -->
+        <div id="delete-alert" style="display: none; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95em; text-align: center; line-height: 1.4;"></div>
+
+        <!-- STEP 1: Warning & Request Code -->
         <div id="delete-step-1">
             <i class="fas fa-exclamation-triangle" style="font-size: 3.5em; color: var(--red); margin-bottom: 20px;"></i>
             <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Delete Account?</h2>
             <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
-                Are you absolutely sure? This action is permanent. We will send an email with a 6-digit confirmation code to verify this request.
+                Are you absolutely sure? Account deletion is permanent. We will send a 6-digit confirmation code to your email (<strong style="color: var(--white);"><%= user.email %></strong>).
             </p>
             
-            <form action="/account/delete" method="POST" id="delete-account-form">
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 25px;">
-                    <label style="display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; margin: 0;">
-                        <input type="checkbox" id="preserve-mods" name="preserveMods" value="true" style="width: 20px; height: 20px; accent-color: var(--gold);">
-                        <span style="color: var(--white); font-weight: 500;">Preserve my uploaded mods.</span>
-                    </label>
-                </div>
-                
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button type="submit" class="btn btn-primary" style="background-color: var(--red); color: var(--white); border: none; box-shadow: 0 0 15px var(--glow-red); padding: 12px 25px;">Yes, Send Code</button>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 25px;">
+                <label style="display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="preserve-mods" name="preserveMods" value="true" style="width: 20px; height: 20px; accent-color: var(--gold);">
+                    <span style="color: var(--white); font-weight: 500;">Preserve my uploaded mods.</span>
+                </label>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button type="button" id="send-code-btn" class="btn btn-primary" style="background-color: var(--red); color: var(--white); border: none; box-shadow: 0 0 15px var(--glow-red); padding: 12px 25px; font-weight: bold; cursor: pointer;">
+                    <i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Send Code
+                </button>
+                <button type="button" class="btn btn-secondary cancelDeleteBtn" style="padding: 12px 25px;">Cancel</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Enter OTP Code & Confirm -->
+        <div id="delete-step-2" style="display: none;">
+            <i class="fas fa-envelope-open-text" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px;"></i>
+            <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.8em;">Enter Confirmation Code</h2>
+            <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+                We sent a 6-digit security code to <strong style="color: var(--white);"><%= user.email %></strong>. Enter the code below to confirm account deletion.
+            </p>
+
+            <div style="margin-bottom: 25px;">
+                <input type="text" id="delete-otp-input" maxlength="6" placeholder="123456" autocomplete="off" style="width: 100%; max-width: 260px; padding: 14px 20px; font-size: 1.8em; letter-spacing: 10px; text-align: center; font-weight: bold; border-radius: 10px; border: 2px solid var(--gold); background: #0a0a0a; color: var(--gold); outline: none; box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                <div style="display: flex; gap: 15px; justify-content: center; width: 100%;">
+                    <button type="button" id="confirm-delete-btn" class="btn btn-primary" style="background-color: var(--red); color: var(--white); border: none; box-shadow: 0 0 15px var(--glow-red); padding: 12px 25px; font-weight: bold; cursor: pointer;">
+                        <i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Confirm & Delete
+                    </button>
                     <button type="button" class="btn btn-secondary cancelDeleteBtn" style="padding: 12px 25px;">Cancel</button>
                 </div>
-            </form>
+
+                <button type="button" id="resend-code-btn" style="background: transparent; border: none; color: var(--silver); text-decoration: underline; font-size: 0.9em; cursor: pointer; transition: color 0.3s ease; margin-top: 5px;" onmouseover="this.style.color='var(--gold)';" onmouseout="this.style.color='var(--silver)';">
+                    <i class="fas fa-redo-alt" style="margin-right: 5px;"></i> Didn't receive code? Resend Code
+                </button>
+            </div>
         </div>
 
     </div>
@@ -160,20 +189,152 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) logoutBtn.addEventListener('click', () => openModal(logoutModal));
     document.getElementById('cancelLogoutBtn')?.addEventListener('click', () => closeModal(logoutModal));
 
-    // Delete Modal
+    // Delete Modal Controls
     const deleteModal = document.getElementById('delete-modal-container');
     const openDeleteBtn = document.getElementById('open-delete-modal-btn');
-    if (openDeleteBtn) openDeleteBtn.addEventListener('click', () => openModal(deleteModal));
-    
+    const sendCodeBtn = document.getElementById('send-code-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const resendCodeBtn = document.getElementById('resend-code-btn');
+    const deleteStep1 = document.getElementById('delete-step-1');
+    const deleteStep2 = document.getElementById('delete-step-2');
+    const deleteAlert = document.getElementById('delete-alert');
+    const deleteOtpInput = document.getElementById('delete-otp-input');
+    const preserveModsCheckbox = document.getElementById('preserve-mods');
+
+    function resetDeleteModal() {
+        if (deleteStep1) deleteStep1.style.display = 'block';
+        if (deleteStep2) deleteStep2.style.display = 'none';
+        if (deleteAlert) {
+            deleteAlert.style.display = 'none';
+            deleteAlert.className = '';
+            deleteAlert.innerText = '';
+        }
+        if (deleteOtpInput) deleteOtpInput.value = '';
+        if (sendCodeBtn) {
+            sendCodeBtn.disabled = false;
+            sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Send Code';
+        }
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Confirm & Delete';
+        }
+    }
+
+    function showDeleteAlert(msg, type = 'error') {
+        if (!deleteAlert) return;
+        deleteAlert.innerText = msg;
+        deleteAlert.style.display = 'block';
+        if (type === 'success') {
+            deleteAlert.style.background = 'rgba(76, 175, 80, 0.2)';
+            deleteAlert.style.border = '1px solid #4CAF50';
+            deleteAlert.style.color = '#81c784';
+        } else {
+            deleteAlert.style.background = 'rgba(229, 57, 53, 0.2)';
+            deleteAlert.style.border = '1px solid #e53935';
+            deleteAlert.style.color = '#ef5350';
+        }
+    }
+
+    if (openDeleteBtn) {
+        openDeleteBtn.addEventListener('click', () => {
+            resetDeleteModal();
+            openModal(deleteModal);
+        });
+    }
+
     document.querySelectorAll('.cancelDeleteBtn').forEach(btn => {
-        btn.addEventListener('click', () => closeModal(deleteModal));
+        btn.addEventListener('click', () => {
+            closeModal(deleteModal);
+            setTimeout(resetDeleteModal, 250);
+        });
     });
+
+    // Request Code (Step 1 -> Step 2) or Resend Code
+    async function requestDeletionCode(isResend = false) {
+        const targetBtn = isResend ? resendCodeBtn : sendCodeBtn;
+        if (targetBtn) {
+            targetBtn.disabled = true;
+            targetBtn.innerHTML = isResend ? '<i class="fas fa-spinner fa-spin"></i> Resending...' : '<i class="fas fa-spinner fa-spin"></i> Sending Code...';
+        }
+
+        try {
+            const response = await fetch('/account/delete-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                if (deleteStep1) deleteStep1.style.display = 'none';
+                if (deleteStep2) deleteStep2.style.display = 'block';
+                showDeleteAlert(isResend ? 'A new confirmation code has been sent to your email.' : 'Confirmation code sent to your email. Please check your inbox.', 'success');
+                if (deleteOtpInput) deleteOtpInput.focus();
+            } else {
+                showDeleteAlert(data.message || 'Failed to send confirmation code. Please try again.');
+            }
+        } catch (err) {
+            console.error("Delete request error:", err);
+            showDeleteAlert('Network or server error. Please try again.');
+        } finally {
+            if (sendCodeBtn) {
+                sendCodeBtn.disabled = false;
+                sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Send Code';
+            }
+            if (resendCodeBtn) {
+                resendCodeBtn.disabled = false;
+                resendCodeBtn.innerHTML = '<i class="fas fa-redo-alt" style="margin-right: 5px;"></i> Didn\'t receive code? Resend Code';
+            }
+        }
+    }
+
+    if (sendCodeBtn) sendCodeBtn.addEventListener('click', () => requestDeletionCode(false));
+    if (resendCodeBtn) resendCodeBtn.addEventListener('click', () => requestDeletionCode(true));
+
+    // Confirm Code & Delete Account
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', async () => {
+            const otp = deleteOtpInput ? deleteOtpInput.value.trim() : '';
+            if (!otp || otp.length !== 6) {
+                return showDeleteAlert('Please enter a valid 6-digit confirmation code.');
+            }
+
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting Account...';
+            deleteAlert.style.display = 'none';
+
+            try {
+                const preserveMods = preserveModsCheckbox ? preserveModsCheckbox.checked : false;
+                const response = await fetch('/account/delete-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otp, preserveMods })
+                });
+                const data = await response.json();
+
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    showDeleteAlert(data.message || 'Verification failed. Please check your code.');
+                    confirmDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Confirm & Delete';
+                }
+            } catch (err) {
+                console.error("Delete confirm error:", err);
+                showDeleteAlert('Network error. Account deletion failed.');
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Confirm & Delete';
+            }
+        });
+    }
 
     // Close Modals on outside click
     window.addEventListener('click', (e) => {
         if (e.target === newsModal) closeModal(newsModal);
         if (e.target === logoutModal) closeModal(logoutModal);
-        if (e.target === deleteModal) closeModal(deleteModal);
+        if (e.target === deleteModal) {
+            closeModal(deleteModal);
+            setTimeout(resetDeleteModal, 250);
+        }
     });
 });
 </script>
