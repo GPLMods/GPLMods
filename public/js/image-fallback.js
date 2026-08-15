@@ -35,12 +35,12 @@ function activateFallbackMode() {
  */
 function getCleanFallbackUrl(originalSrc) {
     try {
-        // This Regex looks specifically for our 3 storage folders and grabs the filename,
-        // ignoring any '?' URL parameters attached by Backblaze.
-        const match = originalSrc.match(/(avatars|icons|screenshots)\/([^\?]+)/);
+        // This Regex matches any of our cloud storage folders and grabs the relative path,
+        // ignoring any '?' URL query parameters attached by Backblaze signed URLs.
+        const match = originalSrc.match(/(avatars|mods|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)\/([^\?]+)/);
         
         if (match) {
-            // match[0] contains "folder/filename.png"
+            // match[0] contains "folder/subfolder/.../filename.png"
             return `${FALLBACK_BASE_URL}/${match[0]}`;
         }
     } catch (e) {
@@ -84,9 +84,11 @@ document.addEventListener('error', function(event) {
     // Check if the element that failed is an Image
     if (event.target && event.target.tagName && event.target.tagName.toLowerCase() === 'img') {
         const failedImg = event.target;
+        const src = failedImg.src || '';
         
-        // Ensure it's one of our cloud images that failed, not a local file
-        if (failedImg.src.includes('avatars') || failedImg.src.includes('icons') || failedImg.src.includes('screenshots')) {
+        // Ensure it's one of our cloud images that failed, not a local asset
+        const cloudFolderPattern = /(avatars|mods|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)/;
+        if (cloudFolderPattern.test(src)) {
             activateFallbackMode(); // Set the 24-hour cookie
             applyFallback(failedImg); // Swap the broken image with the backup
         }

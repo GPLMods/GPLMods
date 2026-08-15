@@ -9,7 +9,9 @@ const ReplySchema = new Schema({
     
     isSolution: { type: Boolean, default: false }, // Marked true if this fixed the issue
     
-    isAdminReply: { type: Boolean, default: false } // To highlight admin responses visually
+    isAdminReply: { type: Boolean, default: false }, // To highlight admin responses visually
+    
+    mediaKeys: [{ type: String }]
     
 }, { timestamps: true });
 

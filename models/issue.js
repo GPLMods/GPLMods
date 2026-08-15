@@ -17,10 +17,12 @@ const IssueSchema = new Schema({
     
     status: { 
         type: String, 
-        enum: ['open', 'resolved', 'closed'], 
+        enum: ['open', 'solved', 'unsolved', 're-open'], 
         default: 'open' 
     },
     
+    mediaKeys: [{ type: String }],
+
     views: { type: Number, default: 0 }
     
 }, { timestamps: true });

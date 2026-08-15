@@ -2,7 +2,7 @@ const ftp = require("basic-ftp");
 const fs = require("fs");
 const path = require("path");
 
-const IMAGE_FOLDERS = new Set(['avatars', 'icons', 'screenshots']);
+const IMAGE_FOLDERS = new Set(['avatars', 'mods', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements']);
 
 function normalizeB2Key(b2Key) {
     if (!b2Key || typeof b2Key !== 'string') return null;
@@ -13,7 +13,11 @@ function shouldMirrorToFTP(b2Key) {
     const normalized = normalizeB2Key(b2Key);
     if (!normalized) return false;
     const topLevel = normalized.split('/')[0].toLowerCase();
-    return IMAGE_FOLDERS.has(topLevel);
+    if (IMAGE_FOLDERS.has(topLevel)) return true;
+    
+    // Fallback: check if the file extension is an image file
+    const ext = path.extname(normalized).toLowerCase();
+    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico'].includes(ext);
 }
 
 /**

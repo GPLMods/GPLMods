@@ -555,41 +555,72 @@ const sanitizeFilename = (filename) => {
 // --- UPDATED HELPER: Tracks B2 Upload Progress ---
 
 // --- UPDATED HELPER: Tracks B2 Upload Progress & Creates Clean Slugs ---
-// Added 'baseName' to the parameters
-const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = null) => {
+// --- UPDATED HELPER: Tracks B2 Upload Progress & Creates Categorized Subfolders ---
+const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = null, options = {}) => {
     if (!file || !file.buffer) {
         throw new Error("File data (buffer) not found.");
     }
 
-    let finalFilename = '';
+    const ext = path.extname(file.originalname).toLowerCase() || '';
+    const cleanBase = baseName ? slugify(baseName) : 'file';
 
-    // If a baseName is provided, construct a clean slug
-    if (baseName) {
-        // e.g., 'minecraft', 'icon', 'png' -> 'minecraft-icon.png'
-        const ext = path.extname(file.originalname).toLowerCase() || ''; 
-        
-        // Handle screenshots differently to allow multiples
-        if (folder === 'screenshots') {
-            // e.g., 'minecraft-screenshot-1715000000.png'
-            finalFilename = `${slugify(baseName)}-screenshot-${Date.now()}${ext}`;
-        } else if (folder === 'avatars') {
-            // e.g., 'johndoe-avatar.png'
-            finalFilename = `${slugify(baseName)}-avatar${ext}`;
-            // For avatars, we might overwrite the old one, but adding Date ensures uniqueness
-            // If you want to overwrite, remove the Date.now() here. Let's keep it unique for cache-busting.
-             finalFilename = `${slugify(baseName)}-avatar-${Date.now()}${ext}`;
+    let catFolder = 'general';
+    const rawCategory = options.category || options.platform || '';
+    if (rawCategory === 'ios-jailed') catFolder = 'ios/jailed';
+    else if (rawCategory === 'ios-jailbroken') catFolder = 'ios/jailbroken';
+    else if (rawCategory) catFolder = slugify(rawCategory);
+
+    let fileName = '';
+
+    if (folder === 'avatars') {
+        const username = options.username || baseName || 'user';
+        const userSlug = slugify(username);
+        fileName = `avatars/${userSlug}/${userSlug}-avatar-${Date.now()}${ext}`;
+    } else if (folder === 'mods') {
+        const modSlug = options.modSlug || cleanBase;
+        if (options.isVariant && options.masterSlug) {
+            fileName = `mods/${catFolder}/${options.masterSlug}/variants/${modSlug}/${cleanBase}-${Date.now()}${ext}`;
         } else {
-            // For icons or main files: 'minecraft-icon.png' or 'minecraft-v1.2.apk'
-            // We append Date to prevent accidental overwrites of identical versions
-            finalFilename = `${slugify(baseName)}-${Date.now()}${ext}`;
+            fileName = `mods/${catFolder}/${modSlug}/${cleanBase}-${Date.now()}${ext}`;
         }
+    } else if (folder === 'icons') {
+        const modSlug = options.modSlug || cleanBase;
+        if (options.isVariant && options.masterSlug) {
+            fileName = `mods/${catFolder}/${options.masterSlug}/variants/${modSlug}/icons/${cleanBase}-icon-${Date.now()}${ext}`;
+        } else {
+            fileName = `mods/${catFolder}/${modSlug}/icons/${cleanBase}-icon-${Date.now()}${ext}`;
+        }
+    } else if (folder === 'screenshots') {
+        const modSlug = options.modSlug || cleanBase;
+        if (options.isVariant && options.masterSlug) {
+            fileName = `mods/${catFolder}/${options.masterSlug}/variants/${modSlug}/screenshots/${cleanBase}-screenshot-${Date.now()}${ext}`;
+        } else {
+            fileName = `mods/${catFolder}/${modSlug}/screenshots/${cleanBase}-screenshot-${Date.now()}${ext}`;
+        }
+    } else if (folder === 'forums') {
+        const issueCat = options.category || 'general';
+        const issueStatus = options.status || 'open';
+        const issueSlug = options.issueSlug || cleanBase;
+        fileName = `forums/${slugify(issueCat)}/${slugify(issueStatus)}/${issueSlug}/media/${cleanBase}-${Date.now()}${ext}`;
+    } else if (folder === 'docs') {
+        const docCat = options.category || 'general';
+        const docSlug = options.docSlug || cleanBase;
+        fileName = `docs/${slugify(docCat)}/${docSlug}/media/${cleanBase}-${Date.now()}${ext}`;
+    } else if (folder === 'requests') {
+        const reqPlatform = options.platform || 'general';
+        const reqStatus = options.status || 'pending';
+        const reqId = options.requestId || cleanBase;
+        fileName = `requests/${slugify(reqPlatform)}/${slugify(reqStatus)}/${reqId}/media/${cleanBase}-${Date.now()}${ext}`;
+    } else if (folder === 'support') {
+        const ticketCat = options.category || 'general';
+        const ticketStatus = options.status || 'open';
+        const ticketId = options.ticketId || cleanBase;
+        fileName = `support/${slugify(ticketCat)}/${slugify(ticketStatus)}/${ticketId}/media/${cleanBase}-${Date.now()}${ext}`;
     } else {
-        // Fallback to old behavior if no baseName is provided
         const sanitizedFilename = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.\-_]/g, '');
-        finalFilename = `${Date.now()}-${sanitizedFilename}`;
+        fileName = `${folder}/${Date.now()}-${sanitizedFilename}`;
     }
 
-    const fileName = `${folder}/${finalFilename}`;
     console.log(`Uploading ${fileName} to B2...`);
     
     const { Upload } = require("@aws-sdk/lib-storage");
@@ -2012,8 +2043,8 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
         reply.isSolution = true;
         await reply.save();
 
-        // Mark Issue as resolved
-        issue.status = 'resolved';
+        // Mark Issue as solved
+        issue.status = 'solved';
         await issue.save();
 
         // ==== GAMIFICATION: Massive 25 Point Reward for the Solution Provider! ====
@@ -2024,6 +2055,26 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
         res.redirect(`/community/${issue.slug}`);
     } catch (error) {
         console.error("Resolve Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// 7. POST: Re-open an Issue (Author or Admin only)
+app.post('/community/:slug/reopen', ensureAuthenticated, async (req, res) => {
+    try {
+        const issue = await Issue.findOne({ slug: req.params.slug });
+        if (!issue) return res.status(404).send("Not found");
+
+        const isAuthor = issue.author.toString() === req.user._id.toString();
+        const isAdmin = req.user.role === 'admin';
+        if (!isAuthor && !isAdmin) return res.status(403).render('pages/403');
+
+        issue.status = 're-open';
+        await issue.save();
+
+        res.redirect(`/community/${issue.slug}`);
+    } catch (error) {
+        console.error("Re-open Error:", error);
         res.status(500).render('pages/500');
     }
 });
@@ -3590,7 +3641,7 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
 
         // Upload new avatar with slugified name
         const avatarBaseName = `${req.user._id}-${req.user.username}`;
-        const imageKey = await uploadToB2(req.file, 'avatars', null, null, avatarBaseName);
+        const imageKey = await uploadToB2(req.file, 'avatars', null, null, avatarBaseName, { username: req.user.username });
         
         const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
         
@@ -4442,28 +4493,71 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- UPDATED: User Delete Mod Route (Deletes from DB AND Cloud) ---
+// --- UPDATED: User Delete Mod Route (Transfers Ownership to Variant or Deletes Permanently) ---
 app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.id;
-        // Populate older versions so we can delete their files too!
-        const file = await File.findById(fileId).populate('olderVersions');
+        const file = await File.findById(fileId).populate('olderVersions').populate('variants');
 
-        // Security check: Make sure the file exists and the logged-in user owns it
-        if (!file || file.uploader !== req.user.username) {
+        if (!file || (file.uploader !== req.user.username && req.user.role !== 'admin')) {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
-        // ✅ ADDED: Delete images from BOTH clouds before deleting DB record
-        await deleteCloudFile(file.iconKey);
-        if (file.screenshotKeys) {
-            for (const key of file.screenshotKeys) {
-                await deleteCloudFile(key);
+
+        // Check if any variant files exist for this master file
+        const variantsList = await File.find({ masterFile: file._id }).sort({ createdAt: 1 });
+
+        if (variantsList.length > 0) {
+            // PROMOTION WORKFLOW: Promote the first uploaded variant to become the main file
+            const firstVariant = variantsList[0];
+
+            // 1. Delete old main binary file key from B2/FTP if different
+            if (file.fileKey && file.fileKey !== 'external-link' && file.fileKey !== firstVariant.fileKey) {
+                await deleteFromB2(file.fileKey);
             }
+
+            // 2. Transfer ownership to the variant uploader
+            const oldUploaderName = file.uploader;
+            file.uploader = firstVariant.uploader;
+
+            // 3. Update mod description and features with the variant's details (keep officialDescription)
+            file.modDescription = firstVariant.modDescription || file.modDescription;
+            file.modFeatures = firstVariant.modFeatures || file.modFeatures;
+
+            // 4. Update file version, binaries, links, and download parts
+            file.version = firstVariant.version;
+            file.fileKey = firstVariant.fileKey;
+            file.fileSize = firstVariant.fileSize;
+            file.originalFilename = firstVariant.originalFilename;
+            file.externalDownloadUrl = firstVariant.externalDownloadUrl;
+            file.directDownloadUrl = firstVariant.directDownloadUrl;
+            file.downloadParts = firstVariant.downloadParts;
+            file.isMultiPart = firstVariant.isMultiPart;
+
+            // 5. Update media (screenshots / video) if provided by variant uploader
+            if (firstVariant.screenshotKeys && firstVariant.screenshotKeys.length > 0) {
+                file.screenshotKeys = firstVariant.screenshotKeys;
+            }
+            if (firstVariant.videoUrl) {
+                file.videoUrl = firstVariant.videoUrl;
+            }
+
+            // 6. Clean up old uploader comment replies on the file
+            await Review.updateMany({ file: file._id }, { $unset: { uploaderReply: 1 } });
+
+            // 7. Migrate/preserve variant reviews to main file
+            await Review.updateMany({ file: firstVariant._id }, { file: file._id });
+
+            // 8. Remove promoted variant from variants array and delete variant DB record
+            file.variants = file.variants.filter(vId => vId.toString() !== firstVariant._id.toString());
+            await File.findByIdAndDelete(firstVariant._id);
+
+            await file.save();
+
+            console.log(`[Variant Promotion] Main mod "${file.name}" transferred to first variant uploader (${firstVariant.uploader}).`);
+            return res.json({ success: true, message: `Main mod transferred to first variant uploader (${firstVariant.uploader}) successfully.` });
         }
 
-        // --- 1. DELETE FILES FROM BACKBLAZE B2 ---
-        
-        // A. Delete main file, icon, and screenshots
+        // NO VARIANTS EXIST -> PERMANENT DELETION
         await deleteFromB2(file.fileKey);
         await deleteFromB2(file.iconKey);
         if (file.screenshotKeys && file.screenshotKeys.length > 0) {
@@ -4472,23 +4566,18 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
             }
         }
 
-        // B. Delete all older versions from B2 and the Database
         if (file.olderVersions && file.olderVersions.length > 0) {
             for (const oldVersion of file.olderVersions) {
                 await deleteFromB2(oldVersion.fileKey);
-                // Icons and screenshots are shared with the parent, so we only need to delete the main fileKey
                 await File.findByIdAndDelete(oldVersion._id); 
             }
         }
 
-        // --- INDEXNOW PING (DELETION) ---
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         const deadUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
-        notifyIndexNow([deadUrl]); // Tell Google this link is dead now
-        notifyGoogle(deadUrl, 'URL_DELETED'); // Tell Google to REMOVE this from search results!
+        notifyIndexNow([deadUrl]);
+        notifyGoogle(deadUrl, 'URL_DELETED');
 
-        // --- 2. DELETE FROM DATABASE ---
-        // Delete the master file record (once) and related reviews/reports
         await File.findByIdAndDelete(fileId);
         await Review.deleteMany({ file: fileId });
         await Report.updateMany({ file: fileId }, { status: 'resolved' });
@@ -4831,13 +4920,26 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // --- NEW: Parse architectures safely (can be string or array) ---
         const archData = formData.architectures ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) :[];
 
-        // --- PROCESS IMAGES ---
-        // Pass the modName (e.g., 'Minecraft') and '-icon' as the base
-        if (!isVariant && softwareIcon && softwareIcon.length > 0) {
-            iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${formData.modName}-icon`);
+        // --- PROCESS IMAGES & CATEGORIZED B2 PATHS ---
+        const b2Opts = {
+            category: formData.modPlatform,
+            modSlug: slugify(formData.modName),
+            isVariant: isVariant,
+            masterSlug: existingMasterFile ? slugify(existingMasterFile.name) : null
+        };
+
+        if (isVariant && existingMasterFile) {
+            // Variant uses shared icon from master file
+            iconKey = existingMasterFile.iconKey;
+        } else if (softwareIcon && softwareIcon.length > 0) {
+            iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${formData.modName}-icon`, b2Opts);
         }
+
         if (screenshots && screenshots.length > 0) {
-            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, formData.modName)));
+            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, formData.modName, b2Opts)));
+        } else if (isVariant && existingMasterFile && (!screenshotKeys || screenshotKeys.length === 0)) {
+            // Use shared screenshots from master file if variant user didn't upload custom screenshots
+            screenshotKeys = existingMasterFile.screenshotKeys || [];
         }
 
         // --- MULTI-PART ARRAY PARSING LOGIC ---

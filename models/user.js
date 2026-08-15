@@ -242,6 +242,33 @@ UserSchema.virtual('forumRank').get(function() {
     return { name: 'Novice', color: '#FFFFFF', lottie: null }; // Default
 });
 
+// --- VIRTUAL: Get User Sub-Group Category ---
+UserSchema.virtual('userCategory').get(function() {
+    if (!this.isVerified) return 'unverified';
+    if (this.role === 'admin') return 'admin';
+    if (this.role === 'distributor') return 'distributor';
+    if (this.membership === 'premium') return 'premium';
+    return 'members';
+});
+
+// --- STATIC: Query Users by Role & Verification Sub-Group ---
+UserSchema.statics.findByCategory = function(categoryQuery) {
+    const cat = (categoryQuery || '').toLowerCase();
+    switch (cat) {
+        case 'unverified':
+            return this.find({ isVerified: false });
+        case 'admin':
+            return this.find({ role: 'admin' });
+        case 'distributor':
+            return this.find({ role: 'distributor' });
+        case 'premium':
+            return this.find({ membership: 'premium', isVerified: true });
+        case 'members':
+        default:
+            return this.find({ role: 'member', isVerified: true });
+    }
+};
+
 // Ensure virtuals are included when converting to JSON/Objects
 UserSchema.set('toObject', { virtuals: true });
 UserSchema.set('toJSON', { virtuals: true });

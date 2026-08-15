@@ -41,7 +41,9 @@ const RequestSchema = new Schema({
         default: 'pending'
     },
     
-    adminNotes: { type: String } // For you to leave notes (e.g., "Working on it", "Not possible")
+    adminNotes: { type: String }, // For you to leave notes (e.g., "Working on it", "Not possible")
+    
+    mediaKeys: [{ type: String }]
 
 }, { timestamps: true });
 
