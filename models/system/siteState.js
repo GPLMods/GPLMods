@@ -1,0 +1,46 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const SiteStateSchema = new Schema({
+    singletonId: {
+        type: String,
+        default: 'master-state',
+        unique: true
+    },
+    status: {
+        type: String,
+        enum: ['online', 'maintenance', 'unavailable'],
+        default: 'online'
+    },
+    targetAudience: {
+        type: String,
+        enum: ['all-users', 'guests-only', 'members-only', 'specific-user'],
+        default: 'all-users'
+    },
+    targetUsername: {
+        type: String,
+        trim: true
+    },
+    maintenanceTitle: { type: String, default: 'Under Maintenance' },
+    maintenanceMessage: { type: String, default: 'GPL Mods is currently down for scheduled maintenance. We will be back online shortly. Thank you for your patience!' },
+    unavailableTitle: { type: String, default: 'Service Temporarily Unavailable' },
+    unavailableMessage: { type: String, default: 'This specific service or page is currently unavailable. Please check back later.' },
+    enableAutomationEngine: {
+        type: Boolean,
+        default: false
+    },
+    enableLinkvertise: {
+        type: Boolean,
+        default: true
+    },
+    linkvertiseId: {
+        type: String,
+        default: '5373913'
+    },
+    adNetworkBaseUrl: {
+        type: String,
+        default: 'https://link-to.net/{{ID}}/dynamic?r={{URL}}'
+    }
+}, { timestamps: true });
+
+module.exports = mongoose.model('SiteState', SiteStateSchema);

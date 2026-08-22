@@ -1,13 +1,10 @@
 // config/admin.js
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
-
-// 1. IMPORT THE SINGLETON LOADER
-// --- ✅ FIX 1: ADD THIS LINE TO IMPORT THE AWS SDK ---
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { componentLoader, Components } = require('../components/loader');
 
-// Import all your models
+// Import all models (via categorized barrel / root entry points)
 const User = require('../models/user');
 const File = require('../models/file');
 const Review = require('../models/review');
@@ -23,17 +20,15 @@ const AutomatedCampaign = require('../models/automatedCampaign');
 const SiteState = require('../models/siteState'); 
 const Subscriber = require('../models/subscriber');
 const NewsletterCampaign = require('../models/newsletterCampaign');
-const DocCategory = require('../models/docCategory'); // <--- ADD THIS
-const DocPage = require('../models/docPage');  // <--- ADD THIS
-const Issue = require('../models/issue');     // <--- ADD THIS
-const Reply = require('../models/reply');     // <--- ADD THIS
+const DocCategory = require('../models/docCategory');
+const DocPage = require('../models/docPage');
+const Issue = require('../models/issue');
+const Reply = require('../models/reply');
 const PointHistory = require('../models/pointHistory');
 const TranslationQuota = require('../models/translationQuota');
 const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
-    
 
-// --- Helper Function ---
 function extractVTId(input) {
     if (!input) return "";
     let cleanInput = input.trim();
@@ -51,7 +46,7 @@ function extractVTId(input) {
     }
     return cleanInput;
 }
-// --- NEW: B2 Delete Helper for AdminJS ---
+
 const s3ClientAdmin = new S3Client({
     endpoint: `https://${process.env.B2_ENDPOINT}`,
     region: process.env.B2_REGION,
@@ -61,10 +56,8 @@ const s3ClientAdmin = new S3Client({
     }
 });
 
-// Helper to trigger Cloudflare rebuild
 const triggerCloudflareRebuild = async () => {
     try {
-        // REPLACE WITH YOUR CLOUDFLARE DEPLOY HOOK URL
         const webhookUrl = 'https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/YOUR_SECRET_UUID';
         await axios.post(webhookUrl);
         console.log("Cloudflare rebuild triggered successfully.");
@@ -79,8 +72,6 @@ const deleteFromB2Admin = async (fileKey) => {
         await s3ClientAdmin.send(new DeleteObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: fileKey }));
         console.log(`AdminJS deleted ${fileKey} from B2.`);
         
-        // ✅ TRIGGER BACKUP DELETE HERE
-        // Note: You will need to import deleteFromFTP at the top of admin.js!
         const { deleteFromFTP } = require('../utils/ftpSync');
         deleteFromFTP(fileKey).catch(e => console.error("Admin FTP delete failed", e));
         
@@ -88,11 +79,8 @@ const deleteFromB2Admin = async (fileKey) => {
         console.error(`AdminJS failed to delete ${fileKey}:`, error.message);
     }
 };
-// 2. EXPORT AN ASYNC FACTORY FUNCTION
-// We must use dynamic imports because AdminJS v7 is ESM only.
+
 async function createAdminRouter() {
-    
-    // Import ESM modules dynamically
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     
@@ -100,13 +88,11 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
-    // Register Adapter
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
     });
 
-    // Define Theme
     const gplModsTheme = {
         ...dark,
         id: 'dark', 
@@ -124,22 +110,23 @@ async function createAdminRouter() {
         }
     };
 
-    // ✅ FIX 1: We define isProduction properly here. 
-    // Setting it to 'true' forces AdminJS into production mode.
     const isProduction = true; 
-    // --- Define Shared Folders ---
-    const marketingNav = { name: 'Marketing', icon: 'Mail' };
-    const docsNav = { name: 'Documentation', icon: 'Book' };
 
-    // Configure AdminJS
+    // --- Structured AdminJS Navigation Groups ---
+    const usersNav = { name: 'Users & Access', icon: 'User' };
+    const modsNav = { name: 'Mods & Repositories', icon: 'Box' };
+    const communityNav = { name: 'Community & Forum', icon: 'Chat' };
+    const docsNav = { name: 'Documentation & Content', icon: 'Document' };
+    const moderationNav = { name: 'Publishers & Moderation', icon: 'Security' };
+    const systemNav = { name: 'System & Analytics', icon: 'Settings' };
+
     const adminJsOptions = {
         rootPath: '/admin',
         componentLoader: componentLoader, 
         
         defaultTheme: 'dark', 
-        availableThemes:[gplModsTheme, light], 
+        availableThemes: [gplModsTheme, light], 
         
-        // ✅ FIX 2: Properly pass the env variables into AdminJS
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
             styles: isProduction ? ['/.adminjs/bundle.css'] : [],
@@ -147,26 +134,20 @@ async function createAdminRouter() {
         },
         dashboard: { 
             component: Components.Dashboard,
-            // --- NEW: REAL-TIME DATA HANDLER ---
             handler: async (request, response, context) => {
-                // Get the first day of the current month
                 const startOfMonth = new Date();
                 startOfMonth.setDate(1);
                 startOfMonth.setHours(0, 0, 0, 0);
 
-                // 1. User Stats
                 const totalUsers = await User.countDocuments();
                 const newUsersThisMonth = await User.countDocuments({ createdAt: { $gte: startOfMonth } });
 
-                // 2. Mod Stats
                 const totalMods = await File.countDocuments();
                 const newModsThisMonth = await File.countDocuments({ createdAt: { $gte: startOfMonth } });
 
-                // 3. Download Stats
                 const downloadAgg = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
                 const totalDownloads = downloadAgg.length > 0 ? downloadAgg[0].total : 0;
 
-                // 4. CHART DATA: Mods by Platform (Pie Chart)
                 const platformAgg = await File.aggregate([
                     { $group: { _id: "$category", value: { $sum: 1 } } }
                 ]);
@@ -175,7 +156,6 @@ async function createAdminRouter() {
                     value: p.value
                 }));
 
-                // 5. CHART DATA: Uploads Last 7 Days (Line Chart)
                 const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                 const recentUploadsAgg = await File.aggregate([
                     { $match: { createdAt: { $gte: sevenDaysAgo } } },
@@ -190,7 +170,6 @@ async function createAdminRouter() {
                     Uploads: item.uploads
                 }));
 
-                // Return all this data to the React frontend
                 return {
                     stats: { totalUsers, newUsersThisMonth, totalMods, newModsThisMonth, totalDownloads },
                     modsByPlatform,
@@ -206,17 +185,17 @@ async function createAdminRouter() {
             withMadeWithLove: false, 
         },
 
-                resources:[
+        resources: [
             // ---------------------------------
-            // USER MANAGEMENT
+            // USERS & ACCESS
             // ---------------------------------
             {
                 resource: User,
                 options: {
-                    navigation: { icon: 'User' }, // ✅ Valid Carbon Icon
-                    listProperties:['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties:['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties:['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    navigation: usersNav,
+                    listProperties: ['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
+                    showProperties: ['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
@@ -246,57 +225,62 @@ async function createAdminRouter() {
                     }
                 }
             },
-        // ---------------------------------
-        // GAMIFICATION & POINT HISTORY
-        // ---------------------------------
-        {
-            resource: PointHistory,
-            options: {
-                listProperties: ['user', 'amount', 'reason', 'createdAt'],
-                showProperties: ['user', 'amount', 'reason', 'customMessage', 'createdAt'],
-                editProperties: ['user', 'amount', 'reason', 'customMessage'],
-                properties: {
-                    customMessage: { type: 'richtext', description: 'Optional message to the user explaining why they got/lost these points.' },
-                    amount: { description: 'Use positive numbers to add points (e.g., 50) and negative to deduct (e.g., -10).' }
-                },
-                actions: {
-                    new: {
-                        // When an admin creates a manual point record, physically update the user's total balance
-                        after: async (response, request, context) => {
-                            if (request.method === 'post' && response.record && !Object.keys(response.record.errors || {}).length) {
-                                const amount = Number(response.record.params.amount);
-                                const userId = response.record.params.user;
-                                // Find the user and apply the math
-                                const User = require('../models/user');
-                                await User.findByIdAndUpdate(userId, { $inc: { forumPoints: amount } });
-                            }
-                            return response;
-                        }
+            {
+                resource: PointHistory,
+                options: {
+                    navigation: usersNav,
+                    listProperties: ['user', 'amount', 'reason', 'createdAt'],
+                    showProperties: ['user', 'amount', 'reason', 'customMessage', 'createdAt'],
+                    editProperties: ['user', 'amount', 'reason', 'customMessage'],
+                    properties: {
+                        customMessage: { type: 'richtext', description: 'Optional message to the user explaining why they got/lost these points.' },
+                        amount: { description: 'Use positive numbers to add points (e.g., 50) and negative to deduct (e.g., -10).' }
                     },
-                    edit: { isAccessible: false }, // Prevent editing history to maintain ledger integrity
-                    delete: { isAccessible: false } 
+                    actions: {
+                        new: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post' && response.record && !Object.keys(response.record.errors || {}).length) {
+                                    const amount = Number(response.record.params.amount);
+                                    const userId = response.record.params.user;
+                                    await User.findByIdAndUpdate(userId, { $inc: { forumPoints: amount } });
+                                }
+                                return response;
+                            }
+                        },
+                        edit: { isAccessible: false },
+                        delete: { isAccessible: false } 
+                    }
                 }
-            }
-        },
-            
+            },
+            {
+                resource: UserNotification,
+                options: {
+                    navigation: usersNav,
+                    listProperties: ['user', 'title', 'type', 'isRead', 'createdAt'],
+                    showProperties: ['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
+                    editProperties: ['user', 'title', 'message', 'type'], 
+                    properties: { message: { type: 'textarea' } }
+                }
+            },
+
             // ---------------------------------
-            // FILE (MOD) MANAGEMENT
+            // MODS & REPOSITORIES
             // ---------------------------------
             {
                 resource: File,
                 options: {
-                    navigation: { icon: 'File' }, // ✅ Valid Carbon Icon
-                    listProperties:['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
-                    editProperties:[
+                    navigation: modsNav,
+                    listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
+                    editProperties: [
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion', 'iosPackageId',
                         'showInSitemap', 'virusTotalId', 'virusTotalAnalysisId', 'architectures', 'minOsVersion', 
                         'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
-                        'isMultiPart', 'downloadParts', 'installationInstructions','directDownloadUrl',
+                        'isMultiPart', 'downloadParts', 'installationInstructions', 'directDownloadUrl',
                         'isVariant', 'showInRepo', 'masterFile'
                     ],
-                    showProperties:[
+                    showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
                         'certification', 'category', 'downloads', 'averageRating', 'showInSitemap', 'isEditorsChoice', 'editorsChoiceDescription',
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl',
@@ -422,186 +406,178 @@ async function createAdminRouter() {
                                 return { record: updatedRecord, notice: { message: 'Opening VirusTotal report...', type: 'success' } };
                             }
                         },
-                    // ======== NEW: ADMIN VOTE MANAGEMENT ========
-                    manageVotes: {
-                        actionType: 'record',
-                        icon: 'ThumbsUp',
-                        // We use a custom component for the UI of this action
-                        component: Components.ManageVotes, 
-                        handler: async (request, response, context) => {
-                            const file = context.record;
-                            
-                            // If the request method is POST, it means the admin submitted the form
-                            if (request.method === 'post') {
-                                const { actionType, newWorkingCount, newNotWorkingCount } = request.payload;
+                        manageVotes: {
+                            actionType: 'record',
+                            icon: 'ThumbsUp',
+                            component: Components.ManageVotes, 
+                            handler: async (request, response, context) => {
+                                const file = context.record;
+                                if (request.method === 'post') {
+                                    const { actionType, newWorkingCount, newNotWorkingCount } = request.payload;
 
-                                try {
-                                    if (actionType === 'reset') {
-                                        // Reset everything to 0
-                                        await File.findByIdAndUpdate(file.params._id, {
-                                            workingVoteCount: 0,
-                                            notWorkingVoteCount: 0,
-                                            votedWorkingBy: [],
-                                            votedNotWorkingBy:[]
-                                        });
+                                    try {
+                                        if (actionType === 'reset') {
+                                            await File.findByIdAndUpdate(file.params._id, {
+                                                workingVoteCount: 0,
+                                                notWorkingVoteCount: 0,
+                                                votedWorkingBy: [],
+                                                votedNotWorkingBy: []
+                                            });
+                                            return {
+                                                record: file.toJSON(context.currentAdmin),
+                                                notice: { message: 'All votes have been successfully reset to 0.', type: 'success' },
+                                                redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
+                                            };
+                                        } 
+                                        else if (actionType === 'override') {
+                                            await File.findByIdAndUpdate(file.params._id, {
+                                                workingVoteCount: parseInt(newWorkingCount, 10) || 0,
+                                                notWorkingVoteCount: parseInt(newNotWorkingCount, 10) || 0,
+                                                votedWorkingBy: [],
+                                                votedNotWorkingBy: []
+                                            });
+                                            return {
+                                                record: file.toJSON(context.currentAdmin),
+                                                notice: { message: 'Vote counts have been manually overridden.', type: 'success' },
+                                                redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
+                                            };
+                                        }
+                                    } catch (error) {
                                         return {
                                             record: file.toJSON(context.currentAdmin),
-                                            notice: { message: 'All votes have been successfully reset to 0.', type: 'success' },
-                                            redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
-                                        };
-                                    } 
-                                    else if (actionType === 'override') {
-                                        // Manually set the counts (Warning: this doesn't populate the user arrays, 
-                                        // it just forces the numbers. It's best used after a reset).
-                                        await File.findByIdAndUpdate(file.params._id, {
-                                            workingVoteCount: parseInt(newWorkingCount, 10) || 0,
-                                            notWorkingVoteCount: parseInt(newNotWorkingCount, 10) || 0,
-                                            votedWorkingBy:[], // Clear arrays to prevent sync issues when manually overriding numbers
-                                            votedNotWorkingBy:[]
-                                        });
-                                        return {
-                                            record: file.toJSON(context.currentAdmin),
-                                            notice: { message: 'Vote counts have been manually overridden.', type: 'success' },
-                                            redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
+                                            notice: { message: `Error updating votes: ${error.message}`, type: 'error' }
                                         };
                                     }
-                                } catch (error) {
-                                    return {
-                                        record: file.toJSON(context.currentAdmin),
-                                        notice: { message: `Error updating votes: ${error.message}`, type: 'error' }
-                                    };
                                 }
+                                return { record: file.toJSON(context.currentAdmin) };
                             }
-                            
-                            // If GET request, just render the component
-                            return {
-                                record: file.toJSON(context.currentAdmin)
-                            };
                         }
                     }
-                    // ============================================
-
-                } // End of actions object
-            } // End of options object
-            }, // End of File resource
-            // ---------------------------------
-            // COMMUNITY FORUM
-            // ---------------------------------
-            {
-                resource: Issue,
-                options: {
-                    listProperties: ['title', 'category', 'status', 'author', 'createdAt'],
-                    showProperties: ['title', 'slug', 'category', 'status', 'views', 'author', 'content', 'createdAt'],
-                    editProperties: ['title', 'slug', 'category', 'status', 'content'],
-                    properties: {
-                        content: { type: 'richtext' } // AdminJS will render a rich text editor for this
-                    }
                 }
             },
             {
-                resource: Reply,
+                resource: Review,
                 options: {
-                    listProperties: ['issue', 'author', 'isSolution', 'isAdminReply', 'createdAt'],
-                    editProperties: ['content', 'isSolution', 'isAdminReply'],
-                    properties: {
-                        content: { type: 'richtext' }
-                    }
-                }
+                    navigation: modsNav,
+                    listProperties: ['username', 'rating', 'comment', 'file', 'createdAt'],
+                    actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
+                },
             },
-
-            // ---------------------------------
-            // GLOBAL SITE CONTROLS
-            // ---------------------------------
             {
-                resource: SiteState,
+                resource: IosCert,
                 options: {
-                    navigation: { icon: 'Server' }, // ✅ Valid Carbon Icon
+                    navigation: modsNav,
+                    listProperties: ['name', 'status', 'updatedAt'],
                     actions: {
-                        new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
-                        delete: { isAccessible: false } 
-                    },
-                    listProperties:['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
-                    editProperties:[
-                        'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
-                        'maintenanceTitle', 'maintenanceMessage', 
-                        'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
-                    ],
-                    properties: {
-                        maintenanceMessage: { type: 'richtext' },
-                        unavailableMessage: { type: 'richtext' },
-                        targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
-                        adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
-                    }
-                }
-            },
-        {
-            resource: TranslationQuota,
-            options: {
-                listProperties: ['monthYear', 'characterCount', 'updatedAt'],
-                actions: {
-                    new: { isAccessible: false }, // System handles creation
-                    delete: { isAccessible: false }
-                }
-            }
-        },
-
-            // ---------------------------------
-            // NEWSLETTER & MARKETING
-            // ---------------------------------
-            {
-                resource: Subscriber,
-                options: {
-                    navigation: marketingNav, // ✅ Groups into "Marketing" folder with Email icon
-                    listProperties: ['email', 'isSubscribed', 'source', 'createdAt'],
-                }
-            },
-            {
-                resource: NewsletterCampaign,
-                options: {
-                    navigation: marketingNav, // ✅ Groups into "Marketing" folder with Email icon
-                    listProperties:['subject', 'audience', 'template', 'status', 'sentCount', 'createdAt'],
-                    showProperties:['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status', 'sentCount', 'createdAt'],
-                    editProperties:['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status'],
-                    properties: {
-                        content: { type: 'richtext', description: 'The main body of the email. HTML is supported.' },
-                        audience: { description: 'WARNING: Selecting anything other than "test-admin-only" will send emails when status is changed to "sending".' }
-                    },
-                    actions: {
+                        new: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post') await triggerCloudflareRebuild();
+                                return response;
+                            }
+                        },
                         edit: {
                             after: async (response, request, context) => {
-                                if (request.method === 'post' && request.payload.status === 'sending' && context.record.params.status === 'draft') {
-                                    const { processNewsletterCampaign } = require('../utils/mailer');
-                                    processNewsletterCampaign(context.record.params._id);
-                                    response.notice = { message: 'Campaign queued for sending.', type: 'success' };
-                                }
+                                if (request.method === 'post') await triggerCloudflareRebuild();
+                                return response;
+                            }
+                        },
+                        delete: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post') await triggerCloudflareRebuild();
                                 return response;
                             }
                         }
                     }
                 }
             },
+            {
+                resource: IosDns,
+                options: {
+                    navigation: modsNav,
+                    listProperties: ['name', 'configUrl', 'isRecommended', 'updatedAt']
+                }
+            },
 
             // ---------------------------------
-            // DOCUMENTATION (CUSTOM WIKI)
+            // COMMUNITY & FORUM
+            // ---------------------------------
+            {
+                resource: Issue,
+                options: {
+                    navigation: communityNav,
+                    listProperties: ['title', 'category', 'status', 'author', 'createdAt'],
+                    showProperties: ['title', 'slug', 'category', 'status', 'views', 'author', 'content', 'createdAt'],
+                    editProperties: ['title', 'slug', 'category', 'status', 'content'],
+                    properties: { content: { type: 'richtext' } }
+                }
+            },
+            {
+                resource: Reply,
+                options: {
+                    navigation: communityNav,
+                    listProperties: ['issue', 'author', 'isSolution', 'isAdminReply', 'createdAt'],
+                    editProperties: ['content', 'isSolution', 'isAdminReply'],
+                    properties: { content: { type: 'richtext' } }
+                }
+            },
+            {
+                resource: Request,
+                options: {
+                    navigation: communityNav,
+                    listProperties: ['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
+                    showProperties: [
+                        'requestType', 'appName', 'platform', 'requestedVersion', 
+                        'officialLink', 'existingModLink', 'modFeaturesRequested', 
+                        'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
+                    ],
+                    editProperties: ['status', 'adminNotes'], 
+                    properties: {
+                        modFeaturesRequested: { type: 'textarea' },
+                        additionalNotes: { type: 'textarea' },
+                        adminNotes: { type: 'textarea' }
+                    }
+                }
+            },
+            {
+                resource: SupportTicket,
+                options: {
+                    navigation: communityNav,
+                    listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
+                    showProperties: ['status', 'category', 'subject', 'message', 'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'],
+                    editProperties: ['status', 'adminNotes'], 
+                    properties: { message: { type: 'textarea' }, adminNotes: { type: 'textarea' } }
+                }
+            },
+            {
+                resource: UnbanRequest,
+                options: {
+                    navigation: communityNav,
+                    listProperties: ['username', 'email', 'status', 'createdAt'],
+                    editProperties: ['status'],
+                }
+            },
+
+            // ---------------------------------
+            // DOCUMENTATION & CONTENT
             // ---------------------------------
             {
                 resource: DocCategory,
                 options: {
-                    navigation: docsNav, // ✅ Groups into "Documentation" folder with Catalog icon
+                    navigation: docsNav,
                     listProperties: ['name', 'order', 'createdAt'],
-                    editProperties:['name', 'order']
+                    editProperties: ['name', 'order']
                 }
             },
             {
                 resource: DocPage,
                 options: {
-                    navigation: docsNav, // ✅ Groups into "Documentation" folder with Catalog icon
-                    listProperties:['title', 'category', 'order', 'slug'],
-                    editProperties:['title', 'category', 'order', 'featuredImageKey', 'content'], 
-                    showProperties:['title', 'category', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
+                    navigation: docsNav,
+                    listProperties: ['title', 'category', 'order', 'slug'],
+                    editProperties: ['title', 'category', 'order', 'featuredImageKey', 'content'], 
+                    showProperties: ['title', 'category', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
                     properties: {
                         content: { type: 'richtext' },
-                        featuredImageKey: {description: 'Optional: Paste a direct image URL (https://...) or B2 Key for the cover image.'},
+                        featuredImageKey: { description: 'Optional: Paste a direct image URL (https://...) or B2 Key for the cover image.' },
                         category: { isSortable: true }
                     },
                     actions: {
@@ -624,171 +600,131 @@ async function createAdminRouter() {
                     }
                 }
             },
-
-            // ---------------------------------
-            // DIRECT USER NOTIFICATIONS
-            // ---------------------------------
             {
-                resource: UserNotification,
+                resource: Announcement,
                 options: {
-                    navigation: { icon: 'Bell' }, // ✅ Valid Carbon Icon
-                    listProperties:['user', 'title', 'type', 'isRead', 'createdAt'],
-                    showProperties:['user', 'title', 'message', 'type', 'isRead', 'createdAt'],
-                    editProperties:['user', 'title', 'message', 'type'], 
-                    properties: { message: { type: 'textarea' } }
-                }
+                    navigation: docsNav,
+                    listProperties: ['title', 'author', 'createdAt'],
+                    editProperties: ['title', 'author', 'content'],
+                    properties: { content: { type: 'richtext' } },
+                },
             },
 
             // ---------------------------------
-            // SUPPORT TICKETS
-            // ---------------------------------
-            {
-                resource: SupportTicket,
-                options: {
-                    navigation: { icon: 'Info' }, // ✅ Valid Carbon Icon
-                    listProperties: ['subject', 'category', 'username', 'status', 'createdAt'],
-                    showProperties:['status', 'category', 'subject', 'message', 'username', 'email', 'adminNotes', 'createdAt', 'updatedAt'],
-                    editProperties: ['status', 'adminNotes'], 
-                    properties: { message: { type: 'textarea' }, adminNotes: { type: 'textarea' } }
-                }
-            },
-
-            // ---------------------------------
-            // AUTOMATED CAMPAIGNS
-            // ---------------------------------
-            {
-                resource: AutomatedCampaign,
-                options: {
-                    navigation: { icon: 'Settings' }, // ✅ Valid Carbon Icon
-                    listProperties:['title', 'targetGroup', 'scheduledDate', 'status'],
-                    properties: { notificationMessage: { type: 'textarea' } }
-                }
-            },
-
-            // ---------------------------------
-            // PARTNERSHIP APPLICATIONS
+            // PUBLISHERS & MODERATION
             // ---------------------------------
             {
                 resource: DistributorApplication,
                 options: {
-                    navigation: { icon: 'Users' }, // ✅ Valid Carbon Icon
-                    listProperties:['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
-                    showProperties:[
+                    navigation: moderationNav,
+                    listProperties: ['organizationName', 'username', 'primaryDistributionPlatform', 'status', 'createdAt'],
+                    showProperties: [
                         'status', 'organizationName', 'username', 'email', 
                         'primaryDistributionPlatform', 'platformUrl', 'monetizationMethod',
                         'adminContactName', 'adminSocialLink', 
                         'socialTelegram', 'socialDiscord', 'socialWebsite', 'socialYoutube',
                         'adminNotes', 'createdAt'
                     ],
-                    editProperties:['status', 'adminNotes'],
+                    editProperties: ['status', 'adminNotes'],
                     properties: { adminNotes: { type: 'textarea' } }
                 }
-            },
-
-            // ---------------------------------
-            // USER REQUESTS
-            // ---------------------------------
-            {
-                resource: Request,
-                options: {
-                    navigation: { icon: 'UserPlus' }, // ✅ Valid Carbon Icon
-                    listProperties:['appName', 'requestType', 'platform', 'username', 'status', 'createdAt'],
-                    showProperties:[
-                        'requestType', 'appName', 'platform', 'requestedVersion', 
-                        'officialLink', 'existingModLink', 'modFeaturesRequested', 
-                        'additionalNotes', 'username', 'status', 'adminNotes', 'createdAt'
-                    ],
-                    editProperties:['status', 'adminNotes'], 
-                    properties: {
-                        modFeaturesRequested: { type: 'textarea' },
-                        additionalNotes: { type: 'textarea' },
-                        adminNotes: { type: 'textarea' }
-                    }
-                }
-            },
-
-            // ---------------------------------
-            // MODERATION RESOURCES
-            // ---------------------------------
-            {
-                resource: Review,
-                options: {
-                    navigation: { icon: 'Star' }, // ✅ Valid Carbon Icon
-                    listProperties:['username', 'rating', 'comment', 'file', 'createdAt'],
-                    actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
-                },
             },
             {
                 resource: Report,
                 options: {
-                    navigation: { icon: 'ShieldOff' }, // ✅ Valid Carbon Icon
-                    listProperties:['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
+                    navigation: moderationNav,
+                    listProperties: ['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
                     editProperties: ['status'],
                 },
             },
             {
                 resource: Dmca,
                 options: {
-                    navigation: { icon: 'Slash' }, // ✅ Valid Carbon Icon
-                    listProperties:['fullName', 'infringingUrl', 'status', 'createdAt'],
+                    navigation: moderationNav,
+                    listProperties: ['fullName', 'infringingUrl', 'status', 'createdAt'],
                     editProperties: ['status'],
                 }
             },
+
+            // ---------------------------------
+            // SYSTEM & ANALYTICS
+            // ---------------------------------
             {
-                resource: UnbanRequest,
+                resource: SiteState,
                 options: {
-                    navigation: { icon: 'UserX' }, // ✅ Valid Carbon Icon
-                    listProperties: ['username', 'email', 'status', 'createdAt'],
-                    editProperties:['status'],
+                    navigation: systemNav,
+                    actions: {
+                        new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
+                        delete: { isAccessible: false } 
+                    },
+                    listProperties: ['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
+                    editProperties: [
+                        'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
+                        'maintenanceTitle', 'maintenanceMessage', 
+                        'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
+                    ],
+                    properties: {
+                        maintenanceMessage: { type: 'richtext' },
+                        unavailableMessage: { type: 'richtext' },
+                        targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
+                        adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
+                    }
                 }
             },
-
-          {
-            resource: IosCert,
-            options: {
-                listProperties: ['name', 'status', 'updatedAt'],
-                actions: {
-                    new: {
-                        after: async (response, request, context) => {
-                            if (request.method === 'post') await triggerCloudflareRebuild();
-                            return response;
-                        }
+            {
+                resource: Subscriber,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['email', 'isSubscribed', 'source', 'createdAt'],
+                }
+            },
+            {
+                resource: NewsletterCampaign,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['subject', 'audience', 'template', 'status', 'sentCount', 'createdAt'],
+                    showProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status', 'sentCount', 'createdAt'],
+                    editProperties: ['subject', 'template', 'audience', 'content', 'callToActionText', 'callToActionUrl', 'status'],
+                    properties: {
+                        content: { type: 'richtext', description: 'The main body of the email. HTML is supported.' },
+                        audience: { description: 'WARNING: Selecting anything other than "test-admin-only" will send emails when status is changed to "sending".' }
                     },
-                    edit: {
-                        after: async (response, request, context) => {
-                            if (request.method === 'post') await triggerCloudflareRebuild();
-                            return response;
-                        }
-                    },
-                    delete: {
-                        after: async (response, request, context) => {
-                            if (request.method === 'post') await triggerCloudflareRebuild();
-                            return response;
+                    actions: {
+                        edit: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post' && request.payload.status === 'sending' && context.record.params.status === 'draft') {
+                                    const { processNewsletterCampaign } = require('../utils/mailer');
+                                    processNewsletterCampaign(context.record.params._id);
+                                    response.notice = { message: 'Campaign queued for sending.', type: 'success' };
+                                }
+                                return response;
+                            }
                         }
                     }
                 }
-            }
-        },
-
-            // ---------------------------------
-            // SITE CONTENT RESOURCE
-            // ---------------------------------
+            },
             {
-                resource: Announcement,
+                resource: AutomatedCampaign,
                 options: {
-                    navigation: { icon: 'MessageSquare' }, // ✅ Valid Carbon Icon
-                    listProperties: ['title', 'author', 'createdAt'],
-                    editProperties: ['title', 'author', 'content'],
-                    properties: { content: { type: 'richtext' } },
-                },
+                    navigation: systemNav,
+                    listProperties: ['title', 'targetGroup', 'scheduledDate', 'status'],
+                    properties: { notificationMessage: { type: 'textarea' } }
+                }
+            },
+            {
+                resource: TranslationQuota,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['monthYear', 'characterCount', 'updatedAt'],
+                    actions: {
+                        new: { isAccessible: false },
+                        delete: { isAccessible: false }
+                    }
+                }
             }
         ] 
     };
     const adminJs = new AdminJS(adminJsOptions);
-    
-    // In v7+, buildRouter expects the AdminJS instance. 
-    // We don't need to pass a pre-configured router if we aren't using custom auth middleware *inside* AdminJS.
-    // Since you use ensureAuthenticated from Express, this standard buildRouter is perfect.
     const adminRouter = AdminJSExpress.buildRouter(adminJs);
     
     return adminRouter;
