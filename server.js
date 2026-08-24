@@ -2951,6 +2951,28 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
         if (!username || !email || !password || !dateOfBirth) {
             return res.status(400).send("All fields are required, including Date of Birth.");
         }
+
+        const birthDate = new Date(`${dateOfBirth}T00:00:00`);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const birthdayThisYear = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if (today < birthdayThisYear) age--;
+
+        if (Number.isNaN(birthDate.getTime()) || birthDate > today) {
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: 'Please enter a valid date of birth.'
+            });
+        }
+
+        if (age < 13) {
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: 'You are not old enough to register. You must be at least 13 years old.'
+            });
+        }
         
         // Validation Check
         if (!isValidName(username)) {
@@ -3005,7 +3027,7 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
             user.username = uniqueUsername;
-            user.dateOfBirth = new Date(dateOfBirth); 
+            user.dateOfBirth = birthDate; 
         } else {
             // Create new user
             user = new User({
@@ -3014,7 +3036,7 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
                 password,
                 referralCode: newReferralCode, 
                 referredBy: referrerId,        
-                dateOfBirth: new Date(dateOfBirth), 
+                dateOfBirth: birthDate, 
                 verificationOtp: otp,
                 otpExpires: otpExpires
             });

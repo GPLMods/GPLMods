@@ -107,15 +107,40 @@
                     <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
                     <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.</p>
                     <p style="color: var(--silver); margin-bottom: 30px;">Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.</p>
-                    <button onclick="window.location.reload()" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
+                    <button id="close-adblock-modal" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
                 </div>
             </div>
 
             <script src="/js/adblock-checker.min.js"></script>
             <script>
+                window.GplModalCoordinator = (() => {
+                    let activeModal = null;
+                    const queuedModals = [];
+
+                    function showNext() {
+                        if (activeModal || queuedModals.length === 0) return;
+                        const nextModal = queuedModals.shift();
+                        activeModal = nextModal.type;
+                        nextModal.show();
+                    }
+
+                    return {
+                        show(type, show) {
+                            queuedModals.push({ type, show });
+                            showNext();
+                        },
+                        complete(type) {
+                            if (activeModal === type) {
+                                activeModal = null;
+                                showNext();
+                            }
+                        }
+                    };
+                })();
+
                 async function checkUserAdblockStatus() {
                     const currentPath = window.location.pathname;
-                    const isExemptPage = currentPath === '/membership' || currentPath === '/login' || currentPath === '/register';
+                    const isExemptPage = ['/membership', '/login', '/register', '/signup'].includes(currentPath);
 
                     if (!isExemptPage) {
                         try {
@@ -124,15 +149,29 @@
                                 console.log("AdBlocker detected! Springing the trap.");
                                 const abModal = document.getElementById('adblock-modal');
                                 if (abModal) {
-                                    abModal.style.display = 'flex';
-                                    setTimeout(() => abModal.classList.add('show'), 10);
-                                    document.body.style.overflow = 'hidden'; 
+                                    window.GplModalCoordinator.show('adblock', () => {
+                                        abModal.style.display = 'flex';
+                                        setTimeout(() => abModal.classList.add('show'), 10);
+                                        document.body.style.overflow = 'hidden';
+                                    });
                                 }
                             }
                         } catch (err) { console.error("AdBlock checker error:", err); }
                     }
                 }
-                window.addEventListener("load", checkUserAdblockStatus);
+                window.addEventListener('load', () => {
+                    const closeButton = document.getElementById('close-adblock-modal');
+                    const adblockModal = document.getElementById('adblock-modal');
+                    if (closeButton && adblockModal) {
+                        closeButton.addEventListener('click', () => {
+                            adblockModal.classList.remove('show');
+                            adblockModal.style.display = 'none';
+                            document.body.style.overflow = '';
+                            window.GplModalCoordinator.complete('adblock');
+                        });
+                    }
+                });
+                window.addEventListener('load', checkUserAdblockStatus);
             </script>
         <% } %> 
 

@@ -301,16 +301,11 @@
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
                     </div>
-                    <!-- ======== NEW: 13+ Confirmation ======== -->
-                    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #333;">
-                        <input type="checkbox" id="ageConfirm" name="ageConfirm" required style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;">
-                        <label for="ageConfirm" style="color: var(--silver); font-size: 0.85em; margin: 0; cursor: pointer; line-height: 1.4;">
-                            I confirm that I am 13 years of age or older and agree to the <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a>.
-                        </label>
+                    <div style="margin-bottom: 20px; color: var(--silver); font-size: 0.85em; line-height: 1.4;">
+                        By registering, you agree to our <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a> and confirm that you are at least 13 years old.
                     </div>
-                    <!-- ======================================= -->
 
-                    <button type="submit" class="submit-button">Sign Up</button>
+                    <button type="submit" id="register-submit-btn" class="submit-button">Sign Up</button>
                 </form>
 
                 <div class="divider">or</div>
@@ -454,6 +449,20 @@
                 // refInput.readOnly = true; 
                 // refInput.style.opacity = '0.7';
             }
+        }
+
+        const dateOfBirthInput = document.getElementById('dateOfBirth');
+        const registrationForm = document.getElementById('signup-form');
+        if (dateOfBirthInput && registrationForm) {
+            const cutoffDate = new Date();
+            cutoffDate.setFullYear(cutoffDate.getFullYear() - 13);
+            dateOfBirthInput.max = cutoffDate.toISOString().split('T')[0];
+            registrationForm.addEventListener('submit', (event) => {
+                if (!dateOfBirthInput.value || dateOfBirthInput.value > dateOfBirthInput.max) {
+                    event.preventDefault();
+                    alert('You are not old enough to register. You must be at least 13 years old.');
+                }
+            });
         }
     </script>
 

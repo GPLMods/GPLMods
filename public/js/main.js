@@ -172,9 +172,10 @@ function initializeStarRatings() {
 async function initializeVpnDetector() {
     const vpnModal = document.getElementById('vpn-modal-container');
     const understoodBtn = document.getElementById('understoodVpnBtn');
+    const exemptPaths = ['/membership', '/login', '/register', '/signup'];
 
     // 1. Check if they already dismissed it
-    if (!vpnModal || !understoodBtn || localStorage.getItem('gplmods_vpn_dismissed') === 'true') {
+    if (!vpnModal || !understoodBtn || exemptPaths.includes(window.location.pathname) || localStorage.getItem('gplmods_vpn_dismissed') === 'true') {
         return; 
     }
 
@@ -186,13 +187,17 @@ async function initializeVpnDetector() {
             console.log("VPN/Proxy/Datacenter IP Detected.");
             
             // Show the modal
-            vpnModal.style.display = 'flex'; 
-            vpnModal.classList.add('show');
-            
-            setTimeout(() => {
-                const contentBox = vpnModal.querySelector('.policy-modal-content');
-                if (contentBox) contentBox.classList.add('active');
-            }, 10);
+            const showVpnModal = () => {
+                vpnModal.style.display = 'flex';
+                vpnModal.classList.add('show');
+
+                setTimeout(() => {
+                    const contentBox = vpnModal.querySelector('.policy-modal-content');
+                    if (contentBox) contentBox.classList.add('active');
+                }, 10);
+            };
+            if (window.GplModalCoordinator) window.GplModalCoordinator.show('vpn', showVpnModal);
+            else showVpnModal();
         } else {
             console.log("Clean IP detected. No VPN active.");
         }
@@ -210,6 +215,7 @@ async function initializeVpnDetector() {
         setTimeout(() => {
             vpnModal.classList.remove('show');
             vpnModal.style.display = 'none'; 
+            if (window.GplModalCoordinator) window.GplModalCoordinator.complete('vpn');
         }, 300);
 
         // Trigger the Colorful Party Popper (Confetti) Effect!
