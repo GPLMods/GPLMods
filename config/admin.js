@@ -26,6 +26,7 @@ const Issue = require('../models/issue');
 const Reply = require('../models/reply');
 const PointHistory = require('../models/pointHistory');
 const TranslationQuota = require('../models/translationQuota');
+const TranslationCache = require('../models/translationCache');
 const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
 
@@ -719,6 +720,16 @@ async function createAdminRouter() {
                     actions: {
                         new: { isAccessible: false },
                         delete: { isAccessible: false }
+                    }
+                }
+            },
+            {
+                resource: TranslationCache,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['originalText', 'targetLanguage', 'translatedText'],
+                    actions: {
+                        new: { isAccessible: false }
                     }
                 }
             }

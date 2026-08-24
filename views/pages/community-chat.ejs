@@ -127,6 +127,23 @@
 <!-- Import Lightweight Emoji Picker Web Component -->
 <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
+<style>
+    /* Translating state indicator */
+    .translating { opacity: 0.6; transition: opacity 0.3s ease; }
+    .translating .message-content::after {
+        content: ' ✦ translating...';
+        color: var(--gold);
+        font-size: 0.75em;
+        font-style: italic;
+        animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+    .translated { opacity: 1; transition: opacity 0.3s ease; }
+</style>
+
 <script>
     const socket = io();
     const form = document.getElementById('chat-form');
@@ -169,7 +186,6 @@
     });
 
     // --- Function to create and append a message element ---
-    // --- Function to create and append a message element ---
     function appendMessage(msg) {
         const item = document.createElement('li');
         
@@ -195,13 +211,13 @@
         usernameLink.href = `/users/${msg.username}`;
         usernameLink.target = '_blank';
         
-        // ✅ ALREADY CORRECT: 'notranslate' class ensures the API ignores this name!
+        // 'notranslate' class ensures the API ignores this name
         usernameLink.className = 'username notranslate'; 
         usernameLink.textContent = msg.username;
         usernameLink.style.textDecoration = 'none'; 
 
         const timestampSpan = document.createElement('span');
-        timestampSpan.className = 'timestamp notranslate'; // Added notranslate to time as well
+        timestampSpan.className = 'timestamp notranslate';
         timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         const textNode = document.createElement('span');
@@ -242,7 +258,7 @@
             appendMessage(msg);
         });
 
-        // ✅ NEW: Translate the entire history bulk if user is using a different language
+        // Translate the entire history bulk if user is using a different language
         const currentLang = localStorage.getItem('site_language');
         if (currentLang && currentLang !== 'en') {
             executeTranslation(currentLang, messages);
@@ -250,14 +266,16 @@
     });
 
     // --- Listen for NEW incoming live messages ---
-    socket.on('chat message', function(msg) {
-        const newItem = appendMessage(msg); // Get the newly created message element
+    socket.on('chat message', async function(msg) {
+        const newItem = appendMessage(msg);
 
-        // ✅ NEW: Live Translate the specific new message instantly!
+        // Live Translate the specific new message instantly with visual indicator
         const currentLang = localStorage.getItem('site_language');
         if (currentLang && currentLang !== 'en') {
-            // We pass 'newItem' to only translate this one message, not the whole page again!
-            executeTranslation(currentLang, newItem);
+            newItem.classList.add('translating');
+            await executeTranslation(currentLang, newItem);
+            newItem.classList.remove('translating');
+            newItem.classList.add('translated');
         }
     });
 </script>

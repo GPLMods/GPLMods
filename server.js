@@ -88,6 +88,8 @@ const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
 const TranslationCache = require('./models/translationCache');
 const TranslationQuota = require('./models/translationQuota');
+const deepl = require('deepl-node');
+const deeplClient = new deepl.DeepLClient(process.env.DEEPL_API_KEY);
 const IosDns = require('./models/iosDns');
 const IosCert = require('./models/iosCert');
 const VpnCache = require('./models/vpnCache');
@@ -5118,7 +5120,18 @@ app.get('/api/ios-store', async (req, res) => {
     }
 });
 
-// CUSTOM MULTI-LANGUAGE ENGINE (MICROSOFT AZURE)
+// CUSTOM MULTI-LANGUAGE ENGINE (DEEPL API via deepl-node SDK)
+// Language code mapping: frontend codes -> DeepL target language codes
+const DEEPL_LANG_MAP = {
+    'es': 'es', 'fr': 'fr', 'hi': 'hi', 'ar': 'ar',
+    'zh-Hans': 'zh', 'zh': 'zh', 'pt': 'pt-BR', 'ru': 'ru', 'id': 'id',
+    'de': 'de', 'it': 'it', 'ja': 'ja', 'ko': 'ko', 'nl': 'nl',
+    'pl': 'pl', 'tr': 'tr', 'uk': 'uk', 'sv': 'sv', 'da': 'da',
+    'fi': 'fi', 'el': 'el', 'cs': 'cs', 'ro': 'ro', 'hu': 'hu',
+    'bg': 'bg', 'sk': 'sk', 'sl': 'sl', 'et': 'et', 'lt': 'lt', 'lv': 'lv',
+    'nb': 'nb', 'en-US': 'en-US', 'en-GB': 'en-GB'
+};
+
 app.post('/api/translate', async (req, res) => {
     try {
         const { texts, targetLanguage } = req.body;
@@ -5131,6 +5144,9 @@ app.post('/api/translate', async (req, res) => {
         if (targetLanguage === 'en') {
             return res.json({ translations: texts }); 
         }
+
+        // Map frontend language code to DeepL's expected code
+        const deeplTargetLang = DEEPL_LANG_MAP[targetLanguage] || targetLanguage;
 
         const finalTranslations = [];
         const textsToTranslate = [];
@@ -5156,7 +5172,7 @@ app.post('/api/translate', async (req, res) => {
             }
         }
 
-        // 2. Call Microsoft Azure API for missing texts
+        // 2. Call DeepL API for cache-missed texts
         if (textsToTranslate.length > 0) {
             
             const newCharsLength = textsToTranslate.join('').length;
@@ -5167,48 +5183,31 @@ app.post('/api/translate', async (req, res) => {
                 quota = new TranslationQuota({ monthYear: currentMonthYear, characterCount: 0 });
             }
 
-            // --- MICROSOFT FREE TIER LIMIT: 2 MILLION CHARACTERS ---
-            const FREE_TIER_LIMIT = 2000000; 
+            // --- DEEPL FREE TIER LIMIT (configurable via .env) ---
+            const DEEPL_LIMIT = parseInt(process.env.DEEPL_MONTHLY_LIMIT) || 500000; 
 
-            if (quota.characterCount + newCharsLength <= FREE_TIER_LIMIT) {
+            if (quota.characterCount + newCharsLength <= DEEPL_LIMIT) {
                 
-                // Format the array into Microsoft's required object structure: [{ "Text": "Hello" }]
-                const msBody = textsToTranslate.map(t => ({ "Text": t }));
+                // Call DeepL API via official deepl-node SDK
+                const results = await deeplClient.translateText(
+                    textsToTranslate,
+                    'en',           // Source language: English
+                    deeplTargetLang // Target language mapped for DeepL
+                );
 
-                // Call Microsoft Translator API
-                const response = await axios({
-                    baseURL: 'https://api.cognitive.microsofttranslator.com',
-                    url: '/translate',
-                    method: 'post',
-                    headers: {
-                        'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATOR_KEY,
-                        'Ocp-Apim-Subscription-Region': process.env.MS_TRANSLATOR_REGION,
-                        'Content-type': 'application/json',
-                        'X-ClientTraceId': crypto.randomUUID() // Built-in Node.js UUID generator
-                    },
-                    params: {
-                        'api-version': '3.0',
-                        'from': 'en',
-                        'to': targetLanguage
-                    },
-                    data: msBody,
-                    responseType: 'json'
-                });
-
-                const apiTranslations = response.data;
+                // deepl-node returns a single TextResult for single input, or array for multiple
+                const apiResults = Array.isArray(results) ? results : [results];
                 const newCacheEntries = [];
 
-                for (let j = 0; j < apiTranslations.length; j++) {
+                for (let j = 0; j < apiResults.length; j++) {
                     const original = textsToTranslate[j];
-                    
-                    // Extract the translated text from Microsoft's response structure
-                    const translated = apiTranslations[j].translations[0].text;
+                    const translated = apiResults[j].text;
                     
                     finalTranslations[indicesToTranslate[j]] = translated;
 
                     newCacheEntries.push({
                         originalText: original,
-                        targetLanguage: targetLanguage,
+                        targetLanguage: targetLanguage, // Store using original frontend code for cache consistency
                         translatedText: translated
                     });
                 }
@@ -5226,7 +5225,7 @@ app.post('/api/translate', async (req, res) => {
 
             } else {
                 // --- LIMIT REACHED: FAIL GRACEFULLY ---
-                console.warn(`[TRANSLATION LIMIT] Microsoft Quota Reached. Used: ${quota.characterCount}/${FREE_TIER_LIMIT}.`);
+                console.warn(`[TRANSLATION LIMIT] DeepL Quota Reached. Used: ${quota.characterCount}/${DEEPL_LIMIT}.`);
                 
                 // Return original English text for missing chunks so site doesn't crash
                 for (let j = 0; j < textsToTranslate.length; j++) {
@@ -5238,8 +5237,7 @@ app.post('/api/translate', async (req, res) => {
         res.json({ translations: finalTranslations });
 
     } catch (error) {
-        // Detailed error logging for Azure
-        console.error("Microsoft API Error:", error.response ? error.response.data : error.message);
+        console.error("DeepL API Error:", error.message);
         res.status(500).json({ error: "Translation failed." });
     }
 });

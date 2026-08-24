@@ -1286,7 +1286,7 @@ document.addEventListener('click', () => {
 });
 /**
  * ==================================================================================
- * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA MICROSOFT AZURE API)
+ * 14. CUSTOM MULTI-LANGUAGE ENGINE (VIA DEEPL API)
  * ==================================================================================
  */
 function initializeLanguageSystem() {
@@ -1338,7 +1338,7 @@ function initializeLanguageSystem() {
 }
 
 async function executeTranslation(targetLang, rootElement = document.body) {
-    console.log(`Translating to ${targetLang}...`);
+    console.log(`[DeepL] Translating to ${targetLang}...`);
     
     // 1. Traverse the DOM to find all visible Text Nodes
     const textNodes = [];
