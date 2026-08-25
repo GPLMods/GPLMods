@@ -1279,11 +1279,14 @@ passport.use(new GitHubStrategy({
 passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    callbackURL: process.env.BASE_URL ? `${process.env.BASE_URL}/auth/microsoft/callback` : "https://gplmods.webredirect.org/auth/microsoft/callback",
-    scope: ['user.read']
+    tenant: process.env.MICROSOFT_TENANT_ID || 'common',
+    callbackURL: process.env.MICROSOFT_CALLBACK_URL || `${(process.env.BASE_URL || 'https://gplmods.webredirect.org').replace(/\/+$/, '')}/auth/microsoft/callback`,
+    scope: ['User.Read'],
+    addUPNAsEmail: true
 }, async (accessToken, refreshToken, profile, done) => {
     const email = (profile.emails && profile.emails.length > 0) ? profile.emails[0].value : profile.userPrincipalName;
-    const microsoftUserData = { microsoftId: profile.id, username: profile.displayName.replace(/\s+/g, '') || `user_${profile.id}`, email: email, isVerified: true };
+    const displayName = profile.displayName || profile.userPrincipalName || `user_${profile.id}`;
+    const microsoftUserData = { microsoftId: profile.id, username: displayName.replace(/\s+/g, ''), email: email, isVerified: true };
     try {
         let user = await User.findOne({ email: microsoftUserData.email });
         if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); } 
