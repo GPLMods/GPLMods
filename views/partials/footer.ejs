@@ -105,8 +105,8 @@
                 <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 40px; text-align: center; border-radius: 15px; max-width: 500px; border-top: 4px solid var(--red); box-shadow: 0 10px 40px rgba(229, 57, 53, 0.3);">
                     <lottie-player src="<%= cdnUrl %>/animations/ad.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" loop autoplay></lottie-player>
                     <h2 style="color: var(--white); margin-bottom: 15px;">Ad Blocker Detected</h2>
-                    <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">It looks like you are using an ad blocker or privacy shield. GPL Mods relies on ad revenue to pay for our servers and keep the platform free.</p>
-                    <p style="color: var(--silver); margin-bottom: 30px;">Please disable your ad blocker for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.</p>
+                    <p style="color: var(--silver); font-size: 1.1em; line-height: 1.6; margin-bottom: 25px;">It looks like an ad blocker or privacy shield is enabled. This can include a browser extension, an ad-blocking DNS service such as AdGuard DNS, or another privacy filter.</p>
+                    <p style="color: var(--silver); margin-bottom: 30px;">Please allow ads for GPL Mods, disable the ad-blocking DNS or privacy filter for this domain, or <a href="/membership" style="color: var(--gold); font-weight: bold;">upgrade to Premium</a> for an ad-free experience.</p>
                     <button id="close-adblock-modal" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold); border: none; border-radius: 25px; background: var(--gold); color: var(--black); font-weight: bold; cursor: pointer;">I have disabled my Ad Blocker</button>
                 </div>
             </div>
@@ -144,6 +144,9 @@
 
                     if (!isExemptPage) {
                         try {
+                            if (window.GplVpnCheckPromise) {
+                                await window.GplVpnCheckPromise;
+                            }
                             let isEnabled = await AdBlockChecker.checkAdBlock();
                             if (isEnabled) {
                                 console.log("AdBlocker detected! Springing the trap.");

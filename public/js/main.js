@@ -38,7 +38,7 @@ try { initializePolicyBanner(); } catch (e) { console.error("Policy Banner Error
 try { initializeMusicPlayer(); } catch (e) { console.error("Music Player Error:", e); }
 try { initializeNewsletter(); } catch (e) { console.error("Newsletter Error:", e); }
 try { initializeNotificationsAndPWA(); } catch (e) { console.error("PWA/Notif Error:", e); }
-try { initializeVpnDetector(); } catch (e) { console.error("VPN Detector Error:", e); }
+try { window.GplVpnCheckPromise = initializeVpnDetector(); } catch (e) { console.error("VPN Detector Error:", e); }
 try { await initializeSearchBar(); } catch (e) { console.error("Search Bar Error:", e); }
 try { initializeLanguageSystem(); } catch (e) { console.error("Language System Error:", e); }
 try { initializeSocialCarousels(); } catch (e) { console.error("Carousel Error:", e); }

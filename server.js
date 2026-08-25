@@ -2898,6 +2898,12 @@ app.post('/login', verifyRecaptcha, (req, res, next) => {
 // --- 4. SOCIAL CALLBACK HANDLER (Handles Fresh Logins AND Social 2FA) ---
 const handleSocialCallback = (provider) => {
     return (req, res, next) => {
+        if (req.query.error) {
+            const providerError = req.query.error_description || req.query.error;
+            console.error(`[${provider} OAuth] Authorization failed: ${providerError}`);
+            return res.redirect('/login?error=' + encodeURIComponent(`${provider} sign-in failed: ${providerError}`));
+        }
+
         passport.authenticate(provider, async (err, user, info) => {
             if (err) return next(err);
             if (!user) return res.redirect('/login');
@@ -3243,24 +3249,6 @@ app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' 
 
 app.get('/auth/github/callback', 
     passport.authenticate('github', { failureRedirect: '/login' }), 
-    processSuccessfulLogin,
-    (req, res) => {
-        // ✅ FIX: Set the CDN bypass cookie on successful social login
-        res.cookie('is_logged_in', 'true', { 
-            maxAge: 1000 * 60 * 60 * 24 * 3, 
-            path: '/',
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        });
-        res.redirect('/home');
-    }
-);
-
-// --- MICROSOFT ROUTES ---
-app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
-
-app.get('/auth/microsoft/callback', 
-    passport.authenticate('microsoft', { failureRedirect: '/login' }),
     processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
