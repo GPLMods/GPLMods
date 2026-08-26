@@ -409,6 +409,16 @@
                     <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang" autocomplete="off" required>
                 </div>
 
+                <div class="form-group">
+                    <label for="modLicense">Software License (Optional)</label>
+                    <select id="modLicense" name="modLicense">
+                        <option value="">None / Proprietary</option>
+                        <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
+                            <option value="<%= license._id %>"><%= license.name %></option>
+                        <% }) } %>
+                    </select>
+                </div>
+
                 <!-- Platform Dropdown -->
                 <div class="form-group">
                     <label>Platform*</label>

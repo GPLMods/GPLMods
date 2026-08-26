@@ -1,0 +1,18 @@
+<%- include('../partials/header') %>
+
+<main class="container" style="padding: 40px 20px 70px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+        <h1 style="color: var(--white); margin: 0;"><%= license.name %></h1>
+        <div style="display: flex; gap: 8px;">
+            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=txt">TXT</a>
+            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=md">MD</a>
+        </div>
+    </div>
+
+    <article style="padding: 28px; background: var(--dark-gray); border: 1px solid #333; border-radius: 8px; overflow: auto;">
+        <p style="color: var(--silver);"><%= license.shortDescription %></p>
+        <pre style="margin: 22px 0 0; color: var(--white); font: 0.95rem/1.65 Consolas, monospace; white-space: pre-wrap;"><%= license.content %></pre>
+    </article>
+</main>
+
+<%- include('../partials/footer') %>

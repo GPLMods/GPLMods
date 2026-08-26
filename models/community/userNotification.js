@@ -17,12 +17,16 @@ const UserNotificationSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['info', 'warning', 'success', 'error'],
+        enum: ['info', 'warning', 'success', 'error', 'mod-update-request'],
         default: 'info'
     },
     isRead: {
         type: Boolean,
         default: false
+    },
+    metadata: {
+        file: { type: Schema.Types.ObjectId, ref: 'File' },
+        requester: { type: Schema.Types.ObjectId, ref: 'User' }
     }
 }, { timestamps: true });
 

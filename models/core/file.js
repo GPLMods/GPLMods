@@ -62,6 +62,11 @@ const FileSchema = new Schema({
     },
 
     category: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; }, enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] },
+    license: {
+        type: Schema.Types.ObjectId,
+        ref: 'License',
+        default: null
+    },
     subCategory: { type: String },
     platforms: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },

@@ -22,6 +22,7 @@ const Subscriber = require('../models/subscriber');
 const NewsletterCampaign = require('../models/newsletterCampaign');
 const DocCategory = require('../models/docCategory');
 const DocPage = require('../models/docPage');
+const License = require('../models/content/license');
 const Issue = require('../models/issue');
 const Reply = require('../models/reply');
 const PointHistory = require('../models/pointHistory');
@@ -280,7 +281,7 @@ async function createAdminRouter() {
                         'iconKey', 'screenshotKeys', 'videoUrl',  'manualFileScanUrl', 'manualSiteScanUrl', 'isEditorsChoice', 'editorsChoiceDescription',
                         'fileKey', 'fileSize', 'originalFilename', 'externalDownloadUrl', 'alternativeLinks', 'customAdLink',
                         'isMultiPart', 'downloadParts', 'installationInstructions', 'directDownloadUrl',
-                        'isVariant', 'showInRepo', 'masterFile'
+                        'isVariant', 'showInRepo', 'masterFile', 'license'
                     ],
                     showProperties: [
                         'iconKey', 'name', 'version', 'ageRating', 'developer', 'uploader', 'status', 'rejectionReason',
@@ -288,7 +289,7 @@ async function createAdminRouter() {
                         'externalDownloadUrl', 'fileKey', 'fileSize', 'originalFilename', 'customAdLink',  'manualFileScanUrl', 'manualSiteScanUrl',
                         'virusTotalId', 'virusTotalAnalysisId', 'screenshotKeys', 'videoUrl', 'createdAt', 'updatedAt', 'architectures', 'minOsVersion',  
                         'isMultiPart', 'downloadParts', 'installationInstructions', 'alternativeLinks', 'directDownloadUrl', 'iosPackageId',
-                        'isVariant', 'showInRepo', 'masterFile'
+                        'isVariant', 'showInRepo', 'masterFile', 'license'
                     ],
                     properties: {
                         modDescription: { type: 'richtext' },
@@ -306,6 +307,7 @@ async function createAdminRouter() {
                         fileKey: { description: 'The Backblaze B2 file path' },
                         customAdLink: { description: 'MANUAL OVERRIDE: Paste a direct Linkvertise/Ad link here.' },
                         directDownloadUrl: { description: 'Optional: Paste a true direct link (like Dropbox with ?dl=1).' },
+                        license: { description: 'Optional software license for this mod.' },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
                             isVisible: { edit: (record) => record.params.status === 'rejected', list: false, filter: false, show: true }
@@ -703,6 +705,15 @@ async function createAdminRouter() {
                             }
                         }
                     }
+                }
+            },
+            {
+                resource: License,
+                options: {
+                    navigation: docsNav,
+                    listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
+                    editProperties: ['name', 'slug', 'shortDescription', 'content'],
+                    properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
                 }
             },
             {

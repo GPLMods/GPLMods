@@ -93,6 +93,7 @@ const deeplClient = new deepl.DeepLClient(process.env.DEEPL_API_KEY);
 const IosDns = require('./models/iosDns');
 const IosCert = require('./models/iosCert');
 const VpnCache = require('./models/vpnCache');
+const License = require('./models/content/license');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -1035,6 +1036,15 @@ let cachedNewUploads = 0;
 let cachedNewUpdates = 0;
 let lastUpdateCheck = 0;
 
+const officialSiteUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+let officialSiteHost = 'gplmods.webredirect.org';
+try {
+    officialSiteHost = new URL(officialSiteUrl).hostname.toLowerCase();
+} catch (error) {
+    console.error('Invalid BASE_URL configuration:', error.message);
+}
+const hasIntegrityConfiguration = Boolean(process.env.SYSTEM_INTEGRITY_KEY);
+
 app.use(async (req, res, next) => {
     try {
         // 1. ======== BASIC LOCALS & HELPERS ========
@@ -1055,6 +1065,11 @@ app.use(async (req, res, next) => {
         // Make sure truncateText is defined as a helper function elsewhere in your server.js!
         res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
+        const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
+        res.locals.isOfficialDeployment = requestHost === officialSiteHost && (
+            process.env.NODE_ENV !== 'production' || hasIntegrityConfiguration
+        );
+        res.locals.officialSiteUrl = officialSiteUrl;
 
         // 2. ======== CRAWLER DETECTION LOGIC ========
         // Safely grab the User-Agent header (fallback to empty string if undefined)
@@ -2159,7 +2174,7 @@ app.get('/:category/:slug', async (req, res, next) => {
             'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
             'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
             'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
-            'download-file', 'upload-details', 'reset-password', 'docs'
+            'download-file', 'upload-details', 'reset-password', 'docs', 'licenses'
         ];
         
         if (reservedPaths.includes(category)) return next();
@@ -2172,15 +2187,15 @@ app.get('/:category/:slug', async (req, res, next) => {
             slug: slug,
             isLatestVersion: true,
             isVariant: { $ne: true } 
-        }).populate('variants');
+        }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
 
         // 3. SECONDARY SEARCH: If exact slug fails and slug is a valid ObjectId, search by _id
         if (!masterFile && Types.ObjectId.isValid(slug)) {
-            const fileById = await File.findById(slug).populate('variants');
+            const fileById = await File.findById(slug).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
             if (fileById) {
                 // If the file found by ID is a variant, resolve to its master file
                 if (fileById.isVariant && fileById.masterFile) {
-                    const parentMaster = await File.findById(fileById.masterFile).populate('variants');
+                    const parentMaster = await File.findById(fileById.masterFile).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
                     if (parentMaster) {
                         const targetSlug = parentMaster.slug || parentMaster._id.toString();
                         const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : `?variant=${fileById._id}`;
@@ -2206,7 +2221,7 @@ app.get('/:category/:slug', async (req, res, next) => {
                 name: nameSearchPattern,
                 isLatestVersion: true,
                 isVariant: { $ne: true } 
-            }).populate('variants');
+            }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
         }
 
         // 5. If STILL not found, throw 404
@@ -2245,6 +2260,7 @@ app.get('/:category/:slug', async (req, res, next) => {
                     modFeatures: requestedVariant.modFeatures,
                     whatsNew: requestedVariant.whatsNew,
                     importantNote: requestedVariant.importantNote,
+                    license: requestedVariant.license || masterFile.license,
                     fileSize: requestedVariant.fileSize,
                     downloads: requestedVariant.downloads,
                     averageRating: requestedVariant.averageRating,
@@ -2367,6 +2383,70 @@ app.get('/:category/:slug', async (req, res, next) => {
     } catch (e) {
         console.error("Error on /:category/:slug route:", e);
         return next(e); 
+    }
+});
+
+// ===================================
+// LICENSE DIRECTORY & READER
+// ===================================
+app.get('/licenses', async (req, res, next) => {
+    try {
+        const licenses = await License.find().sort({ name: 1 }).lean();
+        res.render('pages/licenses-hub', { licenses });
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.get('/licenses/:slug', async (req, res, next) => {
+    try {
+        const license = await License.findOne({ slug: req.params.slug.toLowerCase() }).lean();
+        if (!license) return next();
+        res.render('pages/license-reader', { license });
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.get('/licenses/:slug/download', async (req, res, next) => {
+    try {
+        const format = String(req.query.format || '').toLowerCase();
+        if (!['txt', 'md'].includes(format)) return res.status(400).send('Invalid format');
+        const license = await License.findOne({ slug: req.params.slug.toLowerCase() }).lean();
+        if (!license) return res.status(404).send('Not found');
+        res.type('text/plain').attachment(`${license.slug}-license.${format}`).send(`${license.name}\n\n${license.content}`);
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.post('/mods/:id/request-update', ensureAuthenticated, async (req, res, next) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) return res.status(404).redirect('back');
+
+        const uploader = await User.findOne({ username: file.uploader });
+        if (uploader && uploader._id.toString() !== req.user._id.toString()) {
+            const existingRequest = await UserNotification.findOne({
+                user: uploader._id,
+                type: 'mod-update-request',
+                'metadata.file': file._id
+            });
+
+            if (!existingRequest) {
+                await UserNotification.create({
+                    user: uploader._id,
+                    title: `Update Requested: ${file.name}`,
+                    message: `User ${req.user.username} requested an update for your mod: ${file.name}.`,
+                    type: 'mod-update-request',
+                    metadata: { file: file._id, requester: req.user._id }
+                });
+            }
+        }
+
+        res.redirect(`/${file.category}/${file.slug || file._id}?success=${encodeURIComponent('Update request sent to the uploader.')}`);
+    } catch (error) {
+        next(error);
     }
 });
 // ===================================
@@ -4511,6 +4591,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
 
         const filename = pendingFile.originalFilename || "";
+        const licenses = await License.find().sort({ name: 1 }).lean();
         
         const ext = filename.split('.').pop().toLowerCase();
         let defaultPlatform = "";
@@ -4543,7 +4624,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             defaultName: cleanName,
             defaultVersion: defaultVersion,
             defaultPlatform: defaultPlatform,
-            file: pendingFile
+            file: pendingFile,
+            licenses
         });
 
     } catch (error) {
@@ -4724,9 +4806,11 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
         // Generate signed URLs so the user can see their current images
         const iconUrl = await getSmartImageUrl(file.iconKey);
         const screenshotUrls = await Promise.all((file.screenshotKeys ||[]).map(key => getSmartImageUrl(key)));
+        const licenses = await License.find().sort({ name: 1 }).lean();
 
         res.render('pages/edit-mod', { 
-            file: { ...file.toObject(), iconUrl, screenshotUrls } 
+            file: { ...file.toObject(), iconUrl, screenshotUrls },
+            licenses
         });
     } catch (error) {
         console.error("Error loading edit page:", error);
@@ -4816,6 +4900,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.importantNote = formData.importantNote || file.importantNote;        
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
+        file.license = formData.modLicense || null;
         // --- NEW: Update dependencies on edit ---
         file.minOsVersion = formData.minOsVersion !== undefined ? formData.minOsVersion : file.minOsVersion;
         if (formData.architectures !== undefined) {
@@ -5105,6 +5190,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             
             // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
+            license: formData.modLicense || null,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
             directDownloadUrl: directDownloadUrlValue || '',
             externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',

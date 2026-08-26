@@ -23,8 +23,138 @@
 
 console.log("GPL Mods main.js is loading...");
 
+/**
+ * ==================================================================================
+ * 0. GLOBAL ERROR INTERCEPTOR
+ * Shows a diagnostic modal for unexpected runtime failures and unhandled promises.
+ * ==================================================================================
+ */
+(() => {
+    const recentErrors = new Map();
+    let activeAlert = false;
+
+    const ignoredErrorText = ['script error', 'err_blocked_by_client', 'tidio', 'cashfree'];
+
+    function shouldIgnore(value) {
+        const text = String(value || '').toLowerCase();
+        return ignoredErrorText.some(item => text.includes(item));
+    }
+
+    function stringifyLog(data) {
+        return Object.entries(data)
+            .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}`)
+            .join('\n');
+    }
+
+    function getModal() {
+        let modal = document.getElementById('gpl-diagnostic-modal');
+        if (modal) return modal;
+
+        if (!document.body) return null;
+
+        const style = document.createElement('style');
+        style.textContent = `
+            #gpl-diagnostic-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, .82); backdrop-filter: blur(6px); }
+            #gpl-diagnostic-modal.is-visible { display: flex; }
+            #gpl-diagnostic-modal .gpl-diagnostic-card { width: min(680px, 100%); max-height: min(760px, 92vh); overflow: auto; padding: 28px; color: #fff; background: #1a1a1a; border: 1px solid #552020; border-top: 4px solid #ff3333; border-radius: 12px; box-shadow: 0 18px 60px rgba(0, 0, 0, .7); text-align: left; }
+            #gpl-diagnostic-modal h2 { margin: 0 0 10px; color: #ff5555; font-size: 1.45rem; }
+            #gpl-diagnostic-modal p { margin: 0 0 18px; color: #c0c0c0; line-height: 1.55; }
+            #gpl-diagnostic-modal textarea { width: 100%; min-height: 230px; padding: 14px; resize: vertical; color: #e8e8e8; background: #0a0a0a; border: 1px solid #444; border-radius: 8px; font: 12px/1.5 Consolas, monospace; }
+            #gpl-diagnostic-modal .gpl-diagnostic-actions { display: flex; gap: 10px; margin-top: 16px; }
+            #gpl-diagnostic-modal button { flex: 1; padding: 11px 14px; border: 0; border-radius: 7px; cursor: pointer; font-weight: 700; }
+            #gpl-diagnostic-modal .gpl-download { color: #0a0a0a; background: #ffd700; }
+            #gpl-diagnostic-modal .gpl-close { color: #fff; background: #444; }
+            @media (max-width: 520px) { #gpl-diagnostic-modal .gpl-diagnostic-actions { flex-direction: column; } }
+        `;
+        document.head.appendChild(style);
+
+        modal = document.createElement('div');
+        modal.id = 'gpl-diagnostic-modal';
+        modal.setAttribute('role', 'alertdialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.innerHTML = `
+            <div class="gpl-diagnostic-card">
+                <h2 id="gpl-diagnostic-title">Application Error Detected</h2>
+                <p id="gpl-diagnostic-message">An unexpected error occurred. Download the diagnostic log and attach it to a support ticket.</p>
+                <textarea id="gpl-diagnostic-log" readonly aria-label="Diagnostic log"></textarea>
+                <div class="gpl-diagnostic-actions">
+                    <button type="button" class="gpl-download" id="gpl-diagnostic-download">Download .txt</button>
+                    <button type="button" class="gpl-close" id="gpl-diagnostic-close">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const close = () => {
+            modal.classList.remove('is-visible');
+            document.body.style.overflow = '';
+            activeAlert = false;
+        };
+        modal.querySelector('#gpl-diagnostic-close').addEventListener('click', close);
+        modal.addEventListener('click', event => {
+            if (event.target === modal) close();
+        });
+        modal.querySelector('#gpl-diagnostic-download').addEventListener('click', () => {
+            const log = modal.querySelector('#gpl-diagnostic-log').value;
+            const blob = new Blob([log], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `gplmods-error-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+        return modal;
+    }
+
+    window.showDynamicAlert = function(type, title, message, errorData = {}) {
+        const log = stringifyLog({
+            Type: type || 'Error',
+            ...errorData,
+            URL: errorData.URL || window.location.href,
+            Browser: errorData.Browser || navigator.userAgent,
+            Time: errorData.Time || new Date().toISOString()
+        });
+        const fingerprint = `${title}|${errorData.Message || errorData.Reason || message}`;
+        const lastShown = recentErrors.get(fingerprint) || 0;
+        if (Date.now() - lastShown < 30000 || activeAlert) return;
+        recentErrors.set(fingerprint, Date.now());
+
+        const modal = getModal();
+        if (!modal) return;
+        modal.querySelector('#gpl-diagnostic-title').textContent = title || 'Application Error Detected';
+        modal.querySelector('#gpl-diagnostic-message').textContent = message || 'An unexpected error occurred.';
+        modal.querySelector('#gpl-diagnostic-log').value = log;
+        modal.classList.add('is-visible');
+        document.body.style.overflow = 'hidden';
+        activeAlert = true;
+    };
+
+    window.onerror = function(message, source, lineno, colno, error) {
+        if (shouldIgnore(message)) return false;
+        setTimeout(() => window.showDynamicAlert(
+            'Runtime Error',
+            'Application Crash Detected',
+            'An unexpected error occurred on this page. Download the log and send it with a support ticket.',
+            { Message: message, File: source, Line: lineno, Column: colno, Stack: error?.stack || 'No stack trace available' }
+        ), 0);
+        return false;
+    };
+
+    window.addEventListener('unhandledrejection', event => {
+        const reason = event.reason;
+        const reasonText = reason?.message || String(reason || 'Unknown rejection reason');
+        if (shouldIgnore(reasonText)) return;
+        setTimeout(() => window.showDynamicAlert(
+            'Unhandled Promise Rejection',
+            'Background Task Failed',
+            'A background process failed. Download the log and send it with a support ticket if the problem continues.',
+            { Reason: reasonText, Stack: reason?.stack || 'No stack trace available' }
+        ), 0);
+    });
+})();
+
 // ==================================================================================
-// 0. DOCUMENT READY INITIALIZER
+// 1. DOCUMENT READY INITIALIZER
 // ==================================================================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM loaded. Running initializers...");

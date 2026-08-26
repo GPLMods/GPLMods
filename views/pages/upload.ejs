@@ -226,6 +226,13 @@
 <script>
     // --- Helper to control the Error Modal ---
     function showErrorModal(message) {
+        if (typeof window.showDynamicAlert === 'function') {
+            window.showDynamicAlert('error', 'Upload Error', message, {
+                Message: message,
+                Page: window.location.pathname
+            });
+            return;
+        }
         document.getElementById('error-modal-msg').textContent = message;
         const modal = document.getElementById('error-modal');
         modal.style.display = 'flex';

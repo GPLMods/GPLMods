@@ -560,6 +560,13 @@
                         Add New Version
                     </a>
                 <% } %>
+                <% if (user && user.username.toLowerCase() !== file.uploader.toLowerCase()) { %>
+                    <form action="/mods/<%= file._id %>/request-update" method="POST" style="margin: 0;">
+                        <button type="submit" class="action-btn" style="border-color: var(--blue); color: var(--blue);">
+                            <i class="fas fa-sync-alt"></i> Request Update
+                        </button>
+                    </form>
+                <% } %>
             </div>
             <!-- ============================ -->
             <!--  Updated Action Buttons End  -->
@@ -590,6 +597,15 @@
                         <a href="/developer?name=<%= slugify(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
                     <% } else { %>
                         <span class="meta-value">N/A</span>
+                    <% } %>
+                </li>
+
+                <li>
+                    <span>License:</span>
+                    <% if (file.license) { %>
+                        <a href="/licenses/<%= file.license.slug %>" class="meta-link"><i class="fas fa-file-contract"></i> <%= file.license.name %></a>
+                    <% } else { %>
+                        <span class="meta-value">Proprietary / Unknown</span>
                     <% } %>
                 </li>
                 

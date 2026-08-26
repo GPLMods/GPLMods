@@ -22,6 +22,7 @@ const UnbanRequest = require('./community/unbanRequest');
 const DocPage = require('./content/docPage');
 const DocCategory = require('./content/docCategory');
 const Announcement = require('./content/announcement');
+const License = require('./content/license');
 
 // --- SYSTEM & MODERATION MODELS ---
 const DistributorApplication = require('./system/distributorApplication');
@@ -59,6 +60,7 @@ module.exports = {
     DocPage,
     DocCategory,
     Announcement,
+    License,
 
     // System & Moderation
     DistributorApplication,
@@ -81,6 +83,6 @@ module.exports = {
     // Categorized Namespaces
     Core: { File, User, Review, Reply },
     Community: { Issue, Request, SupportTicket, UserNotification, UnbanRequest },
-    Content: { DocPage, DocCategory, Announcement },
+    Content: { DocPage, DocCategory, Announcement, License },
     System: { DistributorApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache }
 };
