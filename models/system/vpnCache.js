@@ -11,6 +11,19 @@ const vpnCacheSchema = new mongoose.Schema({
         type: Boolean, 
         required: true 
     },
+    visitCount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    firstSeenAt: {
+        type: Date,
+        default: Date.now
+    },
+    lastVisitedAt: {
+        type: Date,
+        default: Date.now
+    },
     security: {
         vpn: { type: Boolean, default: false },
         proxy: { type: Boolean, default: false },

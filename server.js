@@ -747,7 +747,11 @@ app.get('/api/check-vpn', async (req, res) => {
         }
 
         // 1. Check MongoDB Database FIRST
-        const existingCache = await VpnCache.findOne({ ip: clientIp });
+        const existingCache = await VpnCache.findOneAndUpdate(
+            { ip: clientIp },
+            { $inc: { visitCount: 1 }, $set: { lastVisitedAt: new Date() } },
+            { new: true }
+        );
         if (existingCache) {
             console.log(`[VPN API] DB Cache HIT for IP: ${clientIp} (isVpn: ${existingCache.isVpn})`);
             return res.json({
@@ -757,6 +761,7 @@ app.get('/api/check-vpn', async (req, res) => {
                 security: existingCache.security,
                 location: existingCache.location,
                 network: existingCache.network,
+                visitCount: existingCache.visitCount,
                 cached: true
             });
         }
@@ -797,6 +802,9 @@ app.get('/api/check-vpn', async (req, res) => {
         const newVpnRecord = new VpnCache({
             ip: clientIp,
             isVpn: isVpn,
+            visitCount: 1,
+            firstSeenAt: new Date(),
+            lastVisitedAt: new Date(),
             security: {
                 vpn: Boolean(security.vpn),
                 proxy: Boolean(security.proxy),
@@ -808,16 +816,27 @@ app.get('/api/check-vpn', async (req, res) => {
             rawResponse: data
         });
 
-        await newVpnRecord.save();
+        let storedVpnRecord;
+        try {
+            storedVpnRecord = await newVpnRecord.save();
+        } catch (saveError) {
+            if (saveError.code !== 11000) throw saveError;
+            storedVpnRecord = await VpnCache.findOneAndUpdate(
+                { ip: clientIp },
+                { $inc: { visitCount: 1 }, $set: { lastVisitedAt: new Date() } },
+                { new: true }
+            );
+        }
         console.log(`[VPN API] Saved IP ${clientIp} to DB cache (isVpn: ${isVpn}).`);
 
         return res.json({
             success: true,
             ip: clientIp,
             isVpn: isVpn,
-            security: newVpnRecord.security,
-            location: newVpnRecord.location,
-            network: newVpnRecord.network,
+            security: storedVpnRecord.security,
+            location: storedVpnRecord.location,
+            network: storedVpnRecord.network,
+            visitCount: storedVpnRecord.visitCount,
             cached: false
         });
 

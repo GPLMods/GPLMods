@@ -29,6 +29,7 @@ const ApiLimit = require('../models/system/apiLimit');
 const TranslationCache = require('../models/translationCache');
 const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
+const VpnCache = require('../models/vpnCache');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -736,6 +737,20 @@ async function createAdminRouter() {
                         windowStart: { isVisible: { list: false, show: true, edit: false, filter: false } },
                         windowEnd: { isVisible: { list: true, show: true, edit: false, filter: true } },
                         lastErrorAt: { isVisible: { list: false, show: true, edit: false, filter: false } }
+                    }
+                }
+            },
+            {
+                resource: VpnCache,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['ip', 'isVpn', 'visitCount', 'firstSeenAt', 'lastVisitedAt', 'updatedAt'],
+                    editProperties: [],
+                    showProperties: ['ip', 'isVpn', 'security', 'location', 'network', 'visitCount', 'firstSeenAt', 'lastVisitedAt', 'createdAt', 'updatedAt'],
+                    actions: {
+                        new: { isAccessible: false },
+                        edit: { isAccessible: false },
+                        delete: { isAccessible: false }
                     }
                 }
             },
