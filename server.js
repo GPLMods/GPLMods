@@ -39,6 +39,7 @@ const cookieParser = require('cookie-parser');
 const http = require('http');
 const { Server } = require("socket.io");
 const crypto = require('crypto');
+const UAParser = require('ua-parser-js');
 const cors = require('cors');
 const fs = require('fs');
 const cron = require('node-cron');
@@ -59,7 +60,7 @@ const { normalizeSingleValue } = require('./utils/formHelpers');
 const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
 
 // Custom Utilities & Config
-const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, processNewsletterCampaign} = require('./utils/mailer');
+const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, sendLoginAlertEmail, sendFailedAttemptEmail, processNewsletterCampaign} = require('./utils/mailer');
 
 // AWS SDK v3 Imports (Backblaze B2)
 // Add DeleteObjectCommand to this list
@@ -100,6 +101,7 @@ const SourceCode = require('./models/sourceCode');
 // 1. INITIALIZATION & CONFIGURATION
 // ===============================
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const { Types } = mongoose;
 
@@ -992,6 +994,19 @@ app.use(async (req, res, next) => {
     next();
 });
 
+// Invalidate sessions after an account-wide security change.
+app.use((req, res, next) => {
+    if (req.isAuthenticated() && req.session.sessionVersion !== undefined && req.session.sessionVersion !== (req.user.sessionVersion || 0)) {
+        return req.logout(() => {
+            req.session.destroy(() => {
+                res.clearCookie('connect.sid', { path: '/' });
+                res.redirect('/login?error=' + encodeURIComponent('Your session was revoked for security reasons. Please log in again.'));
+            });
+        });
+    }
+    next();
+});
+
 // 2. Passport Serialization
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
@@ -1244,13 +1259,23 @@ const uploadAvatar = multer({
     limits: { fileSize: 5 * 1024 * 1024 } 
 });
 // Local Strategy
-passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, async (req, email, password, done) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase() });
         if (!user) return done(null, false, { message: 'Incorrect email.' });
         const isMatch = await user.comparePassword(password);
-        if (!isMatch) return done(null, false, { message: 'Incorrect password.' });
+        if (!isMatch) {
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+            if (user.failedLoginAttempts >= 5) {
+                if (user.safetyEmailsEnabled) await sendFailedAttemptEmail(user, req);
+                user.failedLoginAttempts = 0;
+            }
+            await user.save();
+            return done(null, false, { message: 'Incorrect password.' });
+        }
         if (!user.isVerified) return done(null, false, { message: 'Please verify your email before logging in.' });
+        user.failedLoginAttempts = 0;
+        await user.save();
         return done(null, user);
     } catch (e) { return done(e); }
 }));
@@ -3028,6 +3053,7 @@ async function finalizeLogin(req, res, user, redirectUrl) {
         if (err) console.error("Session Regen Error:", err);
         
         req.session.passport = tempSession; // Restore login state
+        req.session.sessionVersion = user.sessionVersion || 0;
         
         // Check if the user already has an active session on another device
         if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
@@ -3048,6 +3074,25 @@ async function finalizeLogin(req, res, user, redirectUrl) {
         // Save the new Session ID
         user.currentSessionId = req.sessionID;
         await user.save();
+
+        if (user.safetyEmailsEnabled) {
+            const parser = new UAParser(req.headers['user-agent'] || '');
+            const browser = parser.getBrowser().name || 'Unknown Browser';
+            const os = parser.getOS().name || 'Unknown OS';
+            const deviceInfo = `${browser} on ${os}`;
+            const ipAddress = req.ip || req.socket.remoteAddress || 'Unknown IP';
+            const loginToken = crypto.randomBytes(24).toString('hex');
+
+            user.loginAlertTokens.push({
+                token: loginToken,
+                sessionId: req.sessionID,
+                deviceInfo,
+                ipAddress
+            });
+            user.loginAlertTokens = user.loginAlertTokens.slice(-10);
+            await user.save();
+            await sendLoginAlertEmail(user, deviceInfo, ipAddress, loginToken, req);
+        }
 
         // Save the cookie and redirect
         req.session.save((saveErr) => {
@@ -3581,6 +3626,79 @@ app.get('/settings', ensureAuthenticated, async (req, res) => {
         res.render('pages/settings', { user: userObj });
     } catch (error) {
         console.error("Settings page error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/settings/safety-emails', ensureAuthenticated, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id, {
+            safetyEmailsEnabled: req.body.safetyEmailsEnabled === 'on'
+        });
+        res.redirect('/settings?success=Security alert settings updated.');
+    } catch (error) {
+        console.error('Safety email settings error:', error);
+        res.redirect('/settings?error=Unable to update security alert settings.');
+    }
+});
+
+app.get('/security/login/:action/:token', async (req, res) => {
+    try {
+        const { action, token } = req.params;
+        const user = await User.findOne({ 'loginAlertTokens.token': token });
+        const tokenData = user && user.loginAlertTokens.find(item => item.token === token);
+
+        if (!user || !tokenData || tokenData.status === 'revoked') {
+            return res.render('pages/security-alert', { status: 'invalid', message: 'This security link is invalid or has already been used.' });
+        }
+
+        if (action === 'accept') {
+            tokenData.status = 'verified';
+            await user.save();
+            return res.render('pages/security-alert', { status: 'success', token });
+        }
+
+        if (action === 'deny') {
+            tokenData.status = 'revoked';
+            if (tokenData.sessionId) {
+                await mongoose.connection.collection('sessions').updateOne(
+                    { _id: tokenData.sessionId },
+                    { $set: { kickedOut: true } }
+                );
+            }
+            await user.save();
+            return res.render('pages/security-alert', { status: 'unauthorized', token, email: user.email, error: req.query.error || null });
+        }
+
+        return res.status(400).render('pages/security-alert', { status: 'invalid', message: 'Unsupported security action.' });
+    } catch (error) {
+        console.error('Security alert route error:', error);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/security/force-password-change', async (req, res) => {
+    try {
+        const { email, token, newPassword, confirmPassword } = req.body;
+        if (!newPassword || newPassword !== confirmPassword) {
+            return res.redirect(`/security/login/deny/${encodeURIComponent(token)}?error=Passwords do not match.`);
+        }
+        if (newPassword.length < 6) {
+            return res.redirect(`/security/login/deny/${encodeURIComponent(token)}?error=Password too short.`);
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase(), 'loginAlertTokens.token': token });
+        if (!user) return res.status(400).send('Invalid security request.');
+
+        user.password = newPassword;
+        user.sessionVersion = (user.sessionVersion || 0) + 1;
+        const tokenData = user.loginAlertTokens.find(item => item.token === token);
+        if (!tokenData) return res.status(400).send('Invalid security request.');
+        tokenData.status = 'revoked';
+        await user.save();
+        res.redirect('/login?message=Account secured and password updated successfully. Please log in.');
+    } catch (error) {
+        console.error('Forced password change error:', error);
         res.status(500).render('pages/500');
     }
 });

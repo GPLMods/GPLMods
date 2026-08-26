@@ -129,6 +129,56 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
     }
 };
 
+exports.sendLoginAlertEmail = async (user, deviceInfo, ipAddress, token, req) => {
+    try {
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const acceptUrl = `${baseUrl}/security/login/accept/${encodeURIComponent(token)}`;
+        const denyUrl = `${baseUrl}/security/login/deny/${encodeURIComponent(token)}`;
+        const emailContent = `
+            <h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 24px; text-align: center;">New Login Detected</h2>
+            <p style="color: #c0c0c0; font-size: 16px; line-height: 1.6;">Hi <strong>${user.username}</strong>, we noticed a new login to your GPL Mods account.</p>
+            <p style="color: #c0c0c0; line-height: 1.6;"><strong>Device:</strong> ${deviceInfo}<br><strong>IP address:</strong> ${ipAddress}<br><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="${acceptUrl}" style="display: inline-block; padding: 13px 20px; background: #43a047; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 8px;">It was me</a>
+                <a href="${denyUrl}" style="display: inline-block; padding: 13px 20px; background: #e53935; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">Not me</a>
+            </div>
+            <p style="color: #888; font-size: 14px; line-height: 1.6;">If you did not sign in, deny this session and change your password immediately.</p>
+        `;
+        await sendSmtpEmail({
+            api_key: process.env.SMTP2GO_API_KEY,
+            to: [user.email],
+            sender: process.env.EMAIL_FROM,
+            subject: 'New Login to your GPL Mods Account',
+            text_body: `New login from ${deviceInfo} (${ipAddress}). If this was not you, deny it here: ${denyUrl}`,
+            html_body: getBrandedEmailHtml(emailContent)
+        });
+    } catch (error) {
+        console.error('SMTP2GO Login Alert Error:', error.response ? error.response.data : error.message);
+    }
+};
+
+exports.sendFailedAttemptEmail = async (user, req) => {
+    try {
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const resetUrl = `${baseUrl}/forgot-password`;
+        const emailContent = `
+            <h2 style="margin: 0 0 20px 0; color: #e53935; font-size: 24px; text-align: center;">Security Alert</h2>
+            <p style="color: #c0c0c0; font-size: 16px; line-height: 1.6;">Hi <strong>${user.username}</strong>, someone recently attempted to log in to your account with an incorrect password five times.</p>
+            <div style="text-align: center; margin: 35px 0;"><a href="${resetUrl}" style="display: inline-block; padding: 14px 25px; background: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset My Password</a></div>
+        `;
+        await sendSmtpEmail({
+            api_key: process.env.SMTP2GO_API_KEY,
+            to: [user.email],
+            sender: process.env.EMAIL_FROM,
+            subject: 'SECURITY ALERT: Failed Login Attempts',
+            text_body: `Security alert: five failed login attempts on your account. Reset your password here: ${resetUrl}`,
+            html_body: getBrandedEmailHtml(emailContent)
+        });
+    } catch (error) {
+        console.error('SMTP2GO Failed Attempt Error:', error.response ? error.response.data : error.message);
+    }
+};
+
 exports.sendDeletionOtpEmail = async (user, otp) => {
     try {
         const emailContent = `

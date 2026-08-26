@@ -1,0 +1,31 @@
+<%- include('../partials/header') %>
+
+<main class="container" style="max-width: 650px; margin: 4rem auto; text-align: center; background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333;">
+    <% if (status === 'success') { %>
+        <i class="fas fa-check-circle" style="font-size: 5rem; color: var(--green); margin-bottom: 1.5rem;"></i>
+        <h1 style="color: var(--green);">Login Confirmed</h1>
+        <p style="color: var(--silver); margin: 1rem 0 2rem;">Thanks for confirming this login. You can safely close this window.</p>
+        <a href="/" class="btn btn-primary">Go to GPL Mods</a>
+    <% } else if (status === 'unauthorized') { %>
+        <i class="fas fa-user-shield" style="font-size: 5rem; color: var(--red); margin-bottom: 1.5rem;"></i>
+        <h1 style="color: var(--red);">Session Revoked</h1>
+        <p style="color: var(--silver); margin: 1rem 0 2rem;">The reported session has been terminated. Set a new password to secure your account.</p>
+        <form action="/security/force-password-change" method="POST" style="text-align: left; background: var(--black); padding: 25px; border-radius: 10px;">
+            <input type="hidden" name="email" value="<%= email %>">
+            <input type="hidden" name="token" value="<%= token %>">
+            <% if (typeof error !== 'undefined' && error) { %><p style="color: var(--red); margin-bottom: 1rem;"><%= error %></p><% } %>
+            <label for="new-password" style="color: var(--silver);">New password</label>
+            <input id="new-password" type="password" name="newPassword" minlength="6" required style="width: 100%; padding: 12px; margin: 8px 0 15px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px;">
+            <label for="confirm-password" style="color: var(--silver);">Confirm new password</label>
+            <input id="confirm-password" type="password" name="confirmPassword" minlength="6" required style="width: 100%; padding: 12px; margin: 8px 0 20px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--red); color: #fff;">Change Password</button>
+        </form>
+    <% } else { %>
+        <i class="fas fa-link-slash" style="font-size: 5rem; color: var(--gold); margin-bottom: 1.5rem;"></i>
+        <h1 style="color: var(--gold);">Security Link Unavailable</h1>
+        <p style="color: var(--silver); margin: 1rem 0 2rem;"><%= message %></p>
+        <a href="/" class="btn btn-primary">Go to GPL Mods</a>
+    <% } %>
+</main>
+
+<%- include('../partials/footer') %>

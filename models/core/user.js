@@ -140,6 +140,26 @@ const UserSchema = new Schema({
     passwordResetExpires: {
         type: Date
     },
+    safetyEmailsEnabled: {
+        type: Boolean,
+        default: false
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    sessionVersion: {
+        type: Number,
+        default: 0
+    },
+    loginAlertTokens: [{
+        token: { type: String, required: true },
+        sessionId: String,
+        deviceInfo: String,
+        ipAddress: String,
+        createdAt: { type: Date, default: Date.now },
+        status: { type: String, enum: ['pending', 'verified', 'revoked'], default: 'pending' }
+    }],
     deletionOtp: { type: String },
     deletionOtpExpires: { type: Date },
 
