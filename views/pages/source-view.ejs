@@ -1,0 +1,110 @@
+<%- include('../partials/header') %>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+<style>
+    .source-container { max-width: 1000px; margin: 4rem auto; padding: 0 20px; }
+    .repo-header { background: var(--dark-gray); padding: 30px; border-radius: 12px; border: 1px solid #333; margin-bottom: 30px; }
+    .repo-title { font-size: 2em; color: var(--white); margin: 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    .private-badge { font-size: 0.4em; background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .repo-description { color: var(--silver); margin-top: 10px; line-height: 1.6; }
+    .access-banner { padding: 15px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; display: flex; align-items: center; gap: 15px; }
+    .access-granted { background: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
+    .access-denied { background: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
+    .access-banner small { display: block; color: var(--silver); font-weight: normal; margin-top: 3px; }
+    .release-timeline { border-left: 2px solid #333; padding-left: 30px; margin-left: 10px; }
+    .release-card { background: var(--black); border: 1px solid #333; border-radius: 10px; margin-bottom: 40px; position: relative; overflow: hidden; }
+    .release-card::before { content: ''; position: absolute; left: -39px; top: 20px; width: 16px; height: 16px; background: var(--dark-gray); border: 2px solid var(--silver); border-radius: 50%; }
+    .release-card.latest::before { border-color: var(--gold); background: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+    .release-header { padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .release-name { font-size: 1.5em; color: var(--gold); margin: 0 0 5px; }
+    .release-tag { background: #333; color: var(--white); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.9em; }
+    .release-date { color: var(--silver); font-size: 0.9em; }
+    .release-body { padding: 20px; color: var(--silver); line-height: 1.6; overflow-wrap: anywhere; }
+    .release-body h1, .release-body h2, .release-body h3 { color: var(--white); margin: 20px 0 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+    .release-body ul, .release-body ol { padding-left: 20px; margin-bottom: 15px; }
+    .release-body a { color: var(--gold); }
+    .release-body code { background: #222; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #ffadad; }
+    .release-body pre { background: #111; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; }
+    .release-footer { padding: 15px 20px; background: #111; border-top: 1px solid #222; }
+    .download-src-btn { background: var(--gold); color: var(--black); padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; }
+    .download-src-btn:hover { box-shadow: 0 5px 15px var(--glow-gold); }
+    .download-src-btn.disabled { background: #333; color: #777; pointer-events: none; }
+    .empty-releases { text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 10px; color: var(--silver); }
+    .empty-releases i { font-size: 4em; color: #444; margin-bottom: 20px; }
+    .empty-releases h2 { color: var(--white); }
+    @media (max-width: 600px) {
+        .source-container { margin: 2rem auto; }
+        .repo-header { padding: 22px; }
+        .repo-title { font-size: 1.5em; }
+        .release-timeline { padding-left: 20px; margin-left: 5px; }
+        .release-card::before { left: -29px; }
+    }
+</style>
+
+<main class="container">
+    <div class="source-container">
+        <section class="repo-header">
+            <h1 class="repo-title">
+                <i class="fab fa-github" aria-hidden="true"></i>
+                <%= source.title %>
+                <% if (source.isPrivate) { %><span class="private-badge">Private</span><% } %>
+            </h1>
+            <% if (source.description) { %><p class="repo-description"><%= source.description %></p><% } %>
+        </section>
+
+        <div class="access-banner <%= hasAccess ? 'access-granted' : 'access-denied' %>">
+            <i class="fas <%= hasAccess ? 'fa-check-circle' : 'fa-lock' %>" style="font-size: 1.5em;" aria-hidden="true"></i>
+            <div>
+                <span><%= hasAccess ? 'Access Granted' : 'Access Denied' %></span>
+                <small><%= hasAccess ? 'Your account can download these source archives.' : 'Your account does not have permission to download this source code.' %></small>
+            </div>
+        </div>
+
+        <% if (releases.length) { %>
+            <div class="release-timeline">
+                <% releases.forEach((release, index) => { %>
+                    <article class="release-card <%= index === 0 ? 'latest' : '' %>">
+                        <header class="release-header">
+                            <div>
+                                <h2 class="release-name"><%= release.name || release.tag_name %></h2>
+                                <span class="release-date">Released on <%= release.published_at ? new Date(release.published_at).toLocaleDateString() : 'Unpublished' %></span>
+                            </div>
+                            <span class="release-tag"><i class="fas fa-tag" aria-hidden="true"></i> <%= release.tag_name %></span>
+                        </header>
+                        <div class="release-body" id="markdown-<%= release.id %>"></div>
+                        <textarea id="raw-<%= release.id %>" hidden><%= release.body || '' %></textarea>
+                        <footer class="release-footer">
+                            <% if (hasAccess) { %>
+                                <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(release.tag_name) %>" class="download-src-btn">
+                                    <i class="fas fa-file-archive" aria-hidden="true"></i> Download Source (.zip)
+                                </a>
+                            <% } else { %>
+                                <span class="download-src-btn disabled"><i class="fas fa-lock" aria-hidden="true"></i> Locked</span>
+                            <% } %>
+                        </footer>
+                    </article>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <div class="empty-releases">
+                <i class="fas fa-code-branch" aria-hidden="true"></i>
+                <h2>No Releases Found</h2>
+                <p>This repository has no published releases, or GitHub is temporarily unavailable.</p>
+            </div>
+        <% } %>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        <% releases.forEach((release) => { %>
+            const rawContent = document.getElementById('raw-<%= release.id %>').value;
+            const renderedContent = marked.parse(rawContent);
+            document.getElementById('markdown-<%= release.id %>').innerHTML = DOMPurify.sanitize(renderedContent);
+        <% }) %>
+    });
+</script>
+
+<%- include('../partials/footer') %>

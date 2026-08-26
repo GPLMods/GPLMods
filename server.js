@@ -94,6 +94,7 @@ const IosDns = require('./models/iosDns');
 const IosCert = require('./models/iosCert');
 const VpnCache = require('./models/vpnCache');
 const License = require('./models/content/license');
+const SourceCode = require('./models/sourceCode');
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -1065,6 +1066,7 @@ app.use(async (req, res, next) => {
         // Make sure truncateText is defined as a helper function elsewhere in your server.js!
         res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
+        res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
         res.locals.isOfficialDeployment = requestHost === officialSiteHost && (
             process.env.NODE_ENV !== 'production' || hasIntegrityConfiguration
@@ -1158,6 +1160,7 @@ app.use(async (req, res, next) => {
         res.locals.newUploadsCount = cachedNewUploads || 0;
         res.locals.newUpdatesCount = cachedNewUpdates || 0;
         res.locals.unreadPersonalCount = 0;
+        res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         res.locals.showAds = false;
         res.locals.showModals = false;
         res.locals.generateAdLink = (url) => url; // Return normal url if Ad Generator fails
@@ -1548,6 +1551,97 @@ app.get('/', async (req, res) => {
 app.get('/home', ensureAuthenticated, async (req, res) => {
     // Render the exact same content, but on a URL that Cloudflare treats differently
     await renderHomepage(req, res);
+});
+
+// ===================================
+// SOURCE CODE HUB (GITHUB SYNC)
+// ===================================
+function canUserAccessSource(user, sourceDoc) {
+    if (!user || !sourceDoc) return false;
+    if (user.role === 'admin') return true;
+
+    const allowedRoles = sourceDoc.allowedRoles || [];
+    if (allowedRoles.includes(user.role)) return true;
+
+    const userId = user._id && user._id.toString();
+    return Boolean(userId && (sourceDoc.allowedUsers || []).some(id => id.toString() === userId));
+}
+
+function githubApiConfig() {
+    return {
+        headers: {
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            ...(process.env.GITHUB_PAT && { Authorization: `Bearer ${process.env.GITHUB_PAT}` })
+        }
+    };
+}
+
+function renderSourceError(res, status, title, message) {
+    return res.status(status).render('pages/error', {
+        errorCode: String(status),
+        errorTitle: title,
+        errorMessage: message
+    });
+}
+
+app.get('/source/:slug', ensureAuthenticated, async (req, res) => {
+    try {
+        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
+
+        const owner = encodeURIComponent(source.githubOwner);
+        const repo = encodeURIComponent(source.githubRepo);
+        let releases = [];
+
+        try {
+            const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/releases`, githubApiConfig());
+            releases = Array.isArray(response.data) ? response.data : [];
+        } catch (githubError) {
+            console.error('GitHub API Error:', githubError.response?.data || githubError.message);
+        }
+
+        return res.render('pages/source-view', {
+            source,
+            releases,
+            hasAccess: canUserAccessSource(req.user, source)
+        });
+    } catch (error) {
+        console.error('Source Hub Error:', error);
+        return renderSourceError(res, 500, 'Source Hub <span>Unavailable</span>', 'The source hub could not be loaded right now.');
+    }
+});
+
+app.get('/source/:slug/download/:tag', ensureAuthenticated, async (req, res) => {
+    try {
+        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
+        if (!canUserAccessSource(req.user, source)) {
+            return renderSourceError(res, 403, 'Access <span>Denied</span>', 'You do not have permission to download this source code.');
+        }
+
+        const owner = encodeURIComponent(source.githubOwner);
+        const repo = encodeURIComponent(source.githubRepo);
+        const tag = encodeURIComponent(req.params.tag);
+        const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/zipball/${tag}`, {
+            ...githubApiConfig(),
+            responseType: 'stream'
+        });
+
+        const safeTag = req.params.tag.replace(/[^a-zA-Z0-9._-]/g, '-');
+        res.setHeader('Content-Disposition', `attachment; filename="${source.slug}-${safeTag}.zip"`);
+        res.setHeader('Content-Type', 'application/zip');
+        response.data.on('error', error => {
+            console.error('Source Download Stream Error:', error);
+            if (!res.headersSent) res.status(502).end();
+            else res.destroy(error);
+        });
+        response.data.pipe(res);
+    } catch (error) {
+        console.error('Source Download Error:', error.response?.data || error.message);
+        if (!res.headersSent) return renderSourceError(res, 502, 'Download <span>Unavailable</span>', 'GitHub could not provide this source archive right now.');
+        res.destroy(error);
+    }
 });
 // ===================================
 // 2 NOTIFICATION SYSTEM ROUTES

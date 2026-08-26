@@ -128,7 +128,7 @@
         <div class="team-grid">
             <!-- Team Member 1 -->
             <div class="team-card">
-                <a href="https://github.com/GPLMods-Team" target="_blank">
+                <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank">
                 <img src="<%= cdnUrl %>/images/team-logo.png" alt="Team Logo">
                 <h4>GPL Mods Team</h4>
                 <span>Founder & Lead Developer</span>
@@ -161,34 +161,34 @@
         <h2 class="section-title">Connect With Us</h2>
         <p style="text-align: center; color: var(--silver); margin-bottom: 30px;">Join the conversation, report bugs, and request new mods on our official channels.</p>
                 <div class="social-grid">
-            <a href="https://discord.gg/d7FEDp4vm" target="_blank" class="social-card discord">
+            <a href="<%= socialLinks.discord || 'https://discord.gg/d7FEDp4vm' %>" target="_blank" class="social-card discord">
                 <i class="fab fa-discord"></i> Discord Server
             </a>
-            <a href="https://youtube.com/@gplmods" target="_blank" class="social-card youtube">
+            <a href="<%= socialLinks.youtube || 'https://youtube.com/@gplmods' %>" target="_blank" class="social-card youtube">
                 <i class="fab fa-youtube"></i> YouTube Channel
             </a>
-            <a href="https://github.com/GPLMods-Team" target="_blank" class="social-card github">
+            <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank" class="social-card github">
                 <i class="fab fa-github"></i> GitHub Repository
             </a>
-            <a href="https://www.reddit.com/user/GPLMods" target="_blank" class="social-card reddit">
+            <a href="<%= socialLinks.reddit || 'https://www.reddit.com/user/GPLMods' %>" target="_blank" class="social-card reddit">
                 <i class="fab fa-reddit"></i> Reddit Community
             </a>
-           <a href="https://x.com/GPLMods" target="_blank" class="social-card twitter">
+           <a href="<%= socialLinks.twitter || 'https://x.com/GPLMods' %>" target="_blank" class="social-card twitter">
                 <i class="fab fa-twitter"></i> X (Twitter)
             </a>
-            <a href="https://in.linkedin.com/in/gpl-mods-05a22a403" target="_blank" class="social-card linkedin">
+            <a href="<%= socialLinks.linkedin || 'https://in.linkedin.com/in/gpl-mods-05a22a403' %>" target="_blank" class="social-card linkedin">
                 <i class="fab fa-linkedin"></i> LinkedIn
             </a>
-             <a href="https://www.instagram.com/gplmods" target="_blank" class="social-card instagram">
+             <a href="<%= socialLinks.instagram || 'https://www.instagram.com/gplmods' %>" target="_blank" class="social-card instagram">
                 <i class="fab fa-instagram"></i> Instagram
             </a>
-             <a href="https://www.facebook.com/profile.php?id=61572148715492" target="_blank" class="social-card facebook">
+             <a href="<%= socialLinks.facebook || 'https://www.facebook.com/profile.php?id=61572148715492' %>" target="_blank" class="social-card facebook">
                 <i class="fab fa-facebook-f"></i> Facebook Page
             </a>
-             <a href="https://threads.net/gplmods" target="_blank" class="social-card threads">
+             <a href="<%= socialLinks.threads || 'https://threads.net/gplmods' %>" target="_blank" class="social-card threads">
                 <i class="fab fa-threads"></i> Threads
             </a>
-              <a href="https://gravatar.com/theoristcandid03a1c47c5b" target="_blank" class="social-card gravatar">
+              <a href="<%= socialLinks.gravatar || 'https://gravatar.com/theoristcandid03a1c47c5b' %>" target="_blank" class="social-card gravatar">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
                       <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
                 </svg> Gravatar Profile

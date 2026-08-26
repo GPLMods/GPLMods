@@ -31,6 +31,7 @@ const TranslationCache = require('../models/translationCache');
 const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
 const VpnCache = require('../models/vpnCache');
+const SourceCode = require('../models/sourceCode');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -460,6 +461,23 @@ async function createAdminRouter() {
                 }
             },
             {
+                resource: SourceCode,
+                options: {
+                    navigation: modsNav,
+                    listProperties: ['title', 'githubRepo', 'isPrivate', 'status'],
+                    editProperties: ['title', 'slug', 'githubOwner', 'githubRepo', 'isPrivate', 'description', 'allowedRoles', 'allowedUsers', 'status'],
+                    showProperties: ['title', 'slug', 'githubOwner', 'githubRepo', 'isPrivate', 'description', 'allowedRoles', 'allowedUsers', 'status'],
+                    properties: {
+                        description: { type: 'textarea' },
+                        allowedRoles: { isArray: true },
+                        allowedUsers: {
+                            isArray: true,
+                            description: 'Select specific users who are allowed to download this source code.'
+                        }
+                    }
+                }
+            },
+            {
                 resource: Review,
                 options: {
                     navigation: modsNav,
@@ -666,12 +684,25 @@ async function createAdminRouter() {
                         'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
                         'maintenanceTitle', 'maintenanceMessage', 
                         'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
+                        'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
+                        'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
+                        'socialLinks.threads', 'socialLinks.gravatar'
                     ],
                     properties: {
                         maintenanceMessage: { type: 'richtext' },
                         unavailableMessage: { type: 'richtext' },
                         targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
-                        adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' }
+                        adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' },
+                        'socialLinks.youtube': { description: 'Footer and About page YouTube URL.' },
+                        'socialLinks.discord': { description: 'Footer and About page Discord URL.' },
+                        'socialLinks.github': { description: 'Footer and About page GitHub URL.' },
+                        'socialLinks.twitter': { description: 'Footer and About page X/Twitter URL.' },
+                        'socialLinks.linkedin': { description: 'Footer and About page LinkedIn URL.' },
+                        'socialLinks.reddit': { description: 'Footer and About page Reddit URL.' },
+                        'socialLinks.instagram': { description: 'Footer and About page Instagram URL.' },
+                        'socialLinks.facebook': { description: 'Footer and About page Facebook URL.' },
+                        'socialLinks.threads': { description: 'Footer and About page Threads URL.' },
+                        'socialLinks.gravatar': { description: 'Footer and About page Gravatar URL.' }
                     }
                 }
             },
