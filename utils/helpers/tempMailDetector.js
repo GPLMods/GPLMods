@@ -11,6 +11,7 @@ const DEFAULT_WHITELIST = new Set([
     'yahoo.com',
     'icloud.com'
 ]);
+const inFlightChecks = new Map();
 
 function extractDomain(emailOrDomain) {
     if (!emailOrDomain || typeof emailOrDomain !== 'string') {
@@ -20,7 +21,7 @@ function extractDomain(emailOrDomain) {
     const parts = emailOrDomain.trim().toLowerCase().split('@');
     const domain = parts.length > 1 ? parts[parts.length - 1] : parts[0];
     
-    return domain.trim();
+    return domain.trim().replace(/\.$/, '').toLowerCase();
 }
 
 async function checkDomain(emailOrDomain) {
@@ -44,6 +45,12 @@ async function checkDomain(emailOrDomain) {
             whitelisted: true,
             reason: 'Whitelisted default domain'
         };
+    }
+
+    const inFlightCheck = inFlightChecks.get(domain);
+    if (inFlightCheck) {
+        const result = await inFlightCheck;
+        return { ...result, cached: true };
     }
 
     try {
@@ -70,52 +77,42 @@ async function checkDomain(emailOrDomain) {
         console.error(`[TempMailDetector] MongoDB search error for ${domain}:`, dbError.message);
     }
 
-    let reservation;
-    try {
-        const quota = await reserveApiQuota({ service: 'temp-mail-detector', metric: 'requests', period: 'monthly', amount: 1 });
-        if (!quota.allowed) {
-            return { domain, isDisposable: false, blocked: false, score: 0, meta: {}, cached: false, whitelisted: false, reason: 'API quota unavailable' };
-        }
-        reservation = quota.reservation;
-
-        const response = await axios.post(
-            API_URL,
-            { domain },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_KEY}`
-                },
-                timeout: 5000
-            }
-        );
-
-        const data = response.data;
-
-        if (data.error || data.message) {
-            const errStr = data.error || data.message;
-            if (errStr === 'invalid_domain_or_mx' || errStr === 'error_processing_domain') {
-                return {
-                    domain,
-                    isDisposable: true,
-                    blocked: true,
-                    score: 100,
-                    meta: { block_list: true },
-                    error: errStr,
-                    cached: false,
-                    whitelisted: false,
-                    reason: `Domain validation failed: ${errStr}`
-                };
-            }
-        }
-
-        const score = data.score !== undefined ? data.score : 0;
-        const meta = data.meta || {};
-        const blockList = Boolean(meta.block_list);
-
-        const isDisposable = score >= 75 || blockList === true;
-
+    const apiCheck = (async () => {
+        let reservation;
         try {
+            const quota = await reserveApiQuota({ service: 'temp-mail-detector', metric: 'requests', period: 'monthly', amount: 1 });
+            if (!quota.allowed) {
+                return { domain, isDisposable: false, blocked: false, score: 0, meta: {}, cached: false, whitelisted: false, reason: 'API quota unavailable' };
+            }
+            reservation = quota.reservation;
+
+            const response = await axios.post(
+                API_URL,
+                { domain },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    timeout: 5000
+                }
+            );
+
+            const data = response.data;
+
+            const errStr = data.error || data.message;
+            let score = data.score !== undefined ? data.score : 0;
+            let meta = data.meta || {};
+            let blockList = Boolean(meta.block_list);
+            if (errStr === 'invalid_domain_or_mx' || errStr === 'error_processing_domain') {
+                score = 100;
+                meta = { block_list: true };
+                blockList = true;
+            }
+
+            const isDisposable = score >= 75 || blockList === true;
+
+            try {
             await TempDomain.findOneAndUpdate(
                 { domain },
                 {
@@ -133,11 +130,11 @@ async function checkDomain(emailOrDomain) {
                 },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
-        } catch (dbSaveError) {
+            } catch (dbSaveError) {
             console.error(`[TempMailDetector] Failed to save domain ${domain} to MongoDB:`, dbSaveError.message);
-        }
+            }
 
-        return {
+            return {
             domain: data.domain || domain,
             isDisposable,
             blocked: isDisposable,
@@ -151,20 +148,21 @@ async function checkDomain(emailOrDomain) {
                 forwarding: Boolean(meta.forwarding)
             },
             cached: false,
-            whitelisted: false
-        };
+            whitelisted: false,
+            ...(errStr ? { error: errStr } : {})
+            };
 
-    } catch (apiError) {
-        await releaseApiQuota(reservation).catch(() => {});
-        await disableApiQuotaOnError('temp-mail-detector', 'monthly', apiError, 'requests').catch(() => {});
-        if (apiError.response) {
+        } catch (apiError) {
+            await releaseApiQuota(reservation).catch(() => {});
+            await disableApiQuotaOnError('temp-mail-detector', 'monthly', apiError, 'requests').catch(() => {});
+            if (apiError.response) {
             const status = apiError.response.status;
             const resData = apiError.response.data;
 
             console.error(`[TempMailDetector] API returned HTTP ${status}:`, resData);
 
-            if (status === 400 || resData?.error === 'invalid_domain_or_mx') {
-                return {
+                if (status === 400 || resData?.error === 'invalid_domain_or_mx') {
+                    return {
                     domain,
                     isDisposable: true,
                     blocked: true,
@@ -173,13 +171,13 @@ async function checkDomain(emailOrDomain) {
                     reason: 'Invalid domain or MX record',
                     cached: false,
                     whitelisted: false
-                };
-            }
-        } else {
+                    };
+                }
+            } else {
             console.error(`[TempMailDetector] Request error for ${domain}:`, apiError.message);
         }
 
-        return {
+            return {
             domain,
             isDisposable: false,
             blocked: false,
@@ -189,7 +187,15 @@ async function checkDomain(emailOrDomain) {
             cached: false,
             whitelisted: false,
             reason: 'API execution error fallback'
-        };
+            };
+        }
+    })();
+
+    inFlightChecks.set(domain, apiCheck);
+    try {
+        return await apiCheck;
+    } finally {
+        inFlightChecks.delete(domain);
     }
 }
 
