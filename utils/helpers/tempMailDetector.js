@@ -1,5 +1,6 @@
 const axios = require('axios');
 const TempDomain = require('../../models/tempDomain');
+const { reserveApiQuota, releaseApiQuota, disableApiQuotaOnError } = require('../apiQuota');
 
 const API_KEY = process.env.TEMP_MAIL_DETECTOR_API_KEY || 'f28fc2a32bd4940ee7b92836077430f1';
 const API_URL = 'https://api.tempmaildetector.com/check';
@@ -69,7 +70,14 @@ async function checkDomain(emailOrDomain) {
         console.error(`[TempMailDetector] MongoDB search error for ${domain}:`, dbError.message);
     }
 
+    let reservation;
     try {
+        const quota = await reserveApiQuota({ service: 'temp-mail-detector', metric: 'requests', period: 'monthly', amount: 1 });
+        if (!quota.allowed) {
+            return { domain, isDisposable: false, blocked: false, score: 0, meta: {}, cached: false, whitelisted: false, reason: 'API quota unavailable' };
+        }
+        reservation = quota.reservation;
+
         const response = await axios.post(
             API_URL,
             { domain },
@@ -147,6 +155,8 @@ async function checkDomain(emailOrDomain) {
         };
 
     } catch (apiError) {
+        await releaseApiQuota(reservation).catch(() => {});
+        await disableApiQuotaOnError('temp-mail-detector', 'monthly', apiError, 'requests').catch(() => {});
         if (apiError.response) {
             const status = apiError.response.status;
             const resData = apiError.response.data;

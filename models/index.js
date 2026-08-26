@@ -38,6 +38,7 @@ const PointHistory = require('./system/pointHistory');
 const TempDomain = require('./system/tempDomain');
 const TranslationCache = require('./system/translationCache');
 const TranslationQuota = require('./system/translationQuota');
+const ApiLimit = require('./system/apiLimit');
 const VpnCache = require('./system/vpnCache');
 
 module.exports = {
@@ -74,11 +75,12 @@ module.exports = {
     TempDomain,
     TranslationCache,
     TranslationQuota,
+    ApiLimit,
     VpnCache,
 
     // Categorized Namespaces
     Core: { File, User, Review, Reply },
     Community: { Issue, Request, SupportTicket, UserNotification, UnbanRequest },
     Content: { DocPage, DocCategory, Announcement },
-    System: { DistributorApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, VpnCache }
+    System: { DistributorApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache }
 };

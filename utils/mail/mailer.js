@@ -2,6 +2,24 @@ const axios = require('axios');
 const Subscriber = require('../../models/subscriber');
 const User = require('../../models/user');
 const NewsletterCampaign = require('../../models/newsletterCampaign');
+const { reserveApiQuotaSet, releaseApiQuotaSet, disableApiQuotaOnError } = require('../apiQuota');
+
+async function sendSmtpEmail(payload) {
+    const quota = await reserveApiQuotaSet('smtp2go', 'emails', 1, ['hourly', 'daily', 'monthly']);
+    if (!quota.allowed) throw new Error(`SMTP2GO quota unavailable: ${quota.reason}`);
+
+    try {
+        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+    } catch (error) {
+        await releaseApiQuotaSet(quota.reservations);
+        await Promise.all([
+            disableApiQuotaOnError('smtp2go', 'hourly', error, 'emails'),
+            disableApiQuotaOnError('smtp2go', 'daily', error, 'emails'),
+            disableApiQuotaOnError('smtp2go', 'monthly', error, 'emails')
+        ]);
+        throw error;
+    }
+}
 
 const getBrandedEmailHtml = (content) => `
 <!DOCTYPE html>
@@ -71,7 +89,7 @@ exports.sendVerificationEmail = async (user) => {
             html_body: getBrandedEmailHtml(emailContent)
         };
 
-        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        await sendSmtpEmail(payload);
         console.log(`OTP email sent successfully to ${user.email}`);
     } catch (error) {
         console.error("SMTP2GO Verification Error:", error.response ? error.response.data : error.message);
@@ -104,7 +122,7 @@ exports.sendPasswordResetEmail = async (user, resetURL) => {
             html_body: getBrandedEmailHtml(emailContent)
         };
 
-        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        await sendSmtpEmail(payload);
         console.log(`Password reset email sent successfully to ${user.email}`);
     } catch (error) {
         console.error("SMTP2GO Password Reset Error:", error.response ? error.response.data : error.message);
@@ -137,7 +155,7 @@ exports.sendDeletionOtpEmail = async (user, otp) => {
             html_body: getBrandedEmailHtml(emailContent)
         };
 
-        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        await sendSmtpEmail(payload);
         console.log(`Deletion OTP email sent successfully to ${user.email}`);
     } catch (error) {
         console.error("SMTP2GO Deletion OTP Error:", error.response ? error.response.data : error.message);
@@ -170,7 +188,7 @@ exports.send2faEmail = async (user, otp) => {
             html_body: getBrandedEmailHtml(emailContent)
         };
 
-        await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+        await sendSmtpEmail(payload);
         console.log(`2FA OTP email sent successfully to ${user.email}`);
     } catch (error) {
         console.error("SMTP2GO 2FA Error:", error.response ? error.response.data : error.message);
@@ -258,7 +276,7 @@ exports.processNewsletterCampaign = async (campaignId) => {
                     html_body: emailHtml,
                     text_body: `GPL Mods Update:\n\n${campaign.content.replace(/<[^>]+>/g, '')}\n\n${campaign.callToActionUrl || ''}`
                 };
-                await axios.post('https://api.smtp2go.com/v3/email/send', payload);
+                await sendSmtpEmail(payload);
                 successCount++;
                 await new Promise(resolve => setTimeout(resolve, 50)); 
             } catch (sendErr) {

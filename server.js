@@ -87,7 +87,7 @@ const Donation = require('./models/donation');
 const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
 const TranslationCache = require('./models/translationCache');
-const TranslationQuota = require('./models/translationQuota');
+const { reserveApiQuota, releaseApiQuota, disableApiQuotaOnError, ensureApiLimitCatalog } = require('./utils/apiQuota');
 const deepl = require('deepl-node');
 const deeplClient = new deepl.DeepLClient(process.env.DEEPL_API_KEY);
 const IosDns = require('./models/iosDns');
@@ -764,10 +764,30 @@ app.get('/api/check-vpn', async (req, res) => {
         // 2. Not in DB -> Query vpnapi.io API
         console.log(`[VPN API] DB Cache MISS for IP: ${clientIp}. Querying vpnapi.io...`);
         const apiKey = process.env.VPNAPI_KEY || '58919de8ab5d4a5cbdb0604e31efc9bd';
+        const quota = await reserveApiQuota({ service: 'vpnapi.io', metric: 'requests', period: 'daily', amount: 1 });
+        if (!quota.allowed) {
+            return res.json({
+                success: true,
+                ip: clientIp,
+                isVpn: false,
+                security: {},
+                location: {},
+                network: {},
+                cached: false,
+                note: 'VPN API request limit unavailable'
+            });
+        }
         
-        const response = await axios.get(`https://vpnapi.io/api/${clientIp}?key=${apiKey}`, {
-            timeout: 7000
-        });
+        let response;
+        try {
+            response = await axios.get(`https://vpnapi.io/api/${clientIp}?key=${apiKey}`, {
+                timeout: 7000
+            });
+        } catch (error) {
+            await releaseApiQuota(quota.reservation);
+            await disableApiQuotaOnError('vpnapi.io', 'daily', error, 'requests');
+            throw error;
+        }
 
         const data = response.data || {};
         const security = data.security || {};
@@ -884,7 +904,8 @@ const clientPromise = mongoose.connect(process.env.MONGO_URI)
     .then(m => {
         mongoose.Model.count = mongoose.Model.countDocuments; 
         console.log('Successfully connected to MongoDB Atlas!');
-        return m.connection.getClient(); 
+        return ensureApiLimitCatalog()
+            .then(() => m.connection.getClient());
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
@@ -1151,11 +1172,15 @@ async function verifyRecaptcha(req, res, next) {
     const token = req.body['g-recaptcha-response'];
     const returnUrl = req.path;
     if (!token) return res.redirect(`${returnUrl}?error=Please complete the "I'm not a robot" check.`);
+    const quota = await reserveApiQuota({ service: 'google-recaptcha', metric: 'requests', period: 'monthly', amount: 1 });
+    if (!quota.allowed) return res.redirect(`${returnUrl}?error=CAPTCHA verification is temporarily unavailable.`);
     try {
         const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`);
         if (response.data.success) return next();
         return res.redirect(`${returnUrl}?error=CAPTCHA verification failed. Please try again.`);
     } catch (e) { 
+        await releaseApiQuota(quota.reservation).catch(() => {});
+        await disableApiQuotaOnError('google-recaptcha', 'monthly', e, 'requests').catch(() => {});
         console.error("reCAPTCHA API Error:", e);
         return res.redirect(`${returnUrl}?error=A server error occurred during CAPTCHA verification.`);
     }
@@ -5189,24 +5214,29 @@ app.post('/api/translate', async (req, res) => {
         if (textsToTranslate.length > 0) {
             
             const newCharsLength = textsToTranslate.join('').length;
-            const currentMonthYear = new Date().toISOString().slice(0, 7);
             
-            let quota = await TranslationQuota.findOne({ monthYear: currentMonthYear });
-            if (!quota) {
-                quota = new TranslationQuota({ monthYear: currentMonthYear, characterCount: 0 });
-            }
+            const reservationResult = await reserveApiQuota({
+                service: 'deepl',
+                period: 'monthly',
+                amount: newCharsLength
+            });
 
-            // --- DEEPL FREE TIER LIMIT (configurable via .env) ---
-            const DEEPL_LIMIT = parseInt(process.env.DEEPL_MONTHLY_LIMIT) || 500000; 
-
-            if (quota.characterCount + newCharsLength <= DEEPL_LIMIT) {
+            if (reservationResult.allowed) {
+                const reservation = reservationResult.reservation;
                 
                 // Call DeepL API via official deepl-node SDK
-                const results = await deeplClient.translateText(
-                    textsToTranslate,
-                    'en',           // Source language: English
-                    deeplTargetLang // Target language mapped for DeepL
-                );
+                let results;
+                try {
+                    results = await deeplClient.translateText(
+                        textsToTranslate,
+                        'en',           // Source language: English
+                        deeplTargetLang // Target language mapped for DeepL
+                    );
+                } catch (error) {
+                    await releaseApiQuota(reservation);
+                    await disableApiQuotaOnError('deepl', 'monthly', error);
+                    throw error;
+                }
 
                 // deepl-node returns a single TextResult for single input, or array for multiple
                 const apiResults = Array.isArray(results) ? results : [results];
@@ -5232,13 +5262,8 @@ app.post('/api/translate', async (req, res) => {
                     });
                 }
 
-                // Update the monthly usage counter
-                quota.characterCount += newCharsLength;
-                await quota.save();
-
             } else {
-                // --- LIMIT REACHED: FAIL GRACEFULLY ---
-                console.warn(`[TRANSLATION LIMIT] DeepL Quota Reached. Used: ${quota.characterCount}/${DEEPL_LIMIT}.`);
+                console.warn(`[TRANSLATION LIMIT] DeepL requests blocked: ${reservationResult.reason}.`);
                 
                 // Return original English text for missing chunks so site doesn't crash
                 for (let j = 0; j < textsToTranslate.length; j++) {

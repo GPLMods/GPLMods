@@ -25,7 +25,7 @@ const DocPage = require('../models/docPage');
 const Issue = require('../models/issue');
 const Reply = require('../models/reply');
 const PointHistory = require('../models/pointHistory');
-const TranslationQuota = require('../models/translationQuota');
+const ApiLimit = require('../models/system/apiLimit');
 const TranslationCache = require('../models/translationCache');
 const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
@@ -713,13 +713,29 @@ async function createAdminRouter() {
                 }
             },
             {
-                resource: TranslationQuota,
+                resource: ApiLimit,
                 options: {
                     navigation: systemNav,
-                    listProperties: ['monthYear', 'characterCount', 'updatedAt'],
-                    actions: {
-                        new: { isAccessible: false },
-                        delete: { isAccessible: false }
+                    listProperties: ['service', 'metric', 'period', 'limit', 'unit', 'used', 'enabled', 'autoDisabled', 'windowEnd'],
+                    editProperties: ['service', 'metric', 'period', 'limit', 'unit', 'resetDay', 'rolling', 'trackingOnly', 'enabled', 'autoDisableOnError', 'autoDisabled'],
+                    showProperties: ['service', 'metric', 'period', 'limit', 'unit', 'resetDay', 'rolling', 'trackingOnly', 'used', 'enabled', 'autoDisableOnError', 'autoDisabled', 'disabledReason', 'windowStart', 'windowEnd', 'lastErrorAt', 'updatedAt'],
+                    properties: {
+                        service: { description: 'Lowercase provider key, for example deepl.' },
+                        metric: { description: 'The measured resource, for example requests, emails, or bandwidth.' },
+                        period: { description: 'Usage window. Current windows reset automatically in UTC.' },
+                        unit: { description: 'Unit displayed for this limit.' },
+                        resetDay: { description: 'Monthly reset day, from 1 to 28. Used by providers with a non-first-day billing cycle.' },
+                        rolling: { description: 'Informational flag for provider windows that roll continuously.' },
+                        trackingOnly: { description: 'Plan-only limit. It is recorded for administration but does not block application requests.' },
+                        limit: { description: 'Maximum units for the current window, such as characters.' },
+                        enabled: { description: 'Manual master switch for this provider.' },
+                        autoDisableOnError: { description: 'Lock requests until the window resets after a provider error.' },
+                        used: { isVisible: { list: true, show: true, edit: false, filter: true } },
+                        autoDisabled: { description: 'Set false to clear an automatic lock after resolving the provider issue.' },
+                        disabledReason: { isVisible: { list: false, show: true, edit: false, filter: false } },
+                        windowStart: { isVisible: { list: false, show: true, edit: false, filter: false } },
+                        windowEnd: { isVisible: { list: true, show: true, edit: false, filter: true } },
+                        lastErrorAt: { isVisible: { list: false, show: true, edit: false, filter: false } }
                     }
                 }
             },
