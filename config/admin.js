@@ -742,7 +742,10 @@ async function createAdminRouter() {
                 resource: License,
                 options: {
                     navigation: docsNav,
+                    id: 'License',
+                    name: 'Licenses',
                     listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
+                    showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
                     editProperties: ['name', 'slug', 'shortDescription', 'content'],
                     properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
                 }
@@ -788,7 +791,15 @@ async function createAdminRouter() {
                     navigation: systemNav,
                     listProperties: ['ip', 'isVpn', 'visitCount', 'firstSeenAt', 'lastVisitedAt', 'updatedAt'],
                     editProperties: [],
-                    showProperties: ['ip', 'isVpn', 'security', 'location', 'network', 'visitCount', 'firstSeenAt', 'lastVisitedAt', 'createdAt', 'updatedAt'],
+                    showProperties: [
+                        'ip', 'isVpn', 'visitCount', 'firstSeenAt', 'lastVisitedAt', 'createdAt', 'updatedAt',
+                        'security.vpn', 'security.proxy', 'security.tor', 'security.relay',
+                        'location.city', 'location.region', 'location.country', 'location.continent',
+                        'location.region_code', 'location.country_code', 'location.continent_code',
+                        'location.latitude', 'location.longitude', 'location.time_zone', 'location.is_in_european_union',
+                        'network.network', 'network.autonomous_system_number', 'network.autonomous_system_organization',
+                        'rawResponse'
+                    ],
                     actions: {
                         new: { isAccessible: false },
                         edit: { isAccessible: false },

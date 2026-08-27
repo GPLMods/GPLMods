@@ -924,7 +924,7 @@ function initializeMusicPlayer() {
         { title: 'Mortals', src: '/audio/bgm-6.mp3' },
         { title: 'On & On', src: '/audio/bgm-7.mp3' },
         { title: 'Rise Up', src: '/audio/bgm-8.mp3' },
-        { title: 'Wrong Side Out', src: '/audio/bgm-9.mp3' }        
+        { title: 'Keep Up', src: '/audio/bgm-9.mp3' }        
     ];
     
     // --- 3. State Management ---

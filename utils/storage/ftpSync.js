@@ -2,7 +2,7 @@ const ftp = require("basic-ftp");
 const fs = require("fs");
 const path = require("path");
 
-const IMAGE_FOLDERS = new Set(['avatars', 'mods', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements']);
+const IMAGE_FOLDERS = new Set(['avatars', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements']);
 
 function normalizeB2Key(b2Key) {
     if (!b2Key || typeof b2Key !== 'string') return null;
@@ -13,6 +13,12 @@ function shouldMirrorToFTP(b2Key) {
     const normalized = normalizeB2Key(b2Key);
     if (!normalized) return false;
     const topLevel = normalized.split('/')[0].toLowerCase();
+
+    // Mod archives stay in B2; only their generated icon and screenshot assets are mirrored.
+    if (topLevel === 'mods') {
+        return normalized.split('/').some(folder => folder === 'icons' || folder === 'screenshots');
+    }
+
     if (IMAGE_FOLDERS.has(topLevel)) return true;
     
     const ext = path.extname(normalized).toLowerCase();

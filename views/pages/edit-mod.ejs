@@ -137,12 +137,31 @@
 
                 <div class="form-group">
                     <label for="modLicense">Software License (Optional)</label>
-                    <select id="modLicense" name="modLicense">
+                    <select id="modLicense" name="modLicense" style="display: none;">
                         <option value="">None / Proprietary</option>
                         <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
                             <option value="<%= license._id %>" <%= file.license && file.license.toString() === license._id.toString() ? 'selected' : '' %>><%= license.name %></option>
                         <% }) } %>
                     </select>
+                    <div class="custom-select-wrapper" id="licenseWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">
+                                <% if (file.license && typeof licenses !== 'undefined') { %>
+                                    <% const selectedLicense = licenses.find(license => license._id.toString() === file.license.toString()); %>
+                                    <%= selectedLicense ? selectedLicense.name : 'None / Proprietary' %>
+                                <% } else { %>
+                                    None / Proprietary
+                                <% } %>
+                            </span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option <%= !file.license ? 'selected' : '' %>" data-value="">None / Proprietary</div>
+                            <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
+                                <div class="custom-option <%= file.license && file.license.toString() === license._id.toString() ? 'selected' : '' %>" data-value="<%= license._id %>"><%= license.name %></div>
+                            <% }) } %>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Platform Custom Dropdown -->
@@ -714,6 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect('platformWrapper', 'modPlatform');
     setupCustomSelect('fetchPlatformWrapper', 'fetchPlatform');
     setupCustomSelect('ageRatingWrapper', 'ageRating');
+    setupCustomSelect('licenseWrapper', 'modLicense');
     
     // ArchWrapper needs its own toggle listener because its options are generated dynamically
     const archWrapper = document.getElementById('archWrapper');

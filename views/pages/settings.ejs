@@ -41,12 +41,25 @@
 
         <div class="settings-section">
             <div class="settings-info">
-                <h3><i class="fas fa-bell" style="color: var(--gold);"></i> Login Safety Alerts</h3>
-                <p>Receive an email when a new device signs in or five incorrect passwords are attempted.</p>
+                <h3><i class="fas fa-bell" style="color: var(--gold);"></i> New Login Alerts</h3>
+                <p>Receive an email when a new device signs in to your account.</p>
             </div>
             <form action="/settings/safety-emails" method="POST" style="margin: 0;">
                 <label class="switch">
-                    <input type="checkbox" name="safetyEmailsEnabled" onchange="this.form.submit()" <%= user.safetyEmailsEnabled ? 'checked' : '' %>>
+                    <input type="checkbox" name="loginAlertEmailsEnabled" onchange="this.form.submit()" <%= user.loginAlertEmailsEnabled ? 'checked' : '' %>>
+                    <span class="slider round"></span>
+                </label>
+            </form>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-info">
+                <h3><i class="fas fa-shield-alt" style="color: var(--red);"></i> Failed Login Alerts</h3>
+                <p>Receive an email after five incorrect password attempts on your account.</p>
+            </div>
+            <form action="/settings/safety-emails" method="POST" style="margin: 0;">
+                <label class="switch">
+                    <input type="checkbox" name="failedLoginAlertEmailsEnabled" onchange="this.form.submit()" <%= user.failedLoginAlertEmailsEnabled ? 'checked' : '' %>>
                     <span class="slider round"></span>
                 </label>
             </form>

@@ -144,6 +144,14 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false
     },
+    loginAlertEmailsEnabled: {
+        type: Boolean,
+        default: false
+    },
+    failedLoginAlertEmailsEnabled: {
+        type: Boolean,
+        default: false
+    },
     failedLoginAttempts: {
         type: Number,
         default: 0

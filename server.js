@@ -1267,7 +1267,7 @@ passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true
         if (!isMatch) {
             user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             if (user.failedLoginAttempts >= 5) {
-                if (user.safetyEmailsEnabled) await sendFailedAttemptEmail(user, req);
+                if (user.failedLoginAlertEmailsEnabled || user.safetyEmailsEnabled) await sendFailedAttemptEmail(user, req);
                 user.failedLoginAttempts = 0;
             }
             await user.save();
@@ -1582,7 +1582,9 @@ app.get('/home', ensureAuthenticated, async (req, res) => {
 // SOURCE CODE HUB (GITHUB SYNC)
 // ===================================
 function canUserAccessSource(user, sourceDoc) {
-    if (!user || !sourceDoc) return false;
+    if (!sourceDoc) return false;
+    if (!sourceDoc.isPrivate) return true;
+    if (!user) return false;
     if (user.role === 'admin') return true;
 
     const allowedRoles = sourceDoc.allowedRoles || [];
@@ -1610,10 +1612,23 @@ function renderSourceError(res, status, title, message) {
     });
 }
 
-app.get('/source/:slug', ensureAuthenticated, async (req, res) => {
+app.get('/source', async (req, res) => {
+    try {
+        const sources = await SourceCode.find({ status: 'live' }).sort({ title: 1 }).lean();
+        const visibleSources = sources.filter(source => canUserAccessSource(req.user, source));
+
+        return res.render('pages/source-hub', { sources: visibleSources });
+    } catch (error) {
+        console.error('Source Hub Listing Error:', error);
+        return renderSourceError(res, 500, 'Source Hub <span>Unavailable</span>', 'The source hub could not be loaded right now.');
+    }
+});
+
+app.get('/source/:slug', async (req, res) => {
     try {
         const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
+        if (source.isPrivate && !req.isAuthenticated()) return res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
 
         const owner = encodeURIComponent(source.githubOwner);
         const repo = encodeURIComponent(source.githubRepo);
@@ -1637,10 +1652,11 @@ app.get('/source/:slug', ensureAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/source/:slug/download/:tag', ensureAuthenticated, async (req, res) => {
+app.get('/source/:slug/download/:tag', async (req, res) => {
     try {
         const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
+        if (source.isPrivate && !req.isAuthenticated()) return res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
         if (!canUserAccessSource(req.user, source)) {
             return renderSourceError(res, 403, 'Access <span>Denied</span>', 'You do not have permission to download this source code.');
         }
@@ -3075,7 +3091,7 @@ async function finalizeLogin(req, res, user, redirectUrl) {
         user.currentSessionId = req.sessionID;
         await user.save();
 
-        if (user.safetyEmailsEnabled) {
+        if (user.loginAlertEmailsEnabled || user.safetyEmailsEnabled) {
             const parser = new UAParser(req.headers['user-agent'] || '');
             const browser = parser.getBrowser().name || 'Unknown Browser';
             const os = parser.getOS().name || 'Unknown OS';
@@ -3617,6 +3633,14 @@ app.get('/wishlist', ensureAuthenticated, async (req, res) => {
 app.get('/settings', ensureAuthenticated, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
+
+        // Migrate accounts that used the former combined preference.
+        if (user.safetyEmailsEnabled && !user.loginAlertEmailsEnabled && !user.failedLoginAlertEmailsEnabled) {
+            user.loginAlertEmailsEnabled = true;
+            user.failedLoginAlertEmailsEnabled = true;
+            user.safetyEmailsEnabled = false;
+            await user.save();
+        }
         
         // Convert to object so we can append custom properties
         const userObj = user.toObject();
@@ -3632,9 +3656,14 @@ app.get('/settings', ensureAuthenticated, async (req, res) => {
 
 app.post('/settings/safety-emails', ensureAuthenticated, async (req, res) => {
     try {
-        await User.findByIdAndUpdate(req.user._id, {
-            safetyEmailsEnabled: req.body.safetyEmailsEnabled === 'on'
-        });
+        const updates = { safetyEmailsEnabled: false };
+        if (Object.prototype.hasOwnProperty.call(req.body, 'loginAlertEmailsEnabled')) {
+            updates.loginAlertEmailsEnabled = req.body.loginAlertEmailsEnabled === 'on';
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'failedLoginAlertEmailsEnabled')) {
+            updates.failedLoginAlertEmailsEnabled = req.body.failedLoginAlertEmailsEnabled === 'on';
+        }
+        await User.findByIdAndUpdate(req.user._id, updates);
         res.redirect('/settings?success=Security alert settings updated.');
     } catch (error) {
         console.error('Safety email settings error:', error);

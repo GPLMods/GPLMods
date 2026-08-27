@@ -411,12 +411,24 @@
 
                 <div class="form-group">
                     <label for="modLicense">Software License (Optional)</label>
-                    <select id="modLicense" name="modLicense">
+                    <select id="modLicense" name="modLicense" style="display: none;">
                         <option value="">None / Proprietary</option>
                         <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
                             <option value="<%= license._id %>"><%= license.name %></option>
                         <% }) } %>
                     </select>
+                    <div class="custom-select-wrapper" id="licenseWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">None / Proprietary</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option selected" data-value="">None / Proprietary</div>
+                            <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
+                                <div class="custom-option" data-value="<%= license._id %>"><%= license.name %></div>
+                            <% }) } %>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Platform Dropdown -->
@@ -854,6 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryOptionsContainer = document.getElementById('categoryOptionsContainer');
     const ageRatingWrapper = document.getElementById('ageRatingWrapper');
     const nativeAgeRatingSelect = document.getElementById('ageRating');
+    const licenseWrapper = document.getElementById('licenseWrapper');
+    const nativeLicenseSelect = document.getElementById('modLicense');
     const archWrapper = document.getElementById('archWrapper');
     const archCustomSelect = document.getElementById('archCustomSelect');
     // --- ✅ ADDED FOR FETCH SELECT ---
@@ -915,6 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(platformWrapper, nativePlatformSelect);
     setupCustomSelect(categoryWrapper, nativeCategorySelect);
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
+    setupCustomSelect(licenseWrapper, nativeLicenseSelect);
     setupCustomSelect(fetchPlatformWrapper, nativeFetchPlatformSelect); // ✅ INIT FETCH DROPDOWN
 
     if (nativeAgeRatingSelect && ageRatingWrapper) {
