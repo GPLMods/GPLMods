@@ -51,6 +51,8 @@ const zlib = require('zlib');
 const otplib = require('otplib');
 const { checkDomain } = require('./utils/tempMailDetector');
 const cheerio = require('cheerio');
+const googlePlayScraper = require('google-play-scraper').default;
+const appStoreScraper = require('app-store-scraper');
 const AdmZip = require('adm-zip'); 
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
@@ -5640,8 +5642,11 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             timeout: 8000 // 8 second timeout
         };
 
-        const response = await axios.get(url, axiosConfig);
-        const $ = cheerio.load(response.data);
+        let $;
+        if (platform !== 'playstore' && platform !== 'wordpress' && platform !== 'steam' && platform !== 'epic') {
+            const response = await axios.get(url, axiosConfig);
+            $ = cheerio.load(response.data);
+        }
 
         const normalizeText = (value) => {
             if (!value) return '';
@@ -5663,80 +5668,186 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
 
         // --- SCRAPING LOGIC BASED ON PLATFORM ---
         if (platform === 'playstore') {
-            data.title = getAttr('meta[itemprop="name"]', 'content') || getAttr('meta[property="og:title"]', 'content') || getText('h1 span') || getText('h1');
-            const descriptionEls = $('div[jsname="sngebd"], div[jsname="bN97Pc"], div[itemprop="description"]');
-            data.description = normalizeText(descriptionEls.map((i, el) => $(el).text()).get().join('\n')) ||
-                getAttr('meta[itemprop="description"]', 'content') ||
-                getAttr('meta[name="description"]', 'content') ||
-                getText('div[jsname]');
-            data.developer = getText('a[href*="/store/apps/dev"]') || getText('a[href*="/store/apps/developer"]') || getText('div.T32cc.UAO9ie') || getText('div.hrTbp.R8zArc');
-            data.whatsNew = normalizeText($('div.hAyfc:contains("What\'s New")').find('span.htlgb').text()) || normalizeText($('div.W4P4ne .DWPxHb').text()) || normalizeText($('section[aria-label="What\'s new"]').text());
+            const playStoreUrl = new URL(url);
+            if (playStoreUrl.hostname !== 'play.google.com') {
+                return res.status(400).json({ error: 'Please provide a valid Google Play Store URL.' });
+            }
+            const appId = playStoreUrl.searchParams.get('id');
+            if (!appId) {
+                return res.status(400).json({ error: 'The Google Play URL must include an app id.' });
+            }
 
-            const playTags = [];
-            $('a[href*="/store/apps/category"]').each((i, el) => {
-                const tagText = normalizeText($(el).text());
-                if (tagText && !playTags.includes(tagText)) playTags.push(tagText);
+            const app = await googlePlayScraper.app({
+                appId,
+                lang: playStoreUrl.searchParams.get('hl') || 'en',
+                country: playStoreUrl.searchParams.get('gl') || 'us'
             });
-            data.tags = playTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
 
-            $('div.hAyfc').each((i, el) => {
-                const label = normalizeText($(el).find('div.BgcNfc').text());
-                const value = normalizeText($(el).find('span.htlgb').text());
-                if (label.includes('Requires Android')) data.minOsVersion = value;
-                if (label.includes('Content Rating')) data.ageRating = value;
-            });
+            data.title = normalizeText(app.title);
+            data.description = normalizeText(app.description);
+            data.developer = normalizeText(app.developer);
+            data.whatsNew = normalizeText(app.recentChanges);
+            data.minOsVersion = normalizeText(app.androidVersionText || app.androidVersion);
+            data.ageRating = normalizeText(app.contentRating);
+            data.tags = (app.categories || [])
+                .map(category => normalizeText(category && category.name))
+                .filter(Boolean)
+                .filter((tag, index, tags) => tags.indexOf(tag) === index)
+                .join(', ');
 
         } else if (platform === 'appstore') {
-            data.title = getText('h1.product-header__title').replace(/[\d\+\s]+$/, '').trim() || getText('h1');
-            data.description = getText('section.section__description') || getText('div.section__description') || getAttr('meta[name="description"]', 'content');
-            data.whatsNew = getText('div.whats-new__content p') || getText('section.whats-new') || '';
-            data.developer = getText('h2.product-header__identity a') || getAttr('meta[property="og:site_name"]', 'content');
-            data.minOsVersion = normalizeText($('dt:contains("Compatibility")').next('dd').text()).replace(/Requires (iOS|iPadOS)/i, 'iOS ') || '';
-            data.ageRating = normalizeText($('dt:contains("Age Rating")').next('dd').text()) || '';
+            const appStoreUrl = new URL(url);
+            const validAppStoreHosts = ['apps.apple.com', 'itunes.apple.com'];
+            if (!validAppStoreHosts.includes(appStoreUrl.hostname)) {
+                return res.status(400).json({ error: 'Please provide a valid Apple App Store URL.' });
+            }
 
-            const appStoreCategory = getText('dt:contains("Category") + dd') || getText('a.medium-header__link');
-            data.tags = appStoreCategory || getAttr('meta[name="keywords"]', 'content') || '';
+            const appIdMatch = appStoreUrl.pathname.match(/\/id(\d+)/i);
+            const appId = appIdMatch ? appIdMatch[1] : appStoreUrl.searchParams.get('id');
+            if (!appId || !/^\d+$/.test(appId)) {
+                return res.status(400).json({ error: 'The Apple App Store URL must include a numeric app id.' });
+            }
+
+            const country = appStoreUrl.pathname.split('/').filter(Boolean)[0] || 'us';
+            const app = await appStoreScraper.app({
+                id: Number(appId),
+                country,
+                lang: appStoreUrl.searchParams.get('lang') || undefined
+            });
+
+            data.title = normalizeText(app.title);
+            data.description = normalizeText(app.description);
+            data.developer = normalizeText(app.developer);
+            data.whatsNew = normalizeText(app.releaseNotes);
+            data.minOsVersion = normalizeText(app.requiredOsVersion ? `iOS ${app.requiredOsVersion}` : '');
+            data.ageRating = normalizeText(app.contentRating);
+            data.tags = (app.genres || [])
+                .map(genre => normalizeText(genre))
+                .filter(Boolean)
+                .filter((tag, index, tags) => tags.indexOf(tag) === index)
+                .join(', ');
 
         } else if (platform === 'steam') {
-            data.title = getText('.apphub_AppName') || getAttr('meta[property="og:title"]', 'content') || getText('title');
-            data.description = getText('#game_area_description') || getText('.game_description_snippet') || getAttr('meta[name="description"]', 'content');
-            data.developer = getText('#developers_list a') || getText('.dev_row .summary') || getText('.dev_row');
-            data.whatsNew = getText('.game_news_area') || getText('.event_body') || '';
-            data.minOsVersion = normalizeText($('div.sysreq_contents li').filter((i, el) => $(el).text().includes('OS:')).text().replace('OS:', '')).trim() || '';
-            data.ageRating = normalizeText($('div.game_area_details .age_rating_area').text()) || '';
+            const steamUrl = new URL(url);
+            if (steamUrl.hostname !== 'store.steampowered.com') {
+                return res.status(400).json({ error: 'Please provide a valid Steam store URL.' });
+            }
 
-            const steamTags = [];
-            $('a.app_tag').each((i, el) => {
-                const tagText = normalizeText($(el).text());
-                if (tagText && tagText !== '+' && !steamTags.includes(tagText)) steamTags.push(tagText);
+            const appIdMatch = steamUrl.pathname.match(/\/app\/(\d+)/i);
+            const appId = appIdMatch ? appIdMatch[1] : steamUrl.searchParams.get('appid');
+            if (!appId || !/^\d+$/.test(appId)) {
+                return res.status(400).json({ error: 'The Steam URL must include a numeric app id.' });
+            }
+
+            const response = await axios.get('https://store.steampowered.com/api/appdetails', {
+                ...axiosConfig,
+                params: {
+                    appids: appId,
+                    cc: steamUrl.searchParams.get('cc') || 'us',
+                    l: steamUrl.searchParams.get('l') || 'english'
+                }
             });
-            data.tags = steamTags.slice(0, 8).join(', ');
+            const steamApp = response.data && response.data[appId];
+            if (!steamApp || !steamApp.success || !steamApp.data) {
+                return res.status(404).json({ error: 'Steam could not find that game.' });
+            }
+
+            const game = steamApp.data;
+            data.title = normalizeText(game.name);
+            data.description = normalizeText(game.detailed_description || game.about_the_game || game.short_description);
+            data.developer = normalizeText((game.developers || [])[0]);
+            data.minOsVersion = normalizeText((game.pc_requirements && game.pc_requirements.minimum) || '');
+            data.ageRating = game.required_age ? `${game.required_age}+` : '';
+            data.tags = [...(game.genres || []).map(genre => genre.description), ...(game.categories || []).map(category => category.description)]
+                .map(tag => normalizeText(tag))
+                .filter(Boolean)
+                .filter((tag, index, tags) => tags.indexOf(tag) === index)
+                .join(', ');
 
         } else if (platform === 'epic') {
-            data.title = getAttr('meta[property="og:title"]', 'content') || getText('h1');
-            data.description = getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content');
-            data.developer = getAttr('meta[property="og:site_name"]', 'content') || getText('.developer-name') || getText('span:contains("Developer") + span');
-            data.whatsNew = getText('section.whats-new') || '';
+            const epicUrl = new URL(url);
+            if (epicUrl.hostname !== 'store.epicgames.com') {
+                return res.status(400).json({ error: 'Please provide a valid Epic Games Store URL.' });
+            }
 
-            const epicTags = [];
-            $('a[href*="/browse?genre="]').each((i, el) => {
-                const tagText = normalizeText($(el).text());
-                if (tagText && !epicTags.includes(tagText)) epicTags.push(tagText);
-            });
-            data.tags = epicTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
+            const pathParts = epicUrl.pathname.split('/').filter(Boolean);
+            const productIndex = pathParts.findIndex(part => part === 'p');
+            const slug = productIndex >= 0 ? pathParts[productIndex + 1] : '';
+            if (!slug) {
+                return res.status(400).json({ error: 'The Epic Games Store URL must include a product slug.' });
+            }
+
+            const locale = pathParts.find(part => /^[a-z]{2}-[A-Z]{2}$/.test(part)) || 'en-US';
+            const response = await axios.get(`https://store-content.ak.epicgames.com/api/${locale}/content/products/${encodeURIComponent(slug)}`, axiosConfig);
+            const epicProduct = response.data;
+            const epicPage = (epicProduct.pages || []).find(page => page.data && page.data.about) || epicProduct.pages?.[0];
+            const epicData = epicPage && epicPage.data;
+            if (!epicData) {
+                return res.status(404).json({ error: 'Epic Games Store could not find that product.' });
+            }
+
+            const about = epicData.about || {};
+            const meta = epicData.meta || {};
+            const requirements = epicData.requirements || {};
+            const systems = requirements.systems || [];
+            const osRequirement = systems.find(system => system.systemType === 'Windows') || systems[0];
+            const osDetails = osRequirement && (osRequirement.details || []);
+            const minimumOs = osDetails.find(detail => detail.title === 'OS')?.minimum || '';
+
+            data.title = normalizeText(epicProduct.productName || about.title || epicData.seo?.title);
+            data.description = normalizeText(about.description || about.shortDescription || epicData.seo?.description);
+            data.developer = normalizeText((meta.developer || [])[0] || about.developerAttribution);
+            data.minOsVersion = normalizeText(minimumOs);
+            data.tags = (meta.tags || [])
+                .map(tag => normalizeText(tag.replace(/[_-]+/g, ' ')))
+                .filter(Boolean)
+                .filter((tag, index, tags) => tags.indexOf(tag) === index)
+                .join(', ');
 
         } else if (platform === 'wordpress') {
-            data.title = getText('h1.plugin-title') || getAttr('meta[property="og:title"]', 'content') || getText('title');
-            data.description = getText('div.plugin-description') || getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content');
-            data.developer = getText('span.author a') || getText('.site-title') || getAttr('meta[property="og:site_name"]', 'content');
-            data.whatsNew = getText('div#changelog') || getText('div.changelog') || '';
+            const wordpressUrl = new URL(url);
+            const validWordPressHosts = ['wordpress.org', 'www.wordpress.org'];
+            if (!validWordPressHosts.includes(wordpressUrl.hostname)) {
+                return res.status(400).json({ error: 'Please provide a valid WordPress.org plugin or theme URL.' });
+            }
 
-            const wpTags = [];
-            $('div.tags a, a[href*="/tags/"]').each((i, el) => {
-                const tagText = normalizeText($(el).text());
-                if (tagText && !wpTags.includes(tagText)) wpTags.push(tagText);
+            const pathParts = wordpressUrl.pathname.split('/').filter(Boolean);
+            const resourceTypeIndex = pathParts.findIndex(part => part === 'plugins' || part === 'themes');
+            const resourceType = resourceTypeIndex >= 0 ? pathParts[resourceTypeIndex] : '';
+            const slug = resourceType ? pathParts[resourceTypeIndex + 1] : '';
+            if (!resourceType || !slug) {
+                return res.status(400).json({ error: 'The WordPress URL must point to a plugin or theme.' });
+            }
+
+            const apiUrl = resourceType === 'plugins'
+                ? 'https://api.wordpress.org/plugins/info/1.2/'
+                : 'https://api.wordpress.org/themes/info/1.2/';
+            const apiAction = resourceType === 'plugins' ? 'plugin_information' : 'theme_information';
+            const response = await axios.get(apiUrl, {
+                ...axiosConfig,
+                params: { action: apiAction, 'request[slug]': slug }
             });
-            data.tags = wpTags.join(', ') || getAttr('meta[name="keywords"]', 'content') || '';
+            const wordpressApp = response.data;
+            if (!wordpressApp || wordpressApp.error) {
+                return res.status(404).json({ error: 'WordPress could not find that plugin or theme.' });
+            }
+
+            const author = typeof wordpressApp.author === 'string'
+                ? wordpressApp.author.replace(/<[^>]*>/g, '')
+                : wordpressApp.author && (wordpressApp.author.display_name || wordpressApp.author.author);
+            data.title = normalizeText(wordpressApp.name);
+            data.description = normalizeText(wordpressApp.sections && wordpressApp.sections.description) || normalizeText(wordpressApp.description);
+            data.developer = normalizeText(author);
+            data.whatsNew = normalizeText(wordpressApp.sections && wordpressApp.sections.changelog);
+            data.ageRating = '3+';
+            const wordpressTags = Array.isArray(wordpressApp.tags)
+                ? wordpressApp.tags
+                : Object.keys(wordpressApp.tags || {});
+            data.tags = wordpressTags
+                .map(tag => normalizeText(tag))
+                .filter(Boolean)
+                .filter((tag, index, tags) => tags.indexOf(tag) === index)
+                .join(', ');
 
         } else {
             try {
