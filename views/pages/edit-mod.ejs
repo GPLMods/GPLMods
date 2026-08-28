@@ -1156,7 +1156,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeMetadataModal = () => {
         if (fetchMetadataModal) {
+            fetchMetadataModal.classList.remove('show');
             fetchMetadataModal.style.display = 'none';
+            document.body.style.overflow = '';
         }
     };
 
@@ -1245,6 +1247,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (fetchMetadataModal) {
                         fetchMetadataModal.style.display = 'flex';
+                        fetchMetadataModal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
                     }
 
                 } else {

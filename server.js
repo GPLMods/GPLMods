@@ -4834,6 +4834,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
 
         const filename = pendingFile.originalFilename || "";
+        const savedName = pendingFile.name && pendingFile.name !== 'Pending Upload' ? pendingFile.name : '';
+        const savedVersion = pendingFile.version && pendingFile.version !== 'Draft' ? pendingFile.version : '';
         const licenses = await License.find().sort({ name: 1 }).lean();
         
         const ext = filename.split('.').pop().toLowerCase();
@@ -4864,8 +4866,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             fileKey: pendingFile.fileKey,
             filename: pendingFile.originalFilename,
             filesize: pendingFile.fileSize,
-            defaultName: cleanName,
-            defaultVersion: defaultVersion,
+            defaultName: savedName || cleanName,
+            defaultVersion: savedVersion || defaultVersion,
             defaultPlatform: defaultPlatform,
             file: pendingFile,
             licenses
@@ -5408,6 +5410,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanDescription = safeClean(formData.modDescription);
         const cleanFeatures = safeClean(formData.modFeatures);
         const cleanWhatsNew = safeClean(formData.whatsNew);
+        const cleanOfficialDescription = safeClean(formData.officialDescription);
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
@@ -5420,6 +5423,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             modFeatures: formData.modFeatures,
             modDescription: cleanDescription, // Use clean description
             modFeatures: cleanFeatures,       // Use clean features
+            officialDescription: cleanOfficialDescription,
             whatsNew: cleanWhatsNew,          // Use clean what's new
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
@@ -5806,9 +5810,9 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
 
         } else if (platform === 'wordpress') {
             const wordpressUrl = new URL(url);
-            const validWordPressHosts = ['wordpress.org', 'www.wordpress.org'];
+            const validWordPressHosts = ['wordpress.org', 'www.wordpress.org', 'wordpress.com', 'www.wordpress.com'];
             if (!validWordPressHosts.includes(wordpressUrl.hostname)) {
-                return res.status(400).json({ error: 'Please provide a valid WordPress.org plugin or theme URL.' });
+                return res.status(400).json({ error: 'Please provide a valid WordPress.org or WordPress.com plugin or theme URL.' });
             }
 
             const pathParts = wordpressUrl.pathname.split('/').filter(Boolean);

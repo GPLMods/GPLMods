@@ -406,7 +406,7 @@
 
                 <div class="form-group">
                     <label for="developerName">Official Developer / Company*</label>
-                    <input type="text" id="developerName" name="developerName" placeholder="e.g., Supercell or Mojang" autocomplete="off" required>
+                    <input type="text" id="developerName" name="developerName" value="<%= file && file.developer && file.developer !== 'N/A' ? file.developer : '' %>" placeholder="e.g., Supercell or Mojang" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
@@ -534,7 +534,7 @@
 
                 <div class="form-group">
                     <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
-                    <input type="text" id="minOsVersion" name="minOsVersion" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
+                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= file && file.minOsVersion ? file.minOsVersion : '' %>" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
                     <div style="font-size: 0.82em; color: var(--silver); margin-top: 6px;">This field is required for submission on supported platforms, especially iOS and Android releases.</div>
                 </div>
                 <!-- =================================================================== -->
@@ -587,32 +587,32 @@
 
                 <div class="form-group">
                     <label for="modDescription">Mod Description*</label>
-                    <textarea id="modDescription" name="modDescription" style="display:none;"></textarea>
-                    <div id="editor-modDescription"></div>
+                    <textarea id="modDescription" name="modDescription" style="display:none;"><%- file && file.modDescription ? file.modDescription : '' %></textarea>
+                    <div id="editor-modDescription"><%- file && file.modDescription ? file.modDescription : '' %></div>
                 </div>
 
                 <div class="form-group">
                     <label for="modFeatures">Mod Features* (One per line)</label>
-                    <textarea id="modFeatures" name="modFeatures" style="display:none;"></textarea>
-                    <div id="editor-modFeatures"></div>
+                    <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file && file.modFeatures ? file.modFeatures : '' %></textarea>
+                    <div id="editor-modFeatures"><%- file && file.modFeatures ? file.modFeatures : '' %></div>
                 </div>
 
                 <div class="form-group">
                     <label for="officialDescription">Official Description*</label>
-                    <textarea id="officialDescription" name="officialDescription" style="display:none;"></textarea>
-                    <div id="editor-officialDescription"></div>
+                    <textarea id="officialDescription" name="officialDescription" style="display:none;"><%- file && file.officialDescription ? file.officialDescription : '' %></textarea>
+                    <div id="editor-officialDescription"><%- file && file.officialDescription ? file.officialDescription : '' %></div>
                 </div>
 
                  <div class="form-group">
                     <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
-                    <textarea id="importantNote" name="importantNote" style="display:none;"></textarea>
-                    <div id="editor-importantNote"></div>
+                    <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
+                    <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="whatsNew">What's New (Optional)</label>
-                    <textarea id="whatsNew" name="whatsNew" style="display:none;"></textarea>
-                    <div id="editor-whatsNew"></div>
+                    <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file && file.whatsNew ? file.whatsNew : '' %></textarea>
+                    <div id="editor-whatsNew"><%- file && file.whatsNew ? file.whatsNew : '' %></div>
                 </div>
             </fieldset>
 
@@ -677,7 +677,7 @@
                 <legend>Media & Metadata</legend>
                 <div class="form-group">
                     <label for="tags">Tags (Optional, comma-separated)</label>
-                    <input type="text" id="tags" name="tags" placeholder="strategy, multiplayer, offline" autocomplete="off">
+                    <input type="text" id="tags" name="tags" value="<%= file && file.tags ? file.tags.join(', ') : '' %>" placeholder="strategy, multiplayer, offline" autocomplete="off">
                 </div>
 
                 <div class="form-group">
@@ -1318,7 +1318,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeMetadataModal = () => {
         if (fetchMetadataModal) {
+            fetchMetadataModal.classList.remove('show');
             fetchMetadataModal.style.display = 'none';
+            document.body.style.overflow = '';
         }
     };
 
@@ -1407,6 +1409,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (fetchMetadataModal) {
                         fetchMetadataModal.style.display = 'flex';
+                        fetchMetadataModal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
                     }
 
                 } else {
