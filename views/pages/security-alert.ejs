@@ -1,30 +1,147 @@
 <%- include('../partials/header') %>
 
-<main class="container" style="max-width: 650px; margin: 4rem auto; text-align: center; background: var(--dark-gray); padding: 40px; border-radius: 15px; border: 1px solid #333;">
+<main class="container" style="max-width: 680px; margin: 3.5rem auto; text-align: center; background: var(--dark-gray); padding: 40px 30px; border-radius: 16px; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
     <% if (status === 'success') { %>
-        <i class="fas fa-check-circle" style="font-size: 5rem; color: var(--green); margin-bottom: 1.5rem;"></i>
-        <h1 style="color: var(--green);">Login Confirmed</h1>
-        <p style="color: var(--silver); margin: 1rem 0 2rem;">Thanks for confirming this login. You can safely close this window.</p>
-        <a href="/" class="btn btn-primary">Go to GPL Mods</a>
+        <!-- LOTTIE ANIMATION: SUCCESS CONFETTI -->
+        <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/success-confetti.json" background="transparent" speed="1" style="width: 180px; height: 180px; margin: 0 auto 1rem auto; filter: drop-shadow(0 0 20px rgba(76, 175, 80, 0.4));" loop autoplay></lottie-player>
+        
+        <h1 style="color: var(--green); font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem;">Login Confirmed</h1>
+        
+        <% if (typeof infoMessage !== 'undefined' && infoMessage) { %>
+            <div style="background: rgba(76, 175, 80, 0.15); border: 1px solid var(--green); color: var(--green); padding: 10px 15px; border-radius: 8px; margin: 1rem auto; max-width: 500px; font-size: 0.95em;">
+                <i class="fas fa-info-circle"></i> <%= infoMessage %>
+            </div>
+        <% } %>
+
+        <p style="color: var(--silver); font-size: 1.05rem; margin: 1rem 0 1.5rem; line-height: 1.6;">
+            Thanks for confirming this login. Your session has been marked as safe and recognized.
+        </p>
+
+        <% if (typeof minutesLeft !== 'undefined' && minutesLeft > 0) { %>
+            <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 10px; padding: 15px 20px; margin: 1.5rem 0 2rem; text-align: left;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <strong style="color: var(--gold); display: block; font-size: 0.95em;"><i class="fas fa-clock"></i> Option to Change Your Opinion</strong>
+                        <span style="color: var(--silver); font-size: 0.85em;">Valid for 1 hour (<%= minutesLeft %> minutes remaining)</span>
+                    </div>
+                    <form action="/security/login/change-decision/<%= token %>" method="POST" style="margin: 0;">
+                        <input type="hidden" name="decision" value="deny">
+                        <button type="submit" class="btn btn-danger" style="background: rgba(229, 57, 53, 0.2); border: 1px solid var(--red); color: var(--red); padding: 8px 16px; border-radius: 6px; font-size: 0.88em; font-weight: bold; cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-user-slash"></i> Change to: Not Me
+                        </button>
+                    </form>
+                </div>
+            </div>
+        <% } %>
+
+        <a href="/" class="btn btn-primary" style="padding: 12px 30px; font-weight: bold; display: inline-block;">Go to GPL Mods</a>
+
     <% } else if (status === 'unauthorized') { %>
-        <i class="fas fa-user-shield" style="font-size: 5rem; color: var(--red); margin-bottom: 1.5rem;"></i>
-        <h1 style="color: var(--red);">Session Revoked</h1>
-        <p style="color: var(--silver); margin: 1rem 0 2rem;">The reported session has been terminated. Set a new password to secure your account.</p>
-        <form action="/security/force-password-change" method="POST" style="text-align: left; background: var(--black); padding: 25px; border-radius: 10px;">
+        <!-- LOTTIE ANIMATION: UNAUTHORIZED / 401 -->
+        <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/unauthorized.json" background="transparent" speed="1" style="width: 180px; height: 180px; margin: 0 auto 1rem auto; filter: drop-shadow(0 0 20px rgba(229, 57, 53, 0.4));" loop autoplay></lottie-player>
+        
+        <h1 style="color: var(--red); font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem;">Session Revoked</h1>
+        
+        <% if (typeof infoMessage !== 'undefined' && infoMessage) { %>
+            <div style="background: rgba(229, 57, 53, 0.15); border: 1px solid var(--red); color: #ff8a80; padding: 10px 15px; border-radius: 8px; margin: 1rem auto; max-width: 500px; font-size: 0.95em;">
+                <i class="fas fa-info-circle"></i> <%= infoMessage %>
+            </div>
+        <% } %>
+
+        <p style="color: var(--silver); font-size: 1.05rem; margin: 0.8rem 0 1.8rem; line-height: 1.6;">
+            The reported session has been immediately terminated. Set a new password below to secure your account.
+        </p>
+
+        <form action="/security/force-password-change" method="POST" style="text-align: left; background: var(--black); padding: 25px; border-radius: 12px; border: 1px solid #333;">
             <input type="hidden" name="email" value="<%= email %>">
             <input type="hidden" name="token" value="<%= token %>">
-            <% if (typeof error !== 'undefined' && error) { %><p style="color: var(--red); margin-bottom: 1rem;"><%= error %></p><% } %>
-            <label for="new-password" style="color: var(--silver);">New password</label>
-            <input id="new-password" type="password" name="newPassword" minlength="6" required style="width: 100%; padding: 12px; margin: 8px 0 15px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px;">
-            <label for="confirm-password" style="color: var(--silver);">Confirm new password</label>
-            <input id="confirm-password" type="password" name="confirmPassword" minlength="6" required style="width: 100%; padding: 12px; margin: 8px 0 20px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px;">
-            <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--red); color: #fff;">Change Password</button>
+            <% if (typeof error !== 'undefined' && error) { %>
+                <p style="color: var(--red); margin-bottom: 1rem; font-weight: bold;"><i class="fas fa-exclamation-circle"></i> <%= error %></p>
+            <% } %>
+            <div style="margin-bottom: 15px;">
+                <label for="new-password" style="color: var(--silver); display: block; margin-bottom: 6px; font-weight: 600;">New Password</label>
+                <input id="new-password" type="password" name="newPassword" minlength="6" required style="width: 100%; padding: 12px 15px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 8px; outline: none; font-size: 1em; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="confirm-password" style="color: var(--silver); display: block; margin-bottom: 6px; font-weight: 600;">Confirm New Password</label>
+                <input id="confirm-password" type="password" name="confirmPassword" minlength="6" required style="width: 100%; padding: 12px 15px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 8px; outline: none; font-size: 1em; box-sizing: border-box;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--red); color: #fff; border: none; padding: 14px; font-size: 1.05em; font-weight: bold; border-radius: 8px; cursor: pointer;">Secure Account & Update Password</button>
         </form>
+
+        <% if (typeof minutesLeft !== 'undefined' && minutesLeft > 0) { %>
+            <div style="margin-top: 1.8rem; padding-top: 1.2rem; border-top: 1px solid #333;">
+                <p style="font-size: 0.9em; color: var(--silver); margin-bottom: 10px;">Was this login actually yours?</p>
+                <form action="/security/login/change-decision/<%= token %>" method="POST" style="display: inline;">
+                    <input type="hidden" name="decision" value="accept">
+                    <button type="submit" class="btn" style="background: rgba(76, 175, 80, 0.15); border: 1px solid var(--green); color: var(--green); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.88em;">
+                        <i class="fas fa-check-circle"></i> Change Opinion: It was me (Trust Login)
+                    </button>
+                </form>
+            </div>
+        <% } %>
+
+    <% } else if (status === 'already_reported') { %>
+        <!-- LOTTIE ANIMATION: CODE 208 ALREADY REPORTED -->
+        <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/208.json" background="transparent" speed="1" style="width: 220px; height: 190px; margin: 0 auto 0.5rem auto; filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));" loop autoplay></lottie-player>
+        
+        <div style="display: inline-block; background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); padding: 4px 14px; border-radius: 20px; font-size: 0.85em; font-weight: 700; margin-bottom: 0.8rem; letter-spacing: 1px;">
+            HTTP 208 ALREADY REPORTED
+        </div>
+
+        <h1 style="color: var(--gold); font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Response Already Recorded</h1>
+        
+        <p style="color: var(--silver); font-size: 1.05rem; margin: 0.8rem 0 1.5rem; line-height: 1.6;">
+            <% if (previousDecision === 'verified') { %>
+                You previously confirmed this login as <strong style="color: var(--green);">Legitimate (It Was Me)</strong>.
+            <% } else { %>
+                You previously reported this login as <strong style="color: var(--red);">Unauthorized (Not Me)</strong>.
+            <% } %>
+        </p>
+
+        <% if (typeof minutesLeft !== 'undefined' && minutesLeft > 0) { %>
+            <!-- CHANGE OPINION CARD (VALID FOR 1 HOUR) -->
+            <div style="background: var(--black); border: 1px solid #333; border-radius: 12px; padding: 25px; margin: 1.5rem 0 2rem; text-align: center;">
+                <h3 style="color: var(--white); font-size: 1.15rem; margin-bottom: 8px;">
+                    <i class="fas fa-sliders-h" style="color: var(--gold); margin-right: 6px;"></i> Change Your Opinion?
+                </h3>
+                <p style="color: var(--silver); font-size: 0.88em; margin-bottom: 18px;">
+                    You can adjust your response within 1 hour of the alert (<strong><%= minutesLeft %> minutes</strong> remaining).
+                </p>
+
+                <% if (previousDecision === 'verified') { %>
+                    <form action="/security/login/change-decision/<%= token %>" method="POST">
+                        <input type="hidden" name="decision" value="deny">
+                        <button type="submit" class="btn btn-danger" style="background: var(--red); color: #fff; padding: 12px 25px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; width: 100%; max-width: 320px; font-size: 1em; transition: transform 0.2s;">
+                            <i class="fas fa-user-slash" style="margin-right: 8px;"></i> Change to: Not Me (Revoke Session)
+                        </button>
+                    </form>
+                <% } else { %>
+                    <form action="/security/login/change-decision/<%= token %>" method="POST">
+                        <input type="hidden" name="decision" value="accept">
+                        <button type="submit" class="btn" style="background: var(--green); color: #fff; padding: 12px 25px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; width: 100%; max-width: 320px; font-size: 1em; transition: transform 0.2s;">
+                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Change to: It Was Me (Trust Login)
+                        </button>
+                    </form>
+                <% } %>
+            </div>
+        <% } else { %>
+            <p style="color: #888; font-size: 0.9em; margin: 1.5rem 0;">
+                The 1-hour window to modify this response has ended.
+            </p>
+        <% } %>
+
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+            <a href="/" class="btn btn-primary" style="padding: 12px 25px; font-weight: bold;">Go to GPL Mods</a>
+            <a href="/settings" class="btn btn-secondary" style="border: 1px solid #555; color: var(--silver); background: transparent; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 600;">Security Settings</a>
+        </div>
+
     <% } else { %>
-        <i class="fas fa-link-slash" style="font-size: 5rem; color: var(--gold); margin-bottom: 1.5rem;"></i>
-        <h1 style="color: var(--gold);">Security Link Unavailable</h1>
-        <p style="color: var(--silver); margin: 1rem 0 2rem;"><%= message %></p>
-        <a href="/" class="btn btn-primary">Go to GPL Mods</a>
+        <!-- LINK EXPIRED / INVALID -->
+        <i class="fas fa-link-slash" style="font-size: 4.5rem; color: var(--gold); margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.3));"></i>
+        <h1 style="color: var(--gold); font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Security Link Unavailable</h1>
+        <p style="color: var(--silver); font-size: 1.05rem; margin: 1rem 0 2rem; line-height: 1.6;"><%= typeof message !== 'undefined' ? message : 'This security link is invalid or has expired.' %></p>
+        <a href="/" class="btn btn-primary" style="padding: 12px 30px; font-weight: bold;">Go to GPL Mods</a>
     <% } %>
 </main>
 

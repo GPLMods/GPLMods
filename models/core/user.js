@@ -166,7 +166,8 @@ const UserSchema = new Schema({
         deviceInfo: String,
         ipAddress: String,
         createdAt: { type: Date, default: Date.now },
-        status: { type: String, enum: ['pending', 'verified', 'revoked'], default: 'pending' }
+        status: { type: String, enum: ['pending', 'verified', 'revoked'], default: 'pending' },
+        respondedAt: { type: Date }
     }],
     deletionOtp: { type: String },
     deletionOtpExpires: { type: Date },

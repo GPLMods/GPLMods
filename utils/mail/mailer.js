@@ -139,17 +139,20 @@ exports.sendLoginAlertEmail = async (user, deviceInfo, ipAddress, token, req) =>
             <p style="color: #c0c0c0; font-size: 16px; line-height: 1.6;">Hi <strong>${user.username}</strong>, we noticed a new login to your GPL Mods account.</p>
             <p style="color: #c0c0c0; line-height: 1.6;"><strong>Device:</strong> ${deviceInfo}<br><strong>IP address:</strong> ${ipAddress}<br><strong>Time:</strong> ${new Date().toLocaleString()}</p>
             <div style="text-align: center; margin: 35px 0;">
-                <a href="${acceptUrl}" style="display: inline-block; padding: 13px 20px; background: #43a047; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 8px;">It was me</a>
-                <a href="${denyUrl}" style="display: inline-block; padding: 13px 20px; background: #e53935; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">Not me</a>
+                <a href="${acceptUrl}" style="display: inline-block; padding: 13px 22px; background: #43a047; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 8px;">It was me</a>
+                <a href="${denyUrl}" style="display: inline-block; padding: 13px 22px; background: #e53935; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">Not me</a>
             </div>
-            <p style="color: #888; font-size: 14px; line-height: 1.6;">If you did not sign in, deny this session and change your password immediately.</p>
+            <p style="color: #888; font-size: 14px; line-height: 1.6; text-align: center;">
+                If you did not sign in, deny this session and change your password immediately.<br>
+                This security confirmation link is valid for <strong>1 hour</strong>. You can also change your response within that hour.
+            </p>
         `;
         await sendSmtpEmail({
             api_key: process.env.SMTP2GO_API_KEY,
             to: [user.email],
             sender: process.env.EMAIL_FROM,
             subject: 'New Login to your GPL Mods Account',
-            text_body: `New login from ${deviceInfo} (${ipAddress}). If this was not you, deny it here: ${denyUrl}`,
+            text_body: `New login from ${deviceInfo} (${ipAddress}). Confirm: ${acceptUrl} | Deny: ${denyUrl} (Links valid for 1 hour).`,
             html_body: getBrandedEmailHtml(emailContent)
         });
     } catch (error) {

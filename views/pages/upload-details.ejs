@@ -370,6 +370,47 @@
     .ql-snow .ql-toolbar button:hover .ql-fill, 
     .ql-snow.ql-toolbar button.ql-active .ql-fill, 
     .ql-snow .ql-toolbar button.ql-active .ql-fill { fill: var(--gold) !important; }
+
+    /* --- NEW: Smart Template Dropdown Styles --- */
+    .template-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        z-index: 100;
+        display: none; /* Hidden by default */
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    .template-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #333;
+        transition: background 0.2s;
+    }
+    .template-option:last-child { border-bottom: none; }
+    .template-option:hover { background: #222; }
+    .template-option-title { color: var(--gold); font-weight: bold; display: block; margin-bottom: 4px; }
+    .template-option-preview { color: var(--silver); font-size: 0.85em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .template-helper-btn {
+        float: right;
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        user-select: none;
+    }
+    .template-helper-btn:hover { background: var(--gold); color: var(--black); }
 </style>
 
 <div class="container">
@@ -585,16 +626,24 @@
                 </div>
                 <!-- ============================================= -->
 
-                <div class="form-group">
-                    <label for="modDescription">Mod Description*</label>
+                <div class="form-group" style="position: relative;">
+                    <label for="modDescription">
+                        Mod Description* 
+                        <span class="template-helper-btn" data-target="modDescription">💡 Use Template</span>
+                    </label>
                     <textarea id="modDescription" name="modDescription" style="display:none;"><%- file && file.modDescription ? file.modDescription : '' %></textarea>
                     <div id="editor-modDescription"><%- file && file.modDescription ? file.modDescription : '' %></div>
+                    <div id="dropdown-modDescription" class="template-dropdown"></div>
                 </div>
 
-                <div class="form-group">
-                    <label for="modFeatures">Mod Features* (One per line)</label>
+                <div class="form-group" style="position: relative;">
+                    <label for="modFeatures">
+                        Mod Features* (One per line)
+                        <span class="template-helper-btn" data-target="modFeatures">💡 Use Template</span>
+                    </label>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file && file.modFeatures ? file.modFeatures : '' %></textarea>
                     <div id="editor-modFeatures"><%- file && file.modFeatures ? file.modFeatures : '' %></div>
+                    <div id="dropdown-modFeatures" class="template-dropdown"></div>
                 </div>
 
                 <div class="form-group">
@@ -603,10 +652,14 @@
                     <div id="editor-officialDescription"><%- file && file.officialDescription ? file.officialDescription : '' %></div>
                 </div>
 
-                 <div class="form-group">
-                    <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
+                 <div class="form-group" style="position: relative;">
+                    <label for="importantNote">
+                        Important Note / Installation Instructions (Optional)
+                        <span class="template-helper-btn" data-target="importantNote">💡 Use Template</span>
+                    </label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
                     <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
+                    <div id="dropdown-importantNote" class="template-dropdown"></div>
                 </div>
                 
                 <div class="form-group">
@@ -1132,6 +1185,160 @@ document.addEventListener('DOMContentLoaded', () => {
         if(quillNew) document.getElementById('whatsNew').value = quillNew.root.innerHTML === '<p><br></p>' ? '' : quillNew.root.innerHTML;
         if(quillNote) document.getElementById('importantNote').value = quillNote.root.innerHTML === '<p><br></p>' ? '' : quillNote.root.innerHTML;
     }
+
+    // =======================================================
+    // --- SMART TEMPLATE SYSTEM LOGIC ---
+    // =======================================================
+    const smartTemplates = {
+        modDescription: [
+            { title: "Standard Game Mod", text: "This is a modified version of the game that provides a significant advantage. Explore the world with unlocked features and unlimited resources.\n\nEnjoy a seamless gaming experience without any annoying interruptions!" },
+            { title: "Premium App Unlocked", text: "Get full access to all premium features of this application completely for free. This mod unlocks all VIP tools, removes watermarks, and provides a clean, ad-free experience." }
+        ],
+        modFeatures: [
+            { title: "Standard Game Features", text: "Unlimited Coins & Gems\nAll Characters Unlocked\nGod Mode / High Damage\nNo Ads" },
+            { title: "Premium App Features", text: "Pro Features Unlocked\nExport in HD/4K\nNo Watermark\nAnalytics & Trackers Disabled" }
+        ],
+        importantNote: [
+            { title: "Standard Install Guide", text: "1. Uninstall any previous or official versions of this app.\n2. Download the APK file from the link below.\n3. Allow installation from 'Unknown Sources' in your device settings.\n4. Install the app and enjoy!" },
+            { title: "Login Fix Guide", text: "⚠️ IMPORTANT: If you are unable to login using Google or Facebook, please use a Guest Account or register using a generic email/password inside the app." }
+        ]
+    };
+
+    function getQuillForField(fieldId) {
+        if (fieldId === 'modDescription') return quillDesc;
+        if (fieldId === 'modFeatures') return quillFeat;
+        if (fieldId === 'importantNote') return quillNote;
+        return null;
+    }
+
+    function formatTemplateHtml(text) {
+        return text.split('\n\n').map(p => `<p>${p.split('\n').join('<br>')}</p>`).join('');
+    }
+
+    function setupTemplateSystem(textareaId) {
+        const textarea = document.getElementById(textareaId);
+        const dropdown = document.getElementById(`dropdown-${textareaId}`);
+        if (!dropdown) return;
+
+        const templates = smartTemplates[textareaId];
+        if (!templates) return;
+
+        // Build the Dropdown HTML
+        dropdown.innerHTML = templates.map((tmpl, index) => `
+            <div class="template-option" data-index="${index}">
+                <span class="template-option-title">${tmpl.title}</span>
+                <span class="template-option-preview">${tmpl.text.replace(/\n/g, ' ')}</span>
+            </div>
+        `).join('');
+
+        // Handle clicking an option
+        dropdown.querySelectorAll('.template-option').forEach(opt => {
+            opt.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const selectedTemplate = templates[this.getAttribute('data-index')].text;
+                const quill = getQuillForField(textareaId);
+
+                if (quill) {
+                    const rawText = quill.getText();
+                    const match = rawText.match(/\/?TEMPLATE\s*$/i);
+                    if (match && match.index !== undefined) {
+                        quill.deleteText(match.index, match[0].length);
+                        if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                            quill.clipboard.dangerouslyPasteHTML(match.index, formatTemplateHtml(selectedTemplate));
+                        } else {
+                            quill.insertText(match.index, selectedTemplate);
+                        }
+                    } else {
+                        const currentHtml = quill.root.innerHTML;
+                        if (!currentHtml || currentHtml === '<p><br></p>') {
+                            if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                quill.clipboard.dangerouslyPasteHTML(formatTemplateHtml(selectedTemplate));
+                            } else {
+                                quill.setText(selectedTemplate + '\n');
+                            }
+                        } else {
+                            const length = quill.getLength();
+                            if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                quill.clipboard.dangerouslyPasteHTML(length, formatTemplateHtml(selectedTemplate));
+                            } else {
+                                quill.insertText(length, '\n\n' + selectedTemplate);
+                            }
+                        }
+                    }
+                    syncQuillData();
+                    quill.focus();
+                } else if (textarea) {
+                    textarea.value = textarea.value.replace(/\/?TEMPLATE$/i, selectedTemplate);
+                    if (!textarea.value.includes(selectedTemplate)) {
+                        textarea.value = textarea.value ? textarea.value + '\n\n' + selectedTemplate : selectedTemplate;
+                    }
+                    textarea.focus();
+                }
+
+                dropdown.style.display = 'none';
+            });
+        });
+
+        // Listen for keyword in Quill if attached
+        const quill = getQuillForField(textareaId);
+        if (quill) {
+            quill.on('text-change', function() {
+                const txt = quill.getText().trim().toUpperCase();
+                if (txt.endsWith('/TEMPLATE') || txt.endsWith('TEMPLATE')) {
+                    dropdown.style.display = 'block';
+                } else if (!dropdown.contains(document.activeElement)) {
+                    if (!txt.includes('TEMPLATE')) {
+                        dropdown.style.display = 'none';
+                    }
+                }
+            });
+        } else if (textarea) {
+            textarea.addEventListener('input', function() {
+                const val = this.value.toUpperCase().trim();
+                if (val.endsWith('/TEMPLATE') || val.endsWith('TEMPLATE')) {
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    // Initialize for the 3 fields
+    setupTemplateSystem('modDescription');
+    setupTemplateSystem('modFeatures');
+    setupTemplateSystem('importantNote');
+
+    // Handle the "💡 Use Template" buttons
+    document.querySelectorAll('.template-helper-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            const dropdown = document.getElementById(`dropdown-${targetId}`);
+            if (!dropdown) return;
+
+            const isCurrentlyOpen = dropdown.style.display === 'block';
+            document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+            dropdown.style.display = isCurrentlyOpen ? 'none' : 'block';
+
+            const quill = getQuillForField(targetId);
+            if (quill) {
+                quill.focus();
+            } else {
+                const textarea = document.getElementById(targetId);
+                if (textarea) textarea.focus();
+            }
+        });
+    });
+
+    // Hide dropdown if clicked outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.template-dropdown') && !e.target.closest('.template-helper-btn')) {
+            document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+        }
+    });
 
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitModBtn = document.getElementById('submitModBtn');

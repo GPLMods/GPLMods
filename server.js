@@ -3679,18 +3679,53 @@ app.get('/security/login/:action/:token', async (req, res) => {
         const user = await User.findOne({ 'loginAlertTokens.token': token });
         const tokenData = user && user.loginAlertTokens.find(item => item.token === token);
 
-        if (!user || !tokenData || tokenData.status === 'revoked') {
-            return res.render('pages/security-alert', { status: 'invalid', message: 'This security link is invalid or has already been used.' });
+        if (!user || !tokenData) {
+            return res.status(404).render('pages/security-alert', { 
+                status: 'invalid', 
+                message: 'This security link is invalid or does not exist.' 
+            });
+        }
+
+        const tokenAgeMs = Date.now() - new Date(tokenData.createdAt || Date.now()).getTime();
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+
+        // Check if the 1-hour validity window has expired
+        if (tokenAgeMs > ONE_HOUR_MS) {
+            return res.status(410).render('pages/security-alert', { 
+                status: 'invalid', 
+                message: 'This security link has expired. Security links are only valid for 1 hour from when the login alert was generated.' 
+            });
+        }
+
+        const minutesLeft = Math.max(1, Math.ceil((ONE_HOUR_MS - tokenAgeMs) / (60 * 1000)));
+
+        // If the user already confirmed or denied this alert before, return HTTP 208 (Already Reported)
+        if (tokenData.status === 'verified' || tokenData.status === 'revoked') {
+            return res.status(208).render('pages/security-alert', { 
+                status: 'already_reported', 
+                previousDecision: tokenData.status,
+                token, 
+                email: user.email,
+                minutesLeft,
+                error: req.query.error || null
+            });
         }
 
         if (action === 'accept') {
             tokenData.status = 'verified';
+            tokenData.respondedAt = new Date();
             await user.save();
-            return res.render('pages/security-alert', { status: 'success', token });
+            return res.render('pages/security-alert', { 
+                status: 'success', 
+                token, 
+                email: user.email,
+                minutesLeft 
+            });
         }
 
         if (action === 'deny') {
             tokenData.status = 'revoked';
+            tokenData.respondedAt = new Date();
             if (tokenData.sessionId) {
                 await mongoose.connection.collection('sessions').updateOne(
                     { _id: tokenData.sessionId },
@@ -3698,12 +3733,82 @@ app.get('/security/login/:action/:token', async (req, res) => {
                 );
             }
             await user.save();
-            return res.render('pages/security-alert', { status: 'unauthorized', token, email: user.email, error: req.query.error || null });
+            return res.render('pages/security-alert', { 
+                status: 'unauthorized', 
+                token, 
+                email: user.email, 
+                minutesLeft,
+                error: req.query.error || null 
+            });
         }
 
         return res.status(400).render('pages/security-alert', { status: 'invalid', message: 'Unsupported security action.' });
     } catch (error) {
         console.error('Security alert route error:', error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// Route to change opinion within 1 hour
+app.all(['/security/login/change-decision/:token', '/security/login/change/:decision/:token'], async (req, res) => {
+    try {
+        const { token } = req.params;
+        const decision = req.params.decision || req.body.decision || req.query.decision;
+        const user = await User.findOne({ 'loginAlertTokens.token': token });
+        const tokenData = user && user.loginAlertTokens.find(item => item.token === token);
+
+        if (!user || !tokenData) {
+            return res.status(404).render('pages/security-alert', { 
+                status: 'invalid', 
+                message: 'This security link is invalid or does not exist.' 
+            });
+        }
+
+        const tokenAgeMs = Date.now() - new Date(tokenData.createdAt || Date.now()).getTime();
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+
+        if (tokenAgeMs > ONE_HOUR_MS) {
+            return res.status(410).render('pages/security-alert', { 
+                status: 'invalid', 
+                message: 'The 1-hour window to modify your response for this login alert has expired.' 
+            });
+        }
+
+        const minutesLeft = Math.max(1, Math.ceil((ONE_HOUR_MS - tokenAgeMs) / (60 * 1000)));
+
+        if (decision === 'deny') {
+            tokenData.status = 'revoked';
+            tokenData.respondedAt = new Date();
+            if (tokenData.sessionId) {
+                await mongoose.connection.collection('sessions').updateOne(
+                    { _id: tokenData.sessionId },
+                    { $set: { kickedOut: true } }
+                );
+            }
+            await user.save();
+            return res.render('pages/security-alert', { 
+                status: 'unauthorized', 
+                token, 
+                email: user.email, 
+                minutesLeft,
+                infoMessage: 'Your response was updated. The session has been revoked.' 
+            });
+        } else if (decision === 'accept') {
+            tokenData.status = 'verified';
+            tokenData.respondedAt = new Date();
+            await user.save();
+            return res.render('pages/security-alert', { 
+                status: 'success', 
+                token, 
+                email: user.email, 
+                minutesLeft,
+                infoMessage: 'Your response was updated. The login is now confirmed.' 
+            });
+        }
+
+        return res.status(400).render('pages/security-alert', { status: 'invalid', message: 'Invalid decision specified.' });
+    } catch (error) {
+        console.error('Change security decision error:', error);
         res.status(500).render('pages/500');
     }
 });
@@ -3721,11 +3826,22 @@ app.post('/security/force-password-change', async (req, res) => {
         const user = await User.findOne({ email: email.toLowerCase(), 'loginAlertTokens.token': token });
         if (!user) return res.status(400).send('Invalid security request.');
 
-        user.password = newPassword;
-        user.sessionVersion = (user.sessionVersion || 0) + 1;
         const tokenData = user.loginAlertTokens.find(item => item.token === token);
         if (!tokenData) return res.status(400).send('Invalid security request.');
+
+        const tokenAgeMs = Date.now() - new Date(tokenData.createdAt || Date.now()).getTime();
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+        if (tokenAgeMs > ONE_HOUR_MS) {
+            return res.render('pages/security-alert', {
+                status: 'invalid',
+                message: 'This security session has expired. Please use the Forgot Password page to reset your password.'
+            });
+        }
+
+        user.password = newPassword;
+        user.sessionVersion = (user.sessionVersion || 0) + 1;
         tokenData.status = 'revoked';
+        tokenData.respondedAt = new Date();
         await user.save();
         res.redirect('/login?message=Account secured and password updated successfully. Please log in.');
     } catch (error) {
@@ -5411,6 +5527,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanFeatures = safeClean(formData.modFeatures);
         const cleanWhatsNew = safeClean(formData.whatsNew);
         const cleanOfficialDescription = safeClean(formData.officialDescription);
+        const cleanImportantNote = safeClean(formData.importantNote);
         // --- SET FINAL STATUS ---
         // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
         // but doesn't show up in the Admin's "Pending Review" queue yet.
@@ -5420,11 +5537,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const updateData = {
             name: cleanName, // Use clean name || fileToUpdate.name, 
             version: formData.modVersion || fileToUpdate.version,
-            modFeatures: formData.modFeatures,
             modDescription: cleanDescription, // Use clean description
             modFeatures: cleanFeatures,       // Use clean features
             officialDescription: cleanOfficialDescription,
             whatsNew: cleanWhatsNew,          // Use clean what's new
+            importantNote: cleanImportantNote,
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
             videoUrl: normalizeSingleValue(formData.videoUrl), 
