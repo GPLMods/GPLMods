@@ -45,6 +45,7 @@
                 <p>Receive an email when a new device signs in to your account.</p>
             </div>
             <form action="/settings/safety-emails" method="POST" style="margin: 0;">
+                <input type="hidden" name="settingType" value="loginAlertEmailsEnabled">
                 <label class="switch">
                     <input type="checkbox" name="loginAlertEmailsEnabled" onchange="this.form.submit()" <%= user.loginAlertEmailsEnabled ? 'checked' : '' %>>
                     <span class="slider round"></span>
@@ -58,6 +59,7 @@
                 <p>Receive an email after five incorrect password attempts on your account.</p>
             </div>
             <form action="/settings/safety-emails" method="POST" style="margin: 0;">
+                <input type="hidden" name="settingType" value="failedLoginAlertEmailsEnabled">
                 <label class="switch">
                     <input type="checkbox" name="failedLoginAlertEmailsEnabled" onchange="this.form.submit()" <%= user.failedLoginAlertEmailsEnabled ? 'checked' : '' %>>
                     <span class="slider round"></span>

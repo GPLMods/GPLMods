@@ -3659,11 +3659,11 @@ app.get('/settings', ensureAuthenticated, async (req, res) => {
 app.post('/settings/safety-emails', ensureAuthenticated, async (req, res) => {
     try {
         const updates = { safetyEmailsEnabled: false };
-        if (Object.prototype.hasOwnProperty.call(req.body, 'loginAlertEmailsEnabled')) {
-            updates.loginAlertEmailsEnabled = req.body.loginAlertEmailsEnabled === 'on';
+        if (req.body.settingType === 'loginAlertEmailsEnabled' || Object.prototype.hasOwnProperty.call(req.body, 'loginAlertEmailsEnabled')) {
+            updates.loginAlertEmailsEnabled = req.body.loginAlertEmailsEnabled === 'on' || req.body.loginAlertEmailsEnabled === 'true' || req.body.loginAlertEmailsEnabled === true;
         }
-        if (Object.prototype.hasOwnProperty.call(req.body, 'failedLoginAlertEmailsEnabled')) {
-            updates.failedLoginAlertEmailsEnabled = req.body.failedLoginAlertEmailsEnabled === 'on';
+        if (req.body.settingType === 'failedLoginAlertEmailsEnabled' || Object.prototype.hasOwnProperty.call(req.body, 'failedLoginAlertEmailsEnabled')) {
+            updates.failedLoginAlertEmailsEnabled = req.body.failedLoginAlertEmailsEnabled === 'on' || req.body.failedLoginAlertEmailsEnabled === 'true' || req.body.failedLoginAlertEmailsEnabled === true;
         }
         await User.findByIdAndUpdate(req.user._id, updates);
         res.redirect('/settings?success=Security alert settings updated.');
