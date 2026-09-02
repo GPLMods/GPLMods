@@ -418,6 +418,8 @@
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
 
+        <div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
+
         <form action="/upload-finalize/<%= fileId %>" method="POST" enctype="multipart/form-data" id="mainUploadForm">
             <!-- HIDDEN INPUTS -->
             <input type="hidden" name="fileKey" value="<%= fileKey %>">
@@ -427,7 +429,6 @@
             <fieldset class="form-section">
                 <legend>Core Details</legend>
 
-                <!-- Icon Upload -->
                 <div class="icon-upload-container">
                     <label>Mod Icon*</label>
                     <div class="icon-preview" id="iconPreviewBox">
@@ -440,14 +441,108 @@
                     </div>
                 </div>
 
+                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                    <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
+                    <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="width: 160px; z-index: 10;">
+                            <select id="fetchPlatform" style="display: none;">
+                                <option value="playstore" selected>Play Store</option>
+                                <option value="appstore">App Store</option>
+                                <option value="steam">Steam</option>
+                                <option value="epic">Epic Games</option>
+                                <option value="wordpress">WordPress</option>
+                            </select>
+                            <div class="custom-select-wrapper" id="fetchPlatformWrapper">
+                                <div class="custom-select" style="padding: 10px; height: 45px;">
+                                    <span class="selected-text" style="color: var(--white);">Play Store</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow" style="font-size: 0.8em;"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                    <div class="custom-option" data-value="appstore">App Store</div>
+                                    <div class="custom-option" data-value="steam">Steam</div>
+                                    <div class="custom-option" data-value="epic">Epic Games</div>
+                                    <div class="custom-option" data-value="wordpress">WordPress</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
+                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; height: 45px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch Data</button>
+                    </div>
+                    <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
+                </div>
+
                 <div class="form-group">
                     <label for="modName">Mod Name*</label>
                     <input type="text" id="modName" name="modName" value="<%= defaultName %>" placeholder="e.g., Roblox or Minecraft" required autocomplete="off">
                 </div>
 
                 <div class="form-group">
+                    <label for="ageRating">Age Rating*</label>
+                    <select id="ageRating" name="ageRating" required style="display: none;">
+                        <option value="NA" <%= (typeof file !== 'undefined' && file.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
+                        <option value="3+" <%= (typeof file !== 'undefined' && file.ageRating === '3+') ? 'selected' : '' %>>3+ (Everyone)</option>
+                        <option value="7+" <%= (typeof file !== 'undefined' && file.ageRating === '7+') ? 'selected' : '' %>>7+ (Low Violence)</option>
+                        <option value="12+" <%= (typeof file !== 'undefined' && file.ageRating === '12+') ? 'selected' : '' %>>12+ (Moderate Violence)</option>
+                        <option value="16+" <%= (typeof file !== 'undefined' && file.ageRating === '16+') ? 'selected' : '' %>>16+ (Strong Violence)</option>
+                        <option value="18+" <%= (typeof file !== 'undefined' && file.ageRating === '18+') ? 'selected' : '' %>>18+ (Adults Only)</option>
+                    </select>
+                    <div class="custom-select-wrapper" id="ageRatingWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">Not Rated (N/A)</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
+                            <div class="custom-option" data-value="3+">3+ (Everyone)</div>
+                            <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
+                            <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
+                            <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
+                            <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modVersion">Mod Version*</label>
+                    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" autocomplete="off">
+                </div>
+
+                <div class="form-group">
                     <label for="developerName">Official Developer / Company*</label>
                     <input type="text" id="developerName" name="developerName" value="<%= file && file.developer && file.developer !== 'N/A' ? file.developer : '' %>" placeholder="e.g., Supercell or Mojang" autocomplete="off" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Platform*</label>
+                    <select id="modPlatform" name="modPlatform" style="display: none;">
+                        <option value="" disabled selected>Select a platform...</option>
+                        <option value="android">Android</option>
+                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
+                        <option value="windows">Windows</option>
+                        <option value="wordpress">WordPress</option>
+                    </select>
+                    <div class="custom-select-wrapper" id="platformWrapper">
+                        <div class="custom-select">
+                            <span class="selected-text">Select a platform...</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="android">Android</div>
+                            <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                            <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                            <div class="custom-option" data-value="windows">Windows</div>
+                            <div class="custom-option" data-value="wordpress">WordPress</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
+                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= file && file.minOsVersion ? file.minOsVersion : '' %>" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
+                    <div style="font-size: 0.82em; color: var(--silver); margin-top: 6px;">This field is required for submission on supported platforms, especially iOS and Android releases.</div>
                 </div>
 
                 <div class="form-group">
@@ -472,96 +567,23 @@
                     </div>
                 </div>
 
-                <!-- Platform Dropdown -->
-                <div class="form-group">
-                    <label>Platform*</label>
-                    <select id="modPlatform" name="modPlatform" style="display: none;">
-                        <option value="" disabled selected>Select a platform...</option>
-                        <option value="android">Android</option>
-                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
-                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
-                        <option value="windows">Windows</option>
-                        <option value="wordpress">WordPress</option>
-                    </select>
-                    
-                    <div class="custom-select-wrapper" id="platformWrapper">
-                        <div class="custom-select">
-                            <span class="selected-text">Select a platform...</span>
-                            <i class="fas fa-chevron-down custom-select-arrow"></i>
-                        </div>
-                        <div class="custom-options">
-                            <div class="custom-option" data-value="android">Android</div>
-                            <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
-                            <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
-                            <div class="custom-option" data-value="windows">Windows</div>
-                            <div class="custom-option" data-value="wordpress">WordPress</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="ageRating">Age Rating*</label>
-                    
-                    <!-- 1. Hide the native select -->
-                    <select id="ageRating" name="ageRating" required style="display: none;">
-                        <option value="NA" <%= (typeof file !== 'undefined' && file.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
-                        <option value="3+" <%= (typeof file !== 'undefined' && file.ageRating === '3+') ? 'selected' : '' %>>3+ (Everyone)</option>
-                        <option value="7+" <%= (typeof file !== 'undefined' && file.ageRating === '7+') ? 'selected' : '' %>>7+ (Low Violence)</option>
-                        <option value="12+" <%= (typeof file !== 'undefined' && file.ageRating === '12+') ? 'selected' : '' %>>12+ (Moderate Violence)</option>
-                        <option value="16+" <%= (typeof file !== 'undefined' && file.ageRating === '16+') ? 'selected' : '' %>>16+ (Strong Violence)</option>
-                        <option value="18+" <%= (typeof file !== 'undefined' && file.ageRating === '18+') ? 'selected' : '' %>>18+ (Adults Only)</option>
-                    </select>
-
-                    <!-- 2. Add the custom wrapper HTML -->
-                    <div class="custom-select-wrapper" id="ageRatingWrapper">
-                        <div class="custom-select">
-                            <span class="selected-text">
-                                <% if (typeof file !== 'undefined' && file.ageRating) { %>
-                                    <% if (file.ageRating === '3+') { %> 3+ (Everyone)
-                                    <% } else if (file.ageRating === '7+') { %> 7+ (Low Violence)
-                                    <% } else if (file.ageRating === '12+') { %> 12+ (Moderate Violence)
-                                    <% } else if (file.ageRating === '16+') { %> 16+ (Strong Violence)
-                                    <% } else if (file.ageRating === '18+') { %> 18+ (Adults Only)
-                                    <% } else { %> Not Rated (N/A) <% } %>
-                                <% } else { %>
-                                    Not Rated (N/A)
-                                <% } %>
-                            </span>
-                            <i class="fas fa-chevron-down custom-select-arrow"></i>
-                        </div>
-                        <div class="custom-options">
-                            <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
-                            <div class="custom-option" data-value="3+">3+ (Everyone)</div>
-                            <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
-                            <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
-                            <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
-                            <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Category Dropdown -->
                 <div class="form-group">
                     <label>Category*</label>
                     <select id="modCategory" name="modCategory" required disabled style="display: none;">
                         <option value="" disabled selected>Select a platform first...</option>
                     </select>
-
                     <div class="custom-select-wrapper disabled" id="categoryWrapper">
                         <div class="custom-select">
                             <span class="selected-text">Select a platform first...</span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
-                        <!-- Options will be dynamically populated here -->
                         <div class="custom-options" id="categoryOptionsContainer"></div>
                     </div>
                 </div>
 
-                <!-- ======== DEPENDENCIES SECTION ======== -->
                 <div class="form-group" id="arch-group" style="display: none; background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px;">
                     <label style="color: var(--gold);"><i class="fas fa-microchip"></i> Architecture Support <span id="arch-req-star" style="color: var(--red); display: none;">*</span></label>
                     <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Select all hardware architectures this file supports.</p>
-                    
                     <div class="custom-select-wrapper" id="archWrapper">
                         <div class="custom-select" id="archCustomSelect">
                             <span class="selected-text" id="archSelectedText">Select architectures...</span>
@@ -571,18 +593,6 @@
                             <!-- Multi-select checkboxes will be dynamically populated here -->
                         </div>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
-                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= file && file.minOsVersion ? file.minOsVersion : '' %>" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
-                    <div style="font-size: 0.82em; color: var(--silver); margin-top: 6px;">This field is required for submission on supported platforms, especially iOS and Android releases.</div>
-                </div>
-                <!-- =================================================================== -->
-
-                <div class="form-group">
-                    <label for="modVersion">Mod Version*</label>
-                    <input type="text" id="modVersion" name="modVersion" value="<%= defaultVersion %>" placeholder="e.g., 1.26.1.1" autocomplete="off">
                 </div>
             </fieldset>
             
@@ -791,8 +801,6 @@
         </div>
     </div>
 </div>
-
-<div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
 <script>
 // Helper to control the Error/Success Alert Box (Globally available)

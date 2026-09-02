@@ -1,0 +1,54 @@
+<%- include('../partials/header') %>
+
+<style>
+    .static-page-container {
+        max-width: 900px;
+        margin: 40px auto 60px;
+        padding: 40px;
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .static-page-container h1 {
+        color: var(--white);
+        margin-bottom: 25px;
+        text-align: center;
+    }
+    .static-page-content {
+        color: var(--silver);
+        line-height: 1.7;
+    }
+    .static-page-content img {
+        max-width: 100%;
+        height: auto;
+    }
+    .static-page-content a {
+        color: var(--gold);
+    }
+    .static-page-content h2,
+    .static-page-content h3 {
+        color: var(--gold);
+        margin: 28px 0 12px;
+    }
+    .static-page-content p,
+    .static-page-content ul,
+    .static-page-content ol {
+        margin-bottom: 15px;
+    }
+    @media (max-width: 600px) {
+        .static-page-container {
+            margin: 25px 15px 45px;
+            padding: 25px 20px;
+        }
+    }
+</style>
+
+<main class="container">
+    <div class="static-page-container">
+        <h1><%= page.title %></h1>
+        <div class="static-page-content"><%- page.content %></div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

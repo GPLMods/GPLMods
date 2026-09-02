@@ -32,6 +32,7 @@ const IosDns = require('../models/iosDns');
 const IosCert = require('../models/iosCert');
 const VpnCache = require('../models/vpnCache');
 const SourceCode = require('../models/sourceCode');
+const StaticPage = require('../models/staticPage');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -748,6 +749,19 @@ async function createAdminRouter() {
                     showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
                     editProperties: ['name', 'slug', 'shortDescription', 'content'],
                     properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
+                }
+            },
+            {
+                resource: StaticPage,
+                options: {
+                    navigation: docsNav,
+                    listProperties: ['slug', 'title', 'isPublished', 'updatedAt'],
+                    showProperties: ['slug', 'title', 'content', 'isPublished', 'createdAt', 'updatedAt'],
+                    editProperties: ['slug', 'title', 'content', 'isPublished'],
+                    properties: {
+                        slug: { description: 'Public path segment, for example faq or privacy-policy.' },
+                        content: { type: 'richtext', description: 'HTML content shown on the public page. Only trusted administrators should edit this field.' }
+                    }
                 }
             },
             {

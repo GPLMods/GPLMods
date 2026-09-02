@@ -171,6 +171,114 @@
         display: block;
         filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
     }
+
+    /* Keep the download sidebar in the requested reading order. */
+    .info-panel { display: flex; flex-direction: column; }
+    .info-panel > .app-icon { order: 1; }
+    .info-panel > .rating { order: 2; }
+    .info-panel > h1 { order: 3; }
+    .info-panel > .certification-badge { order: 4; }
+    .info-panel > .sidebar-summary { order: 5; }
+    .info-panel > .download-area { order: 6; }
+    .info-panel > .action-buttons { order: 7; }
+    .info-panel > .meta-info { order: 10; }
+    .info-panel > .mirrors-panel { order: 8; }
+    .info-panel > .install-panel { order: 9; }
+
+    .action-buttons { display: flex; flex-direction: column; }
+    .action-buttons .share-action { order: 1; }
+    .action-buttons .wishlist-action { order: 2; }
+    .action-buttons .security-scan-panel { order: 3; }
+    .action-buttons .report-action { order: 4; }
+    .action-buttons .update-action { order: 5; }
+
+    .meta-info { list-style: none; padding: 0; margin: 0 0 20px; }
+    .meta-info li { display: grid; grid-template-columns: minmax(105px, 38%) minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; color: var(--silver); align-items: start; }
+    .meta-info li > span:first-child { min-width: 0; text-align: left; }
+    .meta-info .meta-value, .meta-info .meta-link { min-width: 0; text-align: right; color: var(--white); font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
+    .meta-info .working-row { align-items: center; }
+    .meta-info .voting-system { display: flex; align-items: center; gap: 10px; }
+    .meta-info .meta-value { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; justify-self: stretch; }
+    .sidebar-summary { margin: 0 0 20px; }
+    .sidebar-summary > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; text-align: left; }
+    .sidebar-summary span { color: var(--silver); }
+    .sidebar-summary strong { color: var(--white); text-align: right; overflow-wrap: anywhere; }
+
+    .download-area { display: contents; }
+    .download-area > .download-button,
+    .download-area > #guest-age-gate-container,
+    .download-area > #hidden-download-buttons { order: 6; }
+
+    .description-preview {
+        position: relative;
+        max-height: 145px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .description-preview::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 45px;
+        background: linear-gradient(transparent, var(--dark-gray));
+        pointer-events: none;
+    }
+    .description-expand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--gold);
+        cursor: pointer;
+        font-weight: 600;
+        padding: 4px 0;
+    }
+    .description-expand:hover { color: var(--white); }
+    .description-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.82);
+        backdrop-filter: blur(5px);
+    }
+    .description-modal.show { display: flex; }
+    .description-modal-content {
+        position: relative;
+        width: min(760px, 100%);
+        max-height: min(760px, 90vh);
+        overflow-y: auto;
+        padding: 28px;
+        background: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.6);
+        color: var(--silver);
+        line-height: 1.7;
+    }
+    .description-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        border: 0;
+        background: transparent;
+        color: var(--silver);
+        cursor: pointer;
+        font-size: 1.6em;
+    }
+    .description-modal-close:hover { color: var(--white); }
+    .description-modal-title { color: var(--gold); margin: 0 35px 20px 0; }
+    .description-modal-body img { max-width: 100%; height: auto; }
+    .details-panel { display: flex; flex-direction: column; }
+    .details-panel > .variants-panel { order: 1; }
+    .details-panel > .tabs-nav { order: 2; }
+    .details-panel > .tab-content { order: 3; }
 </style>
 
 <main class="container">
@@ -186,9 +294,8 @@
         <!-- Left Info Panel -->
         <!-- ============================ -->
         <aside class="info-panel">
-            <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="app-icon">
-            <h1><%= file.name %></h1>
-            
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon" class="app-icon" loading="eager">
+
             <div class="rating">
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
@@ -196,19 +303,27 @@
                 <span class="rating-text"><%= file.averageRating.toFixed(1) %> (<%= file.ratingCount %> reviews)</span>
             </div>
 
+            <h1><%= file.name %></h1>
+
             <% if (file.certification === 'certified') { %>
-            <div class="safety-badge">
+            <div class="safety-badge certification-badge">
                 <lottie-player src="<%= cdnUrl %>/animations/shield.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">100% Safe & Admin Certified</span>
             </div>
             <% } %>
 
            <% if (file.certification === 'community-tested') { %>
-            <div class="safety-badge">
+            <div class="safety-badge certification-badge">
                 <lottie-player src="<%= cdnUrl %>/animations/heart.json" background="transparent" speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
                 <span class="badge-text">Highly Rated By Community</span>
             </div>
             <% } %>
+
+            <div class="sidebar-summary">
+                <div><span>Suitable For</span><strong><%= file.ageRating || 'N/A' %></strong></div>
+                <div><span>Developer</span><strong><%= file.developer || 'N/A' %></strong></div>
+                <div><span>Working</span><strong><%= (file.workingVoteCount + file.notWorkingVoteCount) > 0 ? Math.round((file.workingVoteCount / (file.workingVoteCount + file.notWorkingVoteCount)) * 100) + '%' : 'N/A' %></strong></div>
+            </div>
             
             <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
             
@@ -241,6 +356,7 @@
                 }
             %>
 
+            <div class="download-area">
             <% if (file.ageRating === '18+') { %>
                 <!-- === IT IS AN 18+ FILE === -->
                 
@@ -327,10 +443,11 @@
                 <% } %>
             <% } %>
             <!-- ========================================================= -->
+            </div>
 
             <!-- ======== NEW: ALTERNATIVE LINKS (MIRRORS) ======== -->
             <% if (file.alternativeLinks && file.alternativeLinks.length > 0) { %>
-                <div style="background-color: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid #333; text-align: left;">
+                <div class="mirrors-panel" style="background-color: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid #333; text-align: left;">
                     <span style="color: var(--silver); font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px;">
                         <i class="fas fa-link" style="margin-right: 5px; color: var(--gold);"></i> Alternative Mirrors
                     </span>
@@ -387,7 +504,7 @@
 
                 if (isIosDirect && hasDirectLink) { 
             %>
-                <div style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-top: 15px; margin-bottom: 25px; text-align: left;">
+                <div class="install-panel" style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-top: 15px; margin-bottom: 25px; text-align: left;">
                     
                     <h3 style="color: var(--white); font-size: 1.1em; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
                         <i class="fab fa-apple"></i> 1-Click Direct Install
@@ -475,15 +592,18 @@
             <!-- Updated Action Buttons Start -->
             <!-- ============================ -->
             <div class="action-buttons">
+                <button type="button" class="action-btn share-action" onclick="shareMod()">
+                    <i class="fas fa-share-alt"></i> Share Mod
+                </button>
                 <% if (user) { %>
-                    <form action="/files/<%= file._id %>/whitelist" method="POST" style="margin:0;">
+                    <form class="wishlist-action" action="/files/<%= file._id %>/whitelist" method="POST" style="margin:0;">
                         <input type="hidden" name="redirectUrl" value="back">
                         <button type="submit" class="action-btn">
                             <i class="fas fa-heart"></i>
                             <%= userHasWhitelisted ? 'In Wishlist' : 'Add to Wishlist' %>
                         </button>
                     </form>
-                    <button type="button" id="reportModalBtn" class="action-btn">
+                    <button type="button" id="reportModalBtn" class="action-btn report-action">
                         <i class="fas fa-flag"></i>
                         Report File
                     </button>
@@ -493,7 +613,7 @@
 
         <!-- ======== DYNAMIC SECURITY SCANS ======== -->
         <% if (file.virusTotalId || file.virusTotalAnalysisId || file.manualFileScanUrl || file.manualSiteScanUrl) { %>
-            <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
+            <div class="safety-badge security-scan-panel" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
                 
                 <!-- If Automated Scan is Complete -->
                 <% if (file.virusTotalScanDate) { %>
@@ -537,10 +657,6 @@
                         <a href="<%= vtUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
                             <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
                         </a>
-                       <button onclick="shareMod()" class="action-btn">
-                       <i class="fas fa-share-alt"></i> Share Mod
-                       </button>
-
                     <% } %>
 
                     <!-- Show False Positive Guide when any scan reports positives -->
@@ -555,13 +671,13 @@
         <!-- ============================================== -->
                 
                 <% if (user && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
-                    <a href="/mods/<%= file._id %>/add-version" class="action-btn">
+                    <a href="/mods/<%= file._id %>/add-version" class="action-btn update-action">
                         <i class="fas fa-plus"></i>
                         Add New Version
                     </a>
                 <% } %>
                 <% if (user && user.username.toLowerCase() !== file.uploader.toLowerCase()) { %>
-                    <form action="/mods/<%= file._id %>/request-update" method="POST" style="margin: 0;">
+                    <form class="update-action" action="/mods/<%= file._id %>/request-update" method="POST" style="margin: 0;">
                         <button type="submit" class="action-btn" style="border-color: var(--blue); color: var(--blue);">
                             <i class="fas fa-sync-alt"></i> Request Update
                         </button>
@@ -573,33 +689,21 @@
             <!-- ============================ -->
 
             <ul class="meta-info">
-                <li><span>Version:</span> <span class="meta-value"><%= file.version %></span></li>
-                <li><span>Category:</span> <span class="meta-value"><%= file.platforms[0] || 'N/A' %></span></li>
-                <li>Sutible For:<span><%=file.ageRating%></span></li>
-                <li>
-                <!-- ======== NEW: DEPENDENCY DISPLAYS ======== -->
+                <li><span>Version:</span><span class="meta-value"><%= file.version || 'N/A' %></span></li>
+                <li><span>Category:</span><span class="meta-value"><%= file.platforms && file.platforms.length ? file.platforms.join(', ') : 'N/A' %></span></li>
                 <% if (file.minOsVersion && file.minOsVersion.trim() !== '') { %>
-                    <li>Requires: <span style="color: var(--gold);"><%= file.minOsVersion %>+</span></li>
+                    <li><span>Requires:</span><span class="meta-value" style="color: var(--gold);"><%= file.minOsVersion %></span></li>
                 <% } %>
-                
                 <% if (file.architectures && file.architectures.length > 0) { %>
-                    <li>Architecture: 
-                        <span style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-top: 5px;">
+                    <li>
+                        <span>Architecture:</span>
+                        <span class="meta-value" style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px;">
                             <% file.architectures.forEach(arch => { %>
                                 <span style="background: #222; border: 1px solid #444; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: var(--silver);"><%= arch %></span>
                             <% }) %>
                         </span>
                     </li>
                 <% } %>
-                <!-- ======================================== -->
-                    <span>Developer:</span> 
-                    <% if (file.developer && file.developer !== 'N/A') { %>
-                        <a href="/developer?name=<%= slugify(file.developer) %>" class="meta-link"><%= file.developer %> <span class="arrow">›</span></a>
-                    <% } else { %>
-                        <span class="meta-value">N/A</span>
-                    <% } %>
-                </li>
-
                 <li>
                     <span>License:</span>
                     <% if (file.license) { %>
@@ -608,52 +712,12 @@
                         <span class="meta-value">Proprietary / Unknown</span>
                     <% } %>
                 </li>
-                
                 <li>
-                    <span>Uploaded by:</span> 
+                    <span>Uploaded By:</span>
                     <a href="/users/<%= slugify(file.uploader) %>" class="meta-link"><%= file.uploader %> <span class="arrow">›</span></a>
                 </li>
-                
-                <li><span>Downloads:</span> <span class="meta-value"><%= file.downloads.toLocaleString() %></span></li>
-                
-                <li><span>Updated:</span> <span class="meta-value"><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
-                
-                <li>Working?:
-                    <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
-                    <!-- ✅ FIX: Moved the % sign inside the logic so it doesn't show N/A% -->
-                    <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
-                    <div class="voting-system">
-                        <span class="working-percentage"><%= workingPercentage %></span>
-                        
-                        <% if(user) { %>
-                        <div class="vote-buttons">
-                            <!-- Working Button -->
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
-                                <input type="hidden" name="voteType" value="working">
-                                <!-- If user voted working, make it solid. Otherwise, make it outlined. -->
-                                <button type="submit" 
-                                    class="vote-btn-working" 
-                                    style="<%= userVotedWorking ? 'background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);' : '' %>"
-                                    title="<%= userVotedWorking ? 'Remove vote' : 'Mark as Working' %>">
-                                    ✓
-                                </button>
-                            </form>
-
-                            <!-- Not Working Button -->
-                            <form action="/files/<%= file._id %>/vote-status" method="POST" style="margin:0;">
-                                <input type="hidden" name="voteType" value="not-working">
-                                <!-- If user voted not-working, make it solid. Otherwise, make it outlined. -->
-                                <button type="submit" 
-                                    class="vote-btn-not-working" 
-                                    style="<%= userVotedNotWorking ? 'background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);' : '' %>"
-                                    title="<%= userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>">
-                                    ✗
-                                </button>
-                            </form>
-                        </div>
-                        <% } %>
-                    </div>
-                </li>
+                <li><span>Downloads:</span><span class="meta-value"><%= (file.downloads || 0).toLocaleString() %></span></li>
+                <li><span>Updated:</span><span class="meta-value"><%= new Date(file.updatedAt).toLocaleDateString() %></span></li>
             </ul>
         </aside>
 
@@ -664,7 +728,7 @@
             
             <!-- ======== NEW: VARIANTS SELECTOR ======== -->
             <% if (typeof masterFile !== 'undefined' && masterFile.variants && masterFile.variants.filter(v => v.status === 'live').length > 0) { %>
-                <div style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <div class="variants-panel" style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
                     <h3 style="color: var(--gold); margin-bottom: 15px; font-size: 1.2em;">
                         <i class="fas fa-layer-group" style="margin-right: 10px;"></i>Available Mod Variants
                     </h3>
@@ -703,7 +767,8 @@
                 
                  <!-- 1. Mod Information Box -->
                 <div class="info-box gold">
-                    <h2>Mod Information</h2>
+                    <h2>Mod Description</h2>
+                    <div>
                     
                     <!-- Description -->
                     <div style="margin-bottom: 1.5rem;"><%- file.modDescription %></div>
@@ -749,6 +814,7 @@
                             </div>
                         <% } %>
                     <% } %>
+                    </div>
                 </div>
 <!-- ======== NEW: IMPORTANT NOTE BOX (ANIMATED LIST) ======== -->
                 <% if (file.importantNote && file.importantNote.trim() !== '' && file.importantNote !== '<p><br></p>') { %>
@@ -833,7 +899,14 @@
                 <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
                 <div class="app-description-content" style="margin-top: 2rem;">
                     <h2>About This App/Game</h2>
-                    <p><%- file.officialDescription.replace(/\r?\n/g, '<br>') %></p>
+                    <div class="description-preview">
+                        <div class="description-source" id="official-description-source">
+                            <p><%- file.officialDescription.replace(/\r?\n/g, '<br>') %></p>
+                        </div>
+                    </div>
+                    <button type="button" class="description-expand" data-description-target="official-description-source">
+                        Read official description <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
                 <% } %>
             </div>
@@ -1000,6 +1073,49 @@
         </section>
     </div>
 </main>
+
+<!-- Expandable description reader -->
+<div id="description-modal" class="description-modal" role="dialog" aria-modal="true" aria-labelledby="description-modal-title">
+    <div class="description-modal-content">
+        <button type="button" class="description-modal-close" aria-label="Close description" onclick="closeDescriptionModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 id="description-modal-title" class="description-modal-title"></h2>
+        <div id="description-modal-body" class="description-modal-body"></div>
+    </div>
+</div>
+
+<script>
+    function openDescriptionModal(button) {
+        const source = document.getElementById(button.dataset.descriptionTarget);
+        const modal = document.getElementById('description-modal');
+        const title = document.getElementById('description-modal-title');
+        const body = document.getElementById('description-modal-body');
+
+        if (!source || !modal || !title || !body) return;
+        title.textContent = button.closest('.info-box, .app-description-content').querySelector('h2').textContent;
+        body.innerHTML = source.innerHTML;
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDescriptionModal() {
+        const modal = document.getElementById('description-modal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.description-expand').forEach(button => {
+        button.addEventListener('click', () => openDescriptionModal(button));
+    });
+    document.getElementById('description-modal').addEventListener('click', event => {
+        if (event.target.id === 'description-modal') closeDescriptionModal();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeDescriptionModal();
+    });
+</script>
 
 <!-- Report Modal (Cleaned up and Styled) -->
 <div id="reportModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">

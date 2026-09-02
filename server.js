@@ -86,6 +86,7 @@ const SiteState = require('./models/siteState');
 const Subscriber = require('./models/subscriber');
 const DocCategory = require('./models/docCategory');
 const DocPage = require('./models/docPage');
+const StaticPage = require('./models/staticPage');
 const Donation = require('./models/donation');
 const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
@@ -1735,21 +1736,55 @@ app.get('/notifications/site-updates', async (req, res) => {
 // 3. Admin Responses List (Personal Direct Messages)
 app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) => {
     try {
-        // Fetch only the logged-in user's personal notifications
         const personalNotifications = await UserNotification.find({ user: req.user._id }).sort({ createdAt: -1 });
-        
-        // Mark them all as read since the user is now viewing them
-        if (personalNotifications.length > 0) {
-            await UserNotification.updateMany(
-                { user: req.user._id, isRead: false }, 
-                { $set: { isRead: true } }
-            );
-        }
-
-        res.render('pages/admin-messages', { personalNotifications: personalNotifications });
+        // ✅ FIX: Do not auto-mark everything as read on page load. The inbox UI handles per-message read state.
+        res.render('pages/admin-messages', { personalNotifications });
     } catch (error) {
         console.error("Admin Messages page error:", error);
-        return next(error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// ===================================
+// MAILBOX ACTION APIs
+// ===================================
+
+// Mark a single message as read
+app.post('/api/notifications/:id/read', ensureAuthenticated, async (req, res) => {
+    try {
+        await UserNotification.findOneAndUpdate(
+            { _id: req.params.id, user: req.user._id },
+            { isRead: true }
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error marking notification as read:", e);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Delete multiple messages (or a single one)
+app.post('/api/notifications/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !ids.length) return res.json({ success: false });
+
+        await UserNotification.deleteMany({ _id: { $in: ids }, user: req.user._id });
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error deleting notifications:", e);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Delete all READ messages
+app.post('/api/notifications/delete-read', ensureAuthenticated, async (req, res) => {
+    try {
+        await UserNotification.deleteMany({ user: req.user._id, isRead: true });
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error deleting read notifications:", e);
+        res.status(500).json({ success: false });
     }
 });
 // --- NEW: 24-Hour "New Uploads" Feed ---
@@ -6868,18 +6903,35 @@ app.get('/leaderboard', async (req, res) => {
 // ===============================
 // 13. STATIC PAGES
 // ===============================
-app.get('/about', (req, res) => res.render('pages/static/about'));
-app.get('/faq', (req, res) => res.render('pages/static/faq'));
-app.get('/tos', (req, res) => res.render('pages/static/tos'));
-app.get('/dmca', (req, res) => res.render('pages/static/dmca'));
-app.get('/privacy-policy', (req, res) => res.render('pages/static/privacy-policy'));
-app.get('/refund-policy', (req, res) => res.render('pages/static/refund-policy'));
-app.get('/donate', (req, res) => res.render('pages/static/donate'));
-app.get('/partnership-policy', (req, res) => res.render('pages/static/partnership-policy'));
-app.get('/distributor-features', (req, res) => res.render('pages/static/distributor-features'));
-app.get('/why-choose-us', (req, res) => res.render('pages/static/why-choose-us'));
-app.get('/upload-policy', (req, res) => res.render('pages/static/upload-policy'));
-app.get('/understanding-scans', (req, res) => res.render('pages/static/understanding-scans'));
+const staticPageTemplates = {
+    about: 'pages/static/about',
+    faq: 'pages/static/faq',
+    tos: 'pages/static/tos',
+    dmca: 'pages/static/dmca',
+    'privacy-policy': 'pages/static/privacy-policy',
+    'refund-policy': 'pages/static/refund-policy',
+    donate: 'pages/static/donate',
+    'partnership-policy': 'pages/static/partnership-policy',
+    'distributor-features': 'pages/static/distributor-features',
+    'why-choose-us': 'pages/static/why-choose-us',
+    'upload-policy': 'pages/static/upload-policy',
+    'understanding-scans': 'pages/static/understanding-scans'
+};
+
+async function renderStaticPage(req, res, slug) {
+    try {
+        const onlinePage = await StaticPage.findOne({ slug, isPublished: true }).lean();
+        if (onlinePage) return res.render('pages/static-page', { page: onlinePage });
+        return res.render(staticPageTemplates[slug]);
+    } catch (error) {
+        console.error(`Static page error (${slug}):`, error);
+        return res.status(500).render('pages/500');
+    }
+}
+
+Object.entries(staticPageTemplates).forEach(([slug, template]) => {
+    app.get(`/${slug}`, (req, res) => renderStaticPage(req, res, slug));
+});
 app.get('/membership', (req, res) => {
     // If you use Stripe/Cashfree keys in this view, pass them here
     res.render('pages/membership', {

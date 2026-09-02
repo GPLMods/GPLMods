@@ -1,69 +1,153 @@
 <%- include('../partials/header') %>
 
 <style>
-    .messages-container { max-width: 900px; margin: 0 auto 60px auto; }
-    .page-header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
+    .mailbox-container { max-width: 1000px; margin: 0 auto 60px auto; }
+    .page-header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 30px; }
     .page-header h1 { font-size: 2.5em; color: var(--white); }
     .page-header h1 span { color: var(--blue); text-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
-    
-    .msg-card { background-color: var(--dark-gray); padding: 25px; border-radius: 12px; margin-bottom: 20px; position: relative; border-left: 5px solid var(--silver); }
-    .msg-card.type-warning { border-left-color: var(--gold); }
-    .msg-card.type-error { border-left-color: var(--red); }
-    .msg-card.type-success { border-left-color: var(--green); }
-    
-    .msg-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-    .msg-icon { font-size: 1.5em; }
-    .msg-title { font-size: 1.3em; color: var(--white); margin: 0; flex-grow: 1; }
-    .msg-date { color: var(--silver); font-size: 0.85em; }
-    .msg-body { color: var(--silver); line-height: 1.6; font-size: 1.05em; }
+
+    .mailbox-toolbar {
+        background-color: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 15px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .toolbar-actions { display: flex; gap: 10px; align-items: center; }
+    .toolbar-btn {
+        background: transparent;
+        border: 1px solid #555;
+        color: var(--silver);
+        padding: 8px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        font-family: 'Poppins', sans-serif;
+    }
+    .toolbar-btn:hover:not(:disabled) { border-color: var(--white); color: var(--white); }
+    .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .toolbar-btn.delete-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: rgba(229, 57, 53, 0.1); }
+
+    .custom-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--gold); }
+
+    .msg-item {
+        background-color: var(--dark-gray);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        border: 1px solid #222;
+        border-left: 5px solid transparent;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .msg-item:hover { border-color: #444; }
+
+    .msg-item[data-type="warning"] { border-left-color: var(--gold); }
+    .msg-item[data-type="error"] { border-left-color: var(--red); }
+    .msg-item[data-type="success"] { border-left-color: var(--green); }
+    .msg-item[data-type="mod-update-request"] { border-left-color: var(--blue); }
+
+    .msg-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .msg-header:hover { background-color: rgba(255,255,255,0.02); }
+
+    .msg-item.unread .msg-title { font-weight: 800; color: var(--white); }
+    .msg-item.unread .msg-header { background-color: rgba(255, 255, 255, 0.05); }
+    .msg-item.read .msg-title { font-weight: 400; color: var(--silver); }
+    .msg-item.read .read-icon { color: #555 !important; }
+
+    .msg-title { font-size: 1.1em; margin: 0; flex-grow: 1; display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .msg-date { color: var(--silver); font-size: 0.85em; white-space: nowrap; }
+
+    .msg-delete-icon { color: #555; cursor: pointer; padding: 5px; transition: color 0.2s; }
+    .msg-delete-icon:hover { color: var(--red); }
+
+    .msg-body {
+        display: none;
+        padding: 20px 20px 20px 50px;
+        color: var(--silver);
+        line-height: 1.6;
+        font-size: 1.05em;
+        border-top: 1px dashed #333;
+        background: #111;
+    }
 </style>
 
 <main>
     <div class="page-header">
         <div class="container">
-            <h1>Admin <span>Responses</span></h1>
-            <p style="color: var(--silver); margin-top: 10px;">Direct messages, support replies, and account notices.</p>
+            <h1>Your <span>Mailbox</span></h1>
+            <p style="color: var(--silver); margin-top: 10px;">Direct messages, support replies, and update requests.</p>
         </div>
     </div>
 
-    <div class="container messages-container">
-        <% if (personalNotifications && personalNotifications.length > 0) { %>
-            <% personalNotifications.forEach(notification => { %>
-                <% 
-                    let iconClass = 'fa-info-circle';
-                    let iconColor = 'var(--silver)';
-                    if (notification.type === 'warning') { iconClass = 'fa-exclamation-triangle'; iconColor = 'var(--gold)'; }
-                    if (notification.type === 'error') { iconClass = 'fa-times-circle'; iconColor = 'var(--red)'; }
-                    if (notification.type === 'success') { iconClass = 'fa-check-circle'; iconColor = 'var(--green)'; }
-                %>
-                <div class="msg-card type-<%= notification.type %>">
-                    <div class="msg-header">
-                        <i class="fas <%= iconClass %> msg-icon" style="color: <%= iconColor %>;"></i>
-                        <h2 class="msg-title"><%= notification.title %></h2>
-                        <span class="msg-date"><%= new Date(notification.createdAt).toLocaleDateString() %></span>
-                    </div>
-                    <div class="msg-body">
-                        <%- notification.message.replace(/\n/g, '<br>') %>
-                    </div>
-                </div>
-            <% }) %>
-        <% } else { %>
-            <div style="text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
-                <!-- ======== CUSTOM LOTTIE EMPTY INBOX ANIMATION (PLAY ONCE) ======== -->
-            <lottie-player 
-                src="<%= cdnUrl %>/animations/inbox.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" 
-               autoplay>
-            </lottie-player>
-            <!-- ========================================================== -->
-                <h2 style="color: var(--silver);">No Messages</h2>
-                <p style="color: #888;">You do not have any direct messages from the administration team.</p>
+    <div class="container mailbox-container">
+        <div class="mailbox-toolbar">
+            <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="toggleSelectAll()">
+                <input type="checkbox" id="selectAll" class="custom-checkbox">
+                <label style="color: var(--white); font-weight: bold; cursor: pointer; margin: 0;">Select All</label>
             </div>
-        <% } %>
-        
-        <!-- ✅ FIX 3: Styled the Back to Hub button to match the theme -->
+            <div class="toolbar-actions">
+                <button id="btnDeleteSelected" class="toolbar-btn delete-btn" disabled onclick="deleteSelected()">
+                    <i class="fas fa-trash-alt"></i> Delete Selected
+                </button>
+                <button class="toolbar-btn delete-btn" onclick="deleteAllRead()">
+                    <i class="fas fa-dumpster"></i> Delete All Read
+                </button>
+            </div>
+        </div>
+
+        <div id="mail-list">
+            <% if (personalNotifications && personalNotifications.length > 0) { %>
+                <% personalNotifications.forEach(notification => { %>
+                    <%
+                        let iconClass = 'fa-info-circle';
+                        let iconColor = 'var(--silver)';
+                        if (notification.type === 'warning') { iconClass = 'fa-exclamation-triangle'; iconColor = 'var(--gold)'; }
+                        if (notification.type === 'error') { iconClass = 'fa-times-circle'; iconColor = 'var(--red)'; }
+                        if (notification.type === 'success') { iconClass = 'fa-check-circle'; iconColor = 'var(--green)'; }
+                        if (notification.type === 'mod-update-request') { iconClass = 'fa-sync-alt'; iconColor = 'var(--blue)'; }
+                    %>
+
+                    <div class="msg-item <%= notification.isRead ? 'read' : 'unread' %>" data-id="<%= notification._id %>" data-type="<%= notification.type %>">
+                        <div class="msg-header" onclick="toggleMessage('<%= notification._id %>', this)">
+                            <input type="checkbox" class="custom-checkbox msg-checkbox" value="<%= notification._id %>" onclick="event.stopPropagation(); updateToolbarState();">
+                            <i class="fas <%= notification.isRead ? 'fa-envelope-open' : 'fa-envelope' %> read-icon" style="color: var(--gold); font-size: 1.2em;"></i>
+
+                            <h2 class="msg-title">
+                                <i class="fas <%= iconClass %>" style="color: <%= iconColor %>; font-size: 0.9em;"></i>
+                                <%= notification.title %>
+                            </h2>
+
+                            <span class="msg-date"><%= timeAgo(notification.createdAt) %></span>
+                            <i class="fas fa-trash msg-delete-icon" onclick="event.stopPropagation(); deleteSingle('<%= notification._id %>')"></i>
+                        </div>
+
+                        <div class="msg-body">
+                            <%- notification.message.replace(/\n/g, '<br>') %>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px dashed #444;">
+                    <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/inbox.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" autoplay></lottie-player>
+                    <h2 style="color: var(--silver);">Inbox Empty</h2>
+                    <p style="color: #888;">You do not have any direct messages.</p>
+                </div>
+            <% } %>
+        </div>
+
         <div style="text-align: center; margin-top: 30px;">
             <a href="/notifications" class="btn" style="background: transparent; border: 2px solid #555; color: var(--silver); padding: 10px 25px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--white)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#555'; this.style.color='var(--silver)';">
                 <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back to Hub
@@ -71,5 +155,121 @@
         </div>
     </div>
 </main>
+
+<script>
+    async function toggleMessage(id, headerElement) {
+        const item = headerElement.closest('.msg-item');
+        const body = item.querySelector('.msg-body');
+        const envelopeIcon = item.querySelector('.read-icon');
+
+        if (body.style.display === 'block') {
+            body.style.display = 'none';
+        } else {
+            body.style.display = 'block';
+
+            if (item.classList.contains('unread')) {
+                try {
+                    await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+
+                    item.classList.remove('unread');
+                    item.classList.add('read');
+                    envelopeIcon.classList.remove('fa-envelope');
+                    envelopeIcon.classList.add('fa-envelope-open');
+
+                    const badge = document.getElementById('notification-badge');
+                    if (badge && badge.style.display !== 'none') {
+                        let count = parseInt(badge.textContent.replace('+', ''));
+                        if (!isNaN(count) && count > 0) {
+                            count--;
+                            if (count === 0) badge.style.display = 'none';
+                            else badge.textContent = count > 9 ? '9+' : count;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to mark notification as read', e);
+                }
+            }
+        }
+    }
+
+    const selectAllCb = document.getElementById('selectAll');
+    const msgCheckboxes = document.querySelectorAll('.msg-checkbox');
+    const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+
+    function toggleSelectAll() {
+        if (event.target.id !== 'selectAll') selectAllCb.checked = !selectAllCb.checked;
+
+        msgCheckboxes.forEach(cb => cb.checked = selectAllCb.checked);
+        updateToolbarState();
+    }
+
+    function updateToolbarState() {
+        const anyChecked = Array.from(msgCheckboxes).some(cb => cb.checked);
+        btnDeleteSelected.disabled = !anyChecked;
+
+        const allChecked = Array.from(msgCheckboxes).every(cb => cb.checked);
+        if (selectAllCb) selectAllCb.checked = (msgCheckboxes.length > 0 && allChecked);
+    }
+
+    async function deleteSingle(id) {
+        if (confirm('Delete this message?')) {
+            await executeDelete([id]);
+        }
+    }
+
+    async function deleteSelected() {
+        if (confirm('Delete all selected messages?')) {
+            const ids = Array.from(msgCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            await executeDelete(ids);
+        }
+    }
+
+    async function deleteAllRead() {
+        if (confirm('Are you sure you want to permanently delete ALL read messages?')) {
+            try {
+                const res = await fetch('/api/notifications/delete-read', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    document.querySelectorAll('.msg-item.read').forEach(item => {
+                        item.style.opacity = '0';
+                        setTimeout(() => item.remove(), 300);
+                    });
+                }
+            } catch (e) {
+                console.error('Error deleting read messages', e);
+                alert('Error deleting read messages.');
+            }
+        }
+    }
+
+    async function executeDelete(idArray) {
+        try {
+            const res = await fetch('/api/notifications/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idArray })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                idArray.forEach(id => {
+                    const item = document.querySelector(`.msg-item[data-id="${id}"]`);
+                    if (item) {
+                        item.style.opacity = '0';
+                        setTimeout(() => item.remove(), 300);
+                    }
+                });
+                updateToolbarState();
+            } else {
+                alert('Failed to delete messages.');
+            }
+        } catch (e) {
+            console.error('Network error while deleting.', e);
+            alert('Network error while deleting.');
+        }
+    }
+</script>
 
 <%- include('../partials/footer') %>
