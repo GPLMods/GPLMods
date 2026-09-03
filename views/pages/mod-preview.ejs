@@ -1,0 +1,48 @@
+<%- include('../partials/header') %>
+
+<style>
+    .preview-page { max-width: 1000px; margin: 35px auto 70px; }
+    .preview-banner { padding: 16px 20px; margin-bottom: 25px; background: rgba(33,150,243,0.12); border: 1px solid var(--blue); border-radius: 10px; color: var(--silver); }
+    .preview-banner strong { color: var(--blue); }
+    .preview-layout { display: grid; grid-template-columns: 280px 1fr; gap: 25px; }
+    .preview-sidebar, .preview-section { background: var(--dark-gray); border: 1px solid #333; border-radius: 12px; padding: 25px; }
+    .preview-sidebar { text-align: center; align-self: start; }
+    .preview-icon { width: 150px; height: 150px; object-fit: contain; border-radius: 18px; margin-bottom: 15px; }
+    .preview-sidebar h1 { color: var(--white); overflow-wrap: anywhere; }
+    .preview-sidebar p, .preview-section { color: var(--silver); line-height: 1.7; }
+    .preview-section { margin-bottom: 18px; }
+    .preview-section h2 { color: var(--gold); margin-bottom: 12px; }
+    .preview-section img { max-width: 100%; height: auto; border-radius: 8px; margin: 5px; }
+    .preview-section a { color: var(--gold); }
+    .preview-parts { padding-left: 20px; }
+    @media (max-width: 760px) { .preview-layout { grid-template-columns: 1fr; } }
+</style>
+
+<main class="container preview-page">
+    <div class="preview-banner"><strong><i class="fas fa-eye"></i> Private Preview</strong><br>Only the file owner and administrators can view this draft preview. It is not published or indexed.</div>
+    <div class="preview-layout">
+        <aside class="preview-sidebar">
+            <img class="preview-icon" src="<%= file.iconUrl %>" alt="<%= file.name %> icon">
+            <h1><%= file.name || 'Untitled mod' %></h1>
+            <p><strong>Version:</strong> <%= file.version || 'Draft' %></p>
+            <p><strong>Developer:</strong> <%= file.developer || 'N/A' %></p>
+            <p><strong>Platform:</strong> <%= file.category || 'Not selected' %></p>
+            <p><strong>Suitable For:</strong> <%= file.ageRating || 'NA' %></p>
+            <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length) { %>
+                <p><strong>Parts:</strong> <%= file.downloadParts.length %></p>
+            <% } %>
+        </aside>
+        <section>
+            <% if (file.modFeatures) { %><article class="preview-section"><h2>Mod Features</h2><%- file.modFeatures %></article><% } %>
+            <% if (file.officialDescription) { %><article class="preview-section"><h2>Official Description</h2><%- file.officialDescription %></article><% } %>
+            <% if (file.importantNote) { %><article class="preview-section"><h2>Important Note</h2><%- file.importantNote %></article><% } %>
+            <% if (file.whatsNew) { %><article class="preview-section"><h2>What's New</h2><%- file.whatsNew %></article><% } %>
+            <% if (file.modDescription) { %><article class="preview-section"><h2>Description</h2><%- file.modDescription %></article><% } %>
+            <% if (file.downloadParts && file.downloadParts.length) { %><article class="preview-section"><h2>Download Parts</h2><ol class="preview-parts"><% file.downloadParts.forEach(part => { %><li><%= part.partName %>: <%= part.partUrl %></li><% }) %></ol></article><% } %>
+            <% if (file.screenshotUrls && file.screenshotUrls.length) { %><article class="preview-section"><h2>Screenshots</h2><% file.screenshotUrls.forEach(url => { %><img src="<%= url %>" alt="Mod screenshot"><% }) %></article><% } %>
+            <% if (!file.modFeatures && !file.officialDescription && !file.importantNote && !file.whatsNew && !file.modDescription) { %><article class="preview-section"><p>No description has been added yet.</p></article><% } %>
+        </section>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

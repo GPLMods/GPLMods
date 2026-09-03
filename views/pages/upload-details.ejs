@@ -417,6 +417,12 @@
     <div class="upload-form-container">
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin:15px 0; flex-wrap:wrap;">
+            <a href="/mods/<%= fileId %>/preview" target="_blank" class="btn btn-secondary"><i class="fas fa-eye"></i> Preview Draft</a>
+            <button type="button" id="show-snapshots" class="btn btn-secondary"><i class="fas fa-history"></i> Saved Versions</button>
+            <span id="autosave-status" style="color:var(--silver); align-self:center; font-size:0.9em;"></span>
+        </div>
+        <div id="snapshot-list" style="display:none; margin-bottom:15px; padding:12px; background:var(--black); border:1px solid #333; border-radius:8px;"></div>
 
         <div id="status-alert-box" class="alert-msg" style="display: none; width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
@@ -1973,5 +1979,34 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('mainUploadForm');
+        const status = document.getElementById('autosave-status');
+        const snapshotButton = document.getElementById('show-snapshots');
+        const snapshotList = document.getElementById('snapshot-list');
+        if (!form || !status || !<%= user && user.autoSaveEnabled ? 'true' : 'false' %>) return;
+        let timer;
+        const save = async () => {
+            if (typeof syncQuillData === 'function') syncQuillData();
+            const body = new URLSearchParams();
+            new FormData(form).forEach((value, key) => { if (typeof value === 'string' && !['actionType', 'fileKey', 'originalFilename', 'fileSize'].includes(key)) body.append(key, value); });
+            status.textContent = 'Saving draft...';
+            const response = await fetch('/api/mods/<%= fileId %>/autosave', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+            status.textContent = response.ok ? 'Draft saved' : 'Auto-save unavailable';
+        };
+        const schedule = () => { clearTimeout(timer); timer = setTimeout(() => save().catch(() => { status.textContent = 'Auto-save unavailable'; }), 1200); };
+        form.addEventListener('input', schedule);
+        form.addEventListener('change', schedule);
+        snapshotButton?.addEventListener('click', async () => {
+            const response = await fetch('/api/mods/<%= fileId %>/snapshots');
+            const data = await response.json();
+            snapshotList.innerHTML = data.snapshots?.length ? data.snapshots.map(snapshot => `<button type="button" data-snapshot-id="${snapshot._id}" style="display:block; width:100%; margin:5px 0; padding:8px; text-align:left; background:transparent; border:1px solid #444; color:var(--silver); border-radius:6px; cursor:pointer;">${new Date(snapshot.createdAt).toLocaleString()} - Restore</button>`).join('') : '<span style="color:var(--silver);">No saved versions yet.</span>';
+            snapshotList.style.display = 'block';
+            snapshotList.querySelectorAll('[data-snapshot-id]').forEach(button => button.addEventListener('click', async () => { await fetch(`/api/mods/<%= fileId %>/snapshots/${button.dataset.snapshotId}/restore`, { method: 'POST' }); window.location.reload(); }));
+        });
+    });
+</script>
 
 <%- include('../partials/footer') %>

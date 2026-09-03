@@ -87,6 +87,7 @@ const Subscriber = require('./models/subscriber');
 const DocCategory = require('./models/docCategory');
 const DocPage = require('./models/docPage');
 const StaticPage = require('./models/staticPage');
+const DraftSnapshot = require('./models/draftSnapshot');
 const Donation = require('./models/donation');
 const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
@@ -3752,6 +3753,18 @@ app.post('/settings/safety-emails', ensureAuthenticated, async (req, res) => {
     }
 });
 
+app.post('/settings/auto-save', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        user.autoSaveEnabled = req.body.autoSaveEnabled === 'on' || req.body.autoSaveEnabled === 'true' || req.body.autoSaveEnabled === true;
+        await user.save();
+        res.redirect('/settings?success=Auto-save preference updated.');
+    } catch (error) {
+        console.error('Auto-save settings error:', error);
+        res.redirect('/settings?error=Unable to update auto-save settings.');
+    }
+});
+
 app.get('/security/login/:action/:token', async (req, res) => {
     try {
         const { action, token } = req.params;
@@ -5071,6 +5084,83 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error("Error loading upload details:", error);
         return next(error);
+    }
+});
+
+function canManageDraft(file, user) {
+    return Boolean(file && user && (file.uploader === user.username || user.role === 'admin'));
+}
+
+function draftSnapshotData(file, body = {}) {
+    const fields = ['name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription', 'whatsNew', 'importantNote', 'category', 'minOsVersion', 'ageRating', 'videoUrl', 'directDownloadUrl', 'externalDownloadUrl', 'isMultiPart'];
+    const data = {};
+    fields.forEach(field => {
+        const value = body[field] !== undefined ? body[field] : file[field];
+        if (value !== undefined) data[field] = value;
+    });
+    data.platforms = body.modCategory ? [body.modCategory] : (file.platforms || []);
+    data.tags = body.tags !== undefined ? String(body.tags).split(',').map(tag => tag.trim()).filter(Boolean) : (file.tags || []);
+    data.architectures = body.architectures !== undefined
+        ? (Array.isArray(body.architectures) ? body.architectures : [body.architectures])
+        : (file.architectures || []);
+    data.downloadParts = file.downloadParts || [];
+    return data;
+}
+
+app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id).lean();
+        if (!canManageDraft(file, req.user)) return res.status(403).render('pages/403');
+        file.iconUrl = await getSmartImageUrl(file.iconKey);
+        file.screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));
+        res.render('pages/mod-preview', { file });
+    } catch (error) {
+        console.error('Draft preview error:', error);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/api/mods/:id/autosave', ensureAuthenticated, async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+        if (!req.user.autoSaveEnabled && req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Auto-save is disabled.' });
+
+        const data = draftSnapshotData(file, req.body);
+        await DraftSnapshot.create({ file: file._id, createdBy: req.user._id, data });
+        const snapshots = await DraftSnapshot.find({ file: file._id }).sort({ createdAt: -1 }).select('_id').lean();
+        if (snapshots.length > 5) await DraftSnapshot.deleteMany({ _id: { $in: snapshots.slice(5).map(snapshot => snapshot._id) } });
+
+        Object.entries(data).forEach(([key, value]) => { file[key] = value; });
+        if (file.status === 'processing' || file.status === 'pending') file.status = 'draft';
+        await file.save();
+        res.json({ success: true, savedAt: new Date().toISOString() });
+    } catch (error) {
+        console.error('Autosave error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/mods/:id/snapshots', ensureAuthenticated, async (req, res) => {
+    const file = await File.findById(req.params.id).lean();
+    if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+    const snapshots = await DraftSnapshot.find({ file: file._id }).sort({ createdAt: -1 }).limit(5).select('label createdAt').lean();
+    res.json({ success: true, snapshots });
+});
+
+app.post('/api/mods/:id/snapshots/:snapshotId/restore', ensureAuthenticated, async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+        const snapshot = await DraftSnapshot.findOne({ _id: req.params.snapshotId, file: file._id });
+        if (!snapshot) return res.status(404).json({ success: false });
+        Object.entries(snapshot.data).forEach(([key, value]) => { file[key] = value; });
+        file.status = 'draft';
+        await file.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Snapshot restore error:', error);
+        res.status(500).json({ success: false });
     }
 });
 

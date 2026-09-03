@@ -138,6 +138,9 @@
 
                             <div class="item-actions">
                                 <% if (file.status === 'processing') { %>
+                                    <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-view" style="width: 100%;">
+                                        <i class="fas fa-eye"></i> Preview Draft
+                                    </a>
                                     <a href="/upload-details/<%= file._id %>" class="action-btn btn-draft" style="width: 100%;">
                                         <i class="fas fa-edit"></i> Finish Draft
                                     </a>
@@ -145,6 +148,11 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 <% } else { %>
+                                    <% if (file.status === 'draft') { %>
+                                        <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-view">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </a>
+                                    <% } %>
                                     <% if (file.status === 'live') { %>
                                         <a href="/mods/<%= file._id %>" class="action-btn btn-view">
                                             <i class="fas fa-eye"></i> View
