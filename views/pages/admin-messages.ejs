@@ -82,6 +82,16 @@
         border-top: 1px dashed #333;
         background: #111;
     }
+    .mailbox-modal { display: none; position: fixed; inset: 0; z-index: 1200; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.82); backdrop-filter: blur(5px); }
+    .mailbox-modal.show { display: flex; }
+    .mailbox-modal-content { width: min(440px, 100%); padding: 30px; background: var(--dark-gray); border: 1px solid var(--gold); border-top: 4px solid var(--red); border-radius: 12px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
+    .mailbox-modal-icon { color: var(--red); font-size: 2.5em; margin-bottom: 15px; }
+    .mailbox-modal-content h2 { color: var(--white); margin-bottom: 10px; }
+    .mailbox-modal-content p { color: var(--silver); line-height: 1.6; margin-bottom: 24px; }
+    .mailbox-modal-actions { display: flex; justify-content: center; gap: 10px; }
+    .mailbox-modal-actions button { padding: 10px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .mailbox-confirm { border: 1px solid var(--red); background: var(--red); color: var(--white); }
+    .mailbox-cancel { border: 1px solid #555; background: transparent; color: var(--silver); }
 </style>
 
 <main>
@@ -156,6 +166,18 @@
     </div>
 </main>
 
+<div id="mailbox-confirm-modal" class="mailbox-modal" role="dialog" aria-modal="true" aria-labelledby="mailbox-confirm-title">
+    <div class="mailbox-modal-content">
+        <div class="mailbox-modal-icon"><i class="fas fa-trash-alt"></i></div>
+        <h2 id="mailbox-confirm-title">Delete message?</h2>
+        <p id="mailbox-confirm-message">This action cannot be undone.</p>
+        <div class="mailbox-modal-actions">
+            <button type="button" class="mailbox-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="mailbox-confirm" id="mailbox-confirm-button">Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
     async function toggleMessage(id, headerElement) {
         const item = headerElement.closest('.msg-item');
@@ -211,23 +233,45 @@
         if (selectAllCb) selectAllCb.checked = (msgCheckboxes.length > 0 && allChecked);
     }
 
+    const deleteModal = document.getElementById('mailbox-confirm-modal');
+    const deleteConfirmButton = document.getElementById('mailbox-confirm-button');
+    const deleteConfirmMessage = document.getElementById('mailbox-confirm-message');
+    let pendingDeleteAction = null;
+
+    function openDeleteModal(message, action) {
+        deleteConfirmMessage.textContent = message;
+        pendingDeleteAction = action;
+        deleteModal.classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        deleteModal.classList.remove('show');
+        pendingDeleteAction = null;
+    }
+
+    deleteConfirmButton.addEventListener('click', async () => {
+        const action = pendingDeleteAction;
+        closeDeleteModal();
+        if (action) await action();
+    });
+
+    deleteModal.addEventListener('click', event => {
+        if (event.target === deleteModal) closeDeleteModal();
+    });
+
     async function deleteSingle(id) {
-        if (confirm('Delete this message?')) {
-            await executeDelete([id]);
-        }
+        openDeleteModal('This message will be permanently deleted.', () => executeDelete([id]));
     }
 
     async function deleteSelected() {
-        if (confirm('Delete all selected messages?')) {
-            const ids = Array.from(msgCheckboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
-            await executeDelete(ids);
-        }
+        const ids = Array.from(msgCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        if (ids.length) openDeleteModal('All selected messages will be permanently deleted.', () => executeDelete(ids));
     }
 
     async function deleteAllRead() {
-        if (confirm('Are you sure you want to permanently delete ALL read messages?')) {
+        openDeleteModal('All read messages will be permanently deleted.', async () => {
             try {
                 const res = await fetch('/api/notifications/delete-read', { method: 'POST' });
                 const data = await res.json();
@@ -241,7 +285,7 @@
                 console.error('Error deleting read messages', e);
                 alert('Error deleting read messages.');
             }
-        }
+        });
     }
 
     async function executeDelete(idArray) {

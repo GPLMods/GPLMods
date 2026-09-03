@@ -2261,6 +2261,47 @@ app.post('/community/:slug/reply', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// Delete a question and its replies (author only)
+app.post('/community/:slug/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const issue = await Issue.findOne({ slug: req.params.slug });
+        if (!issue) return res.status(404).send("Not found");
+        if (issue.author.toString() !== req.user._id.toString()) return res.status(403).render('pages/403');
+
+        const replyCount = await Reply.countDocuments({ issue: issue._id });
+        await Reply.deleteMany({ issue: issue._id });
+        await Issue.findByIdAndDelete(issue._id);
+        await User.adjustForumPoints(req.user._id, -(5 + replyCount * 2), "Deleted a community post");
+
+        res.redirect('/community');
+    } catch (error) {
+        console.error("Delete Issue Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// Delete a reply (reply author only)
+app.post('/community/:slug/reply/:replyId/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const issue = await Issue.findOne({ slug: req.params.slug });
+        const reply = await Reply.findOne({ _id: req.params.replyId, issue: issue?._id });
+        if (!issue || !reply) return res.status(404).send("Not found");
+        if (reply.author.toString() !== req.user._id.toString()) return res.status(403).render('pages/403');
+
+        if (reply.isSolution) {
+            issue.status = 'open';
+            await issue.save();
+        }
+        await Reply.findByIdAndDelete(reply._id);
+        await User.adjustForumPoints(req.user._id, -2, "Deleted a community reply");
+
+        res.redirect(`/community/${issue.slug}`);
+    } catch (error) {
+        console.error("Delete Reply Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
 // 6. POST: Mark Reply as Solution (Author or Admin only)
 app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, res) => {
     try {
@@ -2527,13 +2568,15 @@ app.get('/:category/:slug', async (req, res, next) => {
         let userVotedNotWorking = false;
         if (req.user) {
             // Check displayFile instead of currentFile to support variant voting
-            userVotedWorking = (displayFile.votedWorkingBy || []).includes(req.user._id);
-            userVotedNotWorking = (displayFile.votedNotWorkingBy || []).includes(req.user._id);
+            const currentUserId = req.user._id.toString();
+            userVotedWorking = (displayFile.votedWorkingBy || []).some(id => id.toString() === currentUserId);
+            userVotedNotWorking = (displayFile.votedNotWorkingBy || []).some(id => id.toString() === currentUserId);
         }
 
         // --- UPLOADER ROLE CHECK ---
         let isUploaderDistributor = false;
         const uploaderUser = await User.findOne({ username: displayFile.uploader }).lean();
+        const canVoteOnFile = Boolean(req.user && (!uploaderUser || uploaderUser._id.toString() !== req.user._id.toString()));
         
         if (uploaderUser && uploaderUser.role === 'distributor') {
             isUploaderDistributor = true;
@@ -2549,6 +2592,7 @@ app.get('/:category/:slug', async (req, res, next) => {
             userHasWhitelisted,
             userVotedWorking,
             userVotedNotWorking,
+            canVoteOnFile,
             isUploaderDistributor
         });
 
@@ -6172,7 +6216,7 @@ app.get('/api/search/suggestions', async (req, res) => {
 app.get('/api/trending-searches', async (req, res) => {
     try {
         const trendingFiles = await File.find(
-            { isLatestVersion: true },
+            { status: 'live', isLatestVersion: true },
             { name: 1, _id: 0 } 
         )
         .sort({ downloads: -1 }) 
@@ -6625,13 +6669,19 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         
         const file = await File.findById(fileId);
         if (!file) return res.status(404).send("File not found.");
+
+        const uploader = await User.findOne({ username: file.uploader }).select('_id').lean();
+        if (uploader && uploader._id.toString() === userId.toString()) {
+            return res.status(403).send("You cannot vote on your own uploaded file.");
+        }
         
         // Check current voting status
         const votedWorkingBy = Array.isArray(file.votedWorkingBy) ? file.votedWorkingBy : [];
         const votedNotWorkingBy = Array.isArray(file.votedNotWorkingBy) ? file.votedNotWorkingBy : [];
 
-        const hasVotedWorking = votedWorkingBy.includes(userId);
-        const hasVotedNotWorking = votedNotWorkingBy.includes(userId);
+        const currentUserId = userId.toString();
+        const hasVotedWorking = votedWorkingBy.some(id => id.toString() === currentUserId);
+        const hasVotedNotWorking = votedNotWorkingBy.some(id => id.toString() === currentUserId);
         const hasPreviouslyVotedStatus = hasVotedWorking || hasVotedNotWorking;
 
         let updateQuery = {};

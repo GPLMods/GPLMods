@@ -203,6 +203,10 @@
     .sidebar-summary > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; text-align: left; }
     .sidebar-summary span { color: var(--silver); }
     .sidebar-summary strong { color: var(--white); text-align: right; overflow-wrap: anywhere; }
+    .working-summary { align-items: center; }
+    .working-summary-value { display: flex; align-items: center; gap: 10px; }
+    .working-summary .vote-buttons { display: flex; gap: 5px; }
+    .working-summary .vote-buttons form { margin: 0; }
 
     .download-area { display: contents; }
     .download-area > .download-button,
@@ -279,6 +283,11 @@
     .details-panel > .variants-panel { order: 1; }
     .details-panel > .tabs-nav { order: 2; }
     .details-panel > .tab-content { order: 3; }
+    #description.tab-content.active { display: flex; flex-direction: column; }
+    #description .mod-description-panel { order: 1; }
+    #description .official-description-panel { order: 2; }
+    #description .important-note-panel { order: 3; }
+    #description .whats-new-panel { order: 4; }
 </style>
 
 <main class="container">
@@ -321,8 +330,32 @@
 
             <div class="sidebar-summary">
                 <div><span>Suitable For</span><strong><%= file.ageRating || 'N/A' %></strong></div>
-                <div><span>Developer</span><strong><%= file.developer || 'N/A' %></strong></div>
-                <div><span>Working</span><strong><%= (file.workingVoteCount + file.notWorkingVoteCount) > 0 ? Math.round((file.workingVoteCount / (file.workingVoteCount + file.notWorkingVoteCount)) * 100) + '%' : 'N/A' %></strong></div>
+                <div>
+                    <span>Developer</span>
+                    <% if (file.developer && file.developer !== 'N/A') { %>
+                        <a class="meta-link" href="/developer?name=<%= encodeURIComponent(slugify(file.developer)) %>"><strong><%= file.developer %></strong></a>
+                    <% } else { %>
+                        <strong>N/A</strong>
+                    <% } %>
+                </div>
+                <div class="working-summary">
+                    <span>Working</span>
+                    <div class="working-summary-value">
+                        <strong><%= (file.workingVoteCount + file.notWorkingVoteCount) > 0 ? Math.round((file.workingVoteCount / (file.workingVoteCount + file.notWorkingVoteCount)) * 100) + '%' : 'N/A' %></strong>
+                        <% if (canVoteOnFile) { %>
+                            <div class="vote-buttons">
+                                <form action="/files/<%= file._id %>/vote-status" method="POST">
+                                    <input type="hidden" name="voteType" value="working">
+                                    <button type="submit" class="vote-btn-working" title="<%= userVotedWorking ? 'Remove vote' : 'Mark as Working' %>" <%= userVotedWorking ? 'style="background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);"' : '' %>>✓</button>
+                                </form>
+                                <form action="/files/<%= file._id %>/vote-status" method="POST">
+                                    <input type="hidden" name="voteType" value="not-working">
+                                    <button type="submit" class="vote-btn-not-working" title="<%= userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>" <%= userVotedNotWorking ? 'style="background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);"' : '' %>>✗</button>
+                                </form>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
             </div>
             
             <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
@@ -766,8 +799,8 @@
             <div id="description" class="tab-content active">
                 
                  <!-- 1. Mod Information Box -->
-                <div class="info-box gold">
-                    <h2>Mod Description</h2>
+                <div class="info-box gold mod-description-panel">
+                    <h2>Mod Features</h2>
                     <div>
                     
                     <!-- Description -->
@@ -818,7 +851,7 @@
                 </div>
 <!-- ======== NEW: IMPORTANT NOTE BOX (ANIMATED LIST) ======== -->
                 <% if (file.importantNote && file.importantNote.trim() !== '' && file.importantNote !== '<p><br></p>') { %>
-                <div class="info-box" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
+                <div class="info-box important-note-panel" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
                     <h2 style="color: var(--red);">Important Note:</h2>
                     
                     <% 
@@ -864,7 +897,7 @@
             
                                 <!-- 2. What's New Box -->
                 <% if (file.whatsNew && file.whatsNew.trim() !== '' && file.whatsNew !== '<p><br></p>') { %>
-                <div class="info-box silver">
+                <div class="info-box whats-new-panel silver">
                     <h2>What's New</h2>
                     
                     <% const isUpdateList = file.whatsNew.includes('<li'); %>
@@ -897,7 +930,7 @@
 
                 <!-- 3. Official Description -->
                 <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
-                <div class="app-description-content" style="margin-top: 2rem;">
+                <div class="app-description-content official-description-panel" style="margin-top: 2rem;">
                     <h2>About This App/Game</h2>
                     <div class="description-preview">
                         <div class="description-source" id="official-description-source">

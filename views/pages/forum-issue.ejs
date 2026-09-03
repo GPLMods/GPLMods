@@ -40,6 +40,8 @@
     .ql-toolbar.ql-snow { background-color: #222; border-color: #333; border-radius: 8px 8px 0 0; }
     .ql-container.ql-snow { border-color: #333; border-radius: 0 0 8px 8px; min-height: 150px; color: white; font-family: 'Poppins'; }
     .btn-submit { background: var(--blue); color: white; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    .delete-post-btn { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 7px 13px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .delete-post-btn:hover { background: var(--red); color: var(--white); }
 
     @media (max-width: 768px) {
         .post-card { flex-direction: column; }
@@ -70,6 +72,11 @@
                 <span><i class="fas fa-folder-open"></i> <%= issue.category.replace('-', ' ').toUpperCase() %></span>
                 <span><i class="fas fa-clock"></i> <%= new Date(issue.createdAt).toLocaleString() %></span>
                 <span><i class="fas fa-eye"></i> <%= issue.views %> Views</span>
+                <% if (user && issue.author && user._id.toString() === issue.author._id.toString()) { %>
+                    <form action="/community/<%= issue.slug %>/delete" method="POST" onsubmit="return confirm('Delete this question and all its replies? This cannot be undone.');" style="margin: 0 0 0 auto;">
+                        <button type="submit" class="delete-post-btn"><i class="fas fa-trash"></i> Delete Question</button>
+                    </form>
+                <% } %>
             </div>
         </div>
 
@@ -138,7 +145,12 @@
                         
                         <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 15px;">
                             <span style="color: #666; font-size: 0.8em;"><%= timeAgo(reply.createdAt) %></span>
-                            
+                            <% if (user && reply.author && user._id.toString() === reply.author._id.toString()) { %>
+                                <form action="/community/<%= issue.slug %>/reply/<%= reply._id %>/delete" method="POST" onsubmit="return confirm('Delete this reply? This cannot be undone.');" style="margin: 0 0 0 auto;">
+                                    <button type="submit" class="delete-post-btn"><i class="fas fa-trash"></i> Delete Reply</button>
+                                </form>
+                            <% } %>
+
                             <!-- MARK AS SOLUTION LOGIC -->
                             <% 
                                 const isIssueAuthor = user && issue.author && (user._id.toString() === issue.author._id.toString());

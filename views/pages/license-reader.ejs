@@ -1,17 +1,37 @@
 <%- include('../partials/header') %>
 
-<main class="container" style="padding: 40px 20px 70px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
-        <h1 style="color: var(--white); margin: 0;"><%= license.name %></h1>
-        <div style="display: flex; gap: 8px;">
-            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=txt">TXT</a>
-            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=md">MD</a>
-        </div>
-    </div>
+<style>
+    .license-reader { max-width: 980px; margin: 0 auto; padding: 35px 20px 70px; }
+    .license-back { color: var(--silver); text-decoration: none; font-weight: 600; transition: color 0.2s; }
+    .license-back:hover { color: var(--gold); }
+    .license-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; padding: 25px 0; border-bottom: 1px solid #333; }
+    .license-kicker { color: var(--gold); text-transform: uppercase; letter-spacing: 2px; font-size: 0.8em; font-weight: 700; margin-bottom: 8px; }
+    .license-header h1 { color: var(--white); margin: 0; font-size: clamp(1.8rem, 4vw, 2.8rem); }
+    .license-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .license-actions .btn { display: inline-flex; align-items: center; gap: 8px; }
+    .license-document { margin-top: 28px; padding: clamp(22px, 4vw, 42px); background: var(--dark-gray); border: 1px solid #333; border-top: 3px solid var(--gold); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    .license-summary { color: var(--silver); line-height: 1.7; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #333; }
+    .license-content { color: var(--white); font: 0.95rem/1.75 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (max-width: 600px) { .license-header { align-items: flex-start; flex-direction: column; } .license-actions { width: 100%; } .license-actions .btn { flex: 1; justify-content: center; } }
+</style>
 
-    <article style="padding: 28px; background: var(--dark-gray); border: 1px solid #333; border-radius: 8px; overflow: auto;">
-        <p style="color: var(--silver);"><%= license.shortDescription %></p>
-        <pre style="margin: 22px 0 0; color: var(--white); font: 0.95rem/1.65 Consolas, monospace; white-space: pre-wrap;"><%= license.content %></pre>
+<main class="license-reader">
+    <a class="license-back" href="/licenses"><i class="fas fa-arrow-left"></i> Back to Licenses</a>
+
+    <header class="license-header">
+        <div>
+            <div class="license-kicker"><i class="fas fa-file-contract"></i> License Reader</div>
+            <h1><%= license.name %></h1>
+        </div>
+        <div class="license-actions">
+            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=txt" title="Download as text"><i class="fas fa-file-lines"></i> TXT</a>
+            <a class="btn btn-secondary" href="/licenses/<%= license.slug %>/download?format=md" title="Download as Markdown"><i class="fab fa-markdown"></i> MD</a>
+        </div>
+    </header>
+
+    <article class="license-document">
+        <% if (license.shortDescription) { %><p class="license-summary"><%= license.shortDescription %></p><% } %>
+        <pre class="license-content"><%= license.content %></pre>
     </article>
 </main>
 
