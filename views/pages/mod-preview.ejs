@@ -1,15 +1,22 @@
 <%- include('../partials/header') %>
 
 <style>
-    .preview-page { max-width: 1000px; margin: 35px auto 70px; }
+    .preview-page { max-width: 1200px; margin: 35px auto 70px; }
     .preview-banner { padding: 16px 20px; margin-bottom: 25px; background: rgba(33,150,243,0.12); border: 1px solid var(--blue); border-radius: 10px; color: var(--silver); }
     .preview-banner strong { color: var(--blue); }
-    .preview-layout { display: grid; grid-template-columns: 280px 1fr; gap: 25px; }
-    .preview-sidebar, .preview-section { background: var(--dark-gray); border: 1px solid #333; border-radius: 12px; padding: 25px; }
+    .preview-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; }
+    .preview-sidebar, .preview-section { background: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 30px; }
     .preview-sidebar { text-align: center; align-self: start; }
-    .preview-icon { width: 150px; height: 150px; object-fit: contain; border-radius: 18px; margin-bottom: 15px; }
-    .preview-sidebar h1 { color: var(--white); overflow-wrap: anywhere; }
+    .preview-icon { width: 100%; max-width: 200px; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 15px; margin: 0 auto 20px; display: block; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .preview-sidebar h1 { color: var(--white); overflow-wrap: anywhere; font-size: 2em; line-height: 1.3; margin-bottom: 20px; }
+    .preview-rating { color: var(--silver); margin-bottom: 20px; }
     .preview-sidebar p, .preview-section { color: var(--silver); line-height: 1.7; }
+    .preview-meta { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
+    .preview-meta li { display: grid; grid-template-columns: minmax(105px, 38%) minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; }
+    .preview-meta li > span:first-child { color: var(--silver); }
+    .preview-meta li > span:last-child { color: var(--white); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+    .preview-actions { display: block; padding: 15px 20px; background: var(--gold); color: var(--black); border-radius: 10px; text-decoration: none; font-weight: 700; box-shadow: 0 0 15px var(--glow-gold); }
+    .preview-actions:hover { background: var(--white); box-shadow: 0 0 25px var(--glow-gold); }
     .preview-section { margin-bottom: 18px; }
     .preview-section h2 { color: var(--gold); margin-bottom: 12px; }
     .preview-section img { max-width: 100%; height: auto; border-radius: 8px; margin: 5px; }
@@ -22,17 +29,23 @@
     <div class="preview-banner"><strong><i class="fas fa-eye"></i> Private Preview</strong><br>Only the file owner and administrators can view this draft preview. It is not published or indexed.</div>
     <div class="preview-layout">
         <aside class="preview-sidebar">
-            <img class="preview-icon" src="<%= file.iconUrl %>" alt="<%= file.name %> icon">
+            <img class="preview-icon" src="<%= file.iconUrl || '/images/default-app-icon.png' %>" alt="<%= file.name %> icon">
             <h1><%= file.name || 'Untitled mod' %></h1>
-            <p><strong>Version:</strong> <%= file.version || 'Draft' %></p>
-            <p><strong>Developer:</strong> <%= file.developer || 'N/A' %></p>
-            <p><strong>Platform:</strong> <%= file.category || 'Not selected' %></p>
-            <p><strong>Suitable For:</strong> <%= file.ageRating || 'NA' %></p>
-            <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length) { %>
-                <p><strong>Parts:</strong> <%= file.downloadParts.length %></p>
-            <% } %>
+            <div class="preview-rating"><i class="fas fa-star" style="color: var(--gold);"></i> Draft preview</div>
+            <a class="preview-actions" href="#preview-content"><i class="fas fa-eye"></i> Preview Draft</a>
+            <ul class="preview-meta">
+                <li><span>Version:</span><span><%= file.version || 'Draft' %></span></li>
+                <li><span>Category:</span><span><%= file.category || 'Not selected' %></span></li>
+                <li><span>Suitable For:</span><span><%= file.ageRating || 'NA' %></span></li>
+                <li><span>Developer:</span><span><%= file.developer || 'N/A' %></span></li>
+                <li><span>License:</span><span><%= file.license ? file.license.name : 'Proprietary / Unknown' %></span></li>
+                <li><span>Uploaded By:</span><span><%= file.uploader || 'N/A' %></span></li>
+                <% if (file.minOsVersion) { %><li><span>Min OS:</span><span><%= file.minOsVersion %></span></li><% } %>
+                <% if (file.architectures && file.architectures.length) { %><li><span>Architecture:</span><span><%= file.architectures.join(', ') %></span></li><% } %>
+                <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length) { %><li><span>Parts:</span><span><%= file.downloadParts.length %></span></li><% } %>
+            </ul>
         </aside>
-        <section>
+        <section id="preview-content">
             <% if (file.modFeatures) { %><article class="preview-section"><h2>Mod Features</h2><%- file.modFeatures %></article><% } %>
             <% if (file.officialDescription) { %><article class="preview-section"><h2>Official Description</h2><%- file.officialDescription %></article><% } %>
             <% if (file.importantNote) { %><article class="preview-section"><h2>Important Note</h2><%- file.importantNote %></article><% } %>

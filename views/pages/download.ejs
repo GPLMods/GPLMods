@@ -113,10 +113,24 @@
         }
 
         /* The Value (e.g., the long developer name) */
-        .meta-info li .meta-value, 
-        .meta-info li a.meta-link {
+        .meta-info li .meta-value {
             text-align: right;
             color: var(--white);
+            font-weight: 600;
+            line-height: 1.4; /* Improve readability for wrapped text */
+            
+            /* The Magic Formula to force wrapping */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            
+            display: block; /* Ensures links behave properly in the grid */
+            justify-self: end; /* Pushes the text to the far right edge */
+        }
+
+        .meta-info li a.meta-link {
+            text-align: right;
+            color: var(--gold);
             font-weight: 600;
             line-height: 1.4; /* Improve readability for wrapped text */
             
@@ -129,9 +143,13 @@
             transition: color 0.2s;
             display: block; /* Ensures links behave properly in the grid */
             justify-self: end; /* Pushes the text to the far right edge */
+            text-decoration: none;
         }
 
-        .meta-link:hover { color: var(--gold); }
+        .meta-link:hover,
+        .meta-info li a.meta-link:hover { color: var(--white); }
+        .meta-link:hover .arrow,
+        .meta-info li a.meta-link:hover .arrow { color: var(--white); }
         
         /* Specifically fix the Voting row which has a complex nested layout */
         .meta-info li:has(.voting-system) {
@@ -195,7 +213,8 @@
     .meta-info { list-style: none; padding: 0; margin: 0 0 20px; }
     .meta-info li { display: grid; grid-template-columns: minmax(105px, 38%) minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; color: var(--silver); align-items: start; }
     .meta-info li > span:first-child { min-width: 0; text-align: left; }
-    .meta-info .meta-value, .meta-info .meta-link { min-width: 0; text-align: right; color: var(--white); font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
+    .meta-info .meta-value { min-width: 0; text-align: right; color: var(--white); font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
+    .meta-info .meta-link { min-width: 0; text-align: right; color: var(--gold); font-weight: 600; overflow-wrap: anywhere; word-break: break-word; text-decoration: none; }
     .meta-info .working-row { align-items: center; }
     .meta-info .voting-system { display: flex; align-items: center; gap: 10px; }
     .meta-info .meta-value { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; justify-self: stretch; }
@@ -203,6 +222,12 @@
     .sidebar-summary > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; text-align: left; }
     .sidebar-summary span { color: var(--silver); }
     .sidebar-summary strong { color: var(--white); text-align: right; overflow-wrap: anywhere; }
+    .sidebar-summary .meta-link { color: var(--gold); text-decoration: none; display: inline-flex; align-items: center; justify-content: flex-end; transition: color 0.2s; }
+    .sidebar-summary .meta-link strong { color: var(--gold); transition: color 0.2s; }
+    .sidebar-summary .meta-link:hover, .sidebar-summary .meta-link:hover strong, .sidebar-summary .meta-link:hover .arrow { color: var(--white); }
+    .sidebar-summary .meta-link,
+    .meta-info .meta-link { border-bottom: 1px solid rgba(255, 215, 0, 0.35); padding-bottom: 2px; }
+    .meta-info .meta-link:hover { border-bottom-color: var(--white); }
     .working-summary { align-items: center; }
     .working-summary-value { display: flex; align-items: center; gap: 10px; }
     .working-summary .vote-buttons { display: flex; gap: 5px; }
@@ -333,7 +358,7 @@
                 <div>
                     <span>Developer</span>
                     <% if (file.developer && file.developer !== 'N/A') { %>
-                        <a class="meta-link" href="/developer?name=<%= encodeURIComponent(slugify(file.developer)) %>"><strong><%= file.developer %></strong></a>
+                        <a class="meta-link" href="/developer?name=<%= encodeURIComponent(slugify(file.developer)) %>"><strong><%= file.developer %></strong> <span class="arrow">›</span></a>
                     <% } else { %>
                         <strong>N/A</strong>
                     <% } %>
@@ -725,7 +750,7 @@
                 <li><span>Version:</span><span class="meta-value"><%= file.version || 'N/A' %></span></li>
                 <li><span>Category:</span><span class="meta-value"><%= file.platforms && file.platforms.length ? file.platforms.join(', ') : 'N/A' %></span></li>
                 <% if (file.minOsVersion && file.minOsVersion.trim() !== '') { %>
-                    <li><span>Requires:</span><span class="meta-value" style="color: var(--gold);"><%= file.minOsVersion %></span></li>
+                    <li><span>Requires:</span><span class="meta-value" style="color: var(--white);"><%= file.minOsVersion %></span></li>
                 <% } %>
                 <% if (file.architectures && file.architectures.length > 0) { %>
                     <li>
@@ -740,7 +765,7 @@
                 <li>
                     <span>License:</span>
                     <% if (file.license) { %>
-                        <a href="/licenses/<%= file.license.slug %>" class="meta-link"><i class="fas fa-file-contract"></i> <%= file.license.name %></a>
+                        <a href="/licenses/<%= file.license.slug %>" class="meta-link"><i class="fas fa-file-contract"></i> <%= file.license.name %> <span class="arrow">›</span></a>
                     <% } else { %>
                         <span class="meta-value">Proprietary / Unknown</span>
                     <% } %>

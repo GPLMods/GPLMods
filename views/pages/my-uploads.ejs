@@ -45,6 +45,8 @@
     
     .btn-view { background: rgba(33, 150, 243, 0.1); color: var(--blue); border-color: var(--blue); }
     .btn-view:hover { background-color: var(--blue); color: var(--white); }
+    .btn-preview { background: var(--gold); color: var(--black); border-color: var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
+    .btn-preview:hover { background: var(--white); color: var(--black); border-color: var(--white); box-shadow: 0 0 25px var(--glow-gold); transform: translateY(-3px); }
     .btn-edit { background: rgba(255, 215, 0, 0.1); color: var(--gold); border-color: var(--gold); }
     .btn-edit:hover { background-color: var(--gold); color: var(--black); }
     .btn-delete { background: rgba(229, 57, 53, 0.1); color: var(--red); border-color: var(--red); }
@@ -138,7 +140,7 @@
 
                             <div class="item-actions">
                                 <% if (file.status === 'processing') { %>
-                                    <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-view" style="width: 100%;">
+                                    <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-preview" style="width: 100%;">
                                         <i class="fas fa-eye"></i> Preview Draft
                                     </a>
                                     <a href="/upload-details/<%= file._id %>" class="action-btn btn-draft" style="width: 100%;">
@@ -149,7 +151,7 @@
                                     </button>
                                 <% } else { %>
                                     <% if (file.status === 'draft') { %>
-                                        <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-view">
+                                        <a href="/mods/<%= file._id %>/preview" target="_blank" class="action-btn btn-preview">
                                             <i class="fas fa-eye"></i> Preview
                                         </a>
                                     <% } %>

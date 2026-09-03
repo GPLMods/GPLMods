@@ -1809,13 +1809,14 @@ a.overlay-btn-primary:hover {
 
         .meta-info li:last-child { border-bottom: none; }
         .meta-link {
-            color: var(--white);
+            color: var(--gold);
             text-decoration: none;
             font-weight: 600;
             transition: color 0.2s;
         }
-        .meta-link:hover { color: var(--gold); }
-        .meta-link .arrow { margin-left: 5px; font-size: 1.1em; color: var(--gold); }
+        .meta-link:hover { color: var(--white); }
+        .meta-link .arrow { margin-left: 5px; font-size: 1.1em; color: var(--gold); transition: color 0.2s; }
+        .meta-link:hover .arrow { color: var(--white); }
         
         /* Voting System Styles */
         /* ✅ FIX: Added flex-wrap: nowrap to keep items in a row */

@@ -2870,26 +2870,26 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             const pUrls = formData.partUrls
                 ? (Array.isArray(formData.partUrls) ? formData.partUrls : [formData.partUrls])
                 : [];
-            const m1Prov = formData.mirror1Provider
-                ? (Array.isArray(formData.mirror1Provider) ? formData.mirror1Provider : [formData.mirror1Provider])
+            const m1Prov = formData.mirror1Providers || formData.mirror1Provider
+                ? (Array.isArray(formData.mirror1Providers || formData.mirror1Provider) ? (formData.mirror1Providers || formData.mirror1Provider) : [formData.mirror1Providers || formData.mirror1Provider])
                 : [];
-            const m1Url = formData.mirror1Url
-                ? (Array.isArray(formData.mirror1Url) ? formData.mirror1Url : [formData.mirror1Url])
+            const m1Url = formData.mirror1Urls || formData.mirror1Url
+                ? (Array.isArray(formData.mirror1Urls || formData.mirror1Url) ? (formData.mirror1Urls || formData.mirror1Url) : [formData.mirror1Urls || formData.mirror1Url])
                 : [];
-            const m2Prov = formData.mirror2Provider
-                ? (Array.isArray(formData.mirror2Provider) ? formData.mirror2Provider : [formData.mirror2Provider])
+            const m2Prov = formData.mirror2Providers || formData.mirror2Provider
+                ? (Array.isArray(formData.mirror2Providers || formData.mirror2Provider) ? (formData.mirror2Providers || formData.mirror2Provider) : [formData.mirror2Providers || formData.mirror2Provider])
                 : [];
-            const m2Url = formData.mirror2Url
-                ? (Array.isArray(formData.mirror2Url) ? formData.mirror2Url : [formData.mirror2Url])
+            const m2Url = formData.mirror2Urls || formData.mirror2Url
+                ? (Array.isArray(formData.mirror2Urls || formData.mirror2Url) ? (formData.mirror2Urls || formData.mirror2Url) : [formData.mirror2Urls || formData.mirror2Url])
                 : [];
-            const daLink = formData.directAdminLink
-                ? (Array.isArray(formData.directAdminLink) ? formData.directAdminLink : [formData.directAdminLink])
+            const daLink = formData.directAdminLinks || formData.directAdminLink
+                ? (Array.isArray(formData.directAdminLinks || formData.directAdminLink) ? (formData.directAdminLinks || formData.directAdminLink) : [formData.directAdminLinks || formData.directAdminLink])
                 : [];
-            const mfScan = formData.partManualFileScanUrl
-                ? (Array.isArray(formData.partManualFileScanUrl) ? formData.partManualFileScanUrl : [formData.partManualFileScanUrl])
+            const mfScan = formData.manualFileScanUrls || formData.partManualFileScanUrl
+                ? (Array.isArray(formData.manualFileScanUrls || formData.partManualFileScanUrl) ? (formData.manualFileScanUrls || formData.partManualFileScanUrl) : [formData.manualFileScanUrls || formData.partManualFileScanUrl])
                 : [];
-            const msScan = formData.partManualSiteScanUrl
-                ? (Array.isArray(formData.partManualSiteScanUrl) ? formData.partManualSiteScanUrl : [formData.partManualSiteScanUrl])
+            const msScan = formData.manualSiteScanUrls || formData.partManualSiteScanUrl
+                ? (Array.isArray(formData.manualSiteScanUrls || formData.partManualSiteScanUrl) ? (formData.manualSiteScanUrls || formData.partManualSiteScanUrl) : [formData.manualSiteScanUrls || formData.partManualSiteScanUrl])
                 : [];
 
             for (let i = 0; i < pUrls.length; i++) {
@@ -2941,8 +2941,8 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             platforms: previousVersion.platforms,
             tags: previousVersion.tags,
             architectures: previousVersion.architectures,
-            minOsVersion: previousVersion.minOsVersion,
-            ageRating: previousVersion.ageRating,
+            minOsVersion: formData.minOsVersion || previousVersion.minOsVersion,
+            ageRating: formData.ageRating || previousVersion.ageRating,
             importantNote: formData.importantNote || previousVersion.importantNote,
             uploader: req.user.username,
             version: req.body.softwareVersion,
@@ -2954,7 +2954,6 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             downloadParts: downloadParts,
             externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
             directDownloadUrl: normalizeSingleValue(formData.directDownloadUrl) || '',
-            ipaDirectDownloadUrl: normalizeSingleValue(formData.ipaDirectDownloadUrl) || '',
             manualFileScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualFileScanUrl) || '') : '',
             manualSiteScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualSiteScanUrl) || '') : '',
             isLatestVersion: false,
@@ -5109,7 +5108,7 @@ function draftSnapshotData(file, body = {}) {
 
 app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
     try {
-        const file = await File.findById(req.params.id).lean();
+        const file = await File.findById(req.params.id).populate('license', 'name').lean();
         if (!canManageDraft(file, req.user)) return res.status(403).render('pages/403');
         file.iconUrl = await getSmartImageUrl(file.iconKey);
         file.screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));

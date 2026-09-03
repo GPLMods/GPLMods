@@ -34,6 +34,10 @@
     .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; }
     .custom-option:hover { background-color: rgba(33, 150, 243, 0.2); color: var(--white); }
     .custom-option.selected { color: var(--blue); font-weight: bold; }
+    #unifiedAddVersionForm { display: flex; flex-direction: column; }
+    #unifiedAddVersionForm .version-field { order: 1; }
+    #unifiedAddVersionForm .requirements-fields { order: 2; }
+    #unifiedAddVersionForm .whats-new-field { order: 3; }
 </style>
 
 <div class="container">
@@ -91,29 +95,47 @@
             </div>
 
             <!-- CORE DETAILS -->
-            <div class="form-group">
+            <div class="form-group version-field">
                 <label for="softwareVersion">New Version Number*</label>
                 <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
             </div>
 
             <input type="hidden" name="uploadId" id="uploadId" value="">
 
-            <div class="form-group">
-                <label>What's New in this Version? (Optional)</label>
-                <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
-                <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
-                <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="requirements-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
                     <label for="minOsVersion">Minimum OS Required</label>
                     <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>">
                 </div>
                 <div class="form-group">
                     <label for="ageRating">Age Rating</label>
-                    <input type="text" id="ageRating" name="ageRating" value="<%= parentFile.ageRating || '' %>">
+                    <select id="ageRating" name="ageRating" style="display: none;">
+                        <option value="NA" <%= parentFile.ageRating === 'NA' ? 'selected' : '' %>>Not Rated (N/A)</option>
+                        <option value="3+" <%= parentFile.ageRating === '3+' ? 'selected' : '' %>>3+ (Everyone)</option>
+                        <option value="7+" <%= parentFile.ageRating === '7+' ? 'selected' : '' %>>7+ (Low Violence)</option>
+                        <option value="12+" <%= parentFile.ageRating === '12+' ? 'selected' : '' %>>12+ (Moderate Violence)</option>
+                        <option value="16+" <%= parentFile.ageRating === '16+' ? 'selected' : '' %>>16+ (Strong Violence)</option>
+                        <option value="18+" <%= parentFile.ageRating === '18+' ? 'selected' : '' %>>18+ (Adults Only)</option>
+                    </select>
+                    <div class="custom-select-wrapper" id="ageRatingWrapper">
+                        <div class="custom-select"><span class="selected-text">Not Rated (N/A)</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
+                            <div class="custom-option" data-value="3+">3+ (Everyone)</div>
+                            <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
+                            <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
+                            <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
+                            <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <div class="form-group whats-new-field">
+                <label>What's New in this Version? (Optional)</label>
+                <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
+                <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
+                <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
             </div>
 
             <div class="form-group">
@@ -149,11 +171,6 @@
                     <div id="single-link-group" class="form-group">
                         <label for="externalUrl">External Download Link*</label>
                         <input type="url" id="externalUrl" name="externalDownloadUrl" placeholder="https://linkvertise.com/...">
-                    </div>
-                    
-                    <div class="form-group" id="ipa-link-group">
-                        <label for="ipaDirectDownloadUrl">Direct IPA Link (For 1-Click Installs) <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Optional</span></label>
-                        <input type="url" id="ipaDirectDownloadUrl" name="ipaDirectDownloadUrl">
                     </div>
                     
                     <div class="form-group">
@@ -287,6 +304,16 @@
             });
         }
         setupCustomSelect('wrapper-fetchPlatform', 'fetchPlatform');
+        setupCustomSelect('ageRatingWrapper', 'ageRating');
+        const ageRating = document.getElementById('ageRating');
+        const ageRatingText = document.querySelector('#ageRatingWrapper .selected-text');
+        if (ageRating && ageRatingText && ageRating.value) {
+            const selectedAge = ageRating.options[ageRating.selectedIndex];
+            if (selectedAge) {
+                ageRatingText.textContent = selectedAge.textContent;
+                document.querySelector(`#ageRatingWrapper .custom-option[data-value="${ageRating.value}"]`)?.classList.add('selected');
+            }
+        }
         document.addEventListener('click', () => {
             const w = document.getElementById('wrapper-fetchPlatform');
             if (w) w.classList.remove('open');
