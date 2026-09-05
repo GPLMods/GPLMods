@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPL Mods Support Desk & AI Debugger</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0a0a0a; 
+            --panel: #1a1a1a; 
+            --text: #f5f5f5; 
+            --gold: #FFD700; 
+            --silver: #c0c0c0; 
+            --border: #333; 
+            --blue: #2196F3; 
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --orange: #f39c12;
+            --white: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar (Chat List & Diagnostics) */
+        .sidebar { width: 380px; min-width: 320px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+        .sidebar-header h2 { margin: 0; color: var(--gold); font-size: 1.3em; }
+        
+        /* Live Stats Pill Bar */
+        .stats-bar { display: flex; gap: 8px; padding: 12px 18px; background: #141414; border-bottom: 1px solid var(--border); }
+        .stat-pill { flex: 1; display: flex; align-items: center; gap: 7px; background: #202020; padding: 6px 12px; border-radius: 8px; font-size: 0.8em; border: 1px solid #333; }
+        
+        /* AI Debugger Card */
+        .ai-debugger-card {
+            margin: 12px 16px;
+            padding: 12px 14px;
+            background: #121212;
+            border: 1px solid #333;
+            border-left: 4px solid var(--green);
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        .ai-debugger-card.offline {
+            border-left-color: var(--red);
+        }
+        .ai-debugger-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .ai-status-indicator {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            display: inline-block;
+        }
+        .ai-status-indicator.offline {
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+        .ping-btn {
+            background: rgba(255, 215, 0, 0.15);
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.72em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .ping-btn:hover { background: var(--gold); color: var(--bg); }
+        .ai-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+            font-size: 0.78em;
+            color: var(--silver);
+        }
+        .ai-meta-grid b { color: var(--white); }
+        .ai-error-box {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(231, 76, 60, 0.12);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            border-radius: 6px;
+            color: #ffadad;
+            font-size: 0.74em;
+            word-break: break-all;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+        .ai-ping-box {
+            margin-top: 6px;
+            padding: 6px 8px;
+            background: #1c1c1c;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75em;
+            color: var(--gold);
+            display: none;
+        }
+
+        .chat-list { flex-grow: 1; overflow-y: auto; padding: 10px 14px; }
+        .chat-item { padding: 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; cursor: pointer; transition: 0.2s; background: var(--bg); }
+        .chat-item:hover, .chat-item.active { border-color: var(--gold); }
+        .chat-item .status { font-size: 0.72em; padding: 3px 8px; border-radius: 12px; float: right; font-weight: bold; text-transform: uppercase; }
+        .chat-item .status.waiting { background: rgba(231, 76, 60, 0.2); color: #ffadad; border: 1px solid rgba(231, 76, 60, 0.4); }
+        .chat-item .status.active { background: rgba(46, 204, 113, 0.2); color: #b0ffb0; border: 1px solid rgba(46, 204, 113, 0.4); }
+        
+        /* Main Chat Window */
+        .main-chat { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg); }
+        .chat-header { padding: 16px 25px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-header .device-info { font-size: 0.85em; color: var(--silver); margin-top: 5px; }
+        
+        .chat-messages { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #0e0e0e; }
+        .msg-bubble { max-width: 70%; padding: 12px 18px; border-radius: 15px; line-height: 1.5; font-size: 0.95em; word-wrap: break-word; }
+        .msg-user { align-self: flex-start; background: #222; border: 1px solid var(--border); border-bottom-left-radius: 0; color: var(--text); }
+        .msg-agent { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 0; }
+        .msg-bot { align-self: flex-start; background: rgba(255, 215, 0, 0.08); border: 1px solid var(--gold); color: var(--gold); border-bottom-left-radius: 0; }
+        .msg-system { align-self: center; background: transparent; color: var(--silver); font-size: 0.85em; font-style: italic; border: 1px dashed #444; border-radius: 8px; text-align: center; }
+        
+        .chat-input-area { padding: 15px 25px; background: var(--panel); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .chat-input-area input { flex-grow: 1; padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-family: inherit; font-size: 0.95em; }
+        .chat-input-area input:focus { border-color: var(--gold); }
+        .chat-input-area button { padding: 14px 25px; border-radius: 8px; border: none; background: var(--gold); color: var(--bg); font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .chat-input-area button:hover:not(:disabled) { filter: brightness(1.1); transform: scale(1.02); }
+        .chat-input-area button:disabled { background: #555; cursor: not-allowed; }
+        
+        #empty-state { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: var(--silver); font-size: 1.1em; flex-direction: column; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Support Desk</h2>
+            <p style="margin:4px 0 0 0; font-size: 0.85em; color: var(--silver);">Agent: <%= user.username %></p>
+            <a href="/admin" style="color: var(--blue); font-size: 0.82em; text-decoration: none; margin-top: 6px; display: inline-block;">
+                <i class="fas fa-arrow-left"></i> Back to AdminJS
+            </a>
+        </div>
+
+        <!-- Live Members & Agents Bar -->
+        <div class="stats-bar">
+            <div class="stat-pill" title="Connected Support Agents">
+                <i class="fas fa-headset" style="color:var(--green);"></i>
+                <span>Agents: <b id="statAgents">1</b></span>
+            </div>
+            <div class="stat-pill" title="Live Users on Support Chat">
+                <i class="fas fa-users" style="color:var(--blue);"></i>
+                <span>Members: <b id="statMembers">1</b></span>
+            </div>
+        </div>
+
+        <!-- AI Engine Diagnostics & Debugger Card -->
+        <div class="ai-debugger-card" id="aiDebuggerCard">
+            <div class="ai-debugger-header">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                    <span class="ai-status-indicator" id="aiStatusDot"></span>
+                    <strong style="font-size: 0.85em; color: var(--white);">Gemini 3.6 Flash AI</strong>
+                </div>
+                <button type="button" class="ping-btn" id="pingAiBtn" title="Ping AI and test API connectivity">
+                    <i class="fas fa-bolt"></i> <span id="pingBtnText">Ping AI</span>
+                </button>
+            </div>
+            <div class="ai-meta-grid">
+                <span>Status: <b id="aiStatusLabel">Online</b></span>
+                <span>Latency: <b id="aiLatencyLabel">--</b></span>
+                <span>Requests: <b id="aiReqsLabel">0</b></span>
+                <span>Errors: <b id="aiErrorsLabel" style="color: #ffadad;">0</b></span>
+            </div>
+            <div class="ai-error-box" id="aiErrorBox" style="display: none;">
+                <i class="fas fa-exclamation-circle" style="margin-top: 2px;"></i>
+                <span id="aiErrorText">No errors reported</span>
+            </div>
+            <div class="ai-ping-box" id="aiPingBox"></div>
+        </div>
+
+        <div style="padding: 0 16px; margin-top: 5px;">
+            <span style="font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; color: var(--silver); font-weight: bold;">Conversations</span>
+        </div>
+
+        <div class="chat-list" id="chatList">
+            <!-- Chats populated here via JS -->
+        </div>
+    </div>
+
+    <div class="main-chat" id="mainChat" style="display: none;">
+        <div class="chat-header">
+            <div>
+                <h3 id="chatHeaderName" style="margin: 0; color: var(--white);">User Name</h3>
+                <div id="chatHeaderInfo" class="device-info">Guest | No Device Info</div>
+            </div>
+            <button id="claimBtn" style="padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: none;">
+                <i class="fas fa-hand-holding-hand" style="margin-right: 6px;"></i> Claim Chat
+            </button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages"></div>
+        
+        <form class="chat-input-area" id="agentForm">
+            <input type="text" id="agentInput" placeholder="Type a reply..." autocomplete="off" disabled>
+            <button type="submit" id="agentSubmit" disabled><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+    
+    <div id="empty-state">
+        <i class="fas fa-headset" style="font-size: 4em; color: #333; margin-bottom: 20px;"></i>
+        Select a chat from the left to start responding.
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const agentId = '<%= user._id %>';
+        const agentName = '<%= user.username %>';
+        
+        let activeChats = [];
+        let currentSessionId = null;
+
+        // UI Elements
+        const chatListEl = document.getElementById('chatList');
+        const mainChatEl = document.getElementById('mainChat');
+        const emptyStateEl = document.getElementById('empty-state');
+        const chatMessagesEl = document.getElementById('chatMessages');
+        const chatHeaderName = document.getElementById('chatHeaderName');
+        const chatHeaderInfo = document.getElementById('chatHeaderInfo');
+        const claimBtn = document.getElementById('claimBtn');
+        const agentInput = document.getElementById('agentInput');
+        const agentSubmit = document.getElementById('agentSubmit');
+
+        // Diagnostics Elements
+        const statAgents = document.getElementById('statAgents');
+        const statMembers = document.getElementById('statMembers');
+        const aiDebuggerCard = document.getElementById('aiDebuggerCard');
+        const aiStatusDot = document.getElementById('aiStatusDot');
+        const aiStatusLabel = document.getElementById('aiStatusLabel');
+        const aiLatencyLabel = document.getElementById('aiLatencyLabel');
+        const aiReqsLabel = document.getElementById('aiReqsLabel');
+        const aiErrorsLabel = document.getElementById('aiErrorsLabel');
+        const aiErrorBox = document.getElementById('aiErrorBox');
+        const aiErrorText = document.getElementById('aiErrorText');
+        const aiPingBox = document.getElementById('aiPingBox');
+        const pingAiBtn = document.getElementById('pingAiBtn');
+        const pingBtnText = document.getElementById('pingBtnText');
+
+        // 1. Connect as Agent
+        socket.emit('agent_join', { agentId });
+
+        // 2. Load Initial Chats
+        socket.on('load_active_chats', (chats) => {
+            activeChats = chats;
+            renderChatList();
+        });
+
+        // 3. Receive Live Stats Update (Online Members & AI Health)
+        socket.on('support_stats_update', (stats) => {
+            if (statAgents) statAgents.textContent = stats.agentsOnline || 0;
+            if (statMembers) statMembers.textContent = stats.membersOnline || 0;
+            if (stats.aiStatus) updateAiDiagnosticsUI(stats.aiStatus);
+        });
+
+        socket.on('ai_status_update', (aiStatus) => {
+            updateAiDiagnosticsUI(aiStatus);
+        });
+
+        function updateAiDiagnosticsUI(status) {
+            const isOnline = status.status === 'online';
+            aiStatusLabel.textContent = isOnline ? 'Online' : 'Offline';
+            aiStatusLabel.style.color = isOnline ? 'var(--green)' : 'var(--red)';
+            
+            if (isOnline) {
+                aiStatusDot.className = 'ai-status-indicator';
+                aiDebuggerCard.className = 'ai-debugger-card';
+            } else {
+                aiStatusDot.className = 'ai-status-indicator offline';
+                aiDebuggerCard.className = 'ai-debugger-card offline';
+            }
+
+            aiLatencyLabel.textContent = status.latencyMs ? `${status.latencyMs}ms` : '--';
+            aiReqsLabel.textContent = status.totalRequests || 0;
+            aiErrorsLabel.textContent = status.totalErrors || 0;
+
+            if (status.lastError) {
+                aiErrorBox.style.display = 'flex';
+                aiErrorText.textContent = `${status.lastError.message || 'Unknown error'}`;
+            } else {
+                aiErrorBox.style.display = 'none';
+            }
+        }
+
+        // 4. Ping AI Debugger
+        pingAiBtn.addEventListener('click', () => {
+            pingBtnText.textContent = 'Testing...';
+            pingAiBtn.disabled = true;
+            aiPingBox.style.display = 'block';
+            aiPingBox.textContent = 'Sending ping to Gemini 3.6 Flash...';
+            socket.emit('test_ai_connection');
+        });
+
+        socket.on('ai_debug_result', (result) => {
+            pingBtnText.textContent = 'Ping AI';
+            pingAiBtn.disabled = false;
+            aiPingBox.style.display = 'block';
+            if (result.success) {
+                aiPingBox.innerHTML = `<span style="color:var(--green); font-weight:bold;">✔ Ping Success (${result.latencyMs}ms)</span><br>${result.response}`;
+            } else {
+                aiPingBox.innerHTML = `<span style="color:var(--red); font-weight:bold;">✖ Ping Failed (${result.latencyMs}ms)</span><br>${result.error}`;
+            }
+            if (result.status) updateAiDiagnosticsUI(result.status);
+        });
+
+        // 5. Receive New Chat Alert
+        socket.on('agent_alert_new_chat', (session) => {
+            const existingIdx = activeChats.findIndex(c => c._id === session._id);
+            if (existingIdx !== -1) {
+                activeChats[existingIdx] = session;
+            } else {
+                activeChats.unshift(session);
+            }
+            renderChatList();
+            try {
+                new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => {});
+            } catch (err) {}
+        });
+
+        // 6. Receive Live Messages
+        socket.on('agent_receive_message', (data) => {
+            const { sessionId, message } = data;
+            const chat = activeChats.find(c => c._id === sessionId);
+            if (chat) {
+                chat.messages.push(message);
+                if (currentSessionId === sessionId) {
+                    appendMessage(message);
+                } else {
+                    renderChatList();
+                }
+            }
+        });
+
+        // 7. Another agent claimed or updated
+        socket.on('agent_chat_updated', (session) => {
+            const index = activeChats.findIndex(c => c._id === session._id);
+            if (index !== -1) {
+                activeChats[index] = session;
+                renderChatList();
+                if (currentSessionId === session._id) openChat(session._id);
+            }
+        });
+
+        // --- UI RENDER FUNCTIONS ---
+        function renderChatList() {
+            chatListEl.innerHTML = '';
+            if (activeChats.length === 0) {
+                chatListEl.innerHTML = '<div style="color: var(--silver); text-align: center; padding: 25px; font-size: 0.85em;">No active conversations</div>';
+                return;
+            }
+            activeChats.forEach(chat => {
+                const isWaiting = chat.status === 'waiting-for-agent';
+                const name = chat.user ? chat.user.username : (chat.guestEmail || 'Guest');
+                const lastMsg = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].text : 'No messages';
+                
+                const div = document.createElement('div');
+                div.className = `chat-item ${currentSessionId === chat._id ? 'active' : ''}`;
+                div.onclick = () => openChat(chat._id);
+                div.innerHTML = `
+                    <span class="status ${isWaiting ? 'waiting' : 'active'}">${isWaiting ? 'Waiting' : 'Assigned'}</span>
+                    <strong style="color: var(--gold); font-size: 0.95em;">${name}</strong>
+                    <div style="color: var(--silver); font-size: 0.82em; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${lastMsg}
+                    </div>
+                `;
+                chatListEl.appendChild(div);
+            });
+        }
+
+        function openChat(id) {
+            currentSessionId = id;
+            const chat = activeChats.find(c => c._id === id);
+            if (!chat) return;
+            
+            emptyStateEl.style.display = 'none';
+            mainChatEl.style.display = 'flex';
+            
+            chatHeaderName.textContent = chat.user ? chat.user.username : (chat.guestEmail || 'Guest');
+            chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? chat.user.email : 'No email'));
+            
+            chatMessagesEl.innerHTML = '';
+            chat.messages.forEach(msg => appendMessage(msg));
+
+            if (chat.status === 'waiting-for-agent') {
+                claimBtn.style.display = 'block';
+                agentInput.disabled = true;
+                agentSubmit.disabled = true;
+                agentInput.placeholder = "Claim chat to reply...";
+            } else {
+                claimBtn.style.display = 'none';
+                agentInput.disabled = false;
+                agentSubmit.disabled = false;
+                agentInput.placeholder = "Type your reply...";
+                agentInput.focus();
+            }
+
+            renderChatList();
+        }
+
+        function appendMessage(msg) {
+            const div = document.createElement('div');
+            let typeClass = 'msg-system';
+            if (msg.sender === 'user') typeClass = 'msg-user';
+            if (msg.sender === 'agent') typeClass = 'msg-agent';
+            if (msg.sender === 'bot') typeClass = 'msg-bot';
+            
+            div.className = `msg-bubble ${typeClass}`;
+            div.innerHTML = `
+                ${msg.sender === 'agent' || msg.sender === 'bot' ? `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${msg.senderName || msg.sender}</strong>` : ''}
+                ${(msg.text || '').replace(/\n/g, '<br>')}
+            `;
+            chatMessagesEl.appendChild(div);
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+
+        // --- ACTION HANDLERS ---
+        claimBtn.addEventListener('click', () => {
+            socket.emit('agent_claim_chat', { sessionId: currentSessionId, agentId, agentName });
+        });
+
+        document.getElementById('agentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = agentInput.value.trim();
+            if (text && currentSessionId) {
+                socket.emit('agent_send_message', { sessionId: currentSessionId, text, agentName });
+                agentInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

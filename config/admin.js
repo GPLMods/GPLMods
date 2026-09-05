@@ -33,6 +33,7 @@ const IosCert = require('../models/iosCert');
 const VpnCache = require('../models/vpnCache');
 const SourceCode = require('../models/sourceCode');
 const StaticPage = require('../models/staticPage');
+const AIKnowledge = require('../models/aiKnowledge');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -829,6 +830,13 @@ async function createAdminRouter() {
                     actions: {
                         new: { isAccessible: false }
                     }
+                }
+            },
+            {
+                resource: AIKnowledge,
+                options: {
+                    navigation: systemNav,
+                    listProperties: ['topic', 'keywords', 'isActive', 'updatedAt']
                 }
             }
         ] 

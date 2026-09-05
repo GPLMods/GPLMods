@@ -31,7 +31,7 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['member', 'distributor', 'admin'],
+        enum: ['member', 'distributor', 'support', 'admin'],
         default: 'member'
     },
     isBanned: {
@@ -120,6 +120,15 @@ const UserSchema = new Schema({
         discord: { type: String, trim: true },
         website: { type: String, trim: true },
         youtube: { type: String, trim: true }
+    },
+    // Custom Work Email Fields (ImprovMX)
+    customEmailAlias: { 
+        type: String, 
+        trim: true 
+    },
+    hasSmtpAccess: { 
+        type: Boolean, 
+        default: false 
     },
     verificationOtp: {
         type: String

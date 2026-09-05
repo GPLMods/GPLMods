@@ -42,6 +42,9 @@ const TranslationQuota = require('./system/translationQuota');
 const ApiLimit = require('./system/apiLimit');
 const VpnCache = require('./system/vpnCache');
 const SourceCode = require('./sourceCode');
+const ChatSession = require('./chatSession');
+const ChatSettings = require('./chatSettings');
+const AIKnowledge = require('./aiKnowledge');
 
 module.exports = {
     // Core
@@ -49,6 +52,9 @@ module.exports = {
     User,
     Review,
     Reply,
+    ChatSession,
+    ChatSettings,
+    AIKnowledge,
 
     // Community
     Issue,

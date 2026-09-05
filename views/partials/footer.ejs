@@ -315,8 +315,700 @@
 </div>
 <!-- =================================================== -->
         
-        <!-- Tidio Chatbot -->
-        <script src="//code.tidio.co/oenvk3uelgibnqqryawwjuxamjeslyk5.js" async></script>
+        <!-- ======== CUSTOM AI & SUPPORT CHAT WIDGET ======== -->
+        <script src="/socket.io/socket.io.js"></script>
+        <!-- Import Lightweight Emoji Picker Web Component -->
+        <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+        <style>
+            /* Floating Button */
+            .gpl-chat-btn {
+                position: fixed;
+                bottom: 25px;
+                right: 25px;
+                width: 60px;
+                height: 60px;
+                background-color: var(--black);
+                border: 3px solid var(--gold);
+                border-radius: 50%;
+                box-shadow: 0 0 20px var(--glow-gold);
+                cursor: pointer;
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .gpl-chat-btn:hover { transform: scale(1.1); }
+            .gpl-chat-btn img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+
+            /* The Pop-out Greeting Bubble */
+            .gpl-chat-greeting {
+                position: absolute;
+                right: 80px;
+                background: var(--dark-gray);
+                color: var(--gold);
+                padding: 10px 15px;
+                border-radius: 20px 20px 0 20px;
+                border: 1px solid var(--gold);
+                font-size: 0.9em;
+                font-weight: bold;
+                white-space: nowrap;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                opacity: 0;
+                transform: translateX(20px);
+                transition: all 0.4s ease;
+                pointer-events: none;
+            }
+            .gpl-chat-greeting.show { opacity: 1; transform: translateX(0); }
+
+            /* The Main Chat Window */
+            .gpl-chat-window {
+                position: fixed;
+                bottom: 100px;
+                right: 25px;
+                width: 360px;
+                height: 520px;
+                max-height: calc(100vh - 120px);
+                background-color: var(--dark-gray);
+                border-radius: 15px;
+                border: 1px solid #333;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+                z-index: 9998;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                transform: translateY(20px);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .gpl-chat-window.open {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            @media (max-width: 480px) {
+                .gpl-chat-window { width: calc(100% - 40px); right: 20px; bottom: 90px; }
+            }
+
+            /* Header */
+            .gpl-chat-header {
+                background: var(--black);
+                padding: 15px;
+                border-bottom: 2px solid var(--gold);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .gpl-chat-team-info { display: flex; align-items: center; gap: 10px; }
+            .gpl-chat-team-avatars { display: flex; }
+            .gpl-chat-team-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--black); margin-left: -10px; object-fit: cover; }
+            .gpl-chat-team-avatars img:first-child { margin-left: 0; }
+
+            /* Body */
+            .gpl-chat-body { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #111; position: relative; }
+            
+            .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.92em; line-height: 1.4; word-wrap: break-word; }
+            .bubble-user { background: var(--gold); color: var(--black); align-self: flex-end; border-bottom-right-radius: 0; }
+            .bubble-bot { background: #222; color: var(--silver); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #333; }
+            .bubble-agent { background: #2196F3; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
+            
+            /* Quick Replies */
+            .gpl-chat-quick-replies {
+                display: flex;
+                gap: 8px;
+                padding: 10px 12px;
+                overflow-x: auto;
+                background: #111;
+                border-top: 1px solid #222;
+                scrollbar-width: none;
+            }
+            .gpl-chat-quick-replies::-webkit-scrollbar { display: none; }
+            .quick-reply-btn {
+                background: var(--dark-gray);
+                color: var(--gold);
+                border: 1px solid var(--gold);
+                padding: 5px 12px;
+                border-radius: 15px;
+                font-size: 0.8em;
+                white-space: nowrap;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .quick-reply-btn:hover { background: var(--gold); color: var(--black); }
+
+            /* Attachment Button */
+            .gpl-chat-attach {
+                background: none; border: none; color: var(--silver);
+                font-size: 1.1em; cursor: pointer; padding: 0 8px;
+                transition: color 0.2s;
+            }
+            .gpl-chat-attach:hover { color: var(--gold); }
+
+            /* Input Wrapper & Emoji Button */
+            .gpl-chat-input-wrapper {
+                position: relative;
+                flex-grow: 1;
+                display: flex;
+                align-items: center;
+            }
+            .gpl-chat-input {
+                width: 100%;
+                background: #222;
+                border: 1px solid #444;
+                color: #fff;
+                border-radius: 20px;
+                padding: 10px 38px 10px 15px;
+                outline: none;
+                font-size: 0.9em;
+                box-sizing: border-box;
+            }
+            .gpl-chat-input:focus { border-color: var(--gold); }
+            
+            .gpl-chat-emoji-btn {
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--silver);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px;
+                font-size: 1.15em;
+                transition: color 0.2s, transform 0.2s;
+            }
+            .gpl-chat-emoji-btn:hover {
+                color: var(--gold);
+                transform: translateY(-50%) scale(1.15);
+            }
+
+            /* Emoji Picker Component */
+            #gplChatEmojiPicker {
+                position: absolute;
+                bottom: 60px;
+                right: 10px;
+                left: 10px;
+                height: 310px;
+                max-height: 65%;
+                z-index: 9999;
+                display: none;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                border: 1px solid #333;
+                border-radius: 12px;
+                --background: var(--dark-gray);
+                --border-color: #333;
+                --indicator-color: var(--gold);
+                --button-hover-background: #333;
+                --search-background: var(--black);
+                --search-focus-border-color: var(--gold);
+                --search-icon-color: var(--silver);
+                --text-color: var(--white);
+            }
+            #gplChatEmojiPicker.active {
+                display: block;
+                animation: gplEmojiPopUp 0.2s ease-out forwards;
+            }
+            @keyframes gplEmojiPopUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            /* Header Actions & Buttons */
+            .gpl-header-actions { display: flex; align-items: center; gap: 4px; }
+            .gpl-header-icon-btn {
+                background: none;
+                border: none;
+                color: var(--silver);
+                font-size: 0.95em;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 6px;
+                transition: color 0.2s, background 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .gpl-header-icon-btn:hover {
+                color: var(--gold);
+                background: rgba(255, 215, 0, 0.12);
+            }
+
+            /* History Drawer */
+            .gpl-chat-history-drawer {
+                position: absolute;
+                inset: 60px 0 0 0;
+                background: #111;
+                z-index: 9996;
+                display: flex;
+                flex-direction: column;
+                transform: translateX(100%);
+                transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .gpl-chat-history-drawer.open {
+                transform: translateX(0);
+            }
+            .gpl-history-header {
+                padding: 10px 15px;
+                background: var(--black);
+                border-bottom: 1px solid #333;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .gpl-history-list {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .gpl-history-item {
+                padding: 10px 12px;
+                border-radius: 8px;
+                border: 1px solid #292929;
+                background: var(--dark-gray);
+                cursor: pointer;
+                transition: 0.2s;
+            }
+            .gpl-history-item:hover, .gpl-history-item.active {
+                border-color: var(--gold);
+                background: #1f1f1f;
+            }
+            .gpl-history-item-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+            .gpl-history-badge {
+                font-size: 0.7em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            .gpl-history-badge.bot { background: rgba(255, 215, 0, 0.15); color: var(--gold); }
+            .gpl-history-badge.waiting { background: rgba(231, 76, 60, 0.15); color: #ffadad; }
+            .gpl-history-badge.active { background: rgba(46, 204, 113, 0.15); color: #b0ffb0; }
+            .gpl-history-snippet {
+                font-size: 0.85em;
+                color: #ddd;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Footer/Send Button */
+            .gpl-chat-footer { padding: 10px 12px; background: var(--black); border-top: 1px solid #333; display: flex; align-items: center; gap: 8px; position: relative; }
+            .gpl-chat-send { background: none; border: none; color: var(--gold); font-size: 1.3em; cursor: pointer; transition: transform 0.2s; padding: 0 6px; }
+            .gpl-chat-send:hover { transform: scale(1.1); }
+        </style>
+
+        <div class="gpl-chat-btn" id="gplChatToggle" title="GPL Support Chat">
+            <div class="gpl-chat-greeting" id="gplChatGreeting">May I help you? 👋</div>
+            <img src="/images/team-logo.png" alt="Chat">
+        </div>
+
+        <div class="gpl-chat-window" id="gplChatWindow">
+            <div class="gpl-chat-header">
+                <div class="gpl-chat-team-info">
+                    <div class="gpl-chat-team-avatars">
+                        <img src="/images/default-avatar.png" alt="Agent">
+                        <img src="/images/team-logo.png" alt="Bot">
+                    </div>
+                    <div>
+                        <strong style="color: var(--white); display: block; font-size: 0.92em;">Support Team</strong>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span id="gplOnlineStatus" style="color: var(--green); font-size: 0.72em; display: flex; align-items: center; gap: 4px;">
+                                <span id="gplOnlineDot" style="display:inline-block; width:6px; height:6px; background:var(--green); border-radius:50%; box-shadow:0 0 6px var(--green);"></span>
+                                <span id="gplOnlineText">Online</span>
+                            </span>
+                            <span id="gplAiStatusBadge" title="Gemini AI Health Status" style="font-size: 0.68em; padding: 1px 5px; border-radius: 10px; background: rgba(46, 204, 113, 0.15); color: var(--green); border: 1px solid rgba(46, 204, 113, 0.3);">AI Online</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="gpl-header-actions">
+                    <button type="button" id="gplChatHistoryBtn" class="gpl-header-icon-btn" title="Chat History"><i class="fas fa-history"></i></button>
+                    <button type="button" id="gplChatNewBtn" class="gpl-header-icon-btn" title="Start New Conversation"><i class="fas fa-plus"></i></button>
+                    <button type="button" id="gplChatClose" class="gpl-header-icon-btn" title="Close Chat" style="font-size: 1.4em; padding: 0 6px;">&times;</button>
+                </div>
+            </div>
+            
+            <div class="gpl-chat-body" id="gplChatBody">
+                <div class="chat-bubble bubble-bot">
+                    Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?
+                </div>
+            </div>
+
+            <!-- History Drawer Component -->
+            <div class="gpl-chat-history-drawer" id="gplChatHistoryDrawer">
+                <div class="gpl-history-header">
+                    <button type="button" id="gplHistoryBackBtn" class="gpl-header-icon-btn" title="Back to conversation"><i class="fas fa-arrow-left"></i></button>
+                    <strong style="color: var(--gold); font-size: 0.9em;">Chat History</strong>
+                    <button type="button" id="gplHistoryRefreshBtn" class="gpl-header-icon-btn" title="Refresh list"><i class="fas fa-sync-alt"></i></button>
+                </div>
+                <div class="gpl-history-list" id="gplHistoryList">
+                    <div style="color: var(--silver); text-align: center; padding: 25px 15px; font-size: 0.85em;">Loading conversations...</div>
+                </div>
+                <div style="padding: 10px; background: var(--black); border-top: 1px solid #333;">
+                    <button type="button" id="gplDrawerNewChatBtn" style="width: 100%; padding: 10px; background: var(--gold); color: var(--black); border: none; border-radius: 8px; font-weight: bold; font-size: 0.85em; cursor: pointer;">
+                        <i class="fas fa-plus" style="margin-right: 6px;"></i> Start New Conversation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Emoji Picker Component -->
+            <emoji-picker class="dark" id="gplChatEmojiPicker"></emoji-picker>
+
+            <!-- Quick Reply Buttons -->
+            <div class="gpl-chat-quick-replies" id="gplChatQuickReplies">
+                <button type="button" class="quick-reply-btn">Suggest a Mod</button>
+                <button type="button" class="quick-reply-btn">Report a Bug</button>
+                <button type="button" class="quick-reply-btn">Talk to a Human</button>
+            </div>
+            
+            <form class="gpl-chat-footer" id="gplChatForm">
+                <% if (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) { %>
+                    <button type="button" class="gpl-chat-attach" id="gplChatAttachBtn" title="Attach Media"><i class="fas fa-paperclip"></i></button>
+                    <input type="file" id="gplChatMediaInput" accept="image/*,video/*" style="display: none;" multiple>
+                <% } %>
+
+                <div class="gpl-chat-input-wrapper">
+                    <input type="text" class="gpl-chat-input" id="gplChatInput" placeholder="Type a message..." autocomplete="off">
+                    <button type="button" class="gpl-chat-emoji-btn" id="gplChatEmojiBtn" title="Insert Emoji">
+                        <i class="far fa-smile"></i>
+                    </button>
+                </div>
+
+                <button type="submit" class="gpl-chat-send" title="Send message"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatBtn = document.getElementById('gplChatToggle');
+            const chatWindow = document.getElementById('gplChatWindow');
+            const chatClose = document.getElementById('gplChatClose');
+            const greeting = document.getElementById('gplChatGreeting');
+            
+            const chatBody = document.getElementById('gplChatBody');
+            const chatForm = document.getElementById('gplChatForm');
+            const chatInput = document.getElementById('gplChatInput');
+            const quickReplyContainer = document.getElementById('gplChatQuickReplies');
+            const attachBtn = document.getElementById('gplChatAttachBtn');
+            const mediaInput = document.getElementById('gplChatMediaInput');
+            const emojiBtn = document.getElementById('gplChatEmojiBtn');
+            const emojiPicker = document.getElementById('gplChatEmojiPicker');
+
+            // History & New Chat Elements
+            const historyDrawer = document.getElementById('gplChatHistoryDrawer');
+            const historyBtn = document.getElementById('gplChatHistoryBtn');
+            const historyBackBtn = document.getElementById('gplHistoryBackBtn');
+            const historyRefreshBtn = document.getElementById('gplHistoryRefreshBtn');
+            const historyListEl = document.getElementById('gplHistoryList');
+            const newChatBtn = document.getElementById('gplChatNewBtn');
+            const drawerNewChatBtn = document.getElementById('gplDrawerNewChatBtn');
+
+            // Live indicators
+            const onlineTextEl = document.getElementById('gplOnlineText');
+            const onlineDotEl = document.getElementById('gplOnlineDot');
+            const aiStatusBadge = document.getElementById('gplAiStatusBadge');
+
+            if (attachBtn && mediaInput) {
+                attachBtn.addEventListener('click', () => mediaInput.click());
+            }
+
+            // Emoji Picker Interaction
+            if (emojiBtn && emojiPicker && chatInput) {
+                emojiBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    emojiPicker.classList.toggle('active');
+                });
+
+                emojiPicker.addEventListener('emoji-click', event => {
+                    const cursorPosition = chatInput.selectionStart !== null ? chatInput.selectionStart : chatInput.value.length;
+                    const textBefore = chatInput.value.substring(0, cursorPosition);
+                    const textAfter = chatInput.value.substring(cursorPosition);
+                    chatInput.value = textBefore + event.detail.unicode + textAfter;
+                    chatInput.selectionStart = chatInput.selectionEnd = cursorPosition + event.detail.unicode.length;
+                    chatInput.focus();
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!emojiPicker.contains(event.target) && !emojiBtn.contains(event.target)) {
+                        emojiPicker.classList.remove('active');
+                    }
+                });
+            }
+
+            // 1. Randomized Greetings
+            const greetings = [
+                "May I Help You? 👋", 
+                "Looking for a specific mod? 🔍", 
+                "Found a bug? Let me help! 🛠️", 
+                "Need mod suggestions? 💡"
+            ];
+            
+            setTimeout(() => {
+                if (chatWindow && !chatWindow.classList.contains('open') && greeting) {
+                    greeting.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+                    greeting.classList.add('show');
+                    setTimeout(() => greeting.classList.remove('show'), 5000);
+                }
+            }, 3000);
+
+            // 2. Toggle Window
+            if (chatBtn && chatWindow) {
+                chatBtn.addEventListener('click', () => {
+                    chatWindow.classList.toggle('open');
+                    if (greeting) greeting.classList.remove('show');
+                    if (chatWindow.classList.contains('open') && chatInput) {
+                        chatInput.focus();
+                    }
+                });
+            }
+            if (chatClose && chatWindow) {
+                chatClose.addEventListener('click', () => {
+                    chatWindow.classList.remove('open');
+                    if (historyDrawer) historyDrawer.classList.remove('open');
+                });
+            }
+
+            // 3. Socket.IO Logic
+            if (typeof io !== 'undefined') {
+                const socket = io();
+                
+                let guestId = localStorage.getItem('gplGuestId');
+                if (!guestId) {
+                    guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('gplGuestId', guestId);
+                }
+                
+                const userId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
+                let sessionId = localStorage.getItem('gplChatSessionId');
+
+                // Device telemetry
+                const browserInfo = navigator.userAgent || '';
+                let os = "Unknown OS";
+                let browserName = "Unknown Browser";
+                if (browserInfo.indexOf("Win") !== -1) os = "Windows";
+                else if (browserInfo.indexOf("Mac") !== -1) os = "MacOS";
+                else if (browserInfo.indexOf("Android") !== -1) os = "Android";
+                else if (browserInfo.indexOf("iPhone") !== -1 || browserInfo.indexOf("iPad") !== -1) os = "iOS";
+                else if (browserInfo.indexOf("Linux") !== -1) os = "Linux";
+                
+                if (browserInfo.indexOf("Chrome") !== -1) browserName = "Chrome";
+                else if (browserInfo.indexOf("Safari") !== -1) browserName = "Safari";
+                else if (browserInfo.indexOf("Firefox") !== -1) browserName = "Firefox";
+                else if (browserInfo.indexOf("Edge") !== -1) browserName = "Edge";
+
+                const deviceInfo = { browser: browserName, os: os };
+
+                socket.emit('join_support_chat', { userId, guestId, sessionId, deviceInfo });
+
+                // Live Online Stats & AI Health Listener
+                socket.on('support_stats_update', (stats) => {
+                    if (onlineTextEl && onlineDotEl) {
+                        if (stats.agentsOnline > 0) {
+                            onlineTextEl.textContent = `${stats.agentsOnline} Agent${stats.agentsOnline > 1 ? 's' : ''} Online`;
+                            onlineDotEl.style.background = 'var(--green)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                        } else if (stats.membersOnline > 0) {
+                            onlineTextEl.textContent = `${stats.membersOnline} Online`;
+                            onlineDotEl.style.background = 'var(--green)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                        } else {
+                            onlineTextEl.textContent = 'Support Online';
+                            onlineDotEl.style.background = 'var(--green)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                        }
+                    }
+
+                    if (aiStatusBadge && stats.aiStatus) {
+                        if (stats.aiStatus.status === 'online') {
+                            aiStatusBadge.textContent = 'AI Online';
+                            aiStatusBadge.style.background = 'rgba(46, 204, 113, 0.15)';
+                            aiStatusBadge.style.color = 'var(--green)';
+                            aiStatusBadge.style.borderColor = 'rgba(46, 204, 113, 0.3)';
+                            aiStatusBadge.title = `Gemini AI Online (Latency: ${stats.aiStatus.latencyMs ? stats.aiStatus.latencyMs + 'ms' : 'Fast'})`;
+                        } else {
+                            aiStatusBadge.textContent = 'AI Offline';
+                            aiStatusBadge.style.background = 'rgba(231, 76, 60, 0.15)';
+                            aiStatusBadge.style.color = 'var(--red)';
+                            aiStatusBadge.style.borderColor = 'rgba(231, 76, 60, 0.3)';
+                            aiStatusBadge.title = stats.aiStatus.lastError ? stats.aiStatus.lastError.message : 'AI error occurred';
+                        }
+                    }
+                });
+
+                socket.on('support_chat_ready', (data) => {
+                    localStorage.setItem('gplChatSessionId', data.sessionId);
+                    sessionId = data.sessionId;
+                    
+                    if (data.history && data.history.length > 0) {
+                        chatBody.innerHTML = '';
+                        data.history.forEach(msg => appendMsg(msg.text, msg.sender, msg.senderName));
+                    } else {
+                        chatBody.innerHTML = '';
+                        appendMsg("Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?", "bot");
+                    }
+
+                    if (quickReplyContainer) {
+                        quickReplyContainer.style.display = (data.history && data.history.length > 2) ? 'none' : 'flex';
+                    }
+                });
+
+                socket.on('new_support_message', (msg) => {
+                    appendMsg(msg.text, msg.sender, msg.senderName);
+                });
+
+                // --- NEW CHAT LOGIC ---
+                function startNewChat() {
+                    localStorage.removeItem('gplChatSessionId');
+                    sessionId = null;
+                    chatBody.innerHTML = '';
+                    appendMsg("Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?", "bot");
+                    if (quickReplyContainer) quickReplyContainer.style.display = 'flex';
+                    if (historyDrawer) historyDrawer.classList.remove('open');
+                    socket.emit('join_support_chat', { userId, guestId, sessionId: null, deviceInfo, forceNew: true });
+                }
+
+                if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
+                if (drawerNewChatBtn) drawerNewChatBtn.addEventListener('click', startNewChat);
+
+                // --- HISTORY DRAWER LOGIC ---
+                function loadChatHistory() {
+                    if (historyListEl) {
+                        historyListEl.innerHTML = '<div style="color: var(--silver); text-align: center; padding: 25px 15px; font-size: 0.85em;">Loading conversations...</div>';
+                    }
+                    socket.emit('get_user_chat_history', { userId, guestId });
+                }
+
+                if (historyBtn) {
+                    historyBtn.addEventListener('click', () => {
+                        if (historyDrawer) {
+                            historyDrawer.classList.toggle('open');
+                            if (historyDrawer.classList.contains('open')) {
+                                loadChatHistory();
+                            }
+                        }
+                    });
+                }
+
+                if (historyBackBtn) {
+                    historyBackBtn.addEventListener('click', () => {
+                        if (historyDrawer) historyDrawer.classList.remove('open');
+                    });
+                }
+
+                if (historyRefreshBtn) {
+                    historyRefreshBtn.addEventListener('click', loadChatHistory);
+                }
+
+                socket.on('user_chat_history_list', (sessions) => {
+                    if (!historyListEl) return;
+                    historyListEl.innerHTML = '';
+                    
+                    if (!sessions || sessions.length === 0) {
+                        historyListEl.innerHTML = '<div style="color: var(--silver); text-align: center; padding: 30px 15px; font-size: 0.85em;">No past conversations found.</div>';
+                        return;
+                    }
+
+                    sessions.forEach(sess => {
+                        const div = document.createElement('div');
+                        div.className = `gpl-history-item ${sess._id === sessionId ? 'active' : ''}`;
+                        const d = new Date(sess.updatedAt);
+                        const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                        
+                        let badgeClass = 'bot';
+                        let badgeLabel = 'AI Bot';
+                        if (sess.status === 'waiting-for-agent') { badgeClass = 'waiting'; badgeLabel = 'Waiting'; }
+                        else if (sess.status === 'active-agent') { badgeClass = 'active'; badgeLabel = 'Agent'; }
+
+                        div.innerHTML = `
+                            <div class="gpl-history-item-top">
+                                <span style="font-size:0.75em; color:var(--silver);">${dateStr}</span>
+                                <span class="gpl-history-badge ${badgeClass}">${badgeLabel}</span>
+                            </div>
+                            <div class="gpl-history-snippet">${sess.snippet || 'Empty conversation'}</div>
+                        `;
+
+                        div.addEventListener('click', () => {
+                            localStorage.setItem('gplChatSessionId', sess._id);
+                            sessionId = sess._id;
+                            socket.emit('switch_support_chat', { sessionId: sess._id });
+                            if (historyDrawer) historyDrawer.classList.remove('open');
+                        });
+
+                        historyListEl.appendChild(div);
+                    });
+                });
+
+                if (chatForm) {
+                    chatForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const text = chatInput.value.trim();
+                        if (text && sessionId) {
+                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
+                            socket.emit('send_support_message', { sessionId, text, isPremium });
+                            chatInput.value = '';
+                        }
+                    });
+                }
+
+                // Quick Replies
+                const quickReplyBtns = document.querySelectorAll('.quick-reply-btn');
+                quickReplyBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const text = btn.textContent;
+                        if (sessionId) {
+                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
+                            socket.emit('send_support_message', { sessionId, text, isPremium });
+                            if (quickReplyContainer) {
+                                quickReplyContainer.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+
+                function appendMsg(text, sender, senderName) {
+                    const div = document.createElement('div');
+                    if (sender === 'system') {
+                        div.className = 'chat-bubble';
+                        div.style.alignSelf = 'center';
+                        div.style.background = 'transparent';
+                        div.style.color = 'var(--silver)';
+                        div.style.border = '1px dashed #555';
+                        div.style.fontSize = '0.85em';
+                        div.style.textAlign = 'center';
+                        div.style.maxWidth = '90%';
+                    } else if (sender === 'user') {
+                        div.className = 'chat-bubble bubble-user';
+                    } else if (sender === 'agent') {
+                        div.className = 'chat-bubble bubble-agent';
+                    } else {
+                        div.className = 'chat-bubble bubble-bot';
+                    }
+                    
+                    let content = '';
+                    if (senderName && (sender === 'agent' || sender === 'bot')) {
+                        content += `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${senderName}</strong>`;
+                    }
+                    content += (text || '').replace(/\n/g, '<br>');
+                    div.innerHTML = content;
+                    chatBody.appendChild(div);
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }
+            }
+        });
+        </script>
+        <!-- ================================================== -->
 
     <% } %> <!-- ✅ THIS IS THE FIX: The closing tag for showModals is safely at the very bottom -->
 

@@ -100,6 +100,30 @@ const IosCert = require('./models/iosCert');
 const VpnCache = require('./models/vpnCache');
 const License = require('./models/content/license');
 const SourceCode = require('./models/sourceCode');
+const ChatSession = require('./models/chatSession');
+const ChatSettings = require('./models/chatSettings');
+const AIKnowledge = require('./models/aiKnowledge');
+const improvmx = require('./utils/improvmx');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize Gemini Flash AI
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+const aiModel = genAI ? genAI.getGenerativeModel({ 
+    model: "gemini-3.6-flash",
+    systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
+}) : null;
+
+// AI Diagnostics & Health State
+const aiDebuggerStatus = {
+    status: process.env.GEMINI_API_KEY ? 'online' : 'offline',
+    model: 'gemini-3.6-flash',
+    configured: Boolean(process.env.GEMINI_API_KEY),
+    lastPing: null,
+    latencyMs: null,
+    lastError: null,
+    totalRequests: 0,
+    totalErrors: 0
+};
 
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
@@ -1216,6 +1240,14 @@ function ensureAdmin(req, res, next) {
         errorCode: '403',
         errorTitle: 'Access <span>Denied</span>',
         errorMessage: 'You do not have the necessary permissions to view this page.'
+    });
+}
+function ensureSupportOrAdmin(req, res, next) {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'support')) return next();
+    res.status(403).render('pages/error', {
+        errorCode: '403',
+        errorTitle: 'Access <span>Denied</span>',
+        errorMessage: 'You do not have the necessary support or admin permissions to view this page.'
     });
 }
 function redirectIfAuthenticated(req, res, next) {
@@ -4141,6 +4173,72 @@ app.get('/users/:username', async (req, res, next) => {
 
 // --- ACCOUNT MANAGEMENT ROUTES ---
 
+// ===================================
+// CUSTOM WORK EMAIL ROUTES (IMPROVMX)
+// ===================================
+
+app.post('/account/claim-custom-email', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        // Security: Only allow Premium, Distributors, and Admins to claim emails
+        if (user.role !== 'admin' && user.role !== 'distributor' && user.membership !== 'premium') {
+            return res.redirect('/profile?error=Custom emails are reserved for Premium Members and Distributors.');
+        }
+
+        if (user.customEmailAlias) {
+            return res.redirect('/profile?error=You already have a custom email address.');
+        }
+
+        // We use a sanitized version of their username as the alias
+        const alias = slugify(user.username).replace(/-/g, ''); // e.g. "GPL Master" -> "gplmaster"
+        
+        // 1. Call ImprovMX API
+        const result = await improvmx.createAlias(alias, user.email);
+
+        if (result.success) {
+            // 2. Save to database
+            user.customEmailAlias = alias;
+            await user.save();
+            return res.redirect('/profile?success=Custom email claimed successfully! All emails sent to it will now forward to your personal inbox.');
+        } else {
+            return res.redirect(`/profile?error=${encodeURIComponent(result.message)}`);
+        }
+    } catch (error) {
+        console.error("Claim email error:", error);
+        res.redirect('/profile?error=An internal error occurred.');
+    }
+});
+
+app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (!user.customEmailAlias) {
+            return res.redirect('/profile?error=You must claim your custom email first.');
+        }
+
+        // Generate a secure, random password for their SMTP access (12-char hex)
+        const smtpPassword = crypto.randomBytes(6).toString('hex'); 
+
+        // 1. Call ImprovMX API
+        const result = await improvmx.createSmtpCredential(user.customEmailAlias, smtpPassword);
+
+        if (result.success) {
+            user.hasSmtpAccess = true;
+            await user.save();
+            
+            const successMsg = `SMTP Activated! Your Password is: ${smtpPassword} (SAVE THIS NOW, it will not be shown again!)`;
+            return res.redirect(`/profile?success=${encodeURIComponent(successMsg)}`);
+        } else {
+            return res.redirect(`/profile?error=${encodeURIComponent(result.message)}`);
+        }
+    } catch (error) {
+        console.error("SMTP generation error:", error);
+        res.redirect('/profile?error=An internal error occurred.');
+    }
+});
+
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
         const { username, email, bio, dateOfBirth, country } = req.body; 
@@ -6851,6 +6949,51 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
     } catch (e) { res.status(500).send("Error."); }
 });
 
+// --- LIVE SUPPORT DASHBOARD ROUTE ---
+app.get('/admin/support', ensureAuthenticated, ensureSupportOrAdmin, async (req, res) => {
+    res.render('pages/admin/support-dashboard');
+});
+
+// --- AI DIAGNOSTICS & DEBUGGER ROUTES ---
+app.get('/api/admin/ai-status', ensureAuthenticated, ensureSupportOrAdmin, (req, res) => {
+    res.json(aiDebuggerStatus);
+});
+
+app.post('/api/admin/ai-ping', ensureAuthenticated, ensureSupportOrAdmin, async (req, res) => {
+    const start = Date.now();
+    try {
+        if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
+        const chat = aiModel.startChat();
+        const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+        const latency = Date.now() - start;
+        const responseText = result.response.text();
+        
+        aiDebuggerStatus.status = 'online';
+        aiDebuggerStatus.lastPing = new Date();
+        aiDebuggerStatus.latencyMs = latency;
+        aiDebuggerStatus.lastError = null;
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.to('support_agents').emit('ai_debug_result', { success: true, latencyMs: latency, response: responseText, status: aiDebuggerStatus });
+        }
+
+        res.json({ success: true, latencyMs: latency, response: responseText, status: aiDebuggerStatus });
+    } catch (err) {
+        const latency = Date.now() - start;
+        aiDebuggerStatus.status = 'offline';
+        aiDebuggerStatus.lastError = { message: err.message || String(err), time: new Date() };
+        aiDebuggerStatus.totalErrors++;
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to('support_agents').emit('ai_debug_result', { success: false, latencyMs: latency, error: err.message || String(err), status: aiDebuggerStatus });
+        }
+
+        res.status(500).json({ success: false, latencyMs: latency, error: err.message || String(err), status: aiDebuggerStatus });
+    }
+});
+
 app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
     const reports = await Report.find().populate('file').populate('reportingUser').sort({ status: 1, createdAt: -1 });
     res.render('pages/admin/reports', { reports });
@@ -8216,10 +8359,31 @@ const startServer = async () => {
         // ✅ CRITICAL FIX: Make Socket.IO globally accessible HERE, inside the function!
         app.set('io', io); 
 
+        // Tracking connected support members & agents
+        const connectedSupportSockets = new Set();
+        const connectedAgentSockets = new Set();
+
+        function broadcastOnlineStats() {
+            const stats = {
+                agentsOnline: connectedAgentSockets.size,
+                membersOnline: connectedSupportSockets.size,
+                aiStatus: aiDebuggerStatus
+            };
+            io.emit('support_stats_update', stats);
+        }
+
        // Socket.IO logic
         io.on('connection', (socket) => {
             console.log('A user connected to chat');
+            connectedSupportSockets.add(socket.id);
+            broadcastOnlineStats();
+
             socket.emit('chat history', recentMessages);
+            socket.emit('support_stats_update', {
+                agentsOnline: connectedAgentSockets.size,
+                membersOnline: connectedSupportSockets.size,
+                aiStatus: aiDebuggerStatus
+            });
             
             socket.on('chat message', (msg) => {
                 // --- FIXED: Sanitize chat messages with Try/Catch ---
@@ -8249,9 +8413,345 @@ const startServer = async () => {
                 }
                 io.emit('chat message', messageData);
             });
+
+            // ==========================================
+            // --- LIVE SUPPORT & GEMINI AI CHAT LOGIC ---
+            // ==========================================
+            
+            // 1. Agent Joins the Dashboard
+            socket.on('agent_join', async (data) => {
+                socket.join('support_agents');
+                connectedAgentSockets.add(socket.id);
+                broadcastOnlineStats();
+                try {
+                    const activeChats = await ChatSession.find({ status: { $in: ['waiting-for-agent', 'active-agent'] } })
+                        .populate('user', 'username email profileImageKey')
+                        .sort({ updatedAt: -1 });
+                    
+                    socket.emit('load_active_chats', activeChats);
+                    socket.emit('ai_status_update', aiDebuggerStatus);
+                } catch (err) {
+                    console.error("Error loading active chats:", err);
+                }
+            });
+
+            // AI Debugger Ping Test from Agent
+            socket.on('test_ai_connection', async () => {
+                const start = Date.now();
+                try {
+                    if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
+                    const chat = aiModel.startChat();
+                    const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+                    const latency = Date.now() - start;
+                    const responseText = result.response.text();
+                    
+                    aiDebuggerStatus.status = 'online';
+                    aiDebuggerStatus.lastPing = new Date();
+                    aiDebuggerStatus.latencyMs = latency;
+                    aiDebuggerStatus.lastError = null;
+                    
+                    io.to('support_agents').emit('ai_debug_result', {
+                        success: true,
+                        latencyMs: latency,
+                        response: responseText,
+                        status: aiDebuggerStatus
+                    });
+                    broadcastOnlineStats();
+                } catch (err) {
+                    const latency = Date.now() - start;
+                    aiDebuggerStatus.status = 'offline';
+                    aiDebuggerStatus.lastError = {
+                        message: err.message || String(err),
+                        time: new Date()
+                    };
+                    aiDebuggerStatus.totalErrors++;
+                    
+                    io.to('support_agents').emit('ai_debug_result', {
+                        success: false,
+                        latencyMs: latency,
+                        error: err.message || String(err),
+                        status: aiDebuggerStatus
+                    });
+                    broadcastOnlineStats();
+                }
+            });
+
+            // 2. User Joins Chat (With New Chat Support)
+            socket.on('join_support_chat', async (data) => {
+                try {
+                    let expiresAt = new Date(Date.now() + (data.userId ? 24 * 60 : 24) * 60 * 60 * 1000);
+                    let session = null;
+
+                    // If forceNew is not requested, try finding by ID
+                    if (!data.forceNew && data.sessionId) {
+                        session = await ChatSession.findById(data.sessionId);
+                    }
+                    
+                    if (!session) {
+                        session = new ChatSession({
+                            user: data.userId || null,
+                            guestId: data.guestId,
+                            expiresAt: expiresAt,
+                            adminNotes: data.deviceInfo ? `Device: ${data.deviceInfo.browser || 'Unknown'} on ${data.deviceInfo.os || 'Unknown'}` : ''
+                        });
+                        await session.save();
+                    }
+
+                    socket.join(`support_${session._id}`);
+                    socket.emit('support_chat_ready', { 
+                        sessionId: session._id, 
+                        history: session.messages,
+                        status: session.status,
+                        isNew: !data.sessionId || data.forceNew
+                    });
+                } catch (err) {
+                    console.error("join_support_chat error:", err);
+                }
+            });
+
+            // 3. User Requests Chat History List
+            socket.on('get_user_chat_history', async (data) => {
+                try {
+                    const conditions = [];
+                    if (data.userId) conditions.push({ user: data.userId });
+                    if (data.guestId) conditions.push({ guestId: data.guestId });
+                    
+                    if (conditions.length === 0) {
+                        return socket.emit('user_chat_history_list', []);
+                    }
+
+                    const sessions = await ChatSession.find({ $or: conditions })
+                        .sort({ updatedAt: -1 })
+                        .limit(20)
+                        .lean();
+
+                    const historyList = sessions.map(s => {
+                        const msgs = s.messages || [];
+                        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].text : 'Empty conversation';
+                        return {
+                            _id: s._id,
+                            status: s.status,
+                            snippet: lastMsg && lastMsg.length > 50 ? lastMsg.substring(0, 50) + '...' : (lastMsg || 'No message'),
+                            messageCount: msgs.length,
+                            updatedAt: s.updatedAt || s.createdAt
+                        };
+                    });
+
+                    socket.emit('user_chat_history_list', historyList);
+                } catch (err) {
+                    console.error("get_user_chat_history error:", err);
+                    socket.emit('user_chat_history_list', []);
+                }
+            });
+
+            // 4. Switch to a past conversation
+            socket.on('switch_support_chat', async (data) => {
+                try {
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (session) {
+                        socket.join(`support_${session._id}`);
+                        socket.emit('support_chat_ready', { 
+                            sessionId: session._id, 
+                            history: session.messages,
+                            status: session.status,
+                            isNew: false
+                        });
+                    }
+                } catch (err) {
+                    console.error("switch_support_chat error:", err);
+                }
+            });
+
+            // 5. User Sends Message
+            socket.on('send_support_message', async (data) => {
+                try {
+                    const { sessionId, text } = data;
+                    if (!sessionId || !text) return;
+                    
+                    const session = await ChatSession.findById(sessionId).populate('user');
+                    if (!session) return;
+
+                    const userMsg = { sender: 'user', text: text };
+                    session.messages.push(userMsg);
+                    await session.save();
+                    
+                    io.to(`support_${session._id}`).emit('new_support_message', userMsg);
+
+                    // --- HUMAN HANDOFF / GUEST EMAIL CAPTURE ---
+                    if (session.status === 'waiting-for-agent' && !session.user && !session.guestEmail) {
+                        if (/^\S+@\S+\.\S+$/.test(text.trim())) {
+                            session.guestEmail = text.trim();
+                            await session.save();
+                            const sysMsg = { sender: 'system', text: "Thank you! Your email has been saved. Our support team will reply shortly." };
+                            session.messages.push(sysMsg);
+                            await session.save();
+                            io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
+                            io.to('support_agents').emit('agent_alert_new_chat', session);
+                            return;
+                        } else {
+                            const promptMsg = { sender: 'system', text: "Please provide a valid email address so we can reach you if disconnected." };
+                            session.messages.push(promptMsg);
+                            await session.save();
+                            io.to(`support_${session._id}`).emit('new_support_message', promptMsg);
+                            return;
+                        }
+                    }
+
+                    // If agent is active or already waiting, alert the agents room
+                    if (session.status === 'active-agent' || session.status === 'waiting-for-agent') {
+                        io.to('support_agents').emit('agent_receive_message', { sessionId: session._id, message: userMsg });
+                        return; 
+                    }
+
+                    // --- AI PROCESSING (Status is 'bot') ---
+                    if (session.status === 'bot') {
+                        const triggerWords = ['human', 'agent', 'support', 'real person', 'help me', 'admin', 'talk to a human'];
+                        if (triggerWords.some(word => text.toLowerCase().includes(word))) {
+                            session.status = 'waiting-for-agent';
+                            let handoffMsg = "Transferring you to our human support team. Please hold on!";
+                            if (!session.user && !session.guestEmail) {
+                                handoffMsg += "<br><br>Since you are not logged in, please <b>type your email address below</b> so we can reach you if disconnected.";
+                            } else {
+                                handoffMsg += "<br><br>An agent will join as soon as possible.";
+                            }
+                            
+                            const sysMsg = { sender: 'system', text: handoffMsg };
+                            session.messages.push(sysMsg);
+                            await session.save();
+                            io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
+                            
+                            io.to('support_agents').emit('agent_alert_new_chat', session);
+                            return;
+                        }
+
+                        // AI Response via Gemini Flash
+                        try {
+                            if (!aiModel) {
+                                throw new Error("Gemini AI is not configured or missing API key.");
+                            }
+
+                            // Fetch active knowledge base for customized prompt context
+                            const trainingData = await AIKnowledge.find({ isActive: true });
+                            let customContext = "";
+                            if (trainingData.length > 0) {
+                                customContext = "Use this knowledge base if applicable:\n";
+                                trainingData.forEach(item => {
+                                    customContext += `Q: ${item.keywords} | A: ${item.response}\n`;
+                                });
+                                customContext += "\n";
+                            }
+
+                            const history = session.messages
+                                .filter(m => m.sender === 'user' || m.sender === 'bot')
+                                .slice(-10) // Keep last 10 messages for context
+                                .map(m => ({
+                                    role: m.sender === 'user' ? 'user' : 'model',
+                                    parts: [{ text: m.text || '' }]
+                                }));
+
+                            // Remove last message from history since sendMessage will pass it
+                            if (history.length > 0 && history[history.length - 1].role === 'user') {
+                                history.pop();
+                            }
+
+                            // Ensure history begins with a user turn (Gemini API requirement)
+                            while (history.length > 0 && history[0].role !== 'user') {
+                                history.shift();
+                            }
+
+                            aiDebuggerStatus.totalRequests++;
+                            const aiStartTime = Date.now();
+
+                            const chat = aiModel.startChat({ history: history });
+                            const promptText = customContext ? `${customContext}User asks: ${text}` : text;
+                            const result = await chat.sendMessage(promptText);
+                            const botText = result.response.text();
+
+                            aiDebuggerStatus.latencyMs = Date.now() - aiStartTime;
+                            aiDebuggerStatus.status = 'online';
+                            aiDebuggerStatus.lastPing = new Date();
+                            aiDebuggerStatus.lastError = null;
+
+                            const botMsg = { sender: 'bot', senderName: 'GPL Assistant', text: botText };
+                            session.messages.push(botMsg);
+                            session.expiresAt = new Date(Date.now() + (session.user ? 60 * 24 : 24) * 60 * 60 * 1000);
+                            await session.save();
+
+                            io.to(`support_${session._id}`).emit('new_support_message', botMsg);
+                            io.to('support_agents').emit('ai_status_update', aiDebuggerStatus);
+                            broadcastOnlineStats();
+
+                        } catch (error) {
+                            console.error("Gemini Error:", error.message || error);
+                            
+                            aiDebuggerStatus.status = 'offline';
+                            aiDebuggerStatus.totalErrors++;
+                            aiDebuggerStatus.lastError = {
+                                message: error.message || String(error),
+                                time: new Date()
+                            };
+
+                            const errMsg = { sender: 'system', text: "AI is currently resting. Type 'human' to speak with our support team." };
+                            session.messages.push(errMsg);
+                            await session.save();
+                            io.to(`support_${session._id}`).emit('new_support_message', errMsg);
+                            io.to('support_agents').emit('ai_status_update', aiDebuggerStatus);
+                            broadcastOnlineStats();
+                        }
+                    }
+                } catch (err) {
+                    console.error("send_support_message error:", err);
+                }
+            });
+
+            // 6. Agent Claims Chat
+            socket.on('agent_claim_chat', async (data) => {
+                try {
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (session) {
+                        session.status = 'active-agent';
+                        session.assignedTo = data.agentId;
+                        
+                        socket.join(`support_${session._id}`);
+                        
+                        const sysMsg = { sender: 'system', text: `Agent ${data.agentName || 'Support'} has joined the chat.` };
+                        session.messages.push(sysMsg);
+                        await session.save();
+                        
+                        io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
+                        io.to('support_agents').emit('agent_chat_updated', session);
+                    }
+                } catch (err) {
+                    console.error("agent_claim_chat error:", err);
+                }
+            });
+
+            // 7. Agent Sends Message
+            socket.on('agent_send_message', async (data) => {
+                try {
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (session) {
+                        const agentMsg = { 
+                            sender: 'agent', 
+                            senderName: data.agentName || 'Support Agent', 
+                            text: data.text 
+                        };
+                        session.messages.push(agentMsg);
+                        await session.save();
+                        
+                        io.to(`support_${session._id}`).emit('new_support_message', agentMsg);
+                        io.to('support_agents').emit('agent_receive_message', { sessionId: session._id, message: agentMsg });
+                    }
+                } catch (err) {
+                    console.error("agent_send_message error:", err);
+                }
+            });
             
             socket.on('disconnect', () => {
                 console.log('User disconnected from chat');
+                connectedSupportSockets.delete(socket.id);
+                connectedAgentSockets.delete(socket.id);
+                broadcastOnlineStats();
             });
         });
 

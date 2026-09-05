@@ -380,6 +380,69 @@ GLOBAL|Earth
                     <button type="submit" class="submit-button" style="margin-top: 30px;">Save Profile Changes</button>
                 </form>
             </section>
+
+            <!-- ======== NEW: CUSTOM WORK EMAIL SECTION ======== -->
+            <% if (user.role === 'admin' || user.role === 'distributor' || user.membership === 'premium') { %>
+            <section class="form-section" style="border-top: 4px solid var(--blue);">
+                <h2 style="color: var(--blue); border-bottom-color: var(--blue);">
+                    <i class="fas fa-envelope-open-text" style="margin-right: 10px;"></i> Professional Email
+                </h2>
+                
+                <% if (!user.customEmailAlias) { %>
+                    <!-- User hasn't claimed it yet -->
+                    <p style="color: var(--silver); margin-bottom: 20px;">
+                        As a premium member or distributor, you can claim a free <strong>@gplmods.webredirect.org</strong> email address! Emails sent here will instantly forward to your personal inbox.
+                    </p>
+                    
+                    <% const previewAlias = (typeof slugify !== 'undefined' ? slugify(user.username) : user.username.toLowerCase().replace(/[^a-z0-9]/g, '')).replace(/-/g, ''); %>
+                    <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px dashed var(--blue); text-align: center; margin-bottom: 20px;">
+                        <span style="font-size: 1.2em; color: var(--white);">Your proposed email:</span><br>
+                        <strong style="font-size: 1.5em; color: var(--gold);"><%= previewAlias %>@gplmods.webredirect.org</strong>
+                    </div>
+
+                    <form action="/account/claim-custom-email" method="POST">
+                        <button type="submit" class="submit-button" style="background: var(--blue); border-color: var(--blue); box-shadow: 0 0 15px rgba(33, 150, 243, 0.4);">
+                            Claim My Email Address
+                        </button>
+                    </form>
+
+                <% } else { %>
+                    <!-- User HAS claimed it -->
+                    <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: var(--green); font-weight: bold; font-size: 1.2em;">
+                            <i class="fas fa-check-circle"></i> <%= user.customEmailAlias %>@gplmods.webredirect.org
+                        </p>
+                        <p style="margin: 5px 0 0 0; color: var(--silver); font-size: 0.9em;">
+                            Currently forwarding all mail to: <strong><%= user.email %></strong>
+                        </p>
+                    </div>
+
+                    <!-- SMTP Send Section -->
+                    <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px solid #333;">
+                        <h4 style="color: var(--white); margin-top: 0;">Send Emails from this Address</h4>
+                        
+                        <% if (!user.hasSmtpAccess) { %>
+                            <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Generate SMTP credentials to plug into Gmail, Outlook, or Apple Mail so you can write and send emails appearing from your new address!</p>
+                            <form action="/account/generate-smtp" method="POST">
+                                <button type="submit" class="btn btn-secondary" style="border-color: var(--gold); color: var(--gold); width: 100%;">
+                                    Generate SMTP Password
+                                </button>
+                            </form>
+                        <% } else { %>
+                            <p style="color: var(--gold); font-size: 0.9em; font-weight: bold;">✔ SMTP Access Enabled</p>
+                            <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 10px;">Configure your email client (Gmail/Outlook) "Send As" settings using these details:</p>
+                            <ul style="color: var(--white); font-family: monospace; font-size: 0.9em; background: #111; padding: 15px; border-radius: 6px; list-style: none;">
+                                <li style="margin-bottom: 5px;"><strong style="color: var(--silver);">SMTP Server:</strong> smtp.improvmx.com</li>
+                                <li style="margin-bottom: 5px;"><strong style="color: var(--silver);">Port:</strong> 587 (TLS/STARTTLS)</li>
+                                <li style="margin-bottom: 5px;"><strong style="color: var(--silver);">Username:</strong> <%= user.customEmailAlias %>@gplmods.webredirect.org</li>
+                                <li><strong style="color: var(--silver);">Password:</strong> <em>(The password generated when you clicked the button)</em></li>
+                            </ul>
+                        <% } %>
+                    </div>
+                <% } %>
+            </section>
+            <% } %>
+
             <!-- Change Password Form -->
             <section class="form-section">
                 <% if (user.password) { %>
