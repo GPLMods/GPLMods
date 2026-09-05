@@ -1,37 +1,42 @@
 <%- include('../partials/header') %>
 
-<div class="container">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-
-    <!-- Page Title: Will display the developer's name dynamically -->
-    <h1 style="margin-bottom: 2rem; border-bottom: 1px solid var(--light-grey); padding-bottom: 1rem;">
-        More Mods by: <span style="color: var(--gold);"><%= developerName %></span>
-    </h1>
-    
-    <!-- Results Grid -->
-    <section class="results-grid">
-         <!-- Use mod-grid for the perfect vertical/horizontal responsive layout -->
-         <div class="mod-grid">
-        
-            <% if (files && files.length > 0) { %>
-                <% files.forEach(file => { %>
-                    <!-- Use the partial! Show uploader info so users know who posted it. -->
-                    <%- include('../partials/mod-card', { file: file, showUploaderInfo: true }) %>
-                <% }) %>
-            <% } else { %>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <h2>No other mods found for <%= developerName %>.</h2>
-                </div>
-            <% } %>
-    
+    <div class="container">
+        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+        <div style="margin-bottom: 20px;">
+            <a href="javascript:history.back()"
+                style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+                onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+            </a>
         </div>
-    </section>
-</div>
-<%- include('../partials/popunder-ads') %>
-<%- include('../partials/footer') %>
+        <!-- ======================================== -->
+
+        <!-- Page Title: Will display the developer's name dynamically -->
+        <h1 style="margin-bottom: 2rem; border-bottom: 1px solid var(--light-grey); padding-bottom: 1rem;">
+            More Mods by: <span style="color: var(--gold);">
+                <%= developerName %>
+            </span>
+        </h1>
+
+        <!-- Results Grid -->
+        <section class="results-grid">
+            <!-- Use mod-grid for the perfect vertical/horizontal responsive layout -->
+            <div class="mod-grid">
+
+                <% if (files && files.length> 0) { %>
+                    <% files.forEach(file=> { %>
+                        <!-- Use the partial! Show uploader info so users know who posted it. -->
+                        <%- include('../partials/mod-card', { file: file, showUploaderInfo: true }) %>
+                            <% }) %>
+                                <% } else { %>
+                                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                                        <h2>No other mods found for <%= developerName %>.</h2>
+                                    </div>
+                                    <% } %>
+
+            </div>
+        </section>
+    </div>
+    <%- include('../partials/video-ad-modal') %>
+        <%- include('../partials/popunder-ads') %>
+            <%- include('../partials/footer') %>

@@ -1,52 +1,143 @@
 <%- include('../partials/header') %>
 
-<style>
-    .source-hub-container { max-width: 1100px; margin: 4rem auto; padding: 0 20px; }
-    .source-hub-header { margin-bottom: 30px; }
-    .source-hub-header h1 { color: var(--white); margin-bottom: 8px; }
-    .source-hub-header p { color: var(--silver); line-height: 1.6; }
-    .source-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-    .source-card { background: var(--dark-gray); border: 1px solid #333; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; min-height: 210px; }
-    .source-card h2 { color: var(--gold); font-size: 1.3em; margin-bottom: 10px; }
-    .source-card p { color: var(--silver); line-height: 1.5; flex: 1; }
-    .source-meta { color: #888; font-family: monospace; font-size: 0.9em; margin: 12px 0 18px; overflow-wrap: anywhere; }
-    .source-badge { display: inline-block; color: #2ecc71; border: 1px solid #2ecc71; border-radius: 20px; padding: 3px 9px; font-size: 0.75em; text-transform: uppercase; margin-bottom: 14px; width: fit-content; }
-    .source-badge.private { color: var(--gold); border-color: var(--gold); }
-    .source-card-link { background: var(--gold); color: var(--black); border-radius: 8px; padding: 10px 14px; text-align: center; text-decoration: none; font-weight: bold; }
-    .source-empty { background: var(--dark-gray); border: 1px solid #333; border-radius: 10px; padding: 50px 20px; text-align: center; color: var(--silver); }
-    .source-empty i { color: #555; font-size: 3em; margin-bottom: 15px; }
-</style>
+    <style>
+        .source-hub-container {
+            max-width: 1100px;
+            margin: 4rem auto;
+            padding: 0 20px;
+        }
 
-<main class="container">
-    <div class="source-hub-container">
-        <header class="source-hub-header">
-            <h1><i class="fab fa-github" aria-hidden="true"></i> Source Code Hub</h1>
-            <p>Browse the available GPL Mods repositories and download published source releases.</p>
-        </header>
+        .source-hub-header {
+            margin-bottom: 30px;
+        }
 
-        <% if (sources.length) { %>
-            <div class="source-grid">
-                <% sources.forEach(source => { %>
-                    <article class="source-card">
-                        <span class="source-badge <%= source.isPrivate ? 'private' : '' %>">
-                            <i class="fas <%= source.isPrivate ? 'fa-lock' : 'fa-globe' %>" aria-hidden="true"></i>
-                            <%= source.isPrivate ? 'Assigned access' : 'Public' %>
-                        </span>
-                        <h2><%= source.title %></h2>
-                        <p><%= source.description || 'Source code and release archives.' %></p>
-                        <div class="source-meta"><%= source.githubOwner %>/<%= source.githubRepo %></div>
-                        <a class="source-card-link" href="/source/<%= encodeURIComponent(source.slug) %>">View releases</a>
-                    </article>
-                <% }) %>
-            </div>
-        <% } else { %>
-            <div class="source-empty">
-                <i class="fas fa-code-branch" aria-hidden="true"></i>
-                <h2>No source repositories available</h2>
-                <p>Published repositories will appear here when they are enabled.</p>
-            </div>
-        <% } %>
-    </div>
-</main>
+        .source-hub-header h1 {
+            color: var(--white);
+            margin-bottom: 8px;
+        }
 
-<%- include('../partials/footer') %>
+        .source-hub-header p {
+            color: var(--silver);
+            line-height: 1.6;
+        }
+
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .source-card {
+            background: var(--dark-gray);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            min-height: 210px;
+        }
+
+        .source-card h2 {
+            color: var(--gold);
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .source-card p {
+            color: var(--silver);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .source-meta {
+            color: #888;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin: 12px 0 18px;
+            overflow-wrap: anywhere;
+        }
+
+        .source-badge {
+            display: inline-block;
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+            border-radius: 20px;
+            padding: 3px 9px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            width: fit-content;
+        }
+
+        .source-badge.private {
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+
+        .source-card-link {
+            background: var(--gold);
+            color: var(--black);
+            border-radius: 8px;
+            padding: 10px 14px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .source-empty {
+            background: var(--dark-gray);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 50px 20px;
+            text-align: center;
+            color: var(--silver);
+        }
+
+        .source-empty i {
+            color: #555;
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+    </style>
+
+    <main class="container">
+        <div class="source-hub-container">
+            <header class="source-hub-header">
+                <h1><i class="fab fa-github" aria-hidden="true"></i> Source Code Hub</h1>
+                <p>Browse the available GPL Mods repositories and download published source releases.</p>
+            </header>
+
+            <% if (sources.length) { %>
+                <div class="source-grid">
+                    <% sources.forEach(source=> { %>
+                        <article class="source-card">
+                            <span class="source-badge <%= source.isPrivate ? 'private' : '' %>">
+                                <i class="fas <%= source.isPrivate ? 'fa-lock' : 'fa-globe' %>" aria-hidden="true"></i>
+                                <%= source.isPrivate ? 'Assigned access' : 'Public' %>
+                            </span>
+                            <h2>
+                                <%= source.title %>
+                            </h2>
+                            <p>
+                                <%= source.description || 'Source code and release archives.' %>
+                            </p>
+                            <div class="source-meta">
+                                <%= source.githubOwner %>/<%= source.githubRepo %>
+                            </div>
+                            <a class="source-card-link" href="/source/<%= encodeURIComponent(source.slug) %>">View
+                                releases</a>
+                        </article>
+                        <% }) %>
+                </div>
+                <% } else { %>
+                    <div class="source-empty">
+                        <i class="fas fa-code-branch" aria-hidden="true"></i>
+                        <h2>No source repositories available</h2>
+                        <p>Published repositories will appear here when they are enabled.</p>
+                    </div>
+                    <% } %>
+        </div>
+    </main>
+    <%- include('../partials/popunder-ads') %>
+        <%- include('../partials/video-ad-modal') %>
+            <%- include('../partials/footer') %>

@@ -1,243 +1,445 @@
 <%- include('../partials/header') %>
 
-<style>
-    .lb-header { text-align: center; padding: 60px 20px 20px; }
-    .lb-header h1 { font-size: 3em; color: var(--white); }
-    .lb-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-    
-    .lb-controls { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-bottom: 20px; }
-    
-    .lb-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; background: var(--dark-gray); padding: 10px; border-radius: 30px; border: 1px solid #333; }
-    .lb-tab { padding: 10px 25px; border-radius: 20px; color: var(--silver); text-decoration: none; font-weight: bold; transition: all 0.3s ease; }
-    .lb-tab:hover { color: var(--white); }
-    .lb-tab.active { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
-
-    .time-tabs { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-    .time-tab { padding: 5px 15px; border-radius: 15px; border: 1px solid #444; color: var(--silver); text-decoration: none; font-size: 0.9em; transition: all 0.2s; }
-    .time-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); }
-
-    /* --- NEW: Stats Summary Bar --- */
-    .lb-stats-summary {
-        text-align: center;
-        margin-bottom: 30px;
-        padding: 15px;
-        background: rgba(255, 215, 0, 0.05);
-        border: 1px solid rgba(255, 215, 0, 0.2);
-        border-radius: 10px;
-        color: var(--silver);
-        font-weight: 600;
-        display: inline-block;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .lb-stats-summary strong {
-        color: var(--gold);
-        font-size: 1.2em;
-    }
-
-    .lb-container { max-width: 900px; margin: 0 auto 60px auto; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; padding: 20px; }
-    
-    .lb-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #222; transition: background 0.3s; border-radius: 10px; text-decoration: none; color: inherit; }
-    .lb-item:hover { background: #222; }
-    .lb-item:last-child { border-bottom: none; }
-
-    .lb-rank { width: 60px; display: flex; justify-content: center; align-items: center; margin-right: 15px; font-weight: bold; color: #555; }
-    
-    /* Avatar Base Styles */
-    .lb-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 20px; border: 2px solid #444; }
-    
-    /* Top 10 Colored Borders */
-    .rank-1 .lb-avatar { border-color: #FFD700; box-shadow: 0 0 15px var(--glow-gold); } /* Gold */
-    .rank-2 .lb-avatar { border-color: #C0C0C0; box-shadow: 0 0 15px rgba(192,192,192,0.4); } /* Silver */
-    .rank-3 .lb-avatar { border-color: #CD7F32; box-shadow: 0 0 15px rgba(205,127,50,0.4); } /* Bronze */
-    
-    /* Ranks 4-10: Custom Gradients/Colors based on rank */
-    .rank-4 .lb-avatar { border-color: #ff5252; } /* Red */
-    .rank-5 .lb-avatar { border-color: #e040fb; } /* Purple */
-    .rank-6 .lb-avatar { border-color: #448aff; } /* Blue */
-    .rank-7 .lb-avatar { border-color: #69f0ae; } /* Green */
-    .rank-8 .lb-avatar { border-color: #ffab40; } /* Orange */
-    .rank-9 .lb-avatar { border-color: #18ffff; } /* Cyan */
-    .rank-10 .lb-avatar { border-color: #b2ff59; } /* Lime */
-
-    /* --- FIX: Truncating Long Names --- */
-    .lb-info { 
-        flex-grow: 1; 
-        display: flex; 
-        flex-direction: column; 
-        /* Crucial for truncation to work in flexbox */
-        min-width: 0; 
-        margin-right: 15px; 
-    }
-    .lb-name-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        /* Keep badges from being crushed by long names */
-        width: 100%;
-    }
-    .lb-name { 
-        font-size: 1.2em; 
-        font-weight: bold; 
-        color: var(--white); 
-        /* The Truncation Magic */
-        white-space: nowrap; 
-        overflow: hidden; 
-        text-overflow: ellipsis; 
-        /* Allow it to shrink if needed, but not grow infinitely */
-        flex-shrink: 1;
-    }
-    .lb-subtext { 
-        font-size: 0.85em; 
-        color: var(--silver); 
-        white-space: nowrap; 
-        overflow: hidden; 
-        text-overflow: ellipsis; 
-    }
-    
-    .lb-score-container {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        /* Prevent score from shrinking so it's always readable */
-        flex-shrink: 0;
-    }
-    
-    .lb-score { font-size: 1.3em; font-weight: bold; color: var(--gold); }
-    .lb-score-label { font-size: 0.7em; color: var(--silver); text-transform: uppercase; }
-
-    .role-badge { 
-        font-size: 0.7em; 
-        padding: 2px 8px; 
-        border-radius: 10px; 
-        background: #333; 
-        color: var(--silver); 
-        text-transform: uppercase; 
-        /* Prevent badge from shrinking */
-        flex-shrink: 0;
-    }
-    .role-admin { background: var(--red); color: white; border: 1px solid var(--red); }
-    .role-distributor { background: var(--blue); color: white; border: 1px solid var(--blue); }
-
-    /* Mobile Adjustments */
-    @media (max-width: 480px) {
-        .lb-rank { width: 40px; margin-right: 10px; }
-        .lb-avatar { width: 40px; height: 40px; margin-right: 10px; }
-        .lb-name { font-size: 1.1em; }
-        .lb-score { font-size: 1.1em; }
-        .role-badge { padding: 2px 5px; font-size: 0.6em; }
-        
-        /* Make Lottie animations slightly smaller on mobile to fit */
-        .lb-rank lottie-player {
-            width: 45px !important;
-            height: 45px !important;
+    <style>
+        .lb-header {
+            text-align: center;
+            padding: 60px 20px 20px;
         }
-    }
-</style>
 
-<main>
-    <div class="lb-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-        <h1>Global <span>Leaderboards</span></h1>
-        <p style="color: var(--silver);">The top 100 creators, files, and supporters in the GPL Community.</p>
-    </div>
+        .lb-header h1 {
+            font-size: 3em;
+            color: var(--white);
+        }
 
-    <div class="container" style="text-align: center;">
-        <div class="lb-controls">
-            <!-- Category Tabs -->
-            <div class="lb-tabs">
-                <a href="/leaderboard?category=uploaders&timeframe=<%= currentTimeframe %>" class="lb-tab <%= currentCategory === 'uploaders' ? 'active' : '' %>">Top Uploaders</a>
-                <a href="/leaderboard?category=downloaded&timeframe=<%= currentTimeframe %>" class="lb-tab <%= currentCategory === 'downloaded' ? 'active' : '' %>">Most Downloaded</a>
-                <a href="/leaderboard?category=followed" class="lb-tab <%= currentCategory === 'followed' ? 'active' : '' %>">Most Followed</a>
-                <a href="/leaderboard?category=donators&timeframe=<%= currentTimeframe %>" class="lb-tab <%= currentCategory === 'donators' ? 'active' : '' %>">Top Donators</a>
+        .lb-header h1 span {
+            color: var(--gold);
+            text-shadow: 0 0 15px var(--glow-gold);
+        }
+
+        .lb-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .lb-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            background: var(--dark-gray);
+            padding: 10px;
+            border-radius: 30px;
+            border: 1px solid #333;
+        }
+
+        .lb-tab {
+            padding: 10px 25px;
+            border-radius: 20px;
+            color: var(--silver);
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .lb-tab:hover {
+            color: var(--white);
+        }
+
+        .lb-tab.active {
+            background: var(--gold);
+            color: var(--black);
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
+
+        .time-tabs {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .time-tab {
+            padding: 5px 15px;
+            border-radius: 15px;
+            border: 1px solid #444;
+            color: var(--silver);
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .time-tab.active {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        /* --- NEW: Stats Summary Bar --- */
+        .lb-stats-summary {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 10px;
+            color: var(--silver);
+            font-weight: 600;
+            display: inline-block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .lb-stats-summary strong {
+            color: var(--gold);
+            font-size: 1.2em;
+        }
+
+        .lb-container {
+            max-width: 900px;
+            margin: 0 auto 60px auto;
+            background: var(--dark-gray);
+            border-radius: 15px;
+            border: 1px solid #333;
+            padding: 20px;
+        }
+
+        .lb-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #222;
+            transition: background 0.3s;
+            border-radius: 10px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .lb-item:hover {
+            background: #222;
+        }
+
+        .lb-item:last-child {
+            border-bottom: none;
+        }
+
+        .lb-rank {
+            width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Avatar Base Styles */
+        .lb-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+            border: 2px solid #444;
+        }
+
+        /* Top 10 Colored Borders */
+        .rank-1 .lb-avatar {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
+
+        /* Gold */
+        .rank-2 .lb-avatar {
+            border-color: #C0C0C0;
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.4);
+        }
+
+        /* Silver */
+        .rank-3 .lb-avatar {
+            border-color: #CD7F32;
+            box-shadow: 0 0 15px rgba(205, 127, 50, 0.4);
+        }
+
+        /* Bronze */
+
+        /* Ranks 4-10: Custom Gradients/Colors based on rank */
+        .rank-4 .lb-avatar {
+            border-color: #ff5252;
+        }
+
+        /* Red */
+        .rank-5 .lb-avatar {
+            border-color: #e040fb;
+        }
+
+        /* Purple */
+        .rank-6 .lb-avatar {
+            border-color: #448aff;
+        }
+
+        /* Blue */
+        .rank-7 .lb-avatar {
+            border-color: #69f0ae;
+        }
+
+        /* Green */
+        .rank-8 .lb-avatar {
+            border-color: #ffab40;
+        }
+
+        /* Orange */
+        .rank-9 .lb-avatar {
+            border-color: #18ffff;
+        }
+
+        /* Cyan */
+        .rank-10 .lb-avatar {
+            border-color: #b2ff59;
+        }
+
+        /* Lime */
+
+        /* --- FIX: Truncating Long Names --- */
+        .lb-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            /* Crucial for truncation to work in flexbox */
+            min-width: 0;
+            margin-right: 15px;
+        }
+
+        .lb-name-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Keep badges from being crushed by long names */
+            width: 100%;
+        }
+
+        .lb-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--white);
+            /* The Truncation Magic */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Allow it to shrink if needed, but not grow infinitely */
+            flex-shrink: 1;
+        }
+
+        .lb-subtext {
+            font-size: 0.85em;
+            color: var(--silver);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lb-score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            /* Prevent score from shrinking so it's always readable */
+            flex-shrink: 0;
+        }
+
+        .lb-score {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        .lb-score-label {
+            font-size: 0.7em;
+            color: var(--silver);
+            text-transform: uppercase;
+        }
+
+        .role-badge {
+            font-size: 0.7em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #333;
+            color: var(--silver);
+            text-transform: uppercase;
+            /* Prevent badge from shrinking */
+            flex-shrink: 0;
+        }
+
+        .role-admin {
+            background: var(--red);
+            color: white;
+            border: 1px solid var(--red);
+        }
+
+        .role-distributor {
+            background: var(--blue);
+            color: white;
+            border: 1px solid var(--blue);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .lb-rank {
+                width: 40px;
+                margin-right: 10px;
+            }
+
+            .lb-avatar {
+                width: 40px;
+                height: 40px;
+                margin-right: 10px;
+            }
+
+            .lb-name {
+                font-size: 1.1em;
+            }
+
+            .lb-score {
+                font-size: 1.1em;
+            }
+
+            .role-badge {
+                padding: 2px 5px;
+                font-size: 0.6em;
+            }
+
+            /* Make Lottie animations slightly smaller on mobile to fit */
+            .lb-rank lottie-player {
+                width: 45px !important;
+                height: 45px !important;
+            }
+        }
+    </style>
+
+    <main>
+        <div class="lb-header">
+            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+            <div style="margin-bottom: 20px;">
+                <a href="javascript:history.back()"
+                    style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+                    onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+                </a>
             </div>
-
-            <!-- Timeframe Tabs (Hidden for 'Followed' as it's an absolute metric) -->
-            <% if (currentCategory !== 'followed') { %>
-            <div class="time-tabs">
-                <a href="/leaderboard?category=<%= currentCategory %>&timeframe=daily" class="time-tab <%= currentTimeframe === 'daily' ? 'active' : '' %>">Daily</a>
-                <a href="/leaderboard?category=<%= currentCategory %>&timeframe=weekly" class="time-tab <%= currentTimeframe === 'weekly' ? 'active' : '' %>">Weekly</a>
-                <a href="/leaderboard?category=<%= currentCategory %>&timeframe=monthly" class="time-tab <%= currentTimeframe === 'monthly' ? 'active' : '' %>">Monthly</a>
-                <a href="/leaderboard?category=<%= currentCategory %>&timeframe=all-time" class="time-tab <%= currentTimeframe === 'all-time' ? 'active' : '' %>">All-Time</a>
-            </div>
-            <% } %>
+            <!-- ======================================== -->
+            <h1>Global <span>Leaderboards</span></h1>
+            <p style="color: var(--silver);">The top 100 creators, files, and supporters in the GPL Community.</p>
         </div>
 
-        <!-- NEW: Total Count Summary -->
-        <div class="lb-stats-summary">
-            Out of <strong><%= totalCount.toLocaleString() %></strong> <%= totalLabel %>
-        </div>
-
-        <div class="lb-container" style="text-align: left;">
-            <% if (results && results.length > 0) { %>
-                <% results.forEach((item, index) => { %>
-                    <% const rank = index + 1; %>
-                    
-                    <!-- Link to user profile or mod page -->
-                    <% const itemLink = item.link ? item.link : `/users/${slugify(item.name)}`; %>
-
-                    <a href="<%= itemLink %>" class="lb-item rank-<%= rank %>">
-                        
-                        <!-- ======== LOTTIE ANIMATED RANK BADGES ======== -->
-                        <div class="lb-rank">
-                            <% if(rank <= 10) { %>
-                                <!-- Ensure you have rank-1.json through rank-10.json in your folder -->
-                                <lottie-player 
-                                    src="<%= cdnUrl %>/animations/rank-<%= rank %>.json" 
-                                    background="transparent" 
-                                    speed="1" 
-                                    style="width: 55px; height: 55px; transform: scale(1.3);" 
-                                    loop 
-                                    autoplay>
-                                </lottie-player>
-                            <% } else { %>
-                                <!-- Fallback text for ranks 11 to 100 -->
-                                <span style="font-size: 1.2em; color: var(--silver);">#<%= rank %></span>
-                            <% } %>
-                        </div>
-                        <!-- ============================================= -->
-                        
-                        <img src="<%= item.avatar %>" alt="Avatar" class="lb-avatar">
-                        
-                        <div class="lb-info">
-                            <div class="lb-name-wrapper">
-                                <!-- The name is now truncatable -->
-                                <span class="lb-name" title="<%= item.name %>"><%= item.name %></span>
-                                
-                                <% if (item.role && item.role !== 'member') { %>
-                                    <span class="role-badge role-<%= item.role %>"><%= item.role %></span>
-                                <% } %>
-                            </div>
-                            <% if (item.subtext) { %><span class="lb-subtext" title="<%= item.subtext %>"><%= item.subtext %></span><% } %>
-                        </div>
-                        
-                        <div class="lb-score-container">
-                            <div class="lb-score">
-                                <%= item.score %>
-                            </div>
-                            <% if (!item.isCurrency) { %>
-                                <div class="lb-score-label">
-                                    <%= currentCategory === 'uploaders' ? 'Mods' : (currentCategory === 'downloaded' ? 'DLs' : 'Followers') %>
-                                </div>
-                            <% } %>
-                        </div>
-                    </a>
-                <% }) %>
-            <% } else { %>
-                <div style="text-align: center; padding: 40px; color: var(--silver);">
-                    <i class="fas fa-trophy" style="font-size: 3em; color: #444; margin-bottom: 15px; display: block;"></i>
-                    <h3>No data available for this timeframe.</h3>
-                    <p>Be the first to claim a spot on the leaderboard!</p>
+        <div class="container" style="text-align: center;">
+            <div class="lb-controls">
+                <!-- Category Tabs -->
+                <div class="lb-tabs">
+                    <a href="/leaderboard?category=uploaders&timeframe=<%= currentTimeframe %>"
+                        class="lb-tab <%= currentCategory === 'uploaders' ? 'active' : '' %>">Top Uploaders</a>
+                    <a href="/leaderboard?category=downloaded&timeframe=<%= currentTimeframe %>"
+                        class="lb-tab <%= currentCategory === 'downloaded' ? 'active' : '' %>">Most Downloaded</a>
+                    <a href="/leaderboard?category=followed"
+                        class="lb-tab <%= currentCategory === 'followed' ? 'active' : '' %>">Most Followed</a>
+                    <a href="/leaderboard?category=donators&timeframe=<%= currentTimeframe %>"
+                        class="lb-tab <%= currentCategory === 'donators' ? 'active' : '' %>">Top Donators</a>
                 </div>
-            <% } %>
-        </div>
-    </div>
-</main>
 
-<%- include('../partials/footer') %>
+                <!-- Timeframe Tabs (Hidden for 'Followed' as it's an absolute metric) -->
+                <% if (currentCategory !=='followed' ) { %>
+                    <div class="time-tabs">
+                        <a href="/leaderboard?category=<%= currentCategory %>&timeframe=daily"
+                            class="time-tab <%= currentTimeframe === 'daily' ? 'active' : '' %>">Daily</a>
+                        <a href="/leaderboard?category=<%= currentCategory %>&timeframe=weekly"
+                            class="time-tab <%= currentTimeframe === 'weekly' ? 'active' : '' %>">Weekly</a>
+                        <a href="/leaderboard?category=<%= currentCategory %>&timeframe=monthly"
+                            class="time-tab <%= currentTimeframe === 'monthly' ? 'active' : '' %>">Monthly</a>
+                        <a href="/leaderboard?category=<%= currentCategory %>&timeframe=all-time"
+                            class="time-tab <%= currentTimeframe === 'all-time' ? 'active' : '' %>">All-Time</a>
+                    </div>
+                    <% } %>
+            </div>
+
+            <!-- NEW: Total Count Summary -->
+            <div class="lb-stats-summary">
+                Out of <strong>
+                    <%= totalCount.toLocaleString() %>
+                </strong>
+                <%= totalLabel %>
+            </div>
+
+            <div class="lb-container" style="text-align: left;">
+                <% if (results && results.length> 0) { %>
+                    <% results.forEach((item, index)=> { %>
+                        <% const rank=index + 1; %>
+
+                            <!-- Link to user profile or mod page -->
+                            <% const itemLink=item.link ? item.link : `/users/${slugify(item.name)}`; %>
+
+                                <a href="<%= itemLink %>" class="lb-item rank-<%= rank %>">
+
+                                    <!-- ======== LOTTIE ANIMATED RANK BADGES ======== -->
+                                    <div class="lb-rank">
+                                        <% if(rank <=10) { %>
+                                            <!-- Ensure you have rank-1.json through rank-10.json in your folder -->
+                                            <lottie-player src="<%= cdnUrl %>/animations/rank-<%= rank %>.json"
+                                                background="transparent" speed="1"
+                                                style="width: 55px; height: 55px; transform: scale(1.3);" loop autoplay>
+                                            </lottie-player>
+                                            <% } else { %>
+                                                <!-- Fallback text for ranks 11 to 100 -->
+                                                <span style="font-size: 1.2em; color: var(--silver);">#<%= rank %>
+                                                        </span>
+                                                <% } %>
+                                    </div>
+                                    <!-- ============================================= -->
+
+                                    <img src="<%= item.avatar %>" alt="Avatar" class="lb-avatar">
+
+                                    <div class="lb-info">
+                                        <div class="lb-name-wrapper">
+                                            <!-- The name is now truncatable -->
+                                            <span class="lb-name" title="<%= item.name %>">
+                                                <%= item.name %>
+                                            </span>
+
+                                            <% if (item.role && item.role !=='member' ) { %>
+                                                <span class="role-badge role-<%= item.role %>">
+                                                    <%= item.role %>
+                                                </span>
+                                                <% } %>
+                                        </div>
+                                        <% if (item.subtext) { %><span class="lb-subtext" title="<%= item.subtext %>">
+                                                <%= item.subtext %>
+                                            </span>
+                                            <% } %>
+                                    </div>
+
+                                    <div class="lb-score-container">
+                                        <div class="lb-score">
+                                            <%= item.score %>
+                                        </div>
+                                        <% if (!item.isCurrency) { %>
+                                            <div class="lb-score-label">
+                                                <%= currentCategory==='uploaders' ? 'Mods' :
+                                                    (currentCategory==='downloaded' ? 'DLs' : 'Followers' ) %>
+                                            </div>
+                                            <% } %>
+                                    </div>
+                                </a>
+                                <% }) %>
+                                    <% } else { %>
+                                        <div style="text-align: center; padding: 40px; color: var(--silver);">
+                                            <i class="fas fa-trophy"
+                                                style="font-size: 3em; color: #444; margin-bottom: 15px; display: block;"></i>
+                                            <h3>No data available for this timeframe.</h3>
+                                            <p>Be the first to claim a spot on the leaderboard!</p>
+                                        </div>
+                                        <% } %>
+            </div>
+        </div>
+    </main>
+
+    <%- include('../partials/video-ad-modal') %>
+        <%- include('../partials/footer') %>

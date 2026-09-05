@@ -1,283 +1,297 @@
-<%-include('../partials/header')%>
+<%-include('.. /partials/header')%>
 
-<!-- ✅ CDN BYPASS SCRIPT -->
-<!-- If Cloudflare serves this cached guest page to a logged-in user, 
+    <!-- ✅ CDN BYPASS SCRIPT -->
+    <!-- If Cloudflare serves this cached guest page to a logged-in user, 
      this script instantly detects their login cookie and redirects them to /home -->
-<script>
-    // Check if the 'is_logged_in' cookie exists
-    if (document.cookie.split(';').some((item) => item.trim().startsWith('is_logged_in='))) {
-        // Only redirect if we are strictly on the root path '/' to prevent infinite loops
-        if (window.location.pathname === '/') {
-            window.location.replace('/home' + window.location.search); 
+    <script>
+        // Check if the 'is_logged_in' cookie exists
+        if (document.cookie.split(';').some((item) => item.trim().startsWith('is_logged_in='))) {
+            // Only redirect if we are strictly on the root path '/' to prevent infinite loops
+            if (window.location.pathname === '/') {
+                window.location.replace('/home' + window.location.search);
+            }
         }
-    }
-</script>
-<section class="hero"></section>
+    </script>
+    <section class="hero"></section>
 
-<!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
-<% if (typeof editorsChoiceMods !== 'undefined' && editorsChoiceMods.length > 0) { %>
-    <section class="featured-section">
-        <!-- We use the icon of the first featured mod as the blurred background -->
-        <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
-        
-        <div class="container" style="position: relative;">
-            <div class="featured-carousel" id="featured-carousel">
-                <% editorsChoiceMods.forEach((mod, index) => { %>
-                    <div class="featured-card" id="featured-slide-<%= index %>">
-                        <div class="featured-icon-wrapper">
-                            <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
-                        </div>
-                        <div class="featured-content">
-                            <h2>Editor's Choice: <span><%= mod.name %></span></h2>
-                            
-                            <!-- Smart Description Logic -->
-                            <% 
-                                let desc = mod.editorsChoiceDescription;
-                                if (!desc || desc.trim() === '') {
-                                    desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification.";
-                                }
-                            %>
-                            <p><%- desc %></p>
-                            
-                            <div class="featured-buttons">
-                                <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
-                                
-                                <% if (typeof user !== 'undefined' && user && user.whitelist) { %>
-                                    <% 
-                                        // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
-                                        const isWhitelisted = user.whitelist.some(w => 
-                                            w.toString() === mod._id.toString() || 
-                                            (w._id && w._id.toString() === mod._id.toString())
-                                        ); 
-                                    %>
-                                    
-                                    <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
-                                        <input type="hidden" name="redirectUrl" value="back">
-                                        <% if (isWhitelisted) { %>
-                                            <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
-                                                <i class="fas fa-heart-broken"></i> Remove Wishlist
-                                            </button>
-                                        <% } else { %>
-                                            <button type="submit" class="featured-button btn-secondary">
-                                                <i class="fas fa-heart"></i> Add Wishlist
-                                            </button>
-                                        <% } %>
-                                    </form>
-                                <% } else { %>
-                                    <a href="/login" class="featured-button btn-secondary">
-                                        <i class="fas fa-heart"></i> Login to Wishlist
-                                    </a>
-                                <% } %>
+    <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
+    <% if (typeof editorsChoiceMods !=='undefined' && editorsChoiceMods.length> 0) { %>
+        <section class="featured-section">
+            <!-- We use the icon of the first featured mod as the blurred background -->
+            <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
+
+            <div class="container" style="position: relative;">
+                <div class="featured-carousel" id="featured-carousel">
+                    <% editorsChoiceMods.forEach((mod, index)=> { %>
+                        <div class="featured-card" id="featured-slide-<%= index %>">
+                            <div class="featured-icon-wrapper">
+                                <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                            </div>
+                            <div class="featured-content">
+                                <h2>Editor's Choice: <span>
+                                        <%= mod.name %>
+                                    </span></h2>
+
+                                <!-- Smart Description Logic -->
+                                <% let desc=mod.editorsChoiceDescription; if (!desc || desc.trim()==='' ) {
+                                    desc=mod.modDescription || mod.officialDescription
+                                    || "An excellent, highly-rated modification." ; } %>
+                                    <p><%- desc %></p>
+
+                                    <div class="featured-buttons">
+                                        <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>"
+                                            class="featured-button btn-primary">Know More</a>
+
+                                        <% if (typeof user !=='undefined' && user && user.whitelist) { %>
+                                            <% // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
+                                                const isWhitelisted=user.whitelist.some(w=>
+                                                w.toString() === mod._id.toString() ||
+                                                (w._id && w._id.toString() === mod._id.toString())
+                                                );
+                                                %>
+
+                                                <form action="/files/<%= mod._id %>/whitelist" method="POST"
+                                                    style="margin: 0;">
+                                                    <input type="hidden" name="redirectUrl" value="back">
+                                                    <% if (isWhitelisted) { %>
+                                                        <button type="submit" class="featured-button btn-secondary"
+                                                            style="color: var(--red); border-color: var(--red);">
+                                                            <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                                        </button>
+                                                        <% } else { %>
+                                                            <button type="submit" class="featured-button btn-secondary">
+                                                                <i class="fas fa-heart"></i> Add Wishlist
+                                                            </button>
+                                                            <% } %>
+                                                </form>
+                                                <% } else { %>
+                                                    <a href="/login" class="featured-button btn-secondary">
+                                                        <i class="fas fa-heart"></i> Login to Wishlist
+                                                    </a>
+                                                    <% } %>
+                                    </div>
                             </div>
                         </div>
-                    </div>
-                <% }) %>
-            </div>
-            
-            <!-- Carousel Dots (Only show if more than 1 item) -->
-            <% if (editorsChoiceMods.length > 1) { %>
-                <div class="carousel-dots">
-                    <% editorsChoiceMods.forEach((_, index) => { %>
-                        <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollToSlide(<%= index %>)"></div>
-                    <% }) %>
+                        <% }) %>
                 </div>
-            <% } %>
-        </div>
-    </section>
-<% } %>
-<!-- ============================================== -->
 
-<div class="container" id="mods-container">
-<!-- ======== MAIN CATAGORY TAB ======== -->
-    <div class="tabs-container">
-        <nav class="tabs-nav" id="main-tabs-nav">
-            <div class="tab-highlight" id="main-tab-highlight"></div>
-            <button class="tab-button active" data-tab="android">Android</button>
-            <button class="tab-button" data-tab="ios">iOS</button>
-            <button class="tab-button" data-tab="wordpress">WordPress</button>
-            <button class="tab-button" data-tab="windows">Windows</button>
-        </nav>
-    </div>
-    
-    <!-- ======== ADD THIS NEW SUB-TABS BLOCK ======== -->
-    <!-- iOS Sub-Tabs (Hidden by default) -->
-    <div class="tabs-container sub-tabs-container" id="ios-sub-tabs-container" style="display: none; margin-top: -15px; margin-bottom: 25px;">
-        <nav class="tabs-nav" id="ios-tabs-nav" style="background-color: #111;">
-            <div class="tab-highlight" id="ios-tab-highlight"></div>
-            <button class="tab-button active" data-tab="ios-jailed">Jailed (IPA)</button>
-            <button class="tab-button" data-tab="ios-jailbroken">Jailbroken (DEB)</button>
-        </nav>
-    </div>
-    
-    <% 
-        const hasAnyMods = typeof filesByCategory !== 'undefined' && filesByCategory && Object.keys(filesByCategory).some(category => {
-            const sections = filesByCategory[category] || {};
-            return Object.keys(sections).some(section => Array.isArray(sections[section]) && sections[section].length > 0);
-        });
-    %>
-
-    <% if (hasAnyMods) { %>
-        <!-- Loop through each category provided from the backend -->
-        <% Object.keys(filesByCategory).forEach(category => { %>
-            <div id="<%= category %>-mods" class="tab-content <%= category === 'android' ? 'active' : '' %>">
-                
-                <!-- Loop through each sub-section for the category -->
-                <% Object.keys(filesByCategory[category]).forEach(section => { %>
-                    <section class="mod-section">
-                        <div class="section-header">
-                            <h2 class="section-title"><%= section.replace('-', ' ') %></h2>
-                            <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
-                        </div>
-                        
-                        <!-- The Horizontal Glide Container -->
-                        <div class="mod-carousel">
-                            <!-- Loop through the files in this section -->
-                            <% filesByCategory[category][section].forEach(file => { %>
-                                <%- include('../partials/mod-card', { file: file }) %>
-                            <% }) %> <!-- Closes the files loop -->
-                        </div>
-                    </section>
-                <% }) %> <!-- Closes the section loop -->
-
+                <!-- Carousel Dots (Only show if more than 1 item) -->
+                <% if (editorsChoiceMods.length> 1) { %>
+                    <div class="carousel-dots">
+                        <% editorsChoiceMods.forEach((_, index)=> { %>
+                            <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollToSlide(<%= index %>)">
+                            </div>
+                            <% }) %>
+                    </div>
+                    <% } %>
             </div>
-        <% }) %> <!-- Closes the category loop -->
-    <% } else { %>
-        <!-- This block will display if filesByCategory is empty or not defined -->
-        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-            <i class="fas fa-box-open" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
-            <h2 style="color: var(--silver); margin-bottom: 10px;">No Mods Found</h2>
-            <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">It looks like there aren't any mods available right now. Check back soon or be the first to contribute!</p>
-            <a href="/upload" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Upload a Mod</a>
-        </div>
-    <% } %>
+        </section>
+        <% } %>
+            <!-- ============================================== -->
 
-    <section class="upload-section">
-        <h2>Have a Mod to Share?</h2>
-        <p>Contribute to GPL Mods by sharing and uploading your mods.</p>
-        <a href="/upload" class="upload-button">Upload Your Mod</a>
-    </section>
-</div>
-<!-- ✅ FIX: Click-to-Reveal Logic for Mod Cards -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const modCards = document.querySelectorAll('.mod-card');
-        
-        modCards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                // If the user is clicking the actual buttons inside the overlay, let it happen naturally
-                if (e.target.closest('.download-overlay') || e.target.closest('a.full-card-link')) {
-                    return;
-                }
-                
-                // Close any other open overlays first
-                modCards.forEach(c => {
-                    if (c !== this) c.classList.remove('active-overlay');
+            <div class="container" id="mods-container">
+                <!-- ======== MAIN CATAGORY TAB ======== -->
+                <div class="tabs-container">
+                    <nav class="tabs-nav" id="main-tabs-nav">
+                        <div class="tab-highlight" id="main-tab-highlight"></div>
+                        <button class="tab-button active" data-tab="android">Android</button>
+                        <button class="tab-button" data-tab="ios">iOS</button>
+                        <button class="tab-button" data-tab="wordpress">WordPress</button>
+                        <button class="tab-button" data-tab="windows">Windows</button>
+                    </nav>
+                </div>
+
+                <!-- ======== ADD THIS NEW SUB-TABS BLOCK ======== -->
+                <!-- iOS Sub-Tabs (Hidden by default) -->
+                <div class="tabs-container sub-tabs-container" id="ios-sub-tabs-container"
+                    style="display: none; margin-top: -15px; margin-bottom: 25px;">
+                    <nav class="tabs-nav" id="ios-tabs-nav" style="background-color: #111;">
+                        <div class="tab-highlight" id="ios-tab-highlight"></div>
+                        <button class="tab-button active" data-tab="ios-jailed">Jailed (IPA)</button>
+                        <button class="tab-button" data-tab="ios-jailbroken">Jailbroken (DEB)</button>
+                    </nav>
+                </div>
+
+                <% const hasAnyMods=typeof filesByCategory !=='undefined' && filesByCategory &&
+                    Object.keys(filesByCategory).some(category=> {
+                    const sections = filesByCategory[category] || {};
+                    return Object.keys(sections).some(section => Array.isArray(sections[section]) &&
+                    sections[section].length > 0);
+                    });
+                    %>
+
+                    <% if (hasAnyMods) { %>
+                        <!-- Loop through each category provided from the backend -->
+                        <% Object.keys(filesByCategory).forEach(category=> { %>
+                            <div id="<%= category %>-mods"
+                                class="tab-content <%= category === 'android' ? 'active' : '' %>">
+
+                                <!-- Loop through each sub-section for the category -->
+                                <% Object.keys(filesByCategory[category]).forEach(section=> { %>
+                                    <section class="mod-section">
+                                        <div class="section-header">
+                                            <h2 class="section-title">
+                                                <%= section.replace('-', ' ' ) %>
+                                            </h2>
+                                            <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
+                                        </div>
+
+                                        <!-- The Horizontal Glide Container -->
+                                        <div class="mod-carousel">
+                                            <!-- Loop through the files in this section -->
+                                            <% filesByCategory[category][section].forEach(file=> { %>
+                                                <%- include('../partials/mod-card', { file: file }) %>
+                                                    <% }) %> <!-- Closes the files loop -->
+                                        </div>
+                                    </section>
+                                    <% }) %> <!-- Closes the section loop -->
+
+                            </div>
+                            <% }) %> <!-- Closes the category loop -->
+                                <% } else { %>
+                                    <!-- This block will display if filesByCategory is empty or not defined -->
+                                    <div
+                                        style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-box-open"
+                                            style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                                        <h2 style="color: var(--silver); margin-bottom: 10px;">No Mods Found</h2>
+                                        <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">It looks like
+                                            there aren't any mods available right now. Check back soon or be the first
+                                            to contribute!</p>
+                                        <a href="/upload" class="btn"
+                                            style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Upload
+                                            a Mod</a>
+                                    </div>
+                                    <% } %>
+
+                                        <section class="upload-section">
+                                            <h2>Have a Mod to Share?</h2>
+                                            <p>Contribute to GPL Mods by sharing and uploading your mods.</p>
+                                            <a href="/upload" class="upload-button">Upload Your Mod</a>
+                                        </section>
+            </div>
+            <!-- ✅ FIX: Click-to-Reveal Logic for Mod Cards -->
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const modCards = document.querySelectorAll('.mod-card');
+
+                    modCards.forEach(card => {
+                        card.addEventListener('click', function (e) {
+                            // If the user is clicking the actual buttons inside the overlay, let it happen naturally
+                            if (e.target.closest('.download-overlay') || e.target.closest('a.full-card-link')) {
+                                return;
+                            }
+
+                            // Close any other open overlays first
+                            modCards.forEach(c => {
+                                if (c !== this) c.classList.remove('active-overlay');
+                            });
+
+                            // Toggle the overlay on the clicked card
+                            this.classList.toggle('active-overlay');
+                        });
+                    });
+
+                    // Close overlays if the user clicks anywhere outside of a mod card
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.closest('.mod-card')) {
+                            modCards.forEach(c => c.classList.remove('active-overlay'));
+                        }
+                    });
                 });
+            </script>
+            <!-- ======== EDITOR'S CHOICE CAROUSEL SCRIPT ======== -->
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const carousel = document.getElementById('featured-carousel');
+                    if (!carousel) return;
 
-                // Toggle the overlay on the clicked card
-                this.classList.toggle('active-overlay');
-            });
-        });
+                    const slides = carousel.querySelectorAll('.featured-card');
+                    const dots = document.querySelectorAll('.carousel-dots .dot');
 
-        // Close overlays if the user clicks anywhere outside of a mod card
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.mod-card')) {
-                modCards.forEach(c => c.classList.remove('active-overlay'));
-            }
-        });
-    });
-</script>
-<!-- ======== EDITOR'S CHOICE CAROUSEL SCRIPT ======== -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const carousel = document.getElementById('featured-carousel');
-        if (!carousel) return;
+                    // If there's 1 or 0 slides, we don't need animation or dots
+                    if (slides.length <= 1) return;
 
-        const slides = carousel.querySelectorAll('.featured-card');
-        const dots = document.querySelectorAll('.carousel-dots .dot');
-        
-        // If there's 1 or 0 slides, we don't need animation or dots
-        if (slides.length <= 1) return;
+                    let currentIndex = 0;
+                    let autoPlayInterval;
+                    const delay = 4000; // 4 seconds between auto-scrolls
 
-        let currentIndex = 0;
-        let autoPlayInterval;
-        const delay = 4000; // 4 seconds between auto-scrolls
+                    // 1. Function to visually update the active dot
+                    function updateDots(index) {
+                        dots.forEach(d => d.classList.remove('active'));
+                        if (dots[index]) dots[index].classList.add('active');
+                    }
 
-        // 1. Function to visually update the active dot
-        function updateDots(index) {
-            dots.forEach(d => d.classList.remove('active'));
-            if(dots[index]) dots[index].classList.add('active');
-        }
+                    // 2. Function to scroll the container to a specific slide
+                    function scrollToCurrentSlide() {
+                        const slide = document.getElementById(`featured-slide-${currentIndex}`);
+                        if (slide) {
+                            carousel.scrollTo({
+                                left: slide.offsetLeft,
+                                behavior: 'smooth'
+                            });
+                            updateDots(currentIndex);
+                        }
+                    }
 
-        // 2. Function to scroll the container to a specific slide
-        function scrollToCurrentSlide() {
-            const slide = document.getElementById(`featured-slide-${currentIndex}`);
-            if (slide) {
-                carousel.scrollTo({
-                    left: slide.offsetLeft,
-                    behavior: 'smooth'
+                    // 3. Logic to move to the next slide (loops back to start)
+                    function nextSlide() {
+                        currentIndex++;
+                        if (currentIndex >= slides.length) {
+                            currentIndex = 0; // Loop back to the first slide
+                        }
+                        scrollToCurrentSlide();
+                    }
+
+                    // 4. Auto-Play Controls
+                    function startAutoPlay() {
+                        autoPlayInterval = setInterval(nextSlide, delay);
+                    }
+
+                    function stopAutoPlay() {
+                        clearInterval(autoPlayInterval);
+                    }
+
+                    function resetAutoPlay() {
+                        stopAutoPlay();
+                        startAutoPlay();
+                    }
+
+                    // 5. MAGIC FIX: Detect Manual Swipes using IntersectionObserver
+                    // This watches the screen and updates the dot automatically when a user swipes!
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                // Find out which slide just came into view
+                                const index = Array.from(slides).indexOf(entry.target);
+                                currentIndex = index;
+                                updateDots(index);
+                            }
+                        });
+                    }, {
+                        root: carousel,
+                        threshold: 0.6 // Trigger when 60% of the slide is visible
+                    });
+
+                    slides.forEach(slide => observer.observe(slide));
+
+                    // 6. User Experience: Pause auto-play if they are hovering or touching the card
+                    carousel.addEventListener('mouseenter', stopAutoPlay);
+                    carousel.addEventListener('mouseleave', startAutoPlay);
+                    carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
+                    carousel.addEventListener('touchend', startAutoPlay, { passive: true });
+
+                    // 7. Expose the manual click function for the dots
+                    window.scrollToSlide = function (index) {
+                        currentIndex = index;
+                        scrollToCurrentSlide();
+                        resetAutoPlay(); // Reset the timer so it doesn't double-jump
+                    };
+
+                    // Start the engine!
+                    startAutoPlay();
                 });
-                updateDots(currentIndex);
-            }
-        }
-
-        // 3. Logic to move to the next slide (loops back to start)
-        function nextSlide() {
-            currentIndex++;
-            if (currentIndex >= slides.length) {
-                currentIndex = 0; // Loop back to the first slide
-            }
-            scrollToCurrentSlide();
-        }
-
-        // 4. Auto-Play Controls
-        function startAutoPlay() {
-            autoPlayInterval = setInterval(nextSlide, delay);
-        }
-
-        function stopAutoPlay() {
-            clearInterval(autoPlayInterval);
-        }
-
-        function resetAutoPlay() {
-            stopAutoPlay();
-            startAutoPlay();
-        }
-
-        // 5. MAGIC FIX: Detect Manual Swipes using IntersectionObserver
-        // This watches the screen and updates the dot automatically when a user swipes!
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Find out which slide just came into view
-                    const index = Array.from(slides).indexOf(entry.target);
-                    currentIndex = index;
-                    updateDots(index);
-                }
-            });
-        }, {
-            root: carousel,
-            threshold: 0.6 // Trigger when 60% of the slide is visible
-        });
-
-        slides.forEach(slide => observer.observe(slide));
-
-        // 6. User Experience: Pause auto-play if they are hovering or touching the card
-        carousel.addEventListener('mouseenter', stopAutoPlay);
-        carousel.addEventListener('mouseleave', startAutoPlay);
-        carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
-        carousel.addEventListener('touchend', startAutoPlay, { passive: true });
-
-        // 7. Expose the manual click function for the dots
-        window.scrollToSlide = function(index) {
-            currentIndex = index;
-            scrollToCurrentSlide();
-            resetAutoPlay(); // Reset the timer so it doesn't double-jump
-        };
-
-        // Start the engine!
-        startAutoPlay();
-    });
-</script>
-<%- include('../partials/popunder-ads') %>
-<%-include('../partials/footer')%>
+            </script>
+            <%- include('../partials/video-ad-modal') %>
+                <%- include('../partials/popunder-ads') %>
+                    <%-include('.. /partials/footer')%>

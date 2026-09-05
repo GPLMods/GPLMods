@@ -1,313 +1,415 @@
 <%- include('../partials/header') %>
 
-<style>
-    .parts-page-container {
-        max-width: 900px;
-        margin: 4rem auto;
-    }
-    
-    /* Header Section */
-    .game-header {
-        display: flex;
-        align-items: center;
-        gap: 30px;
-        background-color: var(--dark-gray);
-        padding: 30px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-        border: 1px solid #333;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .game-icon {
-        width: 120px;
-        height: 120px;
-        border-radius: 15px;
-        object-fit: cover;
-        border: 2px solid var(--gold);
-        box-shadow: 0 0 15px var(--glow-gold);
-    }
-    .game-info h1 { color: var(--white); font-size: 2.2em; margin-bottom: 5px; }
-    .game-info p { color: var(--silver); margin: 0; font-size: 1.1em; }
-    .game-info .developer { color: var(--gold); font-weight: bold; }
+    <style>
+        .parts-page-container {
+            max-width: 900px;
+            margin: 4rem auto;
+        }
 
-    /* The Links Section */
-    .download-links-section {
-        background-color: var(--black);
-        padding: 30px;
-        border-radius: 15px;
-        border: 1px solid var(--gold);
-        margin-bottom: 30px;
-    }
-    .download-links-section h2 { color: var(--gold); margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-    
-    .parts-list {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-    .part-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: var(--dark-gray);
-        padding: 15px 20px;
-        border-radius: 10px;
-        border: 1px solid #333;
-        transition: all 0.2s ease;
-    }
-    .part-item:hover {
-        border-color: var(--silver);
-        background-color: #222;
-    }
-    .part-name {
-        color: var(--white);
-        font-size: 1.2em;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .part-name i { color: var(--silver); }
-    
-    .part-btn {
-        background-color: var(--gold);
-        color: var(--black);
-        padding: 10px 25px;
-        border-radius: 25px;
-        text-decoration: none;
-        font-weight: bold;
-        transition: all 0.2s ease;
-        box-shadow: 0 0 10px var(--glow-gold);
-    }
-    .part-btn:hover {
-        transform: scale(1.05);
-        background-color: #fff;
-    }
+        /* Header Section */
+        .game-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            background-color: var(--dark-gray);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
 
-    /* Instructions Section */
-    .instructions-section {
-        background-color: var(--dark-gray);
-        padding: 30px;
-        border-radius: 15px;
-        border: 1px solid #333;
-    }
-    .instructions-section h3 { color: var(--white); margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-    .instructions-content { color: var(--silver); line-height: 1.6; }
-    
-    /* Ensure rich text from admin panel looks good */
-    .instructions-content p { margin-bottom: 15px; }
-    .instructions-content ul, .instructions-content ol { margin-bottom: 15px; padding-left: 20px; }
-    .instructions-content strong { color: var(--gold); }
+        .game-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            object-fit: cover;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 15px var(--glow-gold);
+        }
 
-    @media (max-width: 768px) {
-        .game-header { flex-direction: column; text-align: center; }
-        .part-item { flex-direction: column; gap: 15px; text-align: center; }
-        .part-btn { width: 100%; }
-    }
-</style>
+        .game-info h1 {
+            color: var(--white);
+            font-size: 2.2em;
+            margin-bottom: 5px;
+        }
 
-<main class="container">
-    <div class="parts-page-container">
-        
-        <!-- ======== DYNAMIC GO BACK BUTTON (Replaced hardcoded link) ======== -->
-        <div style="margin-bottom: 20px;">
-            <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-            </a>
-        </div>
-        <!-- ================================================================== -->
+        .game-info p {
+            color: var(--silver);
+            margin: 0;
+            font-size: 1.1em;
+        }
 
+        .game-info .developer {
+            color: var(--gold);
+            font-weight: bold;
+        }
 
-        <!-- Header -->
-        <div class="game-header">
-            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="game-icon">
-            <div class="game-info">
-                <h1><%= file.name %></h1>
-                <p>Version: <%= file.version %> | Developer: <span class="developer"><%=slugify(file.developer) %></span></p>
-                <p style="margin-top: 10px; font-size: 0.9em;">Total Parts: <%= file.downloadParts.length %></p>
+        /* The Links Section */
+        .download-links-section {
+            background-color: var(--black);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid var(--gold);
+            margin-bottom: 30px;
+        }
+
+        .download-links-section h2 {
+            color: var(--gold);
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .parts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .part-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--dark-gray);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            transition: all 0.2s ease;
+        }
+
+        .part-item:hover {
+            border-color: var(--silver);
+            background-color: #222;
+        }
+
+        .part-name {
+            color: var(--white);
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .part-name i {
+            color: var(--silver);
+        }
+
+        .part-btn {
+            background-color: var(--gold);
+            color: var(--black);
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+
+        .part-btn:hover {
+            transform: scale(1.05);
+            background-color: #fff;
+        }
+
+        /* Instructions Section */
+        .instructions-section {
+            background-color: var(--dark-gray);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+
+        .instructions-section h3 {
+            color: var(--white);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .instructions-content {
+            color: var(--silver);
+            line-height: 1.6;
+        }
+
+        /* Ensure rich text from admin panel looks good */
+        .instructions-content p {
+            margin-bottom: 15px;
+        }
+
+        .instructions-content ul,
+        .instructions-content ol {
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+
+        .instructions-content strong {
+            color: var(--gold);
+        }
+
+        @media (max-width: 768px) {
+            .game-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .part-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .part-btn {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <main class="container">
+        <div class="parts-page-container">
+
+            <!-- ======== DYNAMIC GO BACK BUTTON (Replaced hardcoded link) ======== -->
+            <div style="margin-bottom: 20px;">
+                <a href="javascript:history.back()"
+                    style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+                    onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+                </a>
             </div>
-        </div>
+            <!-- ================================================================== -->
 
-       <!-- Links List -->
-        <div class="download-links-section">
-            <h2>Download Links</h2>
-        <!-- Links List -->
-        <div class="download-links-section">
-            <h2>Download Links</h2>
-            <div class="parts-list">
-                <% file.downloadParts.forEach((part, index) => { %>
-                    
-                    <% 
-                        // --- DYNAMIC AD & EXTERNAL LINK LOGIC FOR PARTS ---
-                        let rawPartUrl = part.partUrl;
-                        let isPartAdSupported = false;
-                        
-                        const isExternalLink = rawPartUrl && (rawPartUrl.startsWith('http://') || rawPartUrl.startsWith('https://'));
 
-                        if (showAds) {
-                            if (part.customAdLink) {
-                                rawPartUrl = part.customAdLink;
-                                isPartAdSupported = true;
-                            } else if (linkvertiseEnabled && !isUploaderDistributor) {
-                                rawPartUrl = generateAdLink(part.partUrl);
-                                isPartAdSupported = true;
-                            }
-                        }
-
-                        let finalPartUrl = rawPartUrl;
-                        if (isPartAdSupported || isExternalLink) {
-                            finalPartUrl = `/leave?url=${encodeURIComponent(rawPartUrl)}&name=${encodeURIComponent(file.name + ' - ' + part.partName)}`;
-                        }
-
-                        const getMirrorWarningUrl = (mirrorUrl, providerName) => {
-                            let mUrl = mirrorUrl;
-                            if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
-                                mUrl = generateAdLink(mirrorUrl);
-                            }
-                            return `/leave?url=${encodeURIComponent(mUrl)}&name=${encodeURIComponent(file.name + ' - ' + providerName)}`;
-                        };
-                    %>
-
-                    <div class="part-item">
-                        <div class="part-name">
-                            <i class="fas fa-file-archive"></i>
-                            <%= part.partName %>
-                            <% if (isPartAdSupported) { %>
-                                <span style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; margin-left: 10px; color: var(--silver);">Ad-Supported</span>
-                            <% } %>
-                        </div>
-                        
-                        <!-- Actions Container: Mirrors + Main Download -->
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center; margin-top: 10px;">
-                            
-                            <!-- Optional Mirror 1 -->
-                            <% if (part.mirror1Url) { %>
-                                <a href="<%= getMirrorWarningUrl(part.mirror1Url, part.mirror1Provider || 'Mirror 1') %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                    <i class="fas fa-external-link-alt"></i> <%= part.mirror1Provider || 'Mirror 1' %>
-                                </a>
-                            <% } %>
-
-                            <!-- Optional Mirror 2 -->
-                            <% if (part.mirror2Url) { %>
-                                <a href="<%= getMirrorWarningUrl(part.mirror2Url, part.mirror2Provider || 'Mirror 2') %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                    <i class="fas fa-external-link-alt"></i> <%= part.mirror2Provider || 'Mirror 2' %>
-                                </a>
-                            <% } %>
-
-                            <!-- ======== DYNAMIC MAIN PART DOWNLOAD BUTTON ======== -->
-                            <a href="<%= finalPartUrl %>" target="_blank" rel="noopener noreferrer" class="part-btn">
-                                <% if (isPartAdSupported || isExternalLink) { %>
-                                    <!-- Show external link icon for ads or external cloud links -->
-                                    <i class="fas fa-external-link-alt" style="margin-right: 5px;"></i> External Download
-                                <% } else { %>
-                                    <!-- Show download icon for direct/internal links -->
-                                    <i class="fas fa-download" style="margin-right: 5px;"></i> Download Part <%= index + 1 %>
-                                <% } %>
-                            </a>
-                            <!-- =================================================== -->
-                        </div>
-                    </div>
-                <% }) %>
-            </div>
-        </div>
-                        
-        <!-- ======== DYNAMIC SECURITY SCANS ======== -->
-        <% if (file.virusTotalId || file.virusTotalAnalysisId || file.manualFileScanUrl || file.manualSiteScanUrl) { %>
-            <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
-                
-                <!-- If Automated Scan is Complete -->
-                <% if (file.virusTotalScanDate) { %>
-                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
-                        <i class="fas fa-shield-virus" style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
-                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Automated Scan</span>
-                        <span style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
-                            <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
-                        </span>
-                    </div>
-                <% } else if (file.virusTotalAnalysisId) { %>
-                    <!-- If Automated Scan is Pending -->
-                    <div style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
-                        <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
-                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan Pending...</span>
-                        <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8em;"><i class="fas fa-sync-alt"></i></button>
-                    </div>
-                <% } %>
-
-                <!-- Scan Link Buttons Container -->
-                <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;">
-                    
-                    <!-- 1. Manual File Scan -->
-                    <% if (file.manualFileScanUrl) { %>
-                        <a href="<%= file.manualFileScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
-                            <i class="fas fa-file-shield" style="color: var(--green); margin-right: 8px;"></i> View True File Scan
-                        </a>
-                    <% } %>
-
-                    <!-- 2. Manual Site/URL Scan -->
-                    <% if (file.manualSiteScanUrl) { %>
-                        <a href="<%= file.manualSiteScanUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
-                            <i class="fas fa-globe" style="color: var(--gold); margin-right: 8px;"></i> View Host Site Scan
-                        </a>
-                    <% } %>
-
-                    <!-- 3. Automated VT Scan Link -->
-                    <% if (file.virusTotalId || file.virusTotalAnalysisId) { 
-                        const vtUrl = file.virusTotalId ? `https://www.virustotal.com/gui/file/${file.virusTotalId}` : `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
-                    %>
-                        <a href="<%= vtUrl %>" target="_blank" class="full-width-btn btn btn-secondary" style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
-                            <i class="fas fa-robot" style="color: var(--silver); margin-right: 8px;"></i> View Automated Scan
-                        </a>
-                    <% } %>
-
-                    <!-- Show False Positive Guide when any scan reports positives -->
-                    <% if (file.virusTotalPositiveCount > 0 || file.manualFileScanPositive || file.manualSiteScanPositive) { %>
-                        <a href="/understanding-scans" target="_blank" style="color: var(--gold); font-size: 0.8em; margin-top: 12px; display: block; text-align: center; font-style: italic; text-decoration: none;">
-                            <i class="fas fa-info-circle"></i> Why are there detections? Read our False Positive Guide.
-                        </a>
-                    <% } %>
+            <!-- Header -->
+            <div class="game-header">
+                <img src="<%= file.iconUrl %>" alt="<%= file.name %>" class="game-icon">
+                <div class="game-info">
+                    <h1>
+                        <%= file.name %>
+                    </h1>
+                    <p>Version: <%= file.version %> | Developer: <span class="developer">
+                                <%=slugify(file.developer) %>
+                            </span></p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Total Parts: <%= file.downloadParts.length %>
+                    </p>
                 </div>
             </div>
-        <% } %>
-        <!-- ============================================== -->
-        <!-- Instructions -->
-        <div class="instructions-section">
-            <h3><i class="fas fa-tools" style="margin-right: 10px; color: var(--silver);"></i>Installation Instructions</h3>
-            <div class="instructions-content">
-                <% if (file.installationInstructions && file.installationInstructions.trim() !== '') { %>
-                    <%- file.installationInstructions %>
-                <% } else { %>
-                    <p>1. Download all the parts listed above into the same folder on your computer.</p>
-                    <p>2. Ensure you have extraction software installed (like WinRAR or 7-Zip).</p>
-                    <p>3. Right-click on <strong>Part 1</strong> and select "Extract Here".</p>
-                    <p>4. The software will automatically find and extract the remaining parts.</p>
-                    <p>5. Run the installer or game executable from the newly extracted folder.</p>
-                <% } %>
+
+            <!-- Links List -->
+            <div class="download-links-section">
+                <h2>Download Links</h2>
+                <!-- Links List -->
+                <div class="download-links-section">
+                    <h2>Download Links</h2>
+                    <div class="parts-list">
+                        <% file.downloadParts.forEach((part, index)=> { %>
+
+                            <% // --- DYNAMIC AD & EXTERNAL LINK LOGIC FOR PARTS --- let rawPartUrl=part.partUrl; let
+                                isPartAdSupported=false; const isExternalLink=rawPartUrl &&
+                                (rawPartUrl.startsWith('http://') || rawPartUrl.startsWith('https://')); if (showAds) {
+                                if (part.customAdLink) { rawPartUrl=part.customAdLink; isPartAdSupported=true; } else if
+                                (linkvertiseEnabled && !isUploaderDistributor) {
+                                rawPartUrl=generateAdLink(part.partUrl); isPartAdSupported=true; } } let
+                                finalPartUrl=rawPartUrl; if (isPartAdSupported || isExternalLink) {
+                                finalPartUrl=`/leave?url=${encodeURIComponent(rawPartUrl)}&name=${encodeURIComponent(file.name
+                                + ' - ' + part.partName)}`; } const getMirrorWarningUrl=(mirrorUrl, providerName)=> {
+                                let mUrl = mirrorUrl;
+                                if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
+                                mUrl = generateAdLink(mirrorUrl);
+                                }
+                                return `/leave?url=${encodeURIComponent(mUrl)}&name=${encodeURIComponent(file.name + ' -
+                                ' + providerName)}`;
+                                };
+                                %>
+
+                                <div class="part-item">
+                                    <div class="part-name">
+                                        <i class="fas fa-file-archive"></i>
+                                        <%= part.partName %>
+                                            <% if (isPartAdSupported) { %>
+                                                <span
+                                                    style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; margin-left: 10px; color: var(--silver);">Ad-Supported</span>
+                                                <% } %>
+                                    </div>
+
+                                    <!-- Actions Container: Mirrors + Main Download -->
+                                    <div
+                                        style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center; margin-top: 10px;">
+
+                                        <!-- Optional Mirror 1 -->
+                                        <% if (part.mirror1Url) { %>
+                                            <a href="<%= getMirrorWarningUrl(part.mirror1Url, part.mirror1Provider || 'Mirror 1') %>"
+                                                target="_blank" rel="noopener noreferrer" class="btn btn-secondary"
+                                                style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                                <i class="fas fa-external-link-alt"></i>
+                                                <%= part.mirror1Provider || 'Mirror 1' %>
+                                            </a>
+                                            <% } %>
+
+                                                <!-- Optional Mirror 2 -->
+                                                <% if (part.mirror2Url) { %>
+                                                    <a href="<%= getMirrorWarningUrl(part.mirror2Url, part.mirror2Provider || 'Mirror 2') %>"
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        class="btn btn-secondary"
+                                                        style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                        <%= part.mirror2Provider || 'Mirror 2' %>
+                                                    </a>
+                                                    <% } %>
+
+                                                        <!-- ======== DYNAMIC MAIN PART DOWNLOAD BUTTON ======== -->
+                                                        <a href="<%= finalPartUrl %>" target="_blank"
+                                                            rel="noopener noreferrer" class="part-btn">
+                                                            <% if (isPartAdSupported || isExternalLink) { %>
+                                                                <!-- Show external link icon for ads or external cloud links -->
+                                                                <i class="fas fa-external-link-alt"
+                                                                    style="margin-right: 5px;"></i> External Download
+                                                                <% } else { %>
+                                                                    <!-- Show download icon for direct/internal links -->
+                                                                    <i class="fas fa-download"
+                                                                        style="margin-right: 5px;"></i> Download Part
+                                                                    <%= index + 1 %>
+                                                                        <% } %>
+                                                        </a>
+                                                        <!-- =================================================== -->
+                                    </div>
+                                </div>
+                                <% }) %>
+                    </div>
+                </div>
+
+                <!-- ======== DYNAMIC SECURITY SCANS ======== -->
+                <% if (file.virusTotalId || file.virusTotalAnalysisId || file.manualFileScanUrl ||
+                    file.manualSiteScanUrl) { %>
+                    <div class="safety-badge"
+                        style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
+
+                        <!-- If Automated Scan is Complete -->
+                        <% if (file.virusTotalScanDate) { %>
+                            <div
+                                style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                                <i class="fas fa-shield-virus"
+                                    style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
+                                <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Automated
+                                    Scan</span>
+                                <span
+                                    style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                                    <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
+                                </span>
+                            </div>
+                            <% } else if (file.virusTotalAnalysisId) { %>
+                                <!-- If Automated Scan is Pending -->
+                                <div
+                                    style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                                    <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
+                                    <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan
+                                        Pending...</span>
+                                    <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary"
+                                        style="padding: 4px 8px; font-size: 0.8em;"><i
+                                            class="fas fa-sync-alt"></i></button>
+                                </div>
+                                <% } %>
+
+                                    <!-- Scan Link Buttons Container -->
+                                    <div
+                                        style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;">
+
+                                        <!-- 1. Manual File Scan -->
+                                        <% if (file.manualFileScanUrl) { %>
+                                            <a href="<%= file.manualFileScanUrl %>" target="_blank"
+                                                class="full-width-btn btn btn-secondary"
+                                                style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                                                <i class="fas fa-file-shield"
+                                                    style="color: var(--green); margin-right: 8px;"></i> View True File
+                                                Scan
+                                            </a>
+                                            <% } %>
+
+                                                <!-- 2. Manual Site/URL Scan -->
+                                                <% if (file.manualSiteScanUrl) { %>
+                                                    <a href="<%= file.manualSiteScanUrl %>" target="_blank"
+                                                        class="full-width-btn btn btn-secondary"
+                                                        style="text-align: left; padding: 8px 12px; font-size: 0.9em; background: #111 !important;">
+                                                        <i class="fas fa-globe"
+                                                            style="color: var(--gold); margin-right: 8px;"></i> View
+                                                        Host Site Scan
+                                                    </a>
+                                                    <% } %>
+
+                                                        <!-- 3. Automated VT Scan Link -->
+                                                        <% if (file.virusTotalId || file.virusTotalAnalysisId) { const
+                                                            vtUrl=file.virusTotalId ?
+                                                            `https://www.virustotal.com/gui/file/${file.virusTotalId}` :
+                                                            `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
+                                                            %>
+                                                            <a href="<%= vtUrl %>" target="_blank"
+                                                                class="full-width-btn btn btn-secondary"
+                                                                style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
+                                                                <i class="fas fa-robot"
+                                                                    style="color: var(--silver); margin-right: 8px;"></i>
+                                                                View Automated Scan
+                                                            </a>
+                                                            <% } %>
+
+                                                                <!-- Show False Positive Guide when any scan reports positives -->
+                                                                <% if (file.virusTotalPositiveCount> 0 ||
+                                                                    file.manualFileScanPositive ||
+                                                                    file.manualSiteScanPositive) { %>
+                                                                    <a href="/understanding-scans" target="_blank"
+                                                                        style="color: var(--gold); font-size: 0.8em; margin-top: 12px; display: block; text-align: center; font-style: italic; text-decoration: none;">
+                                                                        <i class="fas fa-info-circle"></i> Why are there
+                                                                        detections? Read our False Positive Guide.
+                                                                    </a>
+                                                                    <% } %>
+                                    </div>
+                    </div>
+                    <% } %>
+                        <!-- ============================================== -->
+                        <!-- Instructions -->
+                        <div class="instructions-section">
+                            <h3><i class="fas fa-tools"
+                                    style="margin-right: 10px; color: var(--silver);"></i>Installation Instructions</h3>
+                            <div class="instructions-content">
+                                <% if (file.installationInstructions && file.installationInstructions.trim() !=='' ) {
+                                    %>
+                                    <%- file.installationInstructions %>
+                                        <% } else { %>
+                                            <p>1. Download all the parts listed above into the same folder on your
+                                                computer.</p>
+                                            <p>2. Ensure you have extraction software installed (like WinRAR or 7-Zip).
+                                            </p>
+                                            <p>3. Right-click on <strong>Part 1</strong> and select "Extract Here".</p>
+                                            <p>4. The software will automatically find and extract the remaining parts.
+                                            </p>
+                                            <p>5. Run the installer or game executable from the newly extracted folder.
+                                            </p>
+                                            <% } %>
+                            </div>
+                        </div>
+
             </div>
-        </div>
+    </main>
+    <script>
+        async function refreshPartVTScan(fileId, partId) {
+            try {
+                const btn = event.currentTarget;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                btn.disabled = true;
 
-    </div>
-</main>
-<script>
-    async function refreshPartVTScan(fileId, partId) {
-        try {
-            const btn = event.currentTarget;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-            btn.disabled = true;
+                const response = await fetch(`/api/refresh-vt-scan/${fileId}/part/${partId}`, { method: 'POST' });
+                const data = await response.json();
 
-            const response = await fetch(`/api/refresh-vt-scan/${fileId}/part/${partId}`, { method: 'POST' });
-            const data = await response.json();
-
-            if (data.status === 'completed') {
-                window.location.reload();
-            } else {
-                alert('Scan is still ' + data.status + '. Please check back later.');
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Status';
-                btn.disabled = false;
+                if (data.status === 'completed') {
+                    window.location.reload();
+                } else {
+                    alert('Scan is still ' + data.status + '. Please check back later.');
+                    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Status';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('Failed to check status.');
             }
-        } catch (error) {
-            alert('Failed to check status.');
         }
-    }
-</script>
-<%- include('../partials/popunder-ads') %>
-<%- include('../partials/footer') %>
+    </script>
+    <%- include('../partials/video-ad-modal') %>
+        <%- include('../partials/popunder-ads') %>
+            <%- include('../partials/footer') %>

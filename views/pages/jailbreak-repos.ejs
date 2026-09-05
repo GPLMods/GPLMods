@@ -1,156 +1,222 @@
 <%- include('../partials/header') %>
 
-<style>
-    .repo-header { text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--dark-gray); margin-bottom: 40px; }
-    .repo-header h1 { font-size: 3em; color: var(--white); }
-    .repo-header h1 span { color: #FF9800; text-shadow: 0 0 15px rgba(255, 152, 0, 0.5); }
-    .arch-section { margin-bottom: 60px; background: var(--dark-gray); padding: 30px; border-radius: 15px; border: 1px solid #333; }
-    .arch-title { display: flex; align-items: center; gap: 15px; font-size: 1.8em; color: var(--white); margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 15px; }
-    .arch-desc { color: var(--silver); margin-bottom: 25px; font-size: 1.05em; }
-    /* ✅ NEW: Styling for custom PNG icons inside repo buttons */
-    .repo-icon {
-        width: 24px;         /* Fixed width */
-        height: 24px;        /* Fixed height */
-        min-width: 24px;     /* Prevents flexbox from squishing it */
-        max-width: 24px;     /* Prevents it from growing */
-        object-fit: contain; /* Ensures the whole icon is visible */
-        display: block;      /* Removes inline spacing bugs */
-        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); /* Adds depth */
-    }
+    <style>
+        .repo-header {
+            text-align: center;
+            padding: 60px 20px;
+            border-bottom: 1px solid var(--dark-gray);
+            margin-bottom: 40px;
+        }
 
-    /* Update repo-btn to align the new images properly */
-    .repo-btn { 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        gap: 10px; 
-        background: #1a1a1a; 
-        color: var(--silver); 
-        border: 1px solid #444; 
-        padding: 12px 15px; 
-        border-radius: 8px; 
-        text-decoration: none; 
-        font-weight: bold; 
-        transition: all 0.3s ease; 
-    }
-    .repo-btn:hover { 
-        background: var(--gold); 
-        color: var(--black); 
-        border-color: var(--gold); 
-        transform: translateY(-3px); 
-        box-shadow: 0 5px 15px var(--glow-gold); 
-    }
-</style>
+        .repo-header h1 {
+            font-size: 3em;
+            color: var(--white);
+        }
 
-<main class="container">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-    <div class="repo-header">
-        <h1>Jailbreak <span>Repositories</span></h1>
-        <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks into your favorite package managers categorized by device architecture.</p>
-    </div>
+        .repo-header h1 span {
+            color: #FF9800;
+            text-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
+        }
 
-    <!-- ======== NEW: ADD REPO MASTER SECTION ======== -->
-    <% 
-        const fullRepoUrl = `${baseUrl}/ios-repo`;
-    %>
-    <section class="arch-section" style="border-top: 4px solid var(--gold); text-align: center; background-color: var(--black);">
-        <h2 style="color: var(--white); margin-bottom: 15px;"><i class="fas fa-link" style="color: var(--gold);"></i> Add GPL Mods Repo</h2>
-        <p style="color: var(--silver); margin-bottom: 25px;">Add our repository to your package manager to easily browse and install all available tweaks.</p>
-        
-        <!-- ✅ FIX: Added word-break: break-all; and max-width: 100%; -->
-        <div style="display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 25px; word-break: break-all; max-width: 100%;">
-            <%= fullRepoUrl %>
+        .arch-section {
+            margin-bottom: 60px;
+            background: var(--dark-gray);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+
+        .arch-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.8em;
+            color: var(--white);
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
+        }
+
+        .arch-desc {
+            color: var(--silver);
+            margin-bottom: 25px;
+            font-size: 1.05em;
+        }
+
+        /* ✅ NEW: Styling for custom PNG icons inside repo buttons */
+        .repo-icon {
+            width: 24px;
+            /* Fixed width */
+            height: 24px;
+            /* Fixed height */
+            min-width: 24px;
+            /* Prevents flexbox from squishing it */
+            max-width: 24px;
+            /* Prevents it from growing */
+            object-fit: contain;
+            /* Ensures the whole icon is visible */
+            display: block;
+            /* Removes inline spacing bugs */
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+            /* Adds depth */
+        }
+
+        /* Update repo-btn to align the new images properly */
+        .repo-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #1a1a1a;
+            color: var(--silver);
+            border: 1px solid #444;
+            padding: 12px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .repo-btn:hover {
+            background: var(--gold);
+            color: var(--black);
+            border-color: var(--gold);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--glow-gold);
+        }
+    </style>
+
+    <main class="container">
+        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+        <div style="margin-bottom: 20px;">
+            <a href="javascript:history.back()"
+                style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+                onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+            </a>
+        </div>
+        <!-- ======================================== -->
+        <div class="repo-header">
+            <h1>Jailbreak <span>Repositories</span></h1>
+            <p style="color: var(--silver); font-size: 1.1em; margin-top: 10px;">Browse and directly install DEB tweaks
+                into your favorite package managers categorized by device architecture.</p>
         </div>
 
-        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-            
-            <!-- Sileo -->
-            <a href="sileo://source/<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/sileo.png" alt="Sileo" class="repo-icon"> Add to Sileo
-            </a>
-            
-            <!-- Zebra -->
-            <a href="zbra://sources/add/<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/zebra.png" alt="Zebra" class="repo-icon"> Add to Zebra
-            </a>
-            
-            <!-- Cydia -->
-            <a href="cydia://url/https://cydia.saurik.com/api/share#?source=<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/cydia.png" alt="Cydia" class="repo-icon"> Add to Cydia
-            </a>
+        <!-- ======== NEW: ADD REPO MASTER SECTION ======== -->
+        <% const fullRepoUrl=`${baseUrl}/ios-repo`; %>
+            <section class="arch-section"
+                style="border-top: 4px solid var(--gold); text-align: center; background-color: var(--black);">
+                <h2 style="color: var(--white); margin-bottom: 15px;"><i class="fas fa-link"
+                        style="color: var(--gold);"></i> Add GPL Mods Repo</h2>
+                <p style="color: var(--silver); margin-bottom: 25px;">Add our repository to your package manager to
+                    easily browse and install all available tweaks.</p>
 
-            <!-- PurePKG -->
-            <a href="purepkg://repo/add?url=<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/purepkg.png" alt="PurePKG" class="repo-icon"> Add to PurePKG
-            </a>
-            
-            <!-- Installer -->
-            <a href="installer://add/<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/installer.png" alt="Installer" class="repo-icon"> Add to Installer
-            </a>
+                <!-- ✅ FIX: Added word-break: break-all; and max-width: 100%; -->
+                <div
+                    style="display: inline-block; background: #111; border: 1px dashed #555; color: var(--silver); padding: 10px 20px; border-radius: 8px; font-family: monospace; font-size: 1.1em; letter-spacing: 1px; user-select: all; margin-bottom: 25px; word-break: break-all; max-width: 100%;">
+                    <%= fullRepoUrl %>
+                </div>
 
-            <!-- ✅ NEW: Saily Support -->
-            <a href="saily://addRepo?url=<%= fullRepoUrl %>" class="repo-btn">
-                <img src="<%= cdnUrl %>/images/icons/saily.png" alt="Saily" class="repo-icon"> Add to Saily
-            </a>
+                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
 
-        </div>
-    </section>
+                    <!-- Sileo -->
+                    <a href="sileo://source/<%= fullRepoUrl %>" class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/sileo.png" alt="Sileo" class="repo-icon"> Add to Sileo
+                    </a>
 
-    <!-- ROOTLESS (Modern ARM64) -->
-    <section class="arch-section">
-        <h2 class="arch-title"><i class="fas fa-mobile-alt" style="color: #34C759;"></i> Rootless Tweaks (Modern ARM64)</h2>
-        <p class="arch-desc">Designed for modern jailbreaks (Dopamine, Palera1n rootless) on iOS 15+. These tweaks install to <code>/var/jb</code>.</p>
-        
-        <div class="mod-grid">
-            <% if (rootless.length > 0) { %>
-                <% rootless.forEach(file => { %>
-                    <%- include('../partials/mod-card', { file: file }) %>
-                <% }) %>
-            <% } else { %>
-                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No rootless tweaks available yet.</p>
-            <% } %>
-        </div>
-    </section>
+                    <!-- Zebra -->
+                    <a href="zbra://sources/add/<%= fullRepoUrl %>" class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/zebra.png" alt="Zebra" class="repo-icon"> Add to Zebra
+                    </a>
 
-    <!-- ROOTFUL (Legacy ARM) -->
-    <section class="arch-section">
-        <h2 class="arch-title"><i class="fas fa-hdd" style="color: var(--gold);"></i> Rootful Tweaks (Legacy ARM)</h2>
-        <p class="arch-desc">For older devices and legacy jailbreaks (Unc0ver, checkra1n) that modify the actual root file system (<code>/</code>).</p>
-        
-        <div class="mod-grid">
-            <% if (rootful.length > 0) { %>
-                <% rootful.forEach(file => { %>
-                    <%- include('../partials/mod-card', { file: file }) %>
-                <% }) %>
-            <% } else { %>
-                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No rootful tweaks available yet.</p>
-            <% } %>
-        </div>
-    </section>
+                    <!-- Cydia -->
+                    <a href="cydia://url/https://cydia.saurik.com/api/share#?source=<%= fullRepoUrl %>"
+                        class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/cydia.png" alt="Cydia" class="repo-icon"> Add to Cydia
+                    </a>
 
-    <!-- ROOTHIDE (Anti-JB Detection) -->
-    <section class="arch-section">
-        <h2 class="arch-title"><i class="fas fa-user-secret" style="color: #5E5CE6;"></i> Roothide Tweaks (ARM64e)</h2>
-        <p class="arch-desc">Specifically compiled for the Roothide jailbreak environment to bypass strict jailbreak detection in banking and gaming apps.</p>
-        
-        <div class="mod-grid">
-            <% if (roothide.length > 0) { %>
-                <% roothide.forEach(file => { %>
-                    <%- include('../partials/mod-card', { file: file }) %>
-                <% }) %>
-            <% } else { %>
-                <p style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">No roothide tweaks available yet.</p>
-            <% } %>
-        </div>
-    </section>
+                    <!-- PurePKG -->
+                    <a href="purepkg://repo/add?url=<%= fullRepoUrl %>" class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/purepkg.png" alt="PurePKG" class="repo-icon"> Add to
+                        PurePKG
+                    </a>
 
-</main>
+                    <!-- Installer -->
+                    <a href="installer://add/<%= fullRepoUrl %>" class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/installer.png" alt="Installer" class="repo-icon"> Add to
+                        Installer
+                    </a>
 
-<%- include('../partials/footer') %>
+                    <!-- ✅ NEW: Saily Support -->
+                    <a href="saily://addRepo?url=<%= fullRepoUrl %>" class="repo-btn">
+                        <img src="<%= cdnUrl %>/images/icons/saily.png" alt="Saily" class="repo-icon"> Add to Saily
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- ROOTLESS (Modern ARM64) -->
+            <section class="arch-section">
+                <h2 class="arch-title"><i class="fas fa-mobile-alt" style="color: #34C759;"></i> Rootless Tweaks (Modern
+                    ARM64)</h2>
+                <p class="arch-desc">Designed for modern jailbreaks (Dopamine, Palera1n rootless) on iOS 15+. These
+                    tweaks install to <code>/var/jb</code>.</p>
+
+                <div class="mod-grid">
+                    <% if (rootless.length> 0) { %>
+                        <% rootless.forEach(file=> { %>
+                            <%- include('../partials/mod-card', { file: file }) %>
+                                <% }) %>
+                                    <% } else { %>
+                                        <p
+                                            style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">
+                                            No rootless tweaks available yet.</p>
+                                        <% } %>
+                </div>
+            </section>
+
+            <!-- ROOTFUL (Legacy ARM) -->
+            <section class="arch-section">
+                <h2 class="arch-title"><i class="fas fa-hdd" style="color: var(--gold);"></i> Rootful Tweaks (Legacy
+                    ARM)</h2>
+                <p class="arch-desc">For older devices and legacy jailbreaks (Unc0ver, checkra1n) that modify the actual
+                    root file system (<code>/</code>).</p>
+
+                <div class="mod-grid">
+                    <% if (rootful.length> 0) { %>
+                        <% rootful.forEach(file=> { %>
+                            <%- include('../partials/mod-card', { file: file }) %>
+                                <% }) %>
+                                    <% } else { %>
+                                        <p
+                                            style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">
+                                            No rootful tweaks available yet.</p>
+                                        <% } %>
+                </div>
+            </section>
+
+            <!-- ROOTHIDE (Anti-JB Detection) -->
+            <section class="arch-section">
+                <h2 class="arch-title"><i class="fas fa-user-secret" style="color: #5E5CE6;"></i> Roothide Tweaks
+                    (ARM64e)</h2>
+                <p class="arch-desc">Specifically compiled for the Roothide jailbreak environment to bypass strict
+                    jailbreak detection in banking and gaming apps.</p>
+
+                <div class="mod-grid">
+                    <% if (roothide.length> 0) { %>
+                        <% roothide.forEach(file=> { %>
+                            <%- include('../partials/mod-card', { file: file }) %>
+                                <% }) %>
+                                    <% } else { %>
+                                        <p
+                                            style="color: var(--silver); grid-column: 1/-1; text-align: center; padding: 20px;">
+                                            No roothide tweaks available yet.</p>
+                                        <% } %>
+                </div>
+            </section>
+
+    </main>
+
+    <%- include('../partials/popunder-ads') %>
+        <%- include('../partials/video-ad-modal') %>
+            <%- include('../partials/footer') %>

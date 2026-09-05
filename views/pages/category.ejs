@@ -1,542 +1,640 @@
 <%- include('../partials/header') %>
-<!-- ✅ FIX: ADDED CUSTOM DROPDOWN CSS -->
-<style>
-    /* Filter Section Container */
-    .filter-section {
-        background-color: var(--dark-gray);
-        padding: 25px;
-        border-radius: 15px;
-        margin-bottom: 40px;
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr auto; /* Adjust based on your columns */
-        gap: 20px;
-        align-items: center;
-        border: 1px solid #333;
-    }
-    .filter-group { display: flex; flex-direction: column; position: relative; }
-    .filter-group label { color: var(--silver); font-size: 0.9em; margin-bottom: 8px; font-weight: 600; }
-    
-    /* Custom Select Wrapper */
-    .custom-select-wrapper {
-        position: relative;
-        user-select: none;
-        width: 100%;
-    }
-    .custom-select {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 15px;
-        border-radius: 8px;
-        border: 1px solid #444;
-        background-color: var(--black);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .custom-select:hover { border-color: var(--gold); }
-    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-    .selected-text { color: var(--white); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
-    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
-    
-    /* Custom Options Dropdown */
-    .custom-options {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background-color: #1a1a1a;
-        border: 1px solid var(--gold);
-        border-top: none;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        z-index: 100;
-        max-height: 250px;
-        overflow-y: auto;
-    }
-    .custom-select-wrapper.open .custom-options {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-    }
-    
-    /* Individual Options */
-    .custom-option {
-        padding: 12px 15px;
-        color: var(--silver);
-        font-size: 0.95em;
-        cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
-        border-bottom: 1px solid #2a2a2a;
-    }
-    .custom-option:last-child { border-bottom: none; }
-    .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
-    
-    .filter-button { background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 8px; border: none; font-size: 1em; font-weight: bold; cursor: pointer; align-self: end; height: 46px; transition: transform 0.2s; }
-    .filter-button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
+    <!-- ✅ FIX: ADDED CUSTOM DROPDOWN CSS -->
+    <style>
+        /* Filter Section Container */
+        .filter-section {
+            background-color: var(--dark-gray);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            /* Adjust based on your columns */
+            gap: 20px;
+            align-items: center;
+            border: 1px solid #333;
+        }
 
-    /* Responsive */
-    @media (max-width: 992px) { .filter-section { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 768px) { .filter-section { grid-template-columns: 1fr; } .filter-button { width: 100%; margin-top: 10px; } }
-</style>
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
 
-<main>
-    <section class="page-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-        <div class="container">
-            <h1>Browse <span>All Mods</span></h1>
-            <p>Use the filters below to find the perfect mod for any platform.</p>
-        </div>
-    </section>
-<!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
-<% if (typeof editorsChoiceMods !== 'undefined' && editorsChoiceMods.length > 0) { %>
-    <section class="featured-section">
-        <!-- We use the icon of the first featured mod as the blurred background -->
-        <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
-        
-        <div class="container" style="position: relative;">
-            <div class="featured-carousel" id="featured-carousel">
-                <% editorsChoiceMods.forEach((mod, index) => { %>
-                    <div class="featured-card" id="featured-slide-<%= index %>">
-                        <div class="featured-icon-wrapper">
-                            <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+        .filter-group label {
+            color: var(--silver);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        /* Custom Select Wrapper */
+        .custom-select-wrapper {
+            position: relative;
+            user-select: none;
+            width: 100%;
+        }
+
+        .custom-select {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: var(--black);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .custom-select:hover {
+            border-color: var(--gold);
+        }
+
+        .custom-select-wrapper.open .custom-select {
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .selected-text {
+            color: var(--white);
+            font-size: 0.95em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .custom-select-arrow {
+            color: var(--silver);
+            transition: transform 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .custom-select-wrapper.open .custom-select-arrow {
+            transform: rotate(180deg);
+            color: var(--gold);
+        }
+
+        /* Custom Options Dropdown */
+        .custom-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #1a1a1a;
+            border: 1px solid var(--gold);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .custom-select-wrapper.open .custom-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* Individual Options */
+        .custom-option {
+            padding: 12px 15px;
+            color: var(--silver);
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .custom-option:last-child {
+            border-bottom: none;
+        }
+
+        .custom-option:hover,
+        .custom-option.selected {
+            background-color: var(--gold);
+            color: var(--black);
+            font-weight: bold;
+        }
+
+        .filter-button {
+            background: var(--gold);
+            color: var(--black);
+            padding: 12px 30px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            align-self: end;
+            height: 46px;
+            transition: transform 0.2s;
+        }
+
+        .filter-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .filter-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filter-section {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-button {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+
+    <main>
+        <section class="page-header">
+            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+            <div style="margin-bottom: 20px;">
+                <a href="javascript:history.back()"
+                    style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+                    onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+                </a>
+            </div>
+            <!-- ======================================== -->
+            <div class="container">
+                <h1>Browse <span>All Mods</span></h1>
+                <p>Use the filters below to find the perfect mod for any platform.</p>
+            </div>
+        </section>
+        <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
+        <% if (typeof editorsChoiceMods !=='undefined' && editorsChoiceMods.length> 0) { %>
+            <section class="featured-section">
+                <!-- We use the icon of the first featured mod as the blurred background -->
+                <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
+
+                <div class="container" style="position: relative;">
+                    <div class="featured-carousel" id="featured-carousel">
+                        <% editorsChoiceMods.forEach((mod, index)=> { %>
+                            <div class="featured-card" id="featured-slide-<%= index %>">
+                                <div class="featured-icon-wrapper">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                                </div>
+                                <div class="featured-content">
+                                    <h2>Editor's Choice: <span>
+                                            <%= mod.name %>
+                                        </span></h2>
+
+                                    <!-- Smart Description Logic -->
+                                    <% let desc=mod.editorsChoiceDescription; if (!desc || desc.trim()==='' ) {
+                                        desc=mod.modDescription || mod.officialDescription
+                                        || "An excellent, highly-rated modification." ; } %>
+                                        <p><%- desc %></p>
+
+                                        <div class="featured-buttons">
+                                            <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>"
+                                                class="featured-button btn-primary">Know More</a>
+
+                                            <% if (typeof user !=='undefined' && user && user.whitelist) { %>
+                                                <% // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
+                                                    const isWhitelisted=user.whitelist.some(w=>
+                                                    w.toString() === mod._id.toString() ||
+                                                    (w._id && w._id.toString() === mod._id.toString())
+                                                    );
+                                                    %>
+
+                                                    <form action="/files/<%= mod._id %>/whitelist" method="POST"
+                                                        style="margin: 0;">
+                                                        <input type="hidden" name="redirectUrl" value="back">
+                                                        <% if (isWhitelisted) { %>
+                                                            <button type="submit" class="featured-button btn-secondary"
+                                                                style="color: var(--red); border-color: var(--red);">
+                                                                <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                                            </button>
+                                                            <% } else { %>
+                                                                <button type="submit"
+                                                                    class="featured-button btn-secondary">
+                                                                    <i class="fas fa-heart"></i> Add Wishlist
+                                                                </button>
+                                                                <% } %>
+                                                    </form>
+                                                    <% } else { %>
+                                                        <a href="/login" class="featured-button btn-secondary">
+                                                            <i class="fas fa-heart"></i> Login to Wishlist
+                                                        </a>
+                                                        <% } %>
+                                        </div>
+                                </div>
+                            </div>
+                            <% }) %>
+                    </div>
+
+                    <!-- Carousel Dots (Only show if more than 1 item) -->
+                    <% if (editorsChoiceMods.length> 1) { %>
+                        <div class="carousel-dots">
+                            <% editorsChoiceMods.forEach((_, index)=> { %>
+                                <div class="dot <%= index === 0 ? 'active' : '' %>"
+                                    onclick="scrollToSlide(<%= index %>)"></div>
+                                <% }) %>
                         </div>
-                        <div class="featured-content">
-                            <h2>Editor's Choice: <span><%= mod.name %></span></h2>
-                            
-                            <!-- Smart Description Logic -->
-                            <% 
-                                let desc = mod.editorsChoiceDescription;
-                                if (!desc || desc.trim() === '') {
-                                    desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification.";
-                                }
-                            %>
-                            <p><%- desc %></p>
-                            
-                            <div class="featured-buttons">
-                                <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
-                                
-                                <% if (typeof user !== 'undefined' && user && user.whitelist) { %>
-                                    <% 
-                                        // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
-                                        const isWhitelisted = user.whitelist.some(w => 
-                                            w.toString() === mod._id.toString() || 
-                                            (w._id && w._id.toString() === mod._id.toString())
-                                        ); 
-                                    %>
-                                    
-                                    <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
-                                        <input type="hidden" name="redirectUrl" value="back">
-                                        <% if (isWhitelisted) { %>
-                                            <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
-                                                <i class="fas fa-heart-broken"></i> Remove Wishlist
-                                            </button>
-                                        <% } else { %>
-                                            <button type="submit" class="featured-button btn-secondary">
-                                                <i class="fas fa-heart"></i> Add Wishlist
-                                            </button>
-                                        <% } %>
-                                    </form>
-                                <% } else { %>
-                                    <a href="/login" class="featured-button btn-secondary">
-                                        <i class="fas fa-heart"></i> Login to Wishlist
-                                    </a>
-                                <% } %>
+                        <% } %>
+                </div>
+            </section>
+            <% } %>
+                <!-- ============================================== -->
+
+
+                <div class="container">
+                    <!-- ============================================== -->
+                    <!-- THE NEW CUSTOM FILTER FORM                     -->
+                    <!-- ============================================== -->
+                    <form action="/category" method="GET" class="filter-section" id="categoryFilterForm">
+
+                        <!-- 1. PLATFORM DROPDOWN -->
+                        <div class="filter-group">
+                            <label>Platform</label>
+                            <!-- Hidden Native Select -->
+                            <select id="platform" name="platform" style="display: none;">
+                                <option value="all" <%=currentPlatform==='all' ? 'selected' : '' %>>All Platforms
+                                </option>
+                                <option value="android" <%=currentPlatform==='android' ? 'selected' : '' %>>Android
+                                </option>
+                                <option value="ios-jailed" <%=currentPlatform==='ios-jailed' ? 'selected' : '' %>>iOS -
+                                    Jailed (IPA)</option>
+                                <option value="ios-jailbroken" <%=currentPlatform==='ios-jailbroken' ? 'selected' : ''
+                                    %>>iOS - Jailbroken (DEB)</option>
+                                <option value="windows" <%=currentPlatform==='windows' ? 'selected' : '' %>>Windows
+                                </option>
+                                <option value="wordpress" <%=currentPlatform==='wordpress' ? 'selected' : '' %>
+                                    >WordPress</option>
+                            </select>
+                            <!-- Custom UI Wrapper -->
+                            <div class="custom-select-wrapper" id="wrapper-platform">
+                                <div class="custom-select">
+                                    <span class="selected-text">All Platforms</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option" data-value="all">All Platforms</div>
+                                    <div class="custom-option" data-value="android">Android</div>
+                                    <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                                    <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                                    <div class="custom-option" data-value="windows">Windows</div>
+                                    <div class="custom-option" data-value="wordpress">WordPress</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                <% }) %>
-            </div>
-            
-            <!-- Carousel Dots (Only show if more than 1 item) -->
-            <% if (editorsChoiceMods.length > 1) { %>
-                <div class="carousel-dots">
-                    <% editorsChoiceMods.forEach((_, index) => { %>
-                        <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollToSlide(<%= index %>)"></div>
-                    <% }) %>
+
+                        <!-- 2. SUB-CATEGORY DROPDOWN (Dynamic) -->
+                        <div class="filter-group">
+                            <label>Category</label>
+                            <!-- Hidden Native Select -->
+                            <select id="subCategory" name="subCategory" style="display: none;">
+                                <option value="all" <%=currentSubCategory==='all' ? 'selected' : '' %>>All Categories
+                                </option>
+                                <!-- Options populated by JS -->
+                            </select>
+                            <!-- Custom UI Wrapper -->
+                            <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>"
+                                id="wrapper-subCategory">
+                                <div class="custom-select"
+                                    style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
+                                    <span class="selected-text">All Categories</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-options" id="options-subCategory">
+                                    <div class="custom-option" data-value="all">All Categories</div>
+                                    <!-- Options populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. SORT DROPDOWN -->
+                        <div class="filter-group">
+                            <label>Sort By</label>
+                            <!-- Hidden Native Select -->
+                            <select id="sort" name="sort" style="display: none;">
+                                <option value="latest" <%=currentSort==='latest' ? 'selected' : '' %>>Latest</option>
+                                <option value="popular" <%=currentSort==='popular' ? 'selected' : '' %>>Popularity
+                                </option>
+                            </select>
+                            <!-- Custom UI Wrapper -->
+                            <div class="custom-select-wrapper" id="wrapper-sort">
+                                <div class="custom-select">
+                                    <span class="selected-text">Latest</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option" data-value="latest">Latest</div>
+                                    <div class="custom-option" data-value="popular">Popularity</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="filter-button"
+                            style="box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
+                    </form>
+                    <!-- ============================================== -->
+                    <!-- MOD GRID                                       -->
+                    <!-- ============================================== -->
+                    <section class="mod-grid">
+                        <% if (files && files.length> 0) { %>
+                            <% files.forEach(file=> { %>
+                                <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
+                                    <% }) %>
+                                        <% } else { %>
+                                            <div
+                                                style="grid-column: 1 / -1; text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
+                                                <i class="fas fa-search"
+                                                    style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
+                                                <h2 style="color: var(--silver);">No Mods Found</h2>
+                                                <p style="color: #777;">Try adjusting your filters to see more results.
+                                                </p>
+                                            </div>
+                                            <% } %>
+                    </section>
+
+                    <!-- Pagination -->
+                    <% if (totalPages> 1) { %>
+                        <nav class="pagination">
+                            <% for(let i=1; i <=totalPages; i++) { %>
+                                <a href="/category?page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>"
+                                    class="<%= currentPage === i ? 'active' : '' %>">
+                                    <%= i %>
+                                </a>
+                                <% } %>
+                        </nav>
+                        <% } %>
                 </div>
-            <% } %>
-        </div>
-    </section>
-<% } %>
-<!-- ============================================== -->
+    </main>
 
+    <!-- ============================================== -->
+    <!-- JAVASCRIPT FOR CUSTOM DROPDOWNS & LOGIC        -->
+    <!-- ============================================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
 
-    <div class="container">
-        <!-- ============================================== -->
-        <!-- THE NEW CUSTOM FILTER FORM                     -->
-        <!-- ============================================== -->
-        <form action="/category" method="GET" class="filter-section" id="categoryFilterForm">
-            
-            <!-- 1. PLATFORM DROPDOWN -->
-            <div class="filter-group">
-                <label>Platform</label>
-                <!-- Hidden Native Select -->
-                <select id="platform" name="platform" style="display: none;">
-                    <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
-                    <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
-                    <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
-                    <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
-                    <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
-                    <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper" id="wrapper-platform">
-                    <div class="custom-select">
-                        <span class="selected-text">All Platforms</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option" data-value="all">All Platforms</div>
-                        <div class="custom-option" data-value="android">Android</div>
-                        <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
-                        <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
-                        <div class="custom-option" data-value="windows">Windows</div>
-                        <div class="custom-option" data-value="wordpress">WordPress</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 2. SUB-CATEGORY DROPDOWN (Dynamic) -->
-            <div class="filter-group">
-                <label>Category</label>
-                <!-- Hidden Native Select -->
-                <select id="subCategory" name="subCategory" style="display: none;">
-                    <option value="all" <%= currentSubCategory === 'all' ? 'selected' : '' %>>All Categories</option>
-                    <!-- Options populated by JS -->
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>" id="wrapper-subCategory">
-                    <div class="custom-select" style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
-                        <span class="selected-text">All Categories</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options" id="options-subCategory">
-                        <div class="custom-option" data-value="all">All Categories</div>
-                        <!-- Options populated by JS -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 3. SORT DROPDOWN -->
-            <div class="filter-group">
-                <label>Sort By</label>
-                <!-- Hidden Native Select -->
-                <select id="sort" name="sort" style="display: none;">
-                    <option value="latest" <%= currentSort === 'latest' ? 'selected' : '' %>>Latest</option>
-                    <option value="popular" <%= currentSort === 'popular' ? 'selected' : '' %>>Popularity</option>
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper" id="wrapper-sort">
-                    <div class="custom-select">
-                        <span class="selected-text">Latest</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option" data-value="latest">Latest</div>
-                        <div class="custom-option" data-value="popular">Popularity</div>
-                    </div>
-                </div>
-            </div>
+            // 1. Data mapping for sub-categories
+            const categoriesByPlatform = {
+                android: ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
+                'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
+                'ios-jailbroken': ['Tweak - Accessibility', 'Tweak - Audio', 'Tweak - Battery', 'Tweak - File Management', 'Tweak - Lock Screen', 'Tweak - Messaging', 'Tweak - Notifications', 'Tweak - Security', 'Tweak - Settings', 'Tweak - UI', 'Tweak - Utilities', 'Theme - Icon', 'Theme - Lock Screen', 'Theme - SpringBoard', 'Theme - Widget', 'Utility - System', 'Utility - Scripting', 'Utility - Development', 'Widget - Clock', 'Widget - Music', 'Widget - Productivity', 'Widget - Weather', 'Other'],
+                windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Software - Business', 'Software - Design', 'Software - Education', 'Software - Office', 'Software - Productivity', 'Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Other'],
+                wordpress: ['Plugin - Analytics', 'Plugin - Backup', 'Plugin - Contact Form', 'Plugin - E-commerce', 'Plugin - Email Marketing', 'Plugin - Membership', 'Plugin - Multilingual', 'Plugin - Performance', 'Plugin - Page Builder', 'Plugin - SEO', 'Plugin - Security', 'Plugin - Social', 'Plugin - WooCommerce', 'Plugin - Utilities', 'Theme - Agency', 'Theme - Blog', 'Theme - Business', 'Theme - Corporate', 'Theme - Education', 'Theme - E-commerce', 'Theme - Landing Page', 'Theme - Magazine', 'Theme - Minimal', 'Theme - Multipurpose', 'Theme - Portfolio', 'Theme - Restaurant', 'Theme - WooCommerce', 'Theme - Personal', 'Other']
+            };
 
-            <button type="submit" class="filter-button" style="box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
-        </form>
-<!-- ============================================== -->
-        <!-- MOD GRID                                       -->
-        <!-- ============================================== -->
-        <section class="mod-grid">
-            <% if (files && files.length > 0) { %>
-                <% files.forEach(file => { %>
-                    <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
-                <% }) %>
-            <% } else { %>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
-                    <i class="fas fa-search" style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
-                    <h2 style="color: var(--silver);">No Mods Found</h2>
-                    <p style="color: #777;">Try adjusting your filters to see more results.</p>
-                </div>
-            <% } %>
-        </section>
+            // 2. Setup a specific Custom Dropdown
+            function setupCustomSelect(wrapperId, nativeSelectId) {
+                const wrapper = document.getElementById(wrapperId);
+                const nativeSelect = document.getElementById(nativeSelectId);
+                if (!wrapper || !nativeSelect) return;
 
-        <!-- Pagination -->
-        <% if (totalPages > 1) { %>
-            <nav class="pagination">
-                <% for(let i = 1; i <= totalPages; i++) { %>
-                    <a href="/category?page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
-                       class="<%= currentPage === i ? 'active' : '' %>">
-                       <%= i %>
-                    </a>
-                <% } %>
-            </nav>
-        <% } %>
-    </div>
-</main>
+                const customSelect = wrapper.querySelector('.custom-select');
+                const selectedText = wrapper.querySelector('.selected-text');
+                const optionsContainer = wrapper.querySelector('.custom-options');
 
-<!-- ============================================== -->
-<!-- JAVASCRIPT FOR CUSTOM DROPDOWNS & LOGIC        -->
-<!-- ============================================== -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // 1. Data mapping for sub-categories
-        const categoriesByPlatform = {
-            android: ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
-            'ios-jailed': ['Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Educational', 'Game - Fighting', 'Game - Music', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Game - Survival', 'App - Audio', 'App - Books', 'App - Business', 'App - Communication', 'App - Education', 'App - Entertainment', 'App - Finance', 'App - Food and Drink', 'App - Health and Fitness', 'App - Lifestyle', 'App - Maps and Navigation', 'App - Medical', 'App - Music and Audio', 'App - News', 'App - Photography', 'App - Productivity', 'App - Shopping', 'App - Social', 'App - Tools', 'App - Travel', 'App - Utilities', 'App - Video Players', 'App - Weather', 'Other'],
-            'ios-jailbroken': ['Tweak - Accessibility', 'Tweak - Audio', 'Tweak - Battery', 'Tweak - File Management', 'Tweak - Lock Screen', 'Tweak - Messaging', 'Tweak - Notifications', 'Tweak - Security', 'Tweak - Settings', 'Tweak - UI', 'Tweak - Utilities', 'Theme - Icon', 'Theme - Lock Screen', 'Theme - SpringBoard', 'Theme - Widget', 'Utility - System', 'Utility - Scripting', 'Utility - Development', 'Widget - Clock', 'Widget - Music', 'Widget - Productivity', 'Widget - Weather', 'Other'],
-            windows: ['Software - Utility', 'Software - Multimedia', 'Software - Security', 'Software - Development', 'Software - Business', 'Software - Design', 'Software - Education', 'Software - Office', 'Software - Productivity', 'Game - Action', 'Game - Adventure', 'Game - Arcade', 'Game - Board', 'Game - Casual', 'Game - Puzzle', 'Game - Racing', 'Game - RPG', 'Game - Simulation', 'Game - Sports', 'Game - Strategy', 'Other'],
-            wordpress: ['Plugin - Analytics', 'Plugin - Backup', 'Plugin - Contact Form', 'Plugin - E-commerce', 'Plugin - Email Marketing', 'Plugin - Membership', 'Plugin - Multilingual', 'Plugin - Performance', 'Plugin - Page Builder', 'Plugin - SEO', 'Plugin - Security', 'Plugin - Social', 'Plugin - WooCommerce', 'Plugin - Utilities', 'Theme - Agency', 'Theme - Blog', 'Theme - Business', 'Theme - Corporate', 'Theme - Education', 'Theme - E-commerce', 'Theme - Landing Page', 'Theme - Magazine', 'Theme - Minimal', 'Theme - Multipurpose', 'Theme - Portfolio', 'Theme - Restaurant', 'Theme - WooCommerce', 'Theme - Personal', 'Other']
-        };
-
-        // 2. Setup a specific Custom Dropdown
-        function setupCustomSelect(wrapperId, nativeSelectId) {
-            const wrapper = document.getElementById(wrapperId);
-            const nativeSelect = document.getElementById(nativeSelectId);
-            if (!wrapper || !nativeSelect) return;
-
-            const customSelect = wrapper.querySelector('.custom-select');
-            const selectedText = wrapper.querySelector('.selected-text');
-            const optionsContainer = wrapper.querySelector('.custom-options');
-
-            // Initialize: Set visible text to match the currently selected option in the hidden native select
-            const initialSelectedOption = nativeSelect.options[nativeSelect.selectedIndex];
-            if (initialSelectedOption) {
-                selectedText.textContent = initialSelectedOption.text;
-                selectedText.style.color = 'var(--white)';
-            }
-
-            // Click to open/close
-            customSelect.addEventListener('click', (e) => {
-                // Prevent opening if the wrapper has the 'disabled' class
-                if (wrapper.classList.contains('disabled')) return;
-                
-                // Close all other open dropdowns first
-                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
-                    if (w !== wrapper) w.classList.remove('open');
-                });
-                wrapper.classList.toggle('open');
-                e.stopPropagation(); // Prevent document click from immediately closing it
-            });
-
-            // Delegate click events for options (this is crucial for dynamically added options!)
-            optionsContainer.addEventListener('click', (e) => {
-                const optionEl = e.target.closest('.custom-option');
-                if (!optionEl) return;
-
-                const value = optionEl.getAttribute('data-value');
-                const text = optionEl.textContent;
-
-                // Update UI text
-                selectedText.textContent = text;
-
-                // Update hidden native select
-                nativeSelect.value = value;
-                
-                // Manually trigger a 'change' event on the native select so our other scripts know it changed
-                nativeSelect.dispatchEvent(new Event('change'));
-
-                // Manage styling
-                wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
-                optionEl.classList.add('selected');
-
-                // Close dropdown
-                wrapper.classList.remove('open');
-            });
-        }
-
-        // 3. Initialize all three dropdowns
-        setupCustomSelect('wrapper-platform', 'platform');
-        setupCustomSelect('wrapper-subCategory', 'subCategory');
-        setupCustomSelect('wrapper-sort', 'sort');
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
-        });
-
-        // 4. DYNAMIC LOGIC: When Platform changes, update Sub-Categories
-        const platformSelect = document.getElementById('platform');
-        const subCategorySelect = document.getElementById('subCategory');
-        const subCategoryWrapper = document.getElementById('wrapper-subCategory');
-        const subCategoryOptionsContainer = document.getElementById('options-subCategory');
-        const subCategorySelectedText = subCategoryWrapper.querySelector('.selected-text');
-        const subCategoryCustomSelectBox = subCategoryWrapper.querySelector('.custom-select');
-
-        // The value currently stored in the DB/URL
-        const currentSubCategoryVal = '<%= currentSubCategory %>';
-
-        function updateSubCategories() {
-            const selectedPlatform = platformSelect.value;
-            
-            // Clear existing options in both the native select and custom UI
-            subCategorySelect.innerHTML = '<option value="all">All Categories</option>';
-            subCategoryOptionsContainer.innerHTML = '<div class="custom-option" data-value="all">All Categories</div>';
-
-            if (selectedPlatform === 'all') {
-                // Disable Sub-Category dropdown
-                subCategoryWrapper.classList.add('disabled');
-                subCategoryCustomSelectBox.style.opacity = '0.5';
-                subCategoryCustomSelectBox.style.cursor = 'not-allowed';
-                subCategorySelectedText.textContent = 'All Categories';
-                subCategorySelect.value = 'all';
-            } else {
-                // Enable and Populate Sub-Category dropdown
-                subCategoryWrapper.classList.remove('disabled');
-                subCategoryCustomSelectBox.style.opacity = '1';
-                subCategoryCustomSelectBox.style.cursor = 'pointer';
-
-                const categories = categoriesByPlatform[selectedPlatform] || [];
-                
-                categories.forEach(catName => {
-                    // Create URL-friendly value (e.g., "Game - Action" -> "game---action")
-                    const catValue = catName.toLowerCase().replace(/ /g, '-');
-                    
-                    // Add to hidden native select
-                    const nativeOpt = document.createElement('option');
-                    nativeOpt.value = catValue;
-                    nativeOpt.text = catName;
-                    
-                    // Add to custom UI dropdown
-                    const customOpt = document.createElement('div');
-                    customOpt.className = 'custom-option';
-                    customOpt.setAttribute('data-value', catValue);
-                    customOpt.textContent = catName;
-
-                    // If this matches the URL, set it as active!
-                    if (catValue === currentSubCategoryVal) {
-                        nativeOpt.selected = true;
-                        customOpt.classList.add('selected');
-                        subCategorySelectedText.textContent = catName;
-                    }
-
-                    subCategorySelect.appendChild(nativeOpt);
-                    subCategoryOptionsContainer.appendChild(customOpt);
-                });
-            }
-        }
-
-        // Run immediately on page load to set initial state based on URL
-        updateSubCategories();
-
-        // Listen for changes
-        platformSelect.addEventListener('change', () => {
-            // When user changes platform, reset sub-category to 'all'
-            subCategorySelect.value = 'all';
-            subCategorySelectedText.textContent = 'All Categories';
-            updateSubCategories();
-        });
-        
-        // Form submission animation
-        const filterForm = document.getElementById('categoryFilterForm');
-        const filterBtn = filterForm.querySelector('.filter-button');
-        filterForm.addEventListener('submit', () => {
-            filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-            filterBtn.style.opacity = '0.8';
-        });
-
-    });
-</script>
-<!-- ======== EDITOR'S CHOICE CAROUSEL SCRIPT ======== -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const carousel = document.getElementById('featured-carousel');
-        if (!carousel) return;
-
-        const slides = carousel.querySelectorAll('.featured-card');
-        const dots = document.querySelectorAll('.carousel-dots .dot');
-        
-        // If there's 1 or 0 slides, we don't need animation or dots
-        if (slides.length <= 1) return;
-
-        let currentIndex = 0;
-        let autoPlayInterval;
-        const delay = 4000; // 4 seconds between auto-scrolls
-
-        // 1. Function to visually update the active dot
-        function updateDots(index) {
-            dots.forEach(d => d.classList.remove('active'));
-            if(dots[index]) dots[index].classList.add('active');
-        }
-
-        // 2. Function to scroll the container to a specific slide
-        function scrollToCurrentSlide() {
-            const slide = document.getElementById(`featured-slide-${currentIndex}`);
-            if (slide) {
-                carousel.scrollTo({
-                    left: slide.offsetLeft,
-                    behavior: 'smooth'
-                });
-                updateDots(currentIndex);
-            }
-        }
-
-        // 3. Logic to move to the next slide (loops back to start)
-        function nextSlide() {
-            currentIndex++;
-            if (currentIndex >= slides.length) {
-                currentIndex = 0; // Loop back to the first slide
-            }
-            scrollToCurrentSlide();
-        }
-
-        // 4. Auto-Play Controls
-        function startAutoPlay() {
-            autoPlayInterval = setInterval(nextSlide, delay);
-        }
-
-        function stopAutoPlay() {
-            clearInterval(autoPlayInterval);
-        }
-
-        function resetAutoPlay() {
-            stopAutoPlay();
-            startAutoPlay();
-        }
-
-        // 5. MAGIC FIX: Detect Manual Swipes using IntersectionObserver
-        // This watches the screen and updates the dot automatically when a user swipes!
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Find out which slide just came into view
-                    const index = Array.from(slides).indexOf(entry.target);
-                    currentIndex = index;
-                    updateDots(index);
+                // Initialize: Set visible text to match the currently selected option in the hidden native select
+                const initialSelectedOption = nativeSelect.options[nativeSelect.selectedIndex];
+                if (initialSelectedOption) {
+                    selectedText.textContent = initialSelectedOption.text;
+                    selectedText.style.color = 'var(--white)';
                 }
+
+                // Click to open/close
+                customSelect.addEventListener('click', (e) => {
+                    // Prevent opening if the wrapper has the 'disabled' class
+                    if (wrapper.classList.contains('disabled')) return;
+
+                    // Close all other open dropdowns first
+                    document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                        if (w !== wrapper) w.classList.remove('open');
+                    });
+                    wrapper.classList.toggle('open');
+                    e.stopPropagation(); // Prevent document click from immediately closing it
+                });
+
+                // Delegate click events for options (this is crucial for dynamically added options!)
+                optionsContainer.addEventListener('click', (e) => {
+                    const optionEl = e.target.closest('.custom-option');
+                    if (!optionEl) return;
+
+                    const value = optionEl.getAttribute('data-value');
+                    const text = optionEl.textContent;
+
+                    // Update UI text
+                    selectedText.textContent = text;
+
+                    // Update hidden native select
+                    nativeSelect.value = value;
+
+                    // Manually trigger a 'change' event on the native select so our other scripts know it changed
+                    nativeSelect.dispatchEvent(new Event('change'));
+
+                    // Manage styling
+                    wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                    optionEl.classList.add('selected');
+
+                    // Close dropdown
+                    wrapper.classList.remove('open');
+                });
+            }
+
+            // 3. Initialize all three dropdowns
+            setupCustomSelect('wrapper-platform', 'platform');
+            setupCustomSelect('wrapper-subCategory', 'subCategory');
+            setupCustomSelect('wrapper-sort', 'sort');
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
             });
-        }, {
-            root: carousel,
-            threshold: 0.6 // Trigger when 60% of the slide is visible
+
+            // 4. DYNAMIC LOGIC: When Platform changes, update Sub-Categories
+            const platformSelect = document.getElementById('platform');
+            const subCategorySelect = document.getElementById('subCategory');
+            const subCategoryWrapper = document.getElementById('wrapper-subCategory');
+            const subCategoryOptionsContainer = document.getElementById('options-subCategory');
+            const subCategorySelectedText = subCategoryWrapper.querySelector('.selected-text');
+            const subCategoryCustomSelectBox = subCategoryWrapper.querySelector('.custom-select');
+
+            // The value currently stored in the DB/URL
+            const currentSubCategoryVal = '<%= currentSubCategory %>';
+
+            function updateSubCategories() {
+                const selectedPlatform = platformSelect.value;
+
+                // Clear existing options in both the native select and custom UI
+                subCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+                subCategoryOptionsContainer.innerHTML = '<div class="custom-option" data-value="all">All Categories</div>';
+
+                if (selectedPlatform === 'all') {
+                    // Disable Sub-Category dropdown
+                    subCategoryWrapper.classList.add('disabled');
+                    subCategoryCustomSelectBox.style.opacity = '0.5';
+                    subCategoryCustomSelectBox.style.cursor = 'not-allowed';
+                    subCategorySelectedText.textContent = 'All Categories';
+                    subCategorySelect.value = 'all';
+                } else {
+                    // Enable and Populate Sub-Category dropdown
+                    subCategoryWrapper.classList.remove('disabled');
+                    subCategoryCustomSelectBox.style.opacity = '1';
+                    subCategoryCustomSelectBox.style.cursor = 'pointer';
+
+                    const categories = categoriesByPlatform[selectedPlatform] || [];
+
+                    categories.forEach(catName => {
+                        // Create URL-friendly value (e.g., "Game - Action" -> "game---action")
+                        const catValue = catName.toLowerCase().replace(/ /g, '-');
+
+                        // Add to hidden native select
+                        const nativeOpt = document.createElement('option');
+                        nativeOpt.value = catValue;
+                        nativeOpt.text = catName;
+
+                        // Add to custom UI dropdown
+                        const customOpt = document.createElement('div');
+                        customOpt.className = 'custom-option';
+                        customOpt.setAttribute('data-value', catValue);
+                        customOpt.textContent = catName;
+
+                        // If this matches the URL, set it as active!
+                        if (catValue === currentSubCategoryVal) {
+                            nativeOpt.selected = true;
+                            customOpt.classList.add('selected');
+                            subCategorySelectedText.textContent = catName;
+                        }
+
+                        subCategorySelect.appendChild(nativeOpt);
+                        subCategoryOptionsContainer.appendChild(customOpt);
+                    });
+                }
+            }
+
+            // Run immediately on page load to set initial state based on URL
+            updateSubCategories();
+
+            // Listen for changes
+            platformSelect.addEventListener('change', () => {
+                // When user changes platform, reset sub-category to 'all'
+                subCategorySelect.value = 'all';
+                subCategorySelectedText.textContent = 'All Categories';
+                updateSubCategories();
+            });
+
+            // Form submission animation
+            const filterForm = document.getElementById('categoryFilterForm');
+            const filterBtn = filterForm.querySelector('.filter-button');
+            filterForm.addEventListener('submit', () => {
+                filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                filterBtn.style.opacity = '0.8';
+            });
+
         });
+    </script>
+    <!-- ======== EDITOR'S CHOICE CAROUSEL SCRIPT ======== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const carousel = document.getElementById('featured-carousel');
+            if (!carousel) return;
 
-        slides.forEach(slide => observer.observe(slide));
+            const slides = carousel.querySelectorAll('.featured-card');
+            const dots = document.querySelectorAll('.carousel-dots .dot');
 
-        // 6. User Experience: Pause auto-play if they are hovering or touching the card
-        carousel.addEventListener('mouseenter', stopAutoPlay);
-        carousel.addEventListener('mouseleave', startAutoPlay);
-        carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
-        carousel.addEventListener('touchend', startAutoPlay, { passive: true });
+            // If there's 1 or 0 slides, we don't need animation or dots
+            if (slides.length <= 1) return;
 
-        // 7. Expose the manual click function for the dots
-        window.scrollToSlide = function(index) {
-            currentIndex = index;
-            scrollToCurrentSlide();
-            resetAutoPlay(); // Reset the timer so it doesn't double-jump
-        };
+            let currentIndex = 0;
+            let autoPlayInterval;
+            const delay = 4000; // 4 seconds between auto-scrolls
 
-        // Start the engine!
-        startAutoPlay();
-    });
-</script>
-<%- include('../partials/popunder-ads') %>    
-<%- include('../partials/footer') %>
+            // 1. Function to visually update the active dot
+            function updateDots(index) {
+                dots.forEach(d => d.classList.remove('active'));
+                if (dots[index]) dots[index].classList.add('active');
+            }
+
+            // 2. Function to scroll the container to a specific slide
+            function scrollToCurrentSlide() {
+                const slide = document.getElementById(`featured-slide-${currentIndex}`);
+                if (slide) {
+                    carousel.scrollTo({
+                        left: slide.offsetLeft,
+                        behavior: 'smooth'
+                    });
+                    updateDots(currentIndex);
+                }
+            }
+
+            // 3. Logic to move to the next slide (loops back to start)
+            function nextSlide() {
+                currentIndex++;
+                if (currentIndex >= slides.length) {
+                    currentIndex = 0; // Loop back to the first slide
+                }
+                scrollToCurrentSlide();
+            }
+
+            // 4. Auto-Play Controls
+            function startAutoPlay() {
+                autoPlayInterval = setInterval(nextSlide, delay);
+            }
+
+            function stopAutoPlay() {
+                clearInterval(autoPlayInterval);
+            }
+
+            function resetAutoPlay() {
+                stopAutoPlay();
+                startAutoPlay();
+            }
+
+            // 5. MAGIC FIX: Detect Manual Swipes using IntersectionObserver
+            // This watches the screen and updates the dot automatically when a user swipes!
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Find out which slide just came into view
+                        const index = Array.from(slides).indexOf(entry.target);
+                        currentIndex = index;
+                        updateDots(index);
+                    }
+                });
+            }, {
+                root: carousel,
+                threshold: 0.6 // Trigger when 60% of the slide is visible
+            });
+
+            slides.forEach(slide => observer.observe(slide));
+
+            // 6. User Experience: Pause auto-play if they are hovering or touching the card
+            carousel.addEventListener('mouseenter', stopAutoPlay);
+            carousel.addEventListener('mouseleave', startAutoPlay);
+            carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
+            carousel.addEventListener('touchend', startAutoPlay, { passive: true });
+
+            // 7. Expose the manual click function for the dots
+            window.scrollToSlide = function (index) {
+                currentIndex = index;
+                scrollToCurrentSlide();
+                resetAutoPlay(); // Reset the timer so it doesn't double-jump
+            };
+
+            // Start the engine!
+            startAutoPlay();
+        });
+    </script>
+    <%- include('../partials/video-ad-modal') %>
+        <%- include('../partials/popunder-ads') %>
+            <%- include('../partials/footer') %>
