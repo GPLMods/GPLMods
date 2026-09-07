@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%-include('../partials/header') %>
 
     <style>
         .parts-page-container {
@@ -216,8 +216,7 @@
                                 if (showAds && linkvertiseEnabled && !isUploaderDistributor && mirrorUrl) {
                                 mUrl = generateAdLink(mirrorUrl);
                                 }
-                                return `/leave?url=${encodeURIComponent(mUrl)}&name=${encodeURIComponent(file.name + ' -
-                                ' + providerName)}`;
+                                return `/leave?url=${encodeURIComponent(mUrl)}&name=${encodeURIComponent(file.name + ' - ' + providerName)}`;
                                 };
                                 %>
 

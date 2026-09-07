@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%-include('../partials/header') %>
 
     <style>
         /* Most styles are now in global style.css, but we can keep page-specific ones here */
@@ -675,10 +675,16 @@
 
                                 <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
 
-                                <% // Calculate User Age from DOB let userAge=0; let hasDOB=false; if (user &&
-                                    user.dateOfBirth) { hasDOB=true; const diff_ms=Date.now() - new
-                                    Date(user.dateOfBirth).getTime(); const age_dt=new Date(diff_ms);
-                                    userAge=Math.abs(age_dt.getUTCFullYear() - 1970); } %>
+                                <% // Calculate User Age from DOB
+                                   let userAge = 0;
+                                   let hasDOB = false;
+                                   if (user && user.dateOfBirth) {
+                                       hasDOB = true;
+                                       const diff_ms = Date.now() - new Date(user.dateOfBirth).getTime();
+                                       const age_dt = new Date(diff_ms);
+                                       userAge = Math.abs(age_dt.getUTCFullYear() - 1970);
+                                   }
+                                %>
 
                                     <% let mainDownloadUrl=`/download-file/${file._id}`; let isMainAdSupported=false; if
                                         (showAds) { if (file.customAdLink) {
@@ -725,8 +731,7 @@
                                                                         class="download-button"
                                                                         style="text-align: center;">
                                                                         <i class="fas fa-download"
-                                                                            style="margin-right: 10px;"></i> Download (
-                                                                        <%= formatBytes(file.fileSize) %>)
+                                                                            style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize) %>)
                                                                     </a>
                                                                     <% } %>
                                                                         <% } else { %>
@@ -803,9 +808,7 @@
                                                                                                         style="text-align: center;">
                                                                                                         <i class="fas fa-download"
                                                                                                             style="margin-right: 10px;"></i>
-                                                                                                        Download (<%=
-                                                                                                            formatBytes(file.fileSize)
-                                                                                                            %>)
+                                                                                                        Download (<%= formatBytes(file.fileSize) %>)
                                                                                                     </a>
                                                                                                     <% } %>
                                                                                     </div>
@@ -840,14 +843,9 @@
                                                                                                         Download
                                                                                                     </a>
                                                                                                     <% } else { %>
-                                                                                                        <a href="<%= mainDownloadUrl %>"
-                                                                                                            class="download-button"
-                                                                                                            style="text-align: center;">
-                                                                                                            <i class="fas fa-download"
-                                                                                                                style="margin-right: 10px;"></i>
-                                                                                                            Download (
-                                                                                                            <%= formatBytes(file.fileSize)
-                                                                                                                %>)
+                                                                                                        <a href="<%= mainDownloadUrl %>" class="download-button" style="text-align: center;">
+                                                                                                            <i class="fas fa-download" style="margin-right: 10px;"></i>
+                                                                                                            Download (<%= formatBytes(file.fileSize) %>)
                                                                                                         </a>
                                                                                                         <% } %>
                                                                                                             <% } %>
@@ -1402,17 +1400,12 @@
                                                 <% if (isList) { %>
                                                     <!-- If it's a list, inject the Lottie icons -->
                                                     <ul class="features-list">
-                                                        <% // A clever trick: split the HTML by <li> tags to isolate the
-                                                            list items
-                                                            const listItems = file.modFeatures.split(/<li[^>]*>/);
-
-                                                                listItems.forEach(item => {
-                                                                if (item.trim() !== '' && !item.startsWith('<ul') &&
-                                                                    !item.startsWith('<ol')) { // Clean up the closing
-                                                                    </li> tag
-                                                                    let cleanText = item.replace('</li>', '').replace('
-                                                    </ul>', '').replace('</ol>', '');
-                                                    %>
+                                                        <% // Split the HTML by li tags to isolate list items
+                                                           const listItems = file.modFeatures.split(/<li[^>]*>/);
+                                                           listItems.forEach(function(item) {
+                                                               if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                                                   let cleanText = item.replace('<\/li>', '').replace('<\/ul>', '').replace('<\/ol>', '');
+                                                        %>
                                                     <li>
                                                         <!-- The Lottie Animation -->
                                                         <div class="lottie-icon-wrapper">
@@ -1448,15 +1441,12 @@
 
                                             <% if (isNoteList) { %>
                                                 <ul class="features-list">
-                                                    <% // Split the HTML by <li> tags to isolate the list items
-                                                        const noteItems = file.importantNote.split(/<li[^>]*>/);
-
-                                                            noteItems.forEach(item => {
-                                                            if (item.trim() !== '' && !item.startsWith('<ul') &&
-                                                                !item.startsWith('<ol')) { // Clean up the closing tags
-                                                                let cleanText=item.replace('</li>', '').replace('
-                                                </ul>', '').replace('</ol>', '');
-                                                %>
+                                                    <% // Split the HTML by li tags to isolate list items
+                                                       const noteItems = file.importantNote.split(/<li[^>]*>/);
+                                                       noteItems.forEach(function(item) {
+                                                           if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                                               let cleanText = item.replace('<\/li>', '').replace('<\/ul>', '').replace('<\/ol>', '');
+                                                    %>
                                                 <li>
                                                     <!-- The Red Lottie Arrow Wrapper -->
                                                     <div class="lottie-icon-wrapper">
@@ -1492,13 +1482,11 @@
 
                                                 <% if (isUpdateList) { %>
                                                     <ul class="features-list">
-                                                        <% const updateItems=file.whatsNew.split(/<li[^>]*>/);
-                                                            updateItems.forEach(item => {
-                                                            if (item.trim() !== '' && !item.startsWith('<ul') &&
-                                                                !item.startsWith('<ol')) { let
-                                                                cleanUpdateText=item.replace('</li>', '').replace('
-                                                    </ul>', '').replace('</ol>', '');
-                                                    %>
+                                                        <% const updateItems = file.whatsNew.split(/<li[^>]*>/);
+                                                           updateItems.forEach(item => {
+                                                               if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                                                   let cleanUpdateText = item.replace('<\/li>', '').replace('<\/ul>', '').replace('<\/ol>', '');
+                                                        %>
                                                     <li>
                                                         <div class="lottie-icon-wrapper">
                                                             <lottie-player src="<%= cdnUrl %>/animations/dot.json"

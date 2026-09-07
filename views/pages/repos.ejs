@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%-include('../partials/header') %>
 
     <style>
         .repo-page-header {
@@ -159,8 +159,12 @@
                 package managers for seamless updates and 1-click installs.</p>
         </div>
 
-        <% // Use the dynamically passed baseUrl! const fullRepoUrl=baseUrl; // Strip http:// or https:// for F-Droid
-            schemes if necessary const rawDomain=baseUrl.replace(/^https?:\/\//, '' ); %>
+        <% 
+            // Use the dynamically passed baseUrl!
+            const fullRepoUrl = baseUrl;
+            // Strip http:// or https:// for F-Droid schemes if necessary
+            const rawDomain = baseUrl.replace(/^https?:\/\//, ''); 
+        %>
 
 
             <!-- ============================================== -->
