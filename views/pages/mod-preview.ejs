@@ -21,6 +21,8 @@
     .preview-section h2 { color: var(--gold); margin-bottom: 12px; }
     .preview-section img { max-width: 100%; height: auto; border-radius: 8px; margin: 5px; }
     .preview-section a { color: var(--gold); }
+    .preview-video { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; }
+    .preview-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
     .preview-parts { padding-left: 20px; }
     @media (max-width: 760px) { .preview-layout { grid-template-columns: 1fr; } }
 </style>
@@ -53,6 +55,7 @@
             <% if (file.modDescription) { %><article class="preview-section"><h2>Description</h2><%- file.modDescription %></article><% } %>
             <% if (file.downloadParts && file.downloadParts.length) { %><article class="preview-section"><h2>Download Parts</h2><ol class="preview-parts"><% file.downloadParts.forEach(part => { %><li><%= part.partName %>: <%= part.partUrl %></li><% }) %></ol></article><% } %>
             <% if (file.screenshotUrls && file.screenshotUrls.length) { %><article class="preview-section"><h2>Screenshots</h2><% file.screenshotUrls.forEach(url => { %><img src="<%= url %>" alt="Mod screenshot"><% }) %></article><% } %>
+            <% if (file.youtubeVideoId) { %><article class="preview-section"><h2>Video</h2><div class="preview-video"><iframe src="https://www.youtube.com/embed/<%= file.youtubeVideoId %>" title="Mod video preview" allowfullscreen></iframe></div></article><% } %>
             <% if (!file.modFeatures && !file.officialDescription && !file.importantNote && !file.whatsNew && !file.modDescription) { %><article class="preview-section"><p>No description has been added yet.</p></article><% } %>
         </section>
     </div>

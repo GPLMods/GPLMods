@@ -5166,6 +5166,16 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             cleanName = cleanName.replace(/[-_]+/g, " ").trim();
         }
 
+        // Draft media lives in private storage too, so sign it before rendering the
+        // form.  Previously only the edit route did this, which made media appear
+        // missing until the mod was live.
+        const iconUrl = await getSmartImageUrl(pendingFile.iconKey);
+        const screenshotUrls = await Promise.all((pendingFile.screenshotKeys || []).map(key => getSmartImageUrl(key)));
+        const renderedFile = { ...pendingFile.toObject(), iconUrl, screenshotUrls };
+        const savedPlatform = pendingFile.category && pendingFile.category !== 'n/a'
+            ? pendingFile.category
+            : defaultPlatform;
+
         res.render('pages/upload-details', { 
             fileId: pendingFile._id,
             fileKey: pendingFile.fileKey,
@@ -5173,8 +5183,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             filesize: pendingFile.fileSize,
             defaultName: savedName || cleanName,
             defaultVersion: savedVersion || defaultVersion,
-            defaultPlatform: defaultPlatform,
-            file: pendingFile,
+            defaultPlatform: savedPlatform,
+            file: renderedFile,
             licenses
         });
 
@@ -5210,6 +5220,8 @@ app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
         if (!canManageDraft(file, req.user)) return res.status(403).render('pages/403');
         file.iconUrl = await getSmartImageUrl(file.iconKey);
         file.screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));
+        const youtubeMatch = String(file.videoUrl || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^&#?\/]+)/i);
+        file.youtubeVideoId = youtubeMatch && youtubeMatch[1].length === 11 ? youtubeMatch[1] : null;
         res.render('pages/mod-preview', { file });
     } catch (error) {
         console.error('Draft preview error:', error);

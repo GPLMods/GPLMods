@@ -248,6 +248,13 @@
         border-radius: 8px;
         display: none; 
     }
+    .draft-preview-button {
+        background-color: #16120a;
+        background-image: repeating-linear-gradient(135deg, rgba(255,215,0,.12) 0 2px, transparent 2px 7px);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+    .draft-preview-button:hover { background-color: var(--gold); color: var(--black); }
     #screenshotPreviewContainer {
         column-count: 2;
         column-gap: 15px;
@@ -418,7 +425,7 @@
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin:15px 0; flex-wrap:wrap;">
-            <a href="/mods/<%= fileId %>/preview" target="_blank" class="btn btn-secondary"><i class="fas fa-eye"></i> Preview Draft</a>
+            <a href="/mods/<%= fileId %>/preview" target="_blank" class="btn btn-secondary draft-preview-button"><i class="fas fa-eye"></i> Preview Draft</a>
             <button type="button" id="show-snapshots" class="btn btn-secondary"><i class="fas fa-history"></i> Saved Versions</button>
             <span id="autosave-status" style="color:var(--silver); align-self:center; font-size:0.9em;"></span>
         </div>
@@ -438,8 +445,8 @@
                 <div class="icon-upload-container">
                     <label>Mod Icon*</label>
                     <div class="icon-preview" id="iconPreviewBox">
-                        <img id="iconImage" src="" alt="Icon Preview" style="display:none;">
-                        <span id="iconPlaceholder">Preview</span>
+                        <img id="iconImage" src="<%= file.iconUrl || '' %>" alt="Icon Preview" style="display:<%= file.iconUrl ? 'block' : 'none' %>;">
+                        <span id="iconPlaceholder" style="display:<%= file.iconUrl ? 'none' : 'block' %>;">Preview</span>
                     </div>
                     <div style="max-width: 250px;">
                         <input type="file" id="modIcon" name="softwareIcon" accept="image/*">
@@ -523,12 +530,12 @@
                 <div class="form-group">
                     <label>Platform*</label>
                     <select id="modPlatform" name="modPlatform" style="display: none;">
-                        <option value="" disabled selected>Select a platform...</option>
-                        <option value="android">Android</option>
-                        <option value="ios-jailed">iOS - Jailed (IPA)</option>
-                        <option value="ios-jailbroken">iOS - Jailbroken (DEB)</option>
-                        <option value="windows">Windows</option>
-                        <option value="wordpress">WordPress</option>
+                        <option value="" disabled <%= !defaultPlatform ? 'selected' : '' %>>Select a platform...</option>
+                        <option value="android" <%= defaultPlatform === 'android' ? 'selected' : '' %>>Android</option>
+                        <option value="ios-jailed" <%= defaultPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken" <%= defaultPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
+                        <option value="windows" <%= defaultPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
+                        <option value="wordpress" <%= defaultPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
                     </select>
                     <div class="custom-select-wrapper" id="platformWrapper">
                         <div class="custom-select">
@@ -554,9 +561,9 @@
                 <div class="form-group">
                     <label for="modLicense">Software License (Optional)</label>
                     <select id="modLicense" name="modLicense" style="display: none;">
-                        <option value="">None / Proprietary</option>
+                        <option value="" <%= !file.license ? 'selected' : '' %>>None / Proprietary</option>
                         <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
-                            <option value="<%= license._id %>"><%= license.name %></option>
+                            <option value="<%= license._id %>" <%= file.license && file.license.toString() === license._id.toString() ? 'selected' : '' %>><%= license.name %></option>
                         <% }) } %>
                     </select>
                     <div class="custom-select-wrapper" id="licenseWrapper">
@@ -565,9 +572,9 @@
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
                         <div class="custom-options">
-                            <div class="custom-option selected" data-value="">None / Proprietary</div>
+                            <div class="custom-option <%= !file.license ? 'selected' : '' %>" data-value="">None / Proprietary</div>
                             <% if (typeof licenses !== 'undefined') { licenses.forEach(license => { %>
-                                <div class="custom-option" data-value="<%= license._id %>"><%= license.name %></div>
+                                <div class="custom-option <%= file.license && file.license.toString() === license._id.toString() ? 'selected' : '' %>" data-value="<%= license._id %>"><%= license.name %></div>
                             <% }) } %>
                         </div>
                     </div>
@@ -756,12 +763,14 @@
                         <label for="screenshots" class="file-input-label">Choose Screenshots</label>
                         <span class="file-name" id="screenshotFileName">No files selected</span>
                     </div>
-                    <div class="preview-container" id="screenshotPreviewContainer"></div>
+                    <div class="preview-container" id="screenshotPreviewContainer" style="display:<%= file.screenshotUrls && file.screenshotUrls.length ? 'block' : 'none' %>;">
+                        <% (file.screenshotUrls || []).forEach(url => { %><img src="<%= url %>" alt="Current screenshot"><% }) %>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="videoUrl">Video URL (Optional)</label>
-                    <input type="url" id="videoUrl" name="videoUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                    <input type="url" id="videoUrl" name="videoUrl" value="<%= file.videoUrl || '' %>" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                     <div class="preview-container" id="videoPreviewContainer"></div>
                 </div>
             </fieldset>
@@ -910,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (videoUrlInput && videoPreviewContainer) {
-        videoUrlInput.addEventListener('input', function() {
+        const renderVideoPreview = function() {
             const videoId = getYouTubeId(this.value);
             if (videoId) {
                 videoPreviewContainer.style.display = 'block'; 
@@ -919,7 +928,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 videoPreviewContainer.style.display = 'none'; 
                 videoPreviewContainer.innerHTML = '';
             }
-        });
+        };
+        videoUrlInput.addEventListener('input', renderVideoPreview);
+        renderVideoPreview.call(videoUrlInput);
     }
 
     // ==========================================
@@ -1003,7 +1014,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentValue = nativeAgeRatingSelect.value;
         if (currentValue) {
             const optionToSelect = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentValue}"]`);
-            if (optionToSelect) optionToSelect.classList.add('selected');
+            if (optionToSelect) {
+                optionToSelect.classList.add('selected');
+                ageRatingWrapper.querySelector('.selected-text').textContent = optionToSelect.textContent;
+            }
+        }
+    }
+    if (nativeLicenseSelect && licenseWrapper && nativeLicenseSelect.value) {
+        const optionToSelect = licenseWrapper.querySelector(`.custom-option[data-value="${nativeLicenseSelect.value}"]`);
+        if (optionToSelect) {
+            optionToSelect.classList.add('selected');
+            licenseWrapper.querySelector('.selected-text').textContent = optionToSelect.textContent;
         }
     }
 
@@ -1035,6 +1056,8 @@ document.addEventListener('DOMContentLoaded', () => {
         wordpress:['Plugin - Analytics', 'Plugin - Backup', 'Plugin - Contact Form', 'Plugin - E-commerce', 'Plugin - Email Marketing', 'Plugin - Membership', 'Plugin - Multilingual', 'Plugin - Performance', 'Plugin - Page Builder', 'Plugin - SEO', 'Plugin - Security', 'Plugin - Social', 'Plugin - WooCommerce', 'Plugin - Utilities', 'Theme - Agency', 'Theme - Blog', 'Theme - Business', 'Theme - Corporate', 'Theme - Education', 'Theme - E-commerce', 'Theme - Landing Page', 'Theme - Magazine', 'Theme - Minimal', 'Theme - Multipurpose', 'Theme - Portfolio', 'Theme - Restaurant', 'Theme - WooCommerce', 'Theme - Personal', 'Other']
     };
 
+    const savedCategory = <%- JSON.stringify((file.platforms && file.platforms[0]) || '') %>;
+    const savedArchitectures = <%- JSON.stringify(file.architectures || []) %>;
     function populateCategories() {
         if (!nativePlatformSelect || !nativeCategorySelect || !categoryOptionsContainer || !categoryWrapper) return;
         
@@ -1071,6 +1094,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 customOpt.textContent = category;
                 categoryOptionsContainer.appendChild(customOpt);
             });
+            const savedOption = categoryOptionsContainer.querySelector(`.custom-option[data-value="${savedCategory}"]`);
+            if (savedOption) {
+                nativeCategorySelect.value = savedCategory;
+                savedOption.classList.add('selected');
+                customSelectedText.textContent = savedOption.textContent;
+                customSelectedText.style.color = 'var(--white)';
+            }
         } else {
             nativeCategorySelect.disabled = true;
             categoryWrapper.classList.add('disabled');
@@ -1129,6 +1159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         checkbox.style.width = '16px';
                         checkbox.style.height = '16px';
                         checkbox.style.cursor = 'pointer';
+                        checkbox.checked = savedArchitectures.includes(arch);
                         
                         label.addEventListener('click', function(e) { e.stopPropagation(); });
                         
@@ -1150,6 +1181,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         label.appendChild(document.createTextNode(arch));
                         archOptionsContainer.appendChild(label);
                     });
+                    const savedChecks = archOptionsContainer.querySelectorAll('input:checked');
+                    if (savedChecks.length === 1) { archSelectedText.textContent = savedChecks[0].value; archSelectedText.style.color = 'var(--white)'; }
+                    else if (savedChecks.length > 1) { archSelectedText.textContent = `${savedChecks.length} architectures selected`; archSelectedText.style.color = 'var(--white)'; }
                 }
             } else {
                 if(archGroup) archGroup.style.display = 'none';
@@ -1449,10 +1483,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('developerName') && !document.getElementById('developerName').value.trim()) {
                 showStatusAlert('Error: Developer name is required.', 'error'); return;
             }
-            if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0) {
+            const hasSavedIcon = <%= file.iconUrl ? 'true' : 'false' %>;
+            const hasSavedScreenshots = <%= file.screenshotUrls && file.screenshotUrls.length ? 'true' : 'false' %>;
+            if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0 && !hasSavedIcon) {
                 showStatusAlert('Error: An icon is required to publish this mod.', 'error'); return;
             }
-            if (document.getElementById('screenshots') && document.getElementById('screenshots').files.length === 0) {
+            if (document.getElementById('screenshots') && document.getElementById('screenshots').files.length === 0 && !hasSavedScreenshots) {
                 showStatusAlert('Error: Screenshots are required to publish this mod.', 'error'); return;
             }
 
