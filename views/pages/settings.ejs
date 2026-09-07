@@ -68,6 +68,19 @@
 
         <div class="settings-section">
             <div class="settings-info">
+                <h3><i class="fas fa-eye-slash" style="color: var(--gold);"></i> Filter 18+ Mods</h3>
+                <p>Hide mods marked 18+ across the site. This is enabled by default for members under 18 and disabled by default for adults.</p>
+            </div>
+            <form action="/settings/adult-content" method="POST" style="margin: 0;">
+                <label class="switch">
+                    <input type="checkbox" name="hideAdultContent" onchange="this.form.submit()" <%= user.hideAdultContent ? 'checked' : '' %>>
+                    <span class="slider round"></span>
+                </label>
+            </form>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-info">
                 <h3><i class="fas fa-shield-alt" style="color: var(--red);"></i> Failed Login Alerts</h3>
                 <p>Receive an email after five incorrect password attempts on your account.</p>
             </div>

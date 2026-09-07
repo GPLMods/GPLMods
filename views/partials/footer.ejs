@@ -636,6 +636,7 @@
                 <div class="gpl-header-actions">
                     <button type="button" id="gplChatHistoryBtn" class="gpl-header-icon-btn" title="Chat History"><i class="fas fa-history"></i></button>
                     <button type="button" id="gplChatNewBtn" class="gpl-header-icon-btn" title="Start New Conversation"><i class="fas fa-plus"></i></button>
+                    <button type="button" id="gplChatDeleteBtn" class="gpl-header-icon-btn" title="Delete this conversation" style="color: var(--red);"><i class="fas fa-trash-alt"></i></button>
                     <button type="button" id="gplChatClose" class="gpl-header-icon-btn" title="Close Chat" style="font-size: 1.4em; padding: 0 6px;">&times;</button>
                 </div>
             </div>
@@ -714,6 +715,7 @@
             const historyListEl = document.getElementById('gplHistoryList');
             const newChatBtn = document.getElementById('gplChatNewBtn');
             const drawerNewChatBtn = document.getElementById('gplDrawerNewChatBtn');
+            const deleteChatBtn = document.getElementById('gplChatDeleteBtn');
 
             // Live indicators
             const onlineTextEl = document.getElementById('gplOnlineText');
@@ -882,6 +884,28 @@
                 if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
                 if (drawerNewChatBtn) drawerNewChatBtn.addEventListener('click', startNewChat);
 
+                function deleteCurrentChat() {
+                    if (!sessionId || !window.confirm('Delete this conversation permanently? This cannot be undone.')) return;
+                    socket.emit('delete_support_chat', { sessionId, userId, guestId });
+                }
+
+                if (deleteChatBtn) deleteChatBtn.addEventListener('click', deleteCurrentChat);
+
+                socket.on('support_chat_deleted', (data) => {
+                    if (String(data.sessionId) !== String(sessionId)) {
+                        if (historyDrawer && historyDrawer.classList.contains('open')) loadChatHistory();
+                        return;
+                    }
+                    localStorage.removeItem('gplChatSessionId');
+                    sessionId = null;
+                    if (historyDrawer) historyDrawer.classList.remove('open');
+                    startNewChat();
+                });
+
+                socket.on('support_chat_delete_error', (data) => {
+                    alert(data.message || 'Unable to delete this conversation.');
+                });
+
                 // --- HISTORY DRAWER LOGIC ---
                 function loadChatHistory() {
                     if (historyListEl) {
@@ -934,7 +958,7 @@
                         div.innerHTML = `
                             <div class="gpl-history-item-top">
                                 <span style="font-size:0.75em; color:var(--silver);">${dateStr}</span>
-                                <span class="gpl-history-badge ${badgeClass}">${badgeLabel}</span>
+                                <span style="display:flex; align-items:center; gap:8px;"><span class="gpl-history-badge ${badgeClass}">${badgeLabel}</span><button type="button" class="gpl-history-delete" title="Delete conversation" style="background:none; border:0; color:var(--red); cursor:pointer; padding:2px;"><i class="fas fa-trash-alt"></i></button></span>
                             </div>
                             <div class="gpl-history-snippet">${sess.snippet || 'Empty conversation'}</div>
                         `;
@@ -944,6 +968,14 @@
                             sessionId = sess._id;
                             socket.emit('switch_support_chat', { sessionId: sess._id });
                             if (historyDrawer) historyDrawer.classList.remove('open');
+                        });
+
+                        div.querySelector('.gpl-history-delete').addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            if (window.confirm('Delete this conversation permanently? This cannot be undone.')) {
+                                socket.emit('delete_support_chat', { sessionId: sess._id, userId, guestId });
+                                if (String(sess._id) !== String(sessionId)) loadChatHistory();
+                            }
                         });
 
                         historyListEl.appendChild(div);
@@ -956,7 +988,7 @@
                         const text = chatInput.value.trim();
                         if (text && sessionId) {
                             const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
-                            socket.emit('send_support_message', { sessionId, text, isPremium });
+                            socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             chatInput.value = '';
                         }
                     });
@@ -969,7 +1001,7 @@
                         const text = btn.textContent;
                         if (sessionId) {
                             const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
-                            socket.emit('send_support_message', { sessionId, text, isPremium });
+                            socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             if (quickReplyContainer) {
                                 quickReplyContainer.style.display = 'none';
                             }

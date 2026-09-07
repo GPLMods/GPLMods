@@ -1,5 +1,6 @@
 <!-- views/partials/mod-card.ejs -->
 
+<% if (!(typeof hideAdultContent !== 'undefined' && hideAdultContent && file.ageRating === '18+')) { %>
                                 <!-- The Card is a DIV, not an 'A' tag -->
                                 <div class="mod-card">
                                     
@@ -79,3 +80,4 @@
     </div>
     
 </div>
+<% } %>

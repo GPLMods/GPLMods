@@ -198,9 +198,12 @@
                 <h3 id="chatHeaderName" style="margin: 0; color: var(--white);">User Name</h3>
                 <div id="chatHeaderInfo" class="device-info">Guest | No Device Info</div>
             </div>
-            <button id="claimBtn" style="padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: none;">
-                <i class="fas fa-hand-holding-hand" style="margin-right: 6px;"></i> Claim Chat
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button id="claimBtn" style="padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: none;">
+                    <i class="fas fa-hand-holding-hand" style="margin-right: 6px;"></i> Claim Chat
+                </button>
+                <button id="deleteChatBtn" type="button" title="Delete conversation permanently" style="padding: 10px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
         </div>
         
         <div class="chat-messages" id="chatMessages"></div>
@@ -233,6 +236,7 @@
         const chatHeaderName = document.getElementById('chatHeaderName');
         const chatHeaderInfo = document.getElementById('chatHeaderInfo');
         const claimBtn = document.getElementById('claimBtn');
+        const deleteChatBtn = document.getElementById('deleteChatBtn');
         const agentInput = document.getElementById('agentInput');
         const agentSubmit = document.getElementById('agentSubmit');
 
@@ -355,6 +359,16 @@
             }
         });
 
+        socket.on('agent_chat_deleted', ({ sessionId }) => {
+            activeChats = activeChats.filter(chat => String(chat._id) !== String(sessionId));
+            if (String(currentSessionId) === String(sessionId)) {
+                currentSessionId = null;
+                mainChatEl.style.display = 'none';
+                emptyStateEl.style.display = 'flex';
+            }
+            renderChatList();
+        });
+
         // --- UI RENDER FUNCTIONS ---
         function renderChatList() {
             chatListEl.innerHTML = '';
@@ -430,6 +444,11 @@
         // --- ACTION HANDLERS ---
         claimBtn.addEventListener('click', () => {
             socket.emit('agent_claim_chat', { sessionId: currentSessionId, agentId, agentName });
+        });
+
+        deleteChatBtn.addEventListener('click', () => {
+            if (!currentSessionId || !window.confirm('Delete this conversation permanently? This cannot be undone.')) return;
+            socket.emit('agent_delete_chat', { sessionId: currentSessionId, agentId });
         });
 
         document.getElementById('agentForm').addEventListener('submit', (e) => {

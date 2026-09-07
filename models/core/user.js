@@ -165,6 +165,12 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false
     },
+    // Undefined means "use the age-based default". Once changed in Settings,
+    // this stores the member's explicit preference.
+    hideAdultContent: {
+        type: Boolean,
+        default: undefined
+    },
     failedLoginAttempts: {
         type: Number,
         default: 0
