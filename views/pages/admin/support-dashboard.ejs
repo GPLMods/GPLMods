@@ -120,7 +120,8 @@
         .chat-header .device-info { font-size: 0.85em; color: var(--silver); margin-top: 5px; }
         
         .chat-messages { flex-grow: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #0e0e0e; }
-        .msg-bubble { max-width: 70%; padding: 12px 18px; border-radius: 15px; line-height: 1.5; font-size: 0.95em; word-wrap: break-word; }
+        .msg-bubble { max-width: 70%; padding: 12px 18px; border-radius: 15px; line-height: 1.5; font-size: 0.95em; word-wrap: break-word; animation: supportMessageIn .22s ease-out; }
+        @keyframes supportMessageIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .msg-user { align-self: flex-start; background: #222; border: 1px solid var(--border); border-bottom-left-radius: 0; color: var(--text); }
         .msg-agent { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 0; }
         .msg-bot { align-self: flex-start; background: rgba(255, 215, 0, 0.08); border: 1px solid var(--gold); color: var(--gold); border-bottom-left-radius: 0; }
@@ -219,6 +220,14 @@
         Select a chat from the left to start responding.
     </div>
 
+    <div id="deleteChatModal" class="policy-modal" style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.7); opacity:0; transition:opacity .2s ease;">
+        <div style="background-color:var(--panel); color:var(--white); padding:30px; text-align:center; border-radius:15px; max-width:450px; width:90%; border-top:3px solid var(--red); box-shadow:0 10px 30px rgba(0,0,0,.5);">
+            <h2 style="color:var(--red); margin:0 0 15px;">Delete conversation?</h2>
+            <p style="margin:0 0 20px; color:var(--silver); line-height:1.6;">This permanently deletes the selected chat and cannot be undone.</p>
+            <div style="display:flex; gap:15px; justify-content:center;"><button type="button" id="confirmDeleteChatBtn" style="background:var(--red); color:var(--white); padding:10px 25px; border-radius:20px; font-weight:bold; border:0; cursor:pointer;">Yes, Delete</button><button type="button" id="cancelDeleteChatBtn" style="background:transparent; color:var(--silver); border:2px solid var(--silver); padding:10px 25px; border-radius:20px; font-weight:bold; cursor:pointer;">Cancel</button></div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -237,6 +246,9 @@
         const chatHeaderInfo = document.getElementById('chatHeaderInfo');
         const claimBtn = document.getElementById('claimBtn');
         const deleteChatBtn = document.getElementById('deleteChatBtn');
+        const deleteChatModal = document.getElementById('deleteChatModal');
+        const confirmDeleteChatBtn = document.getElementById('confirmDeleteChatBtn');
+        const cancelDeleteChatBtn = document.getElementById('cancelDeleteChatBtn');
         const agentInput = document.getElementById('agentInput');
         const agentSubmit = document.getElementById('agentSubmit');
 
@@ -446,9 +458,20 @@
             socket.emit('agent_claim_chat', { sessionId: currentSessionId, agentId, agentName });
         });
 
+        function closeDeleteChatModal() {
+            deleteChatModal.style.opacity = '0';
+            setTimeout(() => deleteChatModal.style.display = 'none', 200);
+        }
         deleteChatBtn.addEventListener('click', () => {
-            if (!currentSessionId || !window.confirm('Delete this conversation permanently? This cannot be undone.')) return;
+            if (!currentSessionId) return;
+            deleteChatModal.style.display = 'flex';
+            requestAnimationFrame(() => deleteChatModal.style.opacity = '1');
+        });
+        cancelDeleteChatBtn.addEventListener('click', closeDeleteChatModal);
+        confirmDeleteChatBtn.addEventListener('click', () => {
+            if (!currentSessionId) return closeDeleteChatModal();
             socket.emit('agent_delete_chat', { sessionId: currentSessionId, agentId });
+            closeDeleteChatModal();
         });
 
         document.getElementById('agentForm').addEventListener('submit', (e) => {

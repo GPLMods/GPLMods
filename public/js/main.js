@@ -33,7 +33,7 @@ console.log("GPL Mods main.js is loading...");
     const recentErrors = new Map();
     let activeAlert = false;
 
-    const ignoredErrorText = ['script error', 'err_blocked_by_client', 'tidio', 'cashfree'];
+    const ignoredErrorText = ['script error', 'err_blocked_by_client', 'cashfree'];
 
     function shouldIgnore(value) {
         const text = String(value || '').toLowerCase();

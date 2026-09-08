@@ -24,8 +24,6 @@ const LIMIT_CATALOG = [
     { service: 'backblaze-b2', metric: 'download', period: 'daily', limit: 1, unit: 'GB', trackingOnly: true },
     { service: 'backblaze-b2', metric: 'class-b', period: 'daily', limit: 2500, unit: 'operations', trackingOnly: true },
     { service: 'backblaze-b2', metric: 'class-c', period: 'daily', limit: 2500, unit: 'operations', trackingOnly: true },
-    { service: 'tidio', metric: 'conversations', period: 'monthly', limit: 50, unit: 'conversations', trackingOnly: true },
-    { service: 'tidio', metric: 'chatbot-visitors', period: 'monthly', limit: 100, unit: 'visitors', trackingOnly: true },
     { service: 'infinityfree', metric: 'hits', period: 'daily', limit: 50000, unit: 'hits', trackingOnly: true },
     { service: 'infinityfree', metric: 'disk-space', period: 'monthly', limit: 5, unit: 'GB', trackingOnly: true },
     { service: 'cloudflare-workers', metric: 'requests', period: 'daily', limit: 100000, unit: 'requests', trackingOnly: true }

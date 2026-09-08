@@ -7513,7 +7513,7 @@ app.get('/sitemap-docs.xml', async (req, res) => {
     } catch (error) { res.status(500).send('Error'); }
 });
 
-// ======== HTML SITEMAP (FOR TIDIO LYRO & AI CRAWLERS & SEO) ========
+// ======== HTML SITEMAP (FOR AI CRAWLERS & SEO) ========
 app.get('/ai-directory', async (req, res) => {
     try {
         // 1. Fetch live mods with extended data (Description, Image Keys, Dates)
@@ -8555,8 +8555,9 @@ const startServer = async () => {
                         session = new ChatSession({
                             user: userId,
                             guestId: data.guestId,
+                            guestEmail: !userId && /^\S+@\S+\.\S+$/.test((data.guestEmail || '').trim()) ? data.guestEmail.trim() : undefined,
                             expiresAt: expiresAt,
-                            adminNotes: data.deviceInfo ? `Device: ${data.deviceInfo.browser || 'Unknown'} on ${data.deviceInfo.os || 'Unknown'}` : ''
+                            adminNotes: data.deviceInfo ? `Device: ${data.deviceInfo.browser || 'Unknown'} on ${data.deviceInfo.os || 'Unknown'}${data.currentPage ? ` | Page: ${data.currentPage}` : ''}` : ''
                         });
                         await session.save();
                     }
@@ -8570,6 +8571,19 @@ const startServer = async () => {
                     });
                 } catch (err) {
                     console.error("join_support_chat error:", err);
+                }
+            });
+
+            socket.on('set_support_email', async (data) => {
+                try {
+                    if (socket.request.user || !/^\S+@\S+\.\S+$/.test((data.guestEmail || '').trim())) return;
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (!session || session.user || session.guestId !== data.guestId) return;
+                    session.guestEmail = data.guestEmail.trim();
+                    await session.save();
+                    io.to('support_agents').emit('agent_chat_updated', session);
+                } catch (err) {
+                    console.error('set_support_email error:', err);
                 }
             });
 
@@ -8734,6 +8748,7 @@ const startServer = async () => {
                                 });
                                 customContext += "\n";
                             }
+                            const accountContext = session.user ? `Registered support context: username=${session.user.username || 'unknown'}; email=${session.user.email || 'unknown'}; country=${session.user.country || 'not provided'}; profile bio=${session.user.bio || 'not provided'}; page/device context=${session.adminNotes || 'not provided'}. Use this only to personalize support in this conversation; never reveal it unnecessarily.\n` : '';
 
                             const history = session.messages
                                 .filter(m => m.sender === 'user' || m.sender === 'bot')
@@ -8757,7 +8772,7 @@ const startServer = async () => {
                             const aiStartTime = Date.now();
 
                             const chat = aiModel.startChat({ history: history });
-                            const promptText = customContext ? `${customContext}User asks: ${text}` : text;
+                            const promptText = `${accountContext}${customContext}User asks: ${text}`;
                             const result = await chat.sendMessage(promptText);
                             const botText = result.response.text();
 

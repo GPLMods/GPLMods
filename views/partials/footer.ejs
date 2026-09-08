@@ -409,7 +409,8 @@
             /* Body */
             .gpl-chat-body { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #111; position: relative; }
             
-            .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.92em; line-height: 1.4; word-wrap: break-word; }
+            .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.92em; line-height: 1.4; word-wrap: break-word; animation: gplChatMessageIn .22s ease-out; }
+            @keyframes gplChatMessageIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
             .bubble-user { background: var(--gold); color: var(--black); align-self: flex-end; border-bottom-right-radius: 0; }
             .bubble-bot { background: #222; color: var(--silver); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #333; }
             .bubble-agent { background: #2196F3; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
@@ -425,6 +426,8 @@
                 scrollbar-width: none;
             }
             .gpl-chat-quick-replies::-webkit-scrollbar { display: none; }
+            .gpl-chat-quick-replies.closing { animation: gplChatChoicesOut 0.22s ease forwards; pointer-events: none; }
+            @keyframes gplChatChoicesOut { to { opacity: 0; transform: translateY(-10px); max-height: 0; padding-top: 0; padding-bottom: 0; } }
             .quick-reply-btn {
                 background: var(--dark-gray);
                 color: var(--gold);
@@ -608,6 +611,11 @@
             .gpl-chat-footer { padding: 10px 12px; background: var(--black); border-top: 1px solid #333; display: flex; align-items: center; gap: 8px; position: relative; }
             .gpl-chat-send { background: none; border: none; color: var(--gold); font-size: 1.3em; cursor: pointer; transition: transform 0.2s; padding: 0 6px; }
             .gpl-chat-send:hover { transform: scale(1.1); }
+            .gpl-chat-email-row { padding: 8px 12px; background: #111; border-top: 1px solid #222; }
+            .gpl-chat-email-input { width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: var(--white); font: inherit; font-size: .82em; }
+            .gpl-chat-email-input:focus { outline: none; border-color: var(--gold); }
+            .gpl-chat-confirm-modal { position: absolute; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.7); opacity: 0; transition: opacity .2s ease; }
+            .gpl-chat-confirm-modal.show { display: flex; opacity: 1; }
         </style>
 
         <div class="gpl-chat-btn" id="gplChatToggle" title="GPL Support Chat">
@@ -671,8 +679,15 @@
             <div class="gpl-chat-quick-replies" id="gplChatQuickReplies">
                 <button type="button" class="quick-reply-btn">Suggest a Mod</button>
                 <button type="button" class="quick-reply-btn">Report a Bug</button>
-                <button type="button" class="quick-reply-btn">Talk to a Human</button>
+                <button type="button" class="quick-reply-btn">Talk to Support</button>
+                <button type="button" class="quick-reply-btn">Talk to Gemini AI</button>
             </div>
+
+            <% if (!(typeof user !== 'undefined' && user)) { %>
+                <div class="gpl-chat-email-row">
+                    <input type="email" id="gplChatEmail" class="gpl-chat-email-input" placeholder="Your email address (optional, for support replies)" autocomplete="email">
+                </div>
+            <% } %>
             
             <form class="gpl-chat-footer" id="gplChatForm">
                 <% if (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) { %>
@@ -689,6 +704,14 @@
 
                 <button type="submit" class="gpl-chat-send" title="Send message"><i class="fas fa-paper-plane"></i></button>
             </form>
+
+            <div class="gpl-chat-confirm-modal" id="gplChatDeleteModal" role="dialog" aria-modal="true" aria-labelledby="gplChatDeleteTitle">
+                <div style="background-color:var(--dark-gray); color:var(--white); padding:30px; text-align:center; border-radius:15px; max-width:450px; width:100%; border-top:3px solid var(--red); box-shadow:0 10px 30px rgba(0,0,0,.5);">
+                    <h2 id="gplChatDeleteTitle" style="color:var(--red); margin:0 0 15px;">Delete conversation?</h2>
+                    <p style="margin:0 0 20px; color:var(--silver); line-height:1.6;">This permanently removes this chat and cannot be undone.</p>
+                    <div style="display:flex; gap:15px; justify-content:center;"><button type="button" id="gplChatDeleteConfirm" style="background:var(--red); color:var(--white); padding:10px 25px; border-radius:20px; font-weight:bold; border:0; cursor:pointer;">Yes, Delete</button><button type="button" id="gplChatDeleteCancel" style="background:transparent; color:var(--silver); border:2px solid var(--silver); padding:10px 25px; border-radius:20px; font-weight:bold; cursor:pointer;">Cancel</button></div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -706,6 +729,11 @@
             const mediaInput = document.getElementById('gplChatMediaInput');
             const emojiBtn = document.getElementById('gplChatEmojiBtn');
             const emojiPicker = document.getElementById('gplChatEmojiPicker');
+            const guestEmailInput = document.getElementById('gplChatEmail');
+            const deleteModal = document.getElementById('gplChatDeleteModal');
+            const deleteConfirmBtn = document.getElementById('gplChatDeleteConfirm');
+            const deleteCancelBtn = document.getElementById('gplChatDeleteCancel');
+            let pendingDeleteSessionId = null;
 
             // History & New Chat Elements
             const historyDrawer = document.getElementById('gplChatHistoryDrawer');
@@ -812,7 +840,12 @@
 
                 const deviceInfo = { browser: browserName, os: os };
 
-                socket.emit('join_support_chat', { userId, guestId, sessionId, deviceInfo });
+                const currentGuestEmail = () => guestEmailInput ? guestEmailInput.value.trim() : '';
+                socket.emit('join_support_chat', { userId, guestId, sessionId, deviceInfo, guestEmail: currentGuestEmail(), currentPage: window.location.pathname });
+
+                if (guestEmailInput) guestEmailInput.addEventListener('change', () => {
+                    if (sessionId) socket.emit('set_support_email', { sessionId, guestId, guestEmail: currentGuestEmail() });
+                });
 
                 // Live Online Stats & AI Health Listener
                 socket.on('support_stats_update', (stats) => {
@@ -861,9 +894,7 @@
                         appendMsg("Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?", "bot");
                     }
 
-                    if (quickReplyContainer) {
-                        quickReplyContainer.style.display = (data.history && data.history.length > 2) ? 'none' : 'flex';
-                    }
+                    if (quickReplyContainer) quickReplyContainer.style.display = (data.history && data.history.length > 2) ? 'none' : 'flex';
                 });
 
                 socket.on('new_support_message', (msg) => {
@@ -878,18 +909,23 @@
                     appendMsg("Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?", "bot");
                     if (quickReplyContainer) quickReplyContainer.style.display = 'flex';
                     if (historyDrawer) historyDrawer.classList.remove('open');
-                    socket.emit('join_support_chat', { userId, guestId, sessionId: null, deviceInfo, forceNew: true });
+                    socket.emit('join_support_chat', { userId, guestId, sessionId: null, deviceInfo, guestEmail: currentGuestEmail(), currentPage: window.location.pathname, forceNew: true });
                 }
 
                 if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
                 if (drawerNewChatBtn) drawerNewChatBtn.addEventListener('click', startNewChat);
 
                 function deleteCurrentChat() {
-                    if (!sessionId || !window.confirm('Delete this conversation permanently? This cannot be undone.')) return;
-                    socket.emit('delete_support_chat', { sessionId, userId, guestId });
+                    if (!sessionId || !deleteModal) return;
+                    pendingDeleteSessionId = sessionId;
+                    deleteModal.style.display = 'flex';
+                    requestAnimationFrame(() => deleteModal.classList.add('show'));
                 }
 
                 if (deleteChatBtn) deleteChatBtn.addEventListener('click', deleteCurrentChat);
+                function closeDeleteModal() { pendingDeleteSessionId = null; if (deleteModal) { deleteModal.classList.remove('show'); setTimeout(() => deleteModal.style.display = 'none', 200); } }
+                if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', closeDeleteModal);
+                if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', () => { if (!pendingDeleteSessionId) return; const targetSessionId = pendingDeleteSessionId; closeDeleteModal(); socket.emit('delete_support_chat', { sessionId: targetSessionId, userId, guestId }); });
 
                 socket.on('support_chat_deleted', (data) => {
                     if (String(data.sessionId) !== String(sessionId)) {
@@ -972,10 +1008,11 @@
 
                         div.querySelector('.gpl-history-delete').addEventListener('click', (event) => {
                             event.stopPropagation();
-                            if (window.confirm('Delete this conversation permanently? This cannot be undone.')) {
-                                socket.emit('delete_support_chat', { sessionId: sess._id, userId, guestId });
-                                if (String(sess._id) !== String(sessionId)) loadChatHistory();
-                            }
+                            if (String(sess._id) === String(sessionId)) return deleteCurrentChat();
+                            // Reuse the styled confirmation modal for history items.
+                            if (!deleteModal) return;
+                            pendingDeleteSessionId = sess._id;
+                            deleteModal.style.display = 'flex'; requestAnimationFrame(() => deleteModal.classList.add('show'));
                         });
 
                         historyListEl.appendChild(div);
@@ -1002,9 +1039,7 @@
                         if (sessionId) {
                             const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
                             socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
-                            if (quickReplyContainer) {
-                                quickReplyContainer.style.display = 'none';
-                            }
+                            if (quickReplyContainer) { quickReplyContainer.classList.add('closing'); setTimeout(() => { quickReplyContainer.style.display = 'none'; quickReplyContainer.classList.remove('closing'); }, 220); }
                         }
                     });
                 });

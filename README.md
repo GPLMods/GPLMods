@@ -40,7 +40,7 @@
 <h2 align="center">Platform Features at a Glance</h2>
 
 *   **Inbuilt Documentation:** Comprehensive guides and transparent policies integrated directly into the platform interface.
-*   **24/7 AI Active Support:** Instant, intelligent assistance for users via integrated chatbot architecture (Tidio).
+*   **24/7 Gemini AI Support:** Instant, intelligent assistance through the built-in Google Gemini chatbot.
 *   **Powerful Admin Panel:** A fully customized back-office powered by **AdminJS** for total community, user, and content management.
 *   **Live VirusTotal Integration:** Real-time API scans display exact threat metrics for every uploaded file.
 *   **100% Safe Cross-Platform Mods:** Strict moderation ensures all mods (Android `.apk`, iOS `.ipa`/`.deb`, Windows `.exe`, WordPress `.zip`) function perfectly without malicious payloads. 14+ days of testing per mod.
@@ -87,7 +87,7 @@ We believe in absolute transparency. GPL Mods embraces the open-source philosoph
   <img src="https://img.shields.io/badge/AdminJS-Admin_Panel-1A1A1A?style=for-the-badge&logoColor=FFD700" alt="AdminJS"/>
   <img src="https://img.shields.io/badge/VirusTotal-API_v3-1A1A1A?style=for-the-badge&logo=virustotal&logoColor=C0C0C0" alt="VirusTotal"/>
   <img src="https://img.shields.io/badge/SMTP2GO-Email_Routing-1A1A1A?style=for-the-badge&logoColor=FFD700" alt="SMTP2GO"/>
-  <img src="https://img.shields.io/badge/Tidio-AI_Support-1A1A1A?style=for-the-badge&logoColor=C0C0C0" alt="Tidio"/>
+  <img src="https://img.shields.io/badge/Google_Gemini-AI_Support-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini"/>
 </div>
 
 ---
