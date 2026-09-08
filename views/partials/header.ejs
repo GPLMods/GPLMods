@@ -3,7 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPL Mods - Safe & Working Mods For All Your Devices!</title>
+
+    <%
+        const siteName = "GPL Mods Official";
+        const defaultTitle = "GPL Mods - 100% Safe & Working Premium Unlocked Mods";
+        const defaultDesc = "Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free.";
+        const defaultKeywords = "gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked";
+        const defaultImage = "https://gplmods.webredirect.org/images/logo.png";
+        const defaultUrl = "https://gplmods.webredirect.org";
+
+        const finalTitle = typeof pageTitle !== 'undefined' ? `${pageTitle} | ${siteName}` : defaultTitle;
+        const finalDesc = typeof pageDescription !== 'undefined' ? pageDescription : defaultDesc;
+        const finalKeywords = typeof pageKeywords !== 'undefined' ? pageKeywords : defaultKeywords;
+        const finalImage = typeof pageImage !== 'undefined' ? pageImage : defaultImage;
+        const finalUrl = typeof pageUrl !== 'undefined' ? pageUrl : defaultUrl;
+    %>
+
+    <title><%= finalTitle %></title>
+    <meta name="description" content="<%= finalDesc %>">
+    <meta name="keywords" content="<%= finalKeywords %>">
+    <meta name="author" content="GPL Mods Team">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:site_name" content="<%= siteName %>">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= finalUrl %>">
+    <meta property="og:title" content="<%= finalTitle %>">
+    <meta property="og:description" content="<%= finalDesc %>">
+    <meta property="og:image" content="<%= finalImage %>">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<%= finalUrl %>">
+    <meta property="twitter:title" content="<%= finalTitle %>">
+    <meta property="twitter:description" content="<%= finalDesc %>">
+    <meta property="twitter:image" content="<%= finalImage %>">
     
     <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
     <link rel="apple-touch-icon" href="<%= cdnUrl %>/favicon.png">

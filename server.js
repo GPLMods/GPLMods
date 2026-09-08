@@ -2641,6 +2641,11 @@ app.get('/:category/:slug', async (req, res, next) => {
         }
 
         // --- RENDER ---
+        const seoTitle = `Download ${displayFile.name} Mod${displayFile.version ? ` (${displayFile.version})` : ''}`;
+        const rawDescription = displayFile.modDescription ? displayFile.modDescription.replace(/<[^>]*>?/gm, '').trim() : `Download the latest premium unlocked mod for ${displayFile.name}.`;
+        const seoDescription = rawDescription.length > 160 ? `${rawDescription.substring(0, 157)}...` : rawDescription;
+        const tagsForSeo = Array.isArray(displayFile.tags) && displayFile.tags.length ? displayFile.tags.join(', ') : `gpl mods, ${displayFile.name}, premium unlocked mod`;
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -2651,7 +2656,12 @@ app.get('/:category/:slug', async (req, res, next) => {
             userVotedWorking,
             userVotedNotWorking,
             canVoteOnFile,
-            isUploaderDistributor
+            isUploaderDistributor,
+            pageTitle: seoTitle,
+            pageDescription: seoDescription,
+            pageImage: iconUrl,
+            pageKeywords: tagsForSeo,
+            pageUrl: `https://gplmods.webredirect.org/${category}/${slug}`
         });
 
     } catch (e) {
@@ -4196,12 +4206,21 @@ app.get('/users/:username', async (req, res, next) => {
         }
 
         // --- 8. RENDER PAGE ---
+        const profileTitle = `${targetUserObj.username}'s Profile`;
+        const profileDescription = targetUserObj.bio ? targetUserObj.bio : `Check out all the latest safe and working mods uploaded by ${targetUserObj.username} on GPL Mods Official.`;
+        const profileImage = targetUserObj.signedAvatarUrl && targetUserObj.signedAvatarUrl !== '/images/default-avatar.png' ? targetUserObj.signedAvatarUrl : 'https://gplmods.webredirect.org/images/logo.png';
+
         res.render('pages/public-profile', { 
             profileUser: targetUserObj, 
             uploads: uploadsWithUrls,
-            followersList: followersWithAvatars, 
+            followersList: followersWithAvatars,
             followingList: followingWithAvatars,
-            isFollowing: isFollowing 
+            isFollowing: isFollowing,
+            pageTitle: profileTitle,
+            pageDescription: profileDescription,
+            pageImage: profileImage,
+            pageKeywords: `gpl mods, ${targetUserObj.username}, distributor profile, mod uploads`,
+            pageUrl: `https://gplmods.webredirect.org/users/${targetUserObj.username}`
         });
 
     } catch (error) { 
