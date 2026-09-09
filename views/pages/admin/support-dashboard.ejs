@@ -416,7 +416,7 @@
             mainChatEl.style.display = 'flex';
             
             chatHeaderName.textContent = chat.user ? chat.user.username : (chat.guestEmail || 'Guest');
-            chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? chat.user.email : 'No email'));
+            chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? (chat.user.customEmailAlias ? 'Pro Email: ' + chat.user.customEmailAlias + '@gplmods.webredirect.org | Email: ' + chat.user.email : 'Email: ' + chat.user.email) : 'No email'));
             
             chatMessagesEl.innerHTML = '';
             chat.messages.forEach(msg => appendMessage(msg));

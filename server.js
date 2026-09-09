@@ -1256,10 +1256,10 @@ function ensureAdmin(req, res, next) {
     if (req.user && req.user.role === 'admin') return next();
     
     // Use the universal error template
-    res.status(403).render('pages/error', {
-        errorCode: '403',
-        errorTitle: 'Access <span>Denied</span>',
-        errorMessage: 'You do not have the necessary permissions to view this page.'
+    res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.'
     });
 }
 function ensureSupportOrAdmin(req, res, next) {
@@ -2319,7 +2319,7 @@ app.post('/community/:slug/delete', ensureAuthenticated, async (req, res) => {
     try {
         const issue = await Issue.findOne({ slug: req.params.slug });
         if (!issue) return res.status(404).send("Not found");
-        if (issue.author.toString() !== req.user._id.toString()) return res.status(403).render('pages/403');
+        if (issue.author.toString() !== req.user._id.toString()) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         const replyCount = await Reply.countDocuments({ issue: issue._id });
         await Reply.deleteMany({ issue: issue._id });
@@ -2339,7 +2339,7 @@ app.post('/community/:slug/reply/:replyId/delete', ensureAuthenticated, async (r
         const issue = await Issue.findOne({ slug: req.params.slug });
         const reply = await Reply.findOne({ _id: req.params.replyId, issue: issue?._id });
         if (!issue || !reply) return res.status(404).send("Not found");
-        if (reply.author.toString() !== req.user._id.toString()) return res.status(403).render('pages/403');
+        if (reply.author.toString() !== req.user._id.toString()) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         if (reply.isSolution) {
             issue.status = 'open';
@@ -2367,7 +2367,7 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
         const isAuthor = issue.author.toString() === req.user._id.toString();
         const isAdmin = req.user.role === 'admin';
 
-        if (!isAuthor && !isAdmin) return res.status(403).render('pages/403');
+        if (!isAuthor && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         // Mark Reply as solution
         reply.isSolution = true;
@@ -2397,7 +2397,7 @@ app.post('/community/:slug/reopen', ensureAuthenticated, async (req, res) => {
 
         const isAuthor = issue.author.toString() === req.user._id.toString();
         const isAdmin = req.user.role === 'admin';
-        if (!isAuthor && !isAdmin) return res.status(403).render('pages/403');
+        if (!isAuthor && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         issue.status = 're-open';
         await issue.save();
@@ -2506,7 +2506,7 @@ app.get('/:category/:slug', async (req, res, next) => {
         if (masterFile.status !== 'live') {
             const isUploader = req.user && req.user.username === masterFile.uploader;
             const isAdmin = req.user && req.user.role === 'admin';
-            if (!isUploader && !isAdmin) return res.status(403).render('pages/403'); 
+            if (!isUploader && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' }); 
         }
 
         // Keep the preference effective when a mod URL is opened directly.
@@ -2902,7 +2902,7 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
     try {
         const parentFile = await File.findById(req.params.id);
         if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
-            return res.status(403).render('pages/403');
+            return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
         res.render('pages/add-version', { parentFile: parentFile });
     } catch (error) {
@@ -2920,7 +2920,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
         const isAdmin = req.user.role === 'admin';
         if (!isUploader && !isAdmin) {
-            return res.status(403).json({ success: false, message: "Forbidden: You don't have permission to edit this mod." });
+            return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
 
         const formData = req.body;
@@ -3318,7 +3318,7 @@ app.get('/login', (req, res) => {
 app.post('/login', verifyRecaptcha, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) return next(err);
-        if (!user) return res.redirect('/login?error=' + encodeURIComponent(info.message));
+        if (!user) return res.redirect('/login?error=' + encodeURIComponent('Incorrect Email Or Password'));
         
         processSuccessfulLogin(req, res, next, user); 
     })(req, res, next);
@@ -5194,7 +5194,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         const pendingFile = await File.findById(fileId);
 
         if (!pendingFile) return next(error);
-        if (pendingFile.uploader !== req.user.username) return res.status(403).render('pages/403');
+        if (pendingFile.uploader !== req.user.username) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         const filename = pendingFile.originalFilename || "";
         const savedName = pendingFile.name && pendingFile.name !== 'Pending Upload' ? pendingFile.name : '';
@@ -5275,7 +5275,7 @@ function draftSnapshotData(file, body = {}) {
 app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id).populate('license', 'name').lean();
-        if (!canManageDraft(file, req.user)) return res.status(403).render('pages/403');
+        if (!canManageDraft(file, req.user)) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         file.iconUrl = await getSmartImageUrl(file.iconKey);
         file.screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));
         const youtubeMatch = String(file.videoUrl || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^&#?\/]+)/i);
@@ -5290,7 +5290,7 @@ app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
 app.post('/api/mods/:id/autosave', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
-        if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+        if (!canManageDraft(file, req.user)) return res.status(404).json({ success: false });
         if (!req.user.autoSaveEnabled && req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Auto-save is disabled.' });
 
         const data = draftSnapshotData(file, req.body);
@@ -5310,7 +5310,7 @@ app.post('/api/mods/:id/autosave', ensureAuthenticated, async (req, res) => {
 
 app.get('/api/mods/:id/snapshots', ensureAuthenticated, async (req, res) => {
     const file = await File.findById(req.params.id).lean();
-    if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+    if (!canManageDraft(file, req.user)) return res.status(404).json({ success: false });
     const snapshots = await DraftSnapshot.find({ file: file._id }).sort({ createdAt: -1 }).limit(5).select('label createdAt').lean();
     res.json({ success: true, snapshots });
 });
@@ -5318,7 +5318,7 @@ app.get('/api/mods/:id/snapshots', ensureAuthenticated, async (req, res) => {
 app.post('/api/mods/:id/snapshots/:snapshotId/restore', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
-        if (!canManageDraft(file, req.user)) return res.status(403).json({ success: false });
+        if (!canManageDraft(file, req.user)) return res.status(404).json({ success: false });
         const snapshot = await DraftSnapshot.findOne({ _id: req.params.snapshotId, file: file._id });
         if (!snapshot) return res.status(404).json({ success: false });
         Object.entries(snapshot.data).forEach(([key, value]) => { file[key] = value; });
@@ -5338,7 +5338,7 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         const file = await File.findById(fileId).populate('olderVersions').populate('variants');
 
         if (!file || (file.uploader !== req.user.username && req.user.role !== 'admin')) {
-            return res.status(403).json({ success: false, message: 'Unauthorized' });
+            return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
 
         // Check if any variant files exist for this master file
@@ -5434,7 +5434,7 @@ app.post('/mods/:id/delete-version/:versionId', ensureAuthenticated, async (req,
 
         // Security check
         if (!masterFile || masterFile.uploader !== req.user.username) {
-            return res.status(403).json({ success: false, message: 'Unauthorized' });
+            return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
 
         // Find the version to delete
@@ -5467,7 +5467,7 @@ app.post('/mods/:id/delete-all-versions', ensureAuthenticated, async (req, res) 
 
         // Security check
         if (!masterFile || masterFile.uploader !== req.user.username) {
-            return res.status(403).json({ success: false, message: 'Unauthorized' });
+            return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
 
         if (masterFile.olderVersions && masterFile.olderVersions.length > 0) {
@@ -5497,7 +5497,7 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
         
         // Security check
         if (!file || file.uploader !== req.user.username) {
-            return res.status(403).render('pages/403');
+            return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
 
         // Generate signed URLs so the user can see their current images
@@ -5523,7 +5523,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const file = await File.findById(req.params.id);
         
         if (!file || file.uploader !== req.user.username) {
-            return res.status(403).send("Unauthorized");
+            return res.status(404).send('Not found');
         }
 
         const formData = req.body;
@@ -5711,7 +5711,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const fileToUpdate = await File.findById(fileId);
 
         if (!fileToUpdate || fileToUpdate.uploader !== req.user.username) {
-            return res.status(403).render('pages/403');
+            return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
 
         const { softwareIcon, screenshots } = req.files || {}; // Default to empty object if no files
@@ -6833,7 +6833,7 @@ async function recalculateRating(fileId) {
 app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
     try {
         const review = await Review.findById(req.params.id);
-        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(403).send("Unauthorized");
+        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(404).send('Not found');
         
         await Review.findByIdAndDelete(review._id);
         await recalculateRating(review.file);
@@ -6847,7 +6847,7 @@ app.post('/reviews/:id/edit', ensureAuthenticated, async (req, res) => {
     try {
         const { rating, comment } = req.body;
         const review = await Review.findById(req.params.id);
-        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(403).send("Unauthorized");
+        if (!review || review.user.toString() !== req.user._id.toString()) return res.status(404).send('Not found');
         
         review.rating = parseInt(rating);
         review.comment = comment;
@@ -6861,7 +6861,7 @@ app.post('/reviews/:id/edit', ensureAuthenticated, async (req, res) => {
 app.post('/reviews/:id/reply', ensureAuthenticated, async (req, res) => {
     try {
         const review = await Review.findById(req.params.id).populate('file');
-        if (!review || review.file.uploader !== req.user.username) return res.status(403).send("Unauthorized");
+        if (!review || review.file.uploader !== req.user.username) return res.status(404).send('Not found');
 
         const hadReply = review.uploaderReply && review.uploaderReply.text;
         review.uploaderReply = { text: req.body.replyText, createdAt: new Date() };
@@ -6877,7 +6877,7 @@ app.post('/reviews/:id/reply', ensureAuthenticated, async (req, res) => {
 app.post('/reviews/:id/reply/delete', ensureAuthenticated, async (req, res) => {
     try {
         const review = await Review.findById(req.params.id).populate('file');
-        if (!review || review.file.uploader !== req.user.username) return res.status(403).send("Unauthorized");
+        if (!review || review.file.uploader !== req.user.username) return res.status(404).send('Not found');
 
         review.uploaderReply = undefined; // Unset the reply
         await review.save();
@@ -6929,7 +6929,7 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
 
         const uploader = await User.findOne({ username: file.uploader }).select('_id').lean();
         if (uploader && uploader._id.toString() === userId.toString()) {
-            return res.status(403).send("You cannot vote on your own uploaded file.");
+            return res.status(404).send('Not found');
         }
         
         // Check current voting status

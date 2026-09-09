@@ -51,8 +51,7 @@
     <div class="upload-container">
         <h2 style="color: var(--white); margin-bottom: 10px; font-size: 2.2em;">Update <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);"><%= parentFile.name %></span></h2>
         <p style="color: var(--silver); margin-bottom: 2.5rem;">Uploading a new version will make this file the primary download.</p>
-        <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 2rem;">By uploading, you agree to our <a href="/upload-policy" target="_blank" style="color: var(--gold); text-decoration: underline;">Upload & Update Policy</a>.</p>
-        
+
         <!-- ONE UNIFIED FORM -->
         <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="unifiedAddVersionForm">
             
@@ -102,33 +101,31 @@
 
             <input type="hidden" name="uploadId" id="uploadId" value="">
 
-            <div class="requirements-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label for="minOsVersion">Minimum OS Required</label>
-                    <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>">
-                </div>
-                <div class="form-group">
-                    <label for="ageRating">Age Rating</label>
-                    <select id="ageRating" name="ageRating" style="display: none;">
-                        <option value="NA" <%= parentFile.ageRating === 'NA' ? 'selected' : '' %>>Not Rated (N/A)</option>
-                        <option value="3+" <%= parentFile.ageRating === '3+' ? 'selected' : '' %>>3+ (Everyone)</option>
-                        <option value="7+" <%= parentFile.ageRating === '7+' ? 'selected' : '' %>>7+ (Low Violence)</option>
-                        <option value="12+" <%= parentFile.ageRating === '12+' ? 'selected' : '' %>>12+ (Moderate Violence)</option>
-                        <option value="16+" <%= parentFile.ageRating === '16+' ? 'selected' : '' %>>16+ (Strong Violence)</option>
-                        <option value="18+" <%= parentFile.ageRating === '18+' ? 'selected' : '' %>>18+ (Adults Only)</option>
-                    </select>
-                    <div class="custom-select-wrapper" id="ageRatingWrapper">
-                        <div class="custom-select"><span class="selected-text">Not Rated (N/A)</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
-                        <div class="custom-options">
-                            <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
-                            <div class="custom-option" data-value="3+">3+ (Everyone)</div>
-                            <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
-                            <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
-                            <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
-                            <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
-                        </div>
+            <div class="form-group">
+                <label for="ageRating">Age Rating</label>
+                <select id="ageRating" name="ageRating" style="display: none;">
+                    <option value="NA" <%= parentFile.ageRating === 'NA' ? 'selected' : '' %>>Not Rated (N/A)</option>
+                    <option value="3+" <%= parentFile.ageRating === '3+' ? 'selected' : '' %>>3+ (Everyone)</option>
+                    <option value="7+" <%= parentFile.ageRating === '7+' ? 'selected' : '' %>>7+ (Low Violence)</option>
+                    <option value="12+" <%= parentFile.ageRating === '12+' ? 'selected' : '' %>>12+ (Moderate Violence)</option>
+                    <option value="16+" <%= parentFile.ageRating === '16+' ? 'selected' : '' %>>16+ (Strong Violence)</option>
+                    <option value="18+" <%= parentFile.ageRating === '18+' ? 'selected' : '' %>>18+ (Adults Only)</option>
+                </select>
+                <div class="custom-select-wrapper" id="ageRatingWrapper">
+                    <div class="custom-select"><span class="selected-text">Not Rated (N/A)</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                    <div class="custom-options">
+                        <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
+                        <div class="custom-option" data-value="3+">3+ (Everyone)</div>
+                        <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
+                        <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
+                        <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
+                        <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
                     </div>
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="minOsVersion">Minimum OS Required</label>
+                <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>">
             </div>
 
             <div class="form-group whats-new-field">
@@ -158,6 +155,11 @@
 
                 <!-- External Link Section (Hidden by Default) -->
                 <div id="distributor-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="originalFilename">File Name (for display purposes)*</label>
+                        <!-- Pre-filled for convenience on updates -->
+                        <input type="text" id="originalFilename" name="originalFilename" value="<%= parentFile.originalFilename || parentFile.name %>">
+                    </div>
                     <div class="form-group" style="text-align: left; margin-bottom: 15px;">
                         <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
                             <label class="switch">
@@ -179,21 +181,65 @@
                         <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Optional direct link for faster downloads and 1-click install flows.</span>
                     </div>
 
-                    <div id="multi-link-group" class="form-group" style="display: none;">
-                        <label>Add Download Parts (Min 2)*</label>
-                        <div id="parts-container">
-                            <input type="url" name="partUrls[]" placeholder="Part 1 URL..." style="width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
-                            <input type="url" name="partUrls[]" placeholder="Part 2 URL..." style="width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;">
+                    <div id="multi-link-group" class="form-group" style="text-align: left; display: none;">
+                        <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); padding: 15px; border-radius: 8px;">
+                            <p style="color: var(--gold); font-weight: bold; margin: 0; font-size: 1.1em;"><i class="fas fa-layer-group"></i> Multi-Part Configurator</p>
+                            <p style="color: var(--silver); margin-top: 5px; margin-bottom: 10px; font-size: 0.95em;">Add parts below. Each part may include mirrors, a direct admin link, and scan references. You can add unlimited parts.</p>
+                            <div id="parts-container">
+                                <!-- Part template: Part 1 -->
+                                <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                                    <input type="text" name="partNames[]" placeholder="Part 1 (e.g., main, data)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                                    <input type="url" name="partUrls[]" placeholder="https://.../part1" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
+                                            <input type="text" name="mirror1Providers[]" placeholder="Google Drive" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:2;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 URL</label>
+                                            <input type="url" name="mirror1Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 Provider</label>
+                                            <input type="text" name="mirror2Providers[]" placeholder="Mega" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:2;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 URL</label>
+                                            <input type="url" name="mirror2Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Direct Admin Link</label>
+                                    <input type="url" name="directAdminLinks[]" placeholder="https://admin.example.com/direct/" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual File Scan URL</label>
+                                            <input type="url" name="manualFileScanUrls[]" placeholder="https://www.virustotal.com/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual Site Scan URL</label>
+                                            <input type="url" name="manualSiteScanUrls[]" placeholder="https://sitecheck.sucuri.net/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Part template: Part 2 -->
+                                <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                                    <input type="text" name="partNames[]" placeholder="Part 2 (e.g., split-1)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                                    <input type="url" name="partUrls[]" placeholder="https://.../part2" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.95em;">+ Add Another Part</button>
+                                <button type="button" id="remove-part-btn" class="btn btn-danger" style="padding: 8px 14px; font-size: 0.95em;">- Remove Last Part</button>
+                            </div>
                         </div>
-                        <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em;">+ Add Part</button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="originalFilename">File Name (for display purposes)*</label>
-                        <!-- Pre-filled for convenience on updates -->
-                        <input type="text" id="originalFilename" name="originalFilename" value="<%= parentFile.originalFilename || parentFile.name %>">
-                    </div>
-                    
                     <% if (user.role === 'admin') { %>
                         <div class="form-group" style="border: 1px solid #444; padding: 15px; border-radius: 8px; margin-top: 15px;">
                             <label style="color: var(--gold);">Admin Override: Security Scan Links</label>
@@ -230,6 +276,7 @@
             </div>
 
             <button type="submit" class="submit-button" id="submitBtn">Publish Update</button>
+            <p style="font-size: 0.85em; color: var(--silver); margin-top: 2rem; margin-bottom: 1rem;">By uploading, you agree to our <a href="/upload-policy" target="_blank" style="color: var(--gold); text-decoration: underline;">Upload & Update Policy</a>.</p>
         </form>
     </div>
 </div>
@@ -416,31 +463,88 @@
             const singleInput = document.getElementById('externalUrl');
             const partsContainer = document.getElementById('parts-container');
             const addPartBtn = document.getElementById('add-part-btn');
+            const removePartBtn = document.getElementById('remove-part-btn');
+
+            function setPartsRequired(required) {
+                partsContainer.querySelectorAll('input').forEach(i => {
+                    // require only the part URL fields, keep mirrors optional
+                    if (i.name === 'partUrls[]') i.required = required;
+                });
+            }
 
             multiPartCheckbox.addEventListener('change', function() {
                 if (this.checked) {
                     singleLinkGroup.style.display = 'none';
                     singleInput.required = false;
                     multiLinkGroup.style.display = 'block';
-                    partsContainer.querySelectorAll('input').forEach(i => i.required = true);
+                    setPartsRequired(true);
                 } else {
                     singleLinkGroup.style.display = 'block';
                     singleInput.required = true;
                     multiLinkGroup.style.display = 'none';
-                    partsContainer.querySelectorAll('input').forEach(i => i.required = false);
+                    setPartsRequired(false);
                 }
             });
 
-            let partCount = 2;
+            function createPartBlock(index) {
+                const block = document.createElement('div');
+                block.className = 'part-block';
+                block.style.cssText = 'border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;';
+                block.innerHTML = `
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
+                    <input type="text" name="partNames[]" placeholder="Part ${index} (optional)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
+                    <input type="url" name="partUrls[]" placeholder="https://.../part${index}" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
+                            <input type="text" name="mirror1Providers[]" placeholder="Google Drive" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:2;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 URL</label>
+                            <input type="url" name="mirror1Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 Provider</label>
+                            <input type="text" name="mirror2Providers[]" placeholder="Mega" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:2;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 URL</label>
+                            <input type="url" name="mirror2Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Direct Admin Link</label>
+                    <input type="url" name="directAdminLinks[]" placeholder="https://admin.example.com/direct/" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual File Scan URL</label>
+                            <input type="url" name="manualFileScanUrls[]" placeholder="https://www.virustotal.com/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual Site Scan URL</label>
+                            <input type="url" name="manualSiteScanUrls[]" placeholder="https://sitecheck.sucuri.net/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                        </div>
+                    </div>
+                `;
+                return block;
+            }
+
+            // Add / Remove handlers
             addPartBtn.addEventListener('click', () => {
-                partCount++;
-                const newInput = document.createElement('input');
-                newInput.type = 'url';
-                newInput.name = 'partUrls[]';
-                newInput.placeholder = `Part ${partCount} URL...`;
-                newInput.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; outline: none;';
-                newInput.required = true;
-                partsContainer.appendChild(newInput);
+                const currentCount = partsContainer.querySelectorAll('.part-block').length;
+                const nextIndex = currentCount + 1;
+                const blk = createPartBlock(nextIndex);
+                partsContainer.appendChild(blk);
+                setPartsRequired(true);
+            });
+
+            removePartBtn.addEventListener('click', () => {
+                const blocks = partsContainer.querySelectorAll('.part-block');
+                if (blocks.length > 2) {
+                    blocks[blocks.length - 1].remove();
+                }
             });
         }
 
