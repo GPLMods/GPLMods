@@ -112,13 +112,42 @@
             </div>
         </div>
 
+        <div class="settings-section">
+            <div class="settings-info">
+                <h3><i class="fas fa-music" style="color: var(--gold);"></i> Music Preferences</h3>
+                <p>Customize how background and theme music behave across the site.</p>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <label class="switch">
+                        <input type="checkbox" id="setting-allow-theme" <%= user.musicSettings && user.musicSettings.allowThemeMusic ? 'checked' : '' %>>
+                        <span class="slider round"></span>
+                    </label>
+                    <span style="color: var(--white); font-size: 0.9em; font-weight: 500;">Allow Theme Music</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <label class="switch">
+                        <input type="checkbox" id="setting-autoplay-theme" <%= user.musicSettings && user.musicSettings.autoPlayTheme ? 'checked' : '' %>>
+                        <span class="slider round"></span>
+                    </label>
+                    <span style="color: var(--white); font-size: 0.9em; font-weight: 500;">Auto-play Theme Music</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Account Actions (Danger Zone) -->
+
         <div class="settings-section" style="border-color: rgba(229, 57, 53, 0.5); background-color: rgba(229, 57, 53, 0.05); margin-top: 40px;">
             <div class="settings-info">
                 <h3 style="color: var(--red);"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
-                <p>Log out of your current session or permanently request account deletion.</p>
+                <p>Log out of your current session, permanently request account deletion, or leave the partnership program.</p>
             </div>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <% if (user.role === 'distributor') { %>
+                    <button type="button" id="open-leave-partnership-modal-btn" class="btn-danger-outline" style="border-color: var(--gold); color: var(--gold);">
+                        <i class="fas fa-user-minus" style="margin-right: 8px;"></i> Leave Program
+                    </button>
+                <% } %>
                 <button type="button" id="logout-btn" class="btn-danger-outline"><i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Log Out</button>
                 <button type="button" class="btn btn-primary" style="background: var(--red); color: var(--white); border: none; box-shadow: 0 0 15px var(--glow-red); font-size: 1em; padding: 12px 25px;" id="open-delete-modal-btn">Delete Account</button>
             </div>
@@ -143,7 +172,24 @@
     </div>
 </div>
 
+<!-- ======== LEAVE PARTNERSHIP MODAL ======== -->
+<div id="leave-partnership-modal-container" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 500px; width: 90%; border-top: 4px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+        <i class="fas fa-user-slash" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.8em;">Leave Partnership Program?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            Are you sure you want to leave the Distributor Partnership? <br><br>
+            <strong>Warning:</strong> All your mods using external download links will be transferred to the <strong>GPL Community</strong>. You will still retain access to cloud upload mods.
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" id="confirm-leave-partnership-btn" class="btn btn-primary" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 0 15px var(--glow-gold);">Yes, I want to leave</button>
+            <button type="button" class="btn btn-secondary" id="cancel-leave-partnership-btn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <!-- ======== CUSTOM LOGOUT MODAL ======== -->
+
 <div id="logout-modal-container" class="policy-modal">
     <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 4px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
         <i class="fas fa-sign-out-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px;"></i>
@@ -243,7 +289,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) logoutBtn.addEventListener('click', () => openModal(logoutModal));
     document.getElementById('cancelLogoutBtn')?.addEventListener('click', () => closeModal(logoutModal));
 
+    // Leave Partnership Modal
+    const leavePartnershipModal = document.getElementById('leave-partnership-modal-container');
+    const openLeaveBtn = document.getElementById('open-leave-partnership-modal-btn');
+    if (openLeaveBtn) openLeaveBtn.addEventListener('click', () => openModal(leavePartnershipModal));
+    document.getElementById('cancel-leave-partnership-btn')?.addEventListener('click', () => closeModal(leavePartnershipModal));
+    document.getElementById('confirm-leave-partnership-btn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('confirm-leave-partnership-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Leaving...';
+        try {
+            const response = await fetch('/partnership/leave', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to leave partnership.');
+                btn.disabled = false;
+                btn.innerHTML = 'Yes, I want to leave';
+            }
+        } catch (err) {
+            alert('Network error occurred.');
+            btn.disabled = false;
+            btn.innerHTML = 'Yes, I want to leave';
+        }
+    });
+
     // Delete Modal Controls
+
     const deleteModal = document.getElementById('delete-modal-container');
     const openDeleteBtn = document.getElementById('open-delete-modal-btn');
     const sendCodeBtn = document.getElementById('send-code-btn');
@@ -390,6 +463,33 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(resetDeleteModal, 250);
         }
     });
+
+    // --- Music Settings AJAX ---
+    const allowThemeCheckbox = document.getElementById('setting-allow-theme');
+    const autoPlayCheckbox = document.getElementById('setting-autoplay-theme');
+
+    async function updateMusicSettings() {
+        try {
+            const response = await fetch('/api/user/music-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    allowThemeMusic: allowThemeCheckbox.checked,
+                    autoPlayTheme: autoPlayCheckbox.checked
+                })
+            });
+            const data = await response.json();
+            if (!data.success) {
+                alert('Failed to update music settings.');
+            }
+        } catch (err) {
+            console.error('Music settings error:', err);
+            alert('Network error occurred.');
+        }
+    }
+
+    if (allowThemeCheckbox) allowThemeCheckbox.addEventListener('change', updateMusicSettings);
+    if (autoPlayCheckbox) autoPlayCheckbox.addEventListener('change', updateMusicSettings);
 });
 </script>
 

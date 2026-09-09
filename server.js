@@ -744,6 +744,80 @@ app.get('/healthz', (req, res) => {
 });
 
 // ===============================
+// MUSIC & PLAYLIST API
+// ===============================
+app.get('/api/music/playlist', async (req, res) => {
+    try {
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        res.json({
+            success: true,
+            playlist: state?.weeklyPlaylist || []
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch playlist' });
+    }
+});
+
+app.post('/api/admin/music/playlist', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { playlist } = req.body;
+        if (!Array.isArray(playlist)) {
+            return res.status(400).json({ success: false, error: 'Playlist must be an array' });
+        }
+        await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $set: { weeklyPlaylist: playlist } },
+            { upsert: true }
+        );
+        res.json({ success: true, message: 'Weekly playlist updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/music/theme', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { fileId, themeMusic } = req.body;
+        if (!fileId) return res.status(400).json({ success: false, error: 'File ID is required' });
+
+        await File.findByIdAndUpdate(fileId, { $set: { themeMusic } });
+        res.json({ success: true, message: 'Theme music updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ===============================
+// USER MUSIC SETTINGS API
+// ===============================
+app.get('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        res.json({
+            success: true,
+            settings: user?.musicSettings || { allowThemeMusic: true, autoPlayTheme: true }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch settings' });
+    }
+});
+
+app.post('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
+    try {
+        const { allowThemeMusic, autoPlayTheme } = req.body;
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: {
+                'musicSettings.allowThemeMusic': allowThemeMusic,
+                'musicSettings.autoPlayTheme': autoPlayTheme
+            }
+        });
+        res.json({ success: true, message: 'Music settings updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ===============================
 // VPN DETECTION API (vpnapi.io + MongoDB Cache)
 // ===============================
 app.get('/api/check-vpn', async (req, res) => {
@@ -1131,7 +1205,8 @@ app.use(async (req, res, next) => {
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
         res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
-        res.locals.isOfficialDeployment = requestHost === officialSiteHost && (
+        res.locals.isTestDeployment = (requestHost === 'localhost' || requestHost === '127.0.0.1');
+        res.locals.isOfficialDeployment = !res.locals.isTestDeployment && requestHost === officialSiteHost && (
             process.env.NODE_ENV !== 'production' || hasIntegrityConfiguration
         );
         res.locals.officialSiteUrl = officialSiteUrl;
@@ -2657,6 +2732,8 @@ app.get('/:category/:slug', async (req, res, next) => {
             userVotedNotWorking,
             canVoteOnFile,
             isUploaderDistributor,
+            themeMusic: displayFile.themeMusic,
+            musicSettings: req.user ? req.user.musicSettings : { allowThemeMusic: true, autoPlayTheme: true },
             pageTitle: seoTitle,
             pageDescription: seoDescription,
             pageImage: iconUrl,
@@ -8398,6 +8475,43 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
         res.redirect('/partnership?error=An error occurred while submitting your application.');
     }
 });
+
+app.post('/partnership/leave', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = req.user;
+        if (user.role !== 'distributor') {
+            return res.json({ success: false, message: 'You are not a registered distributor.' });
+        }
+
+        const orgName = user.organizationName;
+
+        // 1. Transfer external mods to GPL Community
+        if (orgName) {
+            await File.updateMany(
+                {
+                    uploader: orgName,
+                    $or: [
+                        { externalDownloadUrl: { $exists: true, $ne: null } },
+                        { customAdLink: { $exists: true, $ne: null } }
+                    ]
+                },
+                { $set: { uploader: 'GPL Community' } }
+            );
+        }
+
+        // 2. Revert user role and clear distributor info
+        user.role = 'member';
+        user.organizationName = undefined;
+        user.socialLinks = {};
+        user.isVerified = false; // Or keep true if they were verified members
+        await user.save();
+
+        res.json({ success: true, message: 'You have successfully left the partnership program.' });
+    } catch (error) {
+        console.error("Leave Partnership Error:", error);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+});
 // ===============================
 // 16. SERVER STARTUP & ADMIN ROUTER
 // ===============================
@@ -8926,6 +9040,7 @@ app.use((err, req, res, next) => {
 
         // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server is running on https:localhost:3000`);
             console.log(`Server is running on port ${PORT}`);
         });
 

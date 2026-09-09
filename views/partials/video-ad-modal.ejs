@@ -96,9 +96,14 @@
                 if (myFP) {
                     try { myFP.destroy(); } catch(e) {}
                 }
+                if (videoEl) {
+                    videoEl.pause();
+                    videoEl.src = "";
+                    videoEl.load();
+                }
                 videoModal.classList.remove('show');
-                document.body.style.overflow = 'auto'; 
-                
+                document.body.style.overflow = 'auto';
+
                 setAdCookie(); // Set cookie when successfully closed
                 
                 setTimeout(() => { 
@@ -165,14 +170,14 @@
                     manualCloseBtn.textContent = 'Close & Continue';
                 }
 
-                // 🔴 20-SECOND FALLBACK TIMER
-                // If ad blockers break the player entirely and it never plays, unlock after 20s
+                // 🔴 120-SECOND FALLBACK TIMER
+                // If ad blockers break the player entirely and it never plays, unlock after 2 minutes
                 const fallbackTimer = setTimeout(() => {
                     if (!adStarted) {
                         console.log("Ad failed to load. Fallback triggered.");
                         enableCloseButton();
                     }
-                }, 20000);
+                }, 120000);
 
                 // 🟢 30-SECOND COUNTDOWN TIMER
                 // Starts only when the video successfully begins playing

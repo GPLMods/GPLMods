@@ -202,9 +202,9 @@ const FileSchema = new Schema({
 
     virusTotalAnalysisId: { type: String },
     virusTotalId: { type: String },
-    
-}, { 
-    timestamps: true 
+    themeMusic: { type: String, default: null },
+}, {
+    timestamps: true
 }); 
 
 module.exports = mongoose.model('File', FileSchema);

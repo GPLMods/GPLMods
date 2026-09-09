@@ -210,7 +210,22 @@ const UserSchema = new Schema({
         counter: Number,
         transports: [String]
     }],
-    webAuthnChallenge: { type: String }, 
+    twoFactorSocialProvider: {
+        type: String,
+        enum: ['google', 'github', 'microsoft', 'none'],
+        default: 'none'
+    },
+    passkeys: [{
+        credentialID: String,
+        credentialPublicKey: String,
+        counter: Number,
+        transports: [String]
+    }],
+    webAuthnChallenge: { type: String },
+    musicSettings: {
+        allowThemeMusic: { type: Boolean, default: true },
+        autoPlayTheme: { type: Boolean, default: true }
+    },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function() {

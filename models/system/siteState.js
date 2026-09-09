@@ -52,7 +52,11 @@ const SiteStateSchema = new Schema({
         facebook: { type: String, default: 'https://www.facebook.com/profile.php?id=61572148715492', trim: true },
         threads: { type: String, default: 'https://threads.net/gplmods', trim: true },
         gravatar: { type: String, default: 'https://gravatar.com/theoristcandid03a1c47c5b', trim: true }
-    }
+    },
+    weeklyPlaylist: [{
+        title: { type: String },
+        src: { type: String }
+    }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);

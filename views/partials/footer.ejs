@@ -181,7 +181,7 @@
         <% } %> 
 
         <!-- ======== UNIFIED POLICY MODAL ======== -->
-        <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler) { %>
+        <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler && typeof isTestDeployment === 'undefined' || (typeof isTestDeployment !== 'undefined' && !isTestDeployment)) { %>
             <div id="deployment-notice-modal" style="display: none; position: fixed; inset: 0; z-index: 1000000; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.82); backdrop-filter: blur(6px);">
                 <div style="width: min(520px, 100%); padding: 30px; color: var(--white); background: var(--dark-gray); border: 1px solid #7d2028; border-top: 4px solid #e53935; border-radius: 12px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,.7);">
                     <i class="fas fa-code-branch" style="font-size: 3em; color: #e53935; margin-bottom: 15px;"></i>
@@ -316,6 +316,7 @@
 <!-- =================================================== -->
         
         <!-- ======== CUSTOM AI & SUPPORT CHAT WIDGET ======== -->
+        <% if (typeof showChatbot !== 'undefined' && showChatbot) { %>
         <script src="/socket.io/socket.io.js"></script>
         <!-- Import Lightweight Emoji Picker Web Component -->
         <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -414,7 +415,14 @@
             .bubble-user { background: var(--gold); color: var(--black); align-self: flex-end; border-bottom-right-radius: 0; }
             .bubble-bot { background: #222; color: var(--silver); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #333; }
             .bubble-agent { background: #2196F3; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
-            
+
+            /* Typing Indicator */
+            .bubble-typing { background: #222; color: var(--silver); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #333; display: flex; align-items: center; gap: 4px; padding: 10px 15px; border-radius: 15px; font-size: 0.92em; }
+            .typing-dot { width: 4px; height: 4px; background: var(--silver); border-radius: 50%; animation: gplTypingDot 1.4s infinite; }
+            .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+            .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+            @keyframes gplTypingDot { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-4px); opacity: 1; } }
+
             /* Quick Replies */
             .gpl-chat-quick-replies {
                 display: flex;
@@ -684,7 +692,7 @@
             </div>
 
             <% if (!(typeof user !== 'undefined' && user)) { %>
-                <div class="gpl-chat-email-row">
+                <div class="gpl-chat-email-row" id="gplChatEmailRow" style="display: none;">
                     <input type="email" id="gplChatEmail" class="gpl-chat-email-input" placeholder="Your email address (optional, for support replies)" autocomplete="email">
                 </div>
             <% } %>
@@ -734,6 +742,7 @@
             const deleteConfirmBtn = document.getElementById('gplChatDeleteConfirm');
             const deleteCancelBtn = document.getElementById('gplChatDeleteCancel');
             let pendingDeleteSessionId = null;
+            let isSupportOnline = true;
 
             // History & New Chat Elements
             const historyDrawer = document.getElementById('gplChatHistoryDrawer');
@@ -849,6 +858,7 @@
 
                 // Live Online Stats & AI Health Listener
                 socket.on('support_stats_update', (stats) => {
+                    isSupportOnline = (stats.agentsOnline > 0 || stats.membersOnline > 0);
                     if (onlineTextEl && onlineDotEl) {
                         if (stats.agentsOnline > 0) {
                             onlineTextEl.textContent = `${stats.agentsOnline} Agent${stats.agentsOnline > 1 ? 's' : ''} Online`;
@@ -859,9 +869,9 @@
                             onlineDotEl.style.background = 'var(--green)';
                             onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
                         } else {
-                            onlineTextEl.textContent = 'Support Online';
-                            onlineDotEl.style.background = 'var(--green)';
-                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                            onlineTextEl.textContent = 'Support Offline';
+                            onlineDotEl.style.background = 'var(--red)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--red)';
                         }
                     }
 
@@ -898,6 +908,7 @@
                 });
 
                 socket.on('new_support_message', (msg) => {
+                    removeTypingIndicator();
                     appendMsg(msg.text, msg.sender, msg.senderName);
                 });
 
@@ -1027,6 +1038,8 @@
                             const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
                             socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             chatInput.value = '';
+                            if (quickReplyContainer) { quickReplyContainer.style.display = 'none'; }
+                            showTypingIndicator();
                         }
                     });
                 }
@@ -1037,12 +1050,37 @@
                     btn.addEventListener('click', () => {
                         const text = btn.textContent;
                         if (sessionId) {
+                            // If clicking "Talk to Support" while offline, redirect to support page
+                            if (text === 'Talk to Support' && !isSupportOnline) {
+                                window.location.href = '/support';
+                                return;
+                            }
+                            // Show email row if clicking support/ai options
+                            if (text.includes('Support') || text.includes('Gemini AI')) {
+                                const emailRow = document.getElementById('gplChatEmailRow');
+                                if (emailRow) emailRow.style.display = 'block';
+                            }
                             const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
                             socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             if (quickReplyContainer) { quickReplyContainer.classList.add('closing'); setTimeout(() => { quickReplyContainer.style.display = 'none'; quickReplyContainer.classList.remove('closing'); }, 220); }
                         }
                     });
                 });
+
+                function showTypingIndicator() {
+                    if (document.getElementById('gplChatTyping')) return;
+                    const div = document.createElement('div');
+                    div.id = 'gplChatTyping';
+                    div.className = 'chat-bubble bubble-typing';
+                    div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+                    chatBody.appendChild(div);
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }
+
+                function removeTypingIndicator() {
+                    const indicator = document.getElementById('gplChatTyping');
+                    if (indicator) indicator.remove();
+                }
 
                 function appendMsg(text, sender, senderName) {
                     const div = document.createElement('div');
@@ -1076,6 +1114,7 @@
         });
         </script>
         <!-- ================================================== -->
+        <% } %>
 
     <% } %> <!-- ✅ THIS IS THE FIX: The closing tag for showModals is safely at the very bottom -->
 

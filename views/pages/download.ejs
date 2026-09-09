@@ -197,8 +197,64 @@
             color: var(--white);
         }
 
+        .meta-info li a.meta-link:hover .arrow,
+        .meta-info li a.meta-link:hover .arrow {
+            color: var(--white);
+        }
+        .meta-link .arrow,
+        .meta-info li a.meta-link .arrow {
+            color: var(--silver);
+        }
+
+        .theme-music-banner {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, var(--dark-gray), var(--black));
+            border: 1px solid var(--gold);
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px var(--glow-gold);
+            animation: slideDown 0.4s ease;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .theme-music-banner .content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--white);
+            font-weight: 500;
+        }
+        .theme-music-banner .play-btn {
+            background: var(--gold);
+            color: var(--black);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .theme-music-banner .play-btn:hover { transform: scale(1.1); }
+        .theme-music-banner .close-btn {
+            background: none;
+            border: none;
+            color: var(--silver);
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        .theme-music-banner .close-btn:hover { color: var(--white); }
+
         /* Specifically fix the Voting row which has a complex nested layout */
         .meta-info li:has(.voting-system) {
+
             align-items: center;
             /* Keep voting system perfectly centered vertically */
         }
@@ -415,7 +471,6 @@
 
         .sidebar-summary .meta-link,
         .meta-info .meta-link {
-            border-bottom: 1px solid rgba(255, 215, 0, 0.35);
             padding-bottom: 2px;
         }
 
@@ -581,7 +636,19 @@
     </style>
 
     <main class="container">
+        <!-- ======== THEME MUSIC BANNER ======== -->
+        <div id="theme-music-banner" class="theme-music-banner">
+            <div class="content">
+                <i class="fas fa-music" style="color: var(--gold);"></i>
+                <span>Theme music is available for this mod!</span>
+                <button id="play-theme-btn" class="play-btn"><i class="fas fa-play"></i></button>
+            </div>
+            <button id="close-theme-banner" class="close-btn">&times;</button>
+        </div>
+        <!-- ===================================== -->
+
         <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+
         <div style="margin-bottom: 20px;">
             <a href="javascript:history.back()"
                 style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
@@ -2296,4 +2363,48 @@
             </script>
             <%- include('../partials/video-ad-modal') %>
                 <%- include('../partials/popunder-ads') %>
-                    <%- include('../partials/footer') %>
+                    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeMusic = "<%= themeMusic %>";
+            const settings = <%- JSON.stringify(musicSettings) %>;
+            const banner = document.getElementById('theme-music-banner');
+            const playBtn = document.getElementById('play-theme-btn');
+            const closeBtn = document.getElementById('close-theme-banner');
+
+            if (themeMusic) {
+                if (settings.allowThemeMusic) {
+                    if (settings.autoPlayTheme) {
+                        // Auto-play theme music
+                        if (window.GplMusicPlayer && window.GplMusicPlayer.playTrack) {
+                            window.GplMusicPlayer.playTrack({
+                                title: '<%= file.name %> Theme',
+                                src: themeMusic
+                            });
+                        }
+                    } else {
+                        // Show banner if auto-play is disabled
+                        if (banner) banner.style.display = 'flex';
+                    }
+                }
+            }
+
+            if (playBtn) {
+                playBtn.addEventListener('click', () => {
+                    if (window.GplMusicPlayer && window.GplMusicPlayer.playTrack) {
+                        window.GplMusicPlayer.playTrack({
+                            title: '<%= file.name %> Theme',
+                            src: themeMusic
+                        });
+                        if (banner) banner.style.display = 'none';
+                    }
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    if (banner) banner.style.display = 'none';
+                });
+            }
+        });
+    </script>
+    <%- include('../partials/footer') %>
