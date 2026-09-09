@@ -9040,7 +9040,7 @@ app.use((err, req, res, next) => {
 
         // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on https:localhost:3000`);
+            console.log(`Server is running on http://ocalhost:3000`);
             console.log(`Server is running on port ${PORT}`);
         });
 
