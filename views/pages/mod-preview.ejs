@@ -1,64 +1,940 @@
-<%-include('../partials/header') %>
+<%- include('../partials/header') %>
 
 <style>
-    .preview-page { max-width: 1200px; margin: 35px auto 70px; }
-    .preview-banner { padding: 16px 20px; margin-bottom: 25px; background: rgba(33,150,243,0.12); border: 1px solid var(--blue); border-radius: 10px; color: var(--silver); }
-    .preview-banner strong { color: var(--blue); }
-    .preview-layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; }
-    .preview-sidebar, .preview-section { background: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 30px; }
-    .preview-sidebar { text-align: center; align-self: start; }
-    .preview-icon { width: 100%; max-width: 200px; height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 15px; margin: 0 auto 20px; display: block; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-    .preview-sidebar h1 { color: var(--white); overflow-wrap: anywhere; font-size: 2em; line-height: 1.3; margin-bottom: 20px; }
-    .preview-rating { color: var(--silver); margin-bottom: 20px; }
-    .preview-sidebar p, .preview-section { color: var(--silver); line-height: 1.7; }
-    .preview-meta { list-style: none; padding: 0; margin: 20px 0; text-align: left; }
-    .preview-meta li { display: grid; grid-template-columns: minmax(105px, 38%) minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; }
-    .preview-meta li > span:first-child { color: var(--silver); }
-    .preview-meta li > span:last-child { color: var(--white); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
-    .preview-actions { display: block; padding: 15px 20px; background: var(--gold); color: var(--black); border-radius: 10px; text-decoration: none; font-weight: 700; box-shadow: 0 0 15px var(--glow-gold); }
-    .preview-actions:hover { background: var(--white); box-shadow: 0 0 25px var(--glow-gold); }
-    .preview-section { margin-bottom: 18px; }
-    .preview-section h2 { color: var(--gold); margin-bottom: 12px; }
-    .preview-section img { max-width: 100%; height: auto; border-radius: 8px; margin: 5px; }
-    .preview-section a { color: var(--gold); }
-    .preview-video { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; }
-    .preview-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-    .preview-parts { padding-left: 20px; }
-    @media (max-width: 760px) { .preview-layout { grid-template-columns: 1fr; } }
+    /* ==========================================================================
+       MOD PREVIEW PAGE STYLES (MATCHES DOWNLOAD.EJS & DOWNLOAD-PARTS.EJS)
+       ========================================================================== */
+    .preview-page-container {
+        max-width: 1200px;
+        margin: 20px auto 60px;
+    }
+
+    /* Private Preview Notice Banner */
+    .preview-mode-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 16px 22px;
+        margin-bottom: 25px;
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.18), rgba(26, 26, 26, 0.95));
+        border: 1px solid var(--blue);
+        border-left: 5px solid var(--blue);
+        border-radius: 12px;
+        color: var(--silver);
+        box-shadow: 0 4px 20px rgba(33, 150, 243, 0.15);
+    }
+    .preview-mode-banner .banner-content {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .preview-mode-banner .banner-icon {
+        font-size: 1.8em;
+        color: var(--blue);
+        flex-shrink: 0;
+    }
+    .preview-mode-banner h4 {
+        color: var(--white);
+        margin: 0 0 4px;
+        font-size: 1.15em;
+        font-weight: 700;
+    }
+    .preview-mode-banner p {
+        margin: 0;
+        font-size: 0.9em;
+        line-height: 1.4;
+        color: var(--silver);
+    }
+    .preview-mode-banner .badge-draft {
+        background: rgba(33, 150, 243, 0.25);
+        color: var(--blue);
+        border: 1px solid var(--blue);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    /* Preview Notice Toast */
+    .preview-toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-left: 4px solid var(--gold);
+        color: var(--white);
+        padding: 15px 22px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        gap: 12px;
+        animation: slideInUp 0.3s ease;
+    }
+    .preview-toast.show {
+        display: flex;
+    }
+    @keyframes slideInUp {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Layout & Panels */
+    .details-panel {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    .meta-info {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px;
+    }
+    .meta-info li {
+        display: grid;
+        grid-template-columns: minmax(105px, 38%) minmax(0, 1fr);
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #2a2a2a;
+        color: var(--silver);
+        align-items: start;
+    }
+    .meta-info li > span:first-child {
+        min-width: 0;
+        text-align: left;
+    }
+    .meta-info .meta-value {
+        min-width: 0;
+        text-align: right;
+        color: var(--white);
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        display: inline-flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 5px;
+        justify-self: stretch;
+    }
+    .meta-info .meta-link {
+        min-width: 0;
+        text-align: right;
+        color: var(--gold);
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        text-decoration: none;
+    }
+    .sidebar-summary {
+        margin: 0 0 20px;
+    }
+    .sidebar-summary > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #2a2a2a;
+        text-align: left;
+    }
+    .sidebar-summary span { color: var(--silver); }
+    .sidebar-summary strong {
+        color: var(--white);
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+    .working-summary-value {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Dummy Download Buttons */
+    .dummy-download-btn {
+        display: block;
+        width: 100%;
+        background: var(--gold);
+        color: var(--black);
+        padding: 18px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 1.25em;
+        font-weight: 700;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px var(--glow-gold);
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        position: relative;
+    }
+    .dummy-download-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 25px var(--glow-gold);
+        background: var(--white);
+    }
+    .dummy-download-btn .preview-pill {
+        display: inline-block;
+        background: rgba(0, 0, 0, 0.75);
+        color: var(--gold);
+        font-size: 0.65em;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: 8px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+
+    /* Download Parts Section (matches download-parts.ejs) */
+    .preview-parts-card {
+        background-color: var(--black);
+        padding: 25px;
+        border-radius: 15px;
+        border: 1px solid var(--gold);
+        margin-bottom: 25px;
+    }
+    .preview-parts-card h3 {
+        color: var(--gold);
+        margin-bottom: 18px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+        font-size: 1.3em;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .preview-parts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .preview-part-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--dark-gray);
+        padding: 15px 20px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        transition: all 0.2s ease;
+    }
+    .preview-part-item:hover {
+        border-color: var(--silver);
+        background-color: #222;
+    }
+    .preview-part-name {
+        color: var(--white);
+        font-size: 1.1em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .preview-part-btn {
+        background-color: var(--gold);
+        color: var(--black);
+        padding: 8px 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 0.9em;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .preview-part-btn:hover {
+        transform: scale(1.05);
+        background-color: #fff;
+    }
+
+    /* Video player */
+    .preview-video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        border-radius: 10px;
+        margin: 20px 0;
+        border: 1px solid #333;
+    }
+    .preview-video-container iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    /* Description Modal */
+    .description-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.82);
+        backdrop-filter: blur(5px);
+    }
+    .description-modal.show { display: flex; }
+    .description-modal-content {
+        position: relative;
+        width: min(760px, 100%);
+        max-height: min(760px, 90vh);
+        overflow-y: auto;
+        padding: 28px;
+        background: var(--dark-gray);
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+        color: var(--silver);
+        line-height: 1.7;
+    }
+    .description-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        border: 0;
+        background: transparent;
+        color: var(--silver);
+        cursor: pointer;
+        font-size: 1.6em;
+    }
+    .description-modal-close:hover { color: var(--white); }
+    .description-modal-title { color: var(--gold); margin: 0 35px 20px 0; }
+
+    @media (max-width: 992px) {
+        .download-layout { grid-template-columns: 1fr; }
+        .preview-mode-banner { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 768px) {
+        .preview-part-item { flex-direction: column; gap: 12px; text-align: center; }
+        .preview-part-btn { width: 100%; }
+    }
 </style>
 
-<main class="container preview-page">
-    <div class="preview-banner"><strong><i class="fas fa-eye"></i> Private Preview</strong><br>Only the file owner and administrators can view this draft preview. It is not published or indexed.</div>
-    <div class="preview-layout">
-        <aside class="preview-sidebar">
-            <img class="preview-icon" src="<%= file.iconUrl || '/images/default-app-icon.png' %>" alt="<%= file.name %> icon">
-            <h1><%= file.name || 'Untitled mod' %></h1>
-            <div class="preview-rating"><i class="fas fa-star" style="color: var(--gold);"></i> Draft preview</div>
-            <a class="preview-actions" href="#preview-content"><i class="fas fa-eye"></i> Preview Draft</a>
-            <ul class="preview-meta">
-                <li><span>Version:</span><span><%= file.version || 'Draft' %></span></li>
-                <li><span>Category:</span><span><%= file.category || 'Not selected' %></span></li>
-                <li><span>Suitable For:</span><span><%= file.ageRating || 'NA' %></span></li>
-                <li><span>Developer:</span><span><%= file.developer || 'N/A' %></span></li>
-                <li><span>License:</span><span><%= file.license ? file.license.name : 'Proprietary / Unknown' %></span></li>
-                <li><span>Uploaded By:</span><span><%= file.uploader || 'N/A' %></span></li>
-                <% if (file.minOsVersion) { %><li><span>Min OS:</span><span><%= file.minOsVersion %></span></li><% } %>
-                <% if (file.architectures && file.architectures.length) { %><li><span>Architecture:</span><span><%= file.architectures.join(', ') %></span></li><% } %>
-                <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length) { %><li><span>Parts:</span><span><%= file.downloadParts.length %></span></li><% } %>
+<main class="container preview-page-container">
+    <!-- ======== BACK BUTTON ======== -->
+    <div style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="javascript:history.back()"
+            style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
+            onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
+            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+        </a>
+        <a href="/upload-details/<%= file._id %>" class="btn btn-secondary" style="font-size: 0.9em; padding: 6px 16px;">
+            <i class="fas fa-edit" style="margin-right: 6px;"></i> Edit Mod
+        </a>
+    </div>
+
+    <!-- ======== DYNAMIC PREVIEW BANNER ======== -->
+    <div class="preview-mode-banner">
+        <div class="banner-content">
+            <i class="fas fa-eye banner-icon"></i>
+            <div>
+                <h4>Interactive Live Preview Mode</h4>
+                <p>This is a realistic preview of how your mod appears to users on the download page. Download buttons and interaction forms are active in preview mode.</p>
+            </div>
+        </div>
+        <span class="badge-draft"><i class="fas fa-shield-alt" style="margin-right: 5px;"></i> <%= file.status ? file.status.toUpperCase() : 'DRAFT' %></span>
+    </div>
+
+    <div class="download-layout">
+        <!-- =================================================== -->
+        <!-- Left Info Panel (Matches download.ejs) -->
+        <!-- =================================================== -->
+        <aside class="info-panel">
+            <img src="<%= file.iconUrl || '/images/default-app-icon.png' %>" alt="<%= file.name %> Icon" class="app-icon" loading="eager">
+
+            <div class="rating">
+                <div class="stars-outer">
+                    <div class="stars-inner" style="width: 100%;"></div>
+                </div>
+                <span class="rating-text">5.0 (Draft Preview)</span>
+            </div>
+
+            <h1><%= file.name || 'Untitled Mod' %></h1>
+
+            <% if (file.certification === 'certified') { %>
+                <div class="safety-badge certification-badge">
+                    <lottie-player src="<%= cdnUrl %>/animations/shield.json" background="transparent" speed="1"
+                        style="width: 28px; height: 28px;" loop autoplay></lottie-player>
+                    <span class="badge-text">100% Safe & Admin Certified</span>
+                </div>
+            <% } else if (file.certification === 'community-tested') { %>
+                <div class="safety-badge certification-badge">
+                    <lottie-player src="<%= cdnUrl %>/animations/heart.json" background="transparent"
+                        speed="1" style="width: 28px; height: 28px;" loop autoplay></lottie-player>
+                    <span class="badge-text">Highly Rated By Community</span>
+                </div>
+            <% } %>
+
+            <div class="sidebar-summary">
+                <div>
+                    <span>Suitable For</span>
+                    <strong><%= file.ageRating || 'N/A' %></strong>
+                </div>
+                <div>
+                    <span>Developer</span>
+                    <% if (file.developer && file.developer !== 'N/A') { %>
+                        <strong style="color: var(--gold);"><%= file.developer %></strong>
+                    <% } else { %>
+                        <strong>N/A</strong>
+                    <% } %>
+                </div>
+                <div>
+                    <span>Status</span>
+                    <strong style="color: var(--blue);"><i class="fas fa-file-alt"></i> Draft Preview</strong>
+                </div>
+                <div class="working-summary">
+                    <span>Working Rate</span>
+                    <div class="working-summary-value">
+                        <strong style="color: var(--green);">100% (Simulation)</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== DYNAMIC DUMMY DOWNLOAD BUTTONS ======== -->
+            <div class="download-area" style="margin-bottom: 20px;">
+                <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length > 0) { %>
+                    <!-- MULTI-PART MOD DUMMY BUTTON -->
+                    <button type="button" class="dummy-download-btn dummy-action-trigger"
+                        data-action-name="View Download Links (<%= file.downloadParts.length %> Parts)"
+                        data-action-info="In production, this leads users to the split multi-part download page.">
+                        <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> View Download Links
+                        <span class="preview-pill">Preview</span>
+                        <span style="display: block; font-size: 0.6em; font-weight: normal; margin-top: 5px;">
+                            (File is split into <%= file.downloadParts.length %> parts)
+                        </span>
+                    </button>
+                <% } else if (file.externalDownloadUrl) { %>
+                    <!-- EXTERNAL DOWNLOAD DUMMY BUTTON -->
+                    <button type="button" class="dummy-download-btn dummy-action-trigger"
+                        data-action-name="External Download"
+                        data-action-info="In production, this directs users to your external download source: <%= file.externalDownloadUrl %>">
+                        <i class="fas fa-external-link-alt" style="margin-right: 10px;"></i> External Download
+                        <span class="preview-pill">Preview</span>
+                    </button>
+                <% } else { %>
+                    <!-- STANDARD DIRECT DOWNLOAD DUMMY BUTTON -->
+                    <button type="button" class="dummy-download-btn dummy-action-trigger"
+                        data-action-name="Download <%= file.name %>"
+                        data-action-info="In production, users get direct high-speed download from Backblaze B2 (<%= formatBytes(file.fileSize || 0) %>).">
+                        <i class="fas fa-download" style="margin-right: 10px;"></i> Download (<%= formatBytes(file.fileSize || 0) %>)
+                        <span class="preview-pill">Preview</span>
+                    </button>
+                <% } %>
+
+                <% if (file.ageRating === '18+') { %>
+                    <div style="background-color: rgba(229, 57, 53, 0.12); border: 1px solid var(--red); padding: 12px 15px; border-radius: 8px; text-align: center; margin-top: 10px;">
+                        <span style="color: var(--red); font-size: 0.85em; font-weight: 600;">
+                            <i class="fas fa-user-shield"></i> 18+ Age Verification Required in Live Mode
+                        </span>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Alternative Mirrors Preview (if added) -->
+            <% if (file.alternativeLinks && file.alternativeLinks.length > 0) { %>
+                <div class="mirrors-panel" style="background-color: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border: 1px solid #333; text-align: left;">
+                    <span style="color: var(--silver); font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px;">
+                        <i class="fas fa-link" style="margin-right: 5px; color: var(--gold);"></i> Alternative Mirrors (Preview)
+                    </span>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <% file.alternativeLinks.forEach(mirror => { %>
+                            <button type="button" class="dummy-action-trigger"
+                                data-action-name="Mirror: <%= mirror.providerName %>"
+                                data-action-info="Target URL: <%= mirror.url %>"
+                                style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; color: var(--white); font-size: 0.9em; border: 1px solid #333; cursor: pointer;">
+                                <span><i class="fas fa-cloud-download-alt" style="margin-right: 8px; color: var(--gold);"></i> <%= mirror.providerName %></span>
+                                <i class="fas fa-external-link-alt" style="font-size: 0.8em; color: var(--gold);"></i>
+                            </button>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- 1-Click iOS Installers Preview (If iOS Category) -->
+            <% const isIosCategory = (file.category === 'ios-jailed' || file.category === 'ios-jailbroken'); %>
+            <% if (isIosCategory && file.directDownloadUrl) { %>
+                <div class="install-panel" style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 18px; margin-bottom: 20px; text-align: left;">
+                    <h3 style="color: var(--white); font-size: 1.05em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fab fa-apple"></i> 1-Click Direct Install (Preview)
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button type="button" class="install-btn dummy-action-trigger" data-action-name="TrollStore Sideload" data-action-info="Triggers 1-click install via apple-magnifier protocol.">TrollStore</button>
+                        <button type="button" class="install-btn dummy-action-trigger" data-action-name="SideStore Sideload" data-action-info="Triggers 1-click install via SideStore protocol.">SideStore</button>
+                        <button type="button" class="install-btn dummy-action-trigger" data-action-name="AltStore Sideload" data-action-info="Triggers 1-click install via AltStore protocol.">AltStore</button>
+                        <button type="button" class="install-btn dummy-action-trigger" data-action-name="E-Sign Import" data-action-info="Triggers 1-click import into E-Sign.">E-Sign</button>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- Action Buttons (Share, Wishlist, Report - all simulated) -->
+            <div class="action-buttons">
+                <button type="button" class="action-btn dummy-action-trigger" data-action-name="Share Mod" data-action-info="Copies link or triggers Web Share API for <%= file.name %>">
+                    <i class="fas fa-share-alt"></i> Share Mod
+                </button>
+                <button type="button" class="action-btn dummy-action-trigger" data-action-name="Add to Wishlist" data-action-info="Allows users to bookmark this file to their personal wishlist.">
+                    <i class="fas fa-heart"></i> Add to Wishlist
+                </button>
+                <button type="button" class="action-btn dummy-action-trigger" data-action-name="Report File" data-action-info="Opens community safety report modal for viruses or broken files.">
+                    <i class="fas fa-flag"></i> Report File
+                </button>
+
+                <!-- Security Scan Simulation Badge -->
+                <div class="safety-badge" style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver); margin-top: 5px;">
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                        <i class="fas fa-shield-virus" style="color: var(--green); font-size: 1.5em;"></i>
+                        <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Antivirus Scans</span>
+                        <span style="font-weight: bold; font-size: 1.1em; color: var(--green);">Ready for Test</span>
+                    </div>
+                    <p style="margin: 8px 0 0; font-size: 0.8em; color: var(--silver); line-height: 1.4;">
+                        Files are automatically submitted to 100+ antivirus engines on VirusTotal upon publication.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Meta Details list -->
+            <ul class="meta-info">
+                <li><span>Version:</span><span class="meta-value"><%= file.version || 'Draft' %></span></li>
+                <li><span>Category:</span><span class="meta-value"><%= file.category || 'N/A' %></span></li>
+                <% if (file.minOsVersion && file.minOsVersion.trim() !== '') { %>
+                    <li><span>Requires:</span><span class="meta-value" style="color: var(--white);"><%= file.minOsVersion %></span></li>
+                <% } %>
+                <% if (file.architectures && file.architectures.length > 0) { %>
+                    <li>
+                        <span>Architecture:</span>
+                        <span class="meta-value">
+                            <% file.architectures.forEach(arch => { %>
+                                <span style="background: #222; border: 1px solid #444; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; color: var(--silver);">
+                                    <%= arch %>
+                                </span>
+                            <% }) %>
+                        </span>
+                    </li>
+                <% } %>
+                <li>
+                    <span>License:</span>
+                    <% if (file.license) { %>
+                        <span class="meta-link"><i class="fas fa-file-contract"></i> <%= file.license.name %></span>
+                    <% } else { %>
+                        <span class="meta-value">Proprietary / Unknown</span>
+                    <% } %>
+                </li>
+                <li>
+                    <span>Uploaded By:</span>
+                    <span class="meta-link"><%= file.uploader || 'N/A' %></span>
+                </li>
+                <li>
+                    <span>Total Parts:</span>
+                    <span class="meta-value"><%= file.isMultiPart && file.downloadParts ? file.downloadParts.length : 1 %></span>
+                </li>
             </ul>
         </aside>
-        <section id="preview-content">
-            <% if (file.modFeatures) { %><article class="preview-section"><h2>Mod Features</h2><%- file.modFeatures %></article><% } %>
-            <% if (file.officialDescription) { %><article class="preview-section"><h2>Official Description</h2><%- file.officialDescription %></article><% } %>
-            <% if (file.importantNote) { %><article class="preview-section"><h2>Important Note</h2><%- file.importantNote %></article><% } %>
-            <% if (file.whatsNew) { %><article class="preview-section"><h2>What's New</h2><%- file.whatsNew %></article><% } %>
-            <% if (file.modDescription) { %><article class="preview-section"><h2>Description</h2><%- file.modDescription %></article><% } %>
-            <% if (file.downloadParts && file.downloadParts.length) { %><article class="preview-section"><h2>Download Parts</h2><ol class="preview-parts"><% file.downloadParts.forEach(part => { %><li><%= part.partName %>: <%= part.partUrl %></li><% }) %></ol></article><% } %>
-            <% if (file.screenshotUrls && file.screenshotUrls.length) { %><article class="preview-section"><h2>Screenshots</h2><% file.screenshotUrls.forEach(url => { %><img src="<%= url %>" alt="Mod screenshot"><% }) %></article><% } %>
-            <% if (file.youtubeVideoId) { %><article class="preview-section"><h2>Video</h2><div class="preview-video"><iframe src="https://www.youtube.com/embed/<%= file.youtubeVideoId %>" title="Mod video preview" allowfullscreen></iframe></div></article><% } %>
-            <% if (!file.modFeatures && !file.officialDescription && !file.importantNote && !file.whatsNew && !file.modDescription) { %><article class="preview-section"><p>No description has been added yet.</p></article><% } %>
+
+        <!-- =================================================== -->
+        <!-- Right Details Panel (Matches download.ejs) -->
+        <!-- =================================================== -->
+        <section class="details-panel">
+            <!-- Navigation Tabs -->
+            <div class="tabs-nav">
+                <button type="button" class="tab-button active" data-tab="description">Description</button>
+                <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length > 0) { %>
+                    <button type="button" class="tab-button" data-tab="download-parts">Download Parts (<%= file.downloadParts.length %>)</button>
+                <% } %>
+                <button type="button" class="tab-button" data-tab="screenshots">Screenshots (<%= file.screenshotUrls ? file.screenshotUrls.length : 0 %>)</button>
+                <% if (file.youtubeVideoId) { %>
+                    <button type="button" class="tab-button" data-tab="video">Video Preview</button>
+                <% } %>
+                <button type="button" class="tab-button" data-tab="versions">Versions (Preview)</button>
+                <button type="button" class="tab-button" data-tab="comments">Comments (Preview)</button>
+            </div>
+
+            <!-- ==================== TAB 1: DESCRIPTION ==================== -->
+            <div id="description" class="tab-content active">
+                <!-- Mod Features Panel -->
+                <div class="info-box gold mod-description-panel">
+                    <h2>Mod Features</h2>
+                    <div>
+                        <% if (file.modDescription) { %>
+                            <div style="margin-bottom: 1.5rem;"><%- file.modDescription %></div>
+                        <% } %>
+
+                        <% if (file.modFeatures && file.modFeatures.trim() !== '') { %>
+                            <% const isList = file.modFeatures.includes('<li'); %>
+                            <% if (isList) { %>
+                                <ul class="features-list">
+                                    <% const listItems = file.modFeatures.split(/<li[^>]*>/);
+                                       listItems.forEach(function(item) {
+                                           if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                               let cleanText = item.replace('</li>', '').replace('</ul>', '').replace('</ol>', ''); %>
+                                        <li>
+                                            <div class="lottie-icon-wrapper">
+                                                <lottie-player src="<%= cdnUrl %>/animations/ticmark.json"
+                                                    background="transparent" speed="1" loop autoplay></lottie-player>
+                                            </div>
+                                            <div class="feature-text">
+                                                <span><%- cleanText %></span>
+                                            </div>
+                                        </li>
+                                    <% } }); %>
+                                </ul>
+                            <% } else { %>
+                                <div class="raw-features-text"><%- file.modFeatures %></div>
+                            <% } %>
+                        <% } else if (!file.modDescription) { %>
+                            <p style="color: var(--silver); font-style: italic;">No mod features specified yet.</p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Important Note Panel -->
+                <% if (file.importantNote && file.importantNote.trim() !== '' && file.importantNote !== '<p><br></p>') { %>
+                    <div class="info-box important-note-panel" style="border-left: 3px solid var(--red); box-shadow: 0 0 15px rgba(229, 57, 53, 0.05);">
+                        <h2 style="color: var(--red);">Important Note:</h2>
+                        <% const isNoteList = file.importantNote.includes('<li'); %>
+                        <% if (isNoteList) { %>
+                            <ul class="features-list">
+                                <% const noteItems = file.importantNote.split(/<li[^>]*>/);
+                                   noteItems.forEach(function(item) {
+                                       if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                           let cleanText = item.replace('</li>', '').replace('</ul>', '').replace('</ol>', ''); %>
+                                    <li>
+                                        <div class="lottie-icon-wrapper">
+                                            <lottie-player src="<%= cdnUrl %>/animations/arrow.json"
+                                                background="transparent" speed="1" loop autoplay
+                                                style="width: 100%; height: 100%; transform: scale(1.8);"></lottie-player>
+                                        </div>
+                                        <div class="feature-text" style="color: var(--white); font-weight: 500;">
+                                            <span><%- cleanText %></span>
+                                        </div>
+                                    </li>
+                                <% } }); %>
+                            </ul>
+                        <% } else { %>
+                            <div class="raw-features-text" style="color: var(--silver);"><%- file.importantNote %></div>
+                        <% } %>
+                    </div>
+                <% } %>
+
+                <!-- What's New Panel -->
+                <% if (file.whatsNew && file.whatsNew.trim() !== '' && file.whatsNew !== '<p><br></p>') { %>
+                    <div class="info-box whats-new-panel silver">
+                        <h2>What's New</h2>
+                        <% const isUpdateList = file.whatsNew.includes('<li'); %>
+                        <% if (isUpdateList) { %>
+                            <ul class="features-list">
+                                <% const updateItems = file.whatsNew.split(/<li[^>]*>/);
+                                   updateItems.forEach(item => {
+                                       if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                           let cleanUpdateText = item.replace('</li>', '').replace('</ul>', '').replace('</ol>', ''); %>
+                                    <li>
+                                        <div class="lottie-icon-wrapper">
+                                            <lottie-player src="<%= cdnUrl %>/animations/dot.json"
+                                                background="transparent" speed="1" loop autoplay></lottie-player>
+                                        </div>
+                                        <div class="feature-text">
+                                            <span><%- cleanUpdateText %></span>
+                                        </div>
+                                    </li>
+                                <% } }); %>
+                            </ul>
+                        <% } else { %>
+                            <div class="raw-features-text"><%- file.whatsNew %></div>
+                        <% } %>
+                    </div>
+                <% } %>
+
+                <!-- Official Description Panel -->
+                <% if (file.officialDescription && file.officialDescription.trim() !== '') { %>
+                    <div class="app-description-content official-description-panel" style="margin-top: 2rem;">
+                        <h2>About This App/Game</h2>
+                        <div class="description-preview">
+                            <div class="description-source" id="official-description-source">
+                                <p><%- file.officialDescription.replace(/\r?\n/g, '<br>') %></p>
+                            </div>
+                        </div>
+                        <button type="button" class="description-expand" data-description-target="official-description-source">
+                            Read official description <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- ==================== TAB 2: DOWNLOAD PARTS (If Multi-Part) ==================== -->
+            <% if (file.isMultiPart && file.downloadParts && file.downloadParts.length > 0) { %>
+                <div id="download-parts" class="tab-content">
+                    <div class="preview-parts-card">
+                        <h3>
+                            <span><i class="fas fa-cubes" style="margin-right: 10px;"></i> Multi-Part Archive Files</span>
+                            <span style="font-size: 0.75em; color: var(--silver);"><%= file.downloadParts.length %> Total Parts</span>
+                        </h3>
+                        <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.95em;">
+                            Each part below represents a segment of the total download. In preview mode, click any part to test simulated actions.
+                        </p>
+                        <div class="preview-parts-list">
+                            <% file.downloadParts.forEach((part, index) => { %>
+                                <div class="preview-part-item">
+                                    <div class="preview-part-name">
+                                        <i class="fas fa-file-archive" style="color: var(--gold);"></i>
+                                        <div>
+                                            <span style="display: block;"><%= part.partName || ('Part ' + (index + 1)) %></span>
+                                            <% if (part.partUrl) { %>
+                                                <small style="color: var(--silver); font-size: 0.75em; word-break: break-all;"><%= part.partUrl %></small>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                        <% if (part.mirror1Url) { %>
+                                            <button type="button" class="btn btn-secondary dummy-action-trigger"
+                                                data-action-name="<%= part.mirror1Provider || 'Mirror 1' %> for <%= part.partName %>"
+                                                data-action-info="URL: <%= part.mirror1Url %>"
+                                                style="padding: 6px 12px; font-size: 0.8em; border-radius: 15px;">
+                                                <i class="fas fa-external-link-alt"></i> <%= part.mirror1Provider || 'Mirror 1' %>
+                                            </button>
+                                        <% } %>
+                                        <button type="button" class="preview-part-btn dummy-action-trigger"
+                                            data-action-name="Download <%= part.partName || ('Part ' + (index + 1)) %>"
+                                            data-action-info="In live mode, downloads or forwards to: <%= part.partUrl %>">
+                                            <i class="fas fa-download" style="margin-right: 6px;"></i> Download Part <%= index + 1 %>
+                                        </button>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+
+                    <!-- Installation Instructions preview -->
+                    <div class="info-box silver" style="margin-top: 25px;">
+                        <h3><i class="fas fa-tools" style="margin-right: 10px; color: var(--gold);"></i> Installation Instructions</h3>
+                        <div style="margin-top: 15px; color: var(--silver); line-height: 1.6;">
+                            <% if (file.installationInstructions && file.installationInstructions.trim() !== '') { %>
+                                <%- file.installationInstructions %>
+                            <% } else { %>
+                                <ol style="padding-left: 20px;">
+                                    <li>Download all the parts listed above into the same folder.</li>
+                                    <li>Make sure you have extraction software installed (e.g. WinRAR, 7-Zip, ZArchiver).</li>
+                                    <li>Select <strong>Part 1</strong> and choose "Extract Here".</li>
+                                    <li>The remaining parts will automatically be extracted together.</li>
+                                </ol>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- ==================== TAB 3: SCREENSHOTS ==================== -->
+            <div id="screenshots" class="tab-content">
+                <h2>Screenshots Gallery</h2>
+                <% if (file.screenshotUrls && file.screenshotUrls.length > 0) { %>
+                    <div class="screenshot-gallery" style="margin-top: 20px;">
+                        <% file.screenshotUrls.forEach(url => { %>
+                            <a href="<%= url %>" target="_blank" rel="noopener noreferrer">
+                                <img src="<%= url %>" alt="Screenshot of <%= file.name %>" loading="lazy">
+                            </a>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--silver); margin-top: 15px; font-style: italic;">No screenshots uploaded for this mod yet.</p>
+                <% } %>
+            </div>
+
+            <!-- ==================== TAB 4: VIDEO PREVIEW (If exists) ==================== -->
+            <% if (file.youtubeVideoId) { %>
+                <div id="video" class="tab-content">
+                    <h2>Gameplay & Video Preview</h2>
+                    <div class="preview-video-container">
+                        <iframe src="https://www.youtube.com/embed/<%= file.youtubeVideoId %>"
+                            title="<%= file.name %> Video Preview"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- ==================== TAB 5: VERSIONS (SIMULATION) ==================== -->
+            <div id="versions" class="tab-content">
+                <h2>Version History (Preview)</h2>
+                <p style="color: var(--silver); margin-bottom: 20px;">This table simulates how version iterations will be displayed to users once newer versions are published.</p>
+                <table class="versions-table" style="margin-bottom: 30px;">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Size</th>
+                            <th>Date</th>
+                            <th>Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td data-label="Version"><strong><%= file.version || 'Draft' %></strong> (Current Preview)</td>
+                            <td data-label="Size"><%= formatBytes(file.fileSize || 0) %></td>
+                            <td data-label="Date"><%= new Date().toLocaleDateString() %></td>
+                            <td data-label="Download">
+                                <button type="button" class="dummy-action-trigger" data-action-name="Download Version <%= file.version || 'Draft' %>" data-action-info="Version download link active upon live release." style="background:none; border:none; color:var(--gold); font-weight:bold; cursor:pointer; padding:0;">
+                                    Download (Simulated)
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ==================== TAB 6: COMMENTS (SIMULATION) ==================== -->
+            <div id="comments" class="tab-content">
+                <h2>Community Reviews & Discussion (Preview)</h2>
+                <div class="comment-form" style="margin-top: 20px;">
+                    <h3>Leave a Review (Preview Form)</h3>
+                    <textarea placeholder="Share your experience with this mod..." disabled style="cursor: not-allowed; opacity: 0.7;"></textarea>
+                    <div class="form-footer">
+                        <div class="rating-input" style="pointer-events: none; opacity: 0.8;">
+                            <label style="color: var(--gold);">☆</label>
+                            <label style="color: var(--gold);">☆</label>
+                            <label style="color: var(--gold);">☆</label>
+                            <label style="color: var(--gold);">☆</label>
+                            <label style="color: var(--gold);">☆</label>
+                        </div>
+                        <button type="button" class="dummy-action-trigger" data-action-name="Post Review" data-action-info="The community commenting and 5-star rating system becomes active once this mod is live.">
+                            Post Review (Simulated)
+                        </button>
+                    </div>
+                </div>
+                <div class="comment-list">
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="avatar-wrapper">
+                                <img src="/images/default-avatar.png" alt="User Avatar">
+                            </div>
+                            <span class="comment-author">GPL Modder Preview</span>
+                            <div class="comment-rating rating">
+                                <div class="stars-outer">
+                                    <div class="stars-inner" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="comment-body">Verified working properly! Testing in sandbox environment.</p>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 </main>
+
+<!-- ======== READ OFFICIAL DESCRIPTION MODAL ======== -->
+<div id="description-modal" class="description-modal" role="dialog" aria-modal="true" aria-labelledby="description-modal-title">
+    <div class="description-modal-content">
+        <button type="button" class="description-modal-close" aria-label="Close description" onclick="closeDescriptionModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 id="description-modal-title" class="description-modal-title">Official Description</h2>
+        <div id="description-modal-body" class="description-modal-body"></div>
+    </div>
+</div>
+
+<!-- ======== DYNAMIC PREVIEW TOAST NOTIFICATION ======== -->
+<div id="previewToast" class="preview-toast" role="status">
+    <i class="fas fa-info-circle" style="color: var(--gold); font-size: 1.5em;"></i>
+    <div>
+        <strong id="toastActionTitle" style="color: var(--gold); display: block; margin-bottom: 2px;">Preview Mode Action</strong>
+        <span id="toastActionDesc" style="color: var(--silver); font-size: 0.88em;">This action is simulated in preview mode.</span>
+    </div>
+</div>
+
+<!-- =================================================== -->
+<!-- CLIENT-SIDE PREVIEW BEHAVIORS -->
+<!-- =================================================== -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. Tab Switching Functionality ---
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTabId = button.getAttribute('data-tab');
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                button.classList.add('active');
+                const targetContent = document.getElementById(targetTabId);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+
+        // --- 2. Interactive Dynamic Dummy Buttons with Preview Feedback ---
+        const toast = document.getElementById('previewToast');
+        const toastTitle = document.getElementById('toastActionTitle');
+        const toastDesc = document.getElementById('toastActionDesc');
+        let toastTimeout = null;
+
+        function showPreviewToast(title, description) {
+            if (!toast) return;
+            toastTitle.textContent = `[Preview Mode] ${title}`;
+            toastDesc.textContent = description || "Downloads and write actions are simulated in private draft preview.";
+            toast.classList.add('show');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4200);
+        }
+
+        document.querySelectorAll('.dummy-action-trigger').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                const name = el.getAttribute('data-action-name') || 'Button Clicked';
+                const info = el.getAttribute('data-action-info') || 'Downloads are disabled in draft preview mode.';
+                showPreviewToast(name, info);
+            });
+        });
+
+        // --- 3. Description Modal Expand Logic ---
+        window.openDescriptionModal = function(button) {
+            const source = document.getElementById(button.dataset.descriptionTarget);
+            const modal = document.getElementById('description-modal');
+            const title = document.getElementById('description-modal-title');
+            const body = document.getElementById('description-modal-body');
+
+            if (!source || !modal || !title || !body) return;
+            title.textContent = "Official Description";
+            body.innerHTML = source.innerHTML;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeDescriptionModal = function() {
+            const modal = document.getElementById('description-modal');
+            if (!modal) return;
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        };
+
+        document.querySelectorAll('.description-expand').forEach(button => {
+            button.addEventListener('click', () => openDescriptionModal(button));
+        });
+
+        const descModal = document.getElementById('description-modal');
+        if (descModal) {
+            descModal.addEventListener('click', (e) => {
+                if (e.target === descModal) closeDescriptionModal();
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDescriptionModal();
+        });
+    });
+</script>
 
 <%- include('../partials/footer') %>

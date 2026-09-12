@@ -33,7 +33,13 @@ console.log("GPL Mods main.js is loading...");
     const recentErrors = new Map();
     let activeAlert = false;
 
-    const ignoredErrorText = ['script error', 'err_blocked_by_client', 'cashfree'];
+    const ignoredErrorText = [
+        'script error',
+        'err_blocked_by_client',
+        'cashfree',
+        'interrupted by a call to pause',
+        'play() request was interrupted'
+    ];
 
     function shouldIgnore(value) {
         const text = String(value || '').toLowerCase();
@@ -943,16 +949,16 @@ function initializeMusicPlayer() {
 
     function onPlayerReady(event) {
         isYtReady = true;
-        setGlobalVolume(volumeSlider.value);
+        setGlobalVolume(volumeSlider ? volumeSlider.value : (localStorage.getItem('musicVolume') || 0.5));
         if (currentSource === 'youtube' && localStorage.getItem('musicState') === 'playing') {
             ytPlayer.playVideo();
         }
     }
 
     function onPlayerStateChange(event) {
-        if (event.data === 0) ytPlayer.playVideo();
+        if (event.data === 0 && ytPlayer && typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
         if (event.data === 1 && currentSource === 'youtube') {
-            const videoData = ytPlayer.getVideoData();
+            const videoData = (ytPlayer && typeof ytPlayer.getVideoData === 'function') ? ytPlayer.getVideoData() : null;
             if (videoData && videoData.title) trackNameDisplay.textContent = "YT: " + videoData.title;
             startYtProgress();
         } else {
@@ -970,13 +976,13 @@ function initializeMusicPlayer() {
         currentSource = 'local';
         localStorage.setItem('musicSource', 'local');
         localStorage.setItem('musicTrackIndex', index);
-        if (isYtReady) ytPlayer.pauseVideo();
+        if (isYtReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') ytPlayer.pauseVideo();
         stopYtProgress();
         const track = playlist[index];
         if (!track) return;
         audioPlayer.src = track.src;
         trackNameDisplay.textContent = track.title;
-        setGlobalVolume(volumeSlider.value);
+        setGlobalVolume(volumeSlider ? volumeSlider.value : (localStorage.getItem('musicVolume') || 0.5));
     }
 
     function playMusic() {
@@ -984,7 +990,7 @@ function initializeMusicPlayer() {
         if (currentSource === 'local') {
             audioPlayer.play().then(() => updatePlayIcon(true)).catch(e => pauseMusic());
         } else if (currentSource === 'youtube' && isYtReady && ytVideoId) {
-            ytPlayer.playVideo();
+            if (ytPlayer && typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
             updatePlayIcon(true);
             trackNameDisplay.textContent = "Loading YT Track...";
         }
@@ -994,26 +1000,29 @@ function initializeMusicPlayer() {
         localStorage.setItem('musicState', 'paused');
         updatePlayIcon(false);
         audioPlayer.pause();
-        if (isYtReady) ytPlayer.pauseVideo();
+        if (isYtReady && ytPlayer && typeof ytPlayer.pauseVideo === 'function') ytPlayer.pauseVideo();
     }
 
     function setGlobalVolume(val) {
+        val = parseFloat(val);
+        if (isNaN(val)) val = 0.5;
         audioPlayer.volume = val;
-        if (isYtReady) ytPlayer.setVolume(val * 100);
+        if (isYtReady && ytPlayer && typeof ytPlayer.setVolume === 'function') ytPlayer.setVolume(val * 100);
         localStorage.setItem('musicVolume', val);
+        if (volumeSlider) volumeSlider.value = val;
     }
 
     audioPlayer.addEventListener('loadedmetadata', () => {
         if (currentSource === 'local') {
-            timeline.max = audioPlayer.duration;
-            durationDisplay.textContent = formatTime(audioPlayer.duration);
+            if (timeline) timeline.max = audioPlayer.duration;
+            if (durationDisplay) durationDisplay.textContent = formatTime(audioPlayer.duration);
         }
     });
 
     audioPlayer.addEventListener('timeupdate', () => {
         if (currentSource === 'local') {
-            timeline.value = audioPlayer.currentTime;
-            currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+            if (timeline) timeline.value = audioPlayer.currentTime;
+            if (currentTimeDisplay) currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
             if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
         }
     });
@@ -1021,13 +1030,15 @@ function initializeMusicPlayer() {
     function startYtProgress() {
         stopYtProgress();
         ytProgressInterval = setInterval(() => {
-            if (ytPlayer && ytPlayer.getPlayerState() === 1) {
+            if (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === 1) {
                 const curr = ytPlayer.getCurrentTime();
                 const dur = ytPlayer.getDuration();
-                timeline.max = dur;
-                timeline.value = curr;
-                currentTimeDisplay.textContent = formatTime(curr);
-                durationDisplay.textContent = formatTime(dur);
+                if (timeline) {
+                    timeline.max = dur;
+                    timeline.value = curr;
+                }
+                if (currentTimeDisplay) currentTimeDisplay.textContent = formatTime(curr);
+                if (durationDisplay) durationDisplay.textContent = formatTime(dur);
                 localStorage.setItem('musicCurrentTime', curr);
             }
         }, 1000);
@@ -1037,10 +1048,10 @@ function initializeMusicPlayer() {
     if (timeline) {
         timeline.addEventListener('input', (e) => {
             const seekTo = parseFloat(e.target.value);
-            currentTimeDisplay.textContent = formatTime(seekTo);
+            if (currentTimeDisplay) currentTimeDisplay.textContent = formatTime(seekTo);
             if (currentSource === 'local') {
                 audioPlayer.currentTime = seekTo;
-            } else if (currentSource === 'youtube' && isYtReady) {
+            } else if (currentSource === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.seekTo === 'function') {
                 ytPlayer.seekTo(seekTo, true);
             }
         });
@@ -1048,25 +1059,35 @@ function initializeMusicPlayer() {
 
     playPauseBtn.addEventListener('click', () => {
         const isPlaying = (currentSource === 'local' && !audioPlayer.paused) ||
-                          (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
+                          (currentSource === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === 1);
         if (isPlaying) pauseMusic();
         else playMusic();
     });
 
-    nextBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex + 1) % playlist.length;
-        loadLocalTrack(trackIndex);
-        playMusic();
-    });
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (!playlist || !playlist.length) return;
+            trackIndex = (trackIndex + 1) % playlist.length;
+            loadLocalTrack(trackIndex);
+            playMusic();
+        });
+    }
 
-    prevBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
-        loadLocalTrack(trackIndex);
-        playMusic();
-    });
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (!playlist || !playlist.length) return;
+            trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
+            loadLocalTrack(trackIndex);
+            playMusic();
+        });
+    }
 
-    audioPlayer.addEventListener('ended', () => nextBtn.click());
-    volumeSlider.addEventListener('input', (e) => setGlobalVolume(e.target.value));
+    audioPlayer.addEventListener('ended', () => {
+        if (nextBtn) nextBtn.click();
+    });
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => setGlobalVolume(e.target.value));
+    }
 
     if (customYtInput && loadYtBtn) {
         loadYtBtn.addEventListener('click', () => {
@@ -1166,168 +1187,7 @@ function initializeMusicPlayer() {
 
     init();
 }
-        
-        if (isYtReady) ytPlayer.pauseVideo();
-        stopYtProgress();
-        
-        const track = playlist[index];
-        audioPlayer.src = track.src;
-        trackNameDisplay.textContent = track.title;
-        setGlobalVolume(volumeSlider.value);
-    }
 
-    function playMusic() {
-        localStorage.setItem('musicState', 'playing');
-        if (currentSource === 'local') {
-            audioPlayer.play().then(() => updatePlayIcon(true)).catch(e => pauseMusic());
-        } else if (currentSource === 'youtube' && isYtReady && ytVideoId) {
-            ytPlayer.playVideo();
-            updatePlayIcon(true);
-            trackNameDisplay.textContent = "Loading YT Track...";
-        }
-    }
-
-    function pauseMusic() {
-        localStorage.setItem('musicState', 'paused');
-        updatePlayIcon(false);
-        audioPlayer.pause();
-        if (isYtReady) ytPlayer.pauseVideo();
-    }
-
-    function setGlobalVolume(val) {
-        audioPlayer.volume = val;
-        if (isYtReady) ytPlayer.setVolume(val * 100); 
-        localStorage.setItem('musicVolume', val);
-    }
-
-    // --- 6. TIMELINE & SEEKING LOGIC ---
-    
-    // A. Local Audio Time Updates
-    audioPlayer.addEventListener('loadedmetadata', () => {
-        if (currentSource === 'local') {
-            timeline.max = audioPlayer.duration;
-            durationDisplay.textContent = formatTime(audioPlayer.duration);
-        }
-    });
-
-    audioPlayer.addEventListener('timeupdate', () => {
-        if (currentSource === 'local') {
-            timeline.value = audioPlayer.currentTime;
-            currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
-            if (!audioPlayer.paused) localStorage.setItem('musicCurrentTime', audioPlayer.currentTime);
-        }
-    });
-
-    // B. YouTube Time Updates (Polling)
-    function startYtProgress() {
-        stopYtProgress();
-        ytProgressInterval = setInterval(() => {
-            if (ytPlayer && ytPlayer.getPlayerState() === 1) {
-                const curr = ytPlayer.getCurrentTime();
-                const dur = ytPlayer.getDuration();
-                timeline.max = dur;
-                timeline.value = curr;
-                currentTimeDisplay.textContent = formatTime(curr);
-                durationDisplay.textContent = formatTime(dur);
-                localStorage.setItem('musicCurrentTime', curr);
-            }
-        }, 1000);
-    }
-    function stopYtProgress() { clearInterval(ytProgressInterval); }
-
-    // C. User Dragging the Timeline (Both Local & YT)
-    if (timeline) {
-        timeline.addEventListener('input', (e) => {
-            const seekTo = parseFloat(e.target.value);
-            currentTimeDisplay.textContent = formatTime(seekTo);
-            
-            if (currentSource === 'local') {
-                audioPlayer.currentTime = seekTo;
-            } else if (currentSource === 'youtube' && isYtReady) {
-                ytPlayer.seekTo(seekTo, true);
-            }
-        });
-    }
-
-    // --- 7. Event Listeners ---
-    playPauseBtn.addEventListener('click', () => {
-        const isPlaying = (currentSource === 'local' && !audioPlayer.paused) || 
-                          (currentSource === 'youtube' && isYtReady && ytPlayer.getPlayerState() === 1);
-        if (isPlaying) pauseMusic();
-        else playMusic();
-    });
-
-    nextBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex + 1) % playlist.length;
-        loadLocalTrack(trackIndex);
-        playMusic();
-    });
-
-    prevBtn.addEventListener('click', () => {
-        trackIndex = (trackIndex - 1 + playlist.length) % playlist.length;
-        loadLocalTrack(trackIndex);
-        playMusic();
-    });
-
-    audioPlayer.addEventListener('ended', () => nextBtn.click());
-    
-    volumeSlider.addEventListener('input', (e) => {
-        setGlobalVolume(e.target.value);
-    });
-
-    // Custom YouTube Input Logic
-    if (customYtInput && loadYtBtn) {
-        loadYtBtn.addEventListener('click', () => {
-            const url = customYtInput.value.trim();
-            const match = url.match(/(?:v=|youtu\.be\/|youtube\.com\/embed\/|music\.youtube\.com\/watch\?v=)([^&?]+)/);
-            
-            if (match && match[1]) {
-                ytVideoId = match[1];
-                currentSource = 'youtube';
-                localStorage.setItem('musicSource', 'youtube');
-                localStorage.setItem('customYtId', ytVideoId);
-                
-                audioPlayer.pause(); 
-                
-                if (isYtReady) {
-                    ytPlayer.loadVideoById({videoId: ytVideoId});
-                    playMusic();
-                }
-                
-                customYtInput.value = '';
-                ytStatusMsg.style.display = 'block';
-                setTimeout(() => ytStatusMsg.style.display = 'none', 3000);
-            } else {
-                alert("Invalid YouTube or YouTube Music URL!");
-            }
-        });
-    }
-
-    // Initialize on Page Load
-    if (currentSource === 'local') {
-        loadLocalTrack(trackIndex);
-        const savedTime = localStorage.getItem('musicCurrentTime');
-        if (savedTime && localStorage.getItem('musicState') === 'playing') {
-            audioPlayer.currentTime = parseFloat(savedTime);
-        }
-    } else {
-        trackNameDisplay.textContent = "Loading YT Track...";
-    }
-
-    if (localStorage.getItem('musicState') === 'playing') {
-        if (currentSource === 'local') {
-            const playPromise = audioPlayer.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => updatePlayIcon(true)).catch(() => {
-                    updatePlayIcon(false);
-                    localStorage.setItem('musicState', 'paused');
-                });
-            }
-        }
-    } else {
-        updatePlayIcon(false);
-    }
-}
 /**
  * ==================================================================================
  * 9. SMART AUDIO HANDLER
@@ -1347,7 +1207,10 @@ function initializeSmartAudioHandler() {
         });
         player.addEventListener('mouseleave', () => { 
             if (backgroundAudio.dataset.wasPlaying === 'true') { 
-                backgroundAudio.play(); 
+                const playPromise = backgroundAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => {});
+                }
                 backgroundAudio.dataset.wasPlaying = 'false'; 
             }
         });

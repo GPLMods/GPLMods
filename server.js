@@ -707,9 +707,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 3. CORS
-const allowedOrigins =[
+const allowedOrigins = [
+    `http://localhost:${PORT}`,
     'http://localhost:3000',          
-    'https://gplmods.webredirect.org'   
+    'https://gplmods.webredirect.org',
+    ...(process.env.RENDER_EXTERNAL_URL ? [process.env.RENDER_EXTERNAL_URL] : []),
+    ...(process.env.BASE_URL ? [process.env.BASE_URL] : [])
 ];
 app.use(cors({
     origin: function (origin, callback) {
@@ -1205,7 +1208,8 @@ app.use(async (req, res, next) => {
         res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
         res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
-        res.locals.isTestDeployment = (requestHost === 'localhost' || requestHost === '127.0.0.1');
+        const isLocalHost = requestHost === 'localhost' || requestHost === '127.0.0.1' || requestHost === '::1' || requestHost === '0.0.0.0' || requestHost.startsWith('192.168.') || requestHost.startsWith('10.');
+        res.locals.isTestDeployment = isLocalHost || (!process.env.RENDER && process.env.NODE_ENV !== 'production' && requestHost !== officialSiteHost);
         res.locals.isOfficialDeployment = !res.locals.isTestDeployment && requestHost === officialSiteHost && (
             process.env.NODE_ENV !== 'production' || hasIntegrityConfiguration
         );
@@ -9040,8 +9044,15 @@ app.use((err, req, res, next) => {
 
         // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server is running on http://ocalhost:3000`);
-            console.log(`Server is running on port ${PORT}`);
+            const isRender = process.env.RENDER === 'true' || Boolean(process.env.RENDER_EXTERNAL_URL);
+            if (isRender) {
+                const liveUrl = process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://gplmods.webredirect.org';
+                console.log(`Server is running on ${liveUrl}`);
+                console.log(`Server is running on port ${PORT}`);
+            } else {
+                console.log(`Server is running on http://localhost:${PORT}`);
+                console.log(`Server is running on port ${PORT}`);
+            }
         });
 
     } catch (error) {

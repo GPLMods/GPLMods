@@ -1,4 +1,4 @@
-<%-include('../partials/header') %>
+<%- include('../partials/header') %>
 <!-- Quill.js Theme (Snow) -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 
@@ -24,7 +24,8 @@
     .processing-pulse { animation: pulse 1.5s infinite; }
 
     /* Custom Dropdown Styles */
-    .custom-select-wrapper { position: relative; user-select: none; width: 150px; }
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .filter-group .custom-select-wrapper { width: 150px; }
     .custom-select { position: relative; display: flex; flex-direction: column; background: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; padding: 12px 15px; color: var(--white); transition: border-color 0.3s; }
     .custom-select-wrapper.open .custom-select { border-color: var(--blue); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(33, 150, 243, 0.3); }
     .custom-select-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); transition: transform 0.3s; color: var(--silver); }
@@ -34,10 +35,20 @@
     .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; }
     .custom-option:hover { background-color: rgba(33, 150, 243, 0.2); color: var(--white); }
     .custom-option.selected { color: var(--blue); font-weight: bold; }
-    #unifiedAddVersionForm { display: flex; flex-direction: column; }
-    #unifiedAddVersionForm .version-field { order: 1; }
-    #unifiedAddVersionForm .requirements-fields { order: 2; }
-    #unifiedAddVersionForm .whats-new-field { order: 3; }
+
+    /* Method Selection Pill Buttons */
+    .method-btn-group { display: flex; gap: 12px; justify-content: center; margin-bottom: 25px; }
+    .btn-method { flex: 1; padding: 12px 20px; border-radius: 30px; font-weight: 700; font-size: 1.05em; cursor: pointer; transition: all 0.3s ease; border: none; outline: none; text-align: center; }
+    .btn-method.active-method { background: #ffffff; color: #111111; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2); }
+    .btn-method.inactive-method { background: rgba(255, 255, 255, 0.08); color: var(--silver); border: 1px solid rgba(255, 255, 255, 0.15); }
+    .btn-method.inactive-method:hover { background: rgba(255, 255, 255, 0.15); color: #ffffff; }
+
+    /* Action buttons */
+    .btn-action { display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
+    .btn-action-secondary { background: #2a2a2a; color: var(--silver); border: 1px solid #444; }
+    .btn-action-secondary:hover { background: #3a3a3a; color: var(--white); border-color: #666; }
+    .btn-action-danger { background: #d32f2f; color: #fff; }
+    .btn-action-danger:hover { background: #b71c1c; }
 </style>
 
 <div class="container">
@@ -54,8 +65,9 @@
 
         <!-- ONE UNIFIED FORM -->
         <form action="/mods/<%= parentFile._id %>/add-version" method="POST" enctype="multipart/form-data" id="unifiedAddVersionForm">
+            <input type="hidden" name="uploadId" id="uploadId" value="">
             
-            <!-- AUTO-FETCH TOGGLE -->
+            <!-- a. AUTO-FETCH TOGGLE -->
             <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: rgba(255, 215, 0, 0.05); padding: 15px; border-radius: 8px; border: 1px solid #333;">
                 <label class="switch" style="margin-bottom: 0;">
                     <input type="checkbox" id="toggleAutoFetch">
@@ -93,18 +105,17 @@
                 <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
             </div>
 
-            <!-- CORE DETAILS -->
-            <div class="form-group version-field">
+            <!-- b. NEW VERSION NUMBER -->
+            <div class="form-group">
                 <label for="softwareVersion">New Version Number*</label>
                 <input type="text" id="softwareVersion" name="softwareVersion" placeholder="e.g., 2.2.0" required autocomplete="off">
             </div>
 
-            <input type="hidden" name="uploadId" id="uploadId" value="">
-
+            <!-- c. AGE RATING -->
             <div class="form-group">
                 <label for="ageRating">Age Rating</label>
                 <select id="ageRating" name="ageRating" style="display: none;">
-                    <option value="NA" <%= parentFile.ageRating === 'NA' ? 'selected' : '' %>>Not Rated (N/A)</option>
+                    <option value="NA" <%= (!parentFile.ageRating || parentFile.ageRating === 'NA') ? 'selected' : '' %>>Not Rated (N/A)</option>
                     <option value="3+" <%= parentFile.ageRating === '3+' ? 'selected' : '' %>>3+ (Everyone)</option>
                     <option value="7+" <%= parentFile.ageRating === '7+' ? 'selected' : '' %>>7+ (Low Violence)</option>
                     <option value="12+" <%= parentFile.ageRating === '12+' ? 'selected' : '' %>>12+ (Moderate Violence)</option>
@@ -112,86 +123,93 @@
                     <option value="18+" <%= parentFile.ageRating === '18+' ? 'selected' : '' %>>18+ (Adults Only)</option>
                 </select>
                 <div class="custom-select-wrapper" id="ageRatingWrapper">
-                    <div class="custom-select"><span class="selected-text">Not Rated (N/A)</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                    <div class="custom-select"><span class="selected-text"><%= parentFile.ageRating ? (parentFile.ageRating === 'NA' ? 'Not Rated (N/A)' : parentFile.ageRating) : 'Not Rated (N/A)' %></span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
                     <div class="custom-options">
-                        <div class="custom-option" data-value="NA">Not Rated (N/A)</div>
-                        <div class="custom-option" data-value="3+">3+ (Everyone)</div>
-                        <div class="custom-option" data-value="7+">7+ (Low Violence)</div>
-                        <div class="custom-option" data-value="12+">12+ (Moderate Violence)</div>
-                        <div class="custom-option" data-value="16+">16+ (Strong Violence)</div>
-                        <div class="custom-option" data-value="18+">18+ (Adults Only)</div>
+                        <div class="custom-option <%= (!parentFile.ageRating || parentFile.ageRating === 'NA') ? 'selected' : '' %>" data-value="NA">Not Rated (N/A)</div>
+                        <div class="custom-option <%= parentFile.ageRating === '3+' ? 'selected' : '' %>" data-value="3+">3+ (Everyone)</div>
+                        <div class="custom-option <%= parentFile.ageRating === '7+' ? 'selected' : '' %>" data-value="7+">7+ (Low Violence)</div>
+                        <div class="custom-option <%= parentFile.ageRating === '12+' ? 'selected' : '' %>" data-value="12+">12+ (Moderate Violence)</div>
+                        <div class="custom-option <%= parentFile.ageRating === '16+' ? 'selected' : '' %>" data-value="16+">16+ (Strong Violence)</div>
+                        <div class="custom-option <%= parentFile.ageRating === '18+' ? 'selected' : '' %>" data-value="18+">18+ (Adults Only)</div>
                     </div>
                 </div>
             </div>
+
+            <!-- d. MINIMUM OS REQUIRED (Single column directly under Age Rating) -->
             <div class="form-group">
                 <label for="minOsVersion">Minimum OS Required</label>
-                <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>">
+                <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>" placeholder="e.g., Required Android 8.0 or above">
             </div>
 
-            <div class="form-group whats-new-field">
+            <!-- e. WHAT'S NEW IN THIS VERSION -->
+            <div class="form-group">
                 <label>What's New in this Version? (Optional)</label>
                 <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
                 <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
                 <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
             </div>
 
+            <!-- f. IMPORTANT NOTE / INSTRUCTIONS -->
             <div class="form-group">
                 <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
                 <textarea id="importantNote" name="importantNote" rows="4" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; outline: none; resize: vertical;"><%= parentFile.importantNote || '' %></textarea>
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
 
-            <!-- DISTRIBUTOR / ADMIN TOGGLES -->
+            <!-- g. METHOD SELECTION BUTTONS (DISTRIBUTOR / ADMIN) -->
             <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
                 <div style="margin: 30px 0 20px 0; border-top: 1px solid #333; padding-top: 20px;">
                     <p style="color: var(--silver); margin-bottom: 1.5rem;">
                         <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Upload Method ★</span>
                     </p>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
-                        <button type="button" class="btn btn-secondary" id="btn-show-file" style="flex: 1; padding: 10px;">Upload to Cloud</button>
-                        <button type="button" class="btn btn-primary" id="btn-show-link" style="flex: 1; padding: 10px;">Paste External Link(s)</button>
+                    <div class="method-btn-group">
+                        <button type="button" class="btn-method active-method" id="btn-show-file">Upload to Cloud</button>
+                        <button type="button" class="btn-method inactive-method" id="btn-show-link">Paste External Link(s)</button>
                     </div>
                 </div>
 
                 <!-- External Link Section (Hidden by Default) -->
                 <div id="distributor-section" style="display: none;">
+                    <!-- Field Positioning: File Name (for display purposes) placed ABOVE the multi-part configurator -->
                     <div class="form-group">
                         <label for="originalFilename">File Name (for display purposes)*</label>
-                        <!-- Pre-filled for convenience on updates -->
-                        <input type="text" id="originalFilename" name="originalFilename" value="<%= parentFile.originalFilename || parentFile.name %>">
+                        <input type="text" id="originalFilename" name="originalFilename" value="<%= parentFile.originalFilename || parentFile.name %>" placeholder="e.g., app-v2.0.apk">
                     </div>
+
                     <div class="form-group" style="text-align: left; margin-bottom: 15px;">
                         <div class="checkbox-group" style="display: flex; align-items: center; gap: 10px;">
-                            <label class="switch">
+                            <label class="switch" style="margin-bottom: 0;">
                                 <input type="checkbox" id="isMultiPartDistributor" name="isMultiPart" value="true">
                                 <span class="slider round"></span>
                             </label>
-                            <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">Multiple links (Multi-Part)</label>
+                            <label for="isMultiPartDistributor" style="margin-bottom: 0; cursor: pointer; color: var(--silver); font-weight: 600;">This mod requires multiple download links (Multi-Part)</label>
                         </div>
                     </div>
 
+                    <!-- Single Link Input Group (Default) -->
                     <div id="single-link-group" class="form-group">
                         <label for="externalUrl">External Download Link*</label>
                         <input type="url" id="externalUrl" name="externalDownloadUrl" placeholder="https://linkvertise.com/...">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
-                        <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="https://www.dropbox.com/s/.../app.zip?dl=1">
-                        <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Optional direct link for faster downloads and 1-click install flows.</span>
+
+                        <div style="margin-top: 15px;">
+                            <label for="directDownloadUrl">Direct Cloud Link (Optional)</label>
+                            <input type="url" id="directDownloadUrl" name="directDownloadUrl" placeholder="https://www.dropbox.com/s/.../app.zip?dl=1">
+                            <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Optional direct link for faster downloads and 1-click install flows.</span>
+                        </div>
                     </div>
 
+                    <!-- Advanced Multi-Part Configurator (Shown when checked) -->
                     <div id="multi-link-group" class="form-group" style="text-align: left; display: none;">
                         <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); padding: 15px; border-radius: 8px;">
                             <p style="color: var(--gold); font-weight: bold; margin: 0; font-size: 1.1em;"><i class="fas fa-layer-group"></i> Multi-Part Configurator</p>
                             <p style="color: var(--silver); margin-top: 5px; margin-bottom: 10px; font-size: 0.95em;">Add parts below. Each part may include mirrors, a direct admin link, and scan references. You can add unlimited parts.</p>
                             <div id="parts-container">
-                                <!-- Part template: Part 1 -->
+                                <!-- Part 1 -->
                                 <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
                                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
                                     <input type="text" name="partNames[]" placeholder="Part 1 (e.g., main, data)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
                                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
-                                    <input type="url" name="partUrls[]" placeholder="https://.../part1" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <input type="url" name="partUrls[]" placeholder="https://.../part1" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
                                     <div style="display:flex; gap:8px;">
                                         <div style="flex:1;">
                                             <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
@@ -225,17 +243,49 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Part template: Part 2 -->
+                                <!-- Part 2 -->
                                 <div class="part-block" style="border:1px solid #333; padding:10px; border-radius:8px; margin-bottom:10px;">
                                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
                                     <input type="text" name="partNames[]" placeholder="Part 2 (e.g., split-1)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
                                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
-                                    <input type="url" name="partUrls[]" placeholder="https://.../part2" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <input type="url" name="partUrls[]" placeholder="https://.../part2" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
+                                            <input type="text" name="mirror1Providers[]" placeholder="Google Drive" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:2;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 URL</label>
+                                            <input type="url" name="mirror1Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 Provider</label>
+                                            <input type="text" name="mirror2Providers[]" placeholder="Mega" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:2;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 2 URL</label>
+                                            <input type="url" name="mirror2Urls[]" placeholder="https://..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
+                                    <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Direct Admin Link</label>
+                                    <input type="url" name="directAdminLinks[]" placeholder="https://admin.example.com/direct/" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                    <div style="display:flex; gap:8px;">
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual File Scan URL</label>
+                                            <input type="url" name="manualFileScanUrls[]" placeholder="https://www.virustotal.com/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                        <div style="flex:1;">
+                                            <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Manual Site Scan URL</label>
+                                            <input type="url" name="manualSiteScanUrls[]" placeholder="https://sitecheck.sucuri.net/..." style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div style="display:flex; gap:8px;">
-                                <button type="button" id="add-part-btn" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.95em;">+ Add Another Part</button>
-                                <button type="button" id="remove-part-btn" class="btn btn-danger" style="padding: 8px 14px; font-size: 0.95em;">- Remove Last Part</button>
+                                <button type="button" id="add-part-btn" class="btn-action btn-action-secondary" style="padding: 8px 14px; font-size: 0.95em;">+ Add Another Part</button>
+                                <button type="button" id="remove-part-btn" class="btn-action btn-action-danger" style="padding: 8px 14px; font-size: 0.95em;">- Remove Last Part</button>
                             </div>
                         </div>
                     </div>
@@ -264,7 +314,7 @@
                         <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                         Click to Choose New File
                     </label>
-                    <input type="file" id="modFile" name="modFile" style="display:none;" data-limit="<%= limitBytes %>">
+                    <input type="file" id="modFile" name="modFile" required style="display:none;" data-limit="<%= limitBytes %>">
                     <div id="file-name-display">No file selected</div>
                 </div>
                 
@@ -275,7 +325,10 @@
                 </div>
             </div>
 
+            <!-- SUBMIT BUTTON -->
             <button type="submit" class="submit-button" id="submitBtn">Publish Update</button>
+            
+            <!-- POLICY LINK (At bottom of page, below Publish Update button) -->
             <p style="font-size: 0.85em; color: var(--silver); margin-top: 2rem; margin-bottom: 1rem;">By uploading, you agree to our <a href="/upload-policy" target="_blank" style="color: var(--gold); text-decoration: underline;">Upload & Update Policy</a>.</p>
         </form>
     </div>
@@ -352,6 +405,7 @@
         }
         setupCustomSelect('wrapper-fetchPlatform', 'fetchPlatform');
         setupCustomSelect('ageRatingWrapper', 'ageRating');
+        
         const ageRating = document.getElementById('ageRating');
         const ageRatingText = document.querySelector('#ageRatingWrapper .selected-text');
         if (ageRating && ageRatingText && ageRating.value) {
@@ -361,9 +415,10 @@
                 document.querySelector(`#ageRatingWrapper .custom-option[data-value="${ageRating.value}"]`)?.classList.add('selected');
             }
         }
-        document.addEventListener('click', () => {
-            const w = document.getElementById('wrapper-fetchPlatform');
-            if (w) w.classList.remove('open');
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-select-wrapper')) {
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+            }
         });
 
         // --- 3. Auto Fetch Logic ---
@@ -404,17 +459,21 @@
                         }
                         if (result.data.ageRating || result.data.minAge) {
                             const ma = document.getElementById('ageRating');
-                            if (ma) ma.value = result.data.ageRating || result.data.minAge;
-                        }
-                        if (result.data.developer) {
-                            const devInput = document.getElementById('developerName');
-                            if (devInput) devInput.value = result.data.developer;
+                            const val = result.data.ageRating || result.data.minAge;
+                            if (ma) {
+                                ma.value = val;
+                                const opt = ma.querySelector(`option[value="${val}"]`);
+                                if (opt && ageRatingText) ageRatingText.textContent = opt.textContent;
+                                document.querySelectorAll('#ageRatingWrapper .custom-option').forEach(o => {
+                                    o.classList.toggle('selected', o.getAttribute('data-value') === val);
+                                });
+                            }
                         }
                     } else {
                         statusSpan.textContent = result.error || 'Failed to fetch data.'; statusSpan.style.color = 'var(--red)';
                     }
                 } catch (err) { statusSpan.textContent = 'Server error.'; statusSpan.style.color = 'var(--red)';
-                } finally { fetchBtn.disabled = false; fetchBtn.textContent = 'Fetch Data'; }
+                } finally { fetchBtn.disabled = false; fetchBtn.textContent = 'Fetch'; }
             });
         }
 
@@ -427,28 +486,48 @@
         const extUrlInput = document.getElementById('externalUrl');
         const origNameInput = document.getElementById('originalFilename');
         const uploadIdInput = document.getElementById('uploadId');
+        const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
+        const partsContainer = document.getElementById('parts-container');
         let currentMode = 'file'; 
+
+        function setPartsRequired(required) {
+            if (!partsContainer) return;
+            partsContainer.querySelectorAll('input').forEach(i => {
+                if (i.name === 'partUrls[]') i.required = required;
+            });
+        }
 
         if (btnShowLink && btnShowFile && distSection && fileSection) {
             btnShowLink.addEventListener('click', () => {
                 currentMode = 'link';
-                btnShowLink.classList.replace('btn-secondary', 'btn-primary');
-                btnShowFile.classList.replace('btn-primary', 'btn-secondary');
+                btnShowLink.classList.remove('inactive-method');
+                btnShowLink.classList.add('active-method');
+                btnShowFile.classList.remove('active-method');
+                btnShowFile.classList.add('inactive-method');
                 distSection.style.display = 'block';
                 fileSection.style.display = 'none';
-                modFileInput.required = false; 
-                extUrlInput.required = true;
-                origNameInput.required = true;
+                if (modFileInput) modFileInput.required = false; 
+                if (origNameInput) origNameInput.required = true;
+                if (multiPartCheckbox && multiPartCheckbox.checked) {
+                    if (extUrlInput) extUrlInput.required = false;
+                    setPartsRequired(true);
+                } else {
+                    if (extUrlInput) extUrlInput.required = true;
+                    setPartsRequired(false);
+                }
             });
             btnShowFile.addEventListener('click', () => {
                 currentMode = 'file';
-                btnShowFile.classList.replace('btn-secondary', 'btn-primary');
-                btnShowLink.classList.replace('btn-primary', 'btn-secondary');
+                btnShowFile.classList.remove('inactive-method');
+                btnShowFile.classList.add('active-method');
+                btnShowLink.classList.remove('active-method');
+                btnShowLink.classList.add('inactive-method');
                 fileSection.style.display = 'block';
                 distSection.style.display = 'none';
-                modFileInput.required = true; 
-                extUrlInput.required = false;
-                origNameInput.required = false;
+                if (modFileInput) modFileInput.required = true; 
+                if (extUrlInput) extUrlInput.required = false;
+                if (origNameInput) origNameInput.required = false;
+                setPartsRequired(false);
             });
         }
 
@@ -456,32 +535,23 @@
             uploadIdInput.value = 'up_' + Date.now();
         }
 
-        const multiPartCheckbox = document.getElementById('isMultiPartDistributor');
-        if (multiPartCheckbox) {
+        // --- 5. Advanced Multi-Part Configurator Logic ---
+        if (multiPartCheckbox && partsContainer) {
             const singleLinkGroup = document.getElementById('single-link-group');
             const multiLinkGroup = document.getElementById('multi-link-group');
-            const singleInput = document.getElementById('externalUrl');
-            const partsContainer = document.getElementById('parts-container');
             const addPartBtn = document.getElementById('add-part-btn');
             const removePartBtn = document.getElementById('remove-part-btn');
 
-            function setPartsRequired(required) {
-                partsContainer.querySelectorAll('input').forEach(i => {
-                    // require only the part URL fields, keep mirrors optional
-                    if (i.name === 'partUrls[]') i.required = required;
-                });
-            }
-
             multiPartCheckbox.addEventListener('change', function() {
                 if (this.checked) {
-                    singleLinkGroup.style.display = 'none';
-                    singleInput.required = false;
-                    multiLinkGroup.style.display = 'block';
-                    setPartsRequired(true);
+                    if (singleLinkGroup) singleLinkGroup.style.display = 'none';
+                    if (extUrlInput) extUrlInput.required = false;
+                    if (multiLinkGroup) multiLinkGroup.style.display = 'block';
+                    if (currentMode === 'link') setPartsRequired(true);
                 } else {
-                    singleLinkGroup.style.display = 'block';
-                    singleInput.required = true;
-                    multiLinkGroup.style.display = 'none';
+                    if (singleLinkGroup) singleLinkGroup.style.display = 'block';
+                    if (extUrlInput && currentMode === 'link') extUrlInput.required = true;
+                    if (multiLinkGroup) multiLinkGroup.style.display = 'none';
                     setPartsRequired(false);
                 }
             });
@@ -494,7 +564,7 @@
                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part Name</label>
                     <input type="text" name="partNames[]" placeholder="Part ${index} (optional)" style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
                     <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Part URL*</label>
-                    <input type="url" name="partUrls[]" placeholder="https://.../part${index}" required style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
+                    <input type="url" name="partUrls[]" placeholder="https://.../part${index}" ${currentMode === 'link' ? 'required' : ''} style="width:100%; margin-bottom:8px; padding:10px; border-radius:6px; border:1px solid #333; background:var(--black); color:var(--white);">
                     <div style="display:flex; gap:8px;">
                         <div style="flex:1;">
                             <label style="color:var(--silver); font-weight:600; display:block; margin-bottom:6px;">Mirror 1 Provider</label>
@@ -531,24 +601,27 @@
                 return block;
             }
 
-            // Add / Remove handlers
-            addPartBtn.addEventListener('click', () => {
-                const currentCount = partsContainer.querySelectorAll('.part-block').length;
-                const nextIndex = currentCount + 1;
-                const blk = createPartBlock(nextIndex);
-                partsContainer.appendChild(blk);
-                setPartsRequired(true);
-            });
+            if (addPartBtn) {
+                addPartBtn.addEventListener('click', () => {
+                    const currentCount = partsContainer.querySelectorAll('.part-block').length;
+                    const nextIndex = currentCount + 1;
+                    const blk = createPartBlock(nextIndex);
+                    partsContainer.appendChild(blk);
+                    if (currentMode === 'link') setPartsRequired(true);
+                });
+            }
 
-            removePartBtn.addEventListener('click', () => {
-                const blocks = partsContainer.querySelectorAll('.part-block');
-                if (blocks.length > 2) {
-                    blocks[blocks.length - 1].remove();
-                }
-            });
+            if (removePartBtn) {
+                removePartBtn.addEventListener('click', () => {
+                    const blocks = partsContainer.querySelectorAll('.part-block');
+                    if (blocks.length > 2) {
+                        blocks[blocks.length - 1].remove();
+                    }
+                });
+            }
         }
 
-        // --- 5. File Selection & Form Submission Logic ---
+        // --- 6. File Selection & Form Submission Logic ---
         const fileNameDisplay = document.getElementById('file-name-display');
         const form = document.getElementById('unifiedAddVersionForm');
         const submitBtn = document.getElementById('submitBtn');
@@ -557,117 +630,136 @@
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
-        modFileInput.addEventListener('change', function() {
-            if (this.files && this.files.length > 0) {
-                const file = this.files[0];
-                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
-                
-                if (file.size > maxLimit) {
-                    showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
-                    this.value = ''; 
-                    fileNameDisplay.textContent = 'No file selected';
-                    dropZone.style.borderColor = 'var(--red)';
-                    dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
-                    return;
+        if (modFileInput) {
+            modFileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    const file = this.files[0];
+                    const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
+                    
+                    if (file.size > maxLimit) {
+                        showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
+                        this.value = ''; 
+                        fileNameDisplay.textContent = 'No file selected';
+                        dropZone.style.borderColor = 'var(--red)';
+                        dropZone.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
+                        return;
+                    }
+                    fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
+                    dropZone.style.borderColor = 'var(--gold)';
+                    dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
                 }
-                fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
-                dropZone.style.borderColor = 'var(--gold)';
-                dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
-            }
-        });
+            });
+        }
 
         form.addEventListener('submit', function(e) {
-                e.preventDefault(); 
-                
-                const contentHtml = quill.root.innerHTML;
-                document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
+            e.preventDefault(); 
+            
+            const contentHtml = quill.root.innerHTML;
+            document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
 
-                if (currentMode === 'file' && modFileInput.files.length === 0) {
-                    return showErrorModal("Please select a file to upload.");
+            if (currentMode === 'file' && (!modFileInput || modFileInput.files.length === 0)) {
+                return showErrorModal("Please select a file to upload.");
+            }
+
+            if (currentMode === 'link') {
+                if (origNameInput && !origNameInput.value.trim()) {
+                    return showErrorModal("Please enter a display file name.");
                 }
-
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Processing...';
-
-                if (uploadIdInput && !uploadIdInput.value) {
-                    uploadIdInput.value = 'up_' + Date.now();
-                }
-
-                const formData = new FormData(form);
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', form.action, true);
-
-                // ONLY show progress bar if we are actually uploading a file
-                if (currentMode === 'file') {
-                    progressWrapper.style.display = 'block';
-                    progressBar.style.width = '0%';
-                    progressBar.textContent = '0%';
-                    progressBar.classList.remove('processing-pulse');
-                    statusText.innerHTML = 'Uploading file... Do not close this page.';
-
-                    // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
-                    const uploadId = uploadIdInput.value;
-                    const socket = io();
-                    socket.on(`b2_progress_${uploadId}`, (data) => {
-                        const totalPercent = 50 + Math.round(data.percent / 2);
-                        progressBar.style.width = totalPercent + '%';
-                        progressBar.textContent = totalPercent + '%';
-                        statusText.innerHTML = `Uploading... ${totalPercent}%`;
-                        
-                        if (data.percent === 100) {
-                            progressBar.classList.add('processing-pulse');
-                            statusText.innerHTML = 'Finalizing and scanning... Almost done!';
-                        }
-                    });
-
-                    // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
-                    xhr.upload.addEventListener('progress', function(event) {
-                        if (event.lengthComputable) {
-                            const percentComplete = Math.round((event.loaded / event.total) * 50); 
-                            progressBar.style.width = percentComplete + '%';
-                            progressBar.textContent = percentComplete + '%';
-                            
-                            if (percentComplete === 50) {
-                                statusText.innerHTML = 'Processing upload... Do not close this page.';
-                            } else {
-                                statusText.innerHTML = `Uploading... ${percentComplete}%`;
-                            }
-                        }
-                    });
-                }
-
-                xhr.onload = function() {
-                    if (xhr.status >= 200 && xhr.status < 400) {
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            if (res.success && res.redirectUrl) {
-                                window.location.href = res.redirectUrl; 
-                            } else {
-                                showErrorModal('Update finished, but server did not provide a redirect URL.');
-                                resetUI();
-                            }
-                        } catch(e) {
-                            // Fallback if response isn't JSON
-                            window.location.href = xhr.responseURL || '/my-uploads'; 
-                        }
-                    } else {
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            showErrorModal(res.message || 'Update failed.');
-                        } catch(e) {
-                            showErrorModal(`Server error (${xhr.status}).`);
-                        }
-                        resetUI();
+                if (multiPartCheckbox && multiPartCheckbox.checked) {
+                    const partUrlInputs = partsContainer ? Array.from(partsContainer.querySelectorAll('input[name="partUrls[]"]')) : [];
+                    const hasValidPart = partUrlInputs.some(i => i.value.trim().length > 0);
+                    if (!hasValidPart) {
+                        return showErrorModal("Please provide at least one valid part URL.");
                     }
-                };
+                } else {
+                    if (extUrlInput && !extUrlInput.value.trim()) {
+                        return showErrorModal("Please enter an external download link.");
+                    }
+                }
+            }
 
-                xhr.onerror = function() { 
-                    showErrorModal('A network error occurred. Please check your internet connection.'); 
-                    resetUI(); 
-                };
-                
-                xhr.send(formData);
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Processing...';
+
+            if (uploadIdInput && !uploadIdInput.value) {
+                uploadIdInput.value = 'up_' + Date.now();
+            }
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action, true);
+
+            // ONLY show progress bar if we are actually uploading a file
+            if (currentMode === 'file') {
+                progressWrapper.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.classList.remove('processing-pulse');
+                statusText.innerHTML = 'Uploading file... Do not close this page.';
+
+                // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
+                const uploadId = uploadIdInput.value;
+                const socket = io();
+                socket.on(`b2_progress_${uploadId}`, (data) => {
+                    const totalPercent = 50 + Math.round(data.percent / 2);
+                    progressBar.style.width = totalPercent + '%';
+                    progressBar.textContent = totalPercent + '%';
+                    statusText.innerHTML = `Uploading... ${totalPercent}%`;
+                    
+                    if (data.percent === 100) {
+                        progressBar.classList.add('processing-pulse');
+                        statusText.innerHTML = 'Finalizing and scanning... Almost done!';
+                    }
+                });
+
+                // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
+                xhr.upload.addEventListener('progress', function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 50); 
+                        progressBar.style.width = percentComplete + '%';
+                        progressBar.textContent = percentComplete + '%';
+                        
+                        if (percentComplete === 50) {
+                            statusText.innerHTML = 'Processing upload... Do not close this page.';
+                        } else {
+                            statusText.innerHTML = `Uploading... ${percentComplete}%`;
+                        }
+                    }
+                });
+            }
+
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success && res.redirectUrl) {
+                            window.location.href = res.redirectUrl; 
+                        } else {
+                            showErrorModal('Update finished, but server did not provide a redirect URL.');
+                            resetUI();
+                        }
+                    } catch(e) {
+                        // Fallback if response isn't JSON
+                        window.location.href = xhr.responseURL || '/my-uploads'; 
+                    }
+                } else {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        showErrorModal(res.message || 'Update failed.');
+                    } catch(e) {
+                        showErrorModal(`Server error (${xhr.status}).`);
+                    }
+                    resetUI();
+                }
+            };
+
+            xhr.onerror = function() { 
+                showErrorModal('A network error occurred. Please check your internet connection.'); 
+                resetUI(); 
+            };
+            
+            xhr.send(formData);
 
             function resetUI() {
                 submitBtn.disabled = false;

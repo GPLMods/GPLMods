@@ -181,25 +181,33 @@
         <% } %> 
 
         <!-- ======== UNIFIED POLICY MODAL ======== -->
-        <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler && typeof isTestDeployment === 'undefined' || (typeof isTestDeployment !== 'undefined' && !isTestDeployment)) { %>
+        <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler) { %>
+            <% const isTestEnv = (typeof isTestDeployment !== 'undefined' && isTestDeployment); %>
             <div id="deployment-notice-modal" style="display: none; position: fixed; inset: 0; z-index: 1000000; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.82); backdrop-filter: blur(6px);">
-                <div style="width: min(520px, 100%); padding: 30px; color: var(--white); background: var(--dark-gray); border: 1px solid #7d2028; border-top: 4px solid #e53935; border-radius: 12px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,.7);">
-                    <i class="fas fa-code-branch" style="font-size: 3em; color: #e53935; margin-bottom: 15px;"></i>
-                    <h2 style="color: #ff6b6b; margin-bottom: 12px;">Unofficial Deployment</h2>
-                    <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px;">This website is running from an unofficial deployment of the GPLMods source code. Verify the domain before downloading files.</p>
-                    <a href="<%= officialSiteUrl %>" style="display: block; margin-bottom: 18px; color: var(--gold); font-weight: 700;">Open the official GPL Mods website</a>
-                    <button id="deployment-notice-close" type="button" style="width: 100%; padding: 12px; color: #fff; background: #a51d2d; border: 0; border-radius: 7px; cursor: pointer; font-weight: 700;">Continue</button>
+                <div style="width: min(520px, 100%); padding: 30px; color: var(--white); background: var(--dark-gray); border: 1px solid <%= isTestEnv ? '#1e40af' : '#7d2028' %>; border-top: 4px solid <%= isTestEnv ? '#3b82f6' : '#e53935' %>; border-radius: 12px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,.7);">
+                    <i class="fas <%= isTestEnv ? 'fa-laptop-code' : 'fa-code-branch' %>" style="font-size: 3em; color: <%= isTestEnv ? '#3b82f6' : '#e53935' %>; margin-bottom: 15px;"></i>
+                    <h2 style="color: <%= isTestEnv ? '#60a5fa' : '#ff6b6b' %>; margin-bottom: 12px;"><%= isTestEnv ? 'Test or Local Deployment' : 'Unofficial Deployment' %></h2>
+                    <p style="color: var(--silver); line-height: 1.6; margin-bottom: 20px;">
+                        <%= isTestEnv 
+                            ? 'This website is running in a local test deployment of the GPLMods source code for development and debugging.' 
+                            : 'This website is running from an unofficial deployment of the GPLMods source code. Verify the domain before downloading files.' %>
+                    </p>
+                    <% if (!isTestEnv) { %>
+                        <a href="<%= officialSiteUrl %>" style="display: block; margin-bottom: 18px; color: var(--gold); font-weight: 700;">Open the official GPL Mods website</a>
+                    <% } %>
+                    <button id="deployment-notice-close" type="button" style="width: 100%; padding: 12px; color: #fff; background: <%= isTestEnv ? '#2563eb' : '#a51d2d' %>; border: 0; border-radius: 7px; cursor: pointer; font-weight: 700;">Continue</button>
                 </div>
             </div>
             <script>
                 window.addEventListener('load', () => {
                     const modal = document.getElementById('deployment-notice-modal');
                     const closeButton = document.getElementById('deployment-notice-close');
-                    if (!modal || !closeButton || localStorage.getItem('gplmods_deployment_notice_seen') === 'true') return;
+                    const storageKey = '<%= isTestEnv ? "gplmods_test_deployment_notice_seen" : "gplmods_deployment_notice_seen" %>';
+                    if (!modal || !closeButton || localStorage.getItem(storageKey) === 'true') return;
                     modal.style.display = 'flex';
                     document.body.style.overflow = 'hidden';
                     closeButton.addEventListener('click', () => {
-                        localStorage.setItem('gplmods_deployment_notice_seen', 'true');
+                        localStorage.setItem(storageKey, 'true');
                         modal.style.display = 'none';
                         document.body.style.overflow = '';
                     });

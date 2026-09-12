@@ -259,15 +259,21 @@
 </head>
 <body>
     <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler) { %>
-        <div class="deployment-notice" role="status">
-            <strong>Unofficial deployment</strong>
-            <span>This copy is not the official GPL Mods website.</span>
-            <a href="<%= officialSiteUrl %>">Visit the official site</a>
+        <% const isTestEnv = (typeof isTestDeployment !== 'undefined' && isTestDeployment); %>
+        <div class="deployment-notice <%= isTestEnv ? 'test-deployment' : 'unofficial-deployment' %>" role="status">
+            <strong><%= isTestEnv ? 'Test or Local Deployment' : 'Unofficial deployment' %></strong>
+            <span><%= isTestEnv ? 'This copy is running in a local test development environment.' : 'This copy is not the official GPL Mods website.' %></span>
+            <% if (!isTestEnv) { %>
+                <a href="<%= officialSiteUrl %>">Visit the official site</a>
+            <% } %>
         </div>
         <style>
-            .deployment-notice { position: relative; z-index: 9999; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; padding: 8px 16px; color: #fff; background: #a51d2d; border-bottom: 2px solid #e01b24; font: 600 .88rem/1.4 monospace; text-align: center; }
-            .deployment-notice span { color: #ffe8e8; font-weight: 400; }
-            .deployment-notice a { color: #ffe066; text-decoration: underline; }
+            .deployment-notice { position: relative; z-index: 9999; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; padding: 8px 16px; color: #fff; font: 600 .88rem/1.4 monospace; text-align: center; }
+            .deployment-notice.test-deployment { background: #1e3a5f; border-bottom: 2px solid #2b6cb0; }
+            .deployment-notice.test-deployment span { color: #dbeafe; font-weight: 400; }
+            .deployment-notice.unofficial-deployment { background: #a51d2d; border-bottom: 2px solid #e01b24; }
+            .deployment-notice.unofficial-deployment span { color: #ffe8e8; font-weight: 400; }
+            .deployment-notice.unofficial-deployment a { color: #ffe066; text-decoration: underline; }
         </style>
     <% } %>
 

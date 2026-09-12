@@ -109,7 +109,10 @@
                 setTimeout(() => { 
                     videoModal.style.display = 'none';
                     if (backgroundAudio && backgroundAudio.dataset.adPaused === 'true') {
-                        backgroundAudio.play();
+                        const playPromise = backgroundAudio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {});
+                        }
                         backgroundAudio.dataset.adPaused = 'false';
                     }
                 }, 300);
