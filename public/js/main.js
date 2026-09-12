@@ -1043,6 +1043,7 @@ function initializeMusicPlayer() {
             }
         }, 1000);
     }
+
     function stopYtProgress() { clearInterval(ytProgressInterval); }
 
     if (timeline) {
@@ -1117,7 +1118,6 @@ function initializeMusicPlayer() {
         async playTrack(track) {
             if (!track || !track.src) return;
 
-            // Check if it's a YT link
             const isYt = track.src.includes('youtube.com') || track.src.includes('youtu.be');
 
             if (isYt) {
