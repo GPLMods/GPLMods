@@ -6882,6 +6882,14 @@ app.post('/files/:fileId/whitelist', ensureAuthenticated, async (req, res) => {
 app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const { rating, comment } = req.body;
+        const fileDoc = await File.findById(req.params.fileId);
+        if (!fileDoc) return res.status(404).send("File not found");
+
+        // Prevent file uploader from reviewing their own mod
+        if (fileDoc.uploader && req.user.username && fileDoc.uploader.toLowerCase() === req.user.username.toLowerCase()) {
+            return res.redirect(`/mods/${req.params.fileId}`);
+        }
+
         const existing = await Review.findOne({ file: req.params.fileId, user: req.user._id });
         if (existing) return res.redirect(`/mods/${req.params.fileId}`);
 

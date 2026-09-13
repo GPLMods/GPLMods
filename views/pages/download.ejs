@@ -166,9 +166,10 @@
             /* Pushes the text to the far right edge */
         }
 
-        .meta-info li a.meta-link {
+        .meta-info li a.meta-link,
+        .meta-info .meta-link {
             text-align: right;
-            color: var(--gold);
+            color: var(--gold) !important;
             font-weight: 600;
             line-height: 1.4;
             /* Improve readability for wrapped text */
@@ -180,30 +181,42 @@
 
             /* Optional: Add a subtle transition for links */
             transition: color 0.2s;
-            display: block;
-            /* Ensures links behave properly in the grid */
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
             justify-self: end;
             /* Pushes the text to the far right edge */
             text-decoration: none;
         }
 
+        .meta-info li a.meta-link strong,
+        .meta-info .meta-link strong {
+            color: var(--gold) !important;
+            transition: color 0.2s;
+        }
+
         .meta-link:hover,
-        .meta-info li a.meta-link:hover {
-            color: var(--white);
+        .meta-info li a.meta-link:hover,
+        .meta-info .meta-link:hover,
+        .meta-link:hover strong,
+        .meta-info li a.meta-link:hover strong,
+        .meta-info .meta-link:hover strong {
+            color: var(--white) !important;
+        }
+
+        .meta-link .arrow,
+        .meta-info li a.meta-link .arrow,
+        .meta-info .meta-link .arrow {
+            color: var(--gold);
+            margin-left: 4px;
+            font-size: 1.1em;
+            transition: color 0.2s;
         }
 
         .meta-link:hover .arrow,
-        .meta-info li a.meta-link:hover .arrow {
-            color: var(--white);
-        }
-
         .meta-info li a.meta-link:hover .arrow,
-        .meta-info li a.meta-link:hover .arrow {
-            color: var(--white);
-        }
-        .meta-link .arrow,
-        .meta-info li a.meta-link .arrow {
-            color: var(--silver);
+        .meta-info .meta-link:hover .arrow {
+            color: var(--white) !important;
         }
 
         .theme-music-banner {
@@ -401,11 +414,14 @@
         .meta-info .meta-link {
             min-width: 0;
             text-align: right;
-            color: var(--gold);
+            color: var(--gold) !important;
             font-weight: 600;
             overflow-wrap: anywhere;
             word-break: break-word;
             text-decoration: none;
+        }
+        .meta-info .meta-link strong {
+            color: var(--gold) !important;
         }
 
         .meta-info .working-row {
@@ -489,12 +505,81 @@
         }
 
         .working-summary .vote-buttons {
-            display: flex;
-            gap: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 3px 5px;
+            border-radius: 20px;
+            border: 1px solid #2a2a2a;
         }
 
         .working-summary .vote-buttons form {
             margin: 0;
+            display: flex;
+        }
+
+        .vote-btn {
+            border: 1px solid transparent;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 0.82em;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e1e1e;
+            color: var(--silver);
+            outline: none;
+            position: relative;
+        }
+
+        .vote-btn-working {
+            background: rgba(46, 125, 50, 0.12);
+            color: #66bb6a;
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .vote-btn-working:hover {
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: #ffffff;
+            border-color: #4caf50;
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.55);
+            transform: scale(1.12);
+        }
+
+        .vote-btn-working.active {
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: #ffffff;
+            border-color: #81c784;
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.7);
+        }
+
+        .vote-btn-not-working {
+            background: rgba(211, 47, 47, 0.12);
+            color: #ef5350;
+            border-color: rgba(239, 83, 80, 0.3);
+        }
+
+        .vote-btn-not-working:hover {
+            background: linear-gradient(135deg, #e53935, #c62828);
+            color: #ffffff;
+            border-color: #ef5350;
+            box-shadow: 0 0 12px rgba(229, 57, 53, 0.55);
+            transform: scale(1.12);
+        }
+
+        .vote-btn-not-working.active {
+            background: linear-gradient(135deg, #e53935, #c62828);
+            color: #ffffff;
+            border-color: #e57373;
+            box-shadow: 0 0 12px rgba(229, 57, 53, 0.7);
+        }
+
+        .vote-btn:active {
+            transform: scale(0.92);
         }
 
         .download-area {
@@ -720,19 +805,19 @@
                                                 <div class="vote-buttons">
                                                     <form action="/files/<%= file._id %>/vote-status" method="POST">
                                                         <input type="hidden" name="voteType" value="working">
-                                                        <button type="submit" class="vote-btn-working"
-                                                            title="<%= userVotedWorking ? 'Remove vote' : 'Mark as Working' %>"
-                                                            <%=userVotedWorking
-                                                            ? 'style="background-color: var(--green); color: var(--white); box-shadow: 0 0 10px var(--green);"'
-                                                            : '' %>>✓</button>
+                                                        <button type="submit" class="vote-btn vote-btn-working <%= userVotedWorking ? 'active' : '' %>"
+                                                            title="<%= userVotedWorking ? 'Voted Working (Click to Remove)' : 'Vote: It Works' %>"
+                                                            aria-label="Vote Working">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
                                                     </form>
                                                     <form action="/files/<%= file._id %>/vote-status" method="POST">
                                                         <input type="hidden" name="voteType" value="not-working">
-                                                        <button type="submit" class="vote-btn-not-working"
-                                                            title="<%= userVotedNotWorking ? 'Remove vote' : 'Mark as Broken' %>"
-                                                            <%=userVotedNotWorking
-                                                            ? 'style="background-color: var(--red); color: var(--white); box-shadow: 0 0 10px var(--red);"'
-                                                            : '' %>>✗</button>
+                                                        <button type="submit" class="vote-btn vote-btn-not-working <%= userVotedNotWorking ? 'active' : '' %>"
+                                                            title="<%= userVotedNotWorking ? 'Voted Broken (Click to Remove)' : 'Vote: Broken / Not Working' %>"
+                                                            aria-label="Vote Broken">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
                                                     </form>
                                                 </div>
                                                 <% } %>
@@ -1373,8 +1458,7 @@
                                                                                 <% if (file.license) { %>
                                                                                     <a href="/licenses/<%= file.license.slug %>"
                                                                                         class="meta-link"><i
-                                                                                            class="fas fa-file-contract"></i>
-                                                                                        <%= file.license.name %> <span
+                                                                                            class="fas fa-file-contract" style="color: var(--gold); margin-right: 4px;"></i><strong><%= file.license.name %></strong> <span
                                                                                                 class="arrow">›</span>
                                                                                     </a>
                                                                                     <% } else { %>
@@ -1386,8 +1470,7 @@
                                                                             <li>
                                                                                 <span>Uploaded By:</span>
                                                                                 <a href="/users/<%= slugify(file.uploader) %>"
-                                                                                    class="meta-link">
-                                                                                    <%= file.uploader %> <span
+                                                                                    class="meta-link"><strong><%= file.uploader %></strong> <span
                                                                                             class="arrow">›</span>
                                                                                 </a>
                                                                             </li>
@@ -1644,29 +1727,49 @@
                         <div id="comments" class="tab-content">
                             <h2>Community Comments</h2>
                             <% if (user) { %>
-                                <div class="comment-form">
-                                    <h3>Leave a Review</h3>
-                                    <form action="/reviews/add/<%= file._id %>" method="POST">
-                                        <textarea name="comment" placeholder="Share your experience..."
-                                            required></textarea>
-                                        <div class="form-footer">
-                                            <div class="rating-input">
-                                                <input type="radio" id="star5" name="rating" value="5" required><label
-                                                    for="star5" title="5 stars">☆</label>
-                                                <input type="radio" id="star4" name="rating" value="4"><label
-                                                    for="star4">☆</label>
-                                                <input type="radio" id="star3" name="rating" value="3"><label
-                                                    for="star3">☆</label>
-                                                <input type="radio" id="star2" name="rating" value="2"><label
-                                                    for="star2">☆</label>
-                                                <input type="radio" id="star1" name="rating" value="1"><label
-                                                    for="star1">☆</label>
+                                <% if (file.uploader && user.username.toLowerCase() === file.uploader.toLowerCase()) { %>
+                                    <div class="comment-form" style="background: rgba(255, 215, 0, 0.05); border: 1px dashed var(--gold); padding: 18px 22px; border-radius: 10px; margin-bottom: 25px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <i class="fas fa-info-circle" style="color: var(--gold); font-size: 1.4em; flex-shrink: 0;"></i>
+                                            <div>
+                                                <h4 style="color: var(--gold); margin: 0 0 4px; font-size: 1em;">Uploader Notice</h4>
+                                                <p style="color: var(--silver); margin: 0; font-size: 0.9em; line-height: 1.4;">
+                                                    As the uploader of this file, you cannot leave a rating review on your own upload. You can reply directly to user reviews below using the <strong>Reply as Uploader</strong> button.
+                                                </p>
                                             </div>
-                                            <button type="submit">Post Comment</button>
                                         </div>
-                                    </form>
-                                </div>
+                                    </div>
+                                <% } else { %>
+                                    <div class="comment-form">
+                                        <h3>Leave a Review</h3>
+                                        <form action="/reviews/add/<%= file._id %>" method="POST">
+                                            <textarea name="comment" placeholder="Share your experience..."
+                                                required></textarea>
+                                            <div class="form-footer">
+                                                <div class="rating-input">
+                                                    <input type="radio" id="star5" name="rating" value="5" required><label
+                                                        for="star5" title="5 stars">☆</label>
+                                                    <input type="radio" id="star4" name="rating" value="4"><label
+                                                        for="star4">☆</label>
+                                                    <input type="radio" id="star3" name="rating" value="3"><label
+                                                        for="star3">☆</label>
+                                                    <input type="radio" id="star2" name="rating" value="2"><label
+                                                        for="star2">☆</label>
+                                                    <input type="radio" id="star1" name="rating" value="1"><label
+                                                        for="star1">☆</label>
+                                                </div>
+                                                <button type="submit">Post Comment</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 <% } %>
+                            <% } else { %>
+                                <div style="background: #151515; border: 1px solid #333; padding: 16px 20px; border-radius: 10px; margin-bottom: 25px; text-align: center;">
+                                    <p style="color: var(--silver); margin: 0; font-size: 0.95em;">
+                                        Please <a href="/login" style="color: var(--gold); font-weight: 600; text-decoration: underline;">log in</a> to rate and leave a review for this file.
+                                    </p>
+                                </div>
+                            <% } %>
 
                                     <div class="comment-list">
                                         <% if(reviews && reviews.length> 0) { %>

@@ -124,11 +124,14 @@
     .meta-info .meta-link {
         min-width: 0;
         text-align: right;
-        color: var(--gold);
+        color: var(--gold) !important;
         font-weight: 600;
         overflow-wrap: anywhere;
         word-break: break-word;
         text-decoration: none;
+    }
+    .meta-info .meta-link strong {
+        color: var(--gold) !important;
     }
     .sidebar-summary {
         margin: 0 0 20px;
@@ -312,6 +315,140 @@
     .description-modal-close:hover { color: var(--white); }
     .description-modal-title { color: var(--gold); margin: 0 35px 20px 0; }
 
+    /* Fix Description Tab Section Order */
+    #description.tab-content.active {
+        display: flex;
+        flex-direction: column;
+    }
+    #description .mod-description-panel { order: 1; }
+    #description .official-description-panel { order: 2; }
+    #description .important-note-panel { order: 3; }
+    #description .whats-new-panel { order: 4; }
+
+    /* Fix Description Preview Fade */
+    .description-preview {
+        position: relative;
+        max-height: 145px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .description-preview::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 45px;
+        background: linear-gradient(transparent, var(--dark-gray));
+        pointer-events: none;
+    }
+    .description-expand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--gold);
+        cursor: pointer;
+        font-weight: 600;
+        padding: 4px 0;
+    }
+    .description-expand:hover {
+        color: var(--white);
+    }
+
+    /* Fix Feature List Textures (Icons) */
+    .features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .features-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .lottie-icon-wrapper {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .lottie-icon-wrapper lottie-player {
+        width: 100%;
+        height: 100%;
+    }
+    .feature-text {
+        color: var(--silver);
+        line-height: 1.5;
+    }
+
+    /* Textured Edit Mod Button */
+    .btn-edit-mod {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 20px;
+        font-size: 0.92em;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        text-decoration: none;
+        color: var(--gold);
+        background: 
+            linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(20, 20, 20, 0.95) 50%, rgba(255, 215, 0, 0.05) 100%),
+            repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0, rgba(255, 255, 255, 0.03) 2px, transparent 2px, transparent 6px),
+            #151515;
+        border: 1px solid rgba(255, 215, 0, 0.55);
+        border-radius: 9px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 12px rgba(255, 215, 0, 0.15);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+        backdrop-filter: blur(4px);
+    }
+    .btn-edit-mod::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -60%;
+        width: 40%;
+        height: 200%;
+        background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 215, 0, 0.35) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        transform: rotate(25deg);
+        pointer-events: none;
+        transition: transform 0.6s ease;
+        opacity: 0;
+    }
+    .btn-edit-mod:hover {
+        color: #000;
+        background: 
+            linear-gradient(135deg, #ffd700 0%, #ffc107 100%);
+        border-color: var(--gold);
+        box-shadow: 0 4px 20px var(--glow-gold), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+        transform: translateY(-2px);
+    }
+    .btn-edit-mod:hover::before {
+        opacity: 1;
+        transform: translate(320%, 0) rotate(25deg);
+    }
+    .btn-edit-mod:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+    .btn-edit-mod i {
+        font-size: 0.95em;
+        transition: transform 0.25s ease;
+    }
+    .btn-edit-mod:hover i {
+        transform: scale(1.15) rotate(-8deg);
+    }
+
     @media (max-width: 992px) {
         .download-layout { grid-template-columns: 1fr; }
         .preview-mode-banner { flex-direction: column; align-items: flex-start; }
@@ -330,8 +467,9 @@
             onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
             <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
         </a>
-        <a href="/upload-details/<%= file._id %>" class="btn btn-secondary" style="font-size: 0.9em; padding: 6px 16px;">
-            <i class="fas fa-edit" style="margin-right: 6px;"></i> Edit Mod
+        <a href="/upload-details/<%= file._id %>" class="btn-edit-mod">
+            <i class="fas fa-edit"></i>
+            <span>Edit Mod</span>
         </a>
     </div>
 
@@ -525,14 +663,14 @@
                 <li>
                     <span>License:</span>
                     <% if (file.license) { %>
-                        <span class="meta-link"><i class="fas fa-file-contract"></i> <%= file.license.name %></span>
+                        <span class="meta-link"><i class="fas fa-file-contract" style="color: var(--gold); margin-right: 4px;"></i><strong><%= file.license.name %></strong> <span class="arrow">›</span></span>
                     <% } else { %>
                         <span class="meta-value">Proprietary / Unknown</span>
                     <% } %>
                 </li>
                 <li>
                     <span>Uploaded By:</span>
-                    <span class="meta-link"><%= file.uploader || 'N/A' %></span>
+                    <span class="meta-link"><strong><%= file.uploader || 'N/A' %></strong> <span class="arrow">›</span></span>
                 </li>
                 <li>
                     <span>Total Parts:</span>
