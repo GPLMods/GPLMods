@@ -65,7 +65,16 @@
     }
     .license-document { margin-top: 28px; padding: clamp(22px, 4vw, 42px); background: var(--dark-gray); border: 1px solid #333; border-top: 3px solid var(--gold); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
     .license-summary { color: var(--silver); line-height: 1.7; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #333; }
-    .license-content { color: var(--white); font: 0.95rem/1.75 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .license-content { 
+        font: 0.95rem/1.75 Consolas, monospace; 
+        white-space: pre-wrap; 
+        overflow-wrap: anywhere;
+        background: linear-gradient(135deg, #FFE873 0%, #E6C657 25%, #FFFFFF 50%, #C0C0C0 75%, #E5A93C 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: var(--gold);
+        text-shadow: 0 0 24px rgba(255, 215, 0, 0.18);
+    }
     @media (max-width: 600px) { .license-header { align-items: flex-start; flex-direction: column; } .license-actions { width: 100%; } .license-actions .btn { flex: 1; justify-content: center; } }
 </style>
 

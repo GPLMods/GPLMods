@@ -1,114 +1,1224 @@
-<%-include('../partials/header') %>
+<%- include('../partials/header') %>
 
+<!-- External Libraries for Markdown & Syntax Highlighting -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
 <style>
-    .source-container { max-width: 1000px; margin: 4rem auto; padding: 0 20px; }
-    .repo-header { background: var(--dark-gray); padding: 30px; border-radius: 12px; border: 1px solid #333; margin-bottom: 30px; }
-    .repo-title { font-size: 2em; color: var(--white); margin: 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-    .private-badge { font-size: 0.4em; background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
-    .repo-description { color: var(--silver); margin-top: 10px; line-height: 1.6; }
-    .access-banner { padding: 15px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; display: flex; align-items: center; gap: 15px; }
-    .access-granted { background: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
-    .access-denied { background: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
-    .access-banner small { display: block; color: var(--silver); font-weight: normal; margin-top: 3px; }
-    .release-timeline { border-left: 2px solid #333; padding-left: 30px; margin-left: 10px; }
-    .release-card { background: var(--black); border: 1px solid #333; border-radius: 10px; margin-bottom: 40px; position: relative; overflow: hidden; }
-    .release-card::before { content: ''; position: absolute; left: -39px; top: 20px; width: 16px; height: 16px; background: var(--dark-gray); border: 2px solid var(--silver); border-radius: 50%; }
-    .release-card.latest::before { border-color: var(--gold); background: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
-    .release-header { padding: 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-    .release-name { font-size: 1.5em; color: var(--gold); margin: 0 0 5px; }
-    .release-tag { background: #333; color: var(--white); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.9em; }
-    .release-date { color: var(--silver); font-size: 0.9em; }
-    .release-body { padding: 20px; color: var(--silver); line-height: 1.6; overflow-wrap: anywhere; }
-    .release-body h1, .release-body h2, .release-body h3 { color: var(--white); margin: 20px 0 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
-    .release-body ul, .release-body ol { padding-left: 20px; margin-bottom: 15px; }
-    .release-body a { color: var(--gold); }
-    .release-body code { background: #222; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #ffadad; }
-    .release-body pre { background: #111; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; }
-    .release-footer { padding: 15px 20px; background: #111; border-top: 1px solid #222; }
-    .download-src-btn { background: var(--gold); color: var(--black); padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; }
-    .download-src-btn:hover { box-shadow: 0 5px 15px var(--glow-gold); }
-    .download-src-btn.disabled { background: #333; color: #777; pointer-events: none; }
-    .empty-releases { text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 10px; color: var(--silver); }
-    .empty-releases i { font-size: 4em; color: #444; margin-bottom: 20px; }
-    .empty-releases h2 { color: var(--white); }
-    @media (max-width: 600px) {
-        .source-container { margin: 2rem auto; }
-        .repo-header { padding: 22px; }
-        .repo-title { font-size: 1.5em; }
-        .release-timeline { padding-left: 20px; margin-left: 5px; }
-        .release-card::before { left: -29px; }
+    :root {
+        --gh-border: #30363d;
+        --gh-bg-secondary: #161b22;
+        --gh-bg-primary: #0d1117;
+        --gh-text-muted: #8b949e;
+        --gh-text-main: #c9d1d9;
+        --gh-btn-bg: #21262d;
+        --gh-btn-border: #363b42;
+        --gh-btn-hover: #30363d;
+    }
+
+    .source-container {
+        max-width: 1200px;
+        margin: 3rem auto;
+        padding: 0 20px;
+    }
+
+    /* Repo Header Banner */
+    .repo-banner {
+        background: linear-gradient(145deg, #141414, #1b1b1b);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .repo-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .repo-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .repo-icon {
+        font-size: 1.8em;
+        color: var(--gold);
+    }
+
+    .repo-title {
+        font-size: 1.8em;
+        color: var(--white);
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    .repo-title a {
+        color: var(--white);
+        text-decoration: none;
+    }
+
+    .repo-title a:hover {
+        color: var(--gold);
+    }
+
+    .repo-badge {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .repo-badge.public {
+        background: rgba(46, 204, 113, 0.12);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+
+    .repo-badge.private {
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .repo-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-gh {
+        background: var(--gh-btn-bg);
+        border: 1px solid var(--gh-btn-border);
+        color: var(--white);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-gh:hover {
+        background: var(--gh-btn-hover);
+        border-color: #8b949e;
+        color: var(--gold);
+        text-decoration: none;
+    }
+
+    .btn-gh-primary {
+        background: var(--gold);
+        color: var(--black);
+        border: 1px solid var(--gold);
+        font-weight: 700;
+    }
+
+    .btn-gh-primary:hover {
+        background: #ffe033;
+        color: var(--black);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+
+    .repo-desc {
+        color: var(--silver);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin: 10px 0 16px;
+    }
+
+    .repo-meta-bar {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        font-size: 0.88rem;
+        color: var(--gh-text-muted);
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        padding-top: 14px;
+    }
+
+    .repo-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .repo-meta-item strong {
+        color: var(--white);
+    }
+
+    /* Alerts */
+    .source-alert {
+        padding: 14px 18px;
+        border-radius: 8px;
+        margin-bottom: 22px;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        line-height: 1.5;
+    }
+
+    .source-alert.warning {
+        background: rgba(243, 156, 18, 0.12);
+        color: #f39c12;
+        border: 1px solid rgba(243, 156, 18, 0.4);
+    }
+
+    .source-alert.info {
+        background: rgba(52, 152, 219, 0.12);
+        color: #3498db;
+        border: 1px solid rgba(52, 152, 219, 0.4);
+    }
+
+    .source-alert.success {
+        background: rgba(46, 204, 113, 0.12);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+
+    /* Tab Navigation */
+    .source-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--gh-border);
+        margin-bottom: 24px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--gh-text-muted);
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 3px solid transparent;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+        color: var(--white);
+        text-decoration: none;
+    }
+
+    .tab-btn.active {
+        color: var(--gold);
+        border-bottom-color: var(--gold);
+    }
+
+    .tab-count {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--white);
+        border-radius: 12px;
+        padding: 2px 7px;
+        font-size: 0.75rem;
+    }
+
+    /* Breadcrumbs Toolbar */
+    .source-subbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 0.95rem;
+        background: var(--gh-bg-secondary);
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--gh-border);
+    }
+
+    .breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .breadcrumb-item a {
+        color: var(--gold);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .breadcrumb-item a:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-item.active {
+        color: var(--white);
+        font-weight: 600;
+    }
+
+    .breadcrumb-separator {
+        color: var(--gh-text-muted);
+    }
+
+    .branch-indicator {
+        background: var(--gh-bg-secondary);
+        border: 1px solid var(--gh-border);
+        color: var(--white);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Directory Table */
+    .file-box {
+        background: var(--gh-bg-primary);
+        border: 1px solid var(--gh-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .file-box-header {
+        background: var(--gh-bg-secondary);
+        border-bottom: 1px solid var(--gh-border);
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--gh-text-muted);
+    }
+
+    .file-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+    }
+
+    .file-table tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background-color 0.15s ease;
+    }
+
+    .file-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .file-table td {
+        padding: 11px 18px;
+        vertical-align: middle;
+    }
+
+    .file-table .col-icon {
+        width: 32px;
+        text-align: center;
+        color: var(--gh-text-muted);
+        padding-right: 0;
+    }
+
+    .file-table .col-name {
+        font-weight: 500;
+    }
+
+    .file-table .col-name a {
+        color: var(--gh-text-main);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .file-table .col-name a:hover {
+        color: var(--gold);
+        text-decoration: underline;
+    }
+
+    .file-table .col-size {
+        text-align: right;
+        color: var(--gh-text-muted);
+        font-family: monospace;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        width: 120px;
+    }
+
+    .file-table .col-action {
+        text-align: right;
+        width: 90px;
+    }
+
+    .file-link-dir {
+        font-weight: 600 !important;
+        color: var(--white) !important;
+    }
+
+    .icon-folder {
+        color: var(--gold);
+    }
+
+    .icon-file {
+        color: var(--silver);
+    }
+
+    .empty-folder {
+        padding: 40px;
+        text-align: center;
+        color: var(--gh-text-muted);
+    }
+
+    /* File Code Viewer */
+    .code-viewer-box {
+        background: var(--gh-bg-primary);
+        border: 1px solid var(--gh-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .code-viewer-header {
+        background: var(--gh-bg-secondary);
+        border-bottom: 1px solid var(--gh-border);
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .file-info-badge {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--silver);
+    }
+
+    .file-info-badge strong {
+        color: var(--white);
+    }
+
+    .code-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-code-tool {
+        background: var(--gh-btn-bg);
+        border: 1px solid var(--gh-btn-border);
+        color: var(--white);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+    }
+
+    .btn-code-tool:hover {
+        background: var(--gh-btn-hover);
+        color: var(--gold);
+        border-color: #8b949e;
+        text-decoration: none;
+    }
+
+    .btn-code-tool.copied {
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        border-color: #2ecc71;
+    }
+
+    .code-viewport {
+        margin: 0;
+        background: #0b0e14 !important;
+        border-radius: 0;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        padding: 16px 0 !important;
+        overflow-x: auto;
+    }
+
+    /* README & License Markdown Boxes */
+    .readme-card, .license-card-box {
+        background: var(--gh-bg-primary);
+        border: 1px solid var(--gh-border);
+        border-radius: 10px;
+        margin-bottom: 35px;
+        overflow: hidden;
+    }
+
+    .readme-header, .license-header-box {
+        background: var(--gh-bg-secondary);
+        border-bottom: 1px solid var(--gh-border);
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        color: var(--white);
+        font-size: 0.95rem;
+    }
+
+    .readme-body, .license-body-box {
+        padding: 28px;
+        color: var(--gh-text-main);
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    .readme-body h1, .readme-body h2, .readme-body h3, .readme-body h4 {
+        color: var(--white);
+        margin: 24px 0 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--gh-border);
+    }
+
+    .readme-body h1 { font-size: 1.8em; }
+    .readme-body h2 { font-size: 1.4em; }
+    .readme-body h3 { font-size: 1.2em; }
+
+    .readme-body p { margin-bottom: 16px; }
+
+    .readme-body ul, .readme-body ol {
+        padding-left: 28px;
+        margin-bottom: 16px;
+    }
+
+    .readme-body li { margin-bottom: 6px; }
+
+    .readme-body a {
+        color: var(--gold);
+        text-decoration: underline;
+    }
+
+    .readme-body pre {
+        background: #000;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--gh-border);
+        overflow-x: auto;
+        margin: 16px 0;
+    }
+
+    .readme-body code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #ffadad;
+        font-size: 0.9em;
+    }
+
+    .readme-body pre code {
+        background: transparent;
+        padding: 0;
+        color: #e6edf3;
+    }
+
+    .readme-body blockquote {
+        border-left: 4px solid var(--gold);
+        padding-left: 16px;
+        margin: 16px 0;
+        color: var(--gh-text-muted);
+    }
+
+    .readme-body table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+    }
+
+    .readme-body th, .readme-body td {
+        border: 1px solid var(--gh-border);
+        padding: 10px 14px;
+    }
+
+    .readme-body th {
+        background: var(--gh-bg-secondary);
+        color: var(--white);
+    }
+
+    /* License Tab Specifics */
+    .license-meta-overview {
+        background: var(--gh-bg-secondary);
+        border: 1px solid var(--gh-border);
+        border-radius: 10px;
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .license-meta-title {
+        font-size: 1.4em;
+        color: var(--white);
+        margin: 0 0 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .license-meta-spdx {
+        font-size: 0.85rem;
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-family: monospace;
+    }
+
+    .license-raw-container {
+        background: #080808;
+        border: 1px solid var(--gh-border);
+        border-radius: 8px;
+        padding: 20px;
+        font-family: monospace;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        color: var(--silver);
+        white-space: pre-wrap;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    /* Releases Timeline */
+    .release-timeline {
+        border-left: 2px solid var(--gh-border);
+        padding-left: 30px;
+        margin-left: 10px;
+    }
+
+    .release-card {
+        background: var(--gh-bg-primary);
+        border: 1px solid var(--gh-border);
+        border-radius: 10px;
+        margin-bottom: 35px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .release-card::before {
+        content: '';
+        position: absolute;
+        left: -39px;
+        top: 20px;
+        width: 16px;
+        height: 16px;
+        background: var(--gh-bg-secondary);
+        border: 2px solid var(--silver);
+        border-radius: 50%;
+    }
+
+    .release-card.latest::before {
+        border-color: var(--gold);
+        background: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+
+    .release-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--gh-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        background: var(--gh-bg-secondary);
+    }
+
+    .release-name {
+        font-size: 1.4em;
+        color: var(--gold);
+        margin: 0 0 5px;
+    }
+
+    .release-tag {
+        background: #333;
+        color: var(--white);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 0.85em;
+    }
+
+    .release-date {
+        color: var(--gh-text-muted);
+        font-size: 0.85em;
+    }
+
+    .release-body {
+        padding: 20px;
+        color: var(--silver);
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    .release-footer {
+        padding: 15px 20px;
+        background: var(--gh-bg-secondary);
+        border-top: 1px solid var(--gh-border);
+    }
+
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .source-container {
+            margin: 1.5rem auto;
+            padding: 0 12px;
+        }
+
+        .repo-banner {
+            padding: 18px;
+        }
+
+        .repo-title {
+            font-size: 1.35em;
+        }
+
+        .file-table td {
+            padding: 10px 10px;
+        }
+
+        .file-table .col-size {
+            display: none;
+        }
+
+        .release-timeline {
+            padding-left: 20px;
+            margin-left: 5px;
+        }
+
+        .release-card::before {
+            left: -29px;
+        }
     }
 </style>
 
 <main class="container">
     <div class="source-container">
-        <section class="repo-header">
-            <h1 class="repo-title">
-                <i class="fab fa-github" aria-hidden="true"></i>
-                <%= source.title %>
-                <% if (source.isPrivate) { %><span class="private-badge">Private</span><% } %>
-            </h1>
-            <% if (source.description) { %><p class="repo-description"><%= source.description %></p><% } %>
+
+        <!-- Top Repo Banner -->
+        <section class="repo-banner">
+            <div class="repo-top-row">
+                <div class="repo-title-wrap">
+                    <i class="fab fa-github repo-icon" aria-hidden="true"></i>
+                    <h1 class="repo-title">
+                        <a href="/source/<%= encodeURIComponent(source.slug) %>"><%= repoData.full_name || (source.githubOwner + '/' + source.githubRepo) %></a>
+                    </h1>
+                    <span class="repo-badge <%= source.isPrivate ? 'private' : 'public' %>">
+                        <i class="fas <%= source.isPrivate ? 'fa-lock' : 'fa-globe' %>"></i>
+                        <%= source.isPrivate ? 'Private' : 'Public' %>
+                    </span>
+                </div>
+
+                <div class="repo-actions">
+                    <% if (hasAccess) { %>
+                        <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
+                            <i class="fas fa-file-archive"></i> Download ZIP
+                        </a>
+                    <% } %>
+                    <a href="<%= repoData.html_url || ('https://github.com/' + source.githubOwner + '/' + source.githubRepo) %>" target="_blank" rel="noopener noreferrer" class="btn-gh">
+                        <i class="fab fa-github"></i> GitHub <i class="fas fa-external-link-alt" style="font-size: 0.75em;"></i>
+                    </a>
+                </div>
+            </div>
+
+            <p class="repo-desc"><%= repoData.description || source.description || 'Source code repository for GPL Mods.' %></p>
+
+            <div class="repo-meta-bar">
+                <div class="repo-meta-item">
+                    <i class="fas fa-code-branch"></i>
+                    Branch: <strong><%= currentRef %></strong>
+                </div>
+                <div class="repo-meta-item">
+                    <i class="fas fa-star text-gold"></i>
+                    Stars: <strong><%= (repoData.stargazers_count || 0).toLocaleString() %></strong>
+                </div>
+                <div class="repo-meta-item">
+                    <i class="fas fa-code-fork"></i>
+                    Forks: <strong><%= (repoData.forks_count || 0).toLocaleString() %></strong>
+                </div>
+                <% if (license && license.name) { %>
+                    <div class="repo-meta-item">
+                        <i class="fas fa-scale-balanced text-gold"></i>
+                        License: <strong><%= license.spdxId || license.name %></strong>
+                    </div>
+                <% } %>
+            </div>
         </section>
 
-        <div class="access-banner <%= hasAccess ? 'access-granted' : 'access-denied' %>">
-            <i class="fas <%= hasAccess ? 'fa-check-circle' : 'fa-lock' %>" style="font-size: 1.5em;" aria-hidden="true"></i>
-            <div>
-                <span><%= hasAccess ? 'Access Granted' : 'Access Denied' %></span>
-                <small><%= hasAccess ? 'Your account can download these source archives.' : 'Your account does not have permission to download this source code.' %></small>
-            </div>
-        </div>
-
-        <% if (releases.length) { %>
-            <div class="release-timeline">
-                <% releases.forEach((release, index) => { %>
-                    <article class="release-card <%= index === 0 ? 'latest' : '' %>">
-                        <header class="release-header">
-                            <div>
-                                <h2 class="release-name"><%= release.name || release.tag_name %></h2>
-                                <span class="release-date">Released on <%= release.published_at ? new Date(release.published_at).toLocaleDateString() : 'Unpublished' %></span>
-                            </div>
-                            <span class="release-tag"><i class="fas fa-tag" aria-hidden="true"></i> <%= release.tag_name %></span>
-                        </header>
-                        <div class="release-body" id="markdown-<%= release.id %>"></div>
-                        <textarea id="raw-<%= release.id %>" hidden><%= release.body || '' %></textarea>
-                        <footer class="release-footer">
-                            <% if (hasAccess) { %>
-                                <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(release.tag_name) %>" class="download-src-btn">
-                                    <i class="fas fa-file-archive" aria-hidden="true"></i> Download Source (.zip)
-                                </a>
-                            <% } else { %>
-                                <span class="download-src-btn disabled"><i class="fas fa-lock" aria-hidden="true"></i> Locked</span>
-                            <% } %>
-                        </footer>
-                    </article>
-                <% }) %>
-            </div>
-        <% } else { %>
-            <div class="empty-releases">
-                <i class="fas fa-code-branch" aria-hidden="true"></i>
-                <h2>No Releases Found</h2>
-                <p>This repository has no published releases, or GitHub is temporarily unavailable.</p>
+        <!-- Access or API Warnings -->
+        <% if (!hasAccess) { %>
+            <div class="source-alert warning">
+                <i class="fas fa-lock" style="font-size: 1.3em;"></i>
+                <div>
+                    <strong>Restricted Access Repository:</strong>
+                    Your account does not have permission to download full source archives for this repository. Contact an administrator for access.
+                </div>
             </div>
         <% } %>
+
+        <% if (apiError) { %>
+            <div class="source-alert info">
+                <i class="fas fa-info-circle" style="font-size: 1.3em;"></i>
+                <div>
+                    <strong>Repository Notice:</strong> <%= apiError %>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Navigation Tabs -->
+        <nav class="source-tabs" aria-label="Source navigation tabs">
+            <a href="?tab=code<%= currentPath ? '&path=' + encodeURIComponent(currentPath) : '' %><%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+               class="tab-btn <%= (activeTab === 'code' || !activeTab) ? 'active' : '' %>" data-tab="tab-code">
+                <i class="fas fa-code"></i> Code
+            </a>
+            <% if (readme) { %>
+                <a href="?tab=readme<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+                   class="tab-btn <%= activeTab === 'readme' ? 'active' : '' %>" data-tab="tab-readme">
+                    <i class="fas fa-book-open"></i> README
+                    <span class="tab-count">Doc</span>
+                </a>
+            <% } %>
+            <% if (license) { %>
+                <a href="?tab=license<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+                   class="tab-btn <%= activeTab === 'license' ? 'active' : '' %>" data-tab="tab-license">
+                    <i class="fas fa-scale-balanced"></i> License
+                    <% if (license.spdxId && license.spdxId !== 'Custom') { %>
+                        <span class="tab-count"><%= license.spdxId %></span>
+                    <% } %>
+                </a>
+            <% } %>
+            <a href="?tab=releases<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+               class="tab-btn <%= activeTab === 'releases' ? 'active' : '' %>" data-tab="tab-releases">
+                <i class="fas fa-tag"></i> Releases
+                <span class="tab-count"><%= releases.length %></span>
+            </a>
+        </nav>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: CODE (Explorer or Single File Code View) -->
+        <!-- ============================================== -->
+        <div id="tab-code" class="tab-pane <%= (activeTab === 'code' || !activeTab) ? 'active' : '' %>">
+            
+            <!-- Breadcrumbs Toolbar -->
+            <div class="source-subbar">
+                <div class="breadcrumbs">
+                    <span class="breadcrumb-item">
+                        <i class="fas fa-folder-open icon-folder"></i>
+                        <a href="/source/<%= encodeURIComponent(source.slug) %>?ref=<%= encodeURIComponent(currentRef) %>"><%= source.slug %></a>
+                    </span>
+
+                    <% if (breadcrumbs && breadcrumbs.length) { %>
+                        <% breadcrumbs.forEach(crumb => { %>
+                            <span class="breadcrumb-separator">/</span>
+                            <span class="breadcrumb-item <%= crumb.isLast ? 'active' : '' %>">
+                                <% if (crumb.isLast) { %>
+                                    <%= crumb.name %>
+                                <% } else { %>
+                                    <a href="/source/<%= encodeURIComponent(source.slug) %>?path=<%= encodeURIComponent(crumb.path) %>&ref=<%= encodeURIComponent(currentRef) %>"><%= crumb.name %></a>
+                                <% } %>
+                            </span>
+                        <% }) %>
+                    <% } %>
+                </div>
+
+                <div class="branch-indicator">
+                    <i class="fas fa-code-branch text-gold"></i>
+                    <span><%= currentRef %></span>
+                </div>
+            </div>
+
+            <% if (isViewingFile && fileData) { %>
+                <!-- SINGLE FILE CODE VIEWER (GitHub Style) -->
+                <div class="code-viewer-box">
+                    <div class="code-viewer-header">
+                        <div class="file-info-badge">
+                            <i class="far fa-file-code icon-file"></i>
+                            <strong><%= fileData.name %></strong>
+                            <span>&bull;</span>
+                            <span><%= fileData.lines %> lines</span>
+                            <span>&bull;</span>
+                            <span><%= fileData.sizeFormatted %></span>
+                        </div>
+
+                        <div class="code-actions">
+                            <button type="button" class="btn-code-tool" id="copyRawBtn" onclick="copySourceCode()" title="Copy raw file content to clipboard">
+                                <i class="far fa-copy"></i> Copy raw
+                            </button>
+                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(fileData.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                               target="_blank" class="btn-code-tool" title="View raw text in browser">
+                                <i class="fas fa-external-link-alt"></i> Raw
+                            </a>
+                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(fileData.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                               download="<%= fileData.name %>" class="btn-code-tool" title="Download this file">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+
+                    <pre class="code-viewport line-numbers"><code id="sourceCodeBlock" class="language-<%= fileData.language %>"><%= fileData.content %></code></pre>
+                    <textarea id="hiddenRawCode" style="position: absolute; left: -9999px;" aria-hidden="true"><%= fileData.content %></textarea>
+                </div>
+
+            <% } else { %>
+
+                <!-- DIRECTORY TREE EXPLORER -->
+                <div class="file-box">
+                    <div class="file-box-header">
+                        <div>
+                            <i class="fas fa-folder-tree text-gold"></i>
+                            <span><%= currentPath ? currentPath : 'Repository Root' %></span>
+                        </div>
+                        <div>
+                            <span><%= directoryItems.length %> items</span>
+                        </div>
+                    </div>
+
+                    <% if (directoryItems && directoryItems.length) { %>
+                        <table class="file-table">
+                            <tbody>
+                                <% if (parentPath !== null) { %>
+                                    <tr>
+                                        <td class="col-icon"><i class="fas fa-level-up-alt text-gold"></i></td>
+                                        <td class="col-name" colspan="3">
+                                            <a href="/source/<%= encodeURIComponent(source.slug) %><%= parentPath ? '?path=' + encodeURIComponent(parentPath) : '' %>&ref=<%= encodeURIComponent(currentRef) %>" class="file-link-dir">
+                                                .. (Go up one directory)
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% } %>
+
+                                <% directoryItems.forEach(item => { %>
+                                    <tr>
+                                        <td class="col-icon">
+                                            <% if (item.type === 'dir') { %>
+                                                <i class="fas fa-folder icon-folder"></i>
+                                            <% } else { %>
+                                                <i class="far fa-file-code icon-file"></i>
+                                            <% } %>
+                                        </td>
+                                        <td class="col-name">
+                                            <a href="/source/<%= encodeURIComponent(source.slug) %>?path=<%= encodeURIComponent(item.path) %>&ref=<%= encodeURIComponent(currentRef) %>" class="<%= item.type === 'dir' ? 'file-link-dir' : '' %>">
+                                                <%= item.name %>
+                                            </a>
+                                        </td>
+                                        <td class="col-size"><%= item.sizeFormatted %></td>
+                                        <td class="col-action">
+                                            <% if (item.type === 'file') { %>
+                                                <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(item.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                                                   target="_blank" class="btn-code-tool" style="padding: 3px 8px; font-size: 0.75rem;" title="Raw file">
+                                                    Raw
+                                                </a>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    <% } else { %>
+                        <div class="empty-folder">
+                            <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 12px; color: #444;"></i>
+                            <p>This directory is empty, or source code contents could not be loaded.</p>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- INLINE README (GitHub Style: shown below directory tree when at root) -->
+                <% if (!currentPath && readme && readme.content) { %>
+                    <div class="readme-card">
+                        <div class="readme-header">
+                            <div>
+                                <i class="fas fa-book-open text-gold"></i>
+                                <span><%= readme.name %></span>
+                            </div>
+                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(readme.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                               target="_blank" class="btn-code-tool">
+                                <i class="fas fa-external-link-alt"></i> Raw README
+                            </a>
+                        </div>
+                        <div class="readme-body" id="inline-readme-body"></div>
+                        <textarea id="raw-inline-readme" hidden><%= readme.content %></textarea>
+                    </div>
+                <% } %>
+
+            <% } %>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: README (Dedicated Tab)                  -->
+        <!-- ============================================== -->
+        <% if (readme) { %>
+            <div id="tab-readme" class="tab-pane <%= activeTab === 'readme' ? 'active' : '' %>">
+                <div class="readme-card">
+                    <div class="readme-header">
+                        <div>
+                            <i class="fas fa-book-open text-gold"></i>
+                            <span><%= readme.name %></span>
+                        </div>
+                        <div class="code-actions">
+                            <button type="button" class="btn-code-tool" onclick="copyReadmeText()">
+                                <i class="far fa-copy"></i> Copy Markdown
+                            </button>
+                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(readme.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                               target="_blank" class="btn-code-tool">
+                                <i class="fas fa-external-link-alt"></i> Raw
+                            </a>
+                        </div>
+                    </div>
+                    <div class="readme-body" id="full-readme-body"></div>
+                    <textarea id="raw-full-readme" hidden><%= readme.content %></textarea>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: LICENSE                                 -->
+        <!-- ============================================== -->
+        <% if (license) { %>
+            <div id="tab-license" class="tab-pane <%= activeTab === 'license' ? 'active' : '' %>">
+                <div class="license-meta-overview">
+                    <div>
+                        <h2 class="license-meta-title">
+                            <i class="fas fa-scale-balanced text-gold"></i>
+                            <%= license.name %>
+                        </h2>
+                        <span class="license-meta-spdx">SPDX: <%= license.spdxId || 'Custom' %></span>
+                    </div>
+                    <div>
+                        <% if (license.url) { %>
+                            <a href="<%= license.url %>" target="_blank" rel="noopener noreferrer" class="btn-gh">
+                                <i class="fas fa-info-circle"></i> License Details <i class="fas fa-external-link-alt" style="font-size: 0.75em;"></i>
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+
+                <% if (license.content) { %>
+                    <div class="license-card-box">
+                        <div class="license-header-box">
+                            <div>
+                                <i class="fas fa-file-contract text-gold"></i>
+                                <span><%= license.path || 'LICENSE' %></span>
+                            </div>
+                            <button type="button" class="btn-code-tool" id="copyLicenseBtn" onclick="copyLicenseText()">
+                                <i class="far fa-copy"></i> Copy License Text
+                            </button>
+                        </div>
+                        <div class="license-body-box">
+                            <div class="license-raw-container" id="licenseRawBox"><%= license.content %></div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="source-alert info">
+                        <i class="fas fa-info-circle" style="font-size: 1.3em;"></i>
+                        <div>
+                            This repository operates under the <strong><%= license.name %></strong> (<%= license.spdxId %>). A separate raw license file was not detected in the repository root.
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
+
+        <!-- ============================================== -->
+        <!-- TAB 4: RELEASES TIMELINE                       -->
+        <!-- ============================================== -->
+        <div id="tab-releases" class="tab-pane <%= activeTab === 'releases' ? 'active' : '' %>">
+            <% if (releases && releases.length) { %>
+                <div class="release-timeline">
+                    <% releases.forEach((release, index) => { %>
+                        <article class="release-card <%= index === 0 ? 'latest' : '' %>">
+                            <header class="release-header">
+                                <div>
+                                    <h2 class="release-name"><%= release.name || release.tag_name %></h2>
+                                    <span class="release-date">Released on <%= release.published_at ? new Date(release.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unpublished' %></span>
+                                </div>
+                                <span class="release-tag"><i class="fas fa-tag"></i> <%= release.tag_name %></span>
+                            </header>
+
+                            <div class="release-body" id="release-body-<%= release.id %>"></div>
+                            <textarea id="raw-release-<%= release.id %>" hidden><%= release.body || '' %></textarea>
+
+                            <footer class="release-footer">
+                                <% if (hasAccess) { %>
+                                    <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(release.tag_name) %>" class="btn-gh btn-gh-primary">
+                                        <i class="fas fa-file-archive"></i> Download Source (.zip)
+                                    </a>
+                                <% } else { %>
+                                    <span class="btn-gh disabled" style="opacity: 0.5; cursor: not-allowed;"><i class="fas fa-lock"></i> Locked</span>
+                                <% } %>
+                            </footer>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <div class="file-box" style="text-align: center; padding: 60px 20px;">
+                    <i class="fas fa-tag" style="font-size: 3.5rem; color: #444; margin-bottom: 16px;"></i>
+                    <h2 style="color: var(--white); margin-bottom: 8px;">No Published Releases Found</h2>
+                    <p style="color: var(--silver); max-width: 500px; margin: 0 auto 20px;">
+                        This repository currently has no release tags published on GitHub, but you can browse and download the live source code using the Code tab.
+                    </p>
+                    <% if (hasAccess) { %>
+                        <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
+                            <i class="fas fa-file-archive"></i> Download Current Source (.zip)
+                        </a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+
     </div>
 </main>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('textarea[id^="raw-"]').forEach((rawElement) => {
-            const releaseId = rawElement.id.substring(4);
-            const rawContent = rawElement.value;
-            const renderedContent = marked.parse(rawContent);
-            const markdownElement = document.getElementById(`markdown-${releaseId}`);
-            if (markdownElement) {
-                markdownElement.innerHTML = DOMPurify.sanitize(renderedContent);
+        // 1. Render Markdown for inline README
+        const rawInlineReadme = document.getElementById('raw-inline-readme');
+        const inlineReadmeContainer = document.getElementById('inline-readme-body');
+        if (rawInlineReadme && inlineReadmeContainer && typeof marked !== 'undefined') {
+            inlineReadmeContainer.innerHTML = DOMPurify.sanitize(marked.parse(rawInlineReadme.value));
+        }
+
+        // 2. Render Markdown for full README tab
+        const rawFullReadme = document.getElementById('raw-full-readme');
+        const fullReadmeContainer = document.getElementById('full-readme-body');
+        if (rawFullReadme && fullReadmeContainer && typeof marked !== 'undefined') {
+            fullReadmeContainer.innerHTML = DOMPurify.sanitize(marked.parse(rawFullReadme.value));
+        }
+
+        // 3. Render Markdown for Releases
+        document.querySelectorAll('textarea[id^="raw-release-"]').forEach(rawElement => {
+            const releaseId = rawElement.id.replace('raw-release-', '');
+            const bodyContainer = document.getElementById(`release-body-${releaseId}`);
+            if (bodyContainer && typeof marked !== 'undefined') {
+                bodyContainer.innerHTML = DOMPurify.sanitize(marked.parse(rawElement.value || '*No release description provided.*'));
             }
         });
+
+        // 4. Trigger Prism syntax highlighting if code viewer exists
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+
+        // 5. Hash / Tab switching support
+        const tabButtons = document.querySelectorAll('.source-tabs .tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetTabId = btn.getAttribute('data-tab');
+                if (targetTabId && document.getElementById(targetTabId)) {
+                    // Update active classes without full page reload if staying on same base
+                    const href = btn.getAttribute('href');
+                    if (href && href.startsWith('?tab=')) {
+                        // Let browser navigate to preserve clean URL params
+                        return;
+                    }
+                }
+            });
+        });
     });
+
+    // Copy source code functionality
+    function copySourceCode() {
+        const rawBox = document.getElementById('hiddenRawCode');
+        const copyBtn = document.getElementById('copyRawBtn');
+        if (!rawBox) return;
+
+        navigator.clipboard.writeText(rawBox.value).then(() => {
+            if (copyBtn) {
+                const originalHtml = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHtml;
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            }
+        }).catch(err => {
+            console.error('Clipboard copy failed:', err);
+        });
+    }
+
+    // Copy README Markdown functionality
+    function copyReadmeText() {
+        const rawFullReadme = document.getElementById('raw-full-readme') || document.getElementById('raw-inline-readme');
+        if (!rawFullReadme) return;
+
+        navigator.clipboard.writeText(rawFullReadme.value).then(() => {
+            alert('README markdown copied to clipboard!');
+        }).catch(err => {
+            console.error('Clipboard copy failed:', err);
+        });
+    }
+
+    // Copy License text functionality
+    function copyLicenseText() {
+        const licBox = document.getElementById('licenseRawBox');
+        const licBtn = document.getElementById('copyLicenseBtn');
+        if (!licBox) return;
+
+        navigator.clipboard.writeText(licBox.innerText).then(() => {
+            if (licBtn) {
+                const orig = licBtn.innerHTML;
+                licBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => { licBtn.innerHTML = orig; }, 2000);
+            }
+        }).catch(err => {
+            console.error('License copy failed:', err);
+        });
+    }
 </script>
 
+<%- include('../partials/popunder-ads') %>
+<%- include('../partials/video-ad-modal') %>
 <%- include('../partials/footer') %>

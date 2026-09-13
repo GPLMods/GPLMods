@@ -54,6 +54,45 @@
         </div>
     </div>
 
+    <% if (user && user.role === 'admin') { %>
+        <!-- ═══ ADMINISTRATOR SUITE (Admins Only) ═══ -->
+        <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 215, 0, 0.35); padding-bottom: 12px; margin-bottom: 20px;">
+                <h2 style="color: var(--gold); font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px rgba(255,215,0,0.3);">
+                    <i class="fas fa-shield-alt"></i> Administrator Suite
+                </h2>
+                <span style="background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Only</span>
+            </div>
+            <div class="dashboard-grid" style="margin-bottom: 0;">
+                <a href="/admin" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
+                    <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
+                    <h3 style="color: var(--gold);">AdminJS Panel</h3>
+                    <p>Full database & resource manager.</p>
+                </a>
+                <a href="/admin/reports" class="dash-card" style="border: 1px solid rgba(229, 57, 53, 0.4); background: linear-gradient(145deg, #1f1314, #141414);">
+                    <i class="fas fa-flag" style="color: #e53935;"></i>
+                    <h3>Reports Dashboard</h3>
+                    <p>Review flagged mods and violations.</p>
+                </a>
+                <a href="/admin/support" class="dash-card" style="border: 1px solid rgba(33, 150, 243, 0.4); background: linear-gradient(145deg, #101925, #141414);">
+                    <i class="fas fa-headset" style="color: #2196f3;"></i>
+                    <h3>Support Console</h3>
+                    <p>Manage user inquiries and tickets.</p>
+                </a>
+                <a href="/status" class="dash-card" style="border: 1px solid rgba(67, 160, 71, 0.4); background: linear-gradient(145deg, #112015, #141414);">
+                    <i class="fas fa-server" style="color: #43a047;"></i>
+                    <h3>System Health</h3>
+                    <p>Live MongoDB, B2 & server diagnostics.</p>
+                </a>
+                <a href="/admin/music" class="dash-card" style="border: 1px solid rgba(186, 104, 200, 0.4); background: linear-gradient(145deg, #1c1322, #141414);">
+                    <i class="fas fa-music" style="color: #ba68c8;"></i>
+                    <h3 style="color: #ba68c8;">Music Manager</h3>
+                    <p>Audio library & playlist sequencer.</p>
+                </a>
+            </div>
+        </div>
+    <% } %>
+
     <div class="dashboard-grid">
         <a href="/profile" class="dash-card">
             <i class="fas fa-user-edit"></i>

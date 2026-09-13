@@ -1,0 +1,883 @@
+<%- include('../../partials/header') %>
+
+<style>
+    :root {
+        --music-gold: #FFD700;
+        --music-gold-dim: rgba(255, 215, 0, 0.12);
+        --music-card-bg: #141414;
+        --music-card-alt: #1a1a1a;
+        --music-border: #2a2a2a;
+    }
+
+    .music-manager-wrapper {
+        max-width: 1200px;
+        margin: 30px auto 70px auto;
+        padding: 0 20px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .music-header-block {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--music-border);
+    }
+
+    .music-title-group h1 {
+        font-size: 2.2em;
+        margin: 0;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .music-title-group h1 span {
+        color: var(--music-gold);
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.35);
+    }
+
+    .music-title-group p {
+        margin: 5px 0 0 0;
+        color: var(--silver);
+        font-size: 0.9em;
+    }
+
+    .music-nav-shortcuts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .music-pill-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        border: 1px solid var(--music-border);
+        background-color: var(--music-card-bg);
+        color: var(--white);
+    }
+
+    .music-pill-btn:hover {
+        border-color: var(--music-gold);
+        color: var(--music-gold);
+        transform: translateY(-2px);
+    }
+
+    .music-pill-btn.primary {
+        background-color: var(--music-gold-dim);
+        border-color: var(--music-gold);
+        color: var(--music-gold);
+    }
+
+    /* KPI Summary Cards */
+    .music-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .music-kpi-card {
+        background-color: var(--music-card-bg);
+        border: 1px solid var(--music-border);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.25s ease;
+    }
+
+    .music-kpi-card:hover {
+        border-color: #444;
+        transform: translateY(-2px);
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4em;
+    }
+
+    .kpi-icon.gold { background: rgba(255, 215, 0, 0.15); color: var(--music-gold); }
+    .kpi-icon.blue { background: rgba(33, 150, 243, 0.15); color: #2196F3; }
+    .kpi-icon.purple { background: rgba(186, 104, 200, 0.15); color: #ba68c8; }
+    .kpi-icon.green { background: rgba(67, 160, 71, 0.15); color: #43a047; }
+
+    .kpi-info h3 {
+        margin: 0;
+        font-size: 1.6em;
+        color: var(--white);
+        font-weight: 700;
+    }
+
+    .kpi-info p {
+        margin: 2px 0 0 0;
+        font-size: 0.8em;
+        color: var(--silver);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Tabs & Section Headers */
+    .music-tabs {
+        display: flex;
+        gap: 12px;
+        border-bottom: 2px solid var(--music-border);
+        margin-bottom: 24px;
+    }
+
+    .music-tab-btn {
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--silver);
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: -2px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .music-tab-btn:hover {
+        color: var(--white);
+    }
+
+    .music-tab-btn.active {
+        color: var(--music-gold);
+        border-bottom-color: var(--music-gold);
+    }
+
+    /* Track List & Playlist Builder */
+    .playlist-builder-box {
+        background-color: var(--music-card-bg);
+        border: 1px solid var(--music-border);
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 30px;
+    }
+
+    .box-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--music-border);
+    }
+
+    .box-header h2 {
+        margin: 0;
+        font-size: 1.3em;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .box-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .btn-action {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85em;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .btn-gold {
+        background: var(--music-gold);
+        color: #000;
+    }
+    .btn-gold:hover {
+        background: #e6c200;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border-color: var(--music-border);
+        color: var(--silver);
+    }
+    .btn-outline:hover {
+        border-color: var(--music-gold);
+        color: var(--music-gold);
+    }
+
+    .btn-danger {
+        background: rgba(229, 57, 53, 0.15);
+        border-color: rgba(229, 57, 53, 0.4);
+        color: #ff6b6b;
+    }
+    .btn-danger:hover {
+        background: rgba(229, 57, 53, 0.3);
+    }
+
+    /* Playlist Items Table / Cards */
+    .track-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background-color: var(--music-card-alt);
+        border: 1px solid var(--music-border);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .track-row:hover {
+        border-color: #444;
+        background-color: #202020;
+    }
+
+    .track-order-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--music-gold);
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9em;
+        flex-shrink: 0;
+    }
+
+    .track-preview-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .track-preview-btn:hover {
+        background: var(--music-gold);
+        color: #000;
+        border-color: var(--music-gold);
+    }
+
+    .track-preview-btn.playing {
+        background: var(--music-gold);
+        color: #000;
+        border-color: var(--music-gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    .track-info-group {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .track-title-input {
+        width: 100%;
+        max-width: 380px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: #0d0d0d;
+        color: var(--white);
+        font-size: 0.95em;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .track-title-input:focus {
+        border-color: var(--music-gold);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+    }
+
+    .track-meta {
+        font-size: 0.75em;
+        color: #777;
+        margin-top: 4px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .track-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .track-row-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .icon-btn {
+        background: none;
+        border: 1px solid var(--music-border);
+        color: var(--silver);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+        border-color: var(--music-gold);
+        color: var(--music-gold);
+    }
+
+    .icon-btn.delete-btn:hover {
+        border-color: #e53935;
+        color: #e53935;
+    }
+
+    /* Upload Dropzone */
+    .upload-dropzone {
+        border: 2px dashed #444;
+        border-radius: 12px;
+        padding: 35px 20px;
+        text-align: center;
+        background: #0f0f0f;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        margin-bottom: 25px;
+    }
+
+    .upload-dropzone:hover, .upload-dropzone.dragover {
+        border-color: var(--music-gold);
+        background: rgba(255, 215, 0, 0.03);
+    }
+
+    .upload-dropzone i {
+        font-size: 2.8em;
+        color: var(--music-gold);
+        margin-bottom: 12px;
+    }
+
+    .upload-dropzone h4 {
+        margin: 0 0 6px 0;
+        color: var(--white);
+        font-size: 1.15em;
+    }
+
+    .upload-dropzone p {
+        margin: 0;
+        color: var(--silver);
+        font-size: 0.85em;
+    }
+
+    /* Toast notification */
+    .music-toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 14px 22px;
+        border-radius: 10px;
+        background: #1e1e1e;
+        color: var(--white);
+        border-left: 4px solid var(--music-gold);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9em;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .music-toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .music-toast.success { border-left-color: #43a047; }
+    .music-toast.error { border-left-color: #e53935; }
+</style>
+
+<main class="container">
+    <div class="music-manager-wrapper">
+        
+        <!-- Back breadcrumb -->
+        <div style="margin-bottom: 15px;">
+            <a href="/admin" style="color: var(--silver); text-decoration: none; font-size: 0.9em; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-arrow-left"></i> Back to Admin Panel
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="music-header-block">
+            <div class="music-title-group">
+                <h1><i class="fas fa-music" style="color: var(--music-gold);"></i> Music & <span>Playlist Manager</span></h1>
+                <p>Manage background audio tracks in <code>public/audio</code>, preview audio, sequence weekly playlist, and upload files.</p>
+            </div>
+            <div class="music-nav-shortcuts">
+                <a href="/admin" class="music-pill-btn"><i class="fas fa-sliders-h"></i> AdminJS</a>
+                <a href="/admin/reports" class="music-pill-btn"><i class="fas fa-flag"></i> Reports</a>
+                <a href="/admin/support" class="music-pill-btn"><i class="fas fa-headset"></i> Support</a>
+                <a href="/status" class="music-pill-btn"><i class="fas fa-server"></i> Status</a>
+                <a href="/home" target="_blank" class="music-pill-btn primary"><i class="fas fa-external-link-alt"></i> Live Site</a>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="music-kpi-grid">
+            <div class="music-kpi-card">
+                <div class="kpi-icon gold"><i class="fas fa-compact-disc"></i></div>
+                <div class="kpi-info">
+                    <h3 id="stat-total-tracks"><%= tracks.length %></h3>
+                    <p>Total Tracks in Storage</p>
+                </div>
+            </div>
+            <div class="music-kpi-card">
+                <div class="kpi-icon blue"><i class="fas fa-list-ol"></i></div>
+                <div class="kpi-info">
+                    <h3 id="stat-playlist-count"><%= (weeklyPlaylist && weeklyPlaylist.length) ? weeklyPlaylist.length : tracks.length %></h3>
+                    <p>Active In Playlist</p>
+                </div>
+            </div>
+            <div class="music-kpi-card">
+                <div class="kpi-icon purple"><i class="fas fa-database"></i></div>
+                <div class="kpi-info">
+                    <% 
+                        const totalBytes = tracks.reduce((acc, t) => acc + (t.size || 0), 0);
+                        const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
+                    %>
+                    <h3 id="stat-storage-used"><%= totalMB %> MB</h3>
+                    <p>Total Disk Space Used</p>
+                </div>
+            </div>
+            <div class="music-kpi-card">
+                <div class="kpi-icon green"><i class="fas fa-play-circle"></i></div>
+                <div class="kpi-info">
+                    <h3 style="font-size: 1.1em; color: #81c784;">Auto-Loop Active</h3>
+                    <p>Playback Mode</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Controls -->
+        <div class="music-tabs">
+            <button class="music-tab-btn active" onclick="switchTab('playlist-tab', this)">
+                <i class="fas fa-list"></i> Active Weekly Playlist (<span id="tab-playlist-badge"><%= (weeklyPlaylist && weeklyPlaylist.length) ? weeklyPlaylist.length : tracks.length %></span>)
+            </button>
+            <button class="music-tab-btn" onclick="switchTab('library-tab', this)">
+                <i class="fas fa-folder-open"></i> All Audio Library Files (<span id="tab-library-badge"><%= tracks.length %></span>)
+            </button>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: ACTIVE PLAYLIST SEQUENCER               -->
+        <!-- ============================================== -->
+        <div id="playlist-tab" class="tab-content">
+            <div class="playlist-builder-box">
+                <div class="box-header">
+                    <div>
+                        <h2><i class="fas fa-sliders-h" style="color: var(--music-gold);"></i> Playlist Sequencer</h2>
+                        <span style="font-size: 0.85em; color: var(--silver);">Reorder tracks, edit custom titles, and click <strong>Save Playlist</strong> to apply.</span>
+                    </div>
+                    <div class="box-actions">
+                        <button class="btn-action btn-outline" onclick="resetPlaylistToAll()"><i class="fas fa-sync-alt"></i> Include All Tracks</button>
+                        <button class="btn-action btn-gold" onclick="savePlaylist()"><i class="fas fa-save"></i> Save Weekly Playlist</button>
+                    </div>
+                </div>
+
+                <div id="playlist-container">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: ALL AUDIO LIBRARY FILES & UPLOAD        -->
+        <!-- ============================================== -->
+        <div id="library-tab" class="tab-content" style="display: none;">
+            
+            <!-- Upload Card -->
+            <div class="playlist-builder-box">
+                <div class="box-header">
+                    <h2><i class="fas fa-cloud-upload-alt" style="color: var(--music-gold);"></i> Upload New Audio Track</h2>
+                    <span style="font-size: 0.85em; color: var(--silver);">Supports MP3, WAV, OGG, M4A up to 30MB</span>
+                </div>
+
+                <div class="upload-dropzone" id="audio-dropzone" onclick="document.getElementById('audio-file-input').click()">
+                    <i class="fas fa-file-audio"></i>
+                    <h4>Click or Drag & Drop audio file here</h4>
+                    <p>File will be saved directly to <code>public/audio/</code> and made available in the player</p>
+                    <input type="file" id="audio-file-input" accept=".mp3,.wav,.ogg,.m4a,.aac,.flac" style="display:none;" onchange="handleAudioUpload(event)">
+                </div>
+                <div id="upload-status" style="display: none; text-align: center; color: var(--music-gold); font-weight: 600; margin-top: 10px;">
+                    <i class="fas fa-spinner fa-spin"></i> Uploading audio track...
+                </div>
+            </div>
+
+            <!-- Library Files List -->
+            <div class="playlist-builder-box">
+                <div class="box-header">
+                    <h2><i class="fas fa-folder" style="color: var(--music-gold);"></i> Files in <code>public/audio/</code></h2>
+                    <span style="font-size: 0.85em; color: var(--silver);">Total: <%= tracks.length %> files</span>
+                </div>
+
+                <div id="library-container">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Hidden Global Preview Audio Element -->
+<audio id="admin-preview-player"></audio>
+
+<!-- Toast alert element -->
+<div id="music-toast" class="music-toast">
+    <i class="fas fa-check-circle" id="toast-icon"></i>
+    <span id="toast-message">Playlist saved successfully!</span>
+</div>
+
+<script>
+    // Initial data passed from server
+    let localTracks = <%- JSON.stringify(tracks || []) %>;
+    let currentPlaylist = <%- JSON.stringify((weeklyPlaylist && weeklyPlaylist.length) ? weeklyPlaylist : []) %>;
+
+    // If currentPlaylist is empty, populate with all localTracks as default
+    if (!currentPlaylist || currentPlaylist.length === 0) {
+        currentPlaylist = localTracks.map(t => ({ title: t.title, src: t.src }));
+    }
+
+    const previewAudio = document.getElementById('admin-preview-player');
+    let currentlyPlayingSrc = null;
+
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('music-toast');
+        const msgEl = document.getElementById('toast-message');
+        const iconEl = document.getElementById('toast-icon');
+
+        msgEl.textContent = msg;
+        toast.className = `music-toast show ${type}`;
+        iconEl.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3500);
+    }
+
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.music-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).style.display = 'block';
+        btn.classList.add('active');
+    }
+
+    function togglePreview(src, btn) {
+        if (currentlyPlayingSrc === src && !previewAudio.paused) {
+            previewAudio.pause();
+            currentlyPlayingSrc = null;
+            document.querySelectorAll('.track-preview-btn').forEach(b => {
+                b.classList.remove('playing');
+                b.innerHTML = '<i class="fas fa-play"></i>';
+            });
+        } else {
+            document.querySelectorAll('.track-preview-btn').forEach(b => {
+                b.classList.remove('playing');
+                b.innerHTML = '<i class="fas fa-play"></i>';
+            });
+            previewAudio.src = src;
+            previewAudio.play().then(() => {
+                currentlyPlayingSrc = src;
+                btn.classList.add('playing');
+                btn.innerHTML = '<i class="fas fa-pause"></i>';
+            }).catch(e => {
+                showToast("Could not play audio track: " + e.message, "error");
+            });
+        }
+    }
+
+    previewAudio.addEventListener('ended', () => {
+        currentlyPlayingSrc = null;
+        document.querySelectorAll('.track-preview-btn').forEach(b => {
+            b.classList.remove('playing');
+            b.innerHTML = '<i class="fas fa-play"></i>';
+        });
+    });
+
+    // Render Playlist Sequencer
+    function renderPlaylist() {
+        const container = document.getElementById('playlist-container');
+        if (!currentPlaylist || currentPlaylist.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--silver);">
+                    <i class="fas fa-music" style="font-size: 2.5em; color: #444; margin-bottom: 10px;"></i>
+                    <p>No tracks in active playlist. Click <strong>"Include All Tracks"</strong> to add your local audio library.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        currentPlaylist.forEach((item, index) => {
+            const isPlaying = currentlyPlayingSrc === item.src && !previewAudio.paused;
+            html += `
+                <div class="track-row" data-index="${index}">
+                    <div class="track-order-badge">#${index + 1}</div>
+                    <button class="track-preview-btn ${isPlaying ? 'playing' : ''}" onclick="togglePreview('${item.src}', this)" title="Preview Track">
+                        <i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                    </button>
+                    <div class="track-info-group">
+                        <input type="text" class="track-title-input" value="${item.title.replace(/"/g, '&quot;')}" onchange="updateTrackTitle(${index}, this.value)">
+                        <div class="track-meta">
+                            <span><i class="fas fa-file-audio"></i> ${item.src}</span>
+                        </div>
+                    </div>
+                    <div class="track-row-actions">
+                        <button class="icon-btn" onclick="moveTrack(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Up">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button class="icon-btn" onclick="moveTrack(${index}, 1)" ${index === currentPlaylist.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Down">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
+                        <button class="icon-btn delete-btn" onclick="removeFromPlaylist(${index})" title="Remove from Playlist">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        document.getElementById('stat-playlist-count').textContent = currentPlaylist.length;
+        document.getElementById('tab-playlist-badge').textContent = currentPlaylist.length;
+    }
+
+    // Render Library Files
+    function renderLibrary() {
+        const container = document.getElementById('library-container');
+        if (!localTracks || localTracks.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--silver);">
+                    <p>No audio files found in <code>public/audio/</code>.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        localTracks.forEach((t, index) => {
+            const inPlaylist = currentPlaylist.some(p => p.src === t.src);
+            const isPlaying = currentlyPlayingSrc === t.src && !previewAudio.paused;
+            html += `
+                <div class="track-row">
+                    <button class="track-preview-btn ${isPlaying ? 'playing' : ''}" onclick="togglePreview('${t.src}', this)" title="Preview Track">
+                        <i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                    </button>
+                    <div class="track-info-group">
+                        <div style="color: var(--white); font-weight: 600; font-size: 0.95em;">${t.title}</div>
+                        <div class="track-meta">
+                            <span><i class="fas fa-file"></i> ${t.filename}</span>
+                            <span><i class="fas fa-weight-hanging"></i> ${t.sizeFormatted}</span>
+                            <span style="color: ${inPlaylist ? 'var(--music-gold)' : '#777'};">
+                                <i class="fas ${inPlaylist ? 'fa-check-circle' : 'fa-circle'}"></i> ${inPlaylist ? 'In Playlist' : 'Not In Playlist'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="track-row-actions">
+                        ${inPlaylist 
+                            ? `<button class="btn-action btn-outline" style="border-color: #555; color: #888;" disabled><i class="fas fa-check"></i> Added</button>`
+                            : `<button class="btn-action btn-gold" onclick="addToPlaylist('${t.src}', '${t.title.replace(/'/g, "\\'")}')"><i class="fas fa-plus"></i> Add to Playlist</button>`
+                        }
+                        <button class="icon-btn delete-btn" onclick="deleteAudioFile('${t.filename}')" title="Delete File from Disk">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        document.getElementById('stat-total-tracks').textContent = localTracks.length;
+        document.getElementById('tab-library-badge').textContent = localTracks.length;
+    }
+
+    function updateTrackTitle(index, newTitle) {
+        if (currentPlaylist[index]) {
+            currentPlaylist[index].title = newTitle.trim() || `Track ${index + 1}`;
+        }
+    }
+
+    function moveTrack(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= currentPlaylist.length) return;
+        const item = currentPlaylist.splice(index, 1)[0];
+        currentPlaylist.splice(newIndex, 0, item);
+        renderPlaylist();
+    }
+
+    function removeFromPlaylist(index) {
+        currentPlaylist.splice(index, 1);
+        renderPlaylist();
+        renderLibrary();
+    }
+
+    function addToPlaylist(src, title) {
+        if (!currentPlaylist.some(p => p.src === src)) {
+            currentPlaylist.push({ title, src });
+            renderPlaylist();
+            renderLibrary();
+            showToast(`Added "${title}" to playlist!`);
+        }
+    }
+
+    function resetPlaylistToAll() {
+        currentPlaylist = localTracks.map(t => ({ title: t.title, src: t.src }));
+        renderPlaylist();
+        renderLibrary();
+        showToast("Playlist reset to include all local tracks!");
+    }
+
+    // Save playlist to database
+    async function savePlaylist() {
+        try {
+            const res = await fetch('/api/admin/music/playlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playlist: currentPlaylist })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast("Weekly playlist saved and updated successfully!", "success");
+            } else {
+                showToast("Error saving playlist: " + (data.error || "Unknown error"), "error");
+            }
+        } catch (e) {
+            showToast("Network error while saving playlist: " + e.message, "error");
+        }
+    }
+
+    // Handle Upload
+    async function handleAudioUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('audioFile', file);
+
+        const statusEl = document.getElementById('upload-status');
+        statusEl.style.display = 'block';
+
+        try {
+            const res = await fetch('/api/admin/music/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            statusEl.style.display = 'none';
+
+            if (data.success) {
+                showToast(data.message, "success");
+                localTracks = data.tracks;
+                // Auto add to playlist as well
+                if (data.file) {
+                    currentPlaylist.push({ title: file.name.replace(/\.[^/.]+$/, ''), src: data.file.src });
+                }
+                renderPlaylist();
+                renderLibrary();
+                document.getElementById('audio-file-input').value = '';
+            } else {
+                showToast("Upload failed: " + (data.error || "Unknown error"), "error");
+            }
+        } catch (e) {
+            statusEl.style.display = 'none';
+            showToast("Upload error: " + e.message, "error");
+        }
+    }
+
+    // Delete file from disk
+    async function deleteAudioFile(filename) {
+        if (!confirm(`Are you sure you want to permanently delete "${filename}" from the server disk? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/admin/music/track/${encodeURIComponent(filename)}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message, "success");
+                localTracks = data.tracks;
+                currentPlaylist = currentPlaylist.filter(p => !p.src.endsWith(filename));
+                renderPlaylist();
+                renderLibrary();
+            } else {
+                showToast("Delete failed: " + (data.error || "Unknown error"), "error");
+            }
+        } catch (e) {
+            showToast("Delete error: " + e.message, "error");
+        }
+    }
+
+    // Drag and drop setup for upload zone
+    const dropzone = document.getElementById('audio-dropzone');
+    ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }, false);
+    });
+    ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }, false);
+    });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const input = document.getElementById('audio-file-input');
+            input.files = files;
+            handleAudioUpload({ target: input });
+        }
+    });
+
+    // Initial render on page load
+    renderPlaylist();
+    renderLibrary();
+</script>

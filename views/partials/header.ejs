@@ -92,6 +92,46 @@
                 document.addEventListener('DOMContentLoaded', fixPageAssets);
             }
         }
+
+        // ======== SMART GO BACK CONTROLLER ========
+        window.smartGoBack = function(fallbackUrl) {
+            const fallback = fallbackUrl || '/';
+            if (document.referrer && document.referrer !== window.location.href) {
+                try {
+                    const refUrl = new URL(document.referrer);
+                    const currentUrl = new URL(window.location.href);
+                    // Check same origin
+                    if (refUrl.origin === currentUrl.origin) {
+                        const trapPaths = ['/login', '/register', '/logout', '/login/2fa', '/admin'];
+                        const isTrap = trapPaths.some(p => refUrl.pathname.startsWith(p));
+                        if (!isTrap && refUrl.pathname !== currentUrl.pathname) {
+                            window.location.href = document.referrer;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+            }
+            if (window.history.length > 1) {
+                const prevLoc = window.location.href;
+                window.history.back();
+                setTimeout(() => {
+                    if (window.location.href === prevLoc) {
+                        window.location.href = fallback;
+                    }
+                }, 300);
+            } else {
+                window.location.href = fallback;
+            }
+        };
+
+        // Automatically bind to any back links across the entire page
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('a[href*="history.back"], .dynamic-back-btn, .btn-go-back');
+            if (target) {
+                e.preventDefault();
+                window.smartGoBack(target.getAttribute('data-fallback') || '/');
+            }
+        });
     </script>
     <!-- ============================================ -->
 
@@ -255,6 +295,11 @@
                 margin-top: 5px;
             }
         }
+
+        /* Ensure mobile sidebar navigation always opens above deployment notices and headers */
+        .mobile-nav {
+            z-index: 100000 !important;
+        }
     </style>
 </head>
 <body>
@@ -347,6 +392,11 @@
                 <!-- Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
+                        <% if (user.role === 'admin') { %>
+                            <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
+                                <i class="fas fa-shield-alt"></i> Admin Panel
+                            </a>
+                        <% } %>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
                     <% } else { %>
@@ -375,6 +425,20 @@
             </li>
             
             <% if (user) { %>
+                <% if (user.role === 'admin') { %>
+                    <li class="has-submenu" style="background: rgba(255, 215, 0, 0.08); border-radius: 8px; margin: 6px 0; border: 1px solid rgba(255, 215, 0, 0.25);">
+                        <a href="#" class="collapsible-trigger" style="color: var(--gold); font-weight: 700;">
+                            <i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite <span class="arrow">▼</span>
+                        </a>
+                        <ul class="sub-menu">
+                            <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
+                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
+                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
+                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
+                            <li><a href="/admin/music"><i class="fas fa-music" style="margin-right: 8px; color: #ba68c8;"></i> Music Manager</a></li>
+                        </ul>
+                    </li>
+                <% } %>
                 <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
                 <li><a href="/licenses"><i class="fas fa-file-contract" aria-hidden="true"></i> License Hub</a></li>
                 <li><a href="/community">Community Forums</a></li>

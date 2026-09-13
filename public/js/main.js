@@ -981,7 +981,9 @@ function initializeMusicPlayer() {
         const track = playlist[index];
         if (!track) return;
         audioPlayer.src = track.src;
-        trackNameDisplay.textContent = track.title;
+        const total = playlist.length;
+        const trackTitle = track.title || `Track ${index + 1}`;
+        trackNameDisplay.textContent = total > 1 ? `(${index + 1}/${total}) ${trackTitle}` : trackTitle;
         setGlobalVolume(volumeSlider ? volumeSlider.value : (localStorage.getItem('musicVolume') || 0.5));
     }
 
@@ -1147,15 +1149,34 @@ function initializeMusicPlayer() {
     };
 
     async function init() {
+        const defaultTracks = [
+            { title: 'GPL Ambient Track 1', src: '/audio/bgm-0.mp3' },
+            { title: 'GPL Ambient Track 2', src: '/audio/bgm-1.mp3' },
+            { title: 'GPL Ambient Track 3', src: '/audio/bgm-2.mp3' },
+            { title: 'GPL Ambient Track 4', src: '/audio/bgm-3.mp3' },
+            { title: 'GPL Ambient Track 5', src: '/audio/bgm-4.mp3' },
+            { title: 'GPL Ambient Track 6', src: '/audio/bgm-5.mp3' },
+            { title: 'GPL Ambient Track 7', src: '/audio/bgm-6.mp3' },
+            { title: 'GPL Ambient Track 8', src: '/audio/bgm-7.mp3' },
+            { title: 'GPL Ambient Track 9', src: '/audio/bgm-8.mp3' },
+            { title: 'GPL Ambient Track 10', src: '/audio/bgm-9.mp3' }
+        ];
+
         try {
             const response = await fetch('/api/music/playlist');
             if (response.ok) {
                 const data = await response.json();
-                if (data.success) playlist = data.playlist;
+                if (data.success && Array.isArray(data.playlist) && data.playlist.length > 0) {
+                    playlist = data.playlist;
+                } else {
+                    playlist = defaultTracks;
+                }
+            } else {
+                playlist = defaultTracks;
             }
         } catch (e) {
             console.error("Failed to load playlist:", e);
-            playlist = [ { title: 'Default Track', src: '/audio/bgm-0.mp3' } ];
+            playlist = defaultTracks;
         }
 
         if (currentSource === 'local') {

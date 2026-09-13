@@ -677,9 +677,42 @@ a.overlay-btn-primary:hover {
     pointer-events: auto; /* Enable clicks when visible */
 }
 
-.overlay-button { display: block; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9em; transition: all 0.3s ease; width: 100%; }
+.overlay-button { display: block; padding: 10px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 0.9em; transition: all 0.3s ease; width: 100%; position: relative; overflow: hidden; box-sizing: border-box; }
 .overlay-btn-primary { background: var(--gold); color: var(--black); }
-.overlay-btn-secondary { background: transparent; color: var(--silver); border: 2px solid var(--silver); }
+.overlay-btn-secondary { 
+    position: relative;
+    background-color: #161616;
+    background-image: 
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.35) 100%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0, rgba(255, 255, 255, 0.03) 2px, transparent 2px, transparent 4px),
+        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.45) 0, rgba(0, 0, 0, 0.45) 2px, transparent 2px, transparent 4px);
+    background-size: auto, 6px 6px, 6px 6px;
+    color: var(--silver); 
+    border: 1px solid rgba(192, 192, 192, 0.35) !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1;
+}
+.overlay-btn-secondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(160, 160, 160, 0.22) 100%);
+    transition: width 0.35s ease;
+    z-index: -1;
+    pointer-events: none;
+}
+.overlay-btn-secondary:hover::before {
+    width: 58%; /* Partially filled gray hover animation */
+}
+.overlay-btn-secondary:hover {
+    color: var(--white);
+    border-color: var(--silver) !important;
+    box-shadow: 0 4px 15px rgba(192, 192, 192, 0.2), inset 0 1px 0 rgba(255,255,255,0.18);
+}
 .overlay-button:hover { transform: scale(1.05); }
 
 /* ==========================================================================
@@ -2542,3 +2575,49 @@ img {
     pointer-events: none; /* Disables pointer events, making it unclickable for direct download */
 }
 /* ========================================================================== */
+
+/* ========================================================================== */
+/* 8. Global Go-Back Button Alignment & Styling */
+/* ========================================================================== */
+.dynamic-back-btn,
+.btn-go-back,
+a[href*="history.back"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    color: var(--silver) !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    padding: 8px 16px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    margin-bottom: 20px !important;
+}
+
+.dynamic-back-btn:hover,
+.btn-go-back:hover,
+a[href*="history.back"]:hover {
+    color: var(--gold) !important;
+    border-color: var(--gold) !important;
+    background: rgba(255, 215, 0, 0.1) !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.25) !important;
+    transform: translateX(-3px);
+    text-decoration: none !important;
+}
+
+.dynamic-back-btn i,
+.btn-go-back i,
+a[href*="history.back"] i {
+    transition: transform 0.2s ease;
+}
+
+.dynamic-back-btn:hover i,
+.btn-go-back:hover i,
+a[href*="history.back"]:hover i {
+    transform: translateX(-2px);
+}

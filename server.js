@@ -749,15 +749,195 @@ app.get('/healthz', (req, res) => {
 // ===============================
 // MUSIC & PLAYLIST API
 // ===============================
+const AUDIO_DIR = path.join(__dirname, 'public', 'audio');
+
+// Helper to scan public/audio and return all audio files
+async function getLocalAudioTracks() {
+    try {
+        if (!fs.existsSync(AUDIO_DIR)) {
+            fs.mkdirSync(AUDIO_DIR, { recursive: true });
+        }
+        const files = await fs.promises.readdir(AUDIO_DIR);
+        const audioExtensions = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']);
+        const audioFiles = files.filter(f => audioExtensions.has(path.extname(f).toLowerCase()));
+        
+        // Natural sort e.g. bgm-0, bgm-1, bgm-2 ... bgm-9
+        audioFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+        const tracks = await Promise.all(audioFiles.map(async (filename) => {
+            const filePath = path.join(AUDIO_DIR, filename);
+            const stats = await fs.promises.stat(filePath);
+            
+            let friendlyTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+            friendlyTitle = friendlyTitle.replace(/\b\w/g, l => l.toUpperCase());
+            if (/^Bgm \d+$/i.test(friendlyTitle)) {
+                const num = friendlyTitle.match(/\d+/)[0];
+                friendlyTitle = `GPL Ambient Track ${parseInt(num) + 1}`;
+            }
+
+            return {
+                filename,
+                src: `/audio/${filename}`,
+                title: friendlyTitle,
+                size: stats.size,
+                sizeFormatted: (stats.size / (1024 * 1024)).toFixed(2) + ' MB',
+                modifiedAt: stats.mtime
+            };
+        }));
+        return tracks;
+    } catch (err) {
+        console.error('Error scanning public/audio directory:', err);
+        return [];
+    }
+}
+
+// Audio upload configuration for public/audio
+const uploadAudioTrack = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            if (!fs.existsSync(AUDIO_DIR)) fs.mkdirSync(AUDIO_DIR, { recursive: true });
+            cb(null, AUDIO_DIR);
+        },
+        filename: (req, file, cb) => {
+            const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
+            cb(null, safeName);
+        }
+    }),
+    limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedExts = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac'];
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowedExts.includes(ext)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only audio files (.mp3, .wav, .ogg, .m4a, .aac, .flac) are allowed.'));
+        }
+    }
+});
+
+// Public playlist endpoint for floating music player (auto-falls back to all 10 local tracks)
 app.get('/api/music/playlist', async (req, res) => {
     try {
         const state = await SiteState.findOne({ singletonId: 'master-state' });
+        let playlist = state?.weeklyPlaylist || [];
+        
+        // Combined Feature: If weeklyPlaylist is empty or not configured, serve all local tracks
+        if (!playlist || playlist.length === 0) {
+            const localTracks = await getLocalAudioTracks();
+            playlist = localTracks.map(t => ({ title: t.title, src: t.src }));
+        }
+
         res.json({
             success: true,
-            playlist: state?.weeklyPlaylist || []
+            playlist
         });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to fetch playlist' });
+    }
+});
+
+// Admin Music Management Page
+app.get('/admin/music', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const tracks = await getLocalAudioTracks();
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        const weeklyPlaylist = state?.weeklyPlaylist || [];
+        res.render('pages/admin/music', {
+            user: req.user,
+            tracks,
+            weeklyPlaylist
+        });
+    } catch (error) {
+        console.error('Error loading admin music page:', error);
+        res.status(500).send('Error loading music manager');
+    }
+});
+
+// Admin API: Get all tracks from public/audio with playlist metadata
+app.get('/api/admin/music/tracks', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const tracks = await getLocalAudioTracks();
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        const playlist = state?.weeklyPlaylist || [];
+
+        const playlistMap = new Map();
+        playlist.forEach((p, idx) => {
+            playlistMap.set(p.src, { order: idx, title: p.title });
+        });
+
+        const mappedTracks = tracks.map(t => {
+            const inPl = playlistMap.has(t.src);
+            return {
+                ...t,
+                inPlaylist: inPl,
+                order: inPl ? playlistMap.get(t.src).order : 999,
+                playlistTitle: inPl ? playlistMap.get(t.src).title : t.title
+            };
+        });
+
+        res.json({
+            success: true,
+            tracks: mappedTracks,
+            playlist
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Admin API: Upload new audio track to public/audio
+app.post('/api/admin/music/upload', ensureAuthenticated, ensureAdmin, (req, res) => {
+    uploadAudioTrack.single('audioFile')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, error: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No audio file provided.' });
+        }
+        try {
+            const tracks = await getLocalAudioTracks();
+            res.json({
+                success: true,
+                message: `Track "${req.file.filename}" uploaded successfully!`,
+                file: {
+                    filename: req.file.filename,
+                    src: `/audio/${req.file.filename}`
+                },
+                tracks
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+});
+
+// Admin API: Delete audio track from public/audio
+app.delete('/api/admin/music/track/:filename', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const rawFilename = path.basename(req.params.filename);
+        const filePath = path.join(AUDIO_DIR, rawFilename);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ success: false, error: 'Track file not found on disk.' });
+        }
+
+        await fs.promises.unlink(filePath);
+
+        // Remove from SiteState.weeklyPlaylist if present
+        const trackSrc = `/audio/${rawFilename}`;
+        await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $pull: { weeklyPlaylist: { src: trackSrc } } }
+        );
+
+        const tracks = await getLocalAudioTracks();
+        res.json({
+            success: true,
+            message: `Track "${rawFilename}" deleted successfully.`,
+            tracks
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -1071,6 +1251,7 @@ app.use(async (req, res, next) => {
         req.logout((err) => {
             req.session.destroy(() => {
                 res.clearCookie('connect.sid', { path: '/' });
+                res.clearCookie('is_logged_in', { path: '/' });
                 return res.redirect('/login?error=' + encodeURIComponent('Your session got expired because you logged in from another device. Please relogin again.'));
             });
         });
@@ -1087,6 +1268,7 @@ app.use(async (req, res, next) => {
                 req.logout((err) => {
                     req.session.destroy(() => {
                         res.clearCookie('connect.sid', { path: '/' });
+                        res.clearCookie('is_logged_in', { path: '/' });
                         return res.redirect('/login?error=' + encodeURIComponent('Your session got expired because you logged in from another device. Please relogin again.'));
                     });
                 });
@@ -1106,9 +1288,18 @@ app.use((req, res, next) => {
         return req.logout(() => {
             req.session.destroy(() => {
                 res.clearCookie('connect.sid', { path: '/' });
+                res.clearCookie('is_logged_in', { path: '/' });
                 res.redirect('/login?error=' + encodeURIComponent('Your session was revoked for security reasons. Please log in again.'));
             });
         });
+    }
+    next();
+});
+
+// Auto-clean stale is_logged_in cookie when user is not authenticated
+app.use((req, res, next) => {
+    if (!req.isAuthenticated() && req.cookies && req.cookies.is_logged_in) {
+        res.clearCookie('is_logged_in', { path: '/' });
     }
     next();
 });
@@ -1338,7 +1529,18 @@ function ensureAdmin(req, res, next) {
     res.status(404).render('pages/error', {
         errorCode: '404',
         errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.'
+        errorMessage: 'The page you are looking for does not exist.'
+    });
+}
+function ensureAdminOr404(req, res, next) {
+    if (req.isAuthenticated() && req.user && req.user.role === 'admin') {
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
+    }
+    return res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: 'The page you are looking for does not exist.'
     });
 }
 function ensureSupportOrAdmin(req, res, next) {
@@ -1351,7 +1553,9 @@ function ensureSupportOrAdmin(req, res, next) {
 }
 function redirectIfAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
-        return res.redirect('/'); 
+        const returnTo = req.session && req.session.returnTo && !req.session.returnTo.includes('/login') && !req.session.returnTo.includes('/register') && !req.session.returnTo.includes('/logout') ? req.session.returnTo : '/';
+        if (req.session) delete req.session.returnTo;
+        return res.redirect(returnTo); 
     }
     next();
 }
@@ -1729,14 +1933,45 @@ function canUserAccessSource(user, sourceDoc) {
     return Boolean(userId && (sourceDoc.allowedUsers || []).some(id => id.toString() === userId));
 }
 
-function githubApiConfig() {
-    return {
-        headers: {
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            ...(process.env.GITHUB_PAT && { Authorization: `Bearer ${process.env.GITHUB_PAT}` })
-        }
+function githubApiConfig(customHeaders = {}) {
+    const token = process.env.GITHUB_PAT || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_API_TOKEN || process.env.GITHUB_ACCESS_TOKEN;
+    const apiVersion = process.env.GITHUB_API_VERSION || '2022-11-28';
+    const headers = {
+        'User-Agent': 'GPLMods-SourceHub',
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': apiVersion,
+        ...customHeaders
     };
+    if (token && token.trim() !== '') {
+        headers.Authorization = `Bearer ${token.trim()}`;
+    }
+    return { headers };
+}
+
+function formatSourceFileSize(bytes) {
+    if (bytes === 0 || bytes == null) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function detectSourceLanguage(filename) {
+    if (!filename) return 'plaintext';
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = {
+        js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'jsx',
+        ts: 'typescript', tsx: 'tsx',
+        html: 'markup', xml: 'markup', svg: 'markup', ejs: 'markup',
+        css: 'css', scss: 'scss', less: 'less',
+        json: 'json', yml: 'yaml', yaml: 'yaml',
+        md: 'markdown', markdown: 'markdown',
+        py: 'python', rb: 'ruby', php: 'php',
+        java: 'java', c: 'c', cpp: 'cpp', cs: 'csharp', go: 'go', rs: 'rust',
+        sh: 'bash', bash: 'bash', zsh: 'bash', ps1: 'powershell',
+        sql: 'sql', dockerfile: 'docker', toml: 'toml', ini: 'ini'
+    };
+    return map[ext] || 'plaintext';
 }
 
 function renderSourceError(res, status, title, message) {
@@ -1759,35 +1994,262 @@ app.get('/source', async (req, res) => {
     }
 });
 
+// Serve raw source file content directly like GitHub raw
+app.get('/source/:slug/raw', async (req, res) => {
+    try {
+        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        if (!source) return res.status(404).type('text/plain').send('Source repository not found.');
+        if (source.isPrivate && !req.isAuthenticated()) return res.status(401).type('text/plain').send('Authentication required.');
+        if (!canUserAccessSource(req.user, source)) {
+            return res.status(403).type('text/plain').send('Access denied.');
+        }
+
+        const filePath = req.query.path ? String(req.query.path).replace(/^\/+/, '') : '';
+        if (!filePath) {
+            return res.status(400).type('text/plain').send('Path query parameter is required.');
+        }
+
+        const owner = encodeURIComponent(source.githubOwner);
+        const repo = encodeURIComponent(source.githubRepo);
+        const refQuery = req.query.ref ? `?ref=${encodeURIComponent(String(req.query.ref))}` : '';
+        const encodedPath = encodeURIComponent(filePath).replace(/%2F/g, '/');
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refQuery}`;
+
+        const response = await axios.get(url, {
+            ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
+            responseType: 'text',
+            transformResponse: [data => data]
+        });
+
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        return res.send(response.data);
+    } catch (error) {
+        console.error('Source Raw File Error:', error.response?.data || error.message);
+        if (error.response?.status === 404) {
+            return res.status(404).type('text/plain').send('File not found in repository.');
+        }
+        return res.status(502).type('text/plain').send('GitHub could not provide this file right now.');
+    }
+});
+
 app.get('/source/:slug', async (req, res) => {
     try {
         const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
         if (source.isPrivate && !req.isAuthenticated()) return res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
 
+        const hasAccess = canUserAccessSource(req.user, source);
         const owner = encodeURIComponent(source.githubOwner);
         const repo = encodeURIComponent(source.githubRepo);
-        let releases = [];
 
-        try {
-            const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/releases`, githubApiConfig());
-            releases = Array.isArray(response.data) ? response.data : [];
-        } catch (githubError) {
-            console.error('GitHub API Error:', githubError.response?.data || githubError.message);
+        // Normalize requested path & ref
+        const rawPath = (req.query.path || '').toString().trim().replace(/^\/+|\/+$/g, '');
+        const requestedRef = (req.query.ref || '').toString().trim();
+        const activeTab = (req.query.tab || 'code').toString().toLowerCase();
+
+        const config = githubApiConfig();
+        const refParam = requestedRef ? `?ref=${encodeURIComponent(requestedRef)}` : '';
+        const encodedPath = rawPath ? encodeURIComponent(rawPath).replace(/%2F/g, '/') : '';
+
+        // Concurrently fetch repo details, contents at path, readme, license, and releases
+        const [repoResult, contentsResult, readmeResult, licenseResult, releasesResult] = await Promise.allSettled([
+            axios.get(`https://api.github.com/repos/${owner}/${repo}`, config),
+            axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refParam}`, config),
+            axios.get(`https://api.github.com/repos/${owner}/${repo}/readme${refParam}`, config),
+            axios.get(`https://api.github.com/repos/${owner}/${repo}/license`, config),
+            axios.get(`https://api.github.com/repos/${owner}/${repo}/releases`, config)
+        ]);
+
+        // 1. Repo Metadata
+        let repoData = {
+            name: source.githubRepo,
+            full_name: `${source.githubOwner}/${source.githubRepo}`,
+            default_branch: 'main',
+            stargazers_count: 0,
+            forks_count: 0,
+            open_issues_count: 0,
+            html_url: `https://github.com/${source.githubOwner}/${source.githubRepo}`,
+            description: source.description || ''
+        };
+        let apiError = null;
+
+        if (repoResult.status === 'fulfilled') {
+            repoData = { ...repoData, ...repoResult.value.data };
+        } else {
+            const errStatus = repoResult.reason?.response?.status;
+            const errMsg = repoResult.reason?.response?.data?.message || repoResult.reason?.message;
+            console.warn(`GitHub Repo Info Warning (${source.slug}):`, errStatus, errMsg);
+            if (errStatus === 403 || errStatus === 429) {
+                apiError = 'GitHub API rate limit reached. If a private repository is being accessed, please ensure a valid GitHub Personal Access Token is configured.';
+            } else if (errStatus === 401) {
+                apiError = 'GitHub token is invalid or expired.';
+            } else if (errStatus === 404) {
+                apiError = 'Repository not found on GitHub. Verify the repository owner and name in Admin settings.';
+            }
+        }
+
+        const currentRef = requestedRef || repoData.default_branch || 'main';
+
+        // 2. Directory Contents or File View
+        let isViewingFile = false;
+        let fileData = null;
+        let directoryItems = [];
+
+        if (contentsResult.status === 'fulfilled') {
+            const data = contentsResult.value.data;
+            if (Array.isArray(data)) {
+                // Directory listing
+                isViewingFile = false;
+                directoryItems = data.map(item => ({
+                    name: item.name,
+                    path: item.path,
+                    type: item.type, // 'dir' | 'file' | 'submodule'
+                    sizeFormatted: item.type === 'file' ? formatSourceFileSize(item.size) : '',
+                    size: item.size || 0,
+                    download_url: item.download_url
+                })).sort((a, b) => {
+                    if (a.type === 'dir' && b.type !== 'dir') return -1;
+                    if (a.type !== 'dir' && b.type === 'dir') return 1;
+                    return a.name.localeCompare(b.name);
+                });
+            } else if (data && data.type === 'file') {
+                // Single file view
+                isViewingFile = true;
+                let rawCode = '';
+                if (data.content && data.encoding === 'base64') {
+                    rawCode = Buffer.from(data.content, 'base64').toString('utf8');
+                } else {
+                    // Fetch raw if content was too large for base64 or null
+                    try {
+                        const rawFetch = await axios.get(
+                            `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(currentRef)}`,
+                            {
+                                ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
+                                responseType: 'text',
+                                transformResponse: [d => d]
+                            }
+                        );
+                        rawCode = rawFetch.data;
+                    } catch (rawErr) {
+                        console.error('Raw content fallback error:', rawErr.message);
+                    }
+                }
+
+                fileData = {
+                    name: data.name,
+                    path: data.path,
+                    sizeFormatted: formatSourceFileSize(data.size),
+                    size: data.size,
+                    lines: rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0,
+                    language: detectSourceLanguage(data.name),
+                    content: rawCode,
+                    download_url: data.download_url
+                };
+            }
+        } else {
+            console.warn(`GitHub Contents Warning (${source.slug}):`, contentsResult.reason?.response?.status, contentsResult.reason?.message);
+            if (!apiError && contentsResult.reason?.response?.status === 404) {
+                apiError = rawPath ? `Path "${rawPath}" was not found in branch "${currentRef}".` : 'Repository has no commits or default branch is empty.';
+            }
+        }
+
+        // 3. README Data
+        let readme = null;
+        if (readmeResult.status === 'fulfilled' && readmeResult.value.data) {
+            const rmData = readmeResult.value.data;
+            let rmContent = '';
+            if (rmData.content && rmData.encoding === 'base64') {
+                rmContent = Buffer.from(rmData.content, 'base64').toString('utf8');
+            }
+            readme = {
+                name: rmData.name || 'README.md',
+                path: rmData.path || 'README.md',
+                content: rmContent,
+                download_url: rmData.download_url
+            };
+        }
+
+        // 4. License Data
+        let license = null;
+        if (licenseResult.status === 'fulfilled' && licenseResult.value.data) {
+            const licData = licenseResult.value.data;
+            let licContent = '';
+            if (licData.content && licData.encoding === 'base64') {
+                licContent = Buffer.from(licData.content, 'base64').toString('utf8');
+            }
+            license = {
+                name: licData.license?.name || repoData.license?.name || 'Open Source License',
+                spdxId: licData.license?.spdx_id || repoData.license?.spdx_id || 'Custom',
+                key: licData.license?.key || repoData.license?.key || '',
+                url: licData.license?.url || repoData.license?.url || '',
+                content: licContent,
+                path: licData.name || 'LICENSE'
+            };
+        } else if (repoData.license) {
+            license = {
+                name: repoData.license.name || 'Open Source License',
+                spdxId: repoData.license.spdx_id || 'Custom',
+                key: repoData.license.key || '',
+                url: repoData.license.url || '',
+                content: '',
+                path: 'LICENSE'
+            };
+        }
+
+        // 5. Releases Data
+        const releases = (releasesResult.status === 'fulfilled' && Array.isArray(releasesResult.value.data))
+            ? releasesResult.value.data
+            : [];
+
+        // Build breadcrumbs for folder/file navigation
+        const breadcrumbs = [];
+        if (rawPath) {
+            const segments = rawPath.split('/').filter(Boolean);
+            let cumulative = '';
+            segments.forEach((seg, idx) => {
+                cumulative += (cumulative ? '/' : '') + seg;
+                breadcrumbs.push({
+                    name: seg,
+                    path: cumulative,
+                    isLast: idx === segments.length - 1
+                });
+            });
+        }
+
+        // Calculate parent path for back button
+        let parentPath = null;
+        if (rawPath) {
+            const segs = rawPath.split('/').filter(Boolean);
+            segs.pop();
+            parentPath = segs.join('/');
         }
 
         return res.render('pages/source-view', {
             source,
+            repoData,
+            currentRef,
+            currentPath: rawPath,
+            parentPath,
+            breadcrumbs,
+            isViewingFile,
+            fileData,
+            directoryItems,
+            readme,
+            license,
             releases,
-            hasAccess: canUserAccessSource(req.user, source)
+            activeTab,
+            apiError,
+            hasAccess
         });
     } catch (error) {
-        console.error('Source Hub Error:', error);
-        return renderSourceError(res, 500, 'Source Hub <span>Unavailable</span>', 'The source hub could not be loaded right now.');
+        console.error('Source View Error:', error);
+        return renderSourceError(res, 500, 'Source Hub <span>Unavailable</span>', 'The source repository could not be loaded right now.');
     }
 });
 
-app.get('/source/:slug/download/:tag', async (req, res) => {
+// Download release zip or branch zipball
+app.get('/source/:slug/download/:tag?', async (req, res) => {
     try {
         const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
@@ -1798,13 +2260,13 @@ app.get('/source/:slug/download/:tag', async (req, res) => {
 
         const owner = encodeURIComponent(source.githubOwner);
         const repo = encodeURIComponent(source.githubRepo);
-        const tag = encodeURIComponent(req.params.tag);
+        const tag = encodeURIComponent(req.params.tag || 'main');
         const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/zipball/${tag}`, {
             ...githubApiConfig(),
             responseType: 'stream'
         });
 
-        const safeTag = req.params.tag.replace(/[^a-zA-Z0-9._-]/g, '-');
+        const safeTag = (req.params.tag || 'main').replace(/[^a-zA-Z0-9._-]/g, '-');
         res.setHeader('Content-Disposition', `attachment; filename="${source.slug}-${safeTag}.zip"`);
         res.setHeader('Content-Type', 'application/zip');
         response.data.on('error', error => {
@@ -3389,6 +3851,15 @@ const processSuccessfulLogin = async (req, res, next, user) => {
 
 // --- 3. LOCAL LOGIN ROUTE ---
 app.get('/login', (req, res) => {
+    if (req.isAuthenticated()) {
+        const returnTo = req.session && req.session.returnTo && !req.session.returnTo.includes('/login') && !req.session.returnTo.includes('/register') && !req.session.returnTo.includes('/logout') ? req.session.returnTo : '/home';
+        if (req.session) delete req.session.returnTo;
+        return res.redirect(returnTo);
+    }
+
+    // Purge any stale is_logged_in cookie for guests visiting the login page
+    res.clearCookie('is_logged_in', { path: '/' });
+
     res.render('pages/login', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
         message: req.query.message || null,
@@ -8594,7 +9065,7 @@ const startServer = async () => {
         mongoose.Model.count = mongoose.Model.countDocuments; 
 
         const adminRouter = await createAdminRouter();
-        app.use('/admin', ensureAuthenticated, ensureAdmin, adminRouter);
+        app.use('/admin', ensureAdminOr404, adminRouter);
         
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json());

@@ -6,9 +6,15 @@
     <script>
         // Check if the 'is_logged_in' cookie exists
         if (document.cookie.split(';').some((item) => item.trim().startsWith('is_logged_in='))) {
-            // Only redirect if we are strictly on the root path '/' to prevent infinite loops
-            if (window.location.pathname === '/') {
+            // Only redirect if we are strictly on the root path '/' and not coming from auth/error pages
+            const isAuthReferrer = document.referrer && (document.referrer.includes('/login') || document.referrer.includes('/logout'));
+            const hasAuthParams = window.location.search.includes('error=') || window.location.search.includes('message=');
+            
+            if (window.location.pathname === '/' && !isAuthReferrer && !hasAuthParams) {
                 window.location.replace('/home' + window.location.search);
+            } else if (isAuthReferrer) {
+                // Clear any stale client-side cookie
+                document.cookie = 'is_logged_in=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
             }
         }
     </script>

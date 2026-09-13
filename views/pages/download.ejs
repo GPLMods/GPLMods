@@ -186,7 +186,9 @@
             justify-content: flex-end;
             justify-self: end;
             /* Pushes the text to the far right edge */
-            text-decoration: none;
+            text-decoration: underline;
+            text-decoration-color: rgba(255, 215, 0, 0.45);
+            text-underline-offset: 3px;
         }
 
         .meta-info li a.meta-link strong,
@@ -202,6 +204,8 @@
         .meta-info li a.meta-link:hover strong,
         .meta-info .meta-link:hover strong {
             color: var(--white) !important;
+            text-decoration: underline;
+            text-decoration-color: var(--white);
         }
 
         .meta-link .arrow,
@@ -418,7 +422,9 @@
             font-weight: 600;
             overflow-wrap: anywhere;
             word-break: break-word;
-            text-decoration: none;
+            text-decoration: underline;
+            text-decoration-color: rgba(255, 215, 0, 0.45);
+            text-underline-offset: 3px;
         }
         .meta-info .meta-link strong {
             color: var(--gold) !important;
@@ -467,7 +473,9 @@
 
         .sidebar-summary .meta-link {
             color: var(--gold);
-            text-decoration: none;
+            text-decoration: underline;
+            text-decoration-color: rgba(255, 215, 0, 0.45);
+            text-underline-offset: 3px;
             display: inline-flex;
             align-items: center;
             justify-content: flex-end;
@@ -483,6 +491,8 @@
         .sidebar-summary .meta-link:hover strong,
         .sidebar-summary .meta-link:hover .arrow {
             color: var(--white);
+            text-decoration: underline;
+            text-decoration-color: var(--white);
         }
 
         .sidebar-summary .meta-link,

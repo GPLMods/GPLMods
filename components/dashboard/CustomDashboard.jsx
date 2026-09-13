@@ -255,24 +255,86 @@ const CustomDashboard = () => {
     <div style={{ backgroundColor: C.bg, minHeight: '100vh', padding: '32px 40px', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
       
       {/* ═══ HEADER ═══ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '16px', paddingBottom: '24px', borderBottom: `1px solid ${C.border}`, marginBottom: '32px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingBottom: '24px', borderBottom: `1px solid ${C.border}`, marginBottom: '28px' }}>
         <div>
-          <H2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: C.gold, textShadow: `0 0 20px ${C.goldGlow}`, fontWeight: 800 }}>GPL</span>
-            <span style={{ color: '#c0c0c0', fontWeight: 700 }}>Mods</span>
-            <span style={{ color: C.textDim, fontSize: '0.5em', fontWeight: 400, marginLeft: '12px', background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${C.border}` }}>Admin Dashboard</span>
-          </H2>
+          <a href="/admin" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+            <H2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: C.gold, textShadow: `0 0 20px ${C.goldGlow}`, fontWeight: 800 }}>GPL</span>
+              <span style={{ color: '#c0c0c0', fontWeight: 700 }}>Mods</span>
+              <span style={{ color: C.textDim, fontSize: '0.5em', fontWeight: 400, marginLeft: '12px', background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${C.border}` }}>Admin Dashboard</span>
+            </H2>
+          </a>
           <Text style={{ color: C.textMuted, marginTop: '6px' }}>
             {greeting}! Here's your platform overview for {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
           </Text>
         </div>
-        <a href="/home" target="_blank" rel="noopener noreferrer" 
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: C.gold, border: `1px solid ${C.gold}`, padding: '10px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', transition: 'all 0.2s' }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = C.goldDim; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-        >
-          <Icon icon="Globe" /> View Live Site
-        </a>
+
+        {/* ═══ ADMIN SUITE SHORTCUT BUTTONS ═══ */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+          <a 
+            href="/admin" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: C.gold, backgroundColor: C.goldDim, border: `1px solid ${C.gold}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,215,0,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = C.goldDim; }}
+            title="AdminJS Main Dashboard"
+          >
+            <Icon icon="Home" size={14} /> AdminJS
+          </a>
+
+          <a 
+            href="/admin/reports" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff6b6b', backgroundColor: 'rgba(229,57,53,0.12)', border: '1px solid rgba(229,57,53,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(229,57,53,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(229,57,53,0.12)'; }}
+            title="Moderation & Mod Reports Console"
+          >
+            <Icon icon="Flag" size={14} /> Reports
+          </a>
+
+          <a 
+            href="/admin/support" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#64b5f6', backgroundColor: 'rgba(33,150,243,0.12)', border: '1px solid rgba(33,150,243,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.12)'; }}
+            title="Live Support & Inquiries Console"
+          >
+            <Icon icon="HelpCircle" size={14} /> Support
+          </a>
+
+          <a 
+            href="/status" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#81c784', backgroundColor: 'rgba(67,160,71,0.12)', border: '1px solid rgba(67,160,71,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.12)'; }}
+            title="Live Server Health & Diagnostics"
+          >
+            <Icon icon="Activity" size={14} /> Status
+          </a>
+
+          <a 
+            href="/admin/music" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ba68c8', backgroundColor: 'rgba(186,104,200,0.12)', border: '1px solid rgba(186,104,200,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(186,104,200,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(186,104,200,0.12)'; }}
+            title="Music & Playlist Manager"
+          >
+            <Icon icon="Music" size={14} /> Music
+          </a>
+
+          <a 
+            href="/home" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#e0e0e0', backgroundColor: C.surfaceAlt, border: `1px solid ${C.border}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = '#e0e0e0'; }}
+            title="Open Live Public Site"
+          >
+            <Icon icon="Globe" size={14} /> Live Site
+          </a>
+        </div>
       </div>
 
       {/* ═══ STAT CARDS ═══ */}
@@ -399,14 +461,17 @@ const CustomDashboard = () => {
 
       {/* ═══ FOOTER ═══ */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '20px', borderTop: `1px solid ${C.border}` }}>
-        <Text style={{ color: C.textDim, fontSize: '12px' }}>
-          <span style={{ color: C.gold, fontWeight: 700 }}>GPL</span> <span style={{ color: '#888' }}>Mods</span> • Admin Panel v2.5
-        </Text>
+        <a href="/admin" style={{ textDecoration: 'none' }}>
+          <Text style={{ color: C.textDim, fontSize: '12px', cursor: 'pointer' }}>
+            <span style={{ color: C.gold, fontWeight: 700 }}>GPL</span> <span style={{ color: '#888' }}>Mods</span> • Admin Panel v2.5
+          </Text>
+        </a>
         <div style={{ display: 'flex', gap: '16px' }}>
           <a href="/admin/resources/User" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Users</a>
           <a href="/admin/resources/File" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Mods</a>
           <a href="/admin/resources/Report" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Reports</a>
           <a href="/admin/resources/SupportTicket" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Tickets</a>
+          <a href="/admin/music" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Music</a>
         </div>
       </div>
     </div>
