@@ -52,6 +52,12 @@
     .msg-item[data-type="success"] { border-left-color: var(--green); }
     .msg-item[data-type="mod-update-request"] { border-left-color: var(--blue); }
 
+    .msg-type-icon { font-size: 0.9em; color: var(--silver); }
+    .msg-item[data-type="warning"] .msg-type-icon { color: var(--gold); }
+    .msg-item[data-type="error"] .msg-type-icon { color: var(--red); }
+    .msg-item[data-type="success"] .msg-type-icon { color: var(--green); }
+    .msg-item[data-type="mod-update-request"] .msg-type-icon { color: var(--blue); }
+
     .msg-header {
         display: flex;
         align-items: center;
@@ -123,11 +129,10 @@
                 <% personalNotifications.forEach(notification => { %>
                     <%
                         let iconClass = 'fa-info-circle';
-                        let iconColor = 'var(--silver)';
-                        if (notification.type === 'warning') { iconClass = 'fa-exclamation-triangle'; iconColor = 'var(--gold)'; }
-                        if (notification.type === 'error') { iconClass = 'fa-times-circle'; iconColor = 'var(--red)'; }
-                        if (notification.type === 'success') { iconClass = 'fa-check-circle'; iconColor = 'var(--green)'; }
-                        if (notification.type === 'mod-update-request') { iconClass = 'fa-sync-alt'; iconColor = 'var(--blue)'; }
+                        if (notification.type === 'warning') { iconClass = 'fa-exclamation-triangle'; }
+                        if (notification.type === 'error') { iconClass = 'fa-times-circle'; }
+                        if (notification.type === 'success') { iconClass = 'fa-check-circle'; }
+                        if (notification.type === 'mod-update-request') { iconClass = 'fa-sync-alt'; }
                     %>
 
                     <div class="msg-item <%= notification.isRead ? 'read' : 'unread' %>" data-id="<%= notification._id %>" data-type="<%= notification.type %>">
@@ -136,7 +141,7 @@
                             <i class="fas <%= notification.isRead ? 'fa-envelope-open' : 'fa-envelope' %> read-icon" style="color: var(--gold); font-size: 1.2em;"></i>
 
                             <h2 class="msg-title">
-                                <i class="fas <%= iconClass %>" style="color: <%= iconColor %>; font-size: 0.9em;"></i>
+                                <i class="fas <%= iconClass %> msg-type-icon"></i>
                                 <%= notification.title %>
                             </h2>
 

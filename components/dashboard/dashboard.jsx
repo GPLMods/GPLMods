@@ -75,12 +75,12 @@ const Dashboard = () => {
                     <Text style={{ color: '#c0c0c0', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}><Icon icon="Users" /> Total Users</Text>
                     <H2 style={{ color: '#fff', margin: '10px 0' }}>{stats.totalUsers?.toLocaleString() || 0}</H2>
                     <Text style={{ color: '#43a047', fontSize: '13px', fontWeight: 'bold' }}>
-                        <Icon icon="TrendUp" /> +{stats.newUsersThisMonth?.toLocaleString() || 0} this month
+                        <Icon icon="TrendingUp" /> +{stats.newUsersThisMonth?.toLocaleString() || 0} this month
                     </Text>
                 </Box>
 
                 <Box p="lg" style={{ flex: '1', minWidth: '200px', backgroundColor: '#1a1a1a', borderRadius: '12px', borderLeft: '4px solid #FFD700', borderTop: '1px solid #333', borderRight: '1px solid #333', borderBottom: '1px solid #333' }}>
-                    <Text style={{ color: '#c0c0c0', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}><Icon icon="FileCode" /> Total Mods</Text>
+                    <Text style={{ color: '#c0c0c0', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}><Icon icon="FileText" /> Total Mods</Text>
                     <H2 style={{ color: '#fff', margin: '10px 0' }}>{stats.totalMods?.toLocaleString() || 0}</H2>
                     <Text style={{ color: '#FFD700', fontSize: '13px', fontWeight: 'bold' }}>
                         <Icon icon="Plus" /> +{stats.newModsThisMonth?.toLocaleString() || 0} this month
@@ -115,7 +115,7 @@ const Dashboard = () => {
                 </Box>
                 
                 <Box p="xl" style={{ flex: '1', minWidth: '300px', backgroundColor: '#1a1a1a', borderRadius: '12px', border: '1px solid #333' }}>
-                    <H5 style={{ color: '#fff', marginBottom: '20px' }}><Icon icon="ChartPieSlice" /> Mods by Platform</H5>
+                    <H5 style={{ color: '#fff', marginBottom: '20px' }}><Icon icon="PieChart" /> Mods by Platform</H5>
                     <div style={{ width: '100%', height: 300 }}>
                         {modsByPlatform.length > 0 ? (
                             <ResponsiveContainer>

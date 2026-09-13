@@ -1274,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const draftModal = document.getElementById('draft-confirm-modal');
     const submitModal = document.getElementById('submit-confirm-modal');
     const fileSizeInput = document.getElementById('fileSize');
-    const userIsDistributor = <%= user && user.role === 'distributor' ? 'true' : 'false' %> === 'true';
+    const userIsDistributor = "<%= user && user.role === 'distributor' ? 'true' : 'false' %>" === "true";
 
     const getFirstTruthyValue = (selector) => {
         const fields = document.querySelectorAll(selector);
@@ -1756,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('autosave-status');
         const snapshotButton = document.getElementById('show-snapshots');
         const snapshotList = document.getElementById('snapshot-list');
-        if (!form || !status || !<%= user && user.autoSaveEnabled ? 'true' : 'false' %>) return;
+        if (!form || !status || "<%= user && user.autoSaveEnabled ? 'true' : 'false' %>" !== "true") return;
         let timer;
         const save = async () => {
             if (typeof syncQuillData === 'function') syncQuillData();

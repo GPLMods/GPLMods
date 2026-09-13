@@ -4481,6 +4481,62 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
     }
 });
 
+// ======== NEW: FETCH GRAVATAR AVATAR ========
+app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) => {
+    try {
+        if (!req.user.email) {
+            return res.status(400).json({ error: 'No email associated with this account.' });
+        }
+        
+        const email = req.user.email.toLowerCase().trim();
+        const hash = crypto.createHash('md5').update(email).digest('hex');
+        
+        // Fetch gravatar with d=404 so it errors if not found, rather than returning a default image
+        const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=256`;
+        
+        let response;
+        try {
+            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer' });
+        } catch (err) {
+            if (err.response && err.response.status === 404) {
+                return res.status(404).json({ error: 'No Gravatar profile image found for your email address.' });
+            }
+            throw err;
+        }
+        
+        const buffer = Buffer.from(response.data, 'binary');
+        const mimetype = response.headers['content-type'] || 'image/jpeg';
+        
+        // Create a mock multer file object
+        const mockFile = {
+            buffer: buffer,
+            originalname: `gravatar.jpg`,
+            mimetype: mimetype,
+            size: buffer.length
+        };
+        
+        // Before we upload the new one, delete the old one from B2 to save space
+        if (req.user.profileImageKey) {
+            await deleteFromB2(req.user.profileImageKey);
+        }
+        
+        // Upload new avatar with slugified name
+        const avatarBaseName = `${req.user._id}-${req.user.username}-gravatar`;
+        const imageKey = await uploadToB2(mockFile, 'avatars', null, null, avatarBaseName, { username: req.user.username });
+        
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
+        
+        req.login(updatedUser, (err) => {
+            if (err) return next(err);
+            res.json({ success: true });
+        });
+    } catch (error) {
+        console.error("Error fetching/uploading gravatar:", error);
+        res.status(500).json({ error: 'An error occurred while fetching the Gravatar image.' });
+    }
+});
+// ============================================
+
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;

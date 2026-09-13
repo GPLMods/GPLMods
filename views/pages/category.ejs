@@ -58,6 +58,11 @@
             border-bottom-right-radius: 0;
         }
 
+        .custom-select-wrapper.disabled .custom-select {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .selected-text {
             color: var(--white);
             font-size: 0.95em;
@@ -246,7 +251,7 @@
                         <div class="carousel-dots">
                             <% editorsChoiceMods.forEach((_, index)=> { %>
                                 <div class="dot <%= index === 0 ? 'active' : '' %>"
-                                    onclick="scrollToSlide(<%= index %>)"></div>
+                                    data-index="<%= index %>"></div>
                                 <% }) %>
                         </div>
                         <% } %>
@@ -309,8 +314,7 @@
                             <!-- Custom UI Wrapper -->
                             <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>"
                                 id="wrapper-subCategory">
-                                <div class="custom-select"
-                                    style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
+                                <div class="custom-select">
                                     <span class="selected-text">All Categories</span>
                                     <i class="fas fa-chevron-down custom-select-arrow"></i>
                                 </div>
@@ -630,6 +634,13 @@
                 scrollToCurrentSlide();
                 resetAutoPlay(); // Reset the timer so it doesn't double-jump
             };
+
+            // Bind click events to dots
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    scrollToSlide(index);
+                });
+            });
 
             // Start the engine!
             startAutoPlay();

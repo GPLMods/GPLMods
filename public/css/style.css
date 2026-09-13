@@ -2526,4 +2526,19 @@ body {
 .notranslate {
     /* Google Engine respects this class natively */
 }
+
+/* ========================================================================== */
+/* 7. Image Protection (Prevent Downloading via Long Press / Right Click) */
+/* This effectively acts as a transparent overlay by passing events through */
+img {
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none;
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE 10+ and Edge */
+    user-select: none; /* Standard syntax */
+    -webkit-user-drag: none; /* Prevent dragging */
+    user-drag: none;
+    -webkit-touch-callout: none; /* iOS Safari - Disables long press popup */
+    pointer-events: none; /* Disables pointer events, making it unclickable for direct download */
+}
 /* ========================================================================== */

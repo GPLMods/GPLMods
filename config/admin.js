@@ -119,11 +119,11 @@ async function createAdminRouter() {
     const isProduction = true; 
 
     // --- Structured AdminJS Navigation Groups ---
-    const usersNav = { name: 'Users & Access', icon: 'User' };
-    const modsNav = { name: 'Mods & Repositories', icon: 'Box' };
-    const communityNav = { name: 'Community & Forum', icon: 'Chat' };
-    const docsNav = { name: 'Documentation & Content', icon: 'Document' };
-    const moderationNav = { name: 'Publishers & Moderation', icon: 'Security' };
+    const usersNav = { name: 'Users & Access', icon: 'Users' };
+    const modsNav = { name: 'Mods & Repositories', icon: 'Package' };
+    const communityNav = { name: 'Community & Forum', icon: 'MessageSquare' };
+    const docsNav = { name: 'Documentation & Content', icon: 'BookOpen' };
+    const moderationNav = { name: 'Publishers & Moderation', icon: 'Shield' };
     const systemNav = { name: 'System & Analytics', icon: 'Settings' };
 
     const adminJsOptions = {
@@ -154,6 +154,14 @@ async function createAdminRouter() {
                 const downloadAgg = await File.aggregate([{ $group: { _id: null, total: { $sum: "$downloads" } } }]);
                 const totalDownloads = downloadAgg.length > 0 ? downloadAgg[0].total : 0;
 
+                const viewsAgg = await File.aggregate([{ $group: { _id: null, total: { $sum: "$views" } } }]);
+                const totalViews = viewsAgg.length > 0 ? viewsAgg[0].total : 0;
+
+                // Action-required counts
+                const pendingReports = await Report.countDocuments({ status: 'pending' });
+                const pendingApprovals = await File.countDocuments({ status: 'pending' });
+                const openTickets = await SupportTicket.countDocuments({ status: 'open' });
+
                 const platformAgg = await File.aggregate([
                     { $group: { _id: "$category", value: { $sum: 1 } } }
                 ]);
@@ -176,10 +184,41 @@ async function createAdminRouter() {
                     Uploads: item.uploads
                 }));
 
+                // 30-day user growth for line chart
+                const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                const userGrowthAgg = await User.aggregate([
+                    { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+                    { $group: {
+                        _id: { $dateToString: { format: "%m/%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }},
+                    { $sort: { _id: 1 } }
+                ]);
+                const userGrowthData = userGrowthAgg.map(item => ({
+                    date: item._id,
+                    users: item.count
+                }));
+
+                // Recent activity
+                const recentUsers = await User.find({})
+                    .sort({ createdAt: -1 })
+                    .limit(5)
+                    .select('username createdAt role')
+                    .lean();
+                const recentMods = await File.find({})
+                    .sort({ createdAt: -1 })
+                    .limit(5)
+                    .select('name category status createdAt')
+                    .lean();
+
                 return {
-                    stats: { totalUsers, newUsersThisMonth, totalMods, newModsThisMonth, totalDownloads },
+                    stats: { totalUsers, newUsersThisMonth, totalMods, newModsThisMonth, totalDownloads, totalViews },
+                    actionRequired: { pendingReports, pendingApprovals, openTickets },
                     modsByPlatform,
-                    uploadChartData
+                    uploadChartData,
+                    userGrowthData,
+                    recentUsers: recentUsers.map(u => ({ username: u.username, date: u.createdAt, role: u.role })),
+                    recentMods: recentMods.map(m => ({ name: m.name, category: m.category, status: m.status, date: m.createdAt }))
                 };
             }
         },
@@ -205,6 +244,8 @@ async function createAdminRouter() {
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
+                        bio: { type: 'textarea', description: 'User profile biography' },
+                        banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
                         'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
                         'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
@@ -300,6 +341,7 @@ async function createAdminRouter() {
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, 
+                        installationInstructions: { type: 'textarea', description: 'Step-by-step instructions for installing this mod.' },
                         showInRepo: { description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.' },
                         iosPackageId: { description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY.' },
                         isEditorsChoice: { description: 'Check this to feature this mod in the Editor\'s Choice banner.' },
@@ -313,6 +355,8 @@ async function createAdminRouter() {
                         license: { description: 'Optional software license for this mod.' },
                         screenshotKeys: { isArray: true, description: 'Paste direct image URLs (https://...).' },
                         rejectionReason: {
+                            type: 'textarea',
+                            description: 'Provide a reason if rejecting this mod.',
                             isVisible: { edit: (record) => record.params.status === 'rejected', list: false, filter: false, show: true }
                         },
                         iconKey: { 
@@ -484,6 +528,11 @@ async function createAdminRouter() {
                 options: {
                     navigation: modsNav,
                     listProperties: ['username', 'rating', 'comment', 'file', 'createdAt'],
+                    showProperties: ['username', 'rating', 'comment', 'file', 'user', 'createdAt', 'updatedAt'],
+                    editProperties: ['rating', 'comment'],
+                    properties: {
+                        comment: { type: 'textarea' }
+                    },
                     actions: { edit: { isAccessible: true }, delete: { isAccessible: true } },
                 },
             },
@@ -577,7 +626,11 @@ async function createAdminRouter() {
                 options: {
                     navigation: communityNav,
                     listProperties: ['username', 'email', 'status', 'createdAt'],
-                    editProperties: ['status'],
+                    showProperties: ['user', 'username', 'email', 'appealMessage', 'status', 'createdAt', 'updatedAt'],
+                    editProperties: ['status', 'appealMessage'],
+                    properties: {
+                        appealMessage: { type: 'textarea' }
+                    }
                 }
             },
 
@@ -633,6 +686,31 @@ async function createAdminRouter() {
                     properties: { content: { type: 'richtext' } },
                 },
             },
+            {
+                resource: License,
+                options: {
+                    navigation: docsNav,
+                    id: 'License',
+                    name: 'Licenses',
+                    listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
+                    showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
+                    editProperties: ['name', 'slug', 'shortDescription', 'content'],
+                    properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
+                }
+            },
+            {
+                resource: StaticPage,
+                options: {
+                    navigation: docsNav,
+                    listProperties: ['slug', 'title', 'isPublished', 'updatedAt'],
+                    showProperties: ['slug', 'title', 'content', 'isPublished', 'createdAt', 'updatedAt'],
+                    editProperties: ['slug', 'title', 'content', 'isPublished'],
+                    properties: {
+                        slug: { description: 'Public path segment, for example faq or privacy-policy.' },
+                        content: { type: 'richtext', description: 'HTML content shown on the public page. Only trusted administrators should edit this field.' }
+                    }
+                }
+            },
 
             // ---------------------------------
             // PUBLISHERS & MODERATION
@@ -658,7 +736,11 @@ async function createAdminRouter() {
                 options: {
                     navigation: moderationNav,
                     listProperties: ['reportedFileName', 'reportingUsername', 'reason', 'status', 'createdAt'],
-                    editProperties: ['status'],
+                    showProperties: ['file', 'reportedFileName', 'reportingUser', 'reportingUsername', 'reason', 'additionalComments', 'status', 'createdAt', 'updatedAt'],
+                    editProperties: ['status', 'reason', 'additionalComments'],
+                    properties: {
+                        additionalComments: { type: 'textarea' }
+                    }
                 },
             },
             {
@@ -741,31 +823,6 @@ async function createAdminRouter() {
                 }
             },
             {
-                resource: License,
-                options: {
-                    navigation: docsNav,
-                    id: 'License',
-                    name: 'Licenses',
-                    listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
-                    showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
-                    editProperties: ['name', 'slug', 'shortDescription', 'content'],
-                    properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
-                }
-            },
-            {
-                resource: StaticPage,
-                options: {
-                    navigation: docsNav,
-                    listProperties: ['slug', 'title', 'isPublished', 'updatedAt'],
-                    showProperties: ['slug', 'title', 'content', 'isPublished', 'createdAt', 'updatedAt'],
-                    editProperties: ['slug', 'title', 'content', 'isPublished'],
-                    properties: {
-                        slug: { description: 'Public path segment, for example faq or privacy-policy.' },
-                        content: { type: 'richtext', description: 'HTML content shown on the public page. Only trusted administrators should edit this field.' }
-                    }
-                }
-            },
-            {
                 resource: AutomatedCampaign,
                 options: {
                     navigation: systemNav,
@@ -827,6 +884,11 @@ async function createAdminRouter() {
                 options: {
                     navigation: systemNav,
                     listProperties: ['originalText', 'targetLanguage', 'translatedText'],
+                    showProperties: ['originalText', 'targetLanguage', 'translatedText'],
+                    properties: {
+                        originalText: { type: 'textarea' },
+                        translatedText: { type: 'textarea' }
+                    },
                     actions: {
                         new: { isAccessible: false }
                     }
@@ -836,7 +898,13 @@ async function createAdminRouter() {
                 resource: AIKnowledge,
                 options: {
                     navigation: systemNav,
-                    listProperties: ['topic', 'keywords', 'isActive', 'updatedAt']
+                    listProperties: ['topic', 'keywords', 'isActive', 'updatedAt'],
+                    showProperties: ['topic', 'keywords', 'response', 'isActive', 'createdAt', 'updatedAt'],
+                    editProperties: ['topic', 'keywords', 'response', 'isActive'],
+                    properties: {
+                        keywords: { type: 'textarea', description: 'Comma-separated keywords or search triggers.' },
+                        response: { type: 'richtext', description: 'Rich-text formatted response provided by the AI assistant.' }
+                    }
                 }
             }
         ] 

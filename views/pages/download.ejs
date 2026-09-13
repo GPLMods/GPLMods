@@ -751,7 +751,7 @@
 
                 <div class="rating">
                     <div class="stars-outer">
-                        <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>
+                        <div class="stars-inner" <%- `style="width: ${(file.averageRating / 5) * 100}%;"` %>></div>
                     </div>
                     <span class="rating-text">
                         <%= file.averageRating.toFixed(1) %> (<%= file.ratingCount %> reviews)
@@ -1044,7 +1044,7 @@
                                                                         icon='fab fa-dropbox' ; iconColor='#0061FF' ; }
                                                                         %>
                                                                         <i class="<%= icon %>"
-                                                                            style="margin-right: 8px; color: <%= iconColor %>;"></i>
+                                                                            <%- `style="margin-right: 8px; color: ${iconColor};"` %>></i>
                                                                         <%= mirror.providerName %>
                                                                 </span>
 
@@ -1267,12 +1267,12 @@
                                                                                     <div
                                                                                         style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
                                                                                         <i class="fas fa-shield-virus"
-                                                                                            style="color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; font-size: 1.5em;"></i>
+                                                                                            <%- `style="color: ${file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)'}; font-size: 1.5em;"` %>></i>
                                                                                         <span
                                                                                             style="font-weight: bold; color: var(--white); flex-grow: 1;">Automated
                                                                                             Scan</span>
                                                                                         <span
-                                                                                            style="font-weight: bold; font-size: 1.2em; color: <%= file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;">
+                                                                                            <%- `style="font-weight: bold; font-size: 1.2em; color: ${file.virusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)'};"` %>>
                                                                                             <%= file.virusTotalPositiveCount
                                                                                                 %> / <%=
                                                                                                     file.virusTotalTotalScans
@@ -1506,7 +1506,7 @@
                             <!-- Button for the Main (Master) Mod -->
                             <a href="/<%= masterFile.category %>/<%= masterFile.slug %>"
                                 class="btn <%= !isViewingVariant ? 'btn-primary' : 'btn-secondary' %>"
-                                style="border-color: <%= !isViewingVariant ? 'var(--gold)' : '#555' %>; padding: 8px 15px; border-radius: 8px;">
+                                <%- `style="border-color: ${!isViewingVariant ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
                                 <%= masterFile.uploader %>'s Mod (Main)
                             </a>
 
@@ -1515,7 +1515,7 @@
                                 <% if (variant.status==='live' ) { %>
                                     <a href="/<%= masterFile.category %>/<%= masterFile.slug %>?variant=<%= variant._id %>"
                                         class="btn <%= (file._id.toString() === variant._id.toString()) ? 'btn-primary' : 'btn-secondary' %>"
-                                        style="border-color: <%= (file._id.toString() === variant._id.toString()) ? 'var(--gold)' : '#555' %>; padding: 8px 15px; border-radius: 8px;">
+                                        <%- `style="border-color: ${(file._id.toString() === variant._id.toString()) ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
                                         <%= variant.uploader %>'s Mod
                                     </a>
                                     <% } %>
@@ -1796,7 +1796,7 @@
                                                                     id="display-stars-<%= review._id %>">
                                                                     <div class="stars-outer">
                                                                         <div class="stars-inner"
-                                                                            style="width: <%= (review.rating / 5) * 100 %>%;">
+                                                                            <%- `style="width: ${(review.rating / 5) * 100}%;"` %>>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2469,7 +2469,7 @@
                     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const themeMusic = "<%= themeMusic %>";
-            const settings = <%- JSON.stringify(musicSettings) %>;
+            const settings = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(' + p1 + ')) %>'));
             const banner = document.getElementById('theme-music-banner');
             const playBtn = document.getElementById('play-theme-btn');
             const closeBtn = document.getElementById('close-theme-banner');

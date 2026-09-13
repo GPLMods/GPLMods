@@ -49,6 +49,7 @@
                         <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
                     </div>
                     <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
+                    <button type="button" id="fetch-gravatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; background-color: #1e8cbe; color: white;">Fetch from Gravatar</button>
                 </form>
 
                 <% if (user.forumRank && user.forumRank.lottie) { %>
@@ -484,6 +485,44 @@ GLOBAL|Earth
             avatarForm.addEventListener('submit', function() {
                  saveAvatarBtn.disabled = true;
                  saveAvatarBtn.textContent = 'Uploading...';
+            });
+        }
+
+        // --- Gravatar Fetch Logic ---
+        const fetchGravatarBtn = document.getElementById('fetch-gravatar-btn');
+        if (fetchGravatarBtn) {
+            fetchGravatarBtn.addEventListener('click', async function() {
+                const originalText = this.textContent;
+                this.textContent = 'Fetching...';
+                this.disabled = true;
+                
+                try {
+                    const response = await fetch('/account/fetch-gravatar', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    
+                    if (response.ok) {
+                        window.location.href = '/profile?success=Gravatar image synced successfully.';
+                    } else {
+                        const errorData = await response.json().catch(() => null);
+                        alert(errorData?.error || 'Could not fetch Gravatar. Ensure your email is registered at gravatar.com');
+                        this.textContent = originalText;
+                        this.disabled = false;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Network error occurred while fetching Gravatar.');
+                    this.textContent = originalText;
+                    this.disabled = false;
+                }
             });
         }
     });
