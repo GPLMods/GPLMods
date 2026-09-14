@@ -40,9 +40,9 @@
         <h1>Your <span>Dashboard</span></h1>
     </div>
 
-    <div style="max-width: 900px; margin: 0 auto 20px auto;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-block; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
+    <div class="back-btn-wrapper" style="max-width: 900px; margin: 0 auto 20px auto; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
         </a>
     </div>
 
@@ -54,20 +54,32 @@
         </div>
     </div>
 
-    <% if (user && user.role === 'admin') { %>
-        <!-- ═══ ADMINISTRATOR SUITE (Admins Only) ═══ -->
+    <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
+        <!-- ═══ ADMINISTRATOR & OWNER SUITE ═══ -->
         <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 215, 0, 0.35); padding-bottom: 12px; margin-bottom: 20px;">
                 <h2 style="color: var(--gold); font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px rgba(255,215,0,0.3);">
-                    <i class="fas fa-shield-alt"></i> Administrator Suite
+                    <i class="fas fa-shield-alt"></i> <%= user.role === 'owner' ? 'Owner & Admin Command Suite' : 'Administrator Suite' %>
                 </h2>
-                <span style="background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Only</span>
+                <span style="background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><%= user.role === 'owner' ? 'Owner & Admin Access' : 'Admin Only' %></span>
             </div>
             <div class="dashboard-grid" style="margin-bottom: 0;">
+                <% if (user.role === 'owner') { %>
+                    <a href="/owner" class="dash-card" style="border: 1px solid rgba(244, 67, 54, 0.6); background: linear-gradient(145deg, #231214, #141414); box-shadow: 0 4px 15px rgba(244,67,54,0.15);">
+                        <i class="fas fa-crown" style="color: #f44336;"></i>
+                        <h3 style="color: #f44336;">Owner Center</h3>
+                        <p>Render, DNS, ImprovMX & server controls.</p>
+                    </a>
+                <% } %>
                 <a href="/admin" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
                     <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
                     <h3 style="color: var(--gold);">AdminJS Panel</h3>
                     <p>Full database & resource manager.</p>
+                </a>
+                <a href="/admin/editors-choice" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1e1b12, #141414);">
+                    <i class="fas fa-star" style="color: var(--gold);"></i>
+                    <h3 style="color: var(--gold);">Council Manager</h3>
+                    <p>Editor's choice councils (Android, iOS, WP, Win).</p>
                 </a>
                 <a href="/admin/reports" class="dash-card" style="border: 1px solid rgba(229, 57, 53, 0.4); background: linear-gradient(145deg, #1f1314, #141414);">
                     <i class="fas fa-flag" style="color: #e53935;"></i>

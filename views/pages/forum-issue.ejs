@@ -100,8 +100,8 @@
                 <span class="author-rank" style="color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>">
                     <%= issue.author.forumRank ? issue.author.forumRank.name : 'Novice' %>
                 </span>
-                <% if (issue.author.role === 'admin') { %>
-                    <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">ADMIN</span>
+                <% if (issue.author.role === 'admin' || issue.author.role === 'owner') { %>
+                    <span style="background: <%= issue.author.role === 'owner' ? '#f44336' : 'var(--red)' %>; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;"><%= issue.author.role.toUpperCase() %></span>
                 <% } %>
             </div>
 
@@ -154,7 +154,7 @@
                             <!-- MARK AS SOLUTION LOGIC -->
                             <% 
                                 const isIssueAuthor = user && issue.author && (user._id.toString() === issue.author._id.toString());
-                                const isSiteAdmin = user && user.role === 'admin';
+                                const isSiteAdmin = user && (user.role === 'admin' || user.role === 'owner');
                             %>
                             <% if (!reply.isSolution && issue.status !== 'closed' && (isIssueAuthor || isSiteAdmin)) { %>
                                 <form action="/community/<%= issue.slug %>/resolve/<%= reply._id %>" method="POST" style="margin: 0;">

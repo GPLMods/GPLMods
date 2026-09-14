@@ -1,396 +1,724 @@
 <%- include('../../partials/header') %>
 
-<style>
-    /* --- ABOUT PAGE SPECIFIC STYLES --- */
-    .page-header { text-align: center; padding: 60px 20px; }
-    .page-header h1 { font-size: 3.5em; color: var(--white); margin-bottom: 10px; }
-    .page-header h1 .gold { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-    .page-header h1 .silver { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
-    .page-header p { font-size: 1.2em; color: var(--silver); max-width: 700px; margin: 15px auto 0 auto; line-height: 1.6; }
+    <style>
+        /* --- ABOUT PAGE SPECIFIC STYLES --- */
+        .page-header {
+            text-align: center;
+            padding: 60px 20px;
+        }
 
-    .about-section { padding: 50px 0; border-bottom: 1px solid #222; }
-    .about-section:last-of-type { border-bottom: none; }
-    .section-title { text-align: center; font-size: 2.5em; margin-bottom: 40px; color: var(--white); }
-    
-    /* Core Principles */
-    .feature-grid { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: flex-start; }
-    .feature-item { display: flex; align-items: flex-start; gap: 25px; background: var(--dark-gray); padding: 25px; border-radius: 15px; border: 1px solid #333; transition: transform 0.3s, border-color 0.3s; }
-    .feature-item:hover { transform: translateY(-5px); border-color: var(--gold); }
-    .feature-text h3 { font-size: 1.5em; margin-bottom: 10px; color: var(--white); }
-    .feature-text p { color: var(--silver); line-height: 1.7; }
+        .page-header h1 {
+            font-size: 3.5em;
+            color: var(--white);
+            margin-bottom: 10px;
+        }
 
-    /* Team Section */
-    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 30px; }
-    .team-card { background-color: var(--dark-gray); padding: 25px; text-align: center; border-radius: 15px; border: 1px solid #333; transition: all 0.3s ease; }
-    .team-card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 20px var(--glow-gold); }
-    .team-card img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--gold); margin-bottom: 15px; object-fit: cover; }
-    .team-card h4 { font-size: 1.3em; margin-bottom: 5px; color: var(--white); }
-    .team-card span { color: var(--gold); font-weight: 600; font-size: 0.9em; }
+        .page-header h1 .gold {
+            color: var(--gold);
+            text-shadow: 0 0 15px var(--glow-gold);
+        }
 
-    /* Extended Members Modal */
-    .members-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .members-modal-content { background: var(--dark-gray); border-top: 3px solid var(--gold); width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; border-radius: 15px; padding: 30px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .close-modal-btn { position: absolute; top: 20px; right: 20px; font-size: 2em; color: var(--silver); cursor: pointer; transition: color 0.2s; line-height: 1; }
-    .close-modal-btn:hover { color: var(--red); }
-    .extended-member-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; }
-    .extended-member-item:last-child { border-bottom: none; }
-    .member-info { display: flex; align-items: center; gap: 15px; }
-    .member-info img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--silver); }
-    .member-socials a { color: var(--silver); font-size: 1.5em; margin-left: 10px; transition: color 0.2s; }
-    .member-socials a:hover { color: var(--gold); }
+        .page-header h1 .silver {
+            color: var(--silver);
+            text-shadow: 0 0 10px var(--glow-silver);
+        }
 
-    /* Social Media Section */
-    .social-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-    .social-card { display: flex; align-items: center; gap: 12px; background: var(--dark-gray); padding: 15px 30px; border-radius: 30px; border: 1px solid #333; color: var(--white); text-decoration: none; font-weight: 600; font-size: 1.1em; transition: all 0.3s ease; }
-    
-    /* Social Card Hover Colors */
-    .social-card.discord:hover { background: #5865F2; border-color: #5865F2; color: #fff; }
-    .social-card.youtube:hover { background: #FF0000; border-color: #FF0000; color: #fff; }
-    .social-card.github:hover { background: #333333; border-color: #ffffff; color: #fff; }
-    .social-card.reddit:hover { background: #FF4500; border-color: #FF4500; color: #fff; }
-    .social-card.twitter:hover { background: #1DA1F2; border-color: #1DA1F2; color: #fff; } /* Or #000000 for X */
-    .social-card.linkedin:hover { background: #0077b5; border-color: #0077b5; color: #fff; }
-    .social-card.instagram:hover { 
-        background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); 
-        border-color: #c13584; 
-        color: #fff; 
-    }
-    .social-card.facebook:hover { background: #1877F2; border-color: #1877F2; color: #fff; }
-    .social-card.threads:hover { background: #000000; border-color: #ffffff; color: #fff; }
-    .social-card.gravatar:hover { background: #1D70B8; border-color: #1D70B8; color: #fff; }
+        .page-header p {
+            font-size: 1.2em;
+            color: var(--silver);
+            max-width: 700px;
+            margin: 15px auto 0 auto;
+            line-height: 1.6;
+        }
+
+        .about-section {
+            padding: 50px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .about-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: var(--white);
+        }
+
+        /* Core Principles */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 25px;
+            background: var(--dark-gray);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+        }
+
+        .feature-text h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: var(--white);
+        }
+
+        .feature-text p {
+            color: var(--silver);
+            line-height: 1.7;
+        }
+
+        /* Team Section */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .team-card {
+            background-color: var(--dark-gray);
+            padding: 25px;
+            text-align: center;
+            border-radius: 15px;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--gold);
+            box-shadow: 0 0 20px var(--glow-gold);
+        }
+
+        .team-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        .team-card h4 {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            color: var(--white);
+        }
+
+        .team-card span {
+            color: var(--gold);
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        /* Extended Members Modal */
+        .members-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .members-modal-content {
+            background: var(--dark-gray);
+            border-top: 3px solid var(--gold);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2em;
+            color: var(--silver);
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .close-modal-btn:hover {
+            color: var(--red);
+        }
+
+        .extended-member-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .extended-member-item:last-child {
+            border-bottom: none;
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .member-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--silver);
+        }
+
+        .member-socials a {
+            color: var(--silver);
+            font-size: 1.5em;
+            margin-left: 10px;
+            transition: color 0.2s;
+        }
+
+        .member-socials a:hover {
+            color: var(--gold);
+        }
+
+        /* Social Media Section */
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .social-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--dark-gray);
+            padding: 15px 30px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        /* Social Card Hover Colors */
+        .social-card.discord:hover {
+            background: #5865F2;
+            border-color: #5865F2;
+            color: #fff;
+        }
+
+        .social-card.youtube:hover {
+            background: #FF0000;
+            border-color: #FF0000;
+            color: #fff;
+        }
+
+        .social-card.github:hover {
+            background: #333333;
+            border-color: #ffffff;
+            color: #fff;
+        }
+
+        .social-card.reddit:hover {
+            background: #FF4500;
+            border-color: #FF4500;
+            color: #fff;
+        }
+
+        .social-card.twitter:hover {
+            background: #1DA1F2;
+            border-color: #1DA1F2;
+            color: #fff;
+        }
+
+        /* Or #000000 for X */
+        .social-card.linkedin:hover {
+            background: #0077b5;
+            border-color: #0077b5;
+            color: #fff;
+        }
+
+        .social-card.instagram:hover {
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+            border-color: #c13584;
+            color: #fff;
+        }
+
+        .social-card.facebook:hover {
+            background: #1877F2;
+            border-color: #1877F2;
+            color: #fff;
+        }
+
+        .social-card.threads:hover {
+            background: #000000;
+            border-color: #ffffff;
+            color: #fff;
+        }
+
+        .social-card.gravatar:hover {
+            background: #1D70B8;
+            border-color: #1D70B8;
+            color: #fff;
+        }
 
 
-    /* Newsletter & CTA Section */
-    .cta-section { background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border: 1px solid #333; text-align: center; padding: 50px 20px; margin: 40px 0 60px 0; border-radius: 15px; position: relative; overflow: hidden; }
-    .newsletter-form { display: flex; max-width: 500px; margin: 25px auto 0 auto; background: var(--black); border-radius: 30px; border: 1px solid var(--gold); overflow: hidden; box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
-    .newsletter-form input { flex-grow: 1; background: transparent; border: none; padding: 15px 25px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; outline: none; }
-    .newsletter-form button { background: var(--gold); color: var(--black); border: none; padding: 0 30px; font-weight: 700; cursor: pointer; transition: background 0.3s; font-family: 'Poppins', sans-serif; }
-    .newsletter-form button:hover { background: #fff; }
+        /* Newsletter & CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            border: 1px solid #333;
+            text-align: center;
+            padding: 50px 20px;
+            margin: 40px 0 60px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
 
-    @media (min-width: 768px) {
-        .feature-grid { grid-template-columns: 1fr 1fr; }
-        .feature-item:last-child { grid-column: 1 / -1; max-width: 800px; margin: 0 auto; } /* Centers the 3rd feature beautifully */
-    }
-</style>
+        .newsletter-form {
+            display: flex;
+            max-width: 500px;
+            margin: 25px auto 0 auto;
+            background: var(--black);
+            border-radius: 30px;
+            border: 1px solid var(--gold);
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+        }
 
-<main class="container">
-    <div class="page-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;">
-        <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-        <h1>About <span class="gold">GPL</span> <span class="silver">Mods</span></h1>
-        <p>Discover our core philosophy, meet the community behind the platform, and learn why your safety is our ultimate priority.</p>
-    </div>
-    
-    <!-- Core Principles Section -->
-    <section class="about-section">
-        <h2 class="section-title">Our Core Principles</h2>
-        <div class="feature-grid">
-            
-            <!-- Safety Feature -->
-            <div class="feature-item">
-                <lottie-player src="<%= cdnUrl %>/animations/shield.json" background="transparent" speed="1" style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
-                <div class="feature-text">
-                    <h3>Commitment to Safety</h3>
-                    <p>Your safety is our priority. We provide mods only after 14+ days of testing. Every file is scanned by over 100 antivirus engines via the VirusTotal API. If a harmful mod is detected, it is removed instantly, and the community is notified immediately.</p>
-                </div>
-            </div>
-            
-            <!-- Community Feature -->
-            <div class="feature-item">
-                <lottie-player src="<%= cdnUrl %>/animations/heart.json" background="transparent" speed="1" style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
-                <div class="feature-text">
-                    <h3>The Power of Community</h3>
-                    <p>GPL Mods doesn't just create mods; we are a community hub. Mods are uploaded by members and trusted sources, strictly distributed under the GNU/GPL spirit. We are a platform run by the people, for the people, ensuring 100% working content.</p>
-                </div>
-            </div>
+        .newsletter-form input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 25px;
+            color: var(--white);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1em;
+            outline: none;
+        }
 
-            <!-- NEW: Open-Source Feature -->
-            <div class="feature-item">
-                <!-- IMPORTANT: Download a "code" or "open source" lottie file and save it as code.json in your animations folder! -->
-                <lottie-player src="<%= cdnUrl %>/animations/code.json" background="transparent" speed="1" style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
-                <div class="feature-text">
-                    <h3>Open-Source Philosophy</h3>
-                    <p>We believe in absolute transparency. GPL Mods embraces the open-source philosophy to its core. Our platform's infrastructure and the mods we distribute thrive on community collaboration, allowing developers to audit, contribute, and improve the ecosystem securely.</p>
-                </div>
-            </div>
+        .newsletter-form button {
+            background: var(--gold);
+            color: var(--black);
+            border: none;
+            padding: 0 30px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
 
-        </div>
-    </section>
+        .newsletter-form button:hover {
+            background: #fff;
+        }
 
-    <!-- Team Section -->
-    <section class="about-section">
-        <h2 class="section-title">Meet the Team</h2>
-        <div class="team-grid">
-            <!-- Team Member 1 -->
-            <div class="team-card">
-                <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank">
-                <img src="<%= cdnUrl %>/images/team-logo.png" alt="Team Logo">
-                <h4>GPL Mods Team</h4>
-                <span>Founder & Lead Developer</span>
-               </a>
-            </div>
-            <!-- Team Member 2 -->
-            <div class="team-card">
-                <img src="<%= cdnUrl %>/images/community.png" alt="Community Logo">
-                <h4>Our Community Modders and Destributiors</h4>
-                <span>Providing & Updating Content</span>
-            </div>
-            <!-- Team Member 3 -->
-            <div class="team-card">
-                <img src="<%= cdnUrl %>/images/supporters.png" alt="Supporters Logo">
-                <h4>Premium Supporters and Donaters</h4>
-                <span>Fueling Server Infrastructure</span>
-            </div>
-        </div>
-
-        <!-- NEW: View All Members Button -->
-        <div style="text-align: center; margin-top: 40px;">
-            <button id="openMembersModal" class="btn btn-secondary" style="background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; font-size: 1.1em; border-radius: 25px; transition: all 0.3s; cursor: pointer;">
-                <i class="fas fa-users" style="margin-right: 8px;"></i> View Extended Team & Top Contributors
-            </button>
-        </div>
-    </section>
-
-    <!-- NEW: Social Media Platforms Section -->
-    <section class="about-section">
-        <h2 class="section-title">Connect With Us</h2>
-        <p style="text-align: center; color: var(--silver); margin-bottom: 30px;">Join the conversation, report bugs, and request new mods on our official channels.</p>
-                <div class="social-grid">
-            <a href="<%= socialLinks.discord || 'https://discord.gg/d7FEDp4vm' %>" target="_blank" class="social-card discord">
-                <i class="fab fa-discord"></i> Discord Server
-            </a>
-            <a href="<%= socialLinks.youtube || 'https://youtube.com/@gplmods' %>" target="_blank" class="social-card youtube">
-                <i class="fab fa-youtube"></i> YouTube Channel
-            </a>
-            <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank" class="social-card github">
-                <i class="fab fa-github"></i> GitHub Repository
-            </a>
-            <a href="<%= socialLinks.reddit || 'https://www.reddit.com/user/GPLMods' %>" target="_blank" class="social-card reddit">
-                <i class="fab fa-reddit"></i> Reddit Community
-            </a>
-           <a href="<%= socialLinks.twitter || 'https://x.com/GPLMods' %>" target="_blank" class="social-card twitter">
-                <i class="fab fa-twitter"></i> X (Twitter)
-            </a>
-            <a href="<%= socialLinks.linkedin || 'https://in.linkedin.com/in/gpl-mods-05a22a403' %>" target="_blank" class="social-card linkedin">
-                <i class="fab fa-linkedin"></i> LinkedIn
-            </a>
-             <a href="<%= socialLinks.instagram || 'https://www.instagram.com/gplmods' %>" target="_blank" class="social-card instagram">
-                <i class="fab fa-instagram"></i> Instagram
-            </a>
-             <a href="<%= socialLinks.facebook || 'https://www.facebook.com/profile.php?id=61572148715492' %>" target="_blank" class="social-card facebook">
-                <i class="fab fa-facebook-f"></i> Facebook Page
-            </a>
-             <a href="<%= socialLinks.threads || 'https://threads.net/gplmods' %>" target="_blank" class="social-card threads">
-                <i class="fab fa-threads"></i> Threads
-            </a>
-              <a href="<%= socialLinks.gravatar || 'https://gravatar.com/theoristcandid03a1c47c5b' %>" target="_blank" class="social-card gravatar">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
-                      <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
-                </svg> Gravatar Profile
-            </a>
-        </div>
-    </section>
-
-    <!-- NEW & UPDATED: Newsletter & CTA Section -->
-    <section class="cta-section">
-        <h2 style="color: var(--gold); font-size: 2.2em; margin-bottom: 10px;">Never Miss an Update</h2>
-        <p style="color: var(--silver); font-size: 1.1em;">Join our newsletter to receive the latest 100% working mods and community news straight to your inbox.</p>
-        
-        <!-- ✅ FIX: Changed to an ID-based form for AJAX, removed action/method -->
-        <form id="about-newsletter-form" class="newsletter-form">
-            <input type="email" id="newsletter-email" placeholder="Enter your email address..." required>
-            <!-- Hidden input to tell your API where this came from -->
-            <input type="hidden" id="newsletter-source" value="about-page">
-            <button type="submit" id="newsletter-submit-btn">Subscribe</button>
-        </form>
-
-        <!-- ✅ FIX: A dedicated spot to show the JSON success/error messages -->
-        <div id="newsletter-message" style="margin-top: 15px; font-weight: bold; min-height: 24px; transition: color 0.3s;"></div>
-
-        <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
-            <p style="color: var(--silver); margin-bottom: 15px;">Want to actively contribute to the platform?</p>
-            <a href="/register" class="btn" style="background: transparent; color: var(--white); border: 1px solid #555; padding: 10px 25px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)';" onmouseout="this.style.borderColor='#555'; this.style.color='var(--white)';">Create an Account</a>
-        </div>
-    </section>
-</main>
-
-<!-- ======== NEW: EXTENDED MEMBERS MODAL ======== -->
-<div id="membersModal" class="members-modal">
-    <div class="members-modal-content">
-        <span class="close-modal-btn" id="closeMembersModal">&times;</span>
-        <h2 style="color: var(--gold); margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px;">Extended Team & Contributors</h2>
-
-        <p style="text-align: center; color: var(--gold); margin-top: 25px; font-size: 0.9em; font-style: italic;">
-         <strong>Core Services we used to Build Our Platform</strong>
-        </p>
-        <!-- Member 1 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/blackblaze-b2.png" alt="BlackBlaze B2">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">BlackBlaze B2</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Cloud Storage Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://www.backblaze.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-                <a href="https://x.com/backblaze" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
-            </div>
-        </div>
-
-       <!-- Member 2 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/cloudflare.png" alt="Cloudflare">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Cloudflare</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website CDN Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://github.com/cloudflare" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-                <a href="https://www.cloudflare.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-            </div>
-        </div>
-
-        <!-- Member 3 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/hilltopads.png" alt="HilltopAds">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">HilltopAds</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Ads Network Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://hilltopads.com/?ref=378819" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-                <a href="http://www.youtube.com/@hilltopads_network" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
-            </div>
-        </div>
-        
-       <!-- Member 4 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/mongodb.png" alt="MongoDB">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">MongoDB</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Database Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://github.com/mongodb" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-                <a href="https://www.mongodb.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-            </div>
-        </div>
-
-        <!-- Member 5 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/improvemx.png" alt="ImproveMX">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">ImproveMX</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Mail Forwarding Service Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://github.com/improvmx" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-                <a href="https://improvmx.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-            </div>
-        </div>
-
-        <!-- Member 6 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/linkvertise.png" alt="Linkvertise">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Linkvertise</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website link-shortening provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://linkvertise.com/?publisherClosed=true&affiliate_id=5373913" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-                <a href="https://x.com/Linkvertise" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
-            </div>
-        </div>
-        
-        <!-- Member 7 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/render.png" alt="Render">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Render</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Website Hosting Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://render.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-                <a href="https://github.com/render-oss" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-            </div>
-        </div>
-        
-       <!-- Member 8 -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="/images/gemini.png" alt="Google Gemini" onerror="this.src='<%= cdnUrl %>/images/gemini.png'">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Google Gemini</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our AI support assistant provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" title="Google Gemini"><i class="fas fa-globe"></i></a>
-            </div>
-        </div>
-        <!-- Member 9: VirusTotal (NEW) -->
-        <div class="extended-member-item">
-            <div class="member-info">
-                <img src="<%= cdnUrl %>/images/virustotal.png" alt="VirusTotal" onerror="this.src='/images/default-avatar.png'">
-                <div>
-                    <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">VirusTotal</h4>
-                    <span style="color: var(--silver); font-size: 0.9em;">Our Antivirus & Security Scan Provider!</span>
-                </div>
-            </div>
-            <div class="member-socials">
-                <a href="https://twitter.com/virustotal" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
-                <a href="https://www.virustotal.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<!-- Modal Logic Script -->
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const modal = document.getElementById('membersModal');
-        const openBtn = document.getElementById('openMembersModal');
-        const closeBtn = document.getElementById('closeMembersModal');
-
-        // Open Modal
-        openBtn.addEventListener('click', () => {
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Stop background scrolling
-        });
-
-        // Close Modal
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restore scrolling
-        });
-
-        // Close if clicked outside the box
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto';
+        @media (min-width: 768px) {
+            .feature-grid {
+                grid-template-columns: 1fr 1fr;
             }
-        });
-    });
-</script>
 
-<%- include('../../partials/footer') %>
+            .feature-item:last-child {
+                grid-column: 1 / -1;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+
+            /* Centers the 3rd feature beautifully */
+        }
+    </style>
+
+    <main class="container">
+        <div class="page-header">
+            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+            <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;">
+                <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </a>
+            </div>
+            <!-- ======================================== -->
+            <h1>About <span class="gold">GPL</span> <span class="silver">Mods</span></h1>
+            <p>Discover our core philosophy, meet the community behind the platform, and learn why your safety is our
+                ultimate priority.</p>
+        </div>
+
+        <!-- Core Principles Section -->
+        <section class="about-section">
+            <h2 class="section-title">Our Core Principles</h2>
+            <div class="feature-grid">
+
+                <!-- Safety Feature -->
+                <div class="feature-item">
+                    <lottie-player src="<%= cdnUrl %>/animations/shield.json" background="transparent" speed="1"
+                        style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
+                    <div class="feature-text">
+                        <h3>Commitment to Safety</h3>
+                        <p>Your safety is our priority. We provide mods only after 14+ days of testing. Every file is
+                            scanned by over 100 antivirus engines via the VirusTotal API. If a harmful mod is detected,
+                            it is removed instantly, and the community is notified immediately.</p>
+                    </div>
+                </div>
+
+                <!-- Community Feature -->
+                <div class="feature-item">
+                    <lottie-player src="<%= cdnUrl %>/animations/heart.json" background="transparent" speed="1"
+                        style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
+                    <div class="feature-text">
+                        <h3>The Power of Community</h3>
+                        <p>GPL Mods doesn't just create mods; we are a community hub. Mods are uploaded by members and
+                            trusted sources, strictly distributed under the GNU/GPL spirit. We are a platform run by the
+                            people, for the people, ensuring 100% working content.</p>
+                    </div>
+                </div>
+
+                <!-- NEW: Open-Source Feature -->
+                <div class="feature-item">
+                    <!-- IMPORTANT: Download a "code" or "open source" lottie file and save it as code.json in your animations folder! -->
+                    <lottie-player src="<%= cdnUrl %>/animations/code.json" background="transparent" speed="1"
+                        style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
+                    <div class="feature-text">
+                        <h3>Open-Source Philosophy</h3>
+                        <p>We believe in absolute transparency. GPL Mods embraces the open-source philosophy to its
+                            core. Our platform's infrastructure and the mods we distribute thrive on community
+                            collaboration, allowing developers to audit, contribute, and improve the ecosystem securely.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Team Section -->
+        <section class="about-section">
+            <h2 class="section-title">Meet the Team</h2>
+            <div class="team-grid">
+                <!-- Team Member 1 -->
+                <div class="team-card">
+                    <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank">
+                        <img src="<%= cdnUrl %>/images/team-logo.png" alt="Team Logo">
+                        <h4>GPL Mods Team</h4>
+                        <span>Founder & Lead Developer</span>
+                    </a>
+                </div>
+                <!-- Team Member 2 -->
+                <div class="team-card">
+                    <img src="<%= cdnUrl %>/images/community.png" alt="Community Logo">
+                    <h4>Our Community Modders and Destributiors</h4>
+                    <span>Providing & Updating Content</span>
+                </div>
+                <!-- Team Member 3 -->
+                <div class="team-card">
+                    <img src="<%= cdnUrl %>/images/supporters.png" alt="Supporters Logo">
+                    <h4>Premium Supporters and Donaters</h4>
+                    <span>Fueling Server Infrastructure</span>
+                </div>
+            </div>
+
+            <!-- NEW: View All Members Button -->
+            <div style="text-align: center; margin-top: 40px;">
+                <button id="openMembersModal" class="btn btn-secondary"
+                    style="background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; font-size: 1.1em; border-radius: 25px; transition: all 0.3s; cursor: pointer;">
+                    <i class="fas fa-users" style="margin-right: 8px;"></i> View Extended Team & Top Contributors
+                </button>
+            </div>
+        </section>
+
+        <!-- NEW: Social Media Platforms Section -->
+        <section class="about-section">
+            <h2 class="section-title">Connect With Us</h2>
+            <p style="text-align: center; color: var(--silver); margin-bottom: 30px;">Join the conversation, report
+                bugs, and request new mods on our official channels.</p>
+            <div class="social-grid">
+                <a href="<%= socialLinks.discord || 'https://discord.gg/d7FEDp4vm' %>" target="_blank"
+                    class="social-card discord">
+                    <i class="fab fa-discord"></i> Discord Server
+                </a>
+                <a href="<%= socialLinks.youtube || 'https://youtube.com/@gplmods' %>" target="_blank"
+                    class="social-card youtube">
+                    <i class="fab fa-youtube"></i> YouTube Channel
+                </a>
+                <a href="<%= socialLinks.github || 'https://github.com/GPLMods-Team' %>" target="_blank"
+                    class="social-card github">
+                    <i class="fab fa-github"></i> GitHub Repository
+                </a>
+                <a href="<%= socialLinks.reddit || 'https://www.reddit.com/user/GPLMods' %>" target="_blank"
+                    class="social-card reddit">
+                    <i class="fab fa-reddit"></i> Reddit Community
+                </a>
+                <a href="<%= socialLinks.twitter || 'https://x.com/GPLMods' %>" target="_blank"
+                    class="social-card twitter">
+                    <i class="fab fa-twitter"></i> X (Twitter)
+                </a>
+                <a href="<%= socialLinks.linkedin || 'https://in.linkedin.com/in/gpl-mods-05a22a403' %>" target="_blank"
+                    class="social-card linkedin">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </a>
+                <a href="<%= socialLinks.instagram || 'https://www.instagram.com/gplmods' %>" target="_blank"
+                    class="social-card instagram">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+                <a href="<%= socialLinks.facebook || 'https://www.facebook.com/profile.php?id=61572148715492' %>"
+                    target="_blank" class="social-card facebook">
+                    <i class="fab fa-facebook-f"></i> Facebook Page
+                </a>
+                <a href="<%= socialLinks.threads || 'https://threads.net/gplmods' %>" target="_blank"
+                    class="social-card threads">
+                    <i class="fab fa-threads"></i> Threads
+                </a>
+                <a href="<%= socialLinks.gravatar || 'https://gravatar.com/theoristcandid03a1c47c5b' %>" target="_blank"
+                    class="social-card gravatar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                        style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
+                        <path
+                            d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z">
+                        </path>
+                    </svg> Gravatar Profile
+                </a>
+            </div>
+        </section>
+
+        <!-- NEW & UPDATED: Newsletter & CTA Section -->
+        <section class="cta-section">
+            <h2 style="color: var(--gold); font-size: 2.2em; margin-bottom: 10px;">Never Miss an Update</h2>
+            <p style="color: var(--silver); font-size: 1.1em;">Join our newsletter to receive the latest 100% working
+                mods and community news straight to your inbox.</p>
+
+            <!-- ✅ FIX: Changed to an ID-based form for AJAX, removed action/method -->
+            <form id="about-newsletter-form" class="newsletter-form">
+                <input type="email" id="newsletter-email" placeholder="Enter your email address..." required>
+                <!-- Hidden input to tell your API where this came from -->
+                <input type="hidden" id="newsletter-source" value="about-page">
+                <button type="submit" id="newsletter-submit-btn">Subscribe</button>
+            </form>
+
+            <!-- ✅ FIX: A dedicated spot to show the JSON success/error messages -->
+            <div id="newsletter-message"
+                style="margin-top: 15px; font-weight: bold; min-height: 24px; transition: color 0.3s;"></div>
+
+            <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
+                <p style="color: var(--silver); margin-bottom: 15px;">Want to actively contribute to the platform?</p>
+                <a href="/register" class="btn"
+                    style="background: transparent; color: var(--white); border: 1px solid #555; padding: 10px 25px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;"
+                    onmouseover="this.style.borderColor='var(--gold)'; this.style.color='var(--gold)';"
+                    onmouseout="this.style.borderColor='#555'; this.style.color='var(--white)';">Create an Account</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- ======== NEW: EXTENDED MEMBERS MODAL ======== -->
+    <div id="membersModal" class="members-modal">
+        <div class="members-modal-content">
+            <span class="close-modal-btn" id="closeMembersModal">&times;</span>
+            <h2 style="color: var(--gold); margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+                Extended Team & Contributors</h2>
+
+            <p style="text-align: center; color: var(--gold); margin-top: 25px; font-size: 0.9em; font-style: italic;">
+                <strong>Core Services we used to Build Our Platform</strong>
+            </p>
+            <!-- Member 1 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/blackblaze-b2.png" alt="BlackBlaze B2">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">BlackBlaze B2</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website Cloud Storage Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://www.backblaze.com/" target="_blank" title="Website"><i
+                            class="fas fa-globe"></i></a>
+                    <a href="https://x.com/backblaze" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 2 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/cloudflare.png" alt="Cloudflare">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Cloudflare</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website CDN Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://github.com/cloudflare" target="_blank" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://www.cloudflare.com/" target="_blank" title="Website"><i
+                            class="fas fa-globe"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 3 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/hilltopads.png" alt="HilltopAds">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">HilltopAds</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website Ads Network Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://hilltopads.com/?ref=378819" target="_blank" title="Website"><i
+                            class="fas fa-globe"></i></a>
+                    <a href="http://www.youtube.com/@hilltopads_network" target="_blank" title="YouTube"><i
+                            class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 4 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/mongodb.png" alt="MongoDB">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">MongoDB</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website Database Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://github.com/mongodb" target="_blank" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://www.mongodb.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 5 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/improvemx.png" alt="ImproveMX">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">ImproveMX</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website Mail Forwarding Service
+                            Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://github.com/improvmx" target="_blank" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://improvmx.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 6 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/linkvertise.png" alt="Linkvertise">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Linkvertise</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website link-shortening
+                            provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://linkvertise.com/?publisherClosed=true&affiliate_id=5373913" target="_blank"
+                        title="Website"><i class="fas fa-globe"></i></a>
+                    <a href="https://x.com/Linkvertise" target="_blank" title="Twitter"><i
+                            class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 7 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/render.png" alt="Render">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Render</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Website Hosting Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://render.com/" target="_blank" title="Website"><i class="fas fa-globe"></i></a>
+                    <a href="https://github.com/render-oss" target="_blank" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                </div>
+            </div>
+
+            <!-- Member 8 -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="/images/gemini.png" alt="Google Gemini"
+                        onerror="this.src='<%= cdnUrl %>/images/gemini.png'">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">Google Gemini</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our AI support assistant provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer"
+                        title="Google Gemini"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+            <!-- Member 9: VirusTotal (NEW) -->
+            <div class="extended-member-item">
+                <div class="member-info">
+                    <img src="<%= cdnUrl %>/images/virustotal.png" alt="VirusTotal"
+                        onerror="this.src='/images/default-avatar.png'">
+                    <div>
+                        <h4 style="color: var(--white); margin: 0; font-size: 1.2em;">VirusTotal</h4>
+                        <span style="color: var(--silver); font-size: 0.9em;">Our Antivirus & Security Scan
+                            Provider!</span>
+                    </div>
+                </div>
+                <div class="member-socials">
+                    <a href="https://twitter.com/virustotal" target="_blank" title="Twitter"><i
+                            class="fab fa-twitter"></i></a>
+                    <a href="https://www.virustotal.com/" target="_blank" title="Website"><i
+                            class="fas fa-globe"></i></a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Logic Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('membersModal');
+            const openBtn = document.getElementById('openMembersModal');
+            const closeBtn = document.getElementById('closeMembersModal');
+
+            // Open Modal
+            openBtn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Stop background scrolling
+            });
+
+            // Close Modal
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restore scrolling
+            });
+
+            // Close if clicked outside the box
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+
+    <%- include('../../partials/footer') %>

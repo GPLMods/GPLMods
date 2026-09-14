@@ -215,6 +215,182 @@
             background: var(--gold);
             color: var(--black);
         }
+
+        /* Custom Calendar UI Styles */
+        .custom-calendar-container {
+            position: relative;
+            width: 100%;
+            user-select: none;
+        }
+        .custom-calendar-trigger {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--black);
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            box-sizing: border-box;
+        }
+        .custom-calendar-trigger:hover {
+            border-color: #555;
+        }
+        .custom-calendar-container.open .custom-calendar-trigger {
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        .dob-display-text.placeholder {
+            color: #777;
+        }
+        .calendar-trigger-icons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gold);
+        }
+        .custom-calendar-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            min-width: 310px;
+            max-width: 360px;
+            background: #18181c;
+            border: 1.5px solid rgba(255, 215, 0, 0.35);
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.85);
+            padding: 16px;
+            z-index: 100;
+            box-sizing: border-box;
+            animation: gplCalPopIn 0.2s ease-out;
+        }
+        @keyframes gplCalPopIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .custom-calendar-container.open .custom-calendar-popup {
+            display: block;
+        }
+        .calendar-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 6px;
+        }
+        .cal-nav-btn {
+            background: #222;
+            border: 1px solid #444;
+            color: var(--silver);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .cal-nav-btn:hover {
+            background: var(--gold);
+            color: var(--black);
+            border-color: var(--gold);
+        }
+        .cal-selectors {
+            display: flex;
+            gap: 6px;
+            flex-grow: 1;
+            justify-content: center;
+        }
+        .cal-select {
+            background: #222;
+            color: var(--white);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 0.85em;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+        }
+        .cal-select:focus {
+            border-color: var(--gold);
+        }
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 0.75em;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .calendar-days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+        }
+        .cal-day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--white);
+            transition: all 0.18s ease;
+            border: 1px solid transparent;
+        }
+        .cal-day-cell:hover:not(.disabled) {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: var(--gold);
+        }
+        .cal-day-cell.selected {
+            background: var(--gold) !important;
+            color: var(--black) !important;
+            font-weight: 700;
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+        .cal-day-cell.other-month {
+            color: #555;
+        }
+        .cal-day-cell.disabled {
+            color: #444;
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+        .calendar-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+        }
+        .cal-footer-btn {
+            background: none;
+            border: none;
+            font-size: 0.82em;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .cal-clear-btn { color: var(--silver); }
+        .cal-clear-btn:hover { color: var(--red); }
+        .cal-close-btn { color: var(--gold); }
+        .cal-close-btn:hover { color: var(--white); }
     </style>
 </head>
 <body>
@@ -224,7 +400,7 @@
 
         <div class="auth-container">
     <!-- ======== GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
+    <div class="back-btn-wrapper">
         <a href="/" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
             <i class="fas fa-arrow-left"></i> Go Back
         </a>
@@ -283,13 +459,57 @@
                         <label for="confirmPassword">Confirm Password</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
                     </div>
-                    <!-- ======== NEW: DATE OF BIRTH INPUT ======== -->
+                    <!-- ======== CUSTOM CALENDAR UI FOR DATE OF BIRTH ======== -->
                     <div class="form-group">
-                        <label for="dateOfBirth">Date of Birth</label>
-                        <input type="date" id="dateOfBirth" name="dateOfBirth" required style="color-scheme: dark;">
-                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access mature content.</p>
+                        <label for="dob-calendar-trigger">Date of Birth</label>
+                        <div class="custom-calendar-container" id="dob-calendar-container">
+                            <input type="hidden" name="dateOfBirth" id="dateOfBirth" required>
+                            
+                            <div class="custom-calendar-trigger" id="dob-calendar-trigger" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
+                                <span class="dob-display-text placeholder" id="dob-display-text">Select your Date of Birth</span>
+                                <div class="calendar-trigger-icons">
+                                    <i class="fas fa-calendar-alt calendar-icon"></i>
+                                </div>
+                            </div>
+
+                            <div class="custom-calendar-popup" id="dob-calendar-popup" role="dialog" aria-label="Date of Birth Calendar">
+                                <div class="calendar-nav-header">
+                                    <button type="button" class="cal-nav-btn" id="cal-prev-month" title="Previous Month"><i class="fas fa-chevron-left"></i></button>
+                                    <div class="cal-selectors">
+                                        <select class="cal-select" id="cal-month-select" aria-label="Select Month">
+                                            <option value="0">January</option>
+                                            <option value="1">February</option>
+                                            <option value="2">March</option>
+                                            <option value="3">April</option>
+                                            <option value="4">May</option>
+                                            <option value="5">June</option>
+                                            <option value="6">July</option>
+                                            <option value="7">August</option>
+                                            <option value="8">September</option>
+                                            <option value="9">October</option>
+                                            <option value="10">November</option>
+                                            <option value="11">December</option>
+                                        </select>
+                                        <select class="cal-select" id="cal-year-select" aria-label="Select Year"></select>
+                                    </div>
+                                    <button type="button" class="cal-nav-btn" id="cal-next-month" title="Next Month"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+
+                                <div class="calendar-weekdays">
+                                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                </div>
+
+                                <div class="calendar-days-grid" id="cal-days-grid"></div>
+
+                                <div class="calendar-footer">
+                                    <button type="button" class="cal-footer-btn cal-clear-btn" id="cal-clear-btn">Clear</button>
+                                    <button type="button" class="cal-footer-btn cal-close-btn" id="cal-close-btn">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 6px;">Required to access mature content (Must be 13+).</p>
                     </div>
-                    <!-- ========================================== -->
+                    <!-- ======================================================= -->
                     <!-- ======== NEW: REFERRAL CODE INPUT ======== -->
                     <div class="form-group">
                         <label for="referralCode">Referral Code <span style="color: var(--silver); font-weight: normal;">(Optional)</span></label>
@@ -453,16 +673,264 @@
 
         const dateOfBirthInput = document.getElementById('dateOfBirth');
         const registrationForm = document.getElementById('signup-form');
-        if (dateOfBirthInput && registrationForm) {
+
+        // ======== CUSTOM CALENDAR INITIALIZER FOR REGISTER ========
+        function initRegisterDobCalendar() {
+            const container = document.getElementById('dob-calendar-container');
+            const trigger = document.getElementById('dob-calendar-trigger');
+            const displayText = document.getElementById('dob-display-text');
+            const popup = document.getElementById('dob-calendar-popup');
+            const hiddenInput = document.getElementById('dateOfBirth');
+            const monthSelect = document.getElementById('cal-month-select');
+            const yearSelect = document.getElementById('cal-year-select');
+            const daysGrid = document.getElementById('cal-days-grid');
+            const prevBtn = document.getElementById('cal-prev-month');
+            const nextBtn = document.getElementById('cal-next-month');
+            const clearBtn = document.getElementById('cal-clear-btn');
+            const closeBtn = document.getElementById('cal-close-btn');
+
+            if (!container || !trigger || !hiddenInput) return;
+
             const cutoffDate = new Date();
             cutoffDate.setFullYear(cutoffDate.getFullYear() - 13);
-            dateOfBirthInput.max = cutoffDate.toISOString().split('T')[0];
-            registrationForm.addEventListener('submit', (event) => {
-                if (!dateOfBirthInput.value || dateOfBirthInput.value > dateOfBirthInput.max) {
-                    event.preventDefault();
-                    alert('You are not old enough to register. You must be at least 13 years old.');
+            const cutoffYear = cutoffDate.getFullYear();
+            const startYear = 1920;
+
+            // Populate year dropdown (descending from cutoffYear to startYear)
+            if (yearSelect) {
+                yearSelect.innerHTML = '';
+                for (let y = cutoffYear; y >= startYear; y--) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yearSelect.appendChild(opt);
+                }
+            }
+
+            let selectedDate = null;
+            if (hiddenInput.value) {
+                const parts = hiddenInput.value.split('-');
+                if (parts.length === 3) {
+                    selectedDate = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+                }
+            }
+
+            let viewYear = selectedDate ? selectedDate.getUTCFullYear() : (cutoffYear - 7);
+            let viewMonth = selectedDate ? selectedDate.getUTCMonth() : 0;
+
+            function updateTriggerDisplay() {
+                if (selectedDate && !isNaN(selectedDate.getTime())) {
+                    displayText.textContent = selectedDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'UTC'
+                    });
+                    displayText.classList.remove('placeholder');
+                } else {
+                    displayText.textContent = 'Select your Date of Birth';
+                    displayText.classList.add('placeholder');
+                }
+            }
+
+            function renderCalendar() {
+                if (monthSelect) monthSelect.value = viewMonth;
+                if (yearSelect) yearSelect.value = viewYear;
+
+                if (!daysGrid) return;
+                daysGrid.innerHTML = '';
+
+                const firstDayOfMonth = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay();
+                const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+                const daysInPrevMonth = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+
+                const today = new Date();
+                const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+
+                // Previous month overflow days
+                for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                    const dayNum = daysInPrevMonth - i;
+                    const cell = document.createElement('div');
+                    cell.className = 'cal-day-cell other-month';
+                    cell.textContent = dayNum;
+                    cell.addEventListener('click', () => {
+                        viewMonth--;
+                        if (viewMonth < 0) {
+                            viewMonth = 11;
+                            viewYear--;
+                        }
+                        selectDay(viewYear, viewMonth, dayNum);
+                    });
+                    daysGrid.appendChild(cell);
+                }
+
+                // Current month days
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cellDate = new Date(Date.UTC(viewYear, viewMonth, d));
+                    const cell = document.createElement('div');
+                    cell.className = 'cal-day-cell';
+                    cell.textContent = d;
+
+                    if (cellDate > todayUTC) {
+                        cell.classList.add('disabled');
+                    } else {
+                        if (selectedDate && 
+                            selectedDate.getUTCFullYear() === viewYear && 
+                            selectedDate.getUTCMonth() === viewMonth && 
+                            selectedDate.getUTCDate() === d) {
+                            cell.classList.add('selected');
+                        }
+                        cell.addEventListener('click', () => {
+                            selectDay(viewYear, viewMonth, d);
+                        });
+                    }
+                    daysGrid.appendChild(cell);
+                }
+
+                // Next month overflow days
+                const totalCells = daysGrid.children.length;
+                const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+                for (let n = 1; n <= remaining; n++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cal-day-cell other-month';
+                    cell.textContent = n;
+                    cell.addEventListener('click', () => {
+                        viewMonth++;
+                        if (viewMonth > 11) {
+                            viewMonth = 0;
+                            viewYear++;
+                        }
+                        selectDay(viewYear, viewMonth, n);
+                    });
+                    daysGrid.appendChild(cell);
+                }
+            }
+
+            function selectDay(y, m, d) {
+                const chosen = new Date(Date.UTC(y, m, d));
+                const today = new Date();
+                const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+                if (chosen > todayUTC) return;
+
+                selectedDate = chosen;
+                viewYear = y;
+                viewMonth = m;
+
+                const isoYear = selectedDate.getUTCFullYear();
+                const isoMonth = String(selectedDate.getUTCMonth() + 1).padStart(2, '0');
+                const isoDay = String(selectedDate.getUTCDate()).padStart(2, '0');
+                hiddenInput.value = `${isoYear}-${isoMonth}-${isoDay}`;
+
+                updateTriggerDisplay();
+                renderCalendar();
+                container.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = container.classList.toggle('open');
+                trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (isOpen) {
+                    if (selectedDate) {
+                        viewYear = selectedDate.getUTCFullYear();
+                        viewMonth = selectedDate.getUTCMonth();
+                    }
+                    renderCalendar();
                 }
             });
+
+            if (monthSelect) {
+                monthSelect.addEventListener('change', (e) => {
+                    viewMonth = parseInt(e.target.value);
+                    renderCalendar();
+                });
+            }
+
+            if (yearSelect) {
+                yearSelect.addEventListener('change', (e) => {
+                    viewYear = parseInt(e.target.value);
+                    renderCalendar();
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    viewMonth--;
+                    if (viewMonth < 0) {
+                        viewMonth = 11;
+                        viewYear--;
+                    }
+                    renderCalendar();
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    viewMonth++;
+                    if (viewMonth > 11) {
+                        viewMonth = 0;
+                        viewYear++;
+                    }
+                    renderCalendar();
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectedDate = null;
+                    hiddenInput.value = '';
+                    updateTriggerDisplay();
+                    renderCalendar();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    container.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            updateTriggerDisplay();
+        }
+
+        initRegisterDobCalendar();
+
+        if (registrationForm) {
+            registrationForm.addEventListener('submit', (event) => {
+                const dobInput = document.getElementById('dateOfBirth');
+                if (!dobInput || !dobInput.value) {
+                    event.preventDefault();
+                    alert('Please select your Date of Birth.');
+                    const triggerEl = document.getElementById('dob-calendar-trigger');
+                    if (triggerEl) triggerEl.focus();
+                    return;
+                }
+
+                const cutoffDate = new Date();
+                cutoffDate.setFullYear(cutoffDate.getFullYear() - 13);
+                const maxIsoDate = cutoffDate.toISOString().split('T')[0];
+
+                if (dobInput.value > maxIsoDate) {
+                    event.preventDefault();
+                    alert('You must be at least 13 years old to register.');
+                    const triggerEl = document.getElementById('dob-calendar-trigger');
+                    if (triggerEl) triggerEl.focus();
+                }
+            });
+        }
         function smartGoBack(fallbackUrl) {
             const fallback = fallbackUrl || '/';
             if (document.referrer && document.referrer !== window.location.href) {

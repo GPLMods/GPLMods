@@ -25,16 +25,16 @@
             <!-- THE FLUID PLAYER CONTAINER -->
             <div id="ad-player-container" style="display: none; width: 100%; aspect-ratio: 16 / 9; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; position: relative;">
                 
-                <!-- A simple 10-second silent video to hold the player open while the ad loads -->
-                <video id="fluid-video-id" style="width: 100%; height: 100%;">
+                <!-- A simple silent video to hold the player open while the ad loads -->
+                <video id="fluid-video-id" loop muted playsinline style="width: 100%; height: 100%;">
                     <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4" />
                 </video>
                 
             </div>
 
-            <!-- HilltopAds Link -->
-            <a id="hilltopads-link" href="https://hilltopads.com/?ref=378819" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: 15px; color: var(--gold); text-decoration: none; font-size: 0.9em; font-weight: bold; padding: 10px; border: 1px solid var(--gold); border-radius: 8px; transition: all 0.3s ease; text-align: center;" onmouseover="this.style.background='var(--gold)'; this.style.color='var(--black)';" onmouseout="this.style.background='transparent'; this.style.color='var(--gold)';">
-                Powered by Hilltopads
+            <!-- HilltopAds Link (Small text with logo in white color) -->
+            <a id="hilltopads-link" href="https://hilltopads.com/?ref=378819" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: 8px; color: #ffffff; text-decoration: none; font-size: 0.85em; opacity: 0.85; transition: opacity 0.2s ease; text-align: center; align-items: center; justify-content: center; gap: 6px;" onmouseover="this.style.opacity='1'; this.style.textDecoration='underline';" onmouseout="this.style.opacity='0.85'; this.style.textDecoration='none';">
+                <i class="fa-regular fa-flag-swallowtail fa-flag" style="color: #ffffff; font-size: 0.95em;"></i> Powered by Hilltopads
             </a>
 
             <!-- The Close Button -->
@@ -131,32 +131,7 @@
                 
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
-                if (hilltopadsLink) hilltopadsLink.style.display = 'block';
-
-                myFP = fluidPlayer('fluid-video-id', {
-                    "layoutControls": {
-                        "controlBar": { "autoHideTimeout": 3, "animated": true, "autoHide": true },
-                        "autoPlay": true, 
-                        "mute": false,
-                        "allowTheatre": false,
-                        "playPauseAnimation": false,
-                        "playbackRateEnabled": false,
-                        "allowDownload": false,
-                        "playButtonShowing": false,
-                        "fillToContainer": true, 
-                        "primaryColor": "#FFD700" 
-                    },
-                    "vastOptions": {
-                        "adList":[
-                            {
-                                "roll": "preRoll",
-                                "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
-                                "adText": ""
-                            }
-                        ],
-                        "adCTAText": false
-                    }
-                });
+                if (hilltopadsLink) hilltopadsLink.style.display = 'inline-flex';
 
                 let adStarted = false;
                 let countdownTimer = null;
@@ -164,7 +139,7 @@
 
                 // Helper function to unlock the button
                 function enableCloseButton() {
-                    clearInterval(countdownTimer);
+                    if (countdownTimer) clearInterval(countdownTimer);
                     manualCloseBtn.style.display = 'inline-block';
                     manualCloseBtn.disabled = false;
                     manualCloseBtn.style.opacity = '1';
@@ -174,17 +149,8 @@
                     manualCloseBtn.textContent = 'Close & Continue';
                 }
 
-                // 🔴 120-SECOND FALLBACK TIMER
-                // If ad blockers break the player entirely and it never plays, unlock after 2 minutes
-                const fallbackTimer = setTimeout(() => {
-                    if (!adStarted) {
-                        console.log("Ad failed to load. Fallback triggered.");
-                        enableCloseButton();
-                    }
-                }, 120000);
-
                 // 🟢 30-SECOND COUNTDOWN TIMER
-                // Starts only when the video successfully begins playing
+                // Starts only when the ad video successfully begins playing
                 function startCountdown() {
                     manualCloseBtn.style.display = 'inline-block';
                     manualCloseBtn.disabled = true;
@@ -201,23 +167,86 @@
                     }, 1000);
                 }
 
-                // Hook into standard video events to detect player status
-                if (videoEl) {
-                    // Triggers when the ad (or fallback media) actually starts playing
-                    videoEl.addEventListener('playing', () => {
-                        if (!adStarted) {
-                            adStarted = true;
-                            clearTimeout(fallbackTimer); // Kill the 20s fallback
-                            startCountdown(); // Start the 30s countdown
+                function handleAdStarted() {
+                    if (!adStarted) {
+                        adStarted = true;
+                        clearTimeout(fallbackTimer);
+                        startCountdown();
+                    }
+                }
+
+                // 🔴 120-SECOND FALLBACK TIMER
+                // If ad blockers break the player entirely and it never plays, unlock after 2 minutes
+                const fallbackTimer = setTimeout(() => {
+                    if (!adStarted) {
+                        console.log("Ad failed to load. Fallback triggered.");
+                        enableCloseButton();
+                    }
+                }, 120000);
+
+                try {
+                    myFP = fluidPlayer('fluid-video-id', {
+                        "layoutControls": {
+                            "controlBar": { "autoHideTimeout": 3, "animated": true, "autoHide": true },
+                            "autoPlay": true, 
+                            "mute": false,
+                            "allowTheatre": false,
+                            "playPauseAnimation": false,
+                            "playbackRateEnabled": false,
+                            "allowDownload": false,
+                            "playButtonShowing": false,
+                            "fillToContainer": true, 
+                            "primaryColor": "#FFD700" 
+                        },
+                        "vastOptions": {
+                            "adList":[
+                                {
+                                    "roll": "preRoll",
+                                    "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
+                                    "adText": ""
+                                }
+                            ],
+                            "adCTAText": false,
+                            "vastAdvanced": {
+                                "vastLoadedCallback": function() {
+                                    console.log("HilltopAds VAST tag loaded");
+                                },
+                                "vastVideoStartedCallback": function() {
+                                    console.log("HilltopAds VAST video started");
+                                    handleAdStarted();
+                                },
+                                "vastVideoEndedCallback": function() {
+                                    console.log("HilltopAds VAST video ended");
+                                    enableCloseButton();
+                                },
+                                "vastVideoSkippedCallback": function() {
+                                    console.log("HilltopAds VAST video skipped");
+                                    enableCloseButton();
+                                },
+                                "noVastVideoCallback": function() {
+                                    console.warn("HilltopAds: No VAST ad returned or ad network error");
+                                    enableCloseButton();
+                                }
+                            }
                         }
                     });
 
-                    // If the video ends BEFORE the 30s countdown finishes, just unlock it instantly
-                    videoEl.addEventListener('ended', () => {
-                        enableCloseButton();
-                    });
+                    // Also bind to Fluid Player instance events if available
+                    if (myFP && typeof myFP.on === 'function') {
+                        try {
+                            myFP.on('adPlay', handleAdStarted);
+                            myFP.on('adEnded', enableCloseButton);
+                            myFP.on('adSkip', enableCloseButton);
+                            myFP.on('adError', enableCloseButton);
+                        } catch(e) {}
+                    }
+                } catch(err) {
+                    console.error("FluidPlayer init error:", err);
+                    enableCloseButton();
+                }
 
-                    // If the video element throws a hard error, unlock it instantly
+                // If the player throws a hard error during loading
+                if (videoEl) {
                     videoEl.addEventListener('error', () => {
                         if (!adStarted) {
                             clearTimeout(fallbackTimer);

@@ -35,16 +35,17 @@
     .full-blog-body a { word-break: break-all; color: var(--gold); text-decoration: underline; } /* Specifically target links to wrap */
 </style>
 
-<main class="container">
-    <div class="updates-header">
-        <h1>Site News & <span>Updates</span></h1>
-    </div>
-
-    <!-- ✅ FIX 5a: Added Back to Hub button -->
-    <div style="display: flex; justify-content: flex-start; margin-bottom: 30px;">
-        <a href="/notifications" class="btn" style="background: transparent; border: 2px solid #333; color: var(--silver); padding: 8px 20px; border-radius: 20px; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--silver)'; this.style.color='var(--white)';" onmouseout="this.style.borderColor='#333'; this.style.color='var(--silver)';">
-            <i class="fas fa-arrow-left"></i> Back to Hub
+<main class="container" style="padding-top: 2rem;">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div class="back-btn-wrapper" style="margin-bottom: 20px;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
         </a>
+    </div>
+    <!-- ======================================== -->
+
+    <div class="updates-header" style="padding-top: 10px;">
+        <h1>Site News & <span>Updates</span></h1>
     </div>
 
     <!-- ✅ FIX 5b: Logic to handle empty announcements -->

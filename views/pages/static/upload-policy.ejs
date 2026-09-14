@@ -71,12 +71,15 @@
         border: 1px solid #333;
         font-family: monospace;
         font-size: 0.9em;
+        overflow-x: auto;
+        max-width: 100%;
+        box-sizing: border-box;
     }
-    .link-example { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .link-example { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     .link-example:last-child { margin-bottom: 0; }
-    .status-cross { color: var(--red); font-weight: bold; }
-    .status-check { color: var(--green); font-weight: bold; }
-    .arrow { color: #555; }
+    .status-cross { color: var(--red); font-weight: bold; flex-shrink: 0; }
+    .status-check { color: var(--green); font-weight: bold; flex-shrink: 0; }
+    .arrow { color: #555; flex-shrink: 0; }
 
     .policy-note {
         background-color: rgba(255, 215, 0, 0.1);
@@ -96,6 +99,14 @@
 <main class="container">
     <div class="policy-wrapper">
         
+        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+        <div class="back-btn-wrapper" style="margin-bottom: 20px;">
+            <a href="javascript:history.back()" class="dynamic-back-btn">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
+        <!-- ======================================== -->
+
         <div class="policy-header">
             <h1>Upload & <span>Update Policy</span></h1>
             <p>By uploading files, updates, or variant mods to the GPL Mods platform, you legally agree to adhere to the following community guidelines and terms of service.</p>

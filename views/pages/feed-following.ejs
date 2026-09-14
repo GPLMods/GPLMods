@@ -1,7 +1,15 @@
 <%-include('../partials/header') %>
 
     <main>
-        <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px;">
+        <div class="container" style="padding-top: 2rem;">
+            <div class="back-btn-wrapper">
+                <a href="javascript:history.back()" class="dynamic-back-btn">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </a>
+            </div>
+        </div>
+
+        <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px; padding-top: 20px;">
             <div class="container">
                 <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">
                     <i class="fas fa-users" style="color: var(--blue); margin-right: 15px;"></i>Following <span
@@ -14,10 +22,7 @@
 
         <div class="container" style="margin-top: 40px; margin-bottom: 60px;">
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <a href="/notifications" class="btn btn-secondary" style="border-color: #333; color: var(--silver);">
-                    <i class="fas fa-arrow-left"></i> Back to Hub
-                </a>
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 30px;">
                 <span style="color: var(--silver); font-weight: bold;">
                     <%= files.length %> Recent Activities
                 </span>

@@ -1,4 +1,4 @@
-<%-include('../partials/header') %>    
+<%- include('../partials/header') %>    
 
 <style>
     /* Custom Dropdown Styles (Reused from forum-ask) */
@@ -13,9 +13,318 @@
     .custom-option:hover { background-color: rgba(255, 215, 0, 0.1); color: var(--white); }
     .custom-option.selected { color: var(--gold); font-weight: bold; }
     
-    /* Layout Adjustments */
-    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
+    /* Layout & Glassmorphism Adjustments */
+    .edit-profile-layout {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 30px;
+        align-items: flex-start;
+        max-width: 1100px;
+        margin: 0 auto 50px auto;
+    }
+    .form-section {
+        background: rgba(24, 24, 28, 0.88);
+        border: 1px solid rgba(255, 215, 0, 0.18);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        padding: 35px 30px;
+        border-radius: 16px;
+    }
+    .form-section h2 {
+        font-size: 1.6em;
+        color: var(--gold);
+        margin-bottom: 22px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+        padding-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-group { margin-bottom: 22px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); font-size: 0.95em; }
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        color: var(--white);
+        font-size: 1em;
+        font-family: 'Poppins', sans-serif;
+        box-sizing: border-box;
+        transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
     .email-note { font-size: 0.85rem; color: #ffadad; margin-top: 8px; font-style: italic; }
+
+    /* Avatar Section */
+    .avatar-preview-wrapper {
+        position: relative;
+        margin: 0 auto 15px auto;
+        width: 150px;
+        height: 150px;
+    }
+    .avatar-preview {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3.5px solid var(--gold);
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.35);
+        transition: transform 0.3s ease;
+    }
+    .avatar-edit-button {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        background: var(--gold);
+        color: var(--black);
+        border: 3px solid var(--black);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    .avatar-edit-button:hover {
+        transform: scale(1.12);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+
+    /* Modal Styling */
+    .avatar-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.84);
+        backdrop-filter: blur(8px);
+        padding: 20px;
+    }
+    .avatar-modal-overlay.show { display: flex; }
+    .avatar-modal-card {
+        background: var(--dark-gray);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        border-top: 4px solid var(--gold);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+        overflow: hidden;
+        animation: gplModalIn 0.25s ease-out;
+    }
+    @keyframes gplModalIn {
+        from { opacity: 0; transform: translateY(15px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .avatar-option-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.45);
+        border: 1.5px solid #333;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+    .avatar-option-card:hover {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.08);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Custom Calendar UI Styles */
+    .custom-calendar-container {
+        position: relative;
+        width: 100%;
+        user-select: none;
+    }
+    .custom-calendar-trigger {
+        width: 100%;
+        padding: 12px 15px;
+        background: var(--black);
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: var(--white);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1em;
+        transition: border-color 0.25s, box-shadow 0.25s;
+        box-sizing: border-box;
+    }
+    .custom-calendar-trigger:hover {
+        border-color: #555;
+    }
+    .custom-calendar-container.open .custom-calendar-trigger {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    .dob-display-text.placeholder {
+        color: #777;
+    }
+    .calendar-trigger-icons {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--gold);
+    }
+    .custom-calendar-popup {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 330px;
+        max-width: 100vw;
+        background: #18181c;
+        border: 1.5px solid rgba(255, 215, 0, 0.35);
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        padding: 16px;
+        z-index: 50;
+        box-sizing: border-box;
+        animation: gplCalPopIn 0.2s ease-out;
+    }
+    @keyframes gplCalPopIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .custom-calendar-container.open .custom-calendar-popup {
+        display: block;
+    }
+    .calendar-nav-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 6px;
+    }
+    .cal-nav-btn {
+        background: #222;
+        border: 1px solid #444;
+        color: var(--silver);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85em;
+        transition: all 0.2s;
+    }
+    .cal-nav-btn:hover {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+    }
+    .cal-selectors {
+        display: flex;
+        gap: 6px;
+        flex-grow: 1;
+        justify-content: center;
+    }
+    .cal-select {
+        background: #222;
+        color: var(--white);
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 0.85em;
+        font-family: inherit;
+        cursor: pointer;
+        outline: none;
+    }
+    .cal-select:focus {
+        border-color: var(--gold);
+    }
+    .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        font-size: 0.75em;
+        font-weight: 700;
+        color: var(--gold);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    .calendar-days-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        text-align: center;
+    }
+    .cal-day-cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85em;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--white);
+        transition: all 0.18s ease;
+        border: 1px solid transparent;
+    }
+    .cal-day-cell:hover:not(.disabled) {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: var(--gold);
+    }
+    .cal-day-cell.selected {
+        background: var(--gold) !important;
+        color: var(--black) !important;
+        font-weight: 700;
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .cal-day-cell.other-month {
+        color: #555;
+    }
+    .cal-day-cell.disabled {
+        color: #444;
+        cursor: not-allowed;
+        opacity: 0.35;
+    }
+    .calendar-footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #333;
+    }
+    .cal-footer-btn {
+        background: none;
+        border: none;
+        font-size: 0.82em;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    .cal-clear-btn { color: var(--silver); }
+    .cal-clear-btn:hover { color: var(--red); }
+    .cal-close-btn { color: var(--gold); }
+    .cal-close-btn:hover { color: var(--white); }
+
+    @media (max-width: 992px) {
+        .edit-profile-layout {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <main>
@@ -27,69 +336,146 @@
     
     <div class="container">
         
-        <!-- ✅ ADDED: Dynamic Back Button -->
-        <a href="/dashboard" style="color: var(--silver); text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back
-        </a>
+        <!-- Dynamic Back Button -->
+        <div class="back-btn-wrapper" style="margin-bottom: 25px;">
+            <a href="javascript:history.back()" class="dynamic-back-btn">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
+
+        <!-- Success & Error Alerts -->
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div style="background: rgba(229, 57, 53, 0.15); border: 1px solid var(--red); color: #ff8a80; padding: 14px 20px; border-radius: 10px; margin-bottom: 25px; font-size: 0.95em; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-circle"></i> <span><%= error %></span>
+            </div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #b0ffb0; padding: 14px 20px; border-radius: 10px; margin-bottom: 25px; font-size: 0.95em; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-check-circle"></i> <span><%= success %></span>
+            </div>
+        <% } %>
 
         <div class="edit-profile-layout">
-            <!-- Profile Details Form -->
+            <!-- Left Column: Personal Details & Avatar -->
             <section class="form-section">
+                <h2><i class="fas fa-user-edit" style="font-size: 0.9em;"></i> Personal Information</h2>
                 
-                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" class="avatar-section" id="avatar-form">
-                    <div class="avatar-preview-wrapper" style="position: relative; margin: 0 auto 20px auto; width: 150px; height: 150px;">
+                <!-- Avatar Preview Card -->
+                <div class="avatar-section" style="text-align: center; margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid rgba(255, 215, 0, 0.12);">
+                    <div class="avatar-preview-wrapper">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview"
                              style="border-color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 25px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
                         
-                        <label for="avatar-input" class="avatar-edit-button" title="Change Avatar" style="z-index: 11;">
+                        <!-- PENCIL ICON BUTTON: Triggers the popup modal -->
+                        <button type="button" class="avatar-edit-button" id="open-avatar-modal-btn" title="Change Profile Picture" aria-label="Change Profile Picture">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--black)">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                             </svg>
-                        </label>
-                        <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg">
+                        </button>
                     </div>
-                    <button type="submit" id="save-avatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; display: none;">Save New Avatar</button>
-                    <button type="button" id="fetch-gravatar-btn" class="submit-button secondary-button" style="margin-bottom: 20px; background-color: #1e8cbe; color: white;">Fetch from Gravatar</button>
+
+                    <% if (user.forumRank && user.forumRank.lottie) { %>
+                        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
+                            <lottie-player src="<%= cdnUrl %>/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
+                        </div>
+                    <% } %>
+
+                    <h3 class="current-username notranslate" style="margin: 0 0 4px 0; font-size: 1.8em; color: var(--white);"><%= user.username %></h3>
+                    <p style="margin: 0; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                        <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints || 0 %> pts)
+                    </p>
+                </div>
+
+                <!-- Hidden form for uploading image from cloud/device -->
+                <form action="/account/update-profile-image" method="POST" enctype="multipart/form-data" id="avatar-form" style="display: none;">
+                    <input type="file" id="avatar-input" name="profileImage" accept="image/png, image/jpeg, image/webp">
                 </form>
-
-                <% if (user.forumRank && user.forumRank.lottie) { %>
-                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                        <lottie-player src="<%= cdnUrl %>/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
-                    </div>
-                <% } %>
-
-                <h3 class="current-username notranslate" style="text-align: center; margin-bottom: 5px; font-size: 2em;"><%= user.username %></h3>
-                <p style="text-align: center; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 30px; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
-                    <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints || 0 %> pts)
-                </p>
 
                 <form action="/account/update-details" method="POST">
                     
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="username"><i class="fas fa-user" style="color: var(--gold); margin-right: 6px;"></i> Username</label>
                         <input type="text" id="username" name="username" value="<%= user.username %>" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="bio">Your Bio</label>
+                        <label for="bio"><i class="fas fa-pen-nib" style="color: var(--gold); margin-right: 6px;"></i> Your Bio</label>
                         <textarea id="bio" name="bio" placeholder="Tell us a little about yourself..."><%= user.bio || '' %></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email Address</label>
+                        <label for="email"><i class="fas fa-envelope" style="color: var(--gold); margin-right: 6px;"></i> Email Address</label>
                         <input type="email" id="email" name="email" value="<%= user.email %>" required>
                          <p class="email-note"><i class="fas fa-exclamation-triangle"></i> Changing your email will require re-verification and log you out.</p>
                     </div>
 
+                    <!-- ======== CUSTOM CALENDAR UI FOR DATE OF BIRTH ======== -->
                     <div class="form-group">
-                        <label for="dateOfBirth">Date of Birth</label>
-                        <input type="date" id="dateOfBirth" name="dateOfBirth" value="<%= user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '' %>" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; color-scheme: dark;">
-                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;">Required to access 18+ content.</p>
+                        <label for="dob-calendar-trigger"><i class="fas fa-calendar-alt" style="color: var(--gold); margin-right: 6px;"></i> Date of Birth</label>
+                        
+                        <div class="custom-calendar-container" id="dob-calendar-container">
+                            <!-- Hidden input storing ISO YYYY-MM-DD for backend submission -->
+                            <input type="hidden" name="dateOfBirth" id="dateOfBirth" value="<%= user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '' %>">
+                            
+                            <!-- Display button that triggers the custom calendar popup -->
+                            <div class="custom-calendar-trigger" id="dob-calendar-trigger" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
+                                <span class="dob-display-text" id="dob-display-text">
+                                    <%= user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : 'Select your Date of Birth' %>
+                                </span>
+                                <div class="calendar-trigger-icons">
+                                    <i class="fas fa-calendar-alt calendar-icon"></i>
+                                </div>
+                            </div>
+
+                            <!-- Custom Calendar Dropdown Popup -->
+                            <div class="custom-calendar-popup" id="dob-calendar-popup" role="dialog" aria-label="Date of Birth Calendar">
+                                <!-- Header: Year & Month controls -->
+                                <div class="calendar-nav-header">
+                                    <button type="button" class="cal-nav-btn" id="cal-prev-month" title="Previous Month"><i class="fas fa-chevron-left"></i></button>
+                                    <div class="cal-selectors">
+                                        <select class="cal-select" id="cal-month-select" aria-label="Select Month">
+                                            <option value="0">January</option>
+                                            <option value="1">February</option>
+                                            <option value="2">March</option>
+                                            <option value="3">April</option>
+                                            <option value="4">May</option>
+                                            <option value="5">June</option>
+                                            <option value="6">July</option>
+                                            <option value="7">August</option>
+                                            <option value="8">September</option>
+                                            <option value="9">October</option>
+                                            <option value="10">November</option>
+                                            <option value="11">December</option>
+                                        </select>
+                                        <select class="cal-select" id="cal-year-select" aria-label="Select Year">
+                                            <!-- Populated dynamically from 1920 to current year -->
+                                        </select>
+                                    </div>
+                                    <button type="button" class="cal-nav-btn" id="cal-next-month" title="Next Month"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+
+                                <!-- Days of Week Header -->
+                                <div class="calendar-weekdays">
+                                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                </div>
+
+                                <!-- Calendar Days Grid -->
+                                <div class="calendar-days-grid" id="cal-days-grid"></div>
+
+                                <!-- Calendar Footer (Actions) -->
+                                <div class="calendar-footer">
+                                    <button type="button" class="cal-footer-btn cal-clear-btn" id="cal-clear-btn">Clear</button>
+                                    <button type="button" class="cal-footer-btn cal-close-btn" id="cal-close-btn">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--silver); margin-top: 6px;">Required to access mature / 18+ content.</p>
                     </div>
+                    <!-- ======================================================= -->
 
                     <!-- ======== CUSTOM COUNTRY SELECTOR ======== -->
                     <div class="form-group">
-                        <label for="country">Country (Optional)</label>
+                        <label for="country"><i class="fas fa-globe-americas" style="color: var(--gold); margin-right: 6px;"></i> Country (Optional)</label>
 
                         <% 
                             const countries = `
@@ -278,25 +664,6 @@ RE|Réunion
 RO|Romania
 RU|Russian Federation
 RW|Rwanda
-BL|Saint Barthélemy
-SH|Saint Helena, Ascension and Tristan da Cunha
-KN|Saint Kitts and Nevis
-LC|Saint Lucia
-MF|Saint Martin (French part)
-PM|Saint Pierre and Miquelon
-VC|Saint Vincent and the Grenadines
-WS|Samoa
-SM|San Marino
-ST|Sao Tome and Principe
-SA|Saudi Arabia
-SN|Senegal
-RS|Serbia
-SC|Seychelles
-SL|Sierra Leone
-SG|Singapore
-SX|Sint Maarten (Dutch part)
-SK|Slovakia
-SI|Slovenia
 SB|Solomon Islands
 SO|Somalia
 ZA|South Africa
@@ -378,45 +745,49 @@ GLOBAL|Earth
                     </div>
                     <!-- ======================================= -->
 
-                    <button type="submit" class="submit-button" style="margin-top: 30px;">Save Profile Changes</button>
+                    <button type="submit" class="submit-button" style="margin-top: 30px;">
+                        <i class="fas fa-save" style="margin-right: 8px;"></i> Save Profile Changes
+                    </button>
                 </form>
             </section>
 
-            <!-- REMOVED PROFESSIONAL EMAIL SECTION -->
-
-            <!-- Change Password Form -->
+            <!-- Right Column: Account Security & Password -->
             <section class="form-section">
                 <% if (user.password) { %>
-                    <h2>Change Password</h2>
+                    <h2><i class="fas fa-key" style="font-size: 0.9em;"></i> Change Password</h2>
                     <form action="/account/change-password" method="POST">
                         <div class="form-group">
                             <label for="current-password">Current Password</label>
-                            <input type="password" id="current-password" name="currentPassword" required>
+                            <input type="password" id="current-password" name="currentPassword" required autocomplete="current-password">
                         </div>
                         <div class="form-group">
                             <label for="new-password">New Password</label>
-                            <input type="password" id="new-password" name="newPassword" required>
+                            <input type="password" id="new-password" name="newPassword" required autocomplete="new-password">
                         </div>
                         <div class="form-group">
                             <label for="confirm-password">Confirm New Password</label>
-                            <input type="password" id="confirm-password" name="confirmPassword" required>
+                            <input type="password" id="confirm-password" name="confirmPassword" required autocomplete="new-password">
                         </div>
-                        <button type="submit" class="submit-button secondary-button">Update Password</button>
+                        <button type="submit" class="submit-button secondary-button">
+                            <i class="fas fa-lock" style="margin-right: 8px;"></i> Update Password
+                        </button>
                     </form>
                 <% } else { %>
-                    <h2>Set Local Password</h2>
-                    <p style="color: var(--silver); margin-bottom: 15px; font-size: 0.9em;">Since you signed up with a social account, you can set a password here to allow logging in with your email directly.</p>
+                    <h2><i class="fas fa-shield-alt" style="font-size: 0.9em;"></i> Set Local Password</h2>
+                    <p style="color: var(--silver); margin-bottom: 18px; font-size: 0.9em; line-height: 1.5;">Since you signed up with a social account, you can set a password here to allow logging in directly with your email address.</p>
                     <form action="/account/change-password" method="POST">
                         <input type="hidden" name="currentPassword" value="social_login_bypass">
                         <div class="form-group">
                             <label for="new-password">Set New Password</label>
-                            <input type="password" id="new-password" name="newPassword" required>
+                            <input type="password" id="new-password" name="newPassword" required autocomplete="new-password">
                         </div>
                         <div class="form-group">
                             <label for="confirm-password">Confirm Password</label>
-                            <input type="password" id="confirm-password" name="confirmPassword" required>
+                            <input type="password" id="confirm-password" name="confirmPassword" required autocomplete="new-password">
                         </div>
-                        <button type="submit" class="submit-button secondary-button">Set Password</button>
+                        <button type="submit" class="submit-button secondary-button">
+                            <i class="fas fa-lock" style="margin-right: 8px;"></i> Set Password
+                        </button>
                     </form>
                 <% } %>
             </section>
@@ -424,10 +795,70 @@ GLOBAL|Earth
     </div>
 </main>
 
+<!-- ======== AVATAR SELECTION MODAL ======== -->
+<div id="avatar-choice-modal" class="avatar-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="avatar-modal-title">
+    <div class="avatar-modal-card">
+        <div style="padding: 20px 24px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-camera-retro" style="color: var(--gold); font-size: 1.3em;"></i>
+                <h3 id="avatar-modal-title" style="margin: 0; color: var(--white); font-size: 1.25em;">Update Profile Picture</h3>
+            </div>
+            <button type="button" id="close-avatar-modal-btn" style="background: none; border: none; color: var(--silver); font-size: 1.6em; cursor: pointer; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">&times;</button>
+        </div>
+        
+        <div style="padding: 24px;">
+            <p style="color: var(--silver); margin-top: 0; margin-bottom: 20px; font-size: 0.9em; line-height: 1.5;">Choose how you want to update your profile picture:</p>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Option 1: Upload from Cloud / Device -->
+                <div class="avatar-option-card" id="option-upload-cloud" role="button" tabindex="0">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 215, 0, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-cloud-upload-alt" style="color: var(--gold); font-size: 1.4em;"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 700; color: var(--white); margin-bottom: 3px; font-size: 1em;">Upload from Device / Cloud</div>
+                        <div style="color: var(--silver); font-size: 0.82em; line-height: 1.4;">Select an image file (PNG, JPG, WebP) from your device or cloud storage</div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em;"></i>
+                </div>
+
+                <!-- Option 2: Fetch from Gravatar -->
+                <div class="avatar-option-card" id="option-fetch-gravatar" role="button" tabindex="0">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(30, 140, 190, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fab fa-grav" style="color: #46b5e8; font-size: 1.6em;"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: 700; color: var(--white); margin-bottom: 3px; font-size: 1em;">Fetch from Gravatar</div>
+                        <div style="color: var(--silver); font-size: 0.82em; line-height: 1.4;">Automatically sync avatar linked to <span style="color: var(--gold); font-weight: 600;"><%= user.email %></span></div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em;"></i>
+                </div>
+            </div>
+
+            <!-- Upload preview & submit block (appears when user selects an image) -->
+            <div id="modal-upload-preview" style="display: none; margin-top: 20px; padding-top: 18px; border-top: 1px solid #333; text-align: center;">
+                <p style="color: var(--gold); font-weight: 600; font-size: 0.88em; margin-bottom: 12px;"><i class="fas fa-check-circle"></i> Image Selected &amp; Ready:</p>
+                <img id="modal-preview-img" src="" alt="Selected Preview" style="width: 85px; height: 85px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--gold); margin-bottom: 15px; box-shadow: 0 0 15px var(--glow-gold);">
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" id="modal-confirm-upload-btn" class="submit-button" style="padding: 10px 20px; font-size: 0.95em; width: auto; min-width: 140px;">Upload Image</button>
+                    <button type="button" id="modal-cancel-upload-btn" class="submit-button secondary-button" style="padding: 10px 18px; font-size: 0.95em; width: auto;">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Gravatar loading indicator -->
+            <div id="gravatar-loading-indicator" style="display: none; margin-top: 20px; text-align: center; color: var(--gold); font-size: 0.9em;">
+                <i class="fas fa-spinner fa-spin" style="margin-right: 8px; font-size: 1.2em;"></i> Syncing image from Gravatar...
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
-        // --- Custom Dropdown Logic ---
+        // ==========================================
+        // 1. CUSTOM COUNTRY DROPDOWN LOGIC
+        // ==========================================
         const wrapper = document.getElementById('wrapper-country');
         const nativeSelect = document.getElementById('country');
         
@@ -445,87 +876,398 @@ GLOBAL|Earth
                 const optionEl = e.target.closest('.custom-option');
                 if (!optionEl) return;
                 
-                // Update UI text
                 selectedText.textContent = optionEl.textContent;
-                // Update hidden select value
                 nativeSelect.value = optionEl.getAttribute('data-value');
                 
-                // Update styling
                 wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
                 optionEl.classList.add('selected');
                 wrapper.classList.remove('open');
             });
 
-            // Close dropdown if clicking outside
             document.addEventListener('click', () => {
                 wrapper.classList.remove('open');
             });
         }
 
-        // --- Live Avatar Preview Logic ---
-        const avatarInput = document.getElementById('avatar-input');
-        const avatarPreview = document.getElementById('avatar-preview');
-        const saveAvatarBtn = document.getElementById('save-avatar-btn');
-        const avatarForm = document.getElementById('avatar-form');
-
-        avatarInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => { 
-                    avatarPreview.src = e.target.result; 
-                    saveAvatarBtn.style.display = 'block'; 
-                }
-                reader.readAsDataURL(this.files[0]);
-            } else {
-                 saveAvatarBtn.style.display = 'none';
-            }
-        });
+        // ==========================================
+        // 2. AVATAR CHOICE MODAL LOGIC (PENCIL ICON)
+        // ==========================================
+        const openAvatarModalBtn = document.getElementById('open-avatar-modal-btn');
+        const avatarModal = document.getElementById('avatar-choice-modal');
+        const closeAvatarModalBtn = document.getElementById('close-avatar-modal-btn');
+        const optionUploadCloud = document.getElementById('option-upload-cloud');
+        const optionFetchGravatar = document.getElementById('option-fetch-gravatar');
         
-        if(avatarForm) {
-            avatarForm.addEventListener('submit', function() {
-                 saveAvatarBtn.disabled = true;
-                 saveAvatarBtn.textContent = 'Uploading...';
+        const avatarInput = document.getElementById('avatar-input');
+        const avatarForm = document.getElementById('avatar-form');
+        const modalUploadPreview = document.getElementById('modal-upload-preview');
+        const modalPreviewImg = document.getElementById('modal-preview-img');
+        const modalConfirmUploadBtn = document.getElementById('modal-confirm-upload-btn');
+        const modalCancelUploadBtn = document.getElementById('modal-cancel-upload-btn');
+        const gravatarLoadingIndicator = document.getElementById('gravatar-loading-indicator');
+
+        function openAvatarModal() {
+            if (!avatarModal) return;
+            avatarModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAvatarModal() {
+            if (!avatarModal) return;
+            avatarModal.classList.remove('show');
+            document.body.style.overflow = '';
+            if (modalUploadPreview) modalUploadPreview.style.display = 'none';
+            if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'none';
+        }
+
+        if (openAvatarModalBtn) {
+            openAvatarModalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openAvatarModal();
             });
         }
 
-        // --- Gravatar Fetch Logic ---
-        const fetchGravatarBtn = document.getElementById('fetch-gravatar-btn');
-        if (fetchGravatarBtn) {
-            fetchGravatarBtn.addEventListener('click', async function() {
-                const originalText = this.textContent;
-                this.textContent = 'Fetching...';
-                this.disabled = true;
-                
+        if (closeAvatarModalBtn) {
+            closeAvatarModalBtn.addEventListener('click', closeAvatarModal);
+        }
+
+        if (avatarModal) {
+            avatarModal.addEventListener('click', (e) => {
+                if (e.target === avatarModal) closeAvatarModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && avatarModal.classList.contains('show')) {
+                    closeAvatarModal();
+                }
+            });
+        }
+
+        // Option 1: Upload from Cloud / Device
+        if (optionUploadCloud && avatarInput) {
+            optionUploadCloud.addEventListener('click', () => {
+                avatarInput.click();
+            });
+        }
+
+        if (avatarInput) {
+            avatarInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        if (modalPreviewImg) modalPreviewImg.src = e.target.result;
+                        if (modalUploadPreview) modalUploadPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    if (modalUploadPreview) modalUploadPreview.style.display = 'none';
+                }
+            });
+        }
+
+        if (modalCancelUploadBtn) {
+            modalCancelUploadBtn.addEventListener('click', () => {
+                if (avatarInput) avatarInput.value = '';
+                if (modalUploadPreview) modalUploadPreview.style.display = 'none';
+            });
+        }
+
+        if (modalConfirmUploadBtn && avatarForm) {
+            modalConfirmUploadBtn.addEventListener('click', () => {
+                modalConfirmUploadBtn.disabled = true;
+                modalConfirmUploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+                avatarForm.submit();
+            });
+        }
+
+        // Option 2: Fetch from Gravatar
+        if (optionFetchGravatar) {
+            optionFetchGravatar.addEventListener('click', async () => {
+                if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'block';
+                if (modalUploadPreview) modalUploadPreview.style.display = 'none';
+
                 try {
                     const response = await fetch('/account/fetch-gravatar', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                        headers: { 'Content-Type': 'application/json' }
                     });
-                    
+
                     if (response.redirected) {
                         window.location.href = response.url;
                         return;
                     }
-                    
+
                     if (response.ok) {
-                        window.location.href = '/profile?success=Gravatar image synced successfully.';
+                        window.location.href = '/profile?success=' + encodeURIComponent('Gravatar image synced successfully.');
                     } else {
                         const errorData = await response.json().catch(() => null);
                         alert(errorData?.error || 'Could not fetch Gravatar. Ensure your email is registered at gravatar.com');
-                        this.textContent = originalText;
-                        this.disabled = false;
+                        if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'none';
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.error('Gravatar fetch error:', err);
                     alert('Network error occurred while fetching Gravatar.');
-                    this.textContent = originalText;
-                    this.disabled = false;
+                    if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'none';
                 }
             });
         }
+
+        // ==========================================
+        // 3. CUSTOM CALENDAR UI (DOB)
+        // ==========================================
+        initCustomDobCalendar({
+            containerId: 'dob-calendar-container',
+            triggerId: 'dob-calendar-trigger',
+            displayTextId: 'dob-display-text',
+            popupId: 'dob-calendar-popup',
+            hiddenInputId: 'dateOfBirth',
+            monthSelectId: 'cal-month-select',
+            yearSelectId: 'cal-year-select',
+            daysGridId: 'cal-days-grid',
+            prevBtnId: 'cal-prev-month',
+            nextBtnId: 'cal-next-month',
+            clearBtnId: 'cal-clear-btn',
+            closeBtnId: 'cal-close-btn'
+        });
+
     });
+
+    // Reusable Custom DOB Calendar Initializer
+    function initCustomDobCalendar(config) {
+        const container = document.getElementById(config.containerId);
+        const trigger = document.getElementById(config.triggerId);
+        const displayText = document.getElementById(config.displayTextId);
+        const popup = document.getElementById(config.popupId);
+        const hiddenInput = document.getElementById(config.hiddenInputId);
+        const monthSelect = document.getElementById(config.monthSelectId);
+        const yearSelect = document.getElementById(config.yearSelectId);
+        const daysGrid = document.getElementById(config.daysGridId);
+        const prevBtn = document.getElementById(config.prevBtnId);
+        const nextBtn = document.getElementById(config.nextBtnId);
+        const clearBtn = document.getElementById(config.clearBtnId);
+        const closeBtn = document.getElementById(config.closeBtnId);
+
+        if (!container || !trigger || !hiddenInput) return;
+
+        const currentYear = new Date().getFullYear();
+        const startYear = 1920;
+
+        // Populate year dropdown (descending from currentYear to startYear)
+        if (yearSelect) {
+            yearSelect.innerHTML = '';
+            for (let y = currentYear; y >= startYear; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+        }
+
+        // Initial Selected Date Parsing
+        let selectedDate = null;
+        if (hiddenInput.value) {
+            const parts = hiddenInput.value.split('-');
+            if (parts.length === 3) {
+                selectedDate = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+            }
+        }
+
+        // Current View State (Month & Year in view)
+        let viewDate = selectedDate ? new Date(selectedDate) : new Date(Date.UTC(currentYear - 20, 0, 1));
+        let viewYear = viewDate.getUTCFullYear();
+        let viewMonth = viewDate.getUTCMonth();
+
+        function updateTriggerDisplay() {
+            if (selectedDate && !isNaN(selectedDate.getTime())) {
+                displayText.textContent = selectedDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    timeZone: 'UTC'
+                });
+                displayText.classList.remove('placeholder');
+            } else {
+                displayText.textContent = 'Select your Date of Birth';
+                displayText.classList.add('placeholder');
+            }
+        }
+
+        function renderCalendar() {
+            if (monthSelect) monthSelect.value = viewMonth;
+            if (yearSelect) yearSelect.value = viewYear;
+
+            if (!daysGrid) return;
+            daysGrid.innerHTML = '';
+
+            const firstDayOfMonth = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay();
+            const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+            const daysInPrevMonth = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+
+            const today = new Date();
+            const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+
+            // Previous month overflow days
+            for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+                const dayNum = daysInPrevMonth - i;
+                const cell = document.createElement('div');
+                cell.className = 'cal-day-cell other-month';
+                cell.textContent = dayNum;
+                cell.addEventListener('click', () => {
+                    viewMonth--;
+                    if (viewMonth < 0) {
+                        viewMonth = 11;
+                        viewYear--;
+                    }
+                    selectDay(viewYear, viewMonth, dayNum);
+                });
+                daysGrid.appendChild(cell);
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const cellDate = new Date(Date.UTC(viewYear, viewMonth, d));
+                const cell = document.createElement('div');
+                cell.className = 'cal-day-cell';
+                cell.textContent = d;
+
+                // Disable future dates (no future DOBs)
+                if (cellDate > todayUTC) {
+                    cell.classList.add('disabled');
+                } else {
+                    if (selectedDate && 
+                        selectedDate.getUTCFullYear() === viewYear && 
+                        selectedDate.getUTCMonth() === viewMonth && 
+                        selectedDate.getUTCDate() === d) {
+                        cell.classList.add('selected');
+                    }
+                    cell.addEventListener('click', () => {
+                        selectDay(viewYear, viewMonth, d);
+                    });
+                }
+                daysGrid.appendChild(cell);
+            }
+
+            // Next month overflow days to fill 35 or 42 grid slots
+            const totalCells = daysGrid.children.length;
+            const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (let n = 1; n <= remaining; n++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-day-cell other-month';
+                cell.textContent = n;
+                cell.addEventListener('click', () => {
+                    viewMonth++;
+                    if (viewMonth > 11) {
+                        viewMonth = 0;
+                        viewYear++;
+                    }
+                    selectDay(viewYear, viewMonth, n);
+                });
+                daysGrid.appendChild(cell);
+            }
+        }
+
+        function selectDay(y, m, d) {
+            const chosen = new Date(Date.UTC(y, m, d));
+            const today = new Date();
+            const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+            if (chosen > todayUTC) return;
+
+            selectedDate = chosen;
+            viewYear = y;
+            viewMonth = m;
+
+            // Update hidden input to ISO YYYY-MM-DD
+            const isoYear = selectedDate.getUTCFullYear();
+            const isoMonth = String(selectedDate.getUTCMonth() + 1).padStart(2, '0');
+            const isoDay = String(selectedDate.getUTCDate()).padStart(2, '0');
+            hiddenInput.value = `${isoYear}-${isoMonth}-${isoDay}`;
+
+            updateTriggerDisplay();
+            renderCalendar();
+            container.classList.remove('open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        // Toggle calendar popup
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = container.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (isOpen) {
+                if (selectedDate) {
+                    viewYear = selectedDate.getUTCFullYear();
+                    viewMonth = selectedDate.getUTCMonth();
+                }
+                renderCalendar();
+            }
+        });
+
+        if (monthSelect) {
+            monthSelect.addEventListener('change', (e) => {
+                viewMonth = parseInt(e.target.value);
+                renderCalendar();
+            });
+        }
+
+        if (yearSelect) {
+            yearSelect.addEventListener('change', (e) => {
+                viewYear = parseInt(e.target.value);
+                renderCalendar();
+            });
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewMonth--;
+                if (viewMonth < 0) {
+                    viewMonth = 11;
+                    viewYear--;
+                }
+                renderCalendar();
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewMonth++;
+                if (viewMonth > 11) {
+                    viewMonth = 0;
+                    viewYear++;
+                }
+                renderCalendar();
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedDate = null;
+                hiddenInput.value = '';
+                updateTriggerDisplay();
+                renderCalendar();
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                container.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                container.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Initialize display text
+        updateTriggerDisplay();
+    }
 </script>
 
 <%- include('../partials/footer') %>

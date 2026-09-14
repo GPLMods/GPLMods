@@ -2599,8 +2599,18 @@ a[href*="history.back"] {
     box-sizing: border-box !important;
     margin-bottom: 20px !important;
     margin-right: auto !important;
-    float: left !important;
+    float: none !important;
+    clear: both !important;
     align-self: flex-start !important;
+}
+
+.back-btn-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 20px;
+    clear: both;
 }
 
 .dynamic-back-btn:hover,
@@ -2624,4 +2634,50 @@ a[href*="history.back"] i {
 .btn-go-back:hover i,
 a[href*="history.back"]:hover i {
     transform: translateX(-2px);
+}
+
+/* Team Card Link Styling (Removes default browser blue underline) */
+.team-card a {
+    color: inherit !important;
+    text-decoration: none !important;
+    display: block;
+}
+.team-card a:hover,
+.team-card a h4,
+.team-card a span {
+    text-decoration: none !important;
+}
+
+/* License & Uploader Golden Underline */
+.meta-info li a.meta-link,
+.meta-info .meta-link,
+.sidebar-summary .meta-link,
+a.meta-link {
+    color: var(--gold) !important;
+    text-decoration: underline !important;
+    text-decoration-color: var(--gold) !important;
+    text-underline-offset: 4px !important;
+}
+
+.meta-info li a.meta-link strong,
+.meta-info .meta-link strong,
+.sidebar-summary .meta-link strong {
+    color: var(--gold) !important;
+}
+
+.meta-info li a.meta-link:visited,
+.meta-info .meta-link:visited,
+.sidebar-summary .meta-link:visited,
+a.meta-link:visited {
+    color: var(--gold) !important;
+    text-decoration-color: var(--gold) !important;
+}
+
+.meta-info li a.meta-link:hover,
+.meta-info .meta-link:hover,
+.sidebar-summary .meta-link:hover,
+a.meta-link:hover {
+    color: var(--white) !important;
+    text-decoration: underline !important;
+    text-decoration-color: var(--gold) !important;
 }

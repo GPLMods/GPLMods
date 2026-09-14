@@ -1138,6 +1138,14 @@
 <main class="container">
     <div class="source-container">
 
+        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+        <div class="back-btn-wrapper" style="margin-bottom: 20px;">
+            <a href="javascript:history.back()" class="dynamic-back-btn">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
+        <!-- ======================================== -->
+
         <!-- Top Repo Banner -->
         <section class="repo-banner">
             <div class="repo-top-row">
@@ -1318,7 +1326,18 @@
 
                     <% if (isImageFile) { %>
                         <div class="image-preview-container">
-                            <img src="<%= rawFileEndpoint %>" alt="<%= fileData.name %>" loading="lazy" />
+                            <img src="<%= (fileData && fileData.dataUrl) ? fileData.dataUrl : rawFileEndpoint %>" 
+                                 data-raw-src="<%= rawFileEndpoint %>" 
+                                 alt="<%= fileData.name %>" 
+                                 loading="lazy" 
+                                 onerror="if (!this.getAttribute('data-tried-raw')) { this.setAttribute('data-tried-raw', 'true'); this.src = this.getAttribute('data-raw-src'); } else { this.style.display = 'none'; this.nextElementSibling.style.display = 'block'; }" />
+                            <div class="image-fallback-error" style="display: none; padding: 30px 20px; text-align: center; color: var(--silver);">
+                                <i class="fas fa-image" style="font-size: 2.5rem; color: #666; margin-bottom: 12px; display: block;"></i>
+                                <p style="margin-bottom: 15px;">Image preview could not be loaded directly.</p>
+                                <a href="<%= rawFileEndpoint %>" target="_blank" class="btn-gh" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-download"></i> Download / View Raw Image
+                                </a>
+                            </div>
                         </div>
                     <% } else if (fileData.content) { %>
                         <pre class="code-viewport line-numbers"><code id="sourceCodeBlock" class="language-<%= fileData.language %>"><%= fileData.content %></code></pre>
@@ -1632,6 +1651,15 @@
                         node.setAttribute('href', href.toLowerCase());
                         node.classList.add('safe-gh-link');
                     }
+                }
+                if (node.tagName === 'IMG' && node.hasAttribute('src')) {
+                    const src = node.getAttribute('src');
+                    if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:') && !src.startsWith('//')) {
+                        const cleanRelPath = src.replace(/^\.?\//, '');
+                        node.setAttribute('src', `/source/<%= encodeURIComponent(safeSlug) %>/raw?path=${encodeURIComponent(cleanRelPath)}<%= activeBranchQuery %>`);
+                    }
+                    node.setAttribute('loading', 'lazy');
+                    node.style.maxWidth = '100%';
                 }
             });
         }

@@ -52,23 +52,23 @@
 
 <div class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+    <div style="max-width: 700px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
         </a>
     </div>
     <!-- ======================================== -->
-    <div class="upload-container">
+    <div class="upload-container" style="margin-top: 1rem;">
         <h2 style="color: var(--gold); margin-bottom: 10px; font-size: 2.2em;">Upload Mod File</h2>
         
         <% if (typeof error !== 'undefined' && error) { %>
             <div style="background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold;"><%= error %></div>
         <% } %>
 
-        <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
-            <!-- DISTRIBUTOR / ADMIN FORM -->
+        <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
+            <!-- DISTRIBUTOR / ADMIN / OWNER FORM -->
             <p style="color: var(--silver); margin-bottom: 1.5rem;">
-                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Account Active ★</span><br>
+                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'owner' ? 'Owner' : (user.role === 'admin' ? 'Admin' : 'Distributor') %> Account Active ★</span><br>
                 Step 1 of 2: Choose your upload method below.
             </p>
 

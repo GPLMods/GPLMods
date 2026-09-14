@@ -6,6 +6,7 @@
     <title>GPL Mods Support Desk & AI Debugger</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
     <style>
         :root { 
             --bg: #0a0a0a; 
@@ -253,11 +254,13 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
+            <div style="margin-bottom: 12px;">
+                <a href="/admin" class="dynamic-back-btn" style="padding: 6px 14px; font-size: 0.85em; display: inline-flex;">
+                    <i class="fas fa-arrow-left"></i> AdminJS
+                </a>
+            </div>
             <h2>Support Desk</h2>
             <p style="margin:4px 0 0 0; font-size: 0.85em; color: var(--silver);">Agent: <%= user.username %></p>
-            <a href="/admin" style="color: var(--blue); font-size: 0.82em; text-decoration: none; margin-top: 6px; display: inline-block;">
-                <i class="fas fa-arrow-left"></i> Back to AdminJS
-            </a>
         </div>
 
         <!-- Live Members & Agents Bar -->

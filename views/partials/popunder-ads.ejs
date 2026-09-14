@@ -1,8 +1,19 @@
 <!-- views/partials/popunder-ads.ejs -->
-<% if (typeof showAds !== 'undefined' && showAds) { %>
+<% 
+const isPrivilegedUser = typeof user !== 'undefined' && user && (
+    ['admin', 'owner', 'distributor'].includes(String(user.role || '').toLowerCase()) ||
+    String(user.membership || '').toLowerCase() === 'premium'
+);
+%>
+<% if (typeof showAds !== 'undefined' && showAds && !isPrivilegedUser) { %>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         
+        // Double check: if user is admin, owner, distributor, or premium, suppress popunders completely
+        <% if (isPrivilegedUser) { %>
+            return;
+        <% } %>
+
         // --- 1. CONSENT CHECK ---
         // Check if the user has accepted the policies via the banner
         const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';

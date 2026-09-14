@@ -275,6 +275,7 @@ UserSchema.virtual('forumRank').get(function() {
 
 UserSchema.virtual('userCategory').get(function() {
     if (!this.isVerified) return 'unverified';
+    if (this.role === 'owner') return 'owner';
     if (this.role === 'admin') return 'admin';
     if (this.role === 'distributor') return 'distributor';
     if (this.membership === 'premium') return 'premium';
@@ -286,8 +287,10 @@ UserSchema.statics.findByCategory = function(categoryQuery) {
     switch (cat) {
         case 'unverified':
             return this.find({ isVerified: false });
+        case 'owner':
+            return this.find({ role: 'owner' });
         case 'admin':
-            return this.find({ role: 'admin' });
+            return this.find({ role: { $in: ['admin', 'owner'] } });
         case 'distributor':
             return this.find({ role: 'distributor' });
         case 'premium':

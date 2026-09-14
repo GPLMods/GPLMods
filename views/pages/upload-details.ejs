@@ -421,7 +421,14 @@
 </style>
 
 <div class="container">
-    <div class="upload-form-container">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div style="max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
+        </a>
+    </div>
+    <!-- ======================================== -->
+    <div class="upload-form-container" style="margin-top: 1rem;">
         <h2>Upload Your Mod <span>- Details</span></h2>
         <p>Step 2 of 2: Your file <strong><%= filename %></strong> is ready. Please provide the details below.</p>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin:15px 0; flex-wrap:wrap;">
@@ -707,8 +714,8 @@
                 </div>
                 <!-- =========================================== -->
 
-            <!-- LINKS & PARTS MANAGEMENT (DISTRIBUTORS/ADMINS - Only for External Link/Multi-part uploads) -->
-            <% if (user && (user.role === 'distributor' || user.role === 'admin') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
+            <!-- LINKS & PARTS MANAGEMENT (DISTRIBUTORS/ADMINS/OWNERS - Only for External Link/Multi-part uploads) -->
+            <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 

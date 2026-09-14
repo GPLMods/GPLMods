@@ -156,11 +156,11 @@
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
 
-            <!-- g. METHOD SELECTION BUTTONS (DISTRIBUTOR / ADMIN) -->
-            <% if (user && (user.role === 'distributor' || user.role === 'admin')) { %>
+            <!-- g. METHOD SELECTION BUTTONS (DISTRIBUTOR / ADMIN / OWNER) -->
+            <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
                 <div style="margin: 30px 0 20px 0; border-top: 1px solid #333; padding-top: 20px;">
                     <p style="color: var(--silver); margin-bottom: 1.5rem;">
-                        <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'admin' ? 'Admin' : 'Distributor' %> Upload Method ★</span>
+                        <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'owner' ? 'Owner' : (user.role === 'admin' ? 'Admin' : 'Distributor') %> Upload Method ★</span>
                     </p>
                     <div class="method-btn-group">
                         <button type="button" class="btn-method active-method" id="btn-show-file">Upload to Cloud</button>
@@ -290,7 +290,7 @@
                         </div>
                     </div>
 
-                    <% if (user.role === 'admin') { %>
+                    <% if (user.role === 'admin' || user.role === 'owner') { %>
                         <div class="form-group" style="border: 1px solid #444; padding: 15px; border-radius: 8px; margin-top: 15px;">
                             <label style="color: var(--gold);">Admin Override: Security Scan Links</label>
                             <input type="url" name="manualFileScanUrl" placeholder="File Scan URL (Optional)" style="margin-bottom: 10px;">
@@ -305,7 +305,7 @@
                 <% 
                     let limitText = (user && user.membership === 'premium') ? "1 GB" : "300 MB"; 
                     let limitBytes = (user && user.membership === 'premium') ? 1073741824 : 314572800;
-                    if (user && (user.role === 'admin' || user.role === 'distributor')) { limitText = "Unlimited"; limitBytes = 999999999999; }
+                    if (user && (user.role === 'admin' || user.role === 'owner' || user.role === 'distributor')) { limitText = "Unlimited"; limitBytes = 999999999999; }
                 %>
                 <p style="color: var(--gold); font-weight: bold; margin: 1rem 0;">Max File Size: <%= limitText %></p>
                 

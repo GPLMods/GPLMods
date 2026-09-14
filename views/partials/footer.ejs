@@ -307,7 +307,7 @@
         </div>
 
         <!-- NEW: Premium Custom YT Feature -->
-        <% if (user && (user.role === 'admin' || user.role === 'distributor' || user.membership === 'premium')) { %>
+        <% if (user && (user.role === 'admin' || user.role === 'owner' || user.role === 'distributor' || user.membership === 'premium')) { %>
             <div class="custom-music-input">
                 <input type="text" id="custom-yt-url" placeholder="Paste YT/YT Music URL..." autocomplete="off">
                 <button id="load-yt-btn" class="btn btn-primary" title="Load Custom Track"><i class="fas fa-search"></i></button>
@@ -345,10 +345,15 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease;
+                user-select: none;
             }
             .gpl-chat-btn:hover { transform: scale(1.1); }
-            .gpl-chat-btn img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+            .gpl-chat-btn img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; transition: transform 0.25s ease, opacity 0.2s ease; }
+            .gpl-chat-btn.active img { display: none; }
+            .gpl-chat-btn .chat-close-icon { display: none; font-size: 1.45em; color: var(--gold); transition: transform 0.25s ease; }
+            .gpl-chat-btn.active .chat-close-icon { display: block; animation: gplChatIconRotate 0.25s ease-out; }
+            @keyframes gplChatIconRotate { from { transform: scale(0.6) rotate(-90deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
 
             /* The Pop-out Greeting Bubble */
             .gpl-chat-greeting {
@@ -370,7 +375,7 @@
             }
             .gpl-chat-greeting.show { opacity: 1; transform: translateX(0); }
 
-            /* The Main Chat Window */
+            /* The Main Chat Window - Smooth Shrink & Expand */
             .gpl-chat-window {
                 position: fixed;
                 bottom: 100px;
@@ -386,15 +391,18 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                transform: translateY(20px);
+                transform-origin: bottom right;
+                transform: scale(0.08) translateY(50px);
                 opacity: 0;
                 visibility: hidden;
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                pointer-events: none;
+                transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.32s;
             }
             .gpl-chat-window.open {
-                transform: translateY(0);
+                transform: scale(1) translateY(0);
                 opacity: 1;
                 visibility: visible;
+                pointer-events: auto;
             }
 
             @media (max-width: 480px) {
@@ -634,14 +642,15 @@
             .gpl-chat-confirm-modal.show { display: flex; opacity: 1; }
         </style>
 
-        <div class="gpl-chat-btn" id="gplChatToggle" title="GPL Support Chat">
+        <div class="gpl-chat-btn" id="gplChatToggle" title="GPL Support Chat" role="button" aria-label="Toggle Support Chat">
             <div class="gpl-chat-greeting" id="gplChatGreeting">May I help you? 👋</div>
-            <img src="/images/team-logo.png" alt="Chat">
+            <img src="/images/team-logo.png" alt="Chat" id="gplChatIconImg">
+            <i class="fas fa-chevron-down chat-close-icon" id="gplChatIconClose" title="Minimize Chat"></i>
         </div>
 
         <div class="gpl-chat-window" id="gplChatWindow">
             <div class="gpl-chat-header">
-                <div class="gpl-chat-team-info">
+                <div class="gpl-chat-team-info" id="gplChatTeamHeader" style="cursor: pointer;" title="Minimize Chat">
                     <div class="gpl-chat-team-avatars">
                         <img src="/images/default-avatar.png" alt="Agent">
                         <img src="/images/team-logo.png" alt="Bot">
@@ -707,7 +716,7 @@
             <% } %>
             
             <form class="gpl-chat-footer" id="gplChatForm">
-                <% if (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) { %>
+                <% if (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
                     <button type="button" class="gpl-chat-attach" id="gplChatAttachBtn" title="Attach Media"><i class="fas fa-paperclip"></i></button>
                     <input type="file" id="gplChatMediaInput" accept="image/*,video/*" style="display: none;" multiple>
                 <% } %>
@@ -811,22 +820,63 @@
                 }
             }, 120000); // 120 seconds
 
-            // 2. Toggle Window
-            if (chatBtn && chatWindow) {
-                chatBtn.addEventListener('click', () => {
-                    chatWindow.classList.toggle('open');
-                    if (greeting) greeting.classList.remove('show');
-                    if (chatWindow.classList.contains('open') && chatInput) {
-                        chatInput.focus();
+            // 2. Toggle Window & Shrink Handlers
+            function closeChatWindow() {
+                if (!chatWindow) return;
+                chatWindow.classList.remove('open');
+                if (chatBtn) chatBtn.classList.remove('active');
+                if (historyDrawer) historyDrawer.classList.remove('open');
+                if (emojiPicker) emojiPicker.classList.remove('active');
+            }
+
+            function openChatWindow() {
+                if (!chatWindow) return;
+                chatWindow.classList.add('open');
+                if (chatBtn) chatBtn.classList.add('active');
+                if (greeting) greeting.classList.remove('show');
+                if (chatInput) {
+                    setTimeout(() => chatInput.focus(), 120);
+                }
+            }
+
+            function toggleChatWindow() {
+                if (!chatWindow) return;
+                if (chatWindow.classList.contains('open')) {
+                    closeChatWindow();
+                } else {
+                    openChatWindow();
+                }
+            }
+
+            if (chatBtn) {
+                chatBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleChatWindow();
+                });
+            }
+
+            if (chatClose) {
+                chatClose.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeChatWindow();
+                });
+            }
+
+            const chatTeamHeader = document.getElementById('gplChatTeamHeader');
+            if (chatTeamHeader) {
+                chatTeamHeader.addEventListener('click', () => {
+                    closeChatWindow();
+                });
+            }
+
+            // Close chat when clicking anywhere outside chat window & launcher button
+            document.addEventListener('click', (e) => {
+                if (chatWindow && chatWindow.classList.contains('open')) {
+                    if (!chatWindow.contains(e.target) && !chatBtn.contains(e.target)) {
+                        closeChatWindow();
                     }
-                });
-            }
-            if (chatClose && chatWindow) {
-                chatClose.addEventListener('click', () => {
-                    chatWindow.classList.remove('open');
-                    if (historyDrawer) historyDrawer.classList.remove('open');
-                });
-            }
+                }
+            });
 
             // 3. Socket.IO Logic
             if (typeof io !== 'undefined') {
@@ -1044,7 +1094,7 @@
                         e.preventDefault();
                         const text = chatInput.value.trim();
                         if (text && sessionId) {
-                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
+                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) ? 'true' : 'false' %>;
                             socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             chatInput.value = '';
                             if (quickReplyContainer) { quickReplyContainer.style.display = 'none'; }
@@ -1069,7 +1119,7 @@
                                 const emailRow = document.getElementById('gplChatEmailRow');
                                 if (emailRow) emailRow.style.display = 'block';
                             }
-                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin')) ? 'true' : 'false' %>;
+                            const isPremium = <%= (typeof user !== 'undefined' && user && (user.membership === 'premium' || user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) ? 'true' : 'false' %>;
                             socket.emit('send_support_message', { sessionId, text, isPremium, guestId });
                             if (quickReplyContainer) { quickReplyContainer.classList.add('closing'); setTimeout(() => { quickReplyContainer.style.display = 'none'; quickReplyContainer.classList.remove('closing'); }, 220); }
                         }

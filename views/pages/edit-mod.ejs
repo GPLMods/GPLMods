@@ -124,13 +124,13 @@
 
 <div class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+    <div style="max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
         </a>
     </div>
     <!-- ======================================== -->
-    <div class="upload-form-container">
+    <div class="upload-form-container" style="margin-top: 1rem;">
         
         <h2>
             Edit 
@@ -452,7 +452,7 @@
                     <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Required to enable direct Sileo/Zebra package installation buttons. Must exactly match the ID in your control file.</span>
                 </div>
 
-            <% if (user && (user.role === 'distributor' || user.role === 'admin') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
+            <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 

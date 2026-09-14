@@ -11,6 +11,31 @@ const catchAsync = (fn) => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+// Middleware: Strictly ensure owner authentication only on owner routes
+const ensureOwner = (req, res, next) => {
+    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
+        if (req.session) req.session.returnTo = req.originalUrl || '/owner';
+        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/owner'));
+    }
+    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
+    if (role === 'owner') return next();
+    
+    // Return 404 to hide the owner page from non-owners entirely
+    return res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: 'The page you are looking for does not exist.'
+    });
+};
+
+// Apply owner protection only to /owner and /api/owner routes
+router.use((req, res, next) => {
+    if (req.path === '/owner' || req.path.startsWith('/owner/') || req.path.startsWith('/api/owner')) {
+        return ensureOwner(req, res, next);
+    }
+    next();
+});
+
 // ==========================================
 // RENDER API
 // ==========================================

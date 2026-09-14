@@ -40,10 +40,17 @@
     .alert-error { background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
 
     /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
+    .form-group.dropdown-group {
+        position: relative;
+        z-index: 50;
+    }
     .custom-select-wrapper {
         position: relative;
         user-select: none;
         width: 100%;
+    }
+    .custom-select-wrapper.open {
+        z-index: 100;
     }
     .custom-select {
         position: relative;
@@ -81,7 +88,7 @@
         border-top: none;
         border-radius: 0 0 8px 8px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        z-index: 100;
+        z-index: 999;
         display: none; /* Hidden by default */
         max-height: 250px;
         overflow-y: auto;
@@ -125,13 +132,13 @@
 
 <main class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+    <div style="max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
         </a>
     </div>
     <!-- ======================================== -->
-    <div class="support-page-container">
+    <div class="support-page-container" style="margin-top: 1rem;">
         <div class="support-header">
             <h1>Contact <span>Support</span></h1>
             <p>Need help? Submit a ticket and our team will reply via your Notifications.</p>
@@ -147,7 +154,7 @@
         <!-- Support Form -->
         <form action="/support" method="POST" id="supportForm">
             
-            <div class="form-group">
+            <div class="form-group dropdown-group">
                 <label>What do you need help with?*</label>
                 
                 <!-- 1. The Hidden Native Select (Used to actually submit the data to the backend) -->
@@ -232,7 +239,8 @@
 
         if (wrapper && customSelect && nativeSelect) {
             // 1. Toggle dropdown open/close when clicking the main box
-            customSelect.addEventListener('click', function() {
+            customSelect.addEventListener('click', function(e) {
+                e.stopPropagation();
                 wrapper.classList.toggle('open');
                 // Reset error styling if it was triggered
                 this.style.borderColor = '';
@@ -241,7 +249,8 @@
 
             // 2. Handle clicking an option
             options.forEach(option => {
-                option.addEventListener('click', function() {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     const value = this.getAttribute('data-value');
                     const text = this.textContent;
 

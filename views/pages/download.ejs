@@ -186,9 +186,9 @@
             justify-content: flex-end;
             justify-self: end;
             /* Pushes the text to the far right edge */
-            text-decoration: underline;
-            text-decoration-color: rgba(255, 215, 0, 0.45);
-            text-underline-offset: 3px;
+            text-decoration: underline !important;
+            text-decoration-color: var(--gold) !important;
+            text-underline-offset: 4px !important;
         }
 
         .meta-info li a.meta-link strong,
@@ -473,9 +473,9 @@
 
         .sidebar-summary .meta-link {
             color: var(--gold);
-            text-decoration: underline;
-            text-decoration-color: rgba(255, 215, 0, 0.45);
-            text-underline-offset: 3px;
+            text-decoration: underline !important;
+            text-decoration-color: var(--gold) !important;
+            text-underline-offset: 4px !important;
             display: inline-flex;
             align-items: center;
             justify-content: flex-end;
@@ -1079,7 +1079,7 @@
                                                     file.category==='ios-jailbroken' ); const
                                                     hasDirectLink=!!file.directDownloadUrl; let
                                                     hasSideloadPermission=false; if (user &&
-                                                    (user.membership==='premium' || user.role==='admin' ||
+                                                    (user.membership==='premium' || user.role==='admin' || user.role==='owner' ||
                                                     user.role==='distributor' )) { hasSideloadPermission=true; } if
                                                     (isIosDirect && hasDirectLink) { %>
                                                     <div class="install-panel"

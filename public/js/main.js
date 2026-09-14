@@ -576,8 +576,8 @@ async function initializeSearchBar() {
  * 5. SEARCH HISTORY & SUGGESTIONS
  * ==================================================================================
  */
-const SEARCH_HISTORY_KEY = 'gplmods_search_history';
-const MAX_HISTORY_ITEMS = 5;
+var SEARCH_HISTORY_KEY = window.SEARCH_HISTORY_KEY || 'gplmods_search_history';
+var MAX_HISTORY_ITEMS = window.MAX_HISTORY_ITEMS || 5;
 
 function getSearchHistory() {
     const historyJSON = localStorage.getItem(SEARCH_HISTORY_KEY);

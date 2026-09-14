@@ -994,7 +994,7 @@ app.use(async (req, res, next) => {
     }
 
     // 3. Always allow access to the Admin Panel, regardless of state
-    if (req.path.startsWith('/admin') || (req.user && req.user.role === 'admin')) {
+    if (req.path.startsWith('/admin') || (req.user && (req.user.role === 'admin' || req.user.role === 'owner'))) {
         return next();
     }
 
@@ -1247,11 +1247,11 @@ app.use(async (req, res, next) => {
         if (isCrawler) {
             shouldShowAds = false;
             shouldShowModals = false;
-        } else if (req.isAuthenticated() && req.user) {
-            // If real user, check privileges
-            const role = req.user.role;
-            const membership = req.user.membership;
-            if (role === 'admin' || role === 'distributor' || membership === 'premium') {
+        } else if (req.user) {
+            // If real user, check privileges (case-insensitive)
+            const role = String(req.user.role || '').toLowerCase();
+            const membership = String(req.user.membership || '').toLowerCase();
+            if (role === 'admin' || role === 'owner' || role === 'distributor' || membership === 'premium') {
                 shouldShowAds = false; 
             }
         }
@@ -1418,7 +1418,7 @@ function ensureAdmin(req, res, next) {
         if (req.session) req.session.returnTo = req.originalUrl || '/admin';
         return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
     }
-    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
+    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
     if (role === 'admin' || role === 'owner') return next();
     
     // Use the universal error template
@@ -1433,7 +1433,7 @@ function ensureAdminOr404(req, res, next) {
         if (req.session) req.session.returnTo = req.originalUrl || '/admin';
         return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
     }
-    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
+    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
     if (role === 'admin' || role === 'owner') {
         res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
         return next();
@@ -1872,7 +1872,7 @@ function canUserAccessSource(user, sourceDoc) {
     if (!sourceDoc) return false;
     if (!sourceDoc.isPrivate) return true;
     if (!user) return false;
-    if (user.role === 'admin') return true;
+    if (user.role === 'admin' || user.role === 'owner') return true;
 
     const allowedRoles = sourceDoc.allowedRoles || [];
     if (allowedRoles.includes(user.role)) return true;
@@ -2000,6 +2000,40 @@ function sanitizeRepoPath(rawPath) {
         .replace(/[\0\r\n]/g, '');
 }
 
+function getSourceMimeType(filePath) {
+    if (!filePath) return 'text/plain; charset=utf-8';
+    const ext = (filePath.split('.').pop() || '').toLowerCase();
+    const mimeMap = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'svg': 'image/svg+xml',
+        'ico': 'image/x-icon',
+        'bmp': 'image/bmp',
+        'avif': 'image/avif',
+        'tiff': 'image/tiff',
+        'tif': 'image/tiff',
+        'pdf': 'application/pdf',
+        'json': 'application/json; charset=utf-8',
+        'xml': 'application/xml; charset=utf-8',
+        'html': 'text/html; charset=utf-8',
+        'htm': 'text/html; charset=utf-8',
+        'css': 'text/css; charset=utf-8',
+        'js': 'text/javascript; charset=utf-8',
+        'mjs': 'text/javascript; charset=utf-8',
+        'txt': 'text/plain; charset=utf-8',
+        'md': 'text/markdown; charset=utf-8',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg'
+    };
+    return mimeMap[ext] || 'text/plain; charset=utf-8';
+}
+
 // Serve raw source file content directly like GitHub raw
 app.get('/source/:slug/raw', async (req, res) => {
     try {
@@ -2022,39 +2056,45 @@ app.get('/source/:slug/raw', async (req, res) => {
         const encodedPath = encodeURIComponent(filePath).replace(/%2F/g, '/');
         const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refQuery}`;
 
+        const mimeType = getSourceMimeType(filePath);
+        const isBinaryOrMedia = /^(image|video|audio|application\/pdf)/i.test(mimeType);
+
         try {
             const response = await axios.get(apiUrl, {
                 ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
-                responseType: 'text',
-                transformResponse: [data => data]
+                responseType: 'arraybuffer'
             });
 
-            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-            res.setHeader('X-Content-Type-Options', 'nosniff');
-            return res.send(response.data);
+            res.setHeader('Content-Type', mimeType);
+            if (!isBinaryOrMedia) {
+                res.setHeader('X-Content-Type-Options', 'nosniff');
+            }
+            return res.send(Buffer.from(response.data));
         } catch (apiErr) {
             // Fallback to raw.githubusercontent.com for public repositories or if API rate-limited
             if (!source.isPrivate) {
                 try {
                     const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentBranch)}/${encodedPath}`;
                     const rawRes = await axios.get(rawUrl, {
-                        responseType: 'text',
-                        transformResponse: [d => d]
+                        responseType: 'arraybuffer'
                     });
-                    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-                    res.setHeader('X-Content-Type-Options', 'nosniff');
-                    return res.send(rawRes.data);
+                    res.setHeader('Content-Type', mimeType);
+                    if (!isBinaryOrMedia) {
+                        res.setHeader('X-Content-Type-Options', 'nosniff');
+                    }
+                    return res.send(Buffer.from(rawRes.data));
                 } catch (rawErr) {
                     if (currentBranch === 'main') {
                         try {
                             const masterUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/${encodedPath}`;
                             const masterRes = await axios.get(masterUrl, {
-                                responseType: 'text',
-                                transformResponse: [d => d]
+                                responseType: 'arraybuffer'
                             });
-                            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-                            res.setHeader('X-Content-Type-Options', 'nosniff');
-                            return res.send(masterRes.data);
+                            res.setHeader('Content-Type', mimeType);
+                            if (!isBinaryOrMedia) {
+                                res.setHeader('X-Content-Type-Options', 'nosniff');
+                            }
+                            return res.send(Buffer.from(masterRes.data));
                         } catch (mErr) {}
                     }
                 }
@@ -2171,17 +2211,28 @@ app.get('/source/:slug', async (req, res) => {
             } else if (data && data.type === 'file') {
                 // Single file view
                 isViewingFile = true;
+                const lowerFileName = (data.name || '').toLowerCase();
+                const isImageFile = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp|avif)$/i.test(lowerFileName);
+                const fileMimeType = getSourceMimeType(data.name);
+
                 let rawCode = '';
+                let dataUrl = null;
+
                 if (data.content && data.encoding === 'base64') {
-                    try {
-                        rawCode = Buffer.from(data.content.replace(/\r?\n/g, ''), 'base64').toString('utf8');
-                    } catch (decErr) {
-                        console.error('Base64 decode error:', decErr.message);
+                    const cleanBase64 = data.content.replace(/[\r\n\s]/g, '');
+                    if (isImageFile) {
+                        dataUrl = `data:${fileMimeType};base64,${cleanBase64}`;
+                    } else {
+                        try {
+                            rawCode = Buffer.from(cleanBase64, 'base64').toString('utf8');
+                        } catch (decErr) {
+                            console.error('Base64 decode error:', decErr.message);
+                        }
                     }
                 }
 
                 // Fallback to direct raw download if content was omitted (large file >1MB or null)
-                if (!rawCode) {
+                if (!rawCode && !dataUrl) {
                     const fallbackUrls = [];
                     if (data.download_url) fallbackUrls.push(data.download_url);
                     fallbackUrls.push(`https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`);
@@ -2193,11 +2244,15 @@ app.get('/source/:slug', async (req, res) => {
                         try {
                             const rawFetch = await axios.get(fUrl, {
                                 ...(!fUrl.includes('raw.githubusercontent.com') ? githubApiConfig({ Accept: 'application/vnd.github.raw+json' }) : {}),
-                                responseType: 'text',
-                                transformResponse: [d => d],
+                                responseType: isImageFile ? 'arraybuffer' : 'text',
+                                transformResponse: isImageFile ? [] : [d => d],
                                 timeout: 7000
                             });
-                            if (typeof rawFetch.data === 'string') {
+                            if (isImageFile && rawFetch.data) {
+                                const b64 = Buffer.from(rawFetch.data).toString('base64');
+                                dataUrl = `data:${fileMimeType};base64,${b64}`;
+                                break;
+                            } else if (typeof rawFetch.data === 'string') {
                                 rawCode = rawFetch.data;
                                 break;
                             }
@@ -2210,9 +2265,10 @@ app.get('/source/:slug', async (req, res) => {
                     path: data.path,
                     sizeFormatted: formatSourceFileSize(data.size),
                     size: data.size,
-                    lines: rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0,
+                    lines: !isImageFile && rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0,
                     language: detectSourceLanguage(data.name),
                     content: rawCode || '',
+                    dataUrl: dataUrl || null,
                     download_url: data.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`
                 };
             }
@@ -2221,23 +2277,38 @@ app.get('/source/:slug', async (req, res) => {
             // If contents call failed, but this was a file path requested, attempt raw.githubusercontent.com fallback!
             if (rawPath && !isViewingFile) {
                 try {
+                    const fileName = rawPath.split('/').pop() || 'file';
+                    const lowerFileName = fileName.toLowerCase();
+                    const isImageFile = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp|avif)$/i.test(lowerFileName);
+                    const fileMimeType = getSourceMimeType(fileName);
                     const rawFallbackUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`;
                     const rawRes = await axios.get(rawFallbackUrl, {
-                        responseType: 'text',
-                        transformResponse: [d => d],
+                        responseType: isImageFile ? 'arraybuffer' : 'text',
+                        transformResponse: isImageFile ? [] : [d => d],
                         timeout: 5000
                     });
-                    if (typeof rawRes.data === 'string') {
+                    if (rawRes.data) {
                         isViewingFile = true;
-                        const fileName = rawPath.split('/').pop() || 'file';
+                        let dataUrl = null;
+                        let rawCode = '';
+                        let byteSize = 0;
+                        if (isImageFile) {
+                            const b64 = Buffer.from(rawRes.data).toString('base64');
+                            dataUrl = `data:${fileMimeType};base64,${b64}`;
+                            byteSize = Buffer.byteLength(Buffer.from(rawRes.data));
+                        } else {
+                            rawCode = typeof rawRes.data === 'string' ? rawRes.data : Buffer.from(rawRes.data).toString('utf8');
+                            byteSize = Buffer.byteLength(rawCode, 'utf8');
+                        }
                         fileData = {
                             name: fileName,
                             path: rawPath,
-                            sizeFormatted: formatSourceFileSize(Buffer.byteLength(rawRes.data, 'utf8')),
-                            size: Buffer.byteLength(rawRes.data, 'utf8'),
-                            lines: (rawRes.data.match(/\n/g) || []).length + 1,
+                            sizeFormatted: formatSourceFileSize(byteSize),
+                            size: byteSize,
+                            lines: isImageFile ? 0 : (rawCode.match(/\n/g) || []).length + 1,
                             language: detectSourceLanguage(fileName),
-                            content: rawRes.data,
+                            content: rawCode,
+                            dataUrl: dataUrl,
                             download_url: rawFallbackUrl
                         };
                     }
@@ -2923,10 +2994,11 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
     }
 });
 // Category / Filter Route
-app.get('/category', async (req, res) => {
+app.get('/category', async (req, res, next) => {
     try {
         // Grab the queries from the URL (e.g., /category?platform=android, /category?cat=wordpress)
-        const rawPlatform = (req.query.platform || req.query.cat || 'all').toLowerCase();
+        const platform = (req.query.platform || req.query.cat || 'all').toLowerCase();
+        const rawPlatform = platform;
         const { subCategory, sort, page = 1 } = req.query;
         const limit = 12;
         const currentPage = parseInt(page);
@@ -3014,7 +3086,10 @@ app.get('/category', async (req, res) => {
 
     } catch (error) { 
         console.error("Category Route Error:", error);
-        return next(error); 
+        if (typeof next === 'function') {
+            return next(error);
+        }
+        return res.status(500).render('pages/500', { error: 'Failed to load category page' });
     }
 });
 
@@ -3294,7 +3369,7 @@ app.post('/community/:slug/reply', ensureAuthenticated, async (req, res) => {
             issue: issue._id,
             author: req.user._id,
             content: req.body.content,
-            isAdminReply: req.user.role === 'admin'
+            isAdminReply: req.user.role === 'admin' || req.user.role === 'owner'
         });
 
         await newReply.save();
@@ -3358,9 +3433,9 @@ app.post('/community/:slug/resolve/:replyId', ensureAuthenticated, async (req, r
 
         if (!issue || !reply) return res.status(404).send("Not found");
 
-        // Verify permissions (Must be Author of the issue or an Admin)
+        // Verify permissions (Must be Author of the issue or an Admin/Owner)
         const isAuthor = issue.author.toString() === req.user._id.toString();
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'owner';
 
         if (!isAuthor && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
@@ -3391,7 +3466,7 @@ app.post('/community/:slug/reopen', ensureAuthenticated, async (req, res) => {
         if (!issue) return res.status(404).send("Not found");
 
         const isAuthor = issue.author.toString() === req.user._id.toString();
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'owner';
         if (!isAuthor && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         issue.status = 're-open';
@@ -3500,7 +3575,7 @@ app.get('/:category/:slug', async (req, res, next) => {
         // --- Security Check for Drafts/Pending ---
         if (masterFile.status !== 'live') {
             const isUploader = req.user && req.user.username === masterFile.uploader;
-            const isAdmin = req.user && req.user.role === 'admin';
+            const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
             if (!isUploader && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' }); 
         }
 
@@ -3915,7 +3990,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         }
 
         const isUploader = req.user.username.toLowerCase() === previousVersion.uploader.toLowerCase();
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.user.role === 'admin' || req.user.role === 'owner';
         if (!isUploader && !isAdmin) {
             return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
@@ -3976,7 +4051,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             const fileSize = req.file.size;
             actualFileSize = fileSize;
             const isPremium = req.user.membership === 'premium';
-            const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
+            const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'owner' || req.user.role === 'distributor';
 
             if (!isAdminOrDist) {
                 if (!isPremium && fileSize > 314572800) {
@@ -6101,7 +6176,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
         });
 
         let dailyLimit = 5;
-        if (req.user.role === 'distributor' || req.user.role === 'admin') dailyLimit = 50;
+        if (req.user.role === 'distributor' || req.user.role === 'admin' || req.user.role === 'owner') dailyLimit = 50;
 
         if (recentUploadCount >= dailyLimit) {
             const UserNotification = require('./models/userNotification');
@@ -6188,7 +6263,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     
     const fileSize = req.file.size;
     const isPremium = req.user.membership === 'premium';
-    const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'distributor';
+    const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'owner' || req.user.role === 'distributor';
     
     const limit300MB = 314572800;
     const limit1GB = 1073741824;
@@ -6315,7 +6390,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
 });
 
 function canManageDraft(file, user) {
-    return Boolean(file && user && (file.uploader === user.username || user.role === 'admin'));
+    return Boolean(file && user && (file.uploader === user.username || user.role === 'admin' || user.role === 'owner'));
 }
 
 function draftSnapshotData(file, body = {}) {
@@ -10227,7 +10302,7 @@ cron.schedule('* * * * *', async () => {
 // OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
 // ===================================
 const ownerRoutes = require('./routes/owner');
-app.use('/', ensureOwner, ownerRoutes);
+app.use('/', ownerRoutes);
 
 // ✅ START THE SERVER
 startServer(); 
