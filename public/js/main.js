@@ -671,13 +671,13 @@ function initializeMobileMenu() {
     const openNav = () => {
         mobileNav.style.display = 'block';
         hamburger.classList.add('open');
-        hamburger.innerHTML = '&times;'; // Show an 'X' icon
+        hamburger.innerHTML = '<i class="fas fa-times"></i>'; // Show an 'X' icon
     };
 
     const closeNav = () => {
         mobileNav.style.display = 'none';
         hamburger.classList.remove('open');
-        hamburger.innerHTML = '&#9776;'; // Show the hamburger icon
+        hamburger.innerHTML = '<i class="fas fa-bars"></i>'; // Show the hamburger icon
     };
 
     // Toggle on hamburger click

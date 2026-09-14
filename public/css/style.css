@@ -2642,6 +2642,10 @@ a[href*="history.back"]:hover i {
     text-decoration: none !important;
     display: block;
 }
+.team-card a {
+    text-decoration: none !important;
+    color: inherit !important;
+}
 .team-card a:hover,
 .team-card a h4,
 .team-card a span {
@@ -2653,7 +2657,7 @@ a[href*="history.back"]:hover i {
 .meta-info .meta-link,
 .sidebar-summary .meta-link,
 a.meta-link {
-    color: var(--gold) !important;
+    color: var(--silver) !important;
     text-decoration: underline !important;
     text-decoration-color: var(--gold) !important;
     text-underline-offset: 4px !important;
@@ -2662,14 +2666,14 @@ a.meta-link {
 .meta-info li a.meta-link strong,
 .meta-info .meta-link strong,
 .sidebar-summary .meta-link strong {
-    color: var(--gold) !important;
+    color: var(--silver) !important;
 }
 
 .meta-info li a.meta-link:visited,
 .meta-info .meta-link:visited,
 .sidebar-summary .meta-link:visited,
 a.meta-link:visited {
-    color: var(--gold) !important;
+    color: var(--silver) !important;
     text-decoration-color: var(--gold) !important;
 }
 
