@@ -182,6 +182,11 @@
                 <span id="aiErrorText">No errors reported</span>
             </div>
             <div class="ai-ping-box" id="aiPingBox"></div>
+            
+            <!-- Gemini Page Visibility Button -->
+            <button type="button" id="openGeminiModalBtn" style="margin-top: 10px; width: 100%; padding: 8px 12px; background: rgba(33, 150, 243, 0.12); border: 1px solid rgba(33, 150, 243, 0.35); border-radius: 6px; color: #64b5f6; font-size: 0.8em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                <i class="fas fa-eye-slash"></i> Configure Gemini Visibility
+            </button>
         </div>
 
         <div style="padding: 0 16px; margin-top: 5px;">
@@ -482,6 +487,171 @@
                 agentInput.value = '';
             }
         });
+
+        // ==========================================
+        // GEMINI VISIBILITY CONFIGURATION MODAL LOGIC
+        // ==========================================
+        const geminiModal = document.getElementById('geminiVisibilityModal');
+        const openGeminiBtn = document.getElementById('openGeminiModalBtn');
+        const closeGeminiBtn = document.getElementById('closeGeminiModalBtn');
+        const cancelGeminiBtn = document.getElementById('cancelGeminiModalBtn');
+        const saveGeminiBtn = document.getElementById('saveGeminiConfigBtn');
+        const geminiMasterToggle = document.getElementById('geminiMasterToggle');
+        const newSlugInput = document.getElementById('newSlugInput');
+        const addSlugBtn = document.getElementById('addSlugBtn');
+        const slugListContainer = document.getElementById('slugListContainer');
+        const slugCount = document.getElementById('slugCount');
+        const feedbackEl = document.getElementById('geminiModalFeedback');
+
+        let currentHiddenPages = [];
+
+        function renderSlugs() {
+            slugListContainer.innerHTML = '';
+            slugCount.textContent = currentHiddenPages.length;
+            if (currentHiddenPages.length === 0) {
+                slugListContainer.innerHTML = '<span style="color:#666; font-size:0.75em; padding:4px;">No pages restricted. Gemini will show on all pages.</span>';
+                return;
+            }
+            currentHiddenPages.forEach((slug, idx) => {
+                const pill = document.createElement('span');
+                pill.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:#222; border:1px solid #444; border-radius:14px; padding:3px 10px; font-size:0.78em; color:#e0e0e0;';
+                pill.innerHTML = `<code>${slug}</code> <i class="fas fa-times" style="cursor:pointer; color:#ff6b6b;" title="Remove"></i>`;
+                pill.querySelector('i').addEventListener('click', () => {
+                    currentHiddenPages.splice(idx, 1);
+                    renderSlugs();
+                });
+                slugListContainer.appendChild(pill);
+            });
+        }
+
+        function addSlugFromInput() {
+            const val = newSlugInput.value.trim();
+            if (!val) return;
+            if (!currentHiddenPages.includes(val)) {
+                currentHiddenPages.push(val);
+                renderSlugs();
+            }
+            newSlugInput.value = '';
+        }
+
+        addSlugBtn.addEventListener('click', addSlugFromInput);
+        newSlugInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSlugFromInput();
+            }
+        });
+
+        async function loadGeminiConfig() {
+            try {
+                const res = await fetch('/api/admin/gemini-config');
+                const data = await res.json();
+                if (data.success) {
+                    geminiMasterToggle.checked = data.enableGeminiChatbot;
+                    currentHiddenPages = data.geminiHiddenPages || [];
+                    renderSlugs();
+                }
+            } catch (err) {
+                console.error("Error loading Gemini config:", err);
+            }
+        }
+
+        function openGeminiModal() {
+            geminiModal.style.display = 'flex';
+            feedbackEl.style.display = 'none';
+            loadGeminiConfig();
+        }
+
+        function closeGeminiModal() {
+            geminiModal.style.display = 'none';
+        }
+
+        openGeminiBtn.addEventListener('click', openGeminiModal);
+        closeGeminiBtn.addEventListener('click', closeGeminiModal);
+        cancelGeminiBtn.addEventListener('click', closeGeminiModal);
+
+        saveGeminiBtn.addEventListener('click', async () => {
+            saveGeminiBtn.disabled = true;
+            saveGeminiBtn.textContent = 'Saving...';
+            try {
+                const res = await fetch('/api/admin/gemini-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enableGeminiChatbot: geminiMasterToggle.checked,
+                        geminiHiddenPages: currentHiddenPages
+                    })
+                });
+                const data = await res.json();
+                saveGeminiBtn.disabled = false;
+                saveGeminiBtn.textContent = 'Save Settings';
+                if (data.success) {
+                    feedbackEl.style.display = 'block';
+                    feedbackEl.style.color = 'var(--green)';
+                    feedbackEl.textContent = '✔ Settings saved! Changes are now live.';
+                    setTimeout(closeGeminiModal, 1500);
+                } else {
+                    feedbackEl.style.display = 'block';
+                    feedbackEl.style.color = 'var(--red)';
+                    feedbackEl.textContent = '✖ Failed: ' + (data.error || 'Unknown error');
+                }
+            } catch (err) {
+                saveGeminiBtn.disabled = false;
+                saveGeminiBtn.textContent = 'Save Settings';
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.color = 'var(--red)';
+                feedbackEl.textContent = '✖ Network error: ' + err.message;
+            }
+        });
     </script>
+
+    <!-- ======== GEMINI VISIBILITY CONFIGURATION MODAL ======== -->
+    <div id="geminiVisibilityModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #181818; border: 1px solid #333; border-radius: 12px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
+                <h3 style="margin: 0; color: var(--gold); font-size: 1.25em; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> Gemini Visibility Settings
+                </h3>
+                <button type="button" id="closeGeminiModalBtn" style="background: none; border: none; color: var(--silver); font-size: 1.4em; cursor: pointer;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: 600; font-size: 0.95em;">
+                    <input type="checkbox" id="geminiMasterToggle" style="width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;" checked>
+                    <span>Enable Gemini Chatbot on Website</span>
+                </label>
+                <p style="margin: 4px 0 0 28px; font-size: 0.78em; color: var(--silver);">
+                    When checked, Gemini will show on all pages by default, except the paths specified below.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-size: 0.85em; font-weight: 600; color: var(--white); margin-bottom: 6px;">
+                    Hide on Specific Pages / URL Slugs:
+                </label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="newSlugInput" placeholder="e.g. mods/:id, /admin, /upload" style="flex: 1; padding: 9px 12px; background: #0d0d0d; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 0.9em; outline: none;">
+                    <button type="button" id="addSlugBtn" style="padding: 9px 16px; background: var(--gold); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Add</button>
+                </div>
+                <div style="font-size: 0.75em; color: #888; margin-top: 6px;">
+                    Supported formats: <code>/upload</code>, <code>mods/:id</code>, <code>/admin/*</code>, <code>/status</code>
+                </div>
+            </div>
+
+            <!-- List of hidden slugs -->
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 0.8em; color: var(--silver); font-weight: 600; margin-bottom: 6px;">Currently Hidden Pages (<span id="slugCount">0</span>):</div>
+                <div id="slugListContainer" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 8px; background: #101010; border: 1px solid #282828; border-radius: 6px; min-height: 48px;">
+                    <!-- Slugs rendered here -->
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #2a2a2a; padding-top: 14px;">
+                <button type="button" id="cancelGeminiModalBtn" style="padding: 8px 16px; background: transparent; border: 1px solid #444; color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Cancel</button>
+                <button type="button" id="saveGeminiConfigBtn" style="padding: 8px 18px; background: var(--gold); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Save Settings</button>
+            </div>
+            <div id="geminiModalFeedback" style="display: none; margin-top: 10px; font-size: 0.8em; text-align: center; color: var(--green);"></div>
+        </div>
+    </div>
 </body>
 </html>

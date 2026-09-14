@@ -751,6 +751,19 @@ app.get('/healthz', (req, res) => {
 // ===============================
 const AUDIO_DIR = path.join(__dirname, 'public', 'audio');
 
+const DEFAULT_TRACK_TITLES = {
+    'bgm-0.mp3': 'You are Good Enough',
+    'bgm-1.mp3': 'Whoopty',
+    'bgm-2.mp3': 'Nekozilla',
+    'bgm-3.mp3': 'Heroes Tonight',
+    'bgm-4.mp3': 'Dreams',
+    'bgm-5.mp3': 'Royalty',
+    'bgm-6.mp3': 'Mortals',
+    'bgm-7.mp3': 'On & On',
+    'bgm-8.mp3': 'Rise Up',
+    'bgm-9.mp3': 'Keep Up'
+};
+
 // Helper to scan public/audio and return all audio files
 async function getLocalAudioTracks() {
     try {
@@ -768,17 +781,16 @@ async function getLocalAudioTracks() {
             const filePath = path.join(AUDIO_DIR, filename);
             const stats = await fs.promises.stat(filePath);
             
-            let friendlyTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-            friendlyTitle = friendlyTitle.replace(/\b\w/g, l => l.toUpperCase());
-            if (/^Bgm \d+$/i.test(friendlyTitle)) {
-                const num = friendlyTitle.match(/\d+/)[0];
-                friendlyTitle = `GPL Ambient Track ${parseInt(num) + 1}`;
+            let trackTitle = DEFAULT_TRACK_TITLES[filename];
+            if (!trackTitle) {
+                let friendlyTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                trackTitle = friendlyTitle.replace(/\b\w/g, l => l.toUpperCase());
             }
 
             return {
                 filename,
                 src: `/audio/${filename}`,
-                title: friendlyTitle,
+                title: trackTitle,
                 size: stats.size,
                 sizeFormatted: (stats.size / (1024 * 1024)).toFixed(2) + ' MB',
                 modifiedAt: stats.mtime
@@ -1481,6 +1493,66 @@ app.use(async (req, res, next) => {
             unreadPersonalCount = await UserNotification.countDocuments({ user: req.user._id, isRead: false });
         }
         res.locals.unreadPersonalCount = unreadPersonalCount;
+
+        // 6. ======== GOOGLE GEMINI CHATBOT VISIBILITY ENGINE ========
+        let chatbotMasterEnabled = true;
+        let hiddenPatterns = [];
+
+        if (typeof cachedSiteState !== 'undefined' && cachedSiteState) {
+            if (typeof cachedSiteState.enableGeminiChatbot === 'boolean') {
+                chatbotMasterEnabled = cachedSiteState.enableGeminiChatbot;
+            }
+            if (Array.isArray(cachedSiteState.geminiHiddenPages)) {
+                hiddenPatterns = cachedSiteState.geminiHiddenPages;
+            } else if (typeof cachedSiteState.geminiHiddenPages === 'string') {
+                hiddenPatterns = cachedSiteState.geminiHiddenPages.split(/[,\n\r]+/).map(s => s.trim()).filter(Boolean);
+            }
+        }
+
+        let isChatbotHiddenOnPage = false;
+        const currentReqPath = (req.path || '').toLowerCase();
+
+        if (chatbotMasterEnabled && hiddenPatterns.length > 0) {
+            isChatbotHiddenOnPage = hiddenPatterns.some(rawPattern => {
+                if (!rawPattern) return false;
+                let pattern = rawPattern.trim().toLowerCase();
+                if (!pattern) return false;
+
+                // Ensure leading slash
+                if (!pattern.startsWith('/')) pattern = '/' + pattern;
+
+                // Exact match (e.g. /upload, /status)
+                if (currentReqPath === pattern || currentReqPath === pattern + '/') return true;
+
+                // Dynamic param pattern like /mods/:id, /users/:username
+                if (pattern.includes('/:')) {
+                    const regexString = '^' + pattern.replace(/:[a-zA-Z0-9_]+/g, '[^\\/]+') + '(\\/?|\\/.*)?$';
+                    try {
+                        if (new RegExp(regexString).test(currentReqPath)) return true;
+                    } catch (e) {}
+                }
+
+                // Wildcard / prefix pattern e.g. /admin/* or /mods/*
+                if (pattern.endsWith('/*')) {
+                    const prefix = pattern.slice(0, -2);
+                    if (currentReqPath === prefix || currentReqPath.startsWith(prefix + '/')) return true;
+                }
+                if (pattern.endsWith('*')) {
+                    const prefix = pattern.slice(0, -1);
+                    if (currentReqPath.startsWith(prefix)) return true;
+                }
+
+                // Subdirectory prefix match e.g. /admin or /mods/
+                if (pattern !== '/' && (currentReqPath === pattern || currentReqPath.startsWith(pattern + '/'))) {
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
+        // By default Gemini shows on all pages, unless disabled globally or hidden for current page
+        res.locals.showChatbot = chatbotMasterEnabled && !isChatbotHiddenOnPage;
         
         next(); 
         
@@ -1496,6 +1568,7 @@ app.use(async (req, res, next) => {
         res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         res.locals.showAds = false;
         res.locals.showModals = false;
+        res.locals.showChatbot = true; // Default to showing chatbot
         res.locals.generateAdLink = (url) => url; // Return normal url if Ad Generator fails
         
         next(); 
@@ -7677,6 +7750,55 @@ app.post('/api/admin/ai-ping', ensureAuthenticated, ensureSupportOrAdmin, async 
         }
 
         res.status(500).json({ success: false, latencyMs: latency, error: err.message || String(err), status: aiDebuggerStatus });
+    }
+});
+// --- GEMINI VISIBILITY CONFIGURATION ROUTES ---
+app.get('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        res.json({
+            success: true,
+            enableGeminiChatbot: state?.enableGeminiChatbot !== false,
+            geminiHiddenPages: state?.geminiHiddenPages || []
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { enableGeminiChatbot, geminiHiddenPages } = req.body;
+        let pagesArray = [];
+        if (Array.isArray(geminiHiddenPages)) {
+            pagesArray = geminiHiddenPages.map(p => String(p).trim()).filter(Boolean);
+        } else if (typeof geminiHiddenPages === 'string') {
+            pagesArray = geminiHiddenPages.split(/[,\n\r]+/).map(p => p.trim()).filter(Boolean);
+        }
+
+        const updateData = {};
+        if (typeof enableGeminiChatbot === 'boolean') {
+            updateData.enableGeminiChatbot = enableGeminiChatbot;
+        }
+        updateData.geminiHiddenPages = pagesArray;
+
+        const updatedState = await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $set: updateData },
+            { new: true, upsert: true }
+        );
+
+        // Immediately update in-memory cache to bypass 30s delay
+        cachedSiteState = updatedState;
+
+        res.json({
+            success: true,
+            message: 'Gemini visibility settings updated successfully!',
+            enableGeminiChatbot: updatedState.enableGeminiChatbot !== false,
+            geminiHiddenPages: updatedState.geminiHiddenPages
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 

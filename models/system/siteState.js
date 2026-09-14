@@ -57,6 +57,14 @@ const SiteStateSchema = new Schema({
         title: { type: String },
         src: { type: String }
     }],
+    enableGeminiChatbot: {
+        type: Boolean,
+        default: true
+    },
+    geminiHiddenPages: [{
+        type: String,
+        trim: true
+    }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);

@@ -763,16 +763,26 @@ async function createAdminRouter() {
                         new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
                         delete: { isAccessible: false } 
                     },
-                    listProperties: ['status', 'targetAudience', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
+                    listProperties: ['status', 'targetAudience', 'enableGeminiChatbot', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
+                    showProperties: [
+                        'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
+                        'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 'unavailableTitle',
+                        'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
+                        'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
+                        'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
+                        'socialLinks.threads', 'socialLinks.gravatar', 'updatedAt'
+                    ],
                     editProperties: [
-                        'status', 'targetAudience', 'targetUsername', 'enableAutomationEngine',
-                        'maintenanceTitle', 'maintenanceMessage', 
+                        'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
+                        'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 
                         'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
                         'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
                         'socialLinks.threads', 'socialLinks.gravatar'
                     ],
                     properties: {
+                        enableGeminiChatbot: { description: 'Master toggle to show or hide the Google Gemini Support Chatbot on the website.' },
+                        geminiHiddenPages: { description: 'Pages or URL slug patterns where Gemini Chatbot should be hidden (e.g. /admin, /upload, /mods/:id, /status).' },
                         maintenanceMessage: { type: 'richtext' },
                         unavailableMessage: { type: 'richtext' },
                         targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
