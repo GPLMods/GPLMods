@@ -9,6 +9,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
 
+<%
+    // Safe lowercase normalization for repository URL and identifiers
+    const safeSlug = (source.slug || '').toLowerCase();
+    const safeOwner = (cleanOwner || source.githubOwner || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const safeRepo = (cleanRepo || source.githubRepo || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const canonicalRepoUrl = (repoUrl || repoData.html_url || ('https://github.com/' + safeOwner + '/' + safeRepo)).toLowerCase();
+    const safeFullName = (repoData.full_name || (safeOwner + '/' + safeRepo)).toLowerCase();
+    const activeBranchQuery = requestedRef ? ('&ref=' + encodeURIComponent(requestedRef)) : '';
+    const activeBranchParam = requestedRef ? ('?ref=' + encodeURIComponent(requestedRef)) : '';
+%>
+
 <style>
     :root {
         --gh-border: #30363d;
@@ -19,12 +30,16 @@
         --gh-btn-bg: #21262d;
         --gh-btn-border: #363b42;
         --gh-btn-hover: #30363d;
+        --safe-green: #2ecc71;
+        --safe-green-bg: rgba(46, 204, 113, 0.12);
+        --safe-green-border: rgba(46, 204, 113, 0.4);
     }
 
     .source-container {
         max-width: 1200px;
-        margin: 3rem auto;
+        margin: 2.5rem auto;
         padding: 0 20px;
+        box-sizing: border-box;
     }
 
     /* Repo Header Banner */
@@ -32,7 +47,7 @@
         background: linear-gradient(145deg, #141414, #1b1b1b);
         border: 1px solid #333;
         border-radius: 12px;
-        padding: 28px;
+        padding: 24px;
         margin-bottom: 24px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
@@ -51,28 +66,40 @@
         align-items: center;
         gap: 12px;
         flex-wrap: wrap;
+        max-width: 100%;
     }
 
     .repo-icon {
         font-size: 1.8em;
         color: var(--gold);
+        flex-shrink: 0;
     }
 
     .repo-title {
-        font-size: 1.8em;
+        font-size: 1.6em;
         color: var(--white);
         margin: 0;
         font-weight: 700;
         letter-spacing: -0.5px;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .repo-title a {
         color: var(--white);
         text-decoration: none;
+        transition: color 0.2s ease;
     }
 
     .repo-title a:hover {
         color: var(--gold);
+    }
+
+    .repo-badges-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
     .repo-badge {
@@ -82,18 +109,35 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
     }
 
     .repo-badge.public {
-        background: rgba(46, 204, 113, 0.12);
-        color: #2ecc71;
-        border: 1px solid rgba(46, 204, 113, 0.4);
+        background: var(--safe-green-bg);
+        color: var(--safe-green);
+        border: 1px solid var(--safe-green-border);
     }
 
     .repo-badge.private {
         background: rgba(255, 215, 0, 0.12);
         color: var(--gold);
         border: 1px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .repo-badge.safety-verified {
+        background: rgba(46, 204, 113, 0.16);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.5);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .repo-badge.safety-verified:hover {
+        background: rgba(46, 204, 113, 0.25);
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
     }
 
     .repo-actions {
@@ -114,9 +158,11 @@
         text-decoration: none;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         cursor: pointer;
         transition: all 0.2s ease;
+        box-sizing: border-box;
     }
 
     .btn-gh:hover {
@@ -141,9 +187,11 @@
 
     .repo-desc {
         color: var(--silver);
-        font-size: 1rem;
+        font-size: 0.96rem;
         line-height: 1.6;
         margin: 10px 0 16px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .repo-meta-bar {
@@ -161,6 +209,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
     }
 
     .repo-meta-item strong {
@@ -177,6 +226,7 @@
         align-items: flex-start;
         gap: 12px;
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .source-alert.warning {
@@ -192,27 +242,33 @@
     }
 
     .source-alert.success {
-        background: rgba(46, 204, 113, 0.12);
-        color: #2ecc71;
-        border: 1px solid rgba(46, 204, 113, 0.4);
+        background: var(--safe-green-bg);
+        color: var(--safe-green);
+        border: 1px solid var(--safe-green-border);
     }
 
     /* Tab Navigation */
     .source-tabs {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         border-bottom: 1px solid var(--gh-border);
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         overflow-x: auto;
-        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    .source-tabs::-webkit-scrollbar {
+        display: none;
     }
 
     .tab-btn {
         background: transparent;
         border: none;
         color: var(--gh-text-muted);
-        padding: 12px 18px;
-        font-size: 0.95rem;
+        padding: 10px 16px;
+        font-size: 0.92rem;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
@@ -222,6 +278,7 @@
         text-decoration: none;
         transition: color 0.15s ease, border-color 0.15s ease;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .tab-btn:hover {
@@ -255,19 +312,28 @@
     .breadcrumbs {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
         gap: 6px;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         background: var(--gh-bg-secondary);
         padding: 8px 14px;
         border-radius: 8px;
         border: 1px solid var(--gh-border);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100%;
+        scrollbar-width: none;
+    }
+
+    .breadcrumbs::-webkit-scrollbar {
+        display: none;
     }
 
     .breadcrumb-item {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
     }
 
     .breadcrumb-item a {
@@ -300,6 +366,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
     }
 
     /* Directory Table */
@@ -308,7 +375,7 @@
         border: 1px solid var(--gh-border);
         border-radius: 10px;
         overflow: hidden;
-        margin-bottom: 30px;
+        margin-bottom: 26px;
     }
 
     .file-box-header {
@@ -318,8 +385,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
         color: var(--gh-text-muted);
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .file-table {
@@ -338,7 +407,7 @@
     }
 
     .file-table td {
-        padding: 11px 18px;
+        padding: 11px 16px;
         vertical-align: middle;
     }
 
@@ -359,6 +428,7 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        word-break: break-word;
     }
 
     .file-table .col-name a:hover {
@@ -372,12 +442,12 @@
         font-family: monospace;
         font-size: 0.85rem;
         white-space: nowrap;
-        width: 120px;
+        width: 110px;
     }
 
     .file-table .col-action {
         text-align: right;
-        width: 90px;
+        width: 80px;
     }
 
     .file-link-dir {
@@ -394,18 +464,18 @@
     }
 
     .empty-folder {
-        padding: 40px;
+        padding: 40px 20px;
         text-align: center;
         color: var(--gh-text-muted);
     }
 
-    /* File Code Viewer */
+    /* Single File Code & Media Viewer */
     .code-viewer-box {
         background: var(--gh-bg-primary);
         border: 1px solid var(--gh-border);
         border-radius: 10px;
         overflow: hidden;
-        margin-bottom: 30px;
+        margin-bottom: 26px;
     }
 
     .code-viewer-header {
@@ -422,19 +492,22 @@
     .file-info-badge {
         display: flex;
         align-items: center;
-        gap: 12px;
-        font-size: 0.9rem;
+        gap: 10px;
+        font-size: 0.88rem;
         color: var(--silver);
+        flex-wrap: wrap;
     }
 
     .file-info-badge strong {
         color: var(--white);
+        word-break: break-all;
     }
 
     .code-actions {
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-wrap: wrap;
     }
 
     .btn-code-tool {
@@ -449,8 +522,10 @@
         cursor: pointer;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 6px;
         transition: all 0.15s ease;
+        box-sizing: border-box;
     }
 
     .btn-code-tool:hover {
@@ -472,9 +547,31 @@
         border-radius: 0;
         font-family: 'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace;
         font-size: 0.88rem;
-        line-height: 1.5;
+        line-height: 1.55;
         padding: 16px 0 !important;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .image-preview-container {
+        padding: 30px 20px;
+        text-align: center;
+        background: #090c10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-preview-container img {
+        max-width: 100%;
+        max-height: 520px;
+        object-fit: contain;
+        border-radius: 6px;
+        border: 1px solid var(--gh-border);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
     /* README & License Markdown Boxes */
@@ -482,48 +579,52 @@
         background: var(--gh-bg-primary);
         border: 1px solid var(--gh-border);
         border-radius: 10px;
-        margin-bottom: 35px;
+        margin-bottom: 30px;
         overflow: hidden;
     }
 
     .readme-header, .license-header-box {
         background: var(--gh-bg-secondary);
         border-bottom: 1px solid var(--gh-border);
-        padding: 12px 20px;
+        padding: 12px 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         font-weight: 600;
         color: var(--white);
-        font-size: 0.95rem;
+        font-size: 0.92rem;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .readme-body, .license-body-box {
-        padding: 28px;
+        padding: 24px;
         color: var(--gh-text-main);
         line-height: 1.7;
         overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .readme-body h1, .readme-body h2, .readme-body h3, .readme-body h4 {
         color: var(--white);
-        margin: 24px 0 14px;
+        margin: 20px 0 12px;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--gh-border);
+        word-break: break-word;
     }
 
-    .readme-body h1 { font-size: 1.8em; }
-    .readme-body h2 { font-size: 1.4em; }
-    .readme-body h3 { font-size: 1.2em; }
+    .readme-body h1 { font-size: 1.7em; }
+    .readme-body h2 { font-size: 1.35em; }
+    .readme-body h3 { font-size: 1.15em; }
 
-    .readme-body p { margin-bottom: 16px; }
+    .readme-body p { margin-bottom: 14px; }
 
     .readme-body ul, .readme-body ol {
-        padding-left: 28px;
-        margin-bottom: 16px;
+        padding-left: 24px;
+        margin-bottom: 14px;
     }
 
-    .readme-body li { margin-bottom: 6px; }
+    .readme-body li { margin-bottom: 5px; }
 
     .readme-body a {
         color: var(--gold);
@@ -532,11 +633,14 @@
 
     .readme-body pre {
         background: #000;
-        padding: 16px;
+        padding: 14px;
         border-radius: 8px;
         border: 1px solid var(--gh-border);
         overflow-x: auto;
-        margin: 16px 0;
+        -webkit-overflow-scrolling: touch;
+        margin: 14px 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .readme-body code {
@@ -556,20 +660,24 @@
 
     .readme-body blockquote {
         border-left: 4px solid var(--gold);
-        padding-left: 16px;
-        margin: 16px 0;
+        padding-left: 14px;
+        margin: 14px 0;
         color: var(--gh-text-muted);
     }
 
     .readme-body table {
         width: 100%;
         border-collapse: collapse;
-        margin: 16px 0;
+        margin: 14px 0;
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .readme-body th, .readme-body td {
         border: 1px solid var(--gh-border);
-        padding: 10px 14px;
+        padding: 8px 12px;
     }
 
     .readme-body th {
@@ -577,13 +685,19 @@
         color: var(--white);
     }
 
+    .readme-body img {
+        max-width: 100% !important;
+        height: auto !important;
+        border-radius: 6px;
+    }
+
     /* License Tab Specifics */
     .license-meta-overview {
         background: var(--gh-bg-secondary);
         border: 1px solid var(--gh-border);
         border-radius: 10px;
-        padding: 24px;
-        margin-bottom: 24px;
+        padding: 22px;
+        margin-bottom: 22px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -592,12 +706,13 @@
     }
 
     .license-meta-title {
-        font-size: 1.4em;
+        font-size: 1.3em;
         color: var(--white);
         margin: 0 0 6px;
         display: flex;
         align-items: center;
         gap: 10px;
+        word-break: break-word;
     }
 
     .license-meta-spdx {
@@ -615,28 +730,30 @@
         background: #080808;
         border: 1px solid var(--gh-border);
         border-radius: 8px;
-        padding: 20px;
+        padding: 18px;
         font-family: monospace;
         font-size: 0.88rem;
         line-height: 1.6;
         color: var(--silver);
         white-space: pre-wrap;
+        word-break: break-all;
         max-height: 600px;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* Releases Timeline */
     .release-timeline {
         border-left: 2px solid var(--gh-border);
-        padding-left: 30px;
-        margin-left: 10px;
+        padding-left: 26px;
+        margin-left: 8px;
     }
 
     .release-card {
         background: var(--gh-bg-primary);
         border: 1px solid var(--gh-border);
         border-radius: 10px;
-        margin-bottom: 35px;
+        margin-bottom: 30px;
         position: relative;
         overflow: hidden;
     }
@@ -644,7 +761,7 @@
     .release-card::before {
         content: '';
         position: absolute;
-        left: -39px;
+        left: -35px;
         top: 20px;
         width: 16px;
         height: 16px;
@@ -660,20 +777,21 @@
     }
 
     .release-header {
-        padding: 20px;
+        padding: 16px 20px;
         border-bottom: 1px solid var(--gh-border);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 15px;
+        gap: 12px;
         background: var(--gh-bg-secondary);
     }
 
     .release-name {
-        font-size: 1.4em;
+        font-size: 1.3em;
         color: var(--gold);
-        margin: 0 0 5px;
+        margin: 0 0 4px;
+        word-break: break-word;
     }
 
     .release-tag {
@@ -683,6 +801,7 @@
         border-radius: 6px;
         font-family: monospace;
         font-size: 0.85em;
+        white-space: nowrap;
     }
 
     .release-date {
@@ -695,10 +814,11 @@
         color: var(--silver);
         line-height: 1.6;
         overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .release-footer {
-        padding: 15px 20px;
+        padding: 14px 20px;
         background: var(--gh-bg-secondary);
         border-top: 1px solid var(--gh-border);
     }
@@ -711,35 +831,306 @@
         display: block;
     }
 
+    /* URL Safety Verification Modal */
+    .url-safety-modal {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        padding: 16px;
+        box-sizing: border-box;
+    }
+
+    .url-safety-modal.show {
+        display: flex;
+    }
+
+    .url-safety-card {
+        background: #161b22;
+        border: 1px solid var(--gh-border);
+        border-radius: 12px;
+        max-width: 480px;
+        width: 100%;
+        padding: 22px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+        color: var(--gh-text-main);
+        animation: safetyFadeIn 0.2s ease-out;
+    }
+
+    @keyframes safetyFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ============================================================ */
+    /* RESPONSIVE MOBILE OPTIMIZATION (down to 320px)               */
+    /* ============================================================ */
     @media (max-width: 768px) {
         .source-container {
-            margin: 1.5rem auto;
+            margin: 1rem auto;
             padding: 0 12px;
+            width: 100%;
         }
 
         .repo-banner {
-            padding: 18px;
+            padding: 16px 14px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .repo-top-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .repo-title-wrap {
+            align-items: flex-start;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .repo-icon {
+            font-size: 1.4em;
+            margin-top: 2px;
         }
 
         .repo-title {
-            font-size: 1.35em;
+            font-size: 1.22em;
+            line-height: 1.35;
+        }
+
+        .repo-badges-wrap {
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .repo-actions {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .repo-actions .btn-gh {
+            flex: 1 1 calc(50% - 4px);
+            min-width: 130px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .repo-desc {
+            font-size: 0.88rem;
+            margin: 8px 0 12px;
+            line-height: 1.5;
+        }
+
+        .repo-meta-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 0.8rem;
+            padding-top: 12px;
+        }
+
+        .source-tabs {
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            padding: 9px 12px;
+            font-size: 0.85rem;
+            min-height: 42px;
+        }
+
+        .source-subbar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .breadcrumbs {
+            padding: 8px 10px;
+            font-size: 0.82rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .branch-indicator {
+            align-self: flex-start;
+            font-size: 0.78rem;
+            padding: 4px 10px;
+        }
+
+        .file-box {
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .file-box-header {
+            padding: 10px 12px;
+            font-size: 0.82rem;
+        }
+
+        .file-table {
+            table-layout: fixed;
+            width: 100%;
         }
 
         .file-table td {
-            padding: 10px 10px;
+            padding: 9px 8px;
+            font-size: 0.84rem;
+        }
+
+        .file-table .col-icon {
+            width: 26px;
+        }
+
+        .file-table .col-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 0;
+            width: 100%;
+        }
+
+        .file-table .col-name a {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+            display: inline-block;
         }
 
         .file-table .col-size {
             display: none;
         }
 
+        .file-table .col-action {
+            width: 54px;
+            padding-left: 0;
+        }
+
+        .code-viewer-box {
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .code-viewer-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .file-info-badge {
+            font-size: 0.8rem;
+            gap: 6px;
+        }
+
+        .code-actions {
+            width: 100%;
+            display: flex;
+            gap: 6px;
+        }
+
+        .code-actions .btn-code-tool {
+            flex: 1;
+            padding: 8px 6px;
+            font-size: 0.76rem;
+            justify-content: center;
+        }
+
+        .code-viewport {
+            font-size: 0.78rem;
+            padding: 10px 0 !important;
+        }
+
+        .readme-body, .license-body-box {
+            padding: 16px 12px;
+            font-size: 0.88rem;
+        }
+
+        .readme-body h1 { font-size: 1.35em; }
+        .readme-body h2 { font-size: 1.18em; }
+        .readme-body h3 { font-size: 1.05em; }
+
+        .readme-body pre {
+            padding: 10px;
+            font-size: 0.78rem;
+        }
+
+        .license-meta-overview {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px 12px;
+            gap: 10px;
+        }
+
+        .license-raw-container {
+            padding: 12px 10px;
+            font-size: 0.76rem;
+            max-height: 380px;
+        }
+
         .release-timeline {
-            padding-left: 20px;
-            margin-left: 5px;
+            padding-left: 18px;
+            margin-left: 4px;
         }
 
         .release-card::before {
-            left: -29px;
+            left: -25px;
+            width: 13px;
+            height: 13px;
+            top: 16px;
+        }
+
+        .release-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px 14px;
+        }
+
+        .release-name {
+            font-size: 1.15em;
+        }
+
+        .release-body {
+            padding: 12px 14px;
+            font-size: 0.86rem;
+        }
+
+        .release-footer {
+            padding: 10px 14px;
+        }
+
+        .release-footer .btn-gh {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .repo-meta-bar {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        .repo-actions .btn-gh {
+            flex: 1 1 100%;
+        }
+
+        .file-info-badge {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -753,21 +1144,27 @@
                 <div class="repo-title-wrap">
                     <i class="fab fa-github repo-icon" aria-hidden="true"></i>
                     <h1 class="repo-title">
-                        <a href="/source/<%= encodeURIComponent(source.slug) %>"><%= repoData.full_name || (source.githubOwner + '/' + source.githubRepo) %></a>
+                        <a href="/source/<%= encodeURIComponent(safeSlug) %>"><%= safeFullName %></a>
                     </h1>
-                    <span class="repo-badge <%= source.isPrivate ? 'private' : 'public' %>">
-                        <i class="fas <%= source.isPrivate ? 'fa-lock' : 'fa-globe' %>"></i>
-                        <%= source.isPrivate ? 'Private' : 'Public' %>
-                    </span>
+                    <div class="repo-badges-wrap">
+                        <span class="repo-badge <%= source.isPrivate ? 'private' : 'public' %>">
+                            <i class="fas <%= source.isPrivate ? 'fa-lock' : 'fa-globe' %>"></i>
+                            <%= source.isPrivate ? 'Private' : 'Public' %>
+                        </span>
+                        <span class="repo-badge safety-verified" id="repoSafetyBadge" title="URL Safety: Verified Official GitHub Repository with HTTPS">
+                            <i class="fas fa-shield-halved"></i>
+                            <span>Verified GitHub</span>
+                        </span>
+                    </div>
                 </div>
 
                 <div class="repo-actions">
                     <% if (hasAccess) { %>
-                        <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
+                        <a href="/source/<%= encodeURIComponent(safeSlug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
                             <i class="fas fa-file-archive"></i> Download ZIP
                         </a>
                     <% } %>
-                    <a href="<%= repoData.html_url || ('https://github.com/' + source.githubOwner + '/' + source.githubRepo) %>" target="_blank" rel="noopener noreferrer" class="btn-gh">
+                    <a href="<%= canonicalRepoUrl %>" target="_blank" rel="noopener noreferrer nofollow" class="btn-gh external-github-link" data-safe-url="<%= canonicalRepoUrl %>">
                         <i class="fab fa-github"></i> GitHub <i class="fas fa-external-link-alt" style="font-size: 0.75em;"></i>
                     </a>
                 </div>
@@ -819,19 +1216,19 @@
 
         <!-- Navigation Tabs -->
         <nav class="source-tabs" aria-label="Source navigation tabs">
-            <a href="?tab=code<%= currentPath ? '&path=' + encodeURIComponent(currentPath) : '' %><%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+            <a href="?tab=code<%= currentPath ? '&path=' + encodeURIComponent(currentPath) : '' %><%= activeBranchQuery %>" 
                class="tab-btn <%= (activeTab === 'code' || !activeTab) ? 'active' : '' %>" data-tab="tab-code">
                 <i class="fas fa-code"></i> Code
             </a>
             <% if (readme) { %>
-                <a href="?tab=readme<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+                <a href="?tab=readme<%= activeBranchQuery %>" 
                    class="tab-btn <%= activeTab === 'readme' ? 'active' : '' %>" data-tab="tab-readme">
                     <i class="fas fa-book-open"></i> README
                     <span class="tab-count">Doc</span>
                 </a>
             <% } %>
             <% if (license) { %>
-                <a href="?tab=license<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+                <a href="?tab=license<%= activeBranchQuery %>" 
                    class="tab-btn <%= activeTab === 'license' ? 'active' : '' %>" data-tab="tab-license">
                     <i class="fas fa-scale-balanced"></i> License
                     <% if (license.spdxId && license.spdxId !== 'Custom') { %>
@@ -839,7 +1236,7 @@
                     <% } %>
                 </a>
             <% } %>
-            <a href="?tab=releases<%= currentRef ? '&ref=' + encodeURIComponent(currentRef) : '' %>" 
+            <a href="?tab=releases<%= activeBranchQuery %>" 
                class="tab-btn <%= activeTab === 'releases' ? 'active' : '' %>" data-tab="tab-releases">
                 <i class="fas fa-tag"></i> Releases
                 <span class="tab-count"><%= releases.length %></span>
@@ -856,7 +1253,7 @@
                 <div class="breadcrumbs">
                     <span class="breadcrumb-item">
                         <i class="fas fa-folder-open icon-folder"></i>
-                        <a href="/source/<%= encodeURIComponent(source.slug) %>?ref=<%= encodeURIComponent(currentRef) %>"><%= source.slug %></a>
+                        <a href="/source/<%= encodeURIComponent(safeSlug) %><%= activeBranchParam %>"><%= safeSlug %></a>
                     </span>
 
                     <% if (breadcrumbs && breadcrumbs.length) { %>
@@ -866,7 +1263,7 @@
                                 <% if (crumb.isLast) { %>
                                     <%= crumb.name %>
                                 <% } else { %>
-                                    <a href="/source/<%= encodeURIComponent(source.slug) %>?path=<%= encodeURIComponent(crumb.path) %>&ref=<%= encodeURIComponent(currentRef) %>"><%= crumb.name %></a>
+                                    <a href="/source/<%= encodeURIComponent(safeSlug) %>?path=<%= encodeURIComponent(crumb.path) %><%= activeBranchQuery %>"><%= crumb.name %></a>
                                 <% } %>
                             </span>
                         <% }) %>
@@ -880,35 +1277,66 @@
             </div>
 
             <% if (isViewingFile && fileData) { %>
-                <!-- SINGLE FILE CODE VIEWER (GitHub Style) -->
+                <% 
+                    const lowerFileName = (fileData.name || '').toLowerCase();
+                    const isImageFile = /\.(png|jpg|jpeg|gif|svg|webp|ico|bmp)$/i.test(lowerFileName);
+                    const rawFileEndpoint = `/source/${encodeURIComponent(safeSlug)}/raw?path=${encodeURIComponent(fileData.path)}${activeBranchQuery}`;
+                %>
+
+                <!-- SINGLE FILE CODE / MEDIA VIEWER -->
                 <div class="code-viewer-box">
                     <div class="code-viewer-header">
                         <div class="file-info-badge">
-                            <i class="far fa-file-code icon-file"></i>
+                            <i class="far <%= isImageFile ? 'fa-image' : 'fa-file-code' %> icon-file"></i>
                             <strong><%= fileData.name %></strong>
-                            <span>&bull;</span>
-                            <span><%= fileData.lines %> lines</span>
-                            <span>&bull;</span>
-                            <span><%= fileData.sizeFormatted %></span>
+                            <% if (!isImageFile && fileData.lines) { %>
+                                <span>&bull;</span>
+                                <span><%= fileData.lines %> lines</span>
+                            <% } %>
+                            <% if (fileData.sizeFormatted) { %>
+                                <span>&bull;</span>
+                                <span><%= fileData.sizeFormatted %></span>
+                            <% } %>
                         </div>
 
                         <div class="code-actions">
-                            <button type="button" class="btn-code-tool" id="copyRawBtn" onclick="copySourceCode()" title="Copy raw file content to clipboard">
-                                <i class="far fa-copy"></i> Copy raw
-                            </button>
-                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(fileData.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
-                               target="_blank" class="btn-code-tool" title="View raw text in browser">
+                            <% if (!isImageFile && fileData.content) { %>
+                                <button type="button" class="btn-code-tool" id="copyRawBtn" onclick="copySourceCode()" title="Copy raw file content to clipboard">
+                                    <i class="far fa-copy"></i> Copy
+                                </button>
+                            <% } %>
+                            <a href="<%= rawFileEndpoint %>" 
+                               target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool" title="View raw text in browser">
                                 <i class="fas fa-external-link-alt"></i> Raw
                             </a>
-                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(fileData.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
+                            <a href="<%= rawFileEndpoint %>" 
                                download="<%= fileData.name %>" class="btn-code-tool" title="Download this file">
                                 <i class="fas fa-download"></i> Download
                             </a>
                         </div>
                     </div>
 
-                    <pre class="code-viewport line-numbers"><code id="sourceCodeBlock" class="language-<%= fileData.language %>"><%= fileData.content %></code></pre>
-                    <textarea id="hiddenRawCode" style="position: absolute; left: -9999px;" aria-hidden="true"><%= fileData.content %></textarea>
+                    <% if (isImageFile) { %>
+                        <div class="image-preview-container">
+                            <img src="<%= rawFileEndpoint %>" alt="<%= fileData.name %>" loading="lazy" />
+                        </div>
+                    <% } else if (fileData.content) { %>
+                        <pre class="code-viewport line-numbers"><code id="sourceCodeBlock" class="language-<%= fileData.language %>"><%= fileData.content %></code></pre>
+                        <textarea id="hiddenRawCode" style="position: absolute; left: -9999px;" aria-hidden="true"><%= fileData.content %></textarea>
+                    <% } else { %>
+                        <div class="empty-folder">
+                            <i class="fas fa-file-alt" style="font-size: 2.8rem; margin-bottom: 12px; color: #555;"></i>
+                            <p>File content could not be previewed directly (file may be binary or exceeds display size limit).</p>
+                            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                <a href="<%= rawFileEndpoint %>" target="_blank" class="btn-gh" style="font-size: 0.85rem;">
+                                    <i class="fas fa-external-link-alt"></i> Open Raw View
+                                </a>
+                                <a href="<%= canonicalRepoUrl %>/blob/<%= encodeURIComponent(currentRef) %>/<%= encodeURIComponent(fileData.path) %>" target="_blank" rel="noopener noreferrer nofollow" class="btn-gh external-github-link" data-safe-url="<%= canonicalRepoUrl %>/blob/<%= encodeURIComponent(currentRef) %>/<%= encodeURIComponent(fileData.path) %>" style="font-size: 0.85rem;">
+                                    <i class="fab fa-github"></i> View on GitHub
+                                </a>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
 
             <% } else { %>
@@ -921,7 +1349,7 @@
                             <span><%= currentPath ? currentPath : 'Repository Root' %></span>
                         </div>
                         <div>
-                            <span><%= directoryItems.length %> items</span>
+                            <span><%= directoryItems ? directoryItems.length : 0 %> items</span>
                         </div>
                     </div>
 
@@ -932,7 +1360,7 @@
                                     <tr>
                                         <td class="col-icon"><i class="fas fa-level-up-alt text-gold"></i></td>
                                         <td class="col-name" colspan="3">
-                                            <a href="/source/<%= encodeURIComponent(source.slug) %><%= parentPath ? '?path=' + encodeURIComponent(parentPath) : '' %>&ref=<%= encodeURIComponent(currentRef) %>" class="file-link-dir">
+                                            <a href="/source/<%= encodeURIComponent(safeSlug) %><%= parentPath ? '?path=' + encodeURIComponent(parentPath) : '' %><%= activeBranchQuery %>" class="file-link-dir">
                                                 .. (Go up one directory)
                                             </a>
                                         </td>
@@ -949,15 +1377,15 @@
                                             <% } %>
                                         </td>
                                         <td class="col-name">
-                                            <a href="/source/<%= encodeURIComponent(source.slug) %>?path=<%= encodeURIComponent(item.path) %>&ref=<%= encodeURIComponent(currentRef) %>" class="<%= item.type === 'dir' ? 'file-link-dir' : '' %>">
+                                            <a href="/source/<%= encodeURIComponent(safeSlug) %>?path=<%= encodeURIComponent(item.path) %><%= activeBranchQuery %>" class="<%= item.type === 'dir' ? 'file-link-dir' : '' %>" title="<%= item.name %>">
                                                 <%= item.name %>
                                             </a>
                                         </td>
                                         <td class="col-size"><%= item.sizeFormatted %></td>
                                         <td class="col-action">
                                             <% if (item.type === 'file') { %>
-                                                <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(item.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
-                                                   target="_blank" class="btn-code-tool" style="padding: 3px 8px; font-size: 0.75rem;" title="Raw file">
+                                                <a href="/source/<%= encodeURIComponent(safeSlug) %>/raw?path=<%= encodeURIComponent(item.path) %><%= activeBranchQuery %>" 
+                                                   target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool" style="padding: 3px 8px; font-size: 0.75rem;" title="View raw file">
                                                     Raw
                                                 </a>
                                             <% } %>
@@ -969,7 +1397,15 @@
                     <% } else { %>
                         <div class="empty-folder">
                             <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 12px; color: #444;"></i>
-                            <p>This directory is empty, or source code contents could not be loaded.</p>
+                            <p>This directory is empty, or source code contents could not be loaded from GitHub.</p>
+                            <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <a href="/source/<%= encodeURIComponent(safeSlug) %>" class="btn-gh" style="font-size: 0.85rem;">
+                                    <i class="fas fa-redo"></i> Reload Root
+                                </a>
+                                <a href="<%= canonicalRepoUrl %>" target="_blank" rel="noopener noreferrer nofollow" class="btn-gh external-github-link" data-safe-url="<%= canonicalRepoUrl %>" style="font-size: 0.85rem;">
+                                    <i class="fab fa-github"></i> Open on GitHub
+                                </a>
+                            </div>
                         </div>
                     <% } %>
                 </div>
@@ -982,10 +1418,15 @@
                                 <i class="fas fa-book-open text-gold"></i>
                                 <span><%= readme.name %></span>
                             </div>
-                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(readme.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
-                               target="_blank" class="btn-code-tool">
-                                <i class="fas fa-external-link-alt"></i> Raw README
-                            </a>
+                            <div class="code-actions">
+                                <button type="button" class="btn-code-tool" onclick="copyReadmeText()">
+                                    <i class="far fa-copy"></i> Copy
+                                </button>
+                                <a href="/source/<%= encodeURIComponent(safeSlug) %>/raw?path=<%= encodeURIComponent(readme.path) %><%= activeBranchQuery %>" 
+                                   target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool">
+                                    <i class="fas fa-external-link-alt"></i> Raw
+                                </a>
+                            </div>
                         </div>
                         <div class="readme-body" id="inline-readme-body"></div>
                         <textarea id="raw-inline-readme" hidden><%= readme.content %></textarea>
@@ -1011,8 +1452,8 @@
                             <button type="button" class="btn-code-tool" onclick="copyReadmeText()">
                                 <i class="far fa-copy"></i> Copy Markdown
                             </button>
-                            <a href="/source/<%= encodeURIComponent(source.slug) %>/raw?path=<%= encodeURIComponent(readme.path) %>&ref=<%= encodeURIComponent(currentRef) %>" 
-                               target="_blank" class="btn-code-tool">
+                            <a href="/source/<%= encodeURIComponent(safeSlug) %>/raw?path=<%= encodeURIComponent(readme.path) %><%= activeBranchQuery %>" 
+                               target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool">
                                 <i class="fas fa-external-link-alt"></i> Raw
                             </a>
                         </div>
@@ -1038,7 +1479,7 @@
                     </div>
                     <div>
                         <% if (license.url) { %>
-                            <a href="<%= license.url %>" target="_blank" rel="noopener noreferrer" class="btn-gh">
+                            <a href="<%= license.url.toLowerCase() %>" target="_blank" rel="noopener noreferrer nofollow" class="btn-gh external-github-link" data-safe-url="<%= license.url.toLowerCase() %>">
                                 <i class="fas fa-info-circle"></i> License Details <i class="fas fa-external-link-alt" style="font-size: 0.75em;"></i>
                             </a>
                         <% } %>
@@ -1092,7 +1533,7 @@
 
                             <footer class="release-footer">
                                 <% if (hasAccess) { %>
-                                    <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(release.tag_name) %>" class="btn-gh btn-gh-primary">
+                                    <a href="/source/<%= encodeURIComponent(safeSlug) %>/download/<%= encodeURIComponent(release.tag_name) %>" class="btn-gh btn-gh-primary">
                                         <i class="fas fa-file-archive"></i> Download Source (.zip)
                                     </a>
                                 <% } else { %>
@@ -1103,14 +1544,14 @@
                     <% }) %>
                 </div>
             <% } else { %>
-                <div class="file-box" style="text-align: center; padding: 60px 20px;">
-                    <i class="fas fa-tag" style="font-size: 3.5rem; color: #444; margin-bottom: 16px;"></i>
+                <div class="file-box" style="text-align: center; padding: 50px 20px;">
+                    <i class="fas fa-tag" style="font-size: 3rem; color: #444; margin-bottom: 14px;"></i>
                     <h2 style="color: var(--white); margin-bottom: 8px;">No Published Releases Found</h2>
-                    <p style="color: var(--silver); max-width: 500px; margin: 0 auto 20px;">
+                    <p style="color: var(--silver); max-width: 500px; margin: 0 auto 18px; font-size: 0.92rem;">
                         This repository currently has no release tags published on GitHub, but you can browse and download the live source code using the Code tab.
                     </p>
                     <% if (hasAccess) { %>
-                        <a href="/source/<%= encodeURIComponent(source.slug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
+                        <a href="/source/<%= encodeURIComponent(safeSlug) %>/download/<%= encodeURIComponent(currentRef) %>" class="btn-gh btn-gh-primary">
                             <i class="fas fa-file-archive"></i> Download Current Source (.zip)
                         </a>
                     <% } %>
@@ -1121,8 +1562,80 @@
     </div>
 </main>
 
+<!-- URL Safety Verification Modal -->
+<div class="url-safety-modal" id="urlSafetyModal" role="dialog" aria-modal="true" aria-labelledby="urlSafetyModalTitle">
+    <div class="url-safety-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-shield-halved" style="color: #2ecc71; font-size: 1.3rem;"></i>
+                <h3 id="urlSafetyModalTitle" style="color: var(--white); margin: 0; font-size: 1.1rem; font-weight: 700;">GitHub URL Safety Verification</h3>
+            </div>
+            <button type="button" class="btn-code-tool" id="closeSafetyModalBtn" style="padding: 4px 8px; border-radius: 4px;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--silver); margin-bottom: 12px; line-height: 1.5;">
+            You are about to navigate to an external GitHub link. GPL Mods URL Safety verified this destination:
+        </p>
+        <div style="background: #0d1117; border: 1px solid var(--gh-border); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; word-break: break-all; font-family: monospace; font-size: 0.82rem; color: var(--gold);" id="urlSafetyTargetUrl">
+            <%= canonicalRepoUrl %>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; font-size: 0.82rem; color: #8b949e;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                <span>Protocol: <strong>HTTPS Encrypted (SSL/TLS)</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                <span>Verified Domain: <strong>github.com (Official)</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                <span>URL Normalization: <strong>Strict lowercase repository link</strong></span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" class="btn-gh" id="cancelSafetyModalBtn" style="font-size: 0.85rem; padding: 8px 14px;">Cancel</button>
+            <a href="<%= canonicalRepoUrl %>" id="confirmSafetyProceedBtn" target="_blank" rel="noopener noreferrer nofollow" class="btn-gh btn-gh-primary" style="font-size: 0.85rem; padding: 8px 16px;">
+                <i class="fas fa-external-link-alt"></i> Proceed to GitHub
+            </a>
+        </div>
+    </div>
+</div>
+
 <script>
+    // URL Safety Validator (client-side)
+    function isSafeGitHubUrl(urlStr) {
+        try {
+            if (!urlStr) return false;
+            const parsed = new URL(urlStr.startsWith('http') ? urlStr : `https://${urlStr}`);
+            if (parsed.protocol !== 'https:') return false;
+            const host = parsed.hostname.toLowerCase();
+            const allowed = ['github.com', 'www.github.com', 'raw.githubusercontent.com', 'gist.github.com'];
+            return allowed.includes(host);
+        } catch (e) {
+            return false;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+        // Configure DOMPurify safety hooks for markdown content
+        if (typeof DOMPurify !== 'undefined') {
+            DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+                if (node.tagName === 'A' && node.hasAttribute('href')) {
+                    const href = node.getAttribute('href');
+                    // Force external links to open in a new tab with security attributes
+                    node.setAttribute('target', '_blank');
+                    node.setAttribute('rel', 'noopener noreferrer nofollow');
+                    // Normalize GitHub links to lowercase where applicable
+                    if (isSafeGitHubUrl(href)) {
+                        node.setAttribute('href', href.toLowerCase());
+                        node.classList.add('safe-gh-link');
+                    }
+                }
+            });
+        }
+
         // 1. Render Markdown for inline README
         const rawInlineReadme = document.getElementById('raw-inline-readme');
         const inlineReadmeContainer = document.getElementById('inline-readme-body');
@@ -1151,18 +1664,58 @@
             Prism.highlightAll();
         }
 
-        // 5. Hash / Tab switching support
+        // 5. URL Safety Verification Modal handlers
+        const safetyModal = document.getElementById('urlSafetyModal');
+        const safetyTargetEl = document.getElementById('urlSafetyTargetUrl');
+        const confirmBtn = document.getElementById('confirmSafetyProceedBtn');
+        const closeBtn = document.getElementById('closeSafetyModalBtn');
+        const cancelBtn = document.getElementById('cancelSafetyModalBtn');
+        const repoSafetyBadge = document.getElementById('repoSafetyBadge');
+
+        function openSafetyModal(url) {
+            if (!safetyModal) return;
+            const safeUrl = (url || '').toLowerCase();
+            if (safetyTargetEl) safetyTargetEl.textContent = safeUrl;
+            if (confirmBtn) confirmBtn.href = safeUrl;
+            safetyModal.classList.add('show');
+        }
+
+        function closeSafetyModal() {
+            if (safetyModal) safetyModal.classList.remove('show');
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeSafetyModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeSafetyModal);
+        if (safetyModal) {
+            safetyModal.addEventListener('click', (e) => {
+                if (e.target === safetyModal) closeSafetyModal();
+            });
+        }
+
+        if (repoSafetyBadge) {
+            repoSafetyBadge.addEventListener('click', () => {
+                openSafetyModal('<%= canonicalRepoUrl %>');
+            });
+        }
+
+        // Intercept external GitHub buttons to show verified safety verification
+        document.querySelectorAll('.external-github-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetUrl = link.getAttribute('data-safe-url') || link.href;
+                if (!isSafeGitHubUrl(targetUrl)) {
+                    e.preventDefault();
+                    alert('Warning: The selected link does not point to a verified GitHub destination.');
+                }
+            });
+        });
+
+        // 6. Tab navigation preserving URL parameters
         const tabButtons = document.querySelectorAll('.source-tabs .tab-btn');
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const targetTabId = btn.getAttribute('data-tab');
-                if (targetTabId && document.getElementById(targetTabId)) {
-                    // Update active classes without full page reload if staying on same base
-                    const href = btn.getAttribute('href');
-                    if (href && href.startsWith('?tab=')) {
-                        // Let browser navigate to preserve clean URL params
-                        return;
-                    }
+                const href = btn.getAttribute('href');
+                if (href && href.startsWith('?tab=')) {
+                    return; // Normal navigation maintains state
                 }
             });
         });

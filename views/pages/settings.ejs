@@ -135,6 +135,20 @@
             </div>
         </div>
 
+        <!-- Web Storage & Cache Cleaner -->
+        <div class="settings-section">
+            <div class="settings-info">
+                <h3><i class="fas fa-broom" style="color: var(--gold);"></i> Web Storage & Cache Cleaner</h3>
+                <p>Purge outdated browser cache, cached scripts, stale service workers, and temporary client storage. Fast URL shortcut: navigate to <b>/cc</b> anytime.</p>
+                <div id="cache-clean-status" style="margin-top: 8px; font-size: 0.85em; display: none;"></div>
+            </div>
+            <div>
+                <button type="button" id="btn-purge-cache" class="btn btn-secondary" style="border-color: var(--gold); color: var(--gold); font-weight: 600; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Clear Web Cache Now
+                </button>
+            </div>
+        </div>
+
         <!-- Account Actions (Danger Zone) -->
 
         <div class="settings-section" style="border-color: rgba(229, 57, 53, 0.5); background-color: rgba(229, 57, 53, 0.05); margin-top: 40px;">
@@ -490,6 +504,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (allowThemeCheckbox) allowThemeCheckbox.addEventListener('change', updateMusicSettings);
     if (autoPlayCheckbox) autoPlayCheckbox.addEventListener('change', updateMusicSettings);
+
+    // --- Web Cache Cleaner Script ---
+    const purgeCacheBtn = document.getElementById('btn-purge-cache');
+    const cacheStatus = document.getElementById('cache-clean-status');
+
+    if (purgeCacheBtn) {
+        purgeCacheBtn.addEventListener('click', async () => {
+            if (!confirm('Clear all local web cache, service workers, and temporary offline storage? This will perform a fresh page reload.')) return;
+            
+            purgeCacheBtn.disabled = true;
+            purgeCacheBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Cleaning Cache...';
+            if (cacheStatus) {
+                cacheStatus.style.display = 'block';
+                cacheStatus.style.color = 'var(--gold)';
+                cacheStatus.textContent = 'Purging Service Workers & CacheStorage...';
+            }
+
+            try {
+                // 1. Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
+                    }
+                }
+
+                // 2. CacheStorage
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                }
+
+                // 3. Clear Storage
+                try { localStorage.clear(); } catch(e){}
+                try { sessionStorage.clear(); } catch(e){}
+
+                if (cacheStatus) {
+                    cacheStatus.style.color = 'var(--green)';
+                    cacheStatus.textContent = '✔ All caches cleared! Reloading fresh...';
+                }
+
+                setTimeout(() => {
+                    window.location.replace(window.location.pathname + '?_cc=' + Date.now() + '&cache_cleared=1');
+                }, 500);
+            } catch (err) {
+                console.error("Cache purge failed:", err);
+                if (cacheStatus) {
+                    cacheStatus.style.color = 'var(--red)';
+                    cacheStatus.textContent = '✖ Error clearing cache: ' + err.message;
+                }
+                purgeCacheBtn.disabled = false;
+                purgeCacheBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Clear Web Cache Now';
+            }
+        });
+    }
 });
 </script>
 

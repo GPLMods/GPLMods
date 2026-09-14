@@ -20,92 +20,95 @@
     </script>
     <section class="hero"></section>
 
-    <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
-    <% if (typeof editorsChoiceMods !=='undefined' && editorsChoiceMods.length> 0) { %>
-        <section class="featured-section">
-            <!-- We use the icon of the first featured mod as the blurred background -->
-            <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
+    <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->    <!-- ======== SEPARATED EDITOR'S CHOICE COUNCILS ======== -->
+    <% 
+        const councilsObj = (typeof editorsChoiceByCouncil !== 'undefined' && editorsChoiceByCouncil) ? editorsChoiceByCouncil : {
+            android: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'android') : [],
+            ios: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category && m.category.startsWith('ios')) : [],
+            wordpress: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'wordpress') : [],
+            windows: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'windows') : []
+        };
+    %>
+
+    <% ['android', 'ios', 'wordpress', 'windows'].forEach((platformName, pIdx) => { 
+        const councilMods = councilsObj[platformName] || [];
+        if (councilMods.length > 0) { 
+    %>
+        <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" style="<%= pIdx === 0 ? '' : 'display: none;' %>">
+            <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="">
 
             <div class="container" style="position: relative;">
-                <div class="featured-carousel" id="featured-carousel">
-                    <% editorsChoiceMods.forEach((mod, index)=> { %>
-                        <div class="featured-card" id="featured-slide-<%= index %>">
+                <div class="featured-carousel" id="featured-carousel-<%= platformName %>">
+                    <% councilMods.forEach((mod, index)=> { %>
+                        <div class="featured-card" id="featured-slide-<%= platformName %>-<%= index %>">
                             <div class="featured-icon-wrapper">
                                 <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                             </div>
                             <div class="featured-content">
-                                <h2>Editor's Choice: <span>
-                                        <%= mod.name %>
-                                    </span></h2>
+                                <h2><%= platformName.toUpperCase() %> Council: <span><%= mod.name %></span></h2>
 
                                 <!-- Smart Description Logic -->
-                                <% let desc=mod.editorsChoiceDescription; if (!desc || desc.trim()==='' ) {
-                                    desc=mod.modDescription || mod.officialDescription
-                                    || "An excellent, highly-rated modification." ; } %>
-                                    <p><%- desc %></p>
+                                <% let desc = mod.editorsChoiceDescription; if (!desc || desc.trim() === '') {
+                                    desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification."; 
+                                } %>
+                                <p><%- desc %></p>
 
-                                    <div class="featured-buttons">
-                                        <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>"
-                                            class="featured-button btn-primary">Know More</a>
+                                <div class="featured-buttons">
+                                    <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
 
-                                        <% if (typeof user !=='undefined' && user && user.whitelist) { %>
-                                            <% // ✅ FIX: Check if THIS specific mod is in the user's whitelist array
-                                                const isWhitelisted=user.whitelist.some(w=>
-                                                w.toString() === mod._id.toString() ||
-                                                (w._id && w._id.toString() === mod._id.toString())
-                                                );
-                                                %>
-
-                                                <form action="/files/<%= mod._id %>/whitelist" method="POST"
-                                                    style="margin: 0;">
-                                                    <input type="hidden" name="redirectUrl" value="back">
-                                                    <% if (isWhitelisted) { %>
-                                                        <button type="submit" class="featured-button btn-secondary"
-                                                            style="color: var(--red); border-color: var(--red);">
-                                                            <i class="fas fa-heart-broken"></i> Remove Wishlist
-                                                        </button>
-                                                        <% } else { %>
-                                                            <button type="submit" class="featured-button btn-secondary">
-                                                                <i class="fas fa-heart"></i> Add Wishlist
-                                                            </button>
-                                                            <% } %>
-                                                </form>
-                                                <% } else { %>
-                                                    <a href="/login" class="featured-button btn-secondary">
-                                                        <i class="fas fa-heart"></i> Login to Wishlist
-                                                    </a>
-                                                    <% } %>
-                                    </div>
+                                    <% if (typeof user !=='undefined' && user && user.whitelist) { %>
+                                        <% const isWhitelisted = user.whitelist.some(w => w.toString() === mod._id.toString() || (w._id && w._id.toString() === mod._id.toString())); %>
+                                        <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
+                                            <input type="hidden" name="redirectUrl" value="back">
+                                            <% if (isWhitelisted) { %>
+                                                <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
+                                                    <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                                </button>
+                                            <% } else { %>
+                                                <button type="submit" class="featured-button btn-secondary">
+                                                    <i class="fas fa-heart"></i> Add Wishlist
+                                                </button>
+                                            <% } %>
+                                        </form>
+                                    <% } else { %>
+                                        <a href="/login" class="featured-button btn-secondary">
+                                            <i class="fas fa-heart"></i> Login to Wishlist
+                                        </a>
+                                    <% } %>
+                                </div>
                             </div>
                         </div>
-                        <% }) %>
+                    <% }) %>
                 </div>
 
-                <!-- Carousel Dots (Only show if more than 1 item) -->
-                <% if (editorsChoiceMods.length> 1) { %>
-                    <div class="carousel-dots">
-                        <% editorsChoiceMods.forEach((_, index)=> { %>
-                            <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollToSlide(<%= index %>)">
-                            </div>
-                            <% }) %>
+                <!-- Carousel Dots -->
+                <% if (councilMods.length > 1) { %>
+                    <div class="carousel-dots" id="dots-<%= platformName %>">
+                        <% councilMods.forEach((_, index)=> { %>
+                            <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollCouncilSlide('<%= platformName %>', <%= index %>)"></div>
+                        <% }) %>
                     </div>
-                    <% } %>
+                <% } %>
             </div>
         </section>
-        <% } %>
-            <!-- ============================================== -->
+    <%  } 
+    }); %>
+    <!-- ============================================== -->
 
-            <div class="container" id="mods-container">
-                <!-- ======== MAIN CATAGORY TAB ======== -->
-                <div class="tabs-container">
-                    <nav class="tabs-nav" id="main-tabs-nav">
-                        <div class="tab-highlight" id="main-tab-highlight"></div>
-                        <button class="tab-button active" data-tab="android">Android</button>
-                        <button class="tab-button" data-tab="ios">iOS</button>
-                        <button class="tab-button" data-tab="wordpress">WordPress</button>
-                        <button class="tab-button" data-tab="windows">Windows</button>
-                    </nav>
-                </div>
+    <div class="container" id="mods-container">
+        <!-- ======== MAIN CATAGORY TAB & CACHE SHORTCUT ======== -->
+        <div class="tabs-container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <nav class="tabs-nav" id="main-tabs-nav">
+                <div class="tab-highlight" id="main-tab-highlight"></div>
+                <button class="tab-button active" data-tab="android">Android</button>
+                <button class="tab-button" data-tab="ios">iOS</button>
+                <button class="tab-button" data-tab="wordpress">WordPress</button>
+                <button class="tab-button" data-tab="windows">Windows</button>
+            </nav>
+            <a href="/cc" class="btn btn-secondary quick-cc-pill" title="Purge Web Cache (/cc)" style="border-color: rgba(255, 215, 0, 0.35); color: var(--gold); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 0.82em; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <i class="fas fa-broom"></i> /cc
+            </a>
+        </div>
 
                 <!-- ======== ADD THIS NEW SUB-TABS BLOCK ======== -->
                 <!-- iOS Sub-Tabs (Hidden by default) -->
@@ -297,6 +300,25 @@
                     // Start the engine!
                     startAutoPlay();
                 });
+
+                // Global Council Carousel Handlers
+                window.switchFeaturedCouncil = function(platform) {
+                    document.querySelectorAll('.council-featured-section').forEach(sec => {
+                        sec.style.display = 'none';
+                    });
+                    const target = document.getElementById(`featured-council-${platform}`);
+                    if (target) target.style.display = 'block';
+                };
+
+                window.scrollCouncilSlide = function(platform, index) {
+                    const carousel = document.getElementById(`featured-carousel-${platform}`);
+                    const slide = document.getElementById(`featured-slide-${platform}-${index}`);
+                    if (carousel && slide) {
+                        carousel.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
+                        const dots = document.querySelectorAll(`#dots-${platform} .dot`);
+                        dots.forEach((d, idx) => d.classList.toggle('active', idx === index));
+                    }
+                };
             </script>
             <%- include('../partials/video-ad-modal') %>
                 <%- include('../partials/popunder-ads') %>

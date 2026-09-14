@@ -1,0 +1,477 @@
+<%-include('../../partials/header') %>
+<style>
+    .owner-header { text-align: center; padding: 40px 20px 20px; }
+    .owner-header h1 { font-size: 2.5em; color: var(--white); }
+    .owner-header h1 span { color: #f44336; text-shadow: 0 0 15px rgba(244, 67, 54, 0.6); }
+    .owner-header p { color: var(--silver); max-width: 600px; margin: 10px auto; }
+    
+    .owner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto 60px auto; padding: 0 20px; }
+    
+    .owner-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 25px; transition: all 0.3s ease; display: flex; flex-direction: column; gap: 15px; position: relative; overflow: hidden; }
+    .owner-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #444; transition: 0.3s; }
+    
+    .owner-card.render::before { background: #6b4fbb; }
+    .owner-card.cloudflare::before { background: #f38020; }
+    .owner-card.improvmx::before { background: #ff9800; }
+    .owner-card.mongo::before { background: #47a248; }
+    .owner-card.b2::before { background: #d9241b; }
+    .owner-card.failback::before { background: #00bcd4; }
+    .owner-card.dns::before { background: #9c27b0; }
+
+    .owner-card:hover { border-color: #555; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+    
+    .card-title { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--white); font-size: 1.3em; }
+    .card-title i { font-size: 1.2em; }
+    
+    .owner-card.render .card-title i { color: #6b4fbb; }
+    .owner-card.cloudflare .card-title i { color: #f38020; }
+    .owner-card.improvmx .card-title i { color: #ff9800; }
+    .owner-card.mongo .card-title i { color: #47a248; }
+    .owner-card.b2 .card-title i { color: #d9241b; }
+    .owner-card.failback .card-title i { color: #00bcd4; }
+    .owner-card.dns .card-title i { color: #9c27b0; }
+    
+    .card-desc { color: #aaa; font-size: 0.9em; margin: 0; line-height: 1.4; flex-grow: 1; }
+    
+    .action-group { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+    .action-row { display: flex; gap: 10px; }
+    
+    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.9em; transition: 0.2s; background: #2a2a2a; color: #eee; }
+    .btn-action:hover { background: #333; }
+    .btn-action.primary { background: var(--gold); color: #000; }
+    .btn-action.primary:hover { background: #ffca28; }
+    .btn-action.warning { background: #ff9800; color: #000; }
+    .btn-action.warning:hover { background: #ffa726; }
+    .btn-action.danger { background: #d32f2f; color: #fff; }
+    .btn-action.danger:hover { background: #b71c1c; }
+    
+    .status-feedback { font-size: 0.85em; text-align: center; margin-top: 5px; height: 16px; color: var(--green); display: none; }
+    
+    /* Specific Link Buttons */
+    .btn-link { text-decoration: none; text-align: center; }
+
+    /* ImprovMX custom styles */
+    .improv-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.75em; font-weight: 600; background: #252525; border: 1px solid #444; width: fit-content; }
+    .improv-badge.active { color: #4caf50; border-color: #4caf50; background: rgba(76, 175, 80, 0.1); }
+    .improv-badge.warning { color: #ff9800; border-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
+    .improv-badge.error { color: #f44336; border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+
+    .improv-aliases-box { max-height: 150px; overflow-y: auto; background: #111; border: 1px solid #333; border-radius: 6px; padding: 8px; font-size: 0.8em; margin-top: 5px; display: none; }
+    .alias-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #222; }
+    .alias-row:last-child { border-bottom: none; }
+    .alias-del-btn { background: none; border: none; color: #f44336; cursor: pointer; padding: 2px 6px; font-size: 0.9em; }
+
+    /* Modal styles */
+    .owner-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .owner-modal-card { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 480px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+    .owner-modal-card h3 { margin: 0 0 15px 0; color: var(--gold); display: flex; justify-content: space-between; align-items: center; }
+    .owner-modal-card .close-btn { cursor: pointer; color: #888; border: none; background: none; font-size: 1.2em; }
+    .owner-modal-input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #444; border-radius: 6px; color: #fff; margin-bottom: 12px; font-family: inherit; box-sizing: border-box; }
+</style>
+
+<div class="owner-header">
+    <h1>Owner <span>Command Center</span></h1>
+    <p>Ultimate infrastructure control panel. Manage external CDNs, databases, cloud storage, custom email, and deployment pipelines from one place.</p>
+</div>
+
+<div class="owner-grid">
+    <!-- Render -->
+    <div class="owner-card render">
+        <h3 class="card-title"><i class="fas fa-server"></i> Render Deployment</h3>
+        <p class="card-desc">Control the main web service hosted on Render. Trigger manual deployments or fetch service status.</p>
+        <div class="action-group">
+            <button class="btn-action primary" onclick="handleAction(this, '/api/owner/render/deploy')">
+                <i class="fas fa-rocket"></i> Manual Deploy
+            </button>
+            <a href="https://dashboard.render.com" target="_blank" class="btn-action btn-link">
+                <i class="fas fa-external-link-alt"></i> Open Dashboard
+            </a>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- Cloudflare -->
+    <div class="owner-card cloudflare">
+        <h3 class="card-title"><i class="fas fa-cloud"></i> Cloudflare CDN & Workers</h3>
+        <p class="card-desc">Manage edge caching and Cloudflare Workers integration.</p>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/cloudflare/purge')">
+                    <i class="fas fa-eraser"></i> Purge Cache
+                </button>
+                <button class="btn-action" onclick="handleAction(this, '/api/owner/cloudflare/reload')">
+                    <i class="fas fa-sync"></i> Reload Workers
+                </button>
+            </div>
+            <a href="https://dash.cloudflare.com" target="_blank" class="btn-action btn-link">
+                <i class="fas fa-external-link-alt"></i> Open Dashboard
+            </a>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- ImprovMX Custom Work Email -->
+    <div class="owner-card improvmx">
+        <h3 class="card-title"><i class="fas fa-envelope-open-text"></i> ImprovMX Custom Email</h3>
+        <p class="card-desc">Manage custom domain email forwarding and SMTP credentials on <b><%= improvmxDomain || 'gplmods.webredirect.org' %></b>.</p>
+        <div id="improvmxStatusBadge" class="improv-badge">
+            <i class="fas fa-circle-notch fa-spin"></i> Checking Domain Status...
+        </div>
+        <div id="improvmxAliasesList" class="improv-aliases-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action warning" onclick="openClaimEmailModal()">
+                    <i class="fas fa-at"></i> Claim Email
+                </button>
+                <button class="btn-action" onclick="generateOwnerSmtp(this)">
+                    <i class="fas fa-key"></i> Gen SMTP
+                </button>
+            </div>
+            <div class="action-row">
+                <button class="btn-action" onclick="checkImprovmxStatus(this)">
+                    <i class="fas fa-sync-alt"></i> Check MX & Aliases
+                </button>
+                <a href="https://app.improvmx.com" target="_blank" class="btn-action btn-link">
+                    <i class="fas fa-external-link-alt"></i> Console
+                </a>
+            </div>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- Failback.JS -->
+    <div class="owner-card failback">
+        <h3 class="card-title"><i class="fas fa-shield-alt"></i> Failback.JS CDN</h3>
+        <p class="card-desc">Fallback content delivery network (InfinityFree project). Manual controls for syncing and restarting.</p>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/failback/sync')">
+                    <i class="fas fa-sync-alt"></i> Sync
+                </button>
+                <button class="btn-action" onclick="handleAction(this, '/api/owner/failback/reload')">
+                    <i class="fas fa-redo"></i> Reload
+                </button>
+            </div>
+            <button class="btn-action danger" onclick="handleAction(this, '/api/owner/failback/restart')">
+                <i class="fas fa-power-off"></i> Restart Service
+            </button>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- GPL Mods Anti-Revoke DNS -->
+    <div class="owner-card dns">
+        <h3 class="card-title"><i class="fas fa-globe"></i> Anti-Revoke DNS</h3>
+        <p class="card-desc">Manage the GPL Mods custom Anti-Revoke DNS layer and routing operations.</p>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/dns/sync')">
+                    <i class="fas fa-sync-alt"></i> Manual Sync
+                </button>
+                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/dns/restart')">
+                    <i class="fas fa-power-off"></i> Restart DNS
+                </button>
+            </div>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- MongoDB Atlas -->
+    <div class="owner-card mongo">
+        <h3 class="card-title"><i class="fas fa-database"></i> MongoDB Atlas</h3>
+        <p class="card-desc">Primary datastore. For full database manipulation, use the MongoDB Atlas web console.</p>
+        <div class="action-group">
+            <a href="https://cloud.mongodb.com" target="_blank" class="btn-action primary btn-link">
+                <i class="fas fa-external-link-alt"></i> Open MongoDB Atlas Console
+            </a>
+        </div>
+    </div>
+
+    <!-- Backblaze B2 -->
+    <div class="owner-card b2">
+        <h3 class="card-title"><i class="fas fa-box-open"></i> Backblaze B2 Cloud</h3>
+        <p class="card-desc">Object storage for media and mods. Manage buckets, CORS, and files via the Backblaze admin panel.</p>
+        <div class="action-group">
+            <a href="https://secure.backblaze.com/b2_buckets.htm" target="_blank" class="btn-action primary btn-link">
+                <i class="fas fa-external-link-alt"></i> Open Backblaze Console
+            </a>
+        </div>
+    </div>
+
+    <!-- Core Server Controls -->
+    <div class="owner-card" style="border-color: #d32f2f;">
+        <h3 class="card-title" style="color: #ef5350;"><i class="fas fa-power-off"></i> Core Server</h3>
+        <p class="card-desc">Danger Zone: Operations affecting the Node.js process and primary datastore.</p>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/core/restart')">
+                    <i class="fas fa-redo"></i> Quick Restart
+                </button>
+                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/core/shutdown')">
+                    <i class="fas fa-stop"></i> Shutdown
+                </button>
+            </div>
+            <button class="btn-action" style="background: #e65100;" onclick="handleAction(this, '/api/owner/core/disconnect-db')">
+                <i class="fas fa-unlink"></i> Disconnect DB
+            </button>
+            <button class="btn-action danger" style="background: #b71c1c; margin-top: 10px;" onclick="handleDataTermination(this)">
+                <i class="fas fa-skull-crossbones"></i> TERMINATE DATA
+            </button>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Claim Custom Email -->
+<div id="claimEmailModal" class="owner-modal-overlay">
+    <div class="owner-modal-card">
+        <h3>
+            <span><i class="fas fa-at"></i> Claim Custom Work Email</span>
+            <button type="button" class="close-btn" onclick="closeClaimEmailModal()">&times;</button>
+        </h3>
+        <p style="color: #bbb; font-size: 0.88em; margin-bottom: 15px;">
+            Create an email alias on <b><%= improvmxDomain || 'gplmods.webredirect.org' %></b> that forwards to any address.
+        </p>
+        <form id="claimEmailForm" onsubmit="submitClaimEmail(event)">
+            <label style="font-size: 0.8em; color: #aaa;">Alias Username (e.g. support, admin, owner):</label>
+            <input type="text" id="emailAliasInput" class="owner-modal-input" placeholder="e.g. owner" required>
+
+            <label style="font-size: 0.8em; color: #aaa;">Forward To (Destination Inbox):</label>
+            <input type="email" id="emailForwardInput" class="owner-modal-input" value="<%= (user && user.email) || '' %>" placeholder="personal@gmail.com" required>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-action" onclick="closeClaimEmailModal()">Cancel</button>
+                <button type="submit" class="btn-action warning" id="submitClaimBtn">
+                    <i class="fas fa-check"></i> Create Email
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // IMPROVMX API FUNCTIONS
+    // ==========================================
+    async function checkImprovmxStatus(btnElement) {
+        const badge = document.getElementById('improvmxStatusBadge');
+        const list = document.getElementById('improvmxAliasesList');
+        badge.className = 'improv-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking domain...';
+
+        try {
+            const res = await fetch('/api/owner/improvmx/status');
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.validMx) {
+                    badge.className = 'improv-badge active';
+                    badge.innerHTML = `<i class="fas fa-check-circle"></i> MX Active: ${data.domain}`;
+                } else {
+                    badge.className = 'improv-badge warning';
+                    badge.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Pending MX: ${data.domain}`;
+                }
+            } else {
+                badge.className = 'improv-badge error';
+                badge.innerHTML = `<i class="fas fa-times-circle"></i> ${data.message || 'API Error'}`;
+            }
+
+            // Also load aliases
+            await loadImprovmxAliases();
+        } catch (err) {
+            badge.className = 'improv-badge error';
+            badge.innerHTML = `<i class="fas fa-times-circle"></i> Connection Failed`;
+        }
+    }
+
+    async function loadImprovmxAliases() {
+        const list = document.getElementById('improvmxAliasesList');
+        try {
+            const res = await fetch('/api/owner/improvmx/aliases');
+            const data = await res.json();
+
+            if (data.success && data.aliases && data.aliases.length > 0) {
+                list.style.display = 'block';
+                list.innerHTML = `<b style="color:var(--gold); font-size:0.85em;">Active Aliases (${data.aliases.length}):</b>` + 
+                    data.aliases.map(a => `
+                        <div class="alias-row">
+                            <span><b>${a.alias}</b>@${data.domain} &rarr; <span style="color:#aaa;">${a.forward}</span></span>
+                            <button class="alias-del-btn" title="Delete Alias" onclick="deleteAlias('${a.id}', '${a.alias}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `).join('');
+            } else if (data.success) {
+                list.style.display = 'block';
+                list.innerHTML = '<span style="color:#888;">No aliases registered yet. Click "Claim Email" to add one.</span>';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteAlias(aliasId, aliasName) {
+        if (!confirm(`Delete custom email alias "${aliasName}"?`)) return;
+        try {
+            const res = await fetch(`/api/owner/improvmx/alias/${aliasId}`, { method: 'DELETE' });
+            const data = await res.json();
+            alert(data.message || 'Deleted');
+            await loadImprovmxAliases();
+        } catch (e) {
+            alert('Failed to delete alias: ' + e.message);
+        }
+    }
+
+    function openClaimEmailModal() {
+        document.getElementById('claimEmailModal').style.display = 'flex';
+    }
+
+    function closeClaimEmailModal() {
+        document.getElementById('claimEmailModal').style.display = 'none';
+    }
+
+    async function submitClaimEmail(e) {
+        e.preventDefault();
+        const alias = document.getElementById('emailAliasInput').value.trim();
+        const forwardEmail = document.getElementById('emailForwardInput').value.trim();
+        const submitBtn = document.getElementById('submitClaimBtn');
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+        try {
+            const res = await fetch('/api/owner/improvmx/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alias, forwardEmail, assignToSelf: true })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert('✔ ' + data.message);
+                closeClaimEmailModal();
+                checkImprovmxStatus();
+            } else {
+                alert('✖ ' + (data.message || 'Failed to create alias'));
+            }
+        } catch (err) {
+            alert('✖ Network error: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Create Email';
+        }
+    }
+
+    async function generateOwnerSmtp(btnElement) {
+        const username = prompt("Enter the alias username to generate SMTP credentials for:", "<%= (user && user.customEmailAlias) || 'owner' %>");
+        if (!username) return;
+
+        const originalText = btnElement.innerHTML;
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+        try {
+            const res = await fetch('/api/owner/improvmx/smtp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                const creds = data.credentials;
+                alert(`✔ SMTP Credentials Generated!\n\nHost: ${creds.host}\nPort: ${creds.port}\nUsername: ${creds.username}\nPassword: ${creds.password}\n\nPlease save this password securely now!`);
+            } else {
+                alert('✖ ' + (data.message || 'Failed to generate SMTP'));
+            }
+        } catch (err) {
+            alert('✖ Network error: ' + err.message);
+        } finally {
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        }
+    }
+
+    // Auto check status on dashboard load
+    window.addEventListener('DOMContentLoaded', () => {
+        checkImprovmxStatus();
+    });
+
+    // ==========================================
+    // CORE DASHBOARD ACTIONS
+    // ==========================================
+    async function handleDataTermination(btnElement) {
+        const confirmWord = prompt("WARNING: This will drop the entire MongoDB database, destroying all users, mods, and state permanently.\n\nType 'TERMINATE_ALL_DATA' to confirm:");
+        if (confirmWord !== 'TERMINATE_ALL_DATA') {
+            alert('Data termination cancelled.');
+            return;
+        }
+
+        const originalText = btnElement.innerHTML;
+        const feedbackEl = btnElement.closest('.action-group').querySelector('.status-feedback');
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Terminating...';
+        feedbackEl.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/owner/core/terminate-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: confirmWord })
+            });
+            const data = await res.json();
+            
+            feedbackEl.style.display = 'block';
+            if (data.success) {
+                feedbackEl.style.color = 'var(--red)';
+                feedbackEl.textContent = '✔ ' + data.message;
+            } else {
+                feedbackEl.style.color = 'var(--red)';
+                feedbackEl.textContent = '✖ ' + (data.message || data.error);
+            }
+        } catch (err) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = 'var(--red)';
+            feedbackEl.textContent = '✖ Network Error: ' + err.message;
+        } finally {
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+        }
+    }
+
+    async function handleAction(btnElement, endpoint) {
+        const originalText = btnElement.innerHTML;
+        const feedbackEl = btnElement.closest('.action-group').querySelector('.status-feedback');
+        
+        btnElement.disabled = true;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        feedbackEl.style.display = 'none';
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            
+            feedbackEl.style.display = 'block';
+            if (data.success) {
+                feedbackEl.style.color = 'var(--green)';
+                feedbackEl.textContent = '✔ ' + data.message;
+            } else {
+                feedbackEl.style.color = 'var(--red)';
+                feedbackEl.textContent = '✖ ' + (data.message || data.error);
+            }
+        } catch (err) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = 'var(--red)';
+            feedbackEl.textContent = '✖ Network Error: ' + err.message;
+        } finally {
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalText;
+            setTimeout(() => {
+                feedbackEl.style.display = 'none';
+            }, 5000);
+        }
+    }
+</script>
+
+<%-include('../../partials/footer') %>

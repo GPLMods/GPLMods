@@ -228,6 +228,9 @@ function initializeHomepageTabs() {
 
                 // Logic for Main Tabs vs Sub Tabs
                 if (isMainGroup) {
+                    if (window.switchFeaturedCouncil) {
+                        window.switchFeaturedCouncil(targetTabId);
+                    }
                     if (targetTabId === 'ios') {
                         // Open iOS sub-tabs, default to Jailed
                         if (iosSubTabsContainer) iosSubTabsContainer.style.display = 'block';

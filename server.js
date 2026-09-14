@@ -827,191 +827,6 @@ const uploadAudioTrack = multer({
     }
 });
 
-// Public playlist endpoint for floating music player (auto-falls back to all 10 local tracks)
-app.get('/api/music/playlist', async (req, res) => {
-    try {
-        const state = await SiteState.findOne({ singletonId: 'master-state' });
-        let playlist = state?.weeklyPlaylist || [];
-        
-        // Combined Feature: If weeklyPlaylist is empty or not configured, serve all local tracks
-        if (!playlist || playlist.length === 0) {
-            const localTracks = await getLocalAudioTracks();
-            playlist = localTracks.map(t => ({ title: t.title, src: t.src }));
-        }
-
-        res.json({
-            success: true,
-            playlist
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Failed to fetch playlist' });
-    }
-});
-
-// Admin Music Management Page
-app.get('/admin/music', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const tracks = await getLocalAudioTracks();
-        const state = await SiteState.findOne({ singletonId: 'master-state' });
-        const weeklyPlaylist = state?.weeklyPlaylist || [];
-        res.render('pages/admin/music', {
-            user: req.user,
-            tracks,
-            weeklyPlaylist
-        });
-    } catch (error) {
-        console.error('Error loading admin music page:', error);
-        res.status(500).send('Error loading music manager');
-    }
-});
-
-// Admin API: Get all tracks from public/audio with playlist metadata
-app.get('/api/admin/music/tracks', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const tracks = await getLocalAudioTracks();
-        const state = await SiteState.findOne({ singletonId: 'master-state' });
-        const playlist = state?.weeklyPlaylist || [];
-
-        const playlistMap = new Map();
-        playlist.forEach((p, idx) => {
-            playlistMap.set(p.src, { order: idx, title: p.title });
-        });
-
-        const mappedTracks = tracks.map(t => {
-            const inPl = playlistMap.has(t.src);
-            return {
-                ...t,
-                inPlaylist: inPl,
-                order: inPl ? playlistMap.get(t.src).order : 999,
-                playlistTitle: inPl ? playlistMap.get(t.src).title : t.title
-            };
-        });
-
-        res.json({
-            success: true,
-            tracks: mappedTracks,
-            playlist
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Admin API: Upload new audio track to public/audio
-app.post('/api/admin/music/upload', ensureAuthenticated, ensureAdmin, (req, res) => {
-    uploadAudioTrack.single('audioFile')(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ success: false, error: err.message });
-        }
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: 'No audio file provided.' });
-        }
-        try {
-            const tracks = await getLocalAudioTracks();
-            res.json({
-                success: true,
-                message: `Track "${req.file.filename}" uploaded successfully!`,
-                file: {
-                    filename: req.file.filename,
-                    src: `/audio/${req.file.filename}`
-                },
-                tracks
-            });
-        } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
-        }
-    });
-});
-
-// Admin API: Delete audio track from public/audio
-app.delete('/api/admin/music/track/:filename', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const rawFilename = path.basename(req.params.filename);
-        const filePath = path.join(AUDIO_DIR, rawFilename);
-
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ success: false, error: 'Track file not found on disk.' });
-        }
-
-        await fs.promises.unlink(filePath);
-
-        // Remove from SiteState.weeklyPlaylist if present
-        const trackSrc = `/audio/${rawFilename}`;
-        await SiteState.findOneAndUpdate(
-            { singletonId: 'master-state' },
-            { $pull: { weeklyPlaylist: { src: trackSrc } } }
-        );
-
-        const tracks = await getLocalAudioTracks();
-        res.json({
-            success: true,
-            message: `Track "${rawFilename}" deleted successfully.`,
-            tracks
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post('/api/admin/music/playlist', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const { playlist } = req.body;
-        if (!Array.isArray(playlist)) {
-            return res.status(400).json({ success: false, error: 'Playlist must be an array' });
-        }
-        await SiteState.findOneAndUpdate(
-            { singletonId: 'master-state' },
-            { $set: { weeklyPlaylist: playlist } },
-            { upsert: true }
-        );
-        res.json({ success: true, message: 'Weekly playlist updated successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post('/api/admin/music/theme', ensureAuthenticated, ensureAdmin, async (req, res) => {
-    try {
-        const { fileId, themeMusic } = req.body;
-        if (!fileId) return res.status(400).json({ success: false, error: 'File ID is required' });
-
-        await File.findByIdAndUpdate(fileId, { $set: { themeMusic } });
-        res.json({ success: true, message: 'Theme music updated successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// ===============================
-// USER MUSIC SETTINGS API
-// ===============================
-app.get('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-        res.json({
-            success: true,
-            settings: user?.musicSettings || { allowThemeMusic: true, autoPlayTheme: true }
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Failed to fetch settings' });
-    }
-});
-
-app.post('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
-    try {
-        const { allowThemeMusic, autoPlayTheme } = req.body;
-        await User.findByIdAndUpdate(req.user._id, {
-            $set: {
-                'musicSettings.allowThemeMusic': allowThemeMusic,
-                'musicSettings.autoPlayTheme': autoPlayTheme
-            }
-        });
-        res.json({ success: true, message: 'Music settings updated' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
 // ===============================
 // VPN DETECTION API (vpnapi.io + MongoDB Cache)
 // ===============================
@@ -1588,15 +1403,23 @@ app.use((req, res, next) => {
 
 // 8. Auth Helper Functions (Used by routes)
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
+    if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
         // ✅ NEW: Tell browser NEVER to cache protected pages
         res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
         return next();
     }
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || (req.path && req.path.startsWith('/api/'))) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
     res.redirect('/login');
 }
 function ensureAdmin(req, res, next) {
-    if (req.user && req.user.role === 'admin') return next();
+    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
+        if (req.session) req.session.returnTo = req.originalUrl || '/admin';
+        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
+    }
+    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
+    if (role === 'admin' || role === 'owner') return next();
     
     // Use the universal error template
     res.status(404).render('pages/error', {
@@ -1606,7 +1429,12 @@ function ensureAdmin(req, res, next) {
     });
 }
 function ensureAdminOr404(req, res, next) {
-    if (req.isAuthenticated() && req.user && req.user.role === 'admin') {
+    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
+        if (req.session) req.session.returnTo = req.originalUrl || '/admin';
+        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
+    }
+    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
+    if (role === 'admin' || role === 'owner') {
         res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
         return next();
     }
@@ -1617,11 +1445,26 @@ function ensureAdminOr404(req, res, next) {
     });
 }
 function ensureSupportOrAdmin(req, res, next) {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'support')) return next();
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'support' || req.user.role === 'owner')) return next();
     res.status(403).render('pages/error', {
         errorCode: '403',
         errorTitle: 'Access <span>Denied</span>',
         errorMessage: 'You do not have the necessary support or admin permissions to view this page.'
+    });
+}
+function ensureOwner(req, res, next) {
+    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
+        if (req.session) req.session.returnTo = req.originalUrl || '/owner';
+        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/owner'));
+    }
+    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
+    if (role === 'owner') return next();
+    
+    // Return 404 to hide the owner page from non-owners entirely
+    res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: 'The page you are looking for does not exist.'
     });
 }
 function redirectIfAuthenticated(req, res, next) {
@@ -1926,23 +1769,46 @@ function formatUptime(seconds) {
 const renderHomepage = async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
-        // --- NEW: Fetch Editor's Choice Mods for Homepage ---
-        const editorsChoiceModsRaw = await File.find({ ...findQuery, isEditorsChoice: true }).sort({ updatedAt: -1 }).limit(10);
         
-        // Process URLs for Editor's Choice
-        const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
-            const iconKey = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-app-icon.png';
-            if (iconKey) {
-                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
-            }
-            return { ...file.toObject(), iconUrl: signedIconUrl };
-        }));
-        // ---------------------------------------------------
+        // --- Separated Editor's Choice Councils (Android, iOS, WordPress, Windows) ---
+        const mapWithIcons = async (rawFiles) => {
+            return Promise.all(rawFiles.map(async (file) => {
+                const iconKey = file.iconUrl || file.iconKey;
+                let signedIconUrl = '/images/default-app-icon.png';
+                if (iconKey) {
+                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                }
+                return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
+            }));
+        };
+
+        const [androidCouncilRaw, iosCouncilRaw, wpCouncilRaw, winCouncilRaw] = await Promise.all([
+            File.find({ ...findQuery, isEditorsChoice: true, category: 'android' }).sort({ updatedAt: -1 }).limit(10),
+            File.find({ ...findQuery, isEditorsChoice: true, category: { $in: ['ios-jailed', 'ios-jailbroken'] } }).sort({ updatedAt: -1 }).limit(10),
+            File.find({ ...findQuery, isEditorsChoice: true, category: 'wordpress' }).sort({ updatedAt: -1 }).limit(10),
+            File.find({ ...findQuery, isEditorsChoice: true, category: 'windows' }).sort({ updatedAt: -1 }).limit(10)
+        ]);
+
+        const [androidCouncil, iosCouncil, wpCouncil, winCouncil] = await Promise.all([
+            mapWithIcons(androidCouncilRaw),
+            mapWithIcons(iosCouncilRaw),
+            mapWithIcons(wpCouncilRaw),
+            mapWithIcons(winCouncilRaw)
+        ]);
+
+        const editorsChoiceByCouncil = {
+            android: androidCouncil,
+            ios: iosCouncil,
+            wordpress: wpCouncil,
+            windows: winCouncil
+        };
+        const editorsChoiceMods = [...androidCouncil, ...iosCouncil, ...wpCouncil, ...winCouncil];
+        // --------------------------------------------------------------------------
+
         const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'windows'];
         const filesByCategory = {};
 
-                await Promise.all(categories.map(async (cat) => {
+        await Promise.all(categories.map(async (cat) => {
             // ✅ OPTIMIZATION: Added .lean() to prevent memory spikes on homepage load
             const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
             const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
@@ -1966,12 +1832,21 @@ const renderHomepage = async (req, res) => {
                 );
             }
         }
-        res.render('pages/index', { filesByCategory, editorsChoiceMods });
+        res.render('pages/index', { filesByCategory, editorsChoiceMods, editorsChoiceByCouncil });
     } catch (error) {
         console.error("Error fetching files for homepage:", error);
         return next(error);
     }
 };
+
+// Web Cache Clear Shortcut Route (/cc)
+app.get('/cc', (req, res) => {
+    res.set('Clear-Site-Data', '"cache", "storage"');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
+    res.set('Pragma', 'no-cache');
+    const returnUrl = req.query.returnTo || req.headers.referer || '/';
+    res.render('pages/cache-cleaner', { returnUrl });
+});
 
 // 1. The Root Route (Heavily cached by Cloudflare for Guests)
 app.get('/', async (req, res) => {
@@ -2067,57 +1942,154 @@ app.get('/source', async (req, res) => {
     }
 });
 
+// --- GitHub URL Safety & Sanitization Helpers ---
+function validateGitHubUrl(urlStr) {
+    try {
+        if (!urlStr || typeof urlStr !== 'string') return { safe: false, reason: 'Empty URL' };
+        const trimmed = urlStr.trim();
+        if (/^(javascript|data|vbscript|file):/i.test(trimmed)) {
+            return { safe: false, reason: 'Disallowed protocol' };
+        }
+        const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+        if (parsed.protocol !== 'https:') {
+            return { safe: false, reason: 'Insecure protocol: only HTTPS allowed' };
+        }
+        const allowedHosts = ['github.com', 'www.github.com', 'raw.githubusercontent.com', 'gist.github.com', 'api.github.com'];
+        const host = parsed.hostname.toLowerCase();
+        if (!allowedHosts.includes(host)) {
+            return { safe: false, reason: `Unverified domain: ${host}` };
+        }
+        if (parsed.pathname.includes('..') || /[\0\r\n]/.test(parsed.pathname)) {
+            return { safe: false, reason: 'Invalid path characters detected' };
+        }
+        return {
+            safe: true,
+            hostname: host,
+            url: parsed.href.toLowerCase(),
+            isOfficialGitHub: host === 'github.com' || host === 'www.github.com'
+        };
+    } catch (e) {
+        return { safe: false, reason: 'Malformed URL' };
+    }
+}
+
+function cleanGitHubOwnerRepo(rawOwner, rawRepo) {
+    const combined = `${rawOwner || ''}/${rawRepo || ''}`;
+    const ghMatch = combined.match(/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i);
+    if (ghMatch) {
+        return {
+            owner: ghMatch[1].toLowerCase(),
+            repo: ghMatch[2].replace(/\.git$/i, '').toLowerCase()
+        };
+    }
+    let owner = (rawOwner || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/.*$/, '').toLowerCase();
+    let repo = (rawRepo || '').trim().replace(/^https?:\/\/github\.com\/[^/]+\//i, '').replace(/\.git$/i, '').replace(/\/.*$/, '').toLowerCase();
+    owner = owner.replace(/[^a-z0-9_.-]/g, '');
+    repo = repo.replace(/[^a-z0-9_.-]/g, '');
+    return { owner, repo };
+}
+
+function sanitizeRepoPath(rawPath) {
+    if (!rawPath) return '';
+    return rawPath
+        .toString()
+        .trim()
+        .replace(/\\/g, '/')
+        .replace(/\.{2,}/g, '')
+        .replace(/^\/+|\/+$/g, '')
+        .replace(/[\0\r\n]/g, '');
+}
+
 // Serve raw source file content directly like GitHub raw
 app.get('/source/:slug/raw', async (req, res) => {
     try {
-        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        const slug = req.params.slug ? req.params.slug.toLowerCase().trim() : '';
+        const source = await SourceCode.findOne({ slug, status: 'live' });
         if (!source) return res.status(404).type('text/plain').send('Source repository not found.');
         if (source.isPrivate && !req.isAuthenticated()) return res.status(401).type('text/plain').send('Authentication required.');
         if (!canUserAccessSource(req.user, source)) {
             return res.status(403).type('text/plain').send('Access denied.');
         }
 
-        const filePath = req.query.path ? String(req.query.path).replace(/^\/+/, '') : '';
+        const filePath = sanitizeRepoPath(req.query.path);
         if (!filePath) {
             return res.status(400).type('text/plain').send('Path query parameter is required.');
         }
 
-        const owner = encodeURIComponent(source.githubOwner);
-        const repo = encodeURIComponent(source.githubRepo);
-        const refQuery = req.query.ref ? `?ref=${encodeURIComponent(String(req.query.ref))}` : '';
+        const { owner, repo } = cleanGitHubOwnerRepo(source.githubOwner, source.githubRepo);
+        const currentBranch = (req.query.ref || 'main').toString().trim();
+        const refQuery = req.query.ref ? `?ref=${encodeURIComponent(currentBranch)}` : '';
         const encodedPath = encodeURIComponent(filePath).replace(/%2F/g, '/');
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refQuery}`;
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refQuery}`;
 
-        const response = await axios.get(url, {
-            ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
-            responseType: 'text',
-            transformResponse: [data => data]
-        });
+        try {
+            const response = await axios.get(apiUrl, {
+                ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
+                responseType: 'text',
+                transformResponse: [data => data]
+            });
 
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        return res.send(response.data);
-    } catch (error) {
-        console.error('Source Raw File Error:', error.response?.data || error.message);
-        if (error.response?.status === 404) {
-            return res.status(404).type('text/plain').send('File not found in repository.');
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            return res.send(response.data);
+        } catch (apiErr) {
+            // Fallback to raw.githubusercontent.com for public repositories or if API rate-limited
+            if (!source.isPrivate) {
+                try {
+                    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentBranch)}/${encodedPath}`;
+                    const rawRes = await axios.get(rawUrl, {
+                        responseType: 'text',
+                        transformResponse: [d => d]
+                    });
+                    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+                    res.setHeader('X-Content-Type-Options', 'nosniff');
+                    return res.send(rawRes.data);
+                } catch (rawErr) {
+                    if (currentBranch === 'main') {
+                        try {
+                            const masterUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/${encodedPath}`;
+                            const masterRes = await axios.get(masterUrl, {
+                                responseType: 'text',
+                                transformResponse: [d => d]
+                            });
+                            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+                            res.setHeader('X-Content-Type-Options', 'nosniff');
+                            return res.send(masterRes.data);
+                        } catch (mErr) {}
+                    }
+                }
+            }
+            console.error('Source Raw File Error:', apiErr.response?.data || apiErr.message);
+            if (apiErr.response?.status === 404) {
+                return res.status(404).type('text/plain').send('File not found in repository.');
+            }
+            return res.status(502).type('text/plain').send('GitHub could not provide this file right now.');
         }
-        return res.status(502).type('text/plain').send('GitHub could not provide this file right now.');
+    } catch (error) {
+        console.error('Source Raw Route Exception:', error);
+        return res.status(500).type('text/plain').send('Internal server error.');
     }
 });
 
 app.get('/source/:slug', async (req, res) => {
     try {
-        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        const rawSlug = (req.params.slug || '').trim();
+        // Redirect uppercase slugs to lowercase (301 Permanent Redirect)
+        if (/[A-Z]/.test(rawSlug)) {
+            const lowerSlug = rawSlug.toLowerCase();
+            const queryString = req._parsedUrl?.search || '';
+            return res.redirect(301, `/source/${lowerSlug}${queryString}`);
+        }
+
+        const source = await SourceCode.findOne({ slug: rawSlug.toLowerCase(), status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
         if (source.isPrivate && !req.isAuthenticated()) return res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
 
         const hasAccess = canUserAccessSource(req.user, source);
-        const owner = encodeURIComponent(source.githubOwner);
-        const repo = encodeURIComponent(source.githubRepo);
+        const { owner, repo } = cleanGitHubOwnerRepo(source.githubOwner, source.githubRepo);
 
         // Normalize requested path & ref
-        const rawPath = (req.query.path || '').toString().trim().replace(/^\/+|\/+$/g, '');
+        const rawPath = sanitizeRepoPath(req.query.path);
         const requestedRef = (req.query.ref || '').toString().trim();
         const activeTab = (req.query.tab || 'code').toString().toLowerCase();
 
@@ -2125,40 +2097,50 @@ app.get('/source/:slug', async (req, res) => {
         const refParam = requestedRef ? `?ref=${encodeURIComponent(requestedRef)}` : '';
         const encodedPath = rawPath ? encodeURIComponent(rawPath).replace(/%2F/g, '/') : '';
 
+        // Construct canonical lowercase repo URL and validate safety
+        const canonicalRepoUrl = `https://github.com/${owner}/${repo}`.toLowerCase();
+        const urlSafety = validateGitHubUrl(canonicalRepoUrl);
+
         // Concurrently fetch repo details, contents at path, readme, license, and releases
+        const contentsUrl = `https://api.github.com/repos/${owner}/${repo}/contents${encodedPath ? '/' + encodedPath : ''}${refParam}`;
+        const readmeUrl = `https://api.github.com/repos/${owner}/${repo}/readme${refParam}`;
+
         const [repoResult, contentsResult, readmeResult, licenseResult, releasesResult] = await Promise.allSettled([
             axios.get(`https://api.github.com/repos/${owner}/${repo}`, config),
-            axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}${refParam}`, config),
-            axios.get(`https://api.github.com/repos/${owner}/${repo}/readme${refParam}`, config),
+            axios.get(contentsUrl, config),
+            axios.get(readmeUrl, config),
             axios.get(`https://api.github.com/repos/${owner}/${repo}/license`, config),
             axios.get(`https://api.github.com/repos/${owner}/${repo}/releases`, config)
         ]);
 
         // 1. Repo Metadata
         let repoData = {
-            name: source.githubRepo,
-            full_name: `${source.githubOwner}/${source.githubRepo}`,
+            name: repo,
+            full_name: `${owner}/${repo}`.toLowerCase(),
             default_branch: 'main',
             stargazers_count: 0,
             forks_count: 0,
             open_issues_count: 0,
-            html_url: `https://github.com/${source.githubOwner}/${source.githubRepo}`,
+            html_url: canonicalRepoUrl,
             description: source.description || ''
         };
         let apiError = null;
 
         if (repoResult.status === 'fulfilled') {
             repoData = { ...repoData, ...repoResult.value.data };
+            // Ensure full_name and html_url are strictly lowercase
+            repoData.full_name = (repoData.full_name || `${owner}/${repo}`).toLowerCase();
+            repoData.html_url = canonicalRepoUrl;
         } else {
             const errStatus = repoResult.reason?.response?.status;
             const errMsg = repoResult.reason?.response?.data?.message || repoResult.reason?.message;
             console.warn(`GitHub Repo Info Warning (${source.slug}):`, errStatus, errMsg);
             if (errStatus === 403 || errStatus === 429) {
-                apiError = 'GitHub API rate limit reached. If a private repository is being accessed, please ensure a valid GitHub Personal Access Token is configured.';
+                apiError = 'GitHub API rate limit reached. If accessing frequently or using a private repository, configure a GitHub Personal Access Token in environment settings.';
             } else if (errStatus === 401) {
                 apiError = 'GitHub token is invalid or expired.';
             } else if (errStatus === 404) {
-                apiError = 'Repository not found on GitHub. Verify the repository owner and name in Admin settings.';
+                apiError = `Repository "${owner}/${repo}" was not found on GitHub. Please check the repository owner and name.`;
             }
         }
 
@@ -2191,21 +2173,35 @@ app.get('/source/:slug', async (req, res) => {
                 isViewingFile = true;
                 let rawCode = '';
                 if (data.content && data.encoding === 'base64') {
-                    rawCode = Buffer.from(data.content, 'base64').toString('utf8');
-                } else {
-                    // Fetch raw if content was too large for base64 or null
                     try {
-                        const rawFetch = await axios.get(
-                            `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(currentRef)}`,
-                            {
-                                ...githubApiConfig({ Accept: 'application/vnd.github.raw+json' }),
+                        rawCode = Buffer.from(data.content.replace(/\r?\n/g, ''), 'base64').toString('utf8');
+                    } catch (decErr) {
+                        console.error('Base64 decode error:', decErr.message);
+                    }
+                }
+
+                // Fallback to direct raw download if content was omitted (large file >1MB or null)
+                if (!rawCode) {
+                    const fallbackUrls = [];
+                    if (data.download_url) fallbackUrls.push(data.download_url);
+                    fallbackUrls.push(`https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`);
+                    if (currentRef === 'main') {
+                        fallbackUrls.push(`https://raw.githubusercontent.com/${owner}/${repo}/master/${encodedPath}`);
+                    }
+
+                    for (const fUrl of fallbackUrls) {
+                        try {
+                            const rawFetch = await axios.get(fUrl, {
+                                ...(!fUrl.includes('raw.githubusercontent.com') ? githubApiConfig({ Accept: 'application/vnd.github.raw+json' }) : {}),
                                 responseType: 'text',
-                                transformResponse: [d => d]
+                                transformResponse: [d => d],
+                                timeout: 7000
+                            });
+                            if (typeof rawFetch.data === 'string') {
+                                rawCode = rawFetch.data;
+                                break;
                             }
-                        );
-                        rawCode = rawFetch.data;
-                    } catch (rawErr) {
-                        console.error('Raw content fallback error:', rawErr.message);
+                        } catch (rawErr) {}
                     }
                 }
 
@@ -2216,24 +2212,57 @@ app.get('/source/:slug', async (req, res) => {
                     size: data.size,
                     lines: rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0,
                     language: detectSourceLanguage(data.name),
-                    content: rawCode,
-                    download_url: data.download_url
+                    content: rawCode || '',
+                    download_url: data.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`
                 };
             }
         } else {
             console.warn(`GitHub Contents Warning (${source.slug}):`, contentsResult.reason?.response?.status, contentsResult.reason?.message);
-            if (!apiError && contentsResult.reason?.response?.status === 404) {
+            // If contents call failed, but this was a file path requested, attempt raw.githubusercontent.com fallback!
+            if (rawPath && !isViewingFile) {
+                try {
+                    const rawFallbackUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`;
+                    const rawRes = await axios.get(rawFallbackUrl, {
+                        responseType: 'text',
+                        transformResponse: [d => d],
+                        timeout: 5000
+                    });
+                    if (typeof rawRes.data === 'string') {
+                        isViewingFile = true;
+                        const fileName = rawPath.split('/').pop() || 'file';
+                        fileData = {
+                            name: fileName,
+                            path: rawPath,
+                            sizeFormatted: formatSourceFileSize(Buffer.byteLength(rawRes.data, 'utf8')),
+                            size: Buffer.byteLength(rawRes.data, 'utf8'),
+                            lines: (rawRes.data.match(/\n/g) || []).length + 1,
+                            language: detectSourceLanguage(fileName),
+                            content: rawRes.data,
+                            download_url: rawFallbackUrl
+                        };
+                    }
+                } catch (e) {
+                    if (!apiError && contentsResult.reason?.response?.status === 404) {
+                        apiError = rawPath ? `Path "${rawPath}" was not found in branch "${currentRef}".` : 'Repository has no commits or default branch is empty.';
+                    }
+                }
+            } else if (!apiError && contentsResult.reason?.response?.status === 404) {
                 apiError = rawPath ? `Path "${rawPath}" was not found in branch "${currentRef}".` : 'Repository has no commits or default branch is empty.';
             }
         }
 
-        // 3. README Data
+        // 3. README Data with fallback
         let readme = null;
         if (readmeResult.status === 'fulfilled' && readmeResult.value.data) {
             const rmData = readmeResult.value.data;
             let rmContent = '';
             if (rmData.content && rmData.encoding === 'base64') {
-                rmContent = Buffer.from(rmData.content, 'base64').toString('utf8');
+                rmContent = Buffer.from(rmData.content.replace(/\r?\n/g, ''), 'base64').toString('utf8');
+            } else if (rmData.download_url) {
+                try {
+                    const rmFetch = await axios.get(rmData.download_url, { responseType: 'text', transformResponse: [d => d], timeout: 5000 });
+                    rmContent = rmFetch.data;
+                } catch (rmErr) {}
             }
             readme = {
                 name: rmData.name || 'README.md',
@@ -2241,6 +2270,33 @@ app.get('/source/:slug', async (req, res) => {
                 content: rmContent,
                 download_url: rmData.download_url
             };
+        } else {
+            // README fallback to raw.githubusercontent.com
+            try {
+                const rmFallbackUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/README.md`;
+                const rmRes = await axios.get(rmFallbackUrl, { responseType: 'text', transformResponse: [d => d], timeout: 5000 });
+                if (typeof rmRes.data === 'string' && rmRes.data.trim()) {
+                    readme = {
+                        name: 'README.md',
+                        path: 'README.md',
+                        content: rmRes.data,
+                        download_url: rmFallbackUrl
+                    };
+                }
+            } catch (e) {
+                try {
+                    const rmFallbackUrl2 = `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/readme.md`;
+                    const rmRes2 = await axios.get(rmFallbackUrl2, { responseType: 'text', transformResponse: [d => d], timeout: 4000 });
+                    if (typeof rmRes2.data === 'string' && rmRes2.data.trim()) {
+                        readme = {
+                            name: 'readme.md',
+                            path: 'readme.md',
+                            content: rmRes2.data,
+                            download_url: rmFallbackUrl2
+                        };
+                    }
+                } catch (e2) {}
+            }
         }
 
         // 4. License Data
@@ -2249,7 +2305,7 @@ app.get('/source/:slug', async (req, res) => {
             const licData = licenseResult.value.data;
             let licContent = '';
             if (licData.content && licData.encoding === 'base64') {
-                licContent = Buffer.from(licData.content, 'base64').toString('utf8');
+                licContent = Buffer.from(licData.content.replace(/\r?\n/g, ''), 'base64').toString('utf8');
             }
             license = {
                 name: licData.license?.name || repoData.license?.name || 'Open Source License',
@@ -2300,8 +2356,13 @@ app.get('/source/:slug', async (req, res) => {
 
         return res.render('pages/source-view', {
             source,
+            cleanOwner: owner,
+            cleanRepo: repo,
+            repoUrl: canonicalRepoUrl,
+            urlSafety,
             repoData,
             currentRef,
+            requestedRef,
             currentPath: rawPath,
             parentPath,
             breadcrumbs,
@@ -2324,15 +2385,15 @@ app.get('/source/:slug', async (req, res) => {
 // Download release zip or branch zipball
 app.get('/source/:slug/download/:tag?', async (req, res) => {
     try {
-        const source = await SourceCode.findOne({ slug: req.params.slug.toLowerCase(), status: 'live' });
+        const slug = req.params.slug ? req.params.slug.toLowerCase().trim() : '';
+        const source = await SourceCode.findOne({ slug, status: 'live' });
         if (!source) return renderSourceError(res, 404, 'Source <span>Not Found</span>', 'That source repository is unavailable.');
         if (source.isPrivate && !req.isAuthenticated()) return res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
         if (!canUserAccessSource(req.user, source)) {
             return renderSourceError(res, 403, 'Access <span>Denied</span>', 'You do not have permission to download this source code.');
         }
 
-        const owner = encodeURIComponent(source.githubOwner);
-        const repo = encodeURIComponent(source.githubRepo);
+        const { owner, repo } = cleanGitHubOwnerRepo(source.githubOwner, source.githubRepo);
         const tag = encodeURIComponent(req.params.tag || 'main');
         const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/zipball/${tag}`, {
             ...githubApiConfig(),
@@ -2354,6 +2415,314 @@ app.get('/source/:slug/download/:tag?', async (req, res) => {
         res.destroy(error);
     }
 });
+
+// ===================================
+// MUSIC & AUDIO SYSTEM ROUTES (Mounted after Passport & Session)
+// ===================================
+
+// Public playlist endpoint for floating music player (auto-falls back to all local tracks)
+app.get('/api/music/playlist', async (req, res) => {
+    try {
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        let playlist = state?.weeklyPlaylist || [];
+        
+        // Combined Feature: If weeklyPlaylist is empty or not configured, serve all local tracks
+        if (!playlist || playlist.length === 0) {
+            const localTracks = await getLocalAudioTracks();
+            playlist = localTracks.map(t => ({ title: t.title, src: t.src }));
+        }
+
+        res.json({
+            success: true,
+            playlist
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch playlist' });
+    }
+});
+
+// Admin Music Management Page
+app.get('/admin/music', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const tracks = await getLocalAudioTracks();
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        const weeklyPlaylist = state?.weeklyPlaylist || [];
+        res.render('pages/admin/music', {
+            user: req.user,
+            tracks,
+            weeklyPlaylist
+        });
+    } catch (error) {
+        console.error('Error loading admin music page:', error);
+        res.status(500).send('Error loading music manager');
+    }
+});
+
+// Admin API: Get all tracks from public/audio with playlist metadata
+app.get('/api/admin/music/tracks', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const tracks = await getLocalAudioTracks();
+        const state = await SiteState.findOne({ singletonId: 'master-state' });
+        const playlist = state?.weeklyPlaylist || [];
+
+        const playlistMap = new Map();
+        playlist.forEach((p, idx) => {
+            playlistMap.set(p.src, { order: idx, title: p.title });
+        });
+
+        const mappedTracks = tracks.map(t => {
+            const inPl = playlistMap.has(t.src);
+            return {
+                ...t,
+                inPlaylist: inPl,
+                order: inPl ? playlistMap.get(t.src).order : 999,
+                playlistTitle: inPl ? playlistMap.get(t.src).title : t.title
+            };
+        });
+
+        res.json({
+            success: true,
+            tracks: mappedTracks,
+            playlist
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Admin API: Upload new audio track to public/audio
+app.post('/api/admin/music/upload', ensureAuthenticated, ensureAdmin, (req, res) => {
+    uploadAudioTrack.single('audioFile')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, error: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No audio file provided.' });
+        }
+        try {
+            const tracks = await getLocalAudioTracks();
+            res.json({
+                success: true,
+                message: `Track "${req.file.filename}" uploaded successfully!`,
+                file: {
+                    filename: req.file.filename,
+                    src: `/audio/${req.file.filename}`
+                },
+                tracks
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+});
+
+// Admin API: Delete audio track from public/audio
+app.delete('/api/admin/music/track/:filename', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const rawFilename = path.basename(req.params.filename);
+        const filePath = path.join(AUDIO_DIR, rawFilename);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ success: false, error: 'Track file not found on disk.' });
+        }
+
+        await fs.promises.unlink(filePath);
+
+        // Remove from SiteState.weeklyPlaylist if present
+        const trackSrc = `/audio/${rawFilename}`;
+        await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $pull: { weeklyPlaylist: { src: trackSrc } } }
+        );
+
+        const tracks = await getLocalAudioTracks();
+        res.json({
+            success: true,
+            message: `Track "${rawFilename}" deleted successfully.`,
+            tracks
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/music/playlist', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { playlist } = req.body;
+        if (!Array.isArray(playlist)) {
+            return res.status(400).json({ success: false, error: 'Playlist must be an array' });
+        }
+        await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $set: { weeklyPlaylist: playlist } },
+            { upsert: true }
+        );
+        res.json({ success: true, message: 'Weekly playlist updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/music/theme', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { fileId, themeMusic } = req.body;
+        if (!fileId) return res.status(400).json({ success: false, error: 'File ID is required' });
+
+        await File.findByIdAndUpdate(fileId, { $set: { themeMusic } });
+        res.json({ success: true, message: 'Theme music updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ==========================================
+// EDITOR'S CHOICE COUNCIL MANAGEMENT ROUTES
+// ==========================================
+app.get('/admin/editors-choice', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const findQuery = { status: 'live', isLatestVersion: true, isEditorsChoice: true };
+
+        const mapWithIcons = async (rawFiles) => {
+            return Promise.all(rawFiles.map(async (file) => {
+                const iconKey = file.iconUrl || file.iconKey;
+                let signedIconUrl = '/images/default-app-icon.png';
+                if (iconKey) {
+                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                }
+                return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
+            }));
+        };
+
+        const [androidRaw, iosRaw, wpRaw, winRaw] = await Promise.all([
+            File.find({ ...findQuery, category: 'android' }).sort({ updatedAt: -1 }).lean(),
+            File.find({ ...findQuery, category: { $in: ['ios-jailed', 'ios-jailbroken'] } }).sort({ updatedAt: -1 }).lean(),
+            File.find({ ...findQuery, category: 'wordpress' }).sort({ updatedAt: -1 }).lean(),
+            File.find({ ...findQuery, category: 'windows' }).sort({ updatedAt: -1 }).lean()
+        ]);
+
+        const [android, ios, wordpress, windows] = await Promise.all([
+            mapWithIcons(androidRaw),
+            mapWithIcons(iosRaw),
+            mapWithIcons(wpRaw),
+            mapWithIcons(winRaw)
+        ]);
+
+        res.render('pages/admin/editors-choice', {
+            councils: { android, ios, wordpress, windows },
+            pageTitle: "Editor's Choice Councils"
+        });
+    } catch (error) {
+        console.error("Editor's Choice Council Page Error:", error);
+        res.status(500).render('pages/error', { errorCode: '500', errorTitle: 'Server Error', errorMessage: 'Could not load Editor Choice Councils.' });
+    }
+});
+
+app.get('/api/admin/editors-choice/search', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { platform, q } = req.query;
+        if (!q || q.trim().length < 2) {
+            return res.json({ success: true, mods: [] });
+        }
+
+        const query = {
+            status: 'live',
+            isLatestVersion: true,
+            name: { $regex: q.trim(), $options: 'i' }
+        };
+
+        if (platform === 'android') {
+            query.category = 'android';
+        } else if (platform === 'ios') {
+            query.category = { $in: ['ios-jailed', 'ios-jailbroken'] };
+        } else if (platform === 'wordpress') {
+            query.category = 'wordpress';
+        } else if (platform === 'windows') {
+            query.category = 'windows';
+        }
+
+        const modsRaw = await File.find(query).sort({ downloads: -1 }).limit(15).lean();
+        const mods = await Promise.all(modsRaw.map(async (mod) => {
+            const iconKey = mod.iconUrl || mod.iconKey;
+            let signedIconUrl = '/images/default-app-icon.png';
+            if (iconKey) {
+                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+            }
+            return {
+                _id: mod._id,
+                name: mod.name,
+                category: mod.category,
+                downloads: mod.downloads,
+                iconUrl: signedIconUrl
+            };
+        }));
+
+        res.json({ success: true, mods });
+    } catch (error) {
+        console.error("Editor's choice search error:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/editors-choice/toggle', ensureAuthenticated, ensureAdmin, async (req, res) => {
+    try {
+        const { fileId, isEditorsChoice, description } = req.body;
+        if (!fileId) return res.status(400).json({ success: false, message: 'File ID is required' });
+
+        const updateData = {
+            isEditorsChoice: Boolean(isEditorsChoice)
+        };
+        if (description !== undefined) {
+            updateData.editorsChoiceDescription = (description || '').trim();
+        }
+
+        const updated = await File.findByIdAndUpdate(fileId, { $set: updateData }, { new: true });
+        if (!updated) return res.status(404).json({ success: false, message: 'File not found' });
+
+        res.json({
+            success: true,
+            message: `Mod "${updated.name}" ${updated.isEditorsChoice ? 'added to' : 'removed from'} Council!`,
+            file: {
+                _id: updated._id,
+                name: updated.name,
+                isEditorsChoice: updated.isEditorsChoice
+            }
+        });
+    } catch (error) {
+        console.error("Editor's choice toggle error:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ===============================
+// USER MUSIC SETTINGS API
+// ===============================
+app.get('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        res.json({
+            success: true,
+            settings: user?.musicSettings || { allowThemeMusic: true, autoPlayTheme: true }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch settings' });
+    }
+});
+
+app.post('/api/user/music-settings', ensureAuthenticated, async (req, res) => {
+    try {
+        const { allowThemeMusic, autoPlayTheme } = req.body;
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: {
+                'musicSettings.allowThemeMusic': allowThemeMusic,
+                'musicSettings.autoPlayTheme': autoPlayTheme
+            }
+        });
+        res.json({ success: true, message: 'Music settings updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ===================================
 // 2 NOTIFICATION SYSTEM ROUTES
 // ===================================
@@ -2556,23 +2925,34 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
 // Category / Filter Route
 app.get('/category', async (req, res) => {
     try {
-        // Grab the queries from the URL (e.g., /category?platform=android&subCategory=game-action)
-        const { platform, subCategory, sort, page = 1 } = req.query;
+        // Grab the queries from the URL (e.g., /category?platform=android, /category?cat=wordpress)
+        const rawPlatform = (req.query.platform || req.query.cat || 'all').toLowerCase();
+        const { subCategory, sort, page = 1 } = req.query;
         const limit = 12;
         const currentPage = parseInt(page);
         
         // Base query: Only show live, latest version mods
         const queryFilter = { isLatestVersion: true, status: 'live' };
 
-        // 1. Filter by Main Platform
-        if (platform && platform !== 'all') {
-            queryFilter.category = platform;
+        // 1. Filter by Main Platform & Council
+        if (rawPlatform === 'android') {
+            queryFilter.category = 'android';
+        } else if (rawPlatform === 'ios' || rawPlatform === 'ios-all') {
+            queryFilter.category = { $in: ['ios-jailed', 'ios-jailbroken'] };
+        } else if (rawPlatform === 'ios-jailed' || rawPlatform === 'ipa') {
+            queryFilter.category = 'ios-jailed';
+        } else if (rawPlatform === 'ios-jailbroken' || rawPlatform === 'deb') {
+            queryFilter.category = 'ios-jailbroken';
+        } else if (rawPlatform === 'wordpress' || rawPlatform === 'wp') {
+            queryFilter.category = 'wordpress';
+        } else if (rawPlatform === 'windows' || rawPlatform === 'win') {
+            queryFilter.category = 'windows';
+        } else if (rawPlatform !== 'all') {
+            queryFilter.category = rawPlatform;
         }
 
-        // 2. NEW: Filter by Sub-Category
+        // 2. Filter by Sub-Category
         if (subCategory && subCategory !== 'all') {
-            // Because we store platforms as an array (e.g., ['game-action']), 
-            // we use the $in operator to find mods that have this sub-category.
             queryFilter.platforms = { $in: [subCategory] };
         }
 
@@ -2584,10 +2964,11 @@ app.get('/category', async (req, res) => {
         } else {
             sortOptions.createdAt = -1; // Default: Newest first
         }
-        // --- NEW: Fetch Editor's Choice Mods for this specific platform ---
+        
+        // --- Platform-Specific Editor's Choice Council ---
         let editorQuery = { isLatestVersion: true, status: 'live', isEditorsChoice: true };
-        if (platform && platform !== 'all') {
-            editorQuery.category = platform;
+        if (queryFilter.category) {
+            editorQuery.category = queryFilter.category;
         }
         
         const editorsChoiceModsRaw = await File.find(editorQuery).sort({ updatedAt: -1 }).limit(10);
@@ -2595,11 +2976,11 @@ app.get('/category', async (req, res) => {
         // Process URLs
         const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/icon.png';
+            let signedIconUrl = '/images/default-app-icon.png';
             if (iconKey) {
                 try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
             }
-            return { ...file.toObject(), iconUrl: signedIconUrl };
+            return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
         }));
         // -----------------------------------------------------------------
 
@@ -6175,9 +6556,10 @@ app.post('/mods/:id/delete-all-versions', ensureAuthenticated, async (req, res) 
 app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
+        const isAdminOrOwner = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
         
         // Security check
-        if (!file || file.uploader !== req.user.username) {
+        if (!file || (file.uploader !== req.user.username && !isAdminOrOwner)) {
             return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
 
@@ -6202,8 +6584,9 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 ]), async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
+        const isAdminOrOwner = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
         
-        if (!file || file.uploader !== req.user.username) {
+        if (!file || (file.uploader !== req.user.username && !isAdminOrOwner)) {
             return res.status(404).send('Not found');
         }
 
@@ -6301,6 +6684,16 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         
         if (formData.modCategory) {
             file.platforms =[formData.modCategory];
+        }
+
+        // --- ADMIN / OWNER: EDITOR'S CHOICE COUNCIL SETTINGS ---
+        if (isAdminOrOwner) {
+            if (formData.isEditorsChoice !== undefined) {
+                file.isEditorsChoice = (formData.isEditorsChoice === 'true' || formData.isEditorsChoice === 'on');
+            }
+            if (formData.editorsChoiceDescription !== undefined) {
+                file.editorsChoiceDescription = (formData.editorsChoiceDescription || '').trim();
+            }
         }
 
         // --- MULTI-PART ARRAY PARSING LOGIC (Edit Route) ---
@@ -9542,7 +9935,7 @@ const startServer = async () => {
                                 });
                                 customContext += "\n";
                             }
-                            const accountContext = session.user ? `Registered support context: username=${session.user.username || 'unknown'}; email=${session.user.email || 'unknown'}; country=${session.user.country || 'not provided'}; profile bio=${session.user.bio || 'not provided'}; page/device context=${session.adminNotes || 'not provided'}. Use this only to personalize support in this conversation; never reveal it unnecessarily.\n` : '';
+                            const accountContext = session.user ? `Registered support context: username=${session.user.username || 'unknown'}; role=${session.user.role || 'member'}; email=${session.user.email || 'unknown'}; country=${session.user.country || 'not provided'}; profile bio=${session.user.bio || 'not provided'}; page/device context=${session.adminNotes || 'not provided'}. Use this only to personalize support in this conversation; never reveal it unnecessarily.\n` : '';
 
                             const history = session.messages
                                 .filter(m => m.sender === 'user' || m.sender === 'bot')
@@ -9829,6 +10222,12 @@ cron.schedule('* * * * *', async () => {
         console.error("Cron Job Automation Error:", error);
     }
 });
+
+// ===================================
+// OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
+// ===================================
+const ownerRoutes = require('./routes/owner');
+app.use('/', ensureOwner, ownerRoutes);
 
 // ✅ START THE SERVER
 startServer(); 

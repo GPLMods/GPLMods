@@ -202,7 +202,7 @@
 
                         <div class="source-meta">
                             <i class="fas fa-code-branch"></i>
-                            <span><%= source.githubOwner %>/<%= source.githubRepo %></span>
+                            <span><%= (source.githubOwner + '/' + source.githubRepo).toLowerCase() %></span>
                         </div>
 
                         <div class="source-features">
@@ -212,7 +212,7 @@
                             <span class="feat-tag"><i class="fas fa-scale-balanced"></i> License</span>
                         </div>
 
-                        <a class="source-card-link" href="/source/<%= encodeURIComponent(source.slug) %>">
+                        <a class="source-card-link" href="/source/<%= encodeURIComponent(source.slug.toLowerCase()) %>">
                             <i class="fas fa-code"></i> Browse Source Code
                         </a>
                     </article>

@@ -356,10 +356,10 @@
                 right: 80px;
                 background: var(--dark-gray);
                 color: var(--gold);
-                padding: 10px 15px;
+                padding: 6px 12px;
                 border-radius: 20px 20px 0 20px;
                 border: 1px solid var(--gold);
-                font-size: 0.9em;
+                font-size: 0.8em;
                 font-weight: bold;
                 white-space: nowrap;
                 box-shadow: 0 5px 15px rgba(0,0,0,0.5);
@@ -645,6 +645,7 @@
                     <div class="gpl-chat-team-avatars">
                         <img src="/images/default-avatar.png" alt="Agent">
                         <img src="/images/team-logo.png" alt="Bot">
+                        <img src="/images/gemini.png" alt="AI">
                     </div>
                     <div>
                         <strong style="color: var(--white); display: block; font-size: 0.92em;">Support Team</strong>
@@ -802,13 +803,13 @@
                 "Need mod suggestions? 💡"
             ];
             
-            setTimeout(() => {
+            setInterval(() => {
                 if (chatWindow && !chatWindow.classList.contains('open') && greeting) {
                     greeting.textContent = greetings[Math.floor(Math.random() * greetings.length)];
                     greeting.classList.add('show');
                     setTimeout(() => greeting.classList.remove('show'), 5000);
                 }
-            }, 3000);
+            }, 120000); // 120 seconds
 
             // 2. Toggle Window
             if (chatBtn && chatWindow) {
@@ -1080,7 +1081,7 @@
                     const div = document.createElement('div');
                     div.id = 'gplChatTyping';
                     div.className = 'chat-bubble bubble-typing';
-                    div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+                    div.innerHTML = '<span style="font-size: 0.85em; opacity: 0.8; margin-right: 5px; font-style: italic; vertical-align: middle;">Writing</span><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
                     chatBody.appendChild(div);
                     chatBody.scrollTop = chatBody.scrollHeight;
                 }

@@ -31,7 +31,7 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['member', 'distributor', 'support', 'admin'],
+        enum: ['member', 'distributor', 'support', 'admin', 'owner'],
         default: 'member'
     },
     isBanned: {

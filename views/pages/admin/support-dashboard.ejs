@@ -135,6 +135,118 @@
         .chat-input-area button:disabled { background: #555; cursor: not-allowed; }
         
         #empty-state { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: var(--silver); font-size: 1.1em; flex-direction: column; text-align: center; padding: 20px; }
+
+        /* Mobile Responsive Enhancements */
+        .mobile-back-btn {
+            display: none;
+            background: #252525;
+            color: var(--gold);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.95em;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .mobile-back-btn:hover { background: #333; }
+
+        .ai-collapse-toggle {
+            background: none;
+            border: none;
+            color: var(--silver);
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 0.85em;
+            transition: transform 0.2s;
+        }
+        .ai-debugger-card.collapsed .ai-debugger-body {
+            display: none !important;
+        }
+        .ai-debugger-card.collapsed {
+            padding: 8px 12px;
+        }
+        .ai-debugger-card.collapsed .ai-collapse-toggle i {
+            transform: rotate(-90deg);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: 100dvh;
+                height: 100vh;
+                position: relative;
+            }
+            .sidebar {
+                width: 100% !important;
+                min-width: 0 !important;
+                height: 100%;
+                border-right: none;
+            }
+            .main-chat {
+                width: 100% !important;
+                height: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 100;
+            }
+            #empty-state {
+                display: none !important;
+            }
+            body:not(.chat-view-active) .main-chat {
+                display: none !important;
+            }
+            body.chat-view-active .sidebar {
+                display: none !important;
+            }
+            .mobile-back-btn {
+                display: inline-flex !important;
+            }
+            .chat-header {
+                padding: 12px 16px;
+                gap: 8px;
+            }
+            .chat-header h3 {
+                font-size: 1.05em;
+            }
+            .chat-header .device-info {
+                font-size: 0.75em;
+            }
+            .chat-messages {
+                padding: 14px;
+                gap: 10px;
+            }
+            .msg-bubble {
+                max-width: 88%;
+                padding: 10px 14px;
+                font-size: 0.9em;
+            }
+            .chat-input-area {
+                padding: 10px 14px;
+                gap: 8px;
+            }
+            .chat-input-area input {
+                padding: 11px 14px;
+                font-size: 0.9em;
+            }
+            .chat-input-area button {
+                padding: 11px 18px;
+            }
+            .stats-bar {
+                padding: 8px 14px;
+            }
+            .stat-pill {
+                padding: 5px 8px;
+                font-size: 0.75em;
+            }
+            .sidebar-header {
+                padding: 14px 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -162,31 +274,38 @@
 
         <!-- AI Engine Diagnostics & Debugger Card -->
         <div class="ai-debugger-card" id="aiDebuggerCard">
-            <div class="ai-debugger-header">
+            <div class="ai-debugger-header" style="cursor: pointer;" onclick="toggleAiDebugger()">
                 <div style="display: flex; align-items: center; gap: 7px;">
                     <span class="ai-status-indicator" id="aiStatusDot"></span>
                     <strong style="font-size: 0.85em; color: var(--white);">Gemini 3.6 Flash AI</strong>
                 </div>
-                <button type="button" class="ping-btn" id="pingAiBtn" title="Ping AI and test API connectivity">
-                    <i class="fas fa-bolt"></i> <span id="pingBtnText">Ping AI</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button type="button" class="ping-btn" id="pingAiBtn" onclick="event.stopPropagation()" title="Ping AI and test API connectivity">
+                        <i class="fas fa-bolt"></i> <span id="pingBtnText">Ping AI</span>
+                    </button>
+                    <button type="button" class="ai-collapse-toggle" onclick="event.stopPropagation(); toggleAiDebugger();" title="Toggle AI Panel">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="ai-debugger-body" id="aiDebuggerBody">
+                <div class="ai-meta-grid">
+                    <span>Status: <b id="aiStatusLabel">Online</b></span>
+                    <span>Latency: <b id="aiLatencyLabel">--</b></span>
+                    <span>Requests: <b id="aiReqsLabel">0</b></span>
+                    <span>Errors: <b id="aiErrorsLabel" style="color: #ffadad;">0</b></span>
+                </div>
+                <div class="ai-error-box" id="aiErrorBox" style="display: none;">
+                    <i class="fas fa-exclamation-circle" style="margin-top: 2px;"></i>
+                    <span id="aiErrorText">No errors reported</span>
+                </div>
+                <div class="ai-ping-box" id="aiPingBox"></div>
+                
+                <!-- Gemini Page Visibility Button -->
+                <button type="button" id="openGeminiModalBtn" style="margin-top: 10px; width: 100%; padding: 8px 12px; background: rgba(33, 150, 243, 0.12); border: 1px solid rgba(33, 150, 243, 0.35); border-radius: 6px; color: #64b5f6; font-size: 0.8em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                    <i class="fas fa-eye-slash"></i> Configure Gemini Visibility
                 </button>
             </div>
-            <div class="ai-meta-grid">
-                <span>Status: <b id="aiStatusLabel">Online</b></span>
-                <span>Latency: <b id="aiLatencyLabel">--</b></span>
-                <span>Requests: <b id="aiReqsLabel">0</b></span>
-                <span>Errors: <b id="aiErrorsLabel" style="color: #ffadad;">0</b></span>
-            </div>
-            <div class="ai-error-box" id="aiErrorBox" style="display: none;">
-                <i class="fas fa-exclamation-circle" style="margin-top: 2px;"></i>
-                <span id="aiErrorText">No errors reported</span>
-            </div>
-            <div class="ai-ping-box" id="aiPingBox"></div>
-            
-            <!-- Gemini Page Visibility Button -->
-            <button type="button" id="openGeminiModalBtn" style="margin-top: 10px; width: 100%; padding: 8px 12px; background: rgba(33, 150, 243, 0.12); border: 1px solid rgba(33, 150, 243, 0.35); border-radius: 6px; color: #64b5f6; font-size: 0.8em; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                <i class="fas fa-eye-slash"></i> Configure Gemini Visibility
-            </button>
         </div>
 
         <div style="padding: 0 16px; margin-top: 5px;">
@@ -200,15 +319,20 @@
 
     <div class="main-chat" id="mainChat" style="display: none;">
         <div class="chat-header">
-            <div>
-                <h3 id="chatHeaderName" style="margin: 0; color: var(--white);">User Name</h3>
-                <div id="chatHeaderInfo" class="device-info">Guest | No Device Info</div>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button id="claimBtn" style="padding: 10px 20px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: none;">
-                    <i class="fas fa-hand-holding-hand" style="margin-right: 6px;"></i> Claim Chat
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                <button type="button" class="mobile-back-btn" id="mobileBackBtn" onclick="closeMobileChat()" title="Back to chat list">
+                    <i class="fas fa-arrow-left"></i>
                 </button>
-                <button id="deleteChatBtn" type="button" title="Delete conversation permanently" style="padding: 10px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; cursor: pointer; font-weight: bold;"><i class="fas fa-trash-alt"></i> Delete</button>
+                <div style="min-width: 0;">
+                    <h3 id="chatHeaderName" style="margin: 0; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User Name</h3>
+                    <div id="chatHeaderInfo" class="device-info" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Guest | No Device Info</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                <button id="claimBtn" style="padding: 9px 16px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; display: none;">
+                    <i class="fas fa-hand-holding-hand" style="margin-right: 4px;"></i> Claim
+                </button>
+                <button id="deleteChatBtn" type="button" title="Delete conversation permanently" style="padding: 9px 12px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em;"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
         
@@ -412,16 +536,41 @@
             });
         }
 
+        function toggleAiDebugger() {
+            const card = document.getElementById('aiDebuggerCard');
+            if (card) card.classList.toggle('collapsed');
+        }
+
+        function closeMobileChat() {
+            document.body.classList.remove('chat-view-active');
+            currentSessionId = null;
+            if (window.innerWidth <= 768) {
+                mainChatEl.style.display = 'none';
+                emptyStateEl.style.display = 'none';
+            } else {
+                mainChatEl.style.display = 'none';
+                emptyStateEl.style.display = 'flex';
+            }
+            renderChatList();
+        }
+
+        // Auto-collapse AI debugger on mobile screens by default
+        if (window.innerWidth <= 768) {
+            const card = document.getElementById('aiDebuggerCard');
+            if (card) card.classList.add('collapsed');
+        }
+
         function openChat(id) {
             currentSessionId = id;
             const chat = activeChats.find(c => c._id === id);
             if (!chat) return;
             
+            document.body.classList.add('chat-view-active');
             emptyStateEl.style.display = 'none';
             mainChatEl.style.display = 'flex';
             
             chatHeaderName.textContent = chat.user ? chat.user.username : (chat.guestEmail || 'Guest');
-            chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? (chat.user.customEmailAlias ? 'Pro Email: ' + chat.user.customEmailAlias + '@gplmods.webredirect.org | Email: ' + chat.user.email : 'Email: ' + chat.user.email) : 'No email'));
+            chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? (chat.user.customEmailAlias ? 'Custom Email Address: ' + chat.user.customEmailAlias + '@gplmods.webredirect.org | Email: ' + chat.user.email : 'Email: ' + chat.user.email) : 'No email'));
             
             chatMessagesEl.innerHTML = '';
             chat.messages.forEach(msg => appendMessage(msg));

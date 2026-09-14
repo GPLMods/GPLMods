@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleaning Web Cache | GPL Mods</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --gold: #FFD700;
+            --white: #ffffff;
+            --silver: #a0a0a0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            font-family: 'Poppins', sans-serif;
+            color: var(--white);
+            text-align: center;
+        }
+        .cleaner-box {
+            background: #161616;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 40px 30px;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .icon-pulse {
+            font-size: 3em;
+            color: var(--gold);
+            margin-bottom: 20px;
+            animation: broom-shake 1.2s infinite ease-in-out;
+        }
+        @keyframes broom-shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
+        h2 { margin: 0 0 10px 0; font-size: 1.5em; }
+        p { color: var(--silver); font-size: 0.9em; margin: 0 0 20px 0; line-height: 1.5; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #252525;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), #ffaa00);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+        .status-txt {
+            font-size: 0.8em;
+            color: var(--gold);
+            margin-top: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="cleaner-box">
+        <div class="icon-pulse">
+            <i class="fas fa-broom"></i>
+        </div>
+        <h2>Purging Web Cache...</h2>
+        <p>Clearing stale service workers, CacheStorage, localStorage, and application cache for a 100% fresh state.</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="status-txt" id="statusTxt">Wiping Service Workers...</div>
+    </div>
+
+    <script>
+        (async function runCacheClean() {
+            const fill = document.getElementById('progressFill');
+            const txt = document.getElementById('statusTxt');
+
+            function setProgress(pct, msg) {
+                fill.style.width = pct + '%';
+                txt.textContent = msg;
+            }
+
+            try {
+                // Step 1: Unregister Service Workers
+                setProgress(25, 'Unregistering Service Workers...');
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
+                    }
+                }
+
+                // Step 2: Clear Cache Storage
+                setProgress(55, 'Purging CacheStorage...');
+                if ('caches' in window) {
+                    const cacheKeys = await caches.keys();
+                    await Promise.all(cacheKeys.map(k => caches.delete(k)));
+                }
+
+                // Step 3: Clear Storage
+                setProgress(85, 'Clearing Client Storage...');
+                try { localStorage.clear(); } catch(e){}
+                try { sessionStorage.clear(); } catch(e){}
+
+                setProgress(100, '✔ Done! Redirecting...');
+                
+                setTimeout(() => {
+                    const target = <%- JSON.stringify(returnUrl || '/') %>;
+                    const sep = target.includes('?') ? '&' : '?';
+                    window.location.replace(target + sep + '_cc=' + Date.now() + '&cache_cleared=1');
+                }, 400);
+
+            } catch (err) {
+                console.error("Cache purge error:", err);
+                window.location.replace('/');
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -32,6 +32,11 @@
                 
             </div>
 
+            <!-- HilltopAds Link -->
+            <a id="hilltopads-link" href="https://hilltopads.com/?ref=378819" target="_blank" rel="noopener noreferrer" style="display: none; margin-top: 15px; color: var(--gold); text-decoration: none; font-size: 0.9em; font-weight: bold; padding: 10px; border: 1px solid var(--gold); border-radius: 8px; transition: all 0.3s ease; text-align: center;" onmouseover="this.style.background='var(--gold)'; this.style.color='var(--black)';" onmouseout="this.style.background='transparent'; this.style.color='var(--gold)';">
+                Powered by Hilltopads
+            </a>
+
             <!-- The Close Button -->
             <button id="manual-close-btn" class="btn btn-secondary" style="display: none; margin-top: 15px; border: 1px solid #555; background: transparent; color: var(--silver); padding: 10px 20px; border-radius: 8px; transition: all 0.3s ease;">
                 Close & Continue
@@ -47,6 +52,7 @@
             const watchBtn = document.getElementById('watch-video-btn');
             const playerContainer = document.getElementById('ad-player-container');
             const manualCloseBtn = document.getElementById('manual-close-btn');
+            const hilltopadsLink = document.getElementById('hilltopads-link');
             const backgroundAudio = document.getElementById('background-audio');
             const videoEl = document.getElementById('fluid-video-id');
 
@@ -125,13 +131,7 @@
                 
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
-
-                // Display close button immediately, but visually disable it
-                manualCloseBtn.style.display = 'inline-block';
-                manualCloseBtn.disabled = true;
-                manualCloseBtn.style.opacity = '0.4';
-                manualCloseBtn.style.cursor = 'not-allowed';
-                manualCloseBtn.textContent = 'Loading ad...';
+                if (hilltopadsLink) hilltopadsLink.style.display = 'block';
 
                 myFP = fluidPlayer('fluid-video-id', {
                     "layoutControls": {
@@ -165,6 +165,7 @@
                 // Helper function to unlock the button
                 function enableCloseButton() {
                     clearInterval(countdownTimer);
+                    manualCloseBtn.style.display = 'inline-block';
                     manualCloseBtn.disabled = false;
                     manualCloseBtn.style.opacity = '1';
                     manualCloseBtn.style.cursor = 'pointer';
@@ -185,6 +186,10 @@
                 // 🟢 30-SECOND COUNTDOWN TIMER
                 // Starts only when the video successfully begins playing
                 function startCountdown() {
+                    manualCloseBtn.style.display = 'inline-block';
+                    manualCloseBtn.disabled = true;
+                    manualCloseBtn.style.opacity = '0.4';
+                    manualCloseBtn.style.cursor = 'not-allowed';
                     manualCloseBtn.textContent = `You can close in ${countdownLeft}s...`;
                     countdownTimer = setInterval(() => {
                         countdownLeft--;

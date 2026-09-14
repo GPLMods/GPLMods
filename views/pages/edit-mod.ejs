@@ -524,6 +524,27 @@
                     <div class="preview-container" id="videoPreviewContainer"></div>
                 </div>
             </fieldset>
+
+            <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
+                <fieldset class="form-section" style="border: 1px solid rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.04); border-radius: 12px; padding: 25px; margin-top: 25px;">
+                    <legend style="color: var(--gold); font-weight: 700; padding: 0 10px; font-size: 1.1em;">
+                        <i class="fas fa-crown"></i> Editor's Choice Council Controls
+                    </legend>
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+                        <label class="switch">
+                            <input type="checkbox" name="isEditorsChoice" value="true" <%= file.isEditorsChoice ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                        <span style="color: var(--white); font-weight: 600; font-size: 1em;">
+                            Feature in <%= file.category ? file.category.toUpperCase() : 'Platform' %> Council Showcase
+                        </span>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="editorsChoiceDescription">Catchy Council Description</label>
+                        <textarea id="editorsChoiceDescription" name="editorsChoiceDescription" rows="2" placeholder="e.g. Hand-picked masterpiece with unlocked features..."><%= file.editorsChoiceDescription || '' %></textarea>
+                    </div>
+                </fieldset>
+            <% } %>
             
             <input type="hidden" name="fileSize" id="fileSize" value="<%= file.fileSize || 0 %>">
             <input type="hidden" name="actionType" id="actionType" value="submit">

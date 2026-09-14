@@ -170,12 +170,16 @@
 
     <main>
         <section class="page-header">
-            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-            <div style="margin-bottom: 20px;">
+            <!-- ======== DYNAMIC GO BACK BUTTON & CACHE PURGE SHORTCUT ======== -->
+            <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                 <a href="javascript:history.back()"
                     style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
                     onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
                     <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
+                </a>
+                <a href="/cc" class="btn btn-secondary quick-cc-pill" title="Purge Web Cache (/cc)" 
+                    style="border-color: rgba(255, 215, 0, 0.35); color: var(--gold); padding: 7px 16px; border-radius: 20px; text-decoration: none; font-size: 0.82em; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; transition: all 0.2s ease;">
+                    <i class="fas fa-broom"></i> /cc
                 </a>
             </div>
             <!-- ======================================== -->
@@ -198,9 +202,14 @@
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                                 </div>
                                 <div class="featured-content">
-                                    <h2>Editor's Choice: <span>
-                                            <%= mod.name %>
-                                        </span></h2>
+                                    <h2>
+                                        <% if (typeof currentPlatform !== 'undefined' && currentPlatform && currentPlatform !== 'all') { %>
+                                            <%= currentPlatform.toUpperCase() %> Council:
+                                        <% } else { %>
+                                            Editor's Choice Council:
+                                        <% } %>
+                                        <span><%= mod.name %></span>
+                                    </h2>
 
                                     <!-- Smart Description Logic -->
                                     <% let desc=mod.editorsChoiceDescription; if (!desc || desc.trim()==='' ) {

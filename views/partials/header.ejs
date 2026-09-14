@@ -392,10 +392,15 @@
                 <!-- Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
-                        <% if (user.role === 'admin') { %>
+                        <% if (user.role === 'admin' || user.role === 'owner') { %>
                             <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
                                 <i class="fas fa-shield-alt"></i> Admin Panel
                             </a>
+                            <% if (user.role === 'owner') { %>
+                                <a href="/owner" class="btn btn-login" style="border-color: #f44336; color: #f44336; font-weight: 600;" title="Owner Command Center">
+                                    <i class="fas fa-crown"></i> Owner Center
+                                </a>
+                            <% } %>
                         <% } %>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
@@ -425,13 +430,17 @@
             </li>
             
             <% if (user) { %>
-                <% if (user.role === 'admin') { %>
+                <% if (user.role === 'admin' || user.role === 'owner') { %>
                     <li class="has-submenu" style="background: rgba(255, 215, 0, 0.08); border-radius: 8px; margin: 6px 0; border: 1px solid rgba(255, 215, 0, 0.25);">
                         <a href="#" class="collapsible-trigger" style="color: var(--gold); font-weight: 700;">
                             <i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite <span class="arrow">▼</span>
                         </a>
                         <ul class="sub-menu">
                             <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
+                            <% if (user.role === 'owner') { %>
+                                <li><a href="/owner"><i class="fas fa-crown" style="margin-right: 8px; color: #f44336;"></i> Owner Center</a></li>
+                            <% } %>
+                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editors Choice Council</a></li>
                             <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
                             <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
                             <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>

@@ -1,0 +1,372 @@
+<%-include('../../partials/header') %>
+
+<style>
+    .council-header { text-align: center; padding: 40px 20px 20px; }
+    .council-header h1 { font-size: 2.4em; color: var(--white); margin: 0 0 8px 0; }
+    .council-header h1 span { color: var(--gold); text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    .council-header p { color: var(--silver); max-width: 650px; margin: 0 auto; line-height: 1.5; font-size: 0.95em; }
+
+    .council-container { max-width: 1100px; margin: 0 auto 60px auto; padding: 0 20px; }
+
+    /* Council Tabs */
+    .council-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+    .council-tab-btn {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: var(--silver);
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95em;
+    }
+    .council-tab-btn:hover { border-color: var(--gold); color: var(--white); transform: translateY(-2px); }
+    .council-tab-btn.active {
+        background: var(--gold);
+        color: #000;
+        border-color: var(--gold);
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35);
+    }
+    .council-tab-btn .badge-count {
+        background: rgba(0,0,0,0.25);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+    }
+    .council-tab-btn.active .badge-count { background: #000; color: var(--gold); }
+
+    /* Panel Content */
+    .council-panel { display: none; }
+    .council-panel.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Search & Add Bar */
+    .council-search-box {
+        background: #141414;
+        border: 1px solid #2e2e2e;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .council-search-input-wrapper { display: flex; gap: 10px; }
+    .council-search-input {
+        flex: 1;
+        background: #0a0a0a;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 0.95em;
+        outline: none;
+    }
+    .council-search-input:focus { border-color: var(--gold); }
+    .search-results-dropdown {
+        display: none;
+        max-height: 280px;
+        overflow-y: auto;
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 8px;
+        margin-top: 5px;
+    }
+    .search-result-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #262626;
+        transition: background 0.2s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: #222; }
+
+    /* App Cards Grid */
+    .council-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .council-card {
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        position: relative;
+        transition: all 0.25s ease;
+    }
+    .council-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+    .council-card-top { display: flex; align-items: center; gap: 15px; }
+    .council-card-icon { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid #333; }
+    .council-card-title { margin: 0; font-size: 1.1em; color: var(--white); }
+    .council-card-sub { font-size: 0.8em; color: var(--silver); margin-top: 3px; }
+    .council-desc-box {
+        background: #111;
+        border: 1px solid #282828;
+        border-radius: 8px;
+        padding: 10px;
+        color: #ccc;
+        font-size: 0.85em;
+        line-height: 1.4;
+        font-style: italic;
+    }
+    .council-card-actions { display: flex; gap: 10px; margin-top: auto; }
+    .btn-remove-council {
+        flex: 1;
+        padding: 8px 14px;
+        background: rgba(229, 57, 53, 0.15);
+        color: #ff5252;
+        border: 1px solid rgba(229, 57, 53, 0.4);
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: 0.2s;
+    }
+    .btn-remove-council:hover { background: #d32f2f; color: #fff; }
+    .btn-edit-desc {
+        padding: 8px 12px;
+        background: #252525;
+        color: var(--gold);
+        border: 1px solid #444;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85em;
+        cursor: pointer;
+    }
+    .btn-edit-desc:hover { background: #333; }
+
+    .empty-council-box {
+        text-align: center;
+        padding: 50px 20px;
+        background: #141414;
+        border: 1px dashed #333;
+        border-radius: 12px;
+        color: var(--silver);
+    }
+</style>
+
+<div class="council-header">
+    <h1>Editor's Choice <span>Councils</span></h1>
+    <p>Manage separate councils for Android, iOS, WordPress, and Windows. Featured apps appear in the top showcase carousel for their specific platform.</p>
+</div>
+
+<div class="council-container">
+    <!-- Council Navigation Tabs -->
+    <div class="council-nav">
+        <button class="council-tab-btn active" data-council="android" onclick="switchCouncil('android')">
+            <i class="fab fa-android"></i> Android Council <span class="badge-count" id="count-android"><%= councils.android.length %></span>
+        </button>
+        <button class="council-tab-btn" data-council="ios" onclick="switchCouncil('ios')">
+            <i class="fab fa-apple"></i> iOS Council <span class="badge-count" id="count-ios"><%= councils.ios.length %></span>
+        </button>
+        <button class="council-tab-btn" data-council="wordpress" onclick="switchCouncil('wordpress')">
+            <i class="fab fa-wordpress"></i> WordPress Council <span class="badge-count" id="count-wordpress"><%= councils.wordpress.length %></span>
+        </button>
+        <button class="council-tab-btn" data-council="windows" onclick="switchCouncil('windows')">
+            <i class="fab fa-windows"></i> Windows Council <span class="badge-count" id="count-windows"><%= councils.windows.length %></span>
+        </button>
+    </div>
+
+    <!-- Council Panels -->
+    <% ['android', 'ios', 'wordpress', 'windows'].forEach((platform, idx) => { %>
+        <div class="council-panel <%= idx === 0 ? 'active' : '' %>" id="panel-<%= platform %>">
+            
+            <!-- Search & Add Form for this platform -->
+            <div class="council-search-box">
+                <div style="font-size: 0.9em; font-weight: 600; color: var(--gold);">
+                    <i class="fas fa-plus-circle"></i> Add App to <%= platform.toUpperCase() %> Council
+                </div>
+                <div class="council-search-input-wrapper">
+                    <input type="text" 
+                           class="council-search-input" 
+                           id="search-input-<%= platform %>" 
+                           placeholder="Search live <%= platform %> mods by name..." 
+                           oninput="handleSearch('<%= platform %>')">
+                    <a href="/cc" class="btn btn-secondary" style="border-color:#444; color:var(--gold); display:flex; align-items:center; gap:6px; font-size:0.85em; text-decoration:none;" title="Purge Cache">
+                        <i class="fas fa-broom"></i> /cc
+                    </a>
+                </div>
+                <div class="search-results-dropdown" id="results-<%= platform %>"></div>
+            </div>
+
+            <!-- Apps in this Council -->
+            <% if (councils[platform] && councils[platform].length > 0) { %>
+                <div class="council-grid" id="grid-<%= platform %>">
+                    <% councils[platform].forEach(app => { %>
+                        <div class="council-card" id="card-<%= app._id %>">
+                            <div class="council-card-top">
+                                <img src="<%= app.iconUrl %>" alt="<%= app.name %>" class="council-card-icon">
+                                <div>
+                                    <h4 class="council-card-title"><%= app.name %></h4>
+                                    <div class="council-card-sub">
+                                        <span style="color:var(--gold);"><i class="fas fa-star"></i> <%= app.averageRating || 5.0 %></span> | 
+                                        <span><i class="fas fa-download"></i> <%= app.downloads || 0 %></span> | 
+                                        <span style="text-transform:uppercase; font-size:0.75em; border:1px solid #444; padding:1px 5px; border-radius:4px;"><%= app.category %></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="council-desc-box">
+                                "<%= app.editorsChoiceDescription || 'Featured hand-picked mod on GPL Mods.' %>"
+                            </div>
+                            <div class="council-card-actions">
+                                <button class="btn-remove-council" onclick="removeFromCouncil('<%= app._id %>', '<%= platform %>', '<%= app.name %>')">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                                <button class="btn-edit-desc" onclick="editDescription('<%= app._id %>', '<%= platform %>')">
+                                    <i class="fas fa-edit"></i> Edit Note
+                                </button>
+                                <a href="/<%= app.category %>/<%= app.slug || app._id %>" target="_blank" class="btn-edit-desc" style="text-decoration:none; display:flex; align-items:center;" title="View Mod Page">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <div class="empty-council-box" id="empty-<%= platform %>">
+                    <i class="fas fa-shield-alt" style="font-size: 3em; margin-bottom: 15px; color: #444;"></i>
+                    <h3 style="color: var(--white); margin: 0 0 8px 0;">No Apps in <%= platform.toUpperCase() %> Council</h3>
+                    <p style="margin: 0;">Use the search bar above to select and feature mods in the <%= platform.toUpperCase() %> Editor's Choice Council.</p>
+                </div>
+            <% } %>
+
+        </div>
+    <% }) %>
+
+</div>
+
+<script>
+    let searchDebounceTimer = null;
+
+    function switchCouncil(platform) {
+        document.querySelectorAll('.council-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-council') === platform);
+        });
+        document.querySelectorAll('.council-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === `panel-${platform}`);
+        });
+    }
+
+    function handleSearch(platform) {
+        clearTimeout(searchDebounceTimer);
+        const input = document.getElementById(`search-input-${platform}`);
+        const resultsBox = document.getElementById(`results-${platform}`);
+        const query = input.value.trim();
+
+        if (query.length < 2) {
+            resultsBox.style.display = 'none';
+            resultsBox.innerHTML = '';
+            return;
+        }
+
+        searchDebounceTimer = setTimeout(async () => {
+            resultsBox.style.display = 'block';
+            resultsBox.innerHTML = '<div style="padding:12px; color:#888; text-align:center;"><i class="fas fa-spinner fa-spin"></i> Searching live mods...</div>';
+
+            try {
+                const res = await fetch(`/api/admin/editors-choice/search?platform=${platform}&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (!data.success || data.mods.length === 0) {
+                    resultsBox.innerHTML = '<div style="padding:12px; color:#888; text-align:center;">No matching mods found for this platform.</div>';
+                    return;
+                }
+
+                resultsBox.innerHTML = data.mods.map(mod => `
+                    <div class="search-result-item">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <img src="${mod.iconUrl}" style="width:36px; height:36px; border-radius:8px; object-fit:cover;">
+                            <div>
+                                <strong style="color:#fff; font-size:0.9em;">${mod.name}</strong>
+                                <div style="font-size:0.75em; color:#888;">${mod.category} | ${mod.downloads || 0} downloads</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" style="border-color:var(--gold); color:var(--gold); font-size:0.8em; padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="addToCouncil('${mod._id}', '${platform}', '${mod.name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-plus"></i> Add to Council
+                        </button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                resultsBox.innerHTML = '<div style="padding:12px; color:var(--red); text-align:center;">Search failed.</div>';
+            }
+        }, 300);
+    }
+
+    async function addToCouncil(modId, platform, modName) {
+        const desc = prompt(`Enter a catchy featured description for "${modName}" (or leave blank for default):`, "Featured hand-picked mod on GPL Mods.");
+        if (desc === null) return; // cancelled
+
+        try {
+            const res = await fetch('/api/admin/editors-choice/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`✔ "${modName}" added to ${platform.toUpperCase()} Council!`);
+                window.location.reload();
+            } else {
+                alert('✖ Failed: ' + (data.message || 'Error updating mod'));
+            }
+        } catch (err) {
+            alert('✖ Network error: ' + err.message);
+        }
+    }
+
+    async function removeFromCouncil(modId, platform, modName) {
+        if (!confirm(`Remove "${modName}" from the ${platform.toUpperCase()} Editor's Choice Council?`)) return;
+
+        try {
+            const res = await fetch('/api/admin/editors-choice/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId: modId, isEditorsChoice: false })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const card = document.getElementById(`card-${modId}`);
+                if (card) card.remove();
+                const countBadge = document.getElementById(`count-${platform}`);
+                if (countBadge) countBadge.textContent = Math.max(0, parseInt(countBadge.textContent || '1') - 1);
+            } else {
+                alert('✖ Failed: ' + (data.message || 'Error updating mod'));
+            }
+        } catch (err) {
+            alert('✖ Network error: ' + err.message);
+        }
+    }
+
+    async function editDescription(modId, platform) {
+        const desc = prompt("Update the catchy council description for this mod:");
+        if (desc === null) return;
+
+        try {
+            const res = await fetch('/api/admin/editors-choice/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('✖ Failed: ' + (data.message || 'Error'));
+            }
+        } catch (err) {
+            alert('✖ Network error: ' + err.message);
+        }
+    }
+</script>
+
+<%-include('../../partials/footer') %>
