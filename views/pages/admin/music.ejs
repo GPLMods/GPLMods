@@ -435,23 +435,134 @@
 
     .music-toast.success { border-left-color: #43a047; }
     .music-toast.error { border-left-color: #e53935; }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+        .music-manager-wrapper {
+            margin: 10px auto 40px auto;
+            padding: 0 12px;
+        }
+        .back-btn-wrapper {
+            padding: 0 12px !important;
+            margin: 1.2rem auto !important;
+        }
+        .music-header-block {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .music-title-group h1 {
+            font-size: 1.6em;
+            flex-wrap: wrap;
+        }
+        .music-nav-shortcuts {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 8px;
+        }
+        .music-pill-btn {
+            justify-content: center;
+            padding: 8px 10px;
+            font-size: 0.8em;
+        }
+        .music-kpi-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .music-kpi-card {
+            padding: 14px;
+            gap: 12px;
+        }
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2em;
+        }
+        .kpi-info h3 {
+            font-size: 1.3em;
+        }
+        .music-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 6px;
+        }
+        .music-tab-btn {
+            padding: 10px 14px;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+        .playlist-builder-box {
+            padding: 16px 12px;
+        }
+        .box-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .box-actions {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .box-actions .btn-action {
+            width: 100%;
+            justify-content: center;
+        }
+        .track-row {
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 12px;
+        }
+        .track-info-group {
+            flex: 1 1 calc(100% - 100px);
+            min-width: 160px;
+        }
+        .track-title-input {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .track-row-actions {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            gap: 8px;
+        }
+        .track-row-actions .btn-action {
+            flex: 1;
+            justify-content: center;
+        }
+        .upload-dropzone {
+            padding: 25px 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .music-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+        .music-title-group h1 {
+            font-size: 1.35em;
+        }
+    }
 </style>
 
 <main class="container">
-    <div class="back-btn-wrapper" style="margin: 2rem auto; max-width: 1200px; padding: 0 20px;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <div class="back-btn-wrapper" style="margin: 1.5rem auto; max-width: 1200px; padding: 0 20px;">
+        <a href="/admin" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/admin');">
+            <i class="fas fa-arrow-left"></i> Back to AdminJS
         </a>
     </div>
+    <!-- ======================================== -->
 
     <div class="music-manager-wrapper">
-        
-        <!-- Back breadcrumb -->
-        <div style="margin-bottom: 15px;">
-            <a href="/admin" style="color: var(--silver); text-decoration: none; font-size: 0.9em; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fas fa-arrow-left"></i> Back to Admin Panel
-            </a>
-        </div>
 
         <!-- Header -->
         <div class="music-header-block">

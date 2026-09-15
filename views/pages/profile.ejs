@@ -150,6 +150,15 @@
         position: relative;
         width: 100%;
         user-select: none;
+        z-index: 10;
+    }
+    .custom-calendar-container.open {
+        z-index: 10000;
+    }
+    .form-section:has(.custom-calendar-container.open),
+    .form-section.cal-open {
+        z-index: 1000 !important;
+        position: relative;
     }
     .custom-calendar-trigger {
         width: 100%;
@@ -183,19 +192,28 @@
         gap: 8px;
         color: var(--gold);
     }
+    .calendar-arrow {
+        font-size: 0.85em;
+        color: var(--silver);
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+    .custom-calendar-container.open .calendar-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
     .custom-calendar-popup {
         display: none;
         position: absolute;
         top: calc(100% + 8px);
         left: 0;
         width: 330px;
-        max-width: 100vw;
+        max-width: calc(100vw - 40px);
         background: #18181c;
         border: 1.5px solid rgba(255, 215, 0, 0.35);
         border-radius: 12px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.95);
         padding: 16px;
-        z-index: 50;
+        z-index: 99999 !important;
         box-sizing: border-box;
         animation: gplCalPopIn 0.2s ease-out;
     }
@@ -239,18 +257,31 @@
         justify-content: center;
     }
     .cal-select {
-        background: #222;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: #222 url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd700'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 6px center;
+        background-size: 14px;
         color: var(--white);
         border: 1px solid #444;
         border-radius: 6px;
-        padding: 5px 8px;
+        padding: 5px 22px 5px 8px;
         font-size: 0.85em;
         font-family: inherit;
         cursor: pointer;
         outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .cal-select:hover {
+        border-color: #666;
     }
     .cal-select:focus {
         border-color: var(--gold);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+    }
+    .cal-select option {
+        background-color: #18181c;
+        color: #ffffff;
     }
     .calendar-weekdays {
         display: grid;
@@ -424,6 +455,7 @@
                                 </span>
                                 <div class="calendar-trigger-icons">
                                     <i class="fas fa-calendar-alt calendar-icon"></i>
+                                    <i class="fas fa-chevron-down calendar-arrow"></i>
                                 </div>
                             </div>
 
@@ -791,6 +823,35 @@ GLOBAL|Earth
                     </form>
                 <% } %>
             </section>
+
+            <% if (user.role === 'distributor') { %>
+                <section class="form-section" style="border-top: 3px solid var(--gold); margin-top: 30px;">
+                    <h2><i class="fas fa-id-card" style="color: var(--gold); font-size: 0.9em; margin-right: 8px;"></i> Verified Distributor Card</h2>
+                    <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.9em; line-height: 1.6;">
+                        You are an official Verified Mod Distributor. You can view, customize, and export your digital credential with Quick-Login capabilities, or manage your partnership status.
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <a href="/id-card" class="submit-button" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; width: auto; padding: 12px 22px; font-weight: bold; background: var(--gold); color: var(--black);">
+                            <i class="fas fa-id-badge" style="margin-right: 8px;"></i> Open My ID Card
+                        </a>
+                        <form action="/account/quit-distributor" method="POST" style="display:inline; margin: 0;" onsubmit="return confirm('Are you sure you want to leave the Distributor Partnership program? All your external-link uploads will be transferred to GPL Community and your ID Card will be revoked.');">
+                            <button type="submit" class="submit-button secondary-button" style="width: auto; padding: 12px 20px; border-color: var(--red); color: var(--red);">
+                                <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Quit Partnership
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            <% } else if (user.role === 'admin' || user.role === 'owner') { %>
+                <section class="form-section" style="border-top: 3px solid var(--gold); margin-top: 30px;">
+                    <h2><i class="fas fa-id-card" style="color: var(--gold); font-size: 0.9em; margin-right: 8px;"></i> <%= user.role === 'owner' ? 'Owner Credential Card' : 'Administrator ID Card' %></h2>
+                    <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.9em; line-height: 1.6;">
+                        As a member of the administration, you have access to your official verified ID Card, customizable welcome broadcast, and Private Quick-Login QR.
+                    </p>
+                    <a href="/id-card" class="submit-button" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; width: auto; padding: 12px 22px; font-weight: bold; background: var(--gold); color: var(--black);">
+                        <i class="fas fa-id-badge" style="margin-right: 8px;"></i> Open My ID Card
+                    </a>
+                </section>
+            <% } %>
         </div>
     </div>
 </main>
@@ -1184,6 +1245,7 @@ GLOBAL|Earth
             updateTriggerDisplay();
             renderCalendar();
             container.classList.remove('open');
+            container.closest('.form-section')?.classList.remove('cal-open');
             trigger.setAttribute('aria-expanded', 'false');
         }
 
@@ -1191,6 +1253,7 @@ GLOBAL|Earth
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = container.classList.toggle('open');
+            container.closest('.form-section')?.classList.toggle('cal-open', isOpen);
             trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             if (isOpen) {
                 if (selectedDate) {
@@ -1253,6 +1316,7 @@ GLOBAL|Earth
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 container.classList.remove('open');
+                container.closest('.form-section')?.classList.remove('cal-open');
                 trigger.setAttribute('aria-expanded', 'false');
             });
         }
@@ -1261,6 +1325,7 @@ GLOBAL|Earth
         document.addEventListener('click', (e) => {
             if (!container.contains(e.target)) {
                 container.classList.remove('open');
+                container.closest('.form-section')?.classList.remove('cal-open');
                 trigger.setAttribute('aria-expanded', 'false');
             }
         });

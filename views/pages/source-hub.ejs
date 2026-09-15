@@ -38,7 +38,7 @@
 
     .source-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
         gap: 24px;
     }
 
@@ -50,6 +50,8 @@
         display: flex;
         flex-direction: column;
         transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .source-card:hover {
@@ -91,6 +93,8 @@
         font-size: 1.35em;
         margin-bottom: 8px;
         font-weight: 700;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .source-card p {
@@ -99,6 +103,8 @@
         flex: 1;
         margin-bottom: 14px;
         font-size: 0.95rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .source-meta {
@@ -109,6 +115,16 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .source-meta span {
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
     }
 
     .source-features {
@@ -175,6 +191,26 @@
         color: var(--white);
         margin-bottom: 8px;
     }
+
+    @media (max-width: 480px) {
+        .source-hub-container {
+            padding: 0 12px;
+            margin: 2rem auto;
+        }
+        .source-hub-header {
+            padding: 20px 16px;
+        }
+        .source-hub-header h1 {
+            font-size: 1.6rem;
+        }
+        .source-card {
+            padding: 18px 14px;
+        }
+        .source-meta span {
+            white-space: normal;
+            line-height: 1.4;
+        }
+    }
 </style>
 
 <main class="container">
@@ -209,7 +245,7 @@
 
                         <div class="source-meta">
                             <i class="fas fa-code-branch"></i>
-                            <span><%= (source.githubOwner + '/' + source.githubRepo).toLowerCase() %></span>
+                            <span><%= source.displayRepo || (source.cleanOwner ? (source.cleanOwner + '/' + source.cleanRepo) : (source.githubOwner + '/' + source.githubRepo).toLowerCase().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '')) %></span>
                         </div>
 
                         <div class="source-features">

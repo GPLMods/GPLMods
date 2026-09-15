@@ -265,8 +265,8 @@
         }
         .avatar-placeholder img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block; }
         
-        .hamburger-menu { display: block !important; cursor: pointer; font-size: 1.6em; color: var(--silver, #c0c0c0); margin-left: 5px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
-        .hamburger-menu:hover, .hamburger-menu.open { color: var(--gold, #FFD700); background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.3); transform: scale(1.05); transition: all 0.2s ease; }
+        .hamburger-menu { display: block !important; cursor: pointer; font-size: 1.6em; color: var(--silver, #c0c0c0); margin-left: 5px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: transparent; border: none !important; box-shadow: none !important; }
+        .hamburger-menu:hover, .hamburger-menu.open { color: var(--gold, #FFD700); background: rgba(255, 215, 0, 0.1); border: none !important; box-shadow: none !important; transform: scale(1.05); transition: all 0.2s ease; }
         
         /* Desktop Breakpoint */
         @media (min-width: 1024px) {
@@ -416,7 +416,17 @@
 
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
-        <ul>
+        <div class="mobile-nav-header" style="padding: 15px 0 20px 0; margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+            <a href="/admin" class="mobile-nav-logo-btn" title="Open Admin Panel" style="display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 10px 14px; border-radius: 8px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.25); transition: all 0.2s ease;">
+                <img src="/images/logo.png" alt="GPL Mods" style="height: 28px; width: auto;" onerror="this.style.display='none'">
+                <div style="font-size: 1.25em; font-weight: 700; font-family: 'Poppins', sans-serif;">
+                    <span style="color: var(--gold); text-shadow: 0 0 10px var(--glow-gold);">GPL</span>
+                    <span style="color: var(--silver); margin-left: 4px;">Mods</span>
+                </div>
+                <i class="fas fa-shield-alt" style="margin-left: auto; color: var(--gold); font-size: 0.95em;"></i>
+            </a>
+        </div>
+        <ul style="padding-top: 0;">
             <li><a href="<%= user ? '/home' : '/' %>">Home</a></li>
             <li class="has-submenu">
                 <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>

@@ -48,6 +48,15 @@ const UserSchema = new Schema({
         enum: ['free', 'premium'],
         default: 'free'
     },
+    membershipExpiresAt: {
+        type: Date
+    },
+    subscriptionId: {
+        type: String
+    },
+    membershipPlan: {
+        type: String
+    },
     referralCode: {
         type: String,
         unique: true,
@@ -210,22 +219,19 @@ const UserSchema = new Schema({
         counter: Number,
         transports: [String]
     }],
-    twoFactorSocialProvider: {
-        type: String,
-        enum: ['google', 'github', 'microsoft', 'none'],
-        default: 'none'
-    },
-    passkeys: [{
-        credentialID: String,
-        credentialPublicKey: String,
-        counter: Number,
-        transports: [String]
-    }],
     webAuthnChallenge: { type: String },
     musicSettings: {
         allowThemeMusic: { type: Boolean, default: true },
         autoPlayTheme: { type: Boolean, default: true }
     },
+
+    // --- TWO-FACTOR AUTHENTICATION & ID CARD ---
+    is2FAEnabled: { type: Boolean, default: false },
+    cardId: { type: String, unique: true, sparse: true }, // 8-digit unique ID
+    cardLoginToken: { type: String }, // Secure token for Private QR quick login
+    cardMessage: { type: String, default: 'Welcome to my profile! Follow me for the best mods.' },
+    cardBgUrl: { type: String, default: '' }, // Custom background image
+    cardLastEdited: { type: Date }, // To enforce the 7-day cooldown
 }, { timestamps: true });
 
 UserSchema.pre('save', async function() {

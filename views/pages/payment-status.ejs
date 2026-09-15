@@ -1,0 +1,179 @@
+<%- include('../partials/header') %>
+
+<style>
+    .payment-status-wrapper {
+        max-width: 650px;
+        margin: 60px auto;
+        background-color: var(--dark-gray);
+        padding: 50px 40px;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+        border: 1px solid #333;
+    }
+    .status-icon-box {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        margin: 0 auto 25px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8em;
+    }
+    .status-success {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 2px solid #2ecc71;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+    }
+    .status-pending {
+        background: rgba(241, 196, 15, 0.15);
+        color: #f1c40f;
+        border: 2px solid #f1c40f;
+        box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+    }
+    .status-error {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 2px solid #e74c3c;
+        box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+    }
+    .payment-status-wrapper h1 {
+        color: var(--white);
+        font-size: 2.2em;
+        margin-bottom: 15px;
+    }
+    .payment-status-wrapper p.desc {
+        color: var(--silver);
+        font-size: 1.05em;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+    .details-card {
+        background: rgba(0,0,0,0.35);
+        border-radius: 12px;
+        border: 1px solid #3a3a3a;
+        padding: 20px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #2b2b2b;
+        font-size: 0.95em;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        color: var(--silver);
+    }
+    .detail-value {
+        color: var(--white);
+        font-weight: 600;
+        word-break: break-all;
+    }
+    .btn-action-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .btn-action {
+        padding: 12px 28px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 1em;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-primary-action {
+        background: var(--gold);
+        color: var(--black);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .btn-primary-action:hover {
+        background: var(--white);
+        transform: translateY(-2px);
+    }
+    .btn-secondary-action {
+        background: transparent;
+        color: var(--silver);
+        border: 1px solid #555;
+    }
+    .btn-secondary-action:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+</style>
+
+<main class="container">
+    <div class="payment-status-wrapper">
+        <% if (status === 'success') { %>
+            <div class="status-icon-box status-success">
+                <i class="fas fa-check"></i>
+            </div>
+        <% } else if (status === 'pending' || status === 'active') { %>
+            <div class="status-icon-box status-pending">
+                <i class="fas fa-clock"></i>
+            </div>
+        <% } else { %>
+            <div class="status-icon-box status-error">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+        <% } %>
+
+        <h1><%= title %></h1>
+        <p class="desc"><%= message %></p>
+
+        <% if (orderId || amount) { %>
+            <div class="details-card">
+                <% if (orderId) { %>
+                    <div class="detail-row">
+                        <span class="detail-label">Reference ID:</span>
+                        <span class="detail-value"><%= orderId %></span>
+                    </div>
+                <% } %>
+                <% if (amount) { %>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value"><%= currency %> <%= amount %></span>
+                    </div>
+                <% } %>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value" style="text-transform: uppercase;">
+                        <%= status === 'success' ? 'Confirmed / Paid' : status %>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Provider:</span>
+                    <span class="detail-value">Cashfree Payments (Sandbox)</span>
+                </div>
+            </div>
+        <% } %>
+
+        <div class="btn-action-group">
+            <% if (type === 'membership') { %>
+                <a href="/membership" class="btn-action btn-secondary-action">
+                    <i class="fas fa-crown"></i> Membership Plans
+                </a>
+            <% } else { %>
+                <a href="/donate" class="btn-action btn-secondary-action">
+                    <i class="fas fa-heart"></i> Donate Page
+                </a>
+            <% } %>
+            <a href="/" class="btn-action btn-primary-action">
+                <i class="fas fa-home"></i> Return Home
+            </a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

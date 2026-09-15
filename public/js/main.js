@@ -1247,31 +1247,33 @@ function initializeSmartAudioHandler() {
  * ==================================================================================
  */
 function initializeNotificationsAndPWA() {
-    // --- NOTIFICATION BADGE LOGIC (SMART MULTI-CHECK) ---
+    // --- NOTIFICATION BADGE LOGIC (SMART MULTI-CHECK & DYNAMIC REFRESH) ---
     const bellLink = document.getElementById('nav-bell-link');
     const badge = document.getElementById('notification-badge');
-    
-    if (bellLink && badge) {
+
+    function calculateAndRenderBadge() {
+        if (!bellLink || !badge) return;
+
         const userId = bellLink.dataset.userId || 'guest';
         const storageKey = (key) => `gplmods_notifications_${userId}_${key}`;
 
-        // Fetch current counts from the server (via data attributes)
+        // Fetch current counts from bellLink dataset
         const curUpdates = parseInt(bellLink.getAttribute('data-updates') || '0', 10);
         const curUploads = parseInt(bellLink.getAttribute('data-uploads') || '0', 10);
         const curModsUpd = parseInt(bellLink.getAttribute('data-modsupdates') || '0', 10);
         const curPersonal = parseInt(bellLink.getAttribute('data-personal') || '0', 10);
-        
+
         // Fetch last seen counts from user's browser using namespaced keys
         const seenUpdates = parseInt(localStorage.getItem(storageKey('lastSeenUpdates')) || '0', 10);
         const seenUploads = parseInt(localStorage.getItem(storageKey('lastSeenUploads')) || '0', 10);
         const seenModsUpd = parseInt(localStorage.getItem(storageKey('lastSeenModsUpd')) || '0', 10);
+
         // Calculate Total Unread
-        let totalUnread = curPersonal; // Admin messages are tracked by the database, so they are always accurate
-        
+        let totalUnread = curPersonal;
         if (curUpdates > seenUpdates) totalUnread += (curUpdates - seenUpdates);
         if (curUploads > seenUploads) totalUnread += (curUploads - seenUploads);
         if (curModsUpd > seenModsUpd) totalUnread += (curModsUpd - seenModsUpd);
-        
+
         if (totalUnread > 0) {
             badge.style.display = 'flex';
             badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
@@ -1279,11 +1281,53 @@ function initializeNotificationsAndPWA() {
             badge.style.display = 'none';
             badge.textContent = '';
         }
-        
-        // ✅ FIX: We removed the event listener here! 
-        // The bell no longer resets itself when clicked. The individual items 
-        // will reset when you click them inside the Hub page!
     }
+
+    // Expose global refresh function to be called from any page or action
+    window.refreshNotificationBadge = async function(updatedCounts) {
+        if (!bellLink) return;
+        if (updatedCounts) {
+            if (typeof updatedCounts.unreadPersonal !== 'undefined') {
+                bellLink.setAttribute('data-personal', updatedCounts.unreadPersonal);
+            }
+            if (typeof updatedCounts.recentAnnouncements !== 'undefined') {
+                bellLink.setAttribute('data-updates', updatedCounts.recentAnnouncements);
+            }
+            if (typeof updatedCounts.newUploads !== 'undefined') {
+                bellLink.setAttribute('data-uploads', updatedCounts.newUploads);
+            }
+            if (typeof updatedCounts.newUpdates !== 'undefined') {
+                bellLink.setAttribute('data-modsupdates', updatedCounts.newUpdates);
+            }
+        } else {
+            // Fetch live counts from server API
+            try {
+                const res = await fetch('/api/notifications/counts');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success) {
+                        if (typeof data.unreadPersonal !== 'undefined') bellLink.setAttribute('data-personal', data.unreadPersonal);
+                        if (typeof data.recentAnnouncements !== 'undefined') bellLink.setAttribute('data-updates', data.recentAnnouncements);
+                        if (typeof data.newUploads !== 'undefined') bellLink.setAttribute('data-uploads', data.newUploads);
+                        if (typeof data.newUpdates !== 'undefined') bellLink.setAttribute('data-modsupdates', data.newUpdates);
+                    }
+                }
+            } catch (e) {
+                // Silently ignore network fetch failures
+            }
+        }
+        calculateAndRenderBadge();
+    };
+
+    calculateAndRenderBadge();
+
+    // Re-check badge counts on page restore from bfcache or tab visibility change
+    window.addEventListener('pageshow', () => calculateAndRenderBadge());
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            calculateAndRenderBadge();
+        }
+    });
 
     // Register Service Worker (Keep this outside the sequence so it always registers)
     if ('serviceWorker' in navigator) {

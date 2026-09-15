@@ -9,6 +9,12 @@ const DonationSchema = new Schema({
     amount: { type: Number, required: true }, // Store in base currency (e.g., USD or INR)
     currency: { type: String, default: 'INR' },
     
+    orderId: { type: String, index: true },
+    paymentSessionId: { type: String },
+    cfPaymentId: { type: String },
+    paymentMethod: { type: String },
+    donorEmail: { type: String },
+    donorPhone: { type: String },
     transactionId: { type: String },
     status: { type: String, enum: ['pending', 'successful', 'failed'], default: 'pending' }
 }, { timestamps: true });

@@ -10,6 +10,8 @@ const File = require('./core/file');
 const User = require('./core/user');
 const Review = require('./core/review');
 const Reply = require('./core/reply');
+const Donation = require('./donation');
+const MembershipOrder = require('./membershipOrder');
 
 // --- COMMUNITY MODELS ---
 const Issue = require('./community/issue');
@@ -52,6 +54,8 @@ module.exports = {
     User,
     Review,
     Reply,
+    Donation,
+    MembershipOrder,
     ChatSession,
     ChatSettings,
     AIKnowledge,

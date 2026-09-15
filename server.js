@@ -89,6 +89,21 @@ const DocPage = require('./models/docPage');
 const StaticPage = require('./models/staticPage');
 const DraftSnapshot = require('./models/draftSnapshot');
 const Donation = require('./models/donation');
+const MembershipOrder = require('./models/membershipOrder');
+
+// Cashfree Payments SDK Initialization (Sandbox / Test Environment)
+const { Cashfree, CFEnvironment } = require('cashfree-pg');
+const cashfreeEnvironment = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase() === 'production'
+    ? CFEnvironment.PRODUCTION
+    : CFEnvironment.SANDBOX;
+
+const cashfree = new Cashfree(
+    cashfreeEnvironment,
+    process.env.CASHFREE_APP_ID,
+    process.env.CASHFREE_SECRET_KEY
+);
+cashfree.XApiVersion = "2025-01-01";
+
 const DailyStat = require('./models/dailyStat');
 const PointHistory = require('./models/pointHistory');
 const TranslationCache = require('./models/translationCache');
@@ -704,7 +719,11 @@ app.use('/.adminjs', express.static(path.join(__dirname, '.adminjs')));
 
 // 2. Parsers (Crucial for AdminJS and login forms)
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf.toString('utf8');
+    }
+}));
 
 // 3. CORS
 const allowedOrigins = [
@@ -1934,8 +1953,17 @@ app.get('/source', async (req, res) => {
     try {
         const sources = await SourceCode.find({ status: 'live' }).sort({ title: 1 }).lean();
         const visibleSources = sources.filter(source => canUserAccessSource(req.user, source));
+        const sanitizedSources = visibleSources.map(source => {
+            const { owner, repo } = cleanGitHubOwnerRepo(source.githubOwner, source.githubRepo);
+            return {
+                ...source,
+                cleanOwner: owner,
+                cleanRepo: repo,
+                displayRepo: `${owner}/${repo}`
+            };
+        });
 
-        return res.render('pages/source-hub', { sources: visibleSources });
+        return res.render('pages/source-hub', { sources: sanitizedSources });
     } catch (error) {
         console.error('Source Hub Listing Error:', error);
         return renderSourceError(res, 500, 'Source Hub <span>Unavailable</span>', 'The source hub could not be loaded right now.');
@@ -2855,6 +2883,46 @@ app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) =
 // ===================================
 // MAILBOX ACTION APIs
 // ===================================
+
+// Dynamic live counts API for client-side refresh
+app.get('/api/notifications/counts', async (req, res) => {
+    try {
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentAnnouncements = await Announcement.countDocuments({ createdAt: { $gte: oneDayAgo } });
+        const newUploads = await File.countDocuments({ status: 'live', isLatestVersion: true, createdAt: { $gte: oneDayAgo } });
+        const newUpdates = await File.countDocuments({ status: 'live', isLatestVersion: true, updatedAt: { $gte: oneDayAgo } });
+
+        let unreadPersonal = 0;
+        let following = 0;
+
+        if (req.isAuthenticated() && req.user) {
+            unreadPersonal = await UserNotification.countDocuments({ user: req.user._id, isRead: false });
+            const currentUser = await User.findById(req.user._id).select('following').lean();
+            if (currentUser && currentUser.following && currentUser.following.length > 0) {
+                const followedUsers = await User.find({ _id: { $in: currentUser.following } }).select('username').lean();
+                const followedUsernames = followedUsers.map(u => u.username);
+                following = await File.countDocuments({
+                    uploader: { $in: followedUsernames },
+                    status: 'live',
+                    isLatestVersion: true,
+                    updatedAt: { $gte: oneDayAgo }
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            unreadPersonal,
+            recentAnnouncements,
+            newUploads,
+            newUpdates,
+            following
+        });
+    } catch (e) {
+        console.error("Error fetching notification counts:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
 
 // Mark a single message as read
 app.post('/api/notifications/:id/read', ensureAuthenticated, async (req, res) => {
@@ -8419,28 +8487,61 @@ app.get('/leaderboard', async (req, res) => {
             }));
 
         } else if (category === 'donators') {
-            // Count unique donators
-            const donatorsCountPipeline =[
-                { $match: { status: 'successful', user: { $ne: null }, ...dateFilter } },
-                { $group: { _id: '$user' } }
+            const donatorMatch = { status: 'successful', ...dateFilter };
+
+            const pipeline = [
+                { $match: donatorMatch },
+                {
+                    $project: {
+                        user: 1,
+                        username: 1,
+                        amount: 1,
+                        currency: 1,
+                        inrAmount: {
+                            $switch: {
+                                branches: [
+                                    { case: { $eq: ['$currency', 'USD'] }, then: { $multiply: ['$amount', 85] } },
+                                    { case: { $eq: ['$currency', 'EUR'] }, then: { $multiply: ['$amount', 92] } },
+                                    { case: { $eq: ['$currency', 'GBP'] }, then: { $multiply: ['$amount', 108] } }
+                                ],
+                                default: '$amount'
+                            }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: { $ifNull: ['$user', '$username'] },
+                        userId: { $first: '$user' },
+                        fallbackUsername: { $first: '$username' },
+                        totalAmount: { $sum: '$inrAmount' }
+                    }
+                },
+                { $sort: { totalAmount: -1 } }
             ];
-            const uniqueDonators = await Donation.aggregate(donatorsCountPipeline);
-            totalCount = uniqueDonators.length;
+
+            const rawDonators = await Donation.aggregate(pipeline);
+            totalCount = rawDonators.length;
             totalLabel = "Total Donators";
 
-            const pipeline =[
-                { $match: { status: 'successful', user: { $ne: null }, ...dateFilter } },
-                { $group: { _id: '$user', totalAmount: { $sum: '$amount' }, username: { $first: '$username' } } },
-                { $sort: { totalAmount: -1 } },
-                { $limit: 100 }
-            ];
-            const rawDonators = await Donation.aggregate(pipeline);
-            
-            results = await Promise.all(rawDonators.map(async (d) => {
-                const user = await User.findById(d._id);
+            const top100 = rawDonators.slice(0, 100);
+
+            results = await Promise.all(top100.map(async (d) => {
+                const user = d.userId ? await User.findById(d.userId) : null;
                 const avatarUrl = user && user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
-                // Convert currency to string, dividing by 100 if you store in cents/paise
-                return { name: d.username, score: `₹${(d.totalAmount / 100).toLocaleString()}`, isCurrency: true, avatar: avatarUrl, role: user ? user.role : 'member' };
+                const displayName = user ? user.username : (d.fallbackUsername || 'Anonymous Supporter');
+                const profileLink = user ? `/users/${slugify(user.username)}` : 'javascript:void(0)';
+                const formattedAmount = Math.round(d.totalAmount).toLocaleString('en-IN');
+
+                return {
+                    name: displayName,
+                    score: `₹${formattedAmount}`,
+                    isCurrency: true,
+                    avatar: avatarUrl,
+                    role: user ? user.role : 'supporter',
+                    link: profileLink,
+                    subtext: user ? '' : 'Community Supporter'
+                };
             }));
         }
 
@@ -8491,9 +8592,557 @@ Object.entries(staticPageTemplates).forEach(([slug, template]) => {
     app.get(`/${slug}`, (req, res) => renderStaticPage(req, res, slug));
 });
 app.get('/membership', (req, res) => {
-    // If you use Stripe/Cashfree keys in this view, pass them here
     res.render('pages/membership', {
-        // e.g., stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+        cashfreeAppId: process.env.CASHFREE_APP_ID,
+        cashfreeEnv: process.env.CASHFREE_ENVIRONMENT || 'sandbox'
+    });
+});
+
+// ============================================================================
+// CASHFREE PAYMENTS & SUBSCRIPTIONS INTEGRATION
+// ============================================================================
+
+const MEMBERSHIP_PLANS = {
+    monthly: {
+        INR: 99,
+        USD: 2.00,
+        EUR: 1.80,
+        GBP: 1.50,
+        name: 'GPLMods Plus (Monthly)',
+        planId: 'gpl-mods-plus',
+        durationDays: 30
+    },
+    '6months': {
+        INR: 499,
+        USD: 10.00,
+        EUR: 9.00,
+        GBP: 8.00,
+        name: 'GPLMods Plus 6 Months',
+        planId: 'gpl-mods-plus-6-month',
+        durationDays: 180
+    },
+    yearly: {
+        INR: 899,
+        USD: 18.00,
+        EUR: 16.00,
+        GBP: 14.00,
+        name: 'GPLMods Plus Yearly',
+        planId: 'gpl-mods-plus-yearly',
+        durationDays: 365
+    },
+    lifetime: {
+        INR: 2499,
+        USD: 35.00,
+        EUR: 32.00,
+        GBP: 28.00,
+        name: 'GPLMods Plus Lifetime',
+        planId: 'gpl-mods-plus-lifetime',
+        durationDays: 36500
+    }
+};
+
+const DONATION_LIMITS = {
+    'INR': { min: 100, max: 5000 },
+    'USD': { min: 5, max: 100 },
+    'EUR': { min: 5, max: 100 },
+    'GBP': { min: 5, max: 100 }
+};
+
+/**
+ * 1. Create Donation Order (Payment Gateway)
+ * Enforces minimum 100 INR donation amount
+ */
+app.post('/create-cashfree-order', async (req, res) => {
+    try {
+        const { amount, currency = 'INR', name, email, phone } = req.body;
+        const cur = String(currency).toUpperCase();
+        const numAmount = parseFloat(amount);
+
+        const limits = DONATION_LIMITS[cur] || { min: 100, max: 5000 };
+        if (isNaN(numAmount) || numAmount < limits.min || numAmount > limits.max) {
+            return res.status(400).json({ 
+                error: `Donation amount must be between ${limits.min} and ${limits.max} ${cur}.` 
+            });
+        }
+
+        const orderId = `donate_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+        const customerId = req.user ? String(req.user._id) : `guest_${crypto.randomBytes(5).toString('hex')}`;
+        const customerName = req.user?.username || name || 'GPL Supporter';
+        const customerEmail = req.user?.email || email || 'donor@gplmods.com';
+        const customerPhone = phone || '9999999999';
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const orderRequest = {
+            order_id: orderId,
+            order_amount: numAmount,
+            order_currency: cur,
+            customer_details: {
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_email: customerEmail,
+                customer_phone: customerPhone
+            },
+            order_meta: {
+                return_url: `${baseUrl}/payment/verify-donation`,
+                notify_url: `${baseUrl}/webhook/cashfree/pg`
+            },
+            order_note: `GPL Mods Donation (${cur} ${numAmount})`
+        };
+
+        const response = await cashfree.PGCreateOrder(orderRequest);
+
+        await new Donation({
+            user: req.user ? req.user._id : null,
+            username: req.user ? req.user.username : customerName,
+            amount: numAmount,
+            currency: cur,
+            orderId: orderId,
+            paymentSessionId: response.data.payment_session_id,
+            donorEmail: customerEmail,
+            donorPhone: customerPhone,
+            status: 'pending'
+        }).save();
+
+        return res.json({
+            payment_session_id: response.data.payment_session_id,
+            order_id: orderId
+        });
+    } catch (error) {
+        console.error('[Cashfree Donation Order Error]:', error.response?.data || error.message);
+        return res.status(500).json({ 
+            error: error.response?.data?.message || 'Failed to create donation order.' 
+        });
+    }
+});
+
+/**
+ * 2. Create Membership Order / Subscription
+ * Supports Cashfree Subscriptions for INR plans & standard PG checkout
+ */
+app.post('/create-membership-order', async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Please log in to purchase Premium Membership.' });
+        }
+
+        const { duration = 'monthly', currency = 'INR', phone } = req.body;
+        const cur = String(currency).toUpperCase();
+        const planConfig = MEMBERSHIP_PLANS[duration];
+
+        if (!planConfig || !planConfig[cur]) {
+            return res.status(400).json({ error: 'Invalid membership plan or currency.' });
+        }
+
+        const amount = planConfig[cur];
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const customerPhone = phone || '9999999999';
+
+        // For INR currency, utilize Cashfree Subscriptions with registered Plan IDs
+        if (cur === 'INR' && planConfig.planId) {
+            const subId = `sub_${req.user._id}_${Date.now().toString().slice(-8)}`;
+            const subRequest = {
+                subscription_id: subId,
+                customer_details: {
+                    customer_name: req.user.username,
+                    customer_email: req.user.email,
+                    customer_phone: customerPhone
+                },
+                plan_details: {
+                    plan_id: planConfig.planId
+                },
+                subscription_meta: {
+                    return_url: `${baseUrl}/payment/verify-subscription`
+                }
+            };
+
+            try {
+                const subResponse = await cashfree.SubsCreateSubscription(subRequest);
+                const subData = subResponse.data;
+
+                await new MembershipOrder({
+                    user: req.user._id,
+                    orderId: subId,
+                    subscriptionId: subId,
+                    planId: planConfig.planId,
+                    isSubscription: true,
+                    subscriptionSessionId: subData.subscription_session_id,
+                    amount: amount,
+                    currency: cur,
+                    duration: duration,
+                    status: 'pending'
+                }).save();
+
+                return res.json({
+                    subscription_session_id: subData.subscription_session_id,
+                    subscription_id: subId
+                });
+            } catch (subErr) {
+                console.warn('[Cashfree Subscriptions Fallback to PG Order]:', subErr.response?.data || subErr.message);
+                // Fall back to standard PG order if subscription creation encounters any plan constraint
+            }
+        }
+
+        // Standard Payment Gateway Order (for one-time or international currencies)
+        const orderId = `mem_${req.user._id}_${Date.now().toString().slice(-8)}`;
+        const orderRequest = {
+            order_id: orderId,
+            order_amount: amount,
+            order_currency: cur,
+            customer_details: {
+                customer_id: String(req.user._id),
+                customer_name: req.user.username,
+                customer_email: req.user.email,
+                customer_phone: customerPhone
+            },
+            order_meta: {
+                return_url: `${baseUrl}/payment/verify-membership`,
+                notify_url: `${baseUrl}/webhook/cashfree/pg`
+            },
+            order_note: `GPL Mods+ ${planConfig.name}`
+        };
+
+        const response = await cashfree.PGCreateOrder(orderRequest);
+
+        await new MembershipOrder({
+            user: req.user._id,
+            orderId: orderId,
+            planId: planConfig.planId,
+            isSubscription: false,
+            paymentSessionId: response.data.payment_session_id,
+            amount: amount,
+            currency: cur,
+            duration: duration,
+            status: 'pending'
+        }).save();
+
+        return res.json({
+            payment_session_id: response.data.payment_session_id,
+            order_id: orderId
+        });
+    } catch (error) {
+        console.error('[Cashfree Membership Order Error]:', error.response?.data || error.message);
+        return res.status(500).json({ 
+            error: error.response?.data?.message || 'Failed to create membership order.' 
+        });
+    }
+});
+
+/**
+ * 3. Return Verification Handler: Donation
+ */
+app.get('/payment/verify-donation', async (req, res) => {
+    try {
+        const orderId = req.query.order_id;
+        if (!orderId) {
+            return res.redirect('/donate');
+        }
+
+        const orderResponse = await cashfree.PGFetchOrder(orderId);
+        const orderData = orderResponse.data;
+        const isPaid = orderData.order_status === 'PAID';
+
+        const donation = await Donation.findOne({ orderId: orderId });
+        if (donation) {
+            donation.status = isPaid ? 'successful' : (orderData.order_status === 'EXPIRED' ? 'failed' : 'pending');
+            donation.cfPaymentId = String(orderData.cf_order_id || '');
+            donation.transactionId = String(orderData.cf_order_id || '');
+            await donation.save();
+        }
+
+        return res.render('pages/payment-status', {
+            status: isPaid ? 'success' : orderData.order_status.toLowerCase(),
+            type: 'donation',
+            title: isPaid ? 'Thank You for Your Support!' : 'Payment Incomplete',
+            message: isPaid 
+                ? 'Your donation to GPL Mods has been received. Your generous support keeps our community alive!' 
+                : `Your transaction status is ${orderData.order_status}. If your account was debited, it will be updated automatically.`,
+            orderId: orderId,
+            amount: orderData.order_amount,
+            currency: orderData.order_currency
+        });
+    } catch (error) {
+        console.error('[Verify Donation Error]:', error.response?.data || error.message);
+        return res.render('pages/payment-status', {
+            status: 'error',
+            type: 'donation',
+            title: 'Verification Error',
+            message: 'Unable to verify order status with payment provider. Please contact support.',
+            orderId: req.query.order_id || '',
+            amount: '',
+            currency: ''
+        });
+    }
+});
+
+/**
+ * 4. Return Verification Handler: Membership
+ */
+app.get('/payment/verify-membership', async (req, res) => {
+    try {
+        const orderId = req.query.order_id;
+        if (!orderId) {
+            return res.redirect('/membership');
+        }
+
+        const orderResponse = await cashfree.PGFetchOrder(orderId);
+        const orderData = orderResponse.data;
+        const isPaid = orderData.order_status === 'PAID';
+
+        const memOrder = await MembershipOrder.findOne({ orderId: orderId });
+        if (memOrder && isPaid) {
+            memOrder.status = 'paid';
+            memOrder.cfPaymentId = String(orderData.cf_order_id || '');
+
+            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+            const now = new Date();
+            const expiresAt = new Date();
+            expiresAt.setDate(now.getDate() + durationConfig.durationDays);
+
+            memOrder.membershipExpiresAt = expiresAt;
+            await memOrder.save();
+
+            await User.findByIdAndUpdate(memOrder.user, {
+                membership: 'premium',
+                membershipExpiresAt: expiresAt,
+                membershipPlan: memOrder.duration
+            });
+        }
+
+        return res.render('pages/payment-status', {
+            status: isPaid ? 'success' : orderData.order_status.toLowerCase(),
+            type: 'membership',
+            title: isPaid ? 'Welcome to GPL Mods+!' : 'Membership Activation Pending',
+            message: isPaid 
+                ? 'Your GPL Mods+ Premium Membership has been activated! Enjoy ad-free downloading and premium perks.' 
+                : `Your transaction status is ${orderData.order_status}. Your account will be upgraded once confirmed.`,
+            orderId: orderId,
+            amount: orderData.order_amount,
+            currency: orderData.order_currency
+        });
+    } catch (error) {
+        console.error('[Verify Membership Error]:', error.response?.data || error.message);
+        return res.render('pages/payment-status', {
+            status: 'error',
+            type: 'membership',
+            title: 'Verification Error',
+            message: 'Unable to verify order status. Please check your dashboard or contact support.',
+            orderId: req.query.order_id || '',
+            amount: '',
+            currency: ''
+        });
+    }
+});
+
+/**
+ * 5. Return Verification Handler: Subscription
+ */
+app.get('/payment/verify-subscription', async (req, res) => {
+    try {
+        const subId = req.query.subscription_id || req.query.sub_id;
+        if (!subId) {
+            return res.redirect('/membership');
+        }
+
+        let isApproved = false;
+        let subData = null;
+        try {
+            const subResponse = await cashfree.SubsFetchSubscription(subId);
+            subData = subResponse.data;
+            const validStatuses = ['ACTIVE', 'BANK_APPROVAL_PENDING', 'INITIALIZED', 'SUCCESS'];
+            isApproved = validStatuses.includes(subData.subscription_status);
+        } catch (fetchErr) {
+            console.warn('[SubsFetchSubscription Warning]:', fetchErr.response?.data || fetchErr.message);
+            isApproved = true; // Fallback to pending state
+        }
+
+        const memOrder = await MembershipOrder.findOne({ subscriptionId: subId });
+        if (memOrder && isApproved) {
+            memOrder.status = 'paid';
+            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+            const now = new Date();
+            const expiresAt = new Date();
+            expiresAt.setDate(now.getDate() + durationConfig.durationDays);
+
+            memOrder.membershipExpiresAt = expiresAt;
+            await memOrder.save();
+
+            await User.findByIdAndUpdate(memOrder.user, {
+                membership: 'premium',
+                membershipExpiresAt: expiresAt,
+                membershipPlan: memOrder.duration,
+                subscriptionId: subId
+            });
+        }
+
+        return res.render('pages/payment-status', {
+            status: isApproved ? 'success' : 'pending',
+            type: 'membership',
+            title: isApproved ? 'Subscription Authorized!' : 'Subscription Authorization Incomplete',
+            message: isApproved 
+                ? 'Your recurring subscription has been set up successfully. Welcome to GPL Mods+!' 
+                : 'Your subscription mandate is awaiting bank confirmation.',
+            orderId: subId,
+            amount: memOrder ? memOrder.amount : '',
+            currency: memOrder ? memOrder.currency : 'INR'
+        });
+    } catch (error) {
+        console.error('[Verify Subscription Error]:', error);
+        return res.redirect('/membership');
+    }
+});
+
+/**
+ * 6. Cashfree Payment Gateway Webhook Endpoint
+ * URL: /webhook/cashfree/pg
+ * Signature Verification: HMAC-SHA256 via cashfree.PGVerifyWebhookSignature
+ */
+app.post('/webhook/cashfree/pg', (req, res) => {
+    const signature = req.headers['x-webhook-signature'];
+    const timestamp = req.headers['x-webhook-timestamp'];
+    const rawPayload = req.rawBody || JSON.stringify(req.body);
+
+    try {
+        cashfree.PGVerifyWebhookSignature(signature, rawPayload, timestamp);
+    } catch (sigErr) {
+        console.error('[Cashfree PG Webhook] Invalid signature:', sigErr.message);
+        return res.status(400).send('Invalid signature');
+    }
+
+    // Acknowledge immediately with 200 OK
+    res.status(200).send('OK');
+
+    // Asynchronously process event
+    setImmediate(async () => {
+        try {
+            const payload = JSON.parse(rawPayload);
+            const { type, data } = payload;
+            if (!data || !data.order) return;
+
+            const orderId = data.order.order_id;
+            const paymentStatus = data.payment?.payment_status;
+
+            if (type === 'PAYMENT_SUCCESS_WEBHOOK' && paymentStatus === 'SUCCESS') {
+                // Authoritative server-side re-verification:
+                const verified = await cashfree.PGFetchOrder(orderId);
+                if (verified.data.order_status === 'PAID') {
+                    // Check if Donation
+                    const donation = await Donation.findOne({ orderId });
+                    if (donation) {
+                        donation.status = 'successful';
+                        donation.cfPaymentId = String(data.payment?.cf_payment_id || verified.data.cf_order_id);
+                        donation.paymentMethod = data.payment?.payment_group || 'cashfree';
+                        await donation.save();
+                        console.log(`[Cashfree PG Webhook] Donation ${orderId} marked as successful.`);
+                        return;
+                    }
+
+                    // Check if Membership Order
+                    const memOrder = await MembershipOrder.findOne({ orderId });
+                    if (memOrder) {
+                        memOrder.status = 'paid';
+                        memOrder.cfPaymentId = String(data.payment?.cf_payment_id || verified.data.cf_order_id);
+                        memOrder.paymentMethod = data.payment?.payment_group || 'cashfree';
+                        
+                        const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+                        const now = new Date();
+                        const expiresAt = new Date();
+                        expiresAt.setDate(now.getDate() + durationConfig.durationDays);
+
+                        memOrder.membershipExpiresAt = expiresAt;
+                        await memOrder.save();
+
+                        await User.findByIdAndUpdate(memOrder.user, {
+                            membership: 'premium',
+                            membershipExpiresAt: expiresAt,
+                            membershipPlan: memOrder.duration
+                        });
+                        console.log(`[Cashfree PG Webhook] User ${memOrder.user} upgraded to premium via ${orderId}.`);
+                    }
+                }
+            } else if (type === 'PAYMENT_FAILED_WEBHOOK') {
+                await Donation.findOneAndUpdate({ orderId }, { status: 'failed' });
+                await MembershipOrder.findOneAndUpdate({ orderId }, { status: 'failed' });
+                console.log(`[Cashfree PG Webhook] Order ${orderId} marked as failed.`);
+            }
+        } catch (procErr) {
+            console.error('[Cashfree PG Webhook] Processing error:', procErr);
+        }
+    });
+});
+
+/**
+ * 7. Cashfree Subscriptions Webhook Endpoint
+ * URL: /webhook/cashfree/subscriptions
+ * Signature Verification: HMAC-SHA256 with timestamp + rawBody
+ */
+app.post('/webhook/cashfree/subscriptions', (req, res) => {
+    const signature = req.headers['x-webhook-signature'];
+    const timestamp = req.headers['x-webhook-timestamp'];
+    const rawPayload = req.rawBody || JSON.stringify(req.body);
+
+    try {
+        let valid = false;
+        try {
+            cashfree.PGVerifyWebhookSignature(signature, rawPayload, timestamp);
+            valid = true;
+        } catch (sdkErr) {
+            const expected = crypto.createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
+                .update((timestamp || '') + rawPayload)
+                .digest('base64');
+            valid = (expected === signature);
+        }
+
+        if (!valid) {
+            console.error('[Cashfree Subs Webhook] Invalid signature');
+            return res.status(400).send('Invalid signature');
+        }
+    } catch (err) {
+        return res.status(400).send('Signature verification error');
+    }
+
+    // Acknowledge immediately
+    res.status(200).send('OK');
+
+    // Asynchronously process subscription event
+    setImmediate(async () => {
+        try {
+            const payload = JSON.parse(rawPayload);
+            const { type, data } = payload;
+            const subId = data?.subscription?.subscription_id || data?.subscription_id;
+            if (!subId) return;
+
+            const memOrder = await MembershipOrder.findOne({ subscriptionId: subId });
+            if (!memOrder) return;
+
+            if (type === 'SUBSCRIPTION_PAYMENT_SUCCESS' || type === 'SUBSCRIPTION_AUTH_STATUS') {
+                memOrder.status = 'paid';
+                const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+                const now = new Date();
+                const expiresAt = new Date();
+                expiresAt.setDate(now.getDate() + durationConfig.durationDays);
+
+                memOrder.membershipExpiresAt = expiresAt;
+                await memOrder.save();
+
+                await User.findByIdAndUpdate(memOrder.user, {
+                    membership: 'premium',
+                    membershipExpiresAt: expiresAt,
+                    membershipPlan: memOrder.duration,
+                    subscriptionId: subId
+                });
+                console.log(`[Cashfree Subs Webhook] User ${memOrder.user} activated/renewed premium via ${subId}.`);
+            } else if (type === 'SUBSCRIPTION_STATUS_CHANGED') {
+                const subStatus = data?.subscription?.subscription_status;
+                if (['CANCELLED', 'EXPIRED'].includes(subStatus)) {
+                    await User.findByIdAndUpdate(memOrder.user, { membership: 'free' });
+                    memOrder.status = 'cancelled';
+                    await memOrder.save();
+                }
+            }
+        } catch (subProcErr) {
+            console.error('[Cashfree Subs Webhook] Processing error:', subProcErr);
+        }
     });
 });
 // --- UPDATED: DOCUMENTATION SYSTEM ROUTE ---
@@ -9628,17 +10277,260 @@ app.post('/partnership/leave', ensureAuthenticated, async (req, res) => {
             );
         }
 
-        // 2. Revert user role and clear distributor info
+        await File.updateMany(
+            { uploader: user.username, fileKey: 'external-link' }, 
+            { $set: { uploader: 'GPL Community' } }
+        );
+
+        // 2. Revert user role and clear distributor info & card
         user.role = 'member';
         user.organizationName = undefined;
         user.socialLinks = {};
         user.isVerified = false; // Or keep true if they were verified members
+        user.cardId = undefined;
+        user.cardLoginToken = undefined;
         await user.save();
 
         res.json({ success: true, message: 'You have successfully left the partnership program.' });
     } catch (error) {
         console.error("Leave Partnership Error:", error);
         res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+    }
+});
+
+// ===================================
+// 2FA, ID CARD, & PARTNERSHIP ROUTES
+// ===================================
+
+// --- 1. QUIT DISTRIBUTOR PROGRAM (FORM POST) ---
+app.post('/account/quit-distributor', ensureAuthenticated, async (req, res) => {
+    try {
+        if (req.user.role !== 'distributor') return res.redirect('/profile');
+
+        const user = await User.findById(req.user._id);
+        const orgName = user.organizationName;
+
+        if (orgName) {
+            await File.updateMany(
+                {
+                    uploader: orgName,
+                    $or: [
+                        { externalDownloadUrl: { $exists: true, $ne: null } },
+                        { customAdLink: { $exists: true, $ne: null } }
+                    ]
+                },
+                { $set: { uploader: 'GPL Community' } }
+            );
+        }
+
+        // Transfer all EXTERNAL LINK mods to GPL Community
+        await File.updateMany(
+            { uploader: user.username, fileKey: 'external-link' }, 
+            { $set: { uploader: 'GPL Community' } }
+        );
+
+        // Revoke distributor status and card
+        user.role = 'member';
+        user.organizationName = undefined;
+        user.socialLinks = {};
+        user.isVerified = false;
+        user.cardId = undefined; // Frees up the 8-digit ID
+        user.cardLoginToken = undefined;
+        await user.save();
+
+        // Update session
+        req.login(user, (err) => {
+            res.redirect('/profile?message=You have successfully left the Distributor program. Your external links have been transferred.');
+        });
+    } catch (e) {
+        console.error("Quit distributor error:", e);
+        res.status(500).redirect('/profile?error=Server Error');
+    }
+});
+
+// --- 2. 2FA SETUP & VERIFY API ---
+app.post('/api/setup-2fa', ensureAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (user.twoFactorEnabled || user.is2FAEnabled) {
+            return res.json({ error: '2FA is already enabled on your account.' });
+        }
+
+        const secret = otplib.authenticator.generateSecret();
+        const otpauth = otplib.authenticator.keyuri(user.email, 'GPL Mods', secret);
+        const qrCodeUrl = await QRCode.toDataURL(otpauth);
+
+        user.twoFactorSecret = secret;
+        await user.save();
+
+        res.json({ secret, qrCodeUrl });
+    } catch (e) {
+        console.error("API 2FA Setup Error:", e);
+        res.status(500).json({ error: 'Failed to setup 2FA' });
+    }
+});
+
+app.post('/api/verify-2fa', ensureAuthenticated, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.json({ success: false, error: 'Verification code is required.' });
+
+        const user = await User.findById(req.user._id);
+        const isValid = otplib.authenticator.check(String(token).trim(), user.twoFactorSecret);
+
+        if (isValid) {
+            user.is2FAEnabled = true;
+            user.twoFactorEnabled = true;
+            user.twoFactorMethod = 'totp';
+            await user.save();
+            req.login(user, () => res.json({ success: true }));
+        } else {
+            res.json({ success: false, error: 'Invalid 2FA code. Please check your authenticator app.' });
+        }
+    } catch (e) {
+        console.error("API 2FA Verify Error:", e);
+        res.status(500).json({ error: 'Verification failed' });
+    }
+});
+
+// --- 3. GENERATE & VIEW ID CARD (Distributor, Admin, Owner) ---
+app.get('/id-card', ensureAuthenticated, async (req, res) => {
+    const user = req.user;
+
+    // 1. Must be Distributor, Admin, or Owner
+    const allowedRoles = ['distributor', 'admin', 'owner'];
+    if (!allowedRoles.includes(user.role)) {
+        return res.status(403).render('pages/403');
+    }
+
+    // 2. Must have 2FA enabled
+    if (!user.twoFactorEnabled && !user.is2FAEnabled) {
+        return res.render('pages/setup-2fa', {
+            error: req.query.error,
+            message: req.query.message
+        });
+    }
+
+    try {
+        const userDoc = await User.findById(user._id);
+
+        // 3. Generate 8-Digit ID if missing
+        if (!userDoc.cardId) {
+            let unique = false;
+            let newId = '';
+            while (!unique) {
+                newId = crypto.randomBytes(4).toString('hex').toUpperCase();
+                const exists = await User.findOne({ cardId: newId });
+                if (!exists) unique = true;
+            }
+            userDoc.cardId = newId;
+            userDoc.cardLoginToken = crypto.randomBytes(32).toString('hex'); // 64 char secret token
+            await userDoc.save();
+        } else if (!userDoc.cardLoginToken) {
+            userDoc.cardLoginToken = crypto.randomBytes(32).toString('hex');
+            await userDoc.save();
+        }
+
+        // 4. Generate QR Codes
+        const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
+        
+        // PUBLIC QR: Redirects to profile with the special ?ref=card parameter (Gold QR)
+        const publicQrUrl = await QRCode.toDataURL(`${baseUrl}/users/${encodeURIComponent(userDoc.username)}?ref=card`, { 
+            color: { dark: '#FFD700', light: '#1a1a1a' },
+            width: 300,
+            margin: 1
+        });
+        
+        // PRIVATE QR: The secret login link (Red QR)
+        const privateQrUrl = await QRCode.toDataURL(`${baseUrl}/qr-login/${userDoc.cardLoginToken}`, { 
+            color: { dark: '#e53935', light: '#1a1a1a' },
+            width: 300,
+            margin: 1
+        });
+
+        res.render('pages/id-card', {
+            cardUser: userDoc,
+            publicQrUrl,
+            privateQrUrl,
+            error: req.query.error,
+            success: req.query.success
+        });
+
+    } catch (error) {
+        console.error("ID Card Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- 4. EDIT CARD SETTINGS (7 Day Cooldown & Bad Words) ---
+app.post('/id-card/edit', ensureAuthenticated, async (req, res) => {
+    try {
+        const allowedRoles = ['distributor', 'admin', 'owner'];
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).render('pages/403');
+        }
+
+        const user = await User.findById(req.user._id);
+        
+        // Cooldown check (7 days = 604800000 ms)
+        if (user.cardLastEdited && (Date.now() - user.cardLastEdited.getTime() < 604800000)) {
+            const nextEdit = new Date(user.cardLastEdited.getTime() + 604800000).toLocaleDateString();
+            return res.redirect(`/id-card?error=You can only edit your card once every 7 days. Next edit available on ${nextEdit}.`);
+        }
+
+        const { cardMessage, cardBgUrl } = req.body;
+
+        // Profanity Check
+        if (cardMessage && profanityFilter.isProfane(cardMessage)) {
+            return res.redirect('/id-card?error=Inappropriate language detected. Please modify your message.');
+        }
+
+        user.cardMessage = cardMessage ? String(cardMessage).trim().slice(0, 120) : 'Welcome to my profile! Follow me for the best mods.';
+        user.cardBgUrl = cardBgUrl ? String(cardBgUrl).trim() : '';
+        user.cardLastEdited = new Date();
+        await user.save();
+
+        res.redirect('/id-card?success=Card updated successfully!');
+    } catch (e) {
+        console.error("ID Card edit error:", e);
+        res.redirect('/id-card?error=Error updating card details.');
+    }
+});
+
+// --- 5. SECURE QR LOGIN ROUTE ---
+app.get('/qr-login/:token', async (req, res, next) => {
+    try {
+        const token = req.params.token;
+        if (!token) {
+            return res.status(400).redirect('/login?error=Invalid login token.');
+        }
+        const user = await User.findOne({ cardLoginToken: token });
+
+        if (!user) {
+            return res.status(403).redirect('/login?error=Invalid or expired login QR code.');
+        }
+
+        if (user.isBanned) {
+            return res.redirect('/banned');
+        }
+
+        // Automatically log them in
+        req.login(user, (err) => {
+            if (err) return next(err);
+            
+            // Regenerate session for security
+            let tempPassport = req.session.passport;
+            req.session.regenerate((regenErr) => {
+                if (regenErr) console.error("QR Session regeneration error:", regenErr);
+                req.session.passport = tempPassport;
+                req.session.save(() => {
+                    return res.redirect('/profile?message=Successfully logged in via Quick-Scan!');
+                });
+            });
+        });
+    } catch (error) {
+        console.error("QR Login Error:", error);
+        res.status(500).render('pages/500');
     }
 });
 // ===============================
@@ -9658,7 +10550,11 @@ const startServer = async () => {
         app.use('/admin', ensureAdminOr404, adminRouter);
         
         app.use(express.urlencoded({ extended: true }));
-        app.use(express.json());
+        app.use(express.json({
+            verify: (req, res, buf) => {
+                req.rawBody = buf.toString('utf8');
+            }
+        }));
 
         // --- DECLARED ONLY ONCE HERE ---
         const server = http.createServer(app);

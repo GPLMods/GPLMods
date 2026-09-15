@@ -472,7 +472,7 @@
         updatePricingUI();
 
         // --- 3. Cashfree Payment Logic ---
-        const cashfree = new Cashfree();
+        const cashfree = Cashfree({ mode: "sandbox" });
         const submitButton = document.getElementById('premium-purchase-btn');
         const errorMessage = document.getElementById('payment-error-message');
 
@@ -489,16 +489,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ duration: currentDuration, currency: currentCurrency })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(errData => { throw new Error(errData.error || 'Server error'); });
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if (data.payment_session_id) {
-                        cashfree.checkout({ payment_session_id: data.payment_session_id, redirectTarget: "_self" });
+                    if (data.subscription_session_id) {
+                        cashfree.subscriptionsCheckout({
+                            subsSessionId: data.subscription_session_id,
+                            redirectTarget: "_self"
+                        });
+                    } else if (data.payment_session_id) {
+                        cashfree.checkout({
+                            paymentSessionId: data.payment_session_id,
+                            redirectTarget: "_self"
+                        });
                     } else {
-                        throw new Error(data.error || 'Server error.');
+                        throw new Error(data.error || 'Failed to initialize checkout session.');
                     }
                 })
                 .catch(err => {
-                    errorMessage.textContent = 'Integration pending. Please try again later.';
+                    errorMessage.textContent = err.message || 'Error processing request. Please try again.';
                     this.disabled = false;
                     this.textContent = originalText;
                 });

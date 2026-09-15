@@ -13,10 +13,11 @@
     .explainer-box p { color: var(--silver); line-height: 1.7; font-size: 1.05em; margin-bottom: 20px; }
 
     /* Layout for Text + Lottie */
-    .text-image-split { display: grid; grid-template-columns: 1fr 250px; gap: 40px; align-items: center; }
+    .text-image-split { display: grid; grid-template-columns: 1fr 250px; gap: 40px; align-items: center; justify-items: center; }
+    .virus-anim-card { display: flex; justify-content: center; align-items: center; width: 100%; text-align: center; }
     
     /* Code Highlights Grid */
-    .code-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+    .code-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; justify-content: center; }
     .code-card { background-color: var(--black); border: 1px solid #444; border-left: 4px solid var(--red); padding: 20px; border-radius: 8px; transition: transform 0.2s, border-color 0.3s; display: flex; flex-direction: column; }
     .code-card:hover { transform: translateY(-5px); border-left-color: var(--gold); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.1); }
     
@@ -82,7 +83,9 @@
                     <p>When software developers create an application, they lock it with an encrypted "Digital Signature." To create a working mod (like unlocking premium features or adding a mod menu), our developers must decompile the app, modify the code, and repackage it without that original lock.</p>
                     <p>Modern Antivirus (AV) scanners are strictly designed to flag <strong>any file that has had its original signature broken or altered</strong>. Because modding fundamentally alters the code structure, highly sensitive AV engines will automatically flag the file as "suspicious," even if the modification is 100% safe. This is known in the cybersecurity industry as a <strong>False Positive</strong>.</p>
                 </div>
-                <lottie-player src="<%= cdnUrl %>/animations/scan.json" background="transparent" speed="1" style="width: 250px; height: 250px; filter: drop-shadow(0 0 15px var(--glow-red));" loop autoplay></lottie-player>
+                <div class="virus-anim-card">
+                    <lottie-player src="<%= cdnUrl %>/animations/scan.json" background="transparent" speed="1" style="width: 250px; height: 250px; filter: drop-shadow(0 0 15px var(--glow-red)); display: block; margin: 0 auto;" loop autoplay></lottie-player>
+                </div>
             </div>
         </div>
 

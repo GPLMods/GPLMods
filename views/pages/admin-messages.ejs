@@ -211,14 +211,14 @@
                     envelopeIcon.classList.remove('fa-envelope');
                     envelopeIcon.classList.add('fa-envelope-open');
 
-                    const badge = document.getElementById('notification-badge');
-                    if (badge && badge.style.display !== 'none') {
-                        let count = parseInt(badge.textContent.replace('+', ''));
-                        if (!isNaN(count) && count > 0) {
-                            count--;
-                            if (count === 0) badge.style.display = 'none';
-                            else badge.textContent = count > 9 ? '9+' : count;
-                        }
+                    const bellLink = document.getElementById('nav-bell-link');
+                    if (bellLink) {
+                        let curPersonal = parseInt(bellLink.getAttribute('data-personal') || '0', 10);
+                        if (curPersonal > 0) curPersonal--;
+                        bellLink.setAttribute('data-personal', curPersonal.toString());
+                    }
+                    if (typeof window.refreshNotificationBadge === 'function') {
+                        window.refreshNotificationBadge();
                     }
                 } catch (e) {
                     console.error('Failed to mark notification as read', e);
@@ -319,6 +319,9 @@
                     }
                 });
                 updateToolbarState();
+                if (typeof window.refreshNotificationBadge === 'function') {
+                    window.refreshNotificationBadge();
+                }
             } else {
                 alert('Failed to delete messages.');
             }

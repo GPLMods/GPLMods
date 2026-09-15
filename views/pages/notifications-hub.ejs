@@ -162,7 +162,7 @@
                     </div>
                 </div>
                 <div class="cat-badge" id="uploads-badge" style="display: none;"></div>
-                <i class="fas fa-chevron-right card-arrow"></i>
+                <i class="fas fa-chevron-right card-arrow" id="uploads-arrow"></i>
             </a>
 
             <!-- Category 4: New Updates (24h - Visible to Everyone) -->
@@ -176,6 +176,7 @@
                         <p>Existing mods that were updated today.</p>
                     </div>
                 </div>
+                <div class="cat-badge" id="mods-update-badge" style="display: none;"></div>
                 <i class="fas fa-chevron-right card-arrow" id="mods-update-arrow"></i>
             </a>
 
@@ -193,7 +194,7 @@
                         </div>
                     </div>
                     <div class="cat-badge" id="following-badge" style="display: none;"></div>
-                    <i class="fas fa-chevron-right card-arrow"></i>
+                    <i class="fas fa-chevron-right card-arrow" id="following-arrow"></i>
                 </a>
             <% } %>
 
@@ -202,12 +203,10 @@
 </main>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
+    (function() {
         const currentUserId = '<%= user ? user._id : 'guest' %>';
         const storagePrefix = `gplmods_notifications_${currentUserId}_`;
 
-        // Helper function to setup independent badge logic for each card!
         function setupBadge(cardId, badgeId, arrowId, localStorageKey, currentCount) {
             const card = document.getElementById(cardId);
             const badge = document.getElementById(badgeId);
@@ -215,37 +214,48 @@
             
             if (card && badge) {
                 const lastSeen = parseInt(localStorage.getItem(storagePrefix + localStorageKey) || '0', 10);
-                const unread = currentCount - lastSeen;
+                const unread = Math.max(0, currentCount - lastSeen);
                 
                 if (unread > 0) {
                     badge.textContent = (unread > 9 ? '9+' : unread) + ' New';
                     badge.style.display = 'flex';
                     if (arrow) arrow.style.display = 'none';
+                } else {
+                    badge.style.display = 'none';
+                    if (arrow) arrow.style.display = '';
                 }
                 
-                // When they click THIS SPECIFIC card, save the view to localStorage!
-                card.addEventListener('click', () => {
-                    localStorage.setItem(storagePrefix + localStorageKey, currentCount.toString());
-                });
+                if (!card._hasBoundClick) {
+                    card.addEventListener('click', () => {
+                        localStorage.setItem(storagePrefix + localStorageKey, currentCount.toString());
+                        if (typeof window.refreshNotificationBadge === 'function') {
+                            window.refreshNotificationBadge();
+                        }
+                    });
+                    card._hasBoundClick = true;
+                }
             }
         }
-        
-        // Pass the EJS server variables safely into the JavaScript
-        const totalUpdates = <%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>;
-        const totalUploads = <%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>;
-        const totalModsUpdates = <%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>;
-        const totalFollowing = <%= typeof followingCount !== 'undefined' ? followingCount : 0 %>;
 
-        // Initialize each card independently!
-        setupBadge('site-updates-card', 'global-badge', 'global-arrow', 'lastSeenUpdates', totalUpdates);
-        setupBadge('new-uploads-card', 'uploads-badge', 'uploads-arrow', 'lastSeenUploads', totalUploads);
-        setupBadge('new-updates-card', 'mods-update-badge', 'mods-update-arrow', 'lastSeenModsUpd', totalModsUpdates);
-        
-        // For logged-in users only
-        if (document.getElementById('following-card')) {
-            setupBadge('following-card', 'following-badge', 'following-arrow', 'lastSeenFollowing', totalFollowing);
+        function refreshHubBadges() {
+            const totalUpdates = <%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>;
+            const totalUploads = <%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>;
+            const totalModsUpdates = <%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>;
+            const totalFollowing = <%= typeof followingCount !== 'undefined' ? followingCount : 0 %>;
+
+            setupBadge('site-updates-card', 'global-badge', 'global-arrow', 'lastSeenUpdates', totalUpdates);
+            setupBadge('new-uploads-card', 'uploads-badge', 'uploads-arrow', 'lastSeenUploads', totalUploads);
+            setupBadge('new-updates-card', 'mods-update-badge', 'mods-update-arrow', 'lastSeenModsUpd', totalModsUpdates);
+            
+            if (document.getElementById('following-card')) {
+                setupBadge('following-card', 'following-badge', 'following-arrow', 'lastSeenFollowing', totalFollowing);
+            }
         }
-    });
+
+        document.addEventListener('DOMContentLoaded', refreshHubBadges);
+        window.addEventListener('pageshow', refreshHubBadges);
+        window.addEventListener('focus', refreshHubBadges);
+    })();
 </script>
 
 <%- include('../partials/footer') %>

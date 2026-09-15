@@ -135,8 +135,8 @@ async function createAdminRouter() {
         
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
-            styles: isProduction ? ['/.adminjs/bundle.css'] : [],
-            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js'] : [],
+            styles: isProduction ? ['/.adminjs/bundle.css', '/css/admin-custom.css'] : ['/css/admin-custom.css'],
+            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js'] : ['/js/image-fallback.js'],
         },
         dashboard: { 
             component: Components.Dashboard,
@@ -238,14 +238,15 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: usersNav,
-                    listProperties: ['profileImageKey', '_id', 'username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties: ['_id', 'username', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
+                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
                         bio: { type: 'textarea', description: 'User profile biography' },
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
+                        cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },
                         'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
                         'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
                         'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
@@ -263,6 +264,10 @@ async function createAdminRouter() {
                                 const { newPassword, ...payload } = request.payload;
                                 if (newPassword && newPassword.length > 0) {
                                     payload.password = await bcrypt.hash(newPassword, 10);
+                                }
+                                if (payload.isBanned === true || payload.isBanned === 'true') {
+                                    payload.cardId = null;
+                                    payload.cardLoginToken = null;
                                 }
                                 request.payload = payload;
                                 return request;

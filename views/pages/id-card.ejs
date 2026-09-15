@@ -1,0 +1,320 @@
+<%- include('../partials/header') %>
+<!-- Required for exporting the card as an image -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+    .id-card-page {
+        padding: 40px 20px 80px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .page-title {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .page-title h1 {
+        font-size: 2.8em;
+        color: var(--white);
+        margin-bottom: 10px;
+    }
+    .page-title h1 span {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--silver) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    /* --- GLASSMORPHISM CARD DESIGN --- */
+    .id-card-wrapper {
+        width: 380px;
+        height: 600px;
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1);
+        font-family: 'Poppins', sans-serif;
+        background-color: var(--black);
+        margin-bottom: 40px;
+    }
+    
+    .id-card-bg {
+        position: absolute; 
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-size: cover; 
+        background-position: center; 
+        z-index: 1;
+        /* Dynamic User Background or Fallback */
+        background-image: url('<%= cardUser.cardBgUrl || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop" %>');
+    }
+    .id-card-bg::after {
+        content: ''; 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(180deg, rgba(10,10,10,0.8) 0%, rgba(10,10,10,0.95) 100%);
+        backdrop-filter: blur(8px);
+    }
+
+    .id-card-content {
+        position: relative; 
+        z-index: 2; 
+        padding: 30px; 
+        display: flex; 
+        flex-direction: column; 
+        height: 100%;
+    }
+
+    .card-header-top { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 25px; 
+    }
+    .card-logo { 
+        font-size: 1.4em; 
+        font-weight: 800; 
+        color: var(--gold); 
+    }
+    .card-role-badge { 
+        padding: 4px 12px; 
+        border-radius: 20px; 
+        font-size: 0.75em; 
+        font-weight: bold; 
+        text-transform: uppercase; 
+        letter-spacing: 2px;
+        color: var(--white);
+    }
+
+    .card-avatar { 
+        width: 130px; 
+        height: 130px; 
+        border-radius: 50%; 
+        border: 4px solid var(--gold); 
+        object-fit: cover; 
+        margin: 0 auto 20px auto; 
+        display: block; 
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); 
+    }
+    
+    .card-name { text-align: center; font-size: 1.8em; margin: 0 0 5px 0; color: var(--white); font-weight: 700; }
+    .card-country { text-align: center; font-size: 1.15em; margin-bottom: auto; color: var(--silver); }
+    
+    .card-qr-section { 
+        background: rgba(0,0,0,0.6); 
+        border-radius: 15px; 
+        padding: 15px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        border: 1px solid rgba(255,215,0,0.2); 
+    }
+    .card-qr-img { width: 90px; height: 90px; border-radius: 8px; background: #fff; padding: 2px; }
+    
+    .card-id-block { text-align: right; }
+    .card-id-label { font-size: 0.65em; color: var(--silver); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px; }
+    .card-id-val { font-family: monospace; font-size: 1.6em; color: var(--gold); font-weight: bold; letter-spacing: 3px; }
+
+    #qr-warning { text-align: center; font-size: 0.75em; color: var(--silver); margin-top: 15px; font-weight: bold; letter-spacing: 1px; transition: opacity 0.2s; }
+
+    /* --- CONTROLS PANEL --- */
+    .controls-panel { 
+        width: 100%; 
+        max-width: 800px; 
+        background: var(--dark-gray); 
+        padding: 30px; 
+        border-radius: 15px; 
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    .action-buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+    .btn-mode { padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; background: transparent; border: 2px solid; }
+    .btn-mode-safe { border-color: var(--gold); color: var(--gold); }
+    .btn-mode-safe:hover, .btn-mode-safe.active { background: var(--gold); color: var(--black); box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    .btn-mode-private { border-color: var(--red); color: var(--red); }
+    .btn-mode-private:hover, .btn-mode-private.active { background: var(--red); color: var(--white); box-shadow: 0 0 15px rgba(229, 57, 53, 0.4); }
+    
+    .btn-download { background: var(--white); color: var(--black); border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
+    .btn-download:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; color: var(--silver); margin-bottom: 8px; font-weight: 600; }
+    .form-group input { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: 1px solid #444; border-radius: 8px; outline: none; transition: border-color 0.3s; }
+    .form-group input:focus { border-color: var(--gold); }
+</style>
+
+<main class="id-card-page container">
+    <!-- Back to Dashboard Shortcut -->
+    <div style="width: 100%; max-width: 800px; margin-bottom: 20px; display: flex; justify-content: flex-start;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
+        </a>
+    </div>
+
+    <div class="page-title">
+        <h1>Official <span>ID Card</span></h1>
+        <p style="color: var(--silver);">Your verified digital credential for GPL Mods.</p>
+    </div>
+
+    <!-- THE CARD (Target for Export) -->
+    <div id="exportable-card" class="id-card-wrapper">
+        <div class="id-card-bg"></div>
+        <div class="id-card-content">
+            <div class="card-header-top">
+                <span class="card-logo">GPL<span style="color: white;">Mods</span></span>
+                <%
+                    let roleBg = 'var(--blue)';
+                    let roleShadow = 'rgba(33, 150, 243, 0.5)';
+                    let roleName = 'Distributor';
+                    if (cardUser.role === 'owner') {
+                        roleBg = 'linear-gradient(135deg, #f44336 0%, #ff9800 100%)';
+                        roleShadow = 'rgba(244, 67, 54, 0.5)';
+                        roleName = 'Owner';
+                    } else if (cardUser.role === 'admin') {
+                        roleBg = 'var(--red)';
+                        roleShadow = 'rgba(229, 57, 53, 0.5)';
+                        roleName = 'Admin';
+                    }
+                %>
+                <span class="card-role-badge" style="background: <%= roleBg %>; box-shadow: 0 0 10px <%= roleShadow %>;"><%= roleName %></span>
+            </div>
+            
+            <img src="<%= cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" crossorigin="anonymous">
+            
+            <h2 class="card-name"><%= cardUser.username %></h2>
+            
+            <div class="card-country">
+                <% 
+                    let flag = '🌍';
+                    if(cardUser.country === 'US') flag = '🇺🇸';
+                    else if(cardUser.country === 'IN') flag = '🇮🇳';
+                    else if(cardUser.country === 'GB') flag = '🇬🇧';
+                    else if(cardUser.country === 'BR') flag = '🇧🇷';
+                    else if(cardUser.country === 'ID') flag = '🇮🇩';
+                    else if(cardUser.country === 'RU') flag = '🇷🇺';
+                    else if(cardUser.country === 'DE') flag = '🇩🇪';
+                    else if(cardUser.country === 'FR') flag = '🇫🇷';
+                    else if(cardUser.country === 'CA') flag = '🇨🇦';
+                    else if(cardUser.country === 'AU') flag = '🇦🇺';
+                %>
+                <%= flag %> <%= cardUser.country || 'Global' %>
+            </div>
+
+            <div class="card-qr-section">
+                <!-- Toggle between Public and Private QR -->
+                <img id="qr-display" src="<%= publicQrUrl %>" class="card-qr-img" crossorigin="anonymous">
+                <div class="card-id-block">
+                    <span class="card-id-label">Verified ID No.</span>
+                    <span class="card-id-val"><%= cardUser.cardId %></span>
+                </div>
+            </div>
+            <p id="qr-warning">SCAN TO VIEW PUBLIC PROFILE</p>
+        </div>
+    </div>
+
+    <!-- CONTROLS & SETTINGS -->
+    <div class="controls-panel">
+        <div class="action-buttons">
+            <button id="btn-safe" onclick="setMode('safe')" class="btn-mode btn-mode-safe active">Safe Mode (Shareable)</button>
+            <button id="btn-private" onclick="setMode('private')" class="btn-mode btn-mode-private">Private Mode (Quick Login)</button>
+            <button onclick="downloadCard()" class="btn-download"><i class="fas fa-download"></i> Save as Image</button>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div style="padding: 15px; background: rgba(229,57,53,0.1); color: var(--red); border: 1px solid var(--red); border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= error %></div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div style="padding: 15px; background: rgba(46,204,113,0.1); color: #2ecc71; border: 1px solid #2ecc71; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= success %></div>
+        <% } %>
+
+        <hr style="border-color: #333; margin: 30px 0;">
+
+        <h3 style="color: var(--white); margin-bottom: 20px;">Customize Your Card</h3>
+        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i> You may edit your custom popup message and background image once every 7 days.
+        </p>
+
+        <form action="/id-card/edit" method="POST">
+            <div class="form-group">
+                <label>Custom Profile Scan Message</label>
+                <input type="text" name="cardMessage" value="<%= cardUser.cardMessage %>" maxlength="120" placeholder="e.g., Welcome to my official distributor page!" required>
+            </div>
+            <div class="form-group">
+                <label>Card Background Image URL (Optional)</label>
+                <input type="url" name="cardBgUrl" value="<%= cardUser.cardBgUrl %>" placeholder="https://images.unsplash.com/...">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 8px; background: var(--gold); color: var(--black); border: none; font-weight: bold; cursor: pointer;">
+                Update Card Design
+            </button>
+        </form>
+    </div>
+</main>
+
+<script>
+    const publicQr = "<%= publicQrUrl %>";
+    const privateQr = "<%= privateQrUrl %>";
+
+    function setMode(mode) {
+        const qrDisplay = document.getElementById('qr-display');
+        const warning = document.getElementById('qr-warning');
+        const btnSafe = document.getElementById('btn-safe');
+        const btnPrivate = document.getElementById('btn-private');
+        
+        if (mode === 'safe') {
+            qrDisplay.src = publicQr;
+            warning.textContent = "SCAN TO VIEW PUBLIC PROFILE";
+            warning.style.color = "var(--silver)";
+            btnSafe.classList.add('active');
+            btnPrivate.classList.remove('active');
+        } else {
+            qrDisplay.src = privateQr;
+            warning.textContent = "⚠️ SECRET LOGIN QR - DO NOT SHARE ⚠️";
+            warning.style.color = "var(--red)";
+            warning.style.fontWeight = "bold";
+            btnPrivate.classList.add('active');
+            btnSafe.classList.remove('active');
+        }
+    }
+
+    function downloadCard() {
+        const card = document.getElementById('exportable-card');
+        const btn = document.querySelector('.btn-download');
+        
+        // UI Feedback
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
+        // Hide warning text momentarily for a cleaner PNG output
+        document.getElementById('qr-warning').style.opacity = '0';
+        
+        // Wait a tiny bit for the DOM to update
+        setTimeout(() => {
+            html2canvas(card, { 
+                scale: 3,           // High resolution
+                useCORS: true,      // Essential for loading external avatars/backgrounds
+                backgroundColor: null, 
+                logging: false 
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `GPLMods-ID-${'<%= cardUser.cardId %>'}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+                
+                // Restore warning text and button state
+                document.getElementById('qr-warning').style.opacity = '1';
+                btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
+                    btn.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                console.error("html2canvas error:", err);
+                alert("Could not generate image. Please ensure your background URL supports CORS.");
+                document.getElementById('qr-warning').style.opacity = '1';
+                btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
+                btn.disabled = false;
+            });
+        }, 100);
+    }
+</script>
+<%- include('../partials/footer') %>

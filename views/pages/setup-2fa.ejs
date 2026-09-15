@@ -1,0 +1,113 @@
+<%- include('../partials/header') %>
+<main class="container" style="max-width: 550px; margin: 4rem auto; text-align: center; background: var(--dark-gray); padding: 40px 30px; border-radius: 16px; border-top: 4px solid var(--gold); border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 215, 0, 0.1); border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 0 20px rgba(255,215,0,0.2);">
+        <i class="fas fa-shield-alt" style="font-size: 2.5em; color: var(--gold);"></i>
+    </div>
+    
+    <h1 style="color: var(--white); font-size: 2em; margin-bottom: 12px; font-weight: 700;">Two-Factor Authentication Required</h1>
+    <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em; line-height: 1.6;">
+        To generate and access your Official Partner/Staff ID Card with Quick-Login capabilities, you must secure your account with Two-Factor Authentication.
+    </p>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div style="padding: 12px; background: rgba(229,57,53,0.1); color: var(--red); border: 1px solid var(--red); border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; font-weight: bold;">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (typeof message !== 'undefined' && message) { %>
+        <div style="padding: 12px; background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; font-weight: bold;">
+            <%= message %>
+        </div>
+    <% } %>
+    
+    <div id="step-1">
+        <button id="start-2fa-btn" class="btn btn-primary" style="padding: 14px 28px; font-size: 1.05em; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <i class="fas fa-qrcode"></i> Generate Secure 2FA QR Code
+        </button>
+        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #333;">
+            <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 10px;">Prefer Email Auth or Passkeys?</p>
+            <a href="/account/2fa/setup" style="color: var(--gold); text-decoration: none; font-size: 0.9em; font-weight: 600;">
+                <i class="fas fa-cog"></i> Open Advanced 2FA Setup Options &rarr;
+            </a>
+        </div>
+    </div>
+
+    <div id="step-2" style="display: none;">
+        <div style="background: #fff; display: inline-block; padding: 12px; border-radius: 12px; margin-bottom: 18px; box-shadow: 0 5px 20px rgba(0,0,0,0.4);">
+            <img id="qr-code-img" src="" alt="2FA QR Code" style="width: 200px; height: 200px; display: block;">
+        </div>
+        <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 6px;">Scan with Google Authenticator, Authy, or 1Password, or enter this secret code:</p>
+        <p style="color: var(--gold); font-family: monospace; font-size: 1.2em; letter-spacing: 2px; background: #111; padding: 8px 12px; border-radius: 6px; border: 1px solid #333; margin-bottom: 20px; word-break: break-all;" id="secret-text"></p>
+        
+        <label for="token-input" style="color: var(--white); display: block; margin-bottom: 8px; font-weight: 600;">Enter the 6-digit code from your app:</label>
+        <input type="text" id="token-input" maxlength="6" inputmode="numeric" placeholder="123456" style="width: 100%; padding: 12px; font-size: 1.6em; text-align: center; letter-spacing: 6px; background: var(--black); color: var(--white); border: 1px solid #444; border-radius: 8px; margin-bottom: 20px; font-family: monospace;" autocomplete="one-time-code">
+        
+        <button id="verify-2fa-btn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05em; font-weight: 700; border-radius: 8px; cursor: pointer;">
+            Verify &amp; Unlock ID Card
+        </button>
+        <p id="error-msg" style="color: var(--red); margin-top: 15px; font-weight: bold; font-size: 0.9em;"></p>
+    </div>
+</main>
+
+<script>
+    document.getElementById('start-2fa-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('start-2fa-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating QR...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/setup-2fa', { method: 'POST' });
+            const data = await res.json();
+            if (data.qrCodeUrl) {
+                document.getElementById('step-1').style.display = 'none';
+                document.getElementById('step-2').style.display = 'block';
+                document.getElementById('qr-code-img').src = data.qrCodeUrl;
+                document.getElementById('secret-text').textContent = data.secret;
+            } else if (data.error) {
+                alert(data.error);
+                window.location.href = '/id-card';
+            }
+        } catch (e) {
+            alert('Failed to initialize 2FA. Please try again.');
+            btn.innerHTML = '<i class="fas fa-qrcode"></i> Generate Secure 2FA QR Code';
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('verify-2fa-btn').addEventListener('click', async () => {
+        const token = document.getElementById('token-input').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+        const btn = document.getElementById('verify-2fa-btn');
+
+        if (!token || token.length !== 6) {
+            errorMsg.textContent = 'Please enter a valid 6-digit code.';
+            return;
+        }
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        btn.disabled = true;
+        errorMsg.textContent = '';
+
+        try {
+            const res = await fetch('/api/verify-2fa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/id-card?success=2FA successfully enabled! Welcome to your ID Card.';
+            } else {
+                errorMsg.textContent = data.error || 'Invalid 2FA code.';
+                btn.innerHTML = 'Verify &amp; Unlock ID Card';
+                btn.disabled = false;
+            }
+        } catch (e) {
+            errorMsg.textContent = 'Verification error. Please try again.';
+            btn.innerHTML = 'Verify &amp; Unlock ID Card';
+            btn.disabled = false;
+        }
+    });
+</script>
+<%- include('../partials/footer') %>

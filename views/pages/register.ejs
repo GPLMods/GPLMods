@@ -254,6 +254,15 @@
             gap: 8px;
             color: var(--gold);
         }
+        .calendar-arrow {
+            font-size: 0.85em;
+            color: var(--silver);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        .custom-calendar-container.open .calendar-arrow {
+            transform: rotate(180deg);
+            color: var(--gold);
+        }
         .custom-calendar-popup {
             display: none;
             position: absolute;
@@ -311,18 +320,31 @@
             justify-content: center;
         }
         .cal-select {
-            background: #222;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: #222 url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd700'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 6px center;
+            background-size: 14px;
             color: var(--white);
             border: 1px solid #444;
             border-radius: 6px;
-            padding: 5px 8px;
+            padding: 5px 22px 5px 8px;
             font-size: 0.85em;
             font-family: inherit;
             cursor: pointer;
             outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .cal-select:hover {
+            border-color: #666;
         }
         .cal-select:focus {
             border-color: var(--gold);
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+        }
+        .cal-select option {
+            background-color: #18181c;
+            color: #ffffff;
         }
         .calendar-weekdays {
             display: grid;
@@ -469,6 +491,7 @@
                                 <span class="dob-display-text placeholder" id="dob-display-text">Select your Date of Birth</span>
                                 <div class="calendar-trigger-icons">
                                     <i class="fas fa-calendar-alt calendar-icon"></i>
+                                    <i class="fas fa-chevron-down calendar-arrow"></i>
                                 </div>
                             </div>
 

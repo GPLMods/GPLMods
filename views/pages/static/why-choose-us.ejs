@@ -3,7 +3,8 @@
 <style>
     .comparison-header { text-align: center; padding: 60px 20px 40px 20px; }
     .comparison-header h1 { font-size: 3.2em; color: var(--white); margin-bottom: 10px; line-height: 1.2; }
-    .comparison-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .comparison-header h1 span.brand-gpl { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .comparison-header h1 span.brand-mods { color: var(--silver); text-shadow: 0 0 15px var(--glow-silver); }
     .comparison-header p { color: var(--silver); font-size: 1.15em; max-width: 800px; margin: 15px auto 0 auto; line-height: 1.6; }
 
     .comparison-section { margin-bottom: 60px; }
@@ -31,6 +32,7 @@
 
     .vs-header { font-size: 1.8em; font-weight: 700; margin-bottom: 25px; text-align: center; }
     .vs-header-gpl { color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); }
+    .vs-header-gpl .brand-mods { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
     .vs-header-other { color: var(--red); text-shadow: 0 0 10px var(--glow-red); }
 
     .vs-list { list-style: none; padding: 0; margin: 0; }
@@ -70,7 +72,7 @@
     </div>
     <!-- ======================================== -->
         <div class="container">
-            <h1>Why Choose <span>GPL Mods?</span></h1>
+            <h1>Why Choose <span class="brand-gpl">GPL</span> <span class="brand-mods">Mods?</span></h1>
             <p>The modding community deserves better. See how GPL Mods is setting a new industry standard for safety, transparency, and user empowerment compared to traditional mod sites.</p>
         </div>
     </div>
@@ -82,7 +84,7 @@
             <h2 class="section-title"><i class="fas fa-shield-check"></i> Security & Transparency</h2>
             <div class="vs-grid">
                 <div class="vs-col vs-col-gpl">
-                    <div class="vs-header vs-header-gpl">GPL Mods</div>
+                    <div class="vs-header vs-header-gpl"><span class="brand-gpl">GPL</span> <span class="brand-mods">Mods</span></div>
                     <ul class="vs-list">
                         <li>
                             <i class="fas fa-check-circle vs-icon icon-gpl"></i>
