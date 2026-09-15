@@ -650,24 +650,22 @@
 
         <div class="gpl-chat-window" id="gplChatWindow">
             <div class="gpl-chat-header">
-                <div class="gpl-chat-team-info" id="gplChatTeamHeader" style="cursor: pointer;" title="Minimize Chat">
-                    <div class="gpl-chat-team-avatars">
-                        <img src="/images/default-avatar.png" alt="Agent">
-                        <img src="/images/team-logo.png" alt="Bot">
-                        <img src="/images/gemini.png" alt="AI">
+                <div class="gpl-chat-team-info" id="gplChatTeamHeader" style="cursor: pointer; min-width: 0;" title="Minimize Chat">
+                    <div class="gpl-chat-team-avatars" id="gplChatTeamAvatars">
+                        <img src="/images/gemini.png" alt="AI" id="gplChatAiAvatar" title="Gemini AI">
                     </div>
-                    <div>
+                    <div style="min-width: 0;">
                         <strong style="color: var(--white); display: block; font-size: 0.92em;">Support Team</strong>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                            <span id="gplOnlineStatus" style="color: var(--green); font-size: 0.72em; display: flex; align-items: center; gap: 4px;">
-                                <span id="gplOnlineDot" style="display:inline-block; width:6px; height:6px; background:var(--green); border-radius:50%; box-shadow:0 0 6px var(--green);"></span>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap;">
+                            <span id="gplOnlineStatus" style="color: var(--green); font-size: 0.72em; display: flex; align-items: center; gap: 4px; line-height: 1.2;">
+                                <span id="gplOnlineDot" style="display:inline-block; width:6px; height:6px; min-width: 6px; background:var(--green); border-radius:50%; box-shadow:0 0 6px var(--green); flex-shrink: 0;"></span>
                                 <span id="gplOnlineText">Online</span>
                             </span>
-                            <span id="gplAiStatusBadge" title="Gemini AI Health Status" style="font-size: 0.68em; padding: 1px 5px; border-radius: 10px; background: rgba(46, 204, 113, 0.15); color: var(--green); border: 1px solid rgba(46, 204, 113, 0.3);">AI Online</span>
+                            <span id="gplAiStatusBadge" title="Gemini AI Health Status" style="font-size: 0.68em; padding: 1px 5px; border-radius: 10px; background: rgba(46, 204, 113, 0.15); color: var(--green); border: 1px solid rgba(46, 204, 113, 0.3); flex-shrink: 0;">AI Online</span>
                         </div>
                     </div>
                 </div>
-                <div class="gpl-header-actions">
+                <div class="gpl-header-actions" style="flex-shrink: 0;">
                     <button type="button" id="gplChatHistoryBtn" class="gpl-header-icon-btn" title="Chat History"><i class="fas fa-history"></i></button>
                     <button type="button" id="gplChatNewBtn" class="gpl-header-icon-btn" title="Start New Conversation"><i class="fas fa-plus"></i></button>
                     <button type="button" id="gplChatDeleteBtn" class="gpl-header-icon-btn" title="Delete this conversation" style="color: var(--red);"><i class="fas fa-trash-alt"></i></button>
@@ -775,7 +773,9 @@
             // Live indicators
             const onlineTextEl = document.getElementById('gplOnlineText');
             const onlineDotEl = document.getElementById('gplOnlineDot');
+            const onlineStatusEl = document.getElementById('gplOnlineStatus');
             const aiStatusBadge = document.getElementById('gplAiStatusBadge');
+            const chatTeamAvatarsEl = document.getElementById('gplChatTeamAvatars');
 
             if (attachBtn && mediaInput) {
                 attachBtn.addEventListener('click', () => mediaInput.click());
@@ -909,46 +909,112 @@
                 const deviceInfo = { browser: browserName, os: os };
 
                 const currentGuestEmail = () => guestEmailInput ? guestEmailInput.value.trim() : '';
-                socket.emit('join_support_chat', { userId, guestId, sessionId, deviceInfo, guestEmail: currentGuestEmail(), currentPage: window.location.pathname });
+                socket.emit('join_support_chat', { 
+                    userId, 
+                    guestId, 
+                    sessionId, 
+                    deviceInfo, 
+                    guestEmail: currentGuestEmail(), 
+                    currentPage: window.location.pathname,
+                    avatarUrl: '<%= typeof user !== "undefined" && user && user.signedAvatarUrl ? user.signedAvatarUrl : "" %>',
+                    username: '<%= typeof user !== "undefined" && user ? user.username : "" %>'
+                });
 
                 if (guestEmailInput) guestEmailInput.addEventListener('change', () => {
                     if (sessionId) socket.emit('set_support_email', { sessionId, guestId, guestEmail: currentGuestEmail() });
                 });
 
-                // Live Online Stats & AI Health Listener
-                socket.on('support_stats_update', (stats) => {
-                    isSupportOnline = (stats.agentsOnline > 0 || stats.membersOnline > 0);
-                    if (onlineTextEl && onlineDotEl) {
-                        if (stats.agentsOnline > 0) {
-                            onlineTextEl.textContent = `${stats.agentsOnline} Agent${stats.agentsOnline > 1 ? 's' : ''} Online`;
-                            onlineDotEl.style.background = 'var(--green)';
-                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
-                        } else if (stats.membersOnline > 0) {
-                            onlineTextEl.textContent = `${stats.membersOnline} Online`;
-                            onlineDotEl.style.background = 'var(--green)';
-                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                function renderSupportAvatarsAndStatus(stats) {
+                    if (!stats) return;
+
+                    const isAiOnline = stats.aiStatus && stats.aiStatus.status === 'online';
+                    const liveUsers = Array.isArray(stats.liveUsers) ? stats.liveUsers : [];
+                    const userCount = liveUsers.length;
+                    const staffCount = typeof stats.staffOnline === 'number' ? stats.staffOnline : liveUsers.filter(u => u.isStaff).length;
+                    const isAnyoneOnline = userCount > 0 || isAiOnline;
+
+                    // 1. DYNAMIC AVATARS:
+                    // Show live users' images: if 1 user is live then 1, if 2 then 2, max 3.
+                    // If AI is live, show its image (/images/gemini.png). If AI is offline, hide its image.
+                    // If no one is online, hide avatars container.
+                    if (chatTeamAvatarsEl) {
+                        chatTeamAvatarsEl.innerHTML = '';
+
+                        if (!isAnyoneOnline) {
+                            chatTeamAvatarsEl.style.display = 'none';
                         } else {
-                            onlineTextEl.textContent = 'Support Offline';
-                            onlineDotEl.style.background = 'var(--red)';
-                            onlineDotEl.style.boxShadow = '0 0 6px var(--red)';
+                            chatTeamAvatarsEl.style.display = 'flex';
+
+                            // Maximum 3 avatars total
+                            const maxUserSlots = isAiOnline ? 2 : 3;
+                            const usersToShow = liveUsers.slice(0, maxUserSlots);
+
+                            usersToShow.forEach((u) => {
+                                const img = document.createElement('img');
+                                img.src = u.avatarUrl || '/images/default-avatar.png';
+                                img.alt = u.username || 'User';
+                                img.title = `${u.username || 'User'}${u.isStaff ? ' (Staff)' : ''}`;
+                                img.onerror = function() { this.src = '/images/default-avatar.png'; };
+                                chatTeamAvatarsEl.appendChild(img);
+                            });
+
+                            if (isAiOnline) {
+                                const aiImg = document.createElement('img');
+                                aiImg.src = '/images/gemini.png';
+                                aiImg.alt = 'Gemini AI';
+                                aiImg.title = 'Gemini AI Assistant (Online)';
+                                aiImg.onerror = function() { this.style.display = 'none'; };
+                                chatTeamAvatarsEl.appendChild(aiImg);
+                            }
                         }
                     }
 
-                    if (aiStatusBadge && stats.aiStatus) {
-                        if (stats.aiStatus.status === 'online') {
-                            aiStatusBadge.textContent = 'AI Online';
-                            aiStatusBadge.style.background = 'rgba(46, 204, 113, 0.15)';
-                            aiStatusBadge.style.color = 'var(--green)';
-                            aiStatusBadge.style.borderColor = 'rgba(46, 204, 113, 0.3)';
-                            aiStatusBadge.title = `Gemini AI Online (Latency: ${stats.aiStatus.latencyMs ? stats.aiStatus.latencyMs + 'ms' : 'Fast'})`;
+                    // 2. STATUS TEXT & INDICATORS:
+                    // If no one online, say: "AI and staff members are not currently online"
+                    if (onlineTextEl && onlineDotEl) {
+                        if (!isAnyoneOnline) {
+                            onlineTextEl.textContent = 'AI and staff members are not currently online';
+                            onlineDotEl.style.background = 'var(--red)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--red)';
+                            if (onlineStatusEl) onlineStatusEl.style.color = 'var(--red)';
+                            if (aiStatusBadge) aiStatusBadge.style.display = 'none';
                         } else {
-                            aiStatusBadge.textContent = 'AI Offline';
-                            aiStatusBadge.style.background = 'rgba(231, 76, 60, 0.15)';
-                            aiStatusBadge.style.color = 'var(--red)';
-                            aiStatusBadge.style.borderColor = 'rgba(231, 76, 60, 0.3)';
-                            aiStatusBadge.title = stats.aiStatus.lastError ? stats.aiStatus.lastError.message : 'AI error occurred';
+                            onlineDotEl.style.background = 'var(--green)';
+                            onlineDotEl.style.boxShadow = '0 0 6px var(--green)';
+                            if (onlineStatusEl) onlineStatusEl.style.color = 'var(--green)';
+
+                            if (staffCount > 0) {
+                                onlineTextEl.textContent = `${staffCount} Staff Online`;
+                            } else if (userCount > 0) {
+                                onlineTextEl.textContent = `${userCount} Online`;
+                            } else if (isAiOnline) {
+                                onlineTextEl.textContent = 'AI Online';
+                            }
+
+                            if (aiStatusBadge) {
+                                aiStatusBadge.style.display = 'inline-block';
+                                if (isAiOnline) {
+                                    aiStatusBadge.textContent = 'AI Online';
+                                    aiStatusBadge.style.background = 'rgba(46, 204, 113, 0.15)';
+                                    aiStatusBadge.style.color = 'var(--green)';
+                                    aiStatusBadge.style.borderColor = 'rgba(46, 204, 113, 0.3)';
+                                    aiStatusBadge.title = `Gemini AI Online${stats.aiStatus && stats.aiStatus.latencyMs ? ' (' + stats.aiStatus.latencyMs + 'ms)' : ''}`;
+                                } else {
+                                    aiStatusBadge.textContent = 'AI Offline';
+                                    aiStatusBadge.style.background = 'rgba(231, 76, 60, 0.15)';
+                                    aiStatusBadge.style.color = 'var(--red)';
+                                    aiStatusBadge.style.borderColor = 'rgba(231, 76, 60, 0.3)';
+                                    aiStatusBadge.title = stats.aiStatus && stats.aiStatus.lastError ? (stats.aiStatus.lastError.message || stats.aiStatus.lastError) : 'AI offline';
+                                }
+                            }
                         }
                     }
+                }
+
+                // Live Online Stats & AI Health Listener
+                socket.on('support_stats_update', (stats) => {
+                    isSupportOnline = ((stats.staffOnline || stats.agentsOnline) > 0 || (stats.liveUsers && stats.liveUsers.length > 0));
+                    renderSupportAvatarsAndStatus(stats);
                 });
 
                 socket.on('support_chat_ready', (data) => {

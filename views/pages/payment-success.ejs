@@ -1,0 +1,340 @@
+<%- include('../partials/header') %>
+
+<style>
+    .payment-result-container {
+        min-height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+    }
+
+    .payment-card {
+        background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(18, 18, 18, 0.98));
+        border: 1px solid rgba(46, 204, 113, 0.35);
+        border-radius: 20px;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), 0 0 35px rgba(46, 204, 113, 0.15);
+        max-width: 650px;
+        width: 100%;
+        padding: 45px 35px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInScale 0.4s ease-out;
+    }
+
+    .payment-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, #2ecc71, #27ae60, var(--gold));
+    }
+
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(15px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .status-badge-wrapper {
+        position: relative;
+        width: 95px;
+        height: 95px;
+        margin: 0 auto 25px auto;
+    }
+
+    .status-badge {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(46, 204, 113, 0.12);
+        border: 2.5px solid #2ecc71;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8rem;
+        color: #2ecc71;
+        box-shadow: 0 0 25px rgba(46, 204, 113, 0.35);
+        animation: pulseGreen 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGreen {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 35px rgba(46, 204, 113, 0.55);
+            transform: scale(1.04);
+        }
+    }
+
+    .payment-card h1 {
+        font-size: 2.1rem;
+        color: var(--white);
+        font-weight: 700;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+    }
+
+    .payment-card .sub-message {
+        color: var(--silver);
+        font-size: 1.05rem;
+        line-height: 1.6;
+        margin-bottom: 30px;
+        max-width: 520px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .receipt-box {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 22px 25px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .receipt-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--silver);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 8px;
+    }
+
+    .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 0;
+        font-size: 0.95rem;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    }
+
+    .receipt-row:last-child {
+        border-bottom: none;
+    }
+
+    .receipt-label {
+        color: #999;
+    }
+
+    .receipt-value {
+        color: var(--white);
+        font-weight: 600;
+        word-break: break-all;
+        text-align: right;
+    }
+
+    .status-pill-paid {
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        display: inline-block;
+    }
+
+    .btn-group-actions {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .btn-result {
+        padding: 13px 26px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.98rem;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-result-primary {
+        background: var(--gold);
+        color: var(--black);
+        box-shadow: 0 0 18px var(--glow-gold);
+    }
+
+    .btn-result-primary:hover {
+        background: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-result-secondary {
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--white);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-result-secondary:hover {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: var(--gold);
+        color: var(--gold);
+        transform: translateY(-2px);
+    }
+
+    .print-receipt-btn {
+        background: transparent;
+        color: #888;
+        font-size: 0.85rem;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.2s ease;
+    }
+
+    .print-receipt-btn:hover {
+        color: var(--silver);
+    }
+
+    @media print {
+        header, footer, .btn-group-actions, .print-receipt-btn {
+            display: none !important;
+        }
+        .payment-result-container {
+            padding: 0;
+        }
+        .payment-card {
+            border: 1px solid #000;
+            box-shadow: none;
+            background: #fff;
+            color: #000;
+        }
+        .payment-card h1, .receipt-value {
+            color: #000 !important;
+        }
+        .receipt-label, .sub-message {
+            color: #444 !important;
+        }
+    }
+</style>
+
+<main class="payment-result-container">
+    <div class="payment-card">
+        <div class="status-badge-wrapper">
+            <div class="status-badge">
+                <i class="fas fa-check"></i>
+            </div>
+        </div>
+
+        <% if (type === 'membership') { %>
+            <h1>Welcome to GPL Mods+!</h1>
+            <p class="sub-message">
+                Your premium membership has been successfully confirmed and activated. Enjoy lightning-fast downloads, an ad-free browsing experience, and exclusive creator features!
+            </p>
+        <% } else { %>
+            <h1>Donation Confirmed!</h1>
+            <p class="sub-message">
+                Thank you so much for your generous support! Your contribution powers GPL Mods' servers, storage infrastructure, and free mod updates for the entire community.
+            </p>
+        <% } %>
+
+        <div class="receipt-box">
+            <div class="receipt-title">
+                <span>Transaction Receipt</span>
+                <span class="status-pill-paid"><i class="fas fa-shield-alt"></i> Verified</span>
+            </div>
+
+            <% if (orderId) { %>
+                <div class="receipt-row">
+                    <span class="receipt-label">Order Reference ID:</span>
+                    <span class="receipt-value"><%= orderId %></span>
+                </div>
+            <% } %>
+
+            <% if (type === 'membership') { %>
+                <div class="receipt-row">
+                    <span class="receipt-label">Membership Tier:</span>
+                    <span class="receipt-value"><%= planName || 'GPL Mods+ Premium' %></span>
+                </div>
+                <% if (expiresAt) { %>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Access Valid Until:</span>
+                        <span class="receipt-value"><%= new Date(expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                    </div>
+                <% } %>
+            <% } else { %>
+                <div class="receipt-row">
+                    <span class="receipt-label">Contribution Type:</span>
+                    <span class="receipt-value">Community Donation</span>
+                </div>
+            <% } %>
+
+            <% if (amount) { %>
+                <div class="receipt-row">
+                    <span class="receipt-label">Amount Paid:</span>
+                    <span class="receipt-value" style="color: var(--gold); font-size: 1.05rem;">
+                        <%= currency || 'INR' %> <%= amount %>
+                    </span>
+                </div>
+            <% } %>
+
+            <div class="receipt-row">
+                <span class="receipt-label">Payment Provider:</span>
+                <span class="receipt-value">Cashfree Payments (Sandbox)</span>
+            </div>
+
+            <div class="receipt-row">
+                <span class="receipt-label">Date & Time:</span>
+                <span class="receipt-value"><%= new Date().toLocaleString() %></span>
+            </div>
+        </div>
+
+        <div class="btn-group-actions">
+            <% if (type === 'membership') { %>
+                <a href="/search" class="btn-result btn-result-primary">
+                    <i class="fas fa-rocket"></i> Explore Premium Mods
+                </a>
+                <a href="/profile" class="btn-result btn-result-secondary">
+                    <i class="fas fa-user-circle"></i> View Profile
+                </a>
+            <% } else { %>
+                <a href="/leaderboard" class="btn-result btn-result-primary">
+                    <i class="fas fa-trophy"></i> View Leaderboard
+                </a>
+                <a href="/search" class="btn-result btn-result-secondary">
+                    <i class="fas fa-gamepad"></i> Browse Mods
+                </a>
+            <% } %>
+            <a href="/" class="btn-result btn-result-secondary">
+                <i class="fas fa-home"></i> Return Home
+            </a>
+        </div>
+
+        <div>
+            <button class="print-receipt-btn" onclick="window.print()">
+                <i class="fas fa-print"></i> Print or Save Receipt
+            </button>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

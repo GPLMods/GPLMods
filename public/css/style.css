@@ -222,15 +222,26 @@ input[type="search"]::-webkit-search-results-decoration {
 
 /* Ensure the Hamburger Menu is ALWAYS visible, on all devices */
 .hamburger-menu {
-    display: block !important; 
+    display: inline-flex !important; 
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    font-size: 2em;
+    font-size: 1.55em;
     color: var(--silver);
     line-height: 1;
-    margin-left: 5px;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 .hamburger-menu:hover {
     color: var(--gold);
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 /* --- Responsive Layout Adjustments --- */
@@ -271,14 +282,18 @@ input[type="search"]::-webkit-search-results-decoration {
 /* Add near .hamburger-menu rules */
 .hamburger-menu.open {
   color: var(--gold);
-  transform: scale(1.1); /* Slight pop effect */
-  transition: color 0.2s ease, transform 0.2s ease;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: color 0.2s ease;
 }
     .policy-banner { flex-direction: row; justify-content: center; }
     .policy-buttons { margin-left: 20px; }
 }
         /* --- New Header Mobile Actions --- */
-        .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
+        .header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
         
         /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
         .avatar-placeholder {
@@ -360,14 +375,18 @@ input[type="search"]::-webkit-search-results-decoration {
 /* Add near .hamburger-menu rules */
 .hamburger-menu.open {
   color: var(--gold);
-  transform: scale(1.1); /* Slight pop effect */
-  transition: color 0.2s ease, transform 0.2s ease;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: color 0.2s ease;
 }
     .policy-banner { flex-direction: row; justify-content: center; }
     .policy-buttons { margin-left: 20px; }
 }
         /* --- New Header Mobile Actions --- */
-        .header-mobile-actions { display: flex; align-items: center; gap: 15px; order: 2; }
+        .header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
         
         /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
         .avatar-placeholder {

@@ -94,3 +94,18 @@ document.addEventListener('error', function(event) {
         }
     }
 }, true);
+
+// 3. ADMINJS: Redirect to /admin when clicking the sidebar / hamburger drawer logo
+document.addEventListener('click', function(e) {
+    if (!window.location.pathname.startsWith('/admin')) return;
+    const target = e.target;
+    if (!target) return;
+    
+    const brandingEl = target.closest('[data-css*="sidebar-branding"], [data-css*="branding"], .adminjs_Branding, aside [alt*="logo" i], aside [alt*="GPL" i], [data-css*="sidebar"] img, [class*="SidebarBranding"]');
+    if (brandingEl) {
+        if (window.location.pathname !== '/admin') {
+            e.preventDefault();
+            window.location.href = '/admin';
+        }
+    }
+});

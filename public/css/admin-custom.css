@@ -188,3 +188,18 @@ span[class*="Tag"]:hover,
         margin: 10px auto !important;
     }
 }
+
+/* Sidebar Branding / Logo Clickable Link to /admin */
+[data-css*="sidebar-branding"],
+[data-css*="branding"],
+.adminjs_Branding,
+[class*="SidebarBranding"] {
+    cursor: pointer !important;
+}
+
+[data-css*="sidebar-branding"] a,
+.adminjs_Branding a {
+    cursor: pointer !important;
+    text-decoration: none !important;
+}
+

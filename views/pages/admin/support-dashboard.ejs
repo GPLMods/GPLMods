@@ -172,6 +172,43 @@
             transform: rotate(-90deg);
         }
 
+        /* Staff Work Email Card */
+        .staff-email-card {
+            margin: 0 16px 10px 16px;
+            padding: 12px 14px;
+            background: #121212;
+            border: 1px solid #333;
+            border-left: 4px solid var(--blue);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .staff-email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .staff-email-card:not(.collapsed) .staff-email-header {
+            margin-bottom: 8px;
+        }
+        .staff-email-toggle {
+            background: none;
+            border: none;
+            color: var(--silver);
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 0.85em;
+            transition: transform 0.2s;
+        }
+        .staff-email-card.collapsed .staff-email-body {
+            display: none !important;
+        }
+        .staff-email-card.collapsed {
+            padding: 8px 12px;
+        }
+        .staff-email-card.collapsed .staff-email-toggle i {
+            transform: rotate(-90deg);
+        }
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -261,6 +298,18 @@
             </div>
             <h2>Support Desk</h2>
             <p style="margin:4px 0 0 0; font-size: 0.85em; color: var(--silver);">Agent: <%= user.username %></p>
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div style="margin-top: 10px; padding: 8px 12px; background: rgba(46, 204, 113, 0.15); border: 1px solid var(--green); border-radius: 6px; color: #a3e9b8; font-size: 0.8em; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
+                    <i class="fas fa-check-circle" style="color: var(--green); margin-top: 2px;"></i>
+                    <div style="word-break: break-word;"><%= success %></div>
+                </div>
+            <% } %>
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div style="margin-top: 10px; padding: 8px 12px; background: rgba(231, 76, 60, 0.15); border: 1px solid var(--red); border-radius: 6px; color: #ffadad; font-size: 0.8em; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
+                    <i class="fas fa-exclamation-circle" style="color: var(--red); margin-top: 2px;"></i>
+                    <div style="word-break: break-word;"><%= error %></div>
+                </div>
+            <% } %>
         </div>
 
         <!-- Live Members & Agents Bar -->
@@ -311,6 +360,88 @@
             </div>
         </div>
 
+        <!-- Staff Work Email & SMTP Card -->
+        <div class="staff-email-card" id="staffEmailCard">
+            <div class="staff-email-header" style="cursor: pointer;" onclick="toggleStaffEmailCard()">
+                <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                    <i class="fas fa-envelope-open-text" style="color: var(--blue); font-size: 0.95em;"></i>
+                    <strong style="font-size: 0.85em; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Staff Work Email</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                    <% if (user.customEmailAlias) { %>
+                        <span style="font-size: 0.68em; padding: 2px 7px; border-radius: 10px; background: rgba(46, 204, 113, 0.18); color: #7bed9f; border: 1px solid rgba(46, 204, 113, 0.4); font-weight: bold;">Active</span>
+                    <% } else { %>
+                        <span style="font-size: 0.68em; padding: 2px 7px; border-radius: 10px; background: rgba(33, 150, 243, 0.18); color: #64b5f6; border: 1px solid rgba(33, 150, 243, 0.4); font-weight: bold;">Unclaimed</span>
+                    <% } %>
+                    <button type="button" class="staff-email-toggle" onclick="event.stopPropagation(); toggleStaffEmailCard();" title="Toggle Staff Email Panel">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="staff-email-body" id="staffEmailBody">
+                <% const deskDomain = (typeof domain !== 'undefined' && domain) ? domain : 'gplmods.webredirect.org'; %>
+                <% if (!user.customEmailAlias) { %>
+                    <div style="font-size: 0.78em; color: var(--silver); line-height: 1.4; margin-bottom: 8px;">
+                        Claim your official staff email. Inbound messages automatically forward to <strong style="color: var(--white);"><%= user.email %></strong>.
+                    </div>
+                    <% const previewAlias = user.username.toLowerCase().replace(/[^a-z0-9]/g, ''); %>
+                    <div style="background: #0a0a0a; padding: 7px 10px; border-radius: 5px; border: 1px dashed var(--blue); text-align: center; margin-bottom: 8px; font-size: 0.8em; color: var(--gold); font-weight: bold; word-break: break-all;">
+                        <%= previewAlias %>@<%= deskDomain %>
+                    </div>
+                    <form id="deskClaimEmailForm" action="/account/claim-custom-email" method="POST">
+                        <input type="hidden" name="redirectUrl" value="/admin/support">
+                        <button type="submit" id="deskClaimBtn" style="width: 100%; padding: 7px 10px; background: var(--blue); border: none; border-radius: 6px; color: #fff; font-size: 0.8em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;">
+                            <i class="fas fa-check-circle"></i> Claim Staff Email
+                        </button>
+                    </form>
+                <% } else { %>
+                    <div style="background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.3); padding: 7px 10px; border-radius: 6px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <div style="min-width: 0; overflow: hidden;">
+                            <div style="color: var(--green); font-weight: bold; font-size: 0.82em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <%= user.customEmailAlias %>@<%= deskDomain %>
+                            </div>
+                            <div style="color: var(--silver); font-size: 0.7em; margin-top: 2px;">
+                                Forwards to: <%= user.email %>
+                            </div>
+                        </div>
+                        <button type="button" onclick="copyStaffEmail('<%= user.customEmailAlias %>@<%= deskDomain %>', this)" style="background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 4px; color: var(--silver); padding: 3px 6px; font-size: 0.72em; cursor: pointer; flex-shrink: 0;" title="Copy email address">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <% if (!user.hasSmtpAccess) { %>
+                        <div style="font-size: 0.74em; color: var(--silver); line-height: 1.35; margin-bottom: 8px;">
+                            Generate SMTP credentials to send official emails from your client (Gmail, Outlook).
+                        </div>
+                        <form id="deskGenSmtpForm" action="/account/generate-smtp" method="POST">
+                            <input type="hidden" name="redirectUrl" value="/admin/support">
+                            <button type="submit" id="deskGenSmtpBtn" style="width: 100%; padding: 6px 10px; background: rgba(255,215,0,0.12); border: 1px solid var(--gold); border-radius: 6px; color: var(--gold); font-size: 0.78em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;">
+                                <i class="fas fa-key"></i> Generate SMTP Access
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <div style="background: #0c0c0c; border: 1px solid #262626; border-radius: 6px; padding: 7px 9px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 0.72em; color: var(--green); font-weight: bold;"><i class="fas fa-shield-alt"></i> SMTP Ready</span>
+                                <span style="font-size: 0.68em; color: var(--silver);">Port 587 (TLS)</span>
+                            </div>
+                            <div style="font-size: 0.7em; color: #888; font-family: monospace; line-height: 1.4;">
+                                Host: smtp.improvmx.com<br>
+                                User: <%= user.customEmailAlias %>
+                            </div>
+                        </div>
+                        <form id="deskGenSmtpForm" action="/account/generate-smtp" method="POST" onsubmit="return confirm('Regenerating will invalidate previous SMTP password. Continue?');">
+                            <input type="hidden" name="redirectUrl" value="/admin/support">
+                            <button type="submit" id="deskGenSmtpBtn" style="width: 100%; padding: 5px 8px; background: transparent; border: 1px solid #3a3a3a; border-radius: 5px; color: var(--silver); font-size: 0.74em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s;">
+                                <i class="fas fa-sync-alt"></i> Regenerate Password
+                            </button>
+                        </form>
+                    <% } %>
+                <% } %>
+                <div id="staffEmailFeedbackBox" style="display: none; margin-top: 8px; padding: 7px 9px; border-radius: 6px; font-size: 0.75em;"></div>
+            </div>
+        </div>
+
         <div style="padding: 0 16px; margin-top: 5px;">
             <span style="font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; color: var(--silver); font-weight: bold;">Conversations</span>
         </div>
@@ -332,6 +463,9 @@
                 </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                <a id="emailCustomerBtn" href="#" style="padding: 9px 14px; background: rgba(33, 150, 243, 0.15); border: 1px solid var(--blue); color: #64b5f6; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; display: none; align-items: center; gap: 6px; text-decoration: none; transition: all 0.2s;" title="Send email to customer">
+                    <i class="fas fa-envelope"></i> <span>Email</span>
+                </a>
                 <button id="claimBtn" style="padding: 9px 16px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; display: none;">
                     <i class="fas fa-hand-holding-hand" style="margin-right: 4px;"></i> Claim
                 </button>
@@ -544,6 +678,25 @@
             if (card) card.classList.toggle('collapsed');
         }
 
+        function toggleStaffEmailCard() {
+            const card = document.getElementById('staffEmailCard');
+            if (card) card.classList.toggle('collapsed');
+        }
+
+        function copyStaffEmail(text, btn) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check" style="color: var(--green);"></i>';
+                    setTimeout(() => { btn.innerHTML = orig; }, 1500);
+                }).catch(() => {
+                    prompt("Copy email address:", text);
+                });
+            } else {
+                prompt("Copy email address:", text);
+            }
+        }
+
         function closeMobileChat() {
             document.body.classList.remove('chat-view-active');
             currentSessionId = null;
@@ -557,10 +710,12 @@
             renderChatList();
         }
 
-        // Auto-collapse AI debugger on mobile screens by default
+        // Auto-collapse diagnostics and staff email cards on mobile screens by default
         if (window.innerWidth <= 768) {
             const card = document.getElementById('aiDebuggerCard');
             if (card) card.classList.add('collapsed');
+            const emailCard = document.getElementById('staffEmailCard');
+            if (emailCard) emailCard.classList.add('collapsed');
         }
 
         function openChat(id) {
@@ -574,6 +729,22 @@
             
             chatHeaderName.textContent = chat.user ? chat.user.username : (chat.guestEmail || 'Guest');
             chatHeaderInfo.textContent = (chat.adminNotes ? chat.adminNotes + ' | ' : '') + (chat.guestEmail ? 'Email: ' + chat.guestEmail : (chat.user ? (chat.user.customEmailAlias ? 'Custom Email Address: ' + chat.user.customEmailAlias + '@gplmods.webredirect.org | Email: ' + chat.user.email : 'Email: ' + chat.user.email) : 'No email'));
+
+            // Handle 'Email Customer' direct action button
+            const emailCustomerBtn = document.getElementById('emailCustomerBtn');
+            const customerEmail = chat.guestEmail || (chat.user && chat.user.email);
+            if (emailCustomerBtn) {
+                if (customerEmail) {
+                    emailCustomerBtn.style.display = 'inline-flex';
+                    const customerName = chat.user ? chat.user.username : 'Customer';
+                    const ticketId = chat._id ? chat._id.toString().slice(-6).toUpperCase() : 'INQUIRY';
+                    const subject = encodeURIComponent(`GPL Mods Support - Ticket #${ticketId}`);
+                    const body = encodeURIComponent(`Hi ${customerName},\n\nThis is ${agentName} from the GPL Mods Support Team.\n\nRegarding your ticket #${ticketId}:\n\n\n\n---\nBest regards,\n${agentName}\nGPL Mods Official Support\nhttps://gplmods.webredirect.org`);
+                    emailCustomerBtn.href = `mailto:${encodeURIComponent(customerEmail)}?subject=${subject}&body=${body}`;
+                } else {
+                    emailCustomerBtn.style.display = 'none';
+                }
+            }
             
             chatMessagesEl.innerHTML = '';
             chat.messages.forEach(msg => appendMessage(msg));
@@ -639,6 +810,102 @@
                 agentInput.value = '';
             }
         });
+
+        // ==========================================
+        // STAFF WORK EMAIL & SMTP AJAX HANDLERS
+        // ==========================================
+        const deskClaimForm = document.getElementById('deskClaimEmailForm');
+        if (deskClaimForm) {
+            deskClaimForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('deskClaimBtn');
+                const feedback = document.getElementById('staffEmailFeedbackBox');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Claiming...'; }
+                try {
+                    const res = await fetch('/account/claim-custom-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ redirectUrl: '/admin/support' })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (feedback) {
+                            feedback.style.display = 'block';
+                            feedback.style.background = 'rgba(46, 204, 113, 0.15)';
+                            feedback.style.border = '1px solid var(--green)';
+                            feedback.style.color = '#a3e9b8';
+                            feedback.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Staff email claimed!') + ' Refreshing...';
+                        }
+                        setTimeout(() => window.location.reload(), 1200);
+                    } else {
+                        if (feedback) {
+                            feedback.style.display = 'block';
+                            feedback.style.background = 'rgba(231, 76, 60, 0.15)';
+                            feedback.style.border = '1px solid var(--red)';
+                            feedback.style.color = '#ffadad';
+                            feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Failed to claim email.');
+                        }
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Claim Staff Email'; }
+                    }
+                } catch (err) {
+                    console.error("AJAX claim email error:", err);
+                    deskClaimForm.submit();
+                }
+            });
+        }
+
+        const deskSmtpForm = document.getElementById('deskGenSmtpForm');
+        if (deskSmtpForm) {
+            deskSmtpForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('deskGenSmtpBtn');
+                const feedback = document.getElementById('staffEmailFeedbackBox');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
+                try {
+                    const res = await fetch('/account/generate-smtp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ redirectUrl: '/admin/support' })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        if (feedback) {
+                            feedback.style.display = 'block';
+                            feedback.style.background = 'rgba(255, 215, 0, 0.12)';
+                            feedback.style.border = '1px solid var(--gold)';
+                            feedback.style.color = 'var(--white)';
+                            feedback.innerHTML = `
+                                <div style="font-size: 0.85em; font-weight: bold; color: var(--gold); margin-bottom: 4px;">
+                                    <i class="fas fa-key"></i> SMTP Password Generated!
+                                </div>
+                                <div style="font-size: 0.74em; color: var(--silver); margin-bottom: 6px;">
+                                    Copy this now, it will not be displayed again:
+                                </div>
+                                <div style="background: #000; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 0.92em; color: #00ff88; user-select: all; word-break: break-all; border: 1px dashed #444;">
+                                    ${data.smtpPassword}
+                                </div>
+                            `;
+                        }
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Password';
+                        }
+                    } else {
+                        if (feedback) {
+                            feedback.style.display = 'block';
+                            feedback.style.background = 'rgba(231, 76, 60, 0.15)';
+                            feedback.style.border = '1px solid var(--red)';
+                            feedback.style.color = '#ffadad';
+                            feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Failed to generate SMTP.');
+                        }
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-key"></i> Generate SMTP Access'; }
+                    }
+                } catch (err) {
+                    console.error("AJAX generate smtp error:", err);
+                    deskSmtpForm.submit();
+                }
+            });
+        }
 
         // ==========================================
         // GEMINI VISIBILITY CONFIGURATION MODAL LOGIC

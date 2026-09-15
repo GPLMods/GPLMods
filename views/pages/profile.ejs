@@ -852,6 +852,79 @@ GLOBAL|Earth
                     </a>
                 </section>
             <% } %>
+
+            <!-- ======== STAFF PROFESSIONAL WORK EMAIL SECTION ======== -->
+            <% if (user && (user.role === 'owner' || user.role === 'admin' || user.role === 'support')) { %>
+            <section class="form-section" style="border-top: 4px solid var(--blue); margin-top: 30px;">
+                <h2 style="color: var(--blue); border-bottom-color: var(--blue);">
+                    <i class="fas fa-envelope-open-text" style="margin-right: 10px;"></i> Staff Work Email & SMTP
+                </h2>
+                
+                <% if (!user.customEmailAlias) { %>
+                    <!-- Staff hasn't claimed it yet -->
+                    <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.9em; line-height: 1.6;">
+                        As an official GPL Mods staff member, you can claim your official <strong>@gplmods.webredirect.org</strong> email address. Any emails sent here will automatically forward directly to your personal inbox (<strong><%= user.email %></strong>).
+                    </p>
+                    
+                    <% const previewAlias = (typeof slugify !== 'undefined' ? slugify(user.username).replace(/-/g, '').toLowerCase() : user.username.toLowerCase()); %>
+                    <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px dashed var(--blue); text-align: center; margin-bottom: 20px;">
+                        <span style="font-size: 1.1em; color: var(--silver);">Your proposed staff email:</span><br>
+                        <strong style="font-size: 1.4em; color: var(--gold);"><%= previewAlias %>@gplmods.webredirect.org</strong>
+                    </div>
+
+                    <form action="/account/claim-custom-email" method="POST">
+                        <button type="submit" class="submit-button" style="background: var(--blue); border-color: var(--blue); box-shadow: 0 0 15px rgba(33, 150, 243, 0.4); width: auto; padding: 12px 24px;">
+                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Claim Official Staff Email
+                        </button>
+                    </form>
+
+                <% } else { %>
+                    <!-- Staff HAS claimed it -->
+                    <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--green); padding: 18px 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: var(--green); font-weight: bold; font-size: 1.2em;">
+                            <i class="fas fa-check-circle"></i> <%= user.customEmailAlias %>@gplmods.webredirect.org
+                        </p>
+                        <p style="margin: 6px 0 0 0; color: var(--silver); font-size: 0.9em;">
+                            Inbound emails currently forwarding to: <strong style="color: var(--white);"><%= user.email %></strong>
+                        </p>
+                    </div>
+
+                    <!-- SMTP Send Section -->
+                    <div style="background: var(--black); padding: 20px; border-radius: 8px; border: 1px solid #333;">
+                        <h4 style="color: var(--white); margin-top: 0; font-size: 1.05em;"><i class="fas fa-paper-plane" style="color: var(--gold); margin-right: 8px;"></i> Send Emails From This Address</h4>
+                        
+                        <% if (!user.hasSmtpAccess) { %>
+                            <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px; line-height: 1.5;">
+                                Generate SMTP credentials to configure Gmail, Outlook, or Apple Mail to send official staff emails directly from your <code><%= user.customEmailAlias %>@gplmods.webredirect.org</code> address.
+                            </p>
+                            <form action="/account/generate-smtp" method="POST">
+                                <button type="submit" class="submit-button secondary-button" style="border-color: var(--gold); color: var(--gold); width: auto; padding: 10px 20px;">
+                                    <i class="fas fa-key" style="margin-right: 6px;"></i> Generate SMTP Credentials
+                                </button>
+                            </form>
+                        <% } else { %>
+                            <p style="color: var(--gold); font-size: 0.9em; font-weight: bold; margin-bottom: 8px;">
+                                <i class="fas fa-shield-alt"></i> SMTP Access Active
+                            </p>
+                            <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 12px; line-height: 1.5;">
+                                Configure your email client (Gmail, Outlook, Apple Mail) "Send As" settings using these details:
+                            </p>
+                            <ul style="color: var(--white); font-family: monospace; font-size: 0.88em; background: #111; padding: 16px 20px; border-radius: 6px; list-style: none; margin: 0 0 15px 0; border: 1px solid #2a2a2a;">
+                                <li style="margin-bottom: 8px;"><strong style="color: var(--silver);">SMTP Host:</strong> smtp.improvmx.com</li>
+                                <li style="margin-bottom: 8px;"><strong style="color: var(--silver);">Port:</strong> 587 (TLS / STARTTLS)</li>
+                                <li style="margin-bottom: 8px;"><strong style="color: var(--silver);">Username:</strong> <%= user.customEmailAlias %></li>
+                                <li><strong style="color: var(--silver);">Password:</strong> <em>(The password generated when you clicked the button)</em></li>
+                            </ul>
+                            <form action="/account/generate-smtp" method="POST" onsubmit="return confirm('Generating a new password will invalidate any previous SMTP password. Continue?');">
+                                <button type="submit" class="submit-button secondary-button" style="border-color: #555; color: var(--silver); font-size: 0.85em; width: auto; padding: 8px 16px;">
+                                    <i class="fas fa-sync-alt" style="margin-right: 6px;"></i> Regenerate SMTP Password
+                                </button>
+                            </form>
+                        <% } %>
+                    </div>
+                <% } %>
+            </section>
+            <% } %>
         </div>
     </div>
 </main>

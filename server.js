@@ -730,18 +730,44 @@ const allowedOrigins = [
     `http://localhost:${PORT}`,
     'http://localhost:3000',          
     'https://gplmods.webredirect.org',
+    'http://gplmods.webredirect.org',
     ...(process.env.RENDER_EXTERNAL_URL ? [process.env.RENDER_EXTERNAL_URL] : []),
     ...(process.env.BASE_URL ? [process.env.BASE_URL] : [])
 ];
 app.use(cors({
     origin: function (origin, callback) {
+        // Requests without origin (like direct navigation, curl, webhooks, or same-origin)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+
+        // Explicit matches from allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
         }
-        return callback(null, true);
-    }
+
+        // Dynamic domain pattern matching for Cashfree, Render, and site mirrors
+        try {
+            const parsedUrl = new URL(origin);
+            const host = parsedUrl.hostname.toLowerCase();
+            if (
+                host === 'localhost' ||
+                host === '127.0.0.1' ||
+                host.endsWith('.cashfree.com') ||
+                host === 'cashfree.com' ||
+                host.endsWith('.onrender.com') ||
+                host === 'onrender.com' ||
+                host.endsWith('.webredirect.org') ||
+                host === 'webredirect.org'
+            ) {
+                return callback(null, true);
+            }
+        } catch (e) {
+            // Malformed origin string
+        }
+
+        // Safely disallow CORS without crashing Express with an unhandled 500 error
+        return callback(null, false);
+    },
+    credentials: true
 }));
 
 // --- NEW: PUBLIC HEALTH CHECK & STATUS PAGE ---
@@ -5385,64 +5411,113 @@ app.get('/users/:username', async (req, res, next) => {
 // ===================================
 
 app.post('/account/claim-custom-email', ensureAuthenticated, async (req, res) => {
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/')) 
+        ? req.body.redirectUrl 
+        : (req.headers.referer && req.headers.referer.includes('/admin/support') ? '/admin/support' : '/profile');
+
     try {
         const user = await User.findById(req.user._id);
+        const isStaff = user && ['owner', 'admin', 'support'].includes(user.role);
 
-        // Security: Only allow Premium, Distributors, and Admins to claim emails
-        if (user.role !== 'admin' && user.role !== 'distributor' && user.membership !== 'premium') {
-            return res.redirect('/profile?error=Custom emails are reserved for Premium Members and Distributors.');
+        // Security: Strictly reserved for official staff members
+        if (!isStaff) {
+            const errorMsg = 'Custom email access is strictly reserved for official staff members.';
+            if (isAjax) return res.status(403).json({ success: false, message: errorMsg });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
         }
 
         if (user.customEmailAlias) {
-            return res.redirect('/profile?error=You already have a custom email address.');
+            const errorMsg = 'You already have a custom staff email address.';
+            if (isAjax) return res.status(400).json({ success: false, message: errorMsg });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
         }
 
-        // We use a sanitized version of their username as the alias
-        const alias = slugify(user.username).replace(/-/g, ''); // e.g. "GPL Master" -> "gplmaster"
+        // Generate sanitized alias from username (or custom requested alias for staff)
+        let requestedAlias = (req.body.alias || '').trim().toLowerCase();
+        let alias = '';
+        if (requestedAlias && /^[a-z0-9._-]+$/.test(requestedAlias)) {
+            alias = requestedAlias;
+        } else {
+            alias = slugify(user.username).replace(/-/g, '').toLowerCase();
+        }
         
         // 1. Call ImprovMX API
-        const result = await improvmx.createAlias(alias, user.email);
+        const domain = process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org';
+        const result = await improvmx.createAlias(alias, user.email, domain);
 
         if (result.success) {
             // 2. Save to database
             user.customEmailAlias = alias;
             await user.save();
-            return res.redirect('/profile?success=Custom email claimed successfully! All emails sent to it will now forward to your personal inbox.');
+            const successMsg = `Staff email ${alias}@${domain} claimed successfully! All inbound emails will forward to ${user.email}.`;
+            if (isAjax) return res.json({ success: true, message: successMsg, alias, domain, email: `${alias}@${domain}` });
+            return res.redirect(`${redirectTarget}?success=${encodeURIComponent(successMsg)}`);
         } else {
-            return res.redirect(`/profile?error=${encodeURIComponent(result.message)}`);
+            if (isAjax) return res.status(400).json({ success: false, message: result.message });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(result.message)}`);
         }
     } catch (error) {
         console.error("Claim email error:", error);
-        res.redirect('/profile?error=An internal error occurred.');
+        const errorMsg = 'An internal error occurred while creating your staff email.';
+        if (isAjax) return res.status(500).json({ success: false, message: errorMsg });
+        res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
     }
 });
 
 app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/')) 
+        ? req.body.redirectUrl 
+        : (req.headers.referer && req.headers.referer.includes('/admin/support') ? '/admin/support' : '/profile');
+
     try {
         const user = await User.findById(req.user._id);
+        const isStaff = user && ['owner', 'admin', 'support'].includes(user.role);
+
+        // Security: Strictly reserved for official staff members
+        if (!isStaff) {
+            const errorMsg = 'Custom email access is strictly reserved for official staff members.';
+            if (isAjax) return res.status(403).json({ success: false, message: errorMsg });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
+        }
 
         if (!user.customEmailAlias) {
-            return res.redirect('/profile?error=You must claim your custom email first.');
+            const errorMsg = 'You must claim your custom staff email first.';
+            if (isAjax) return res.status(400).json({ success: false, message: errorMsg });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
         }
 
         // Generate a secure, random password for their SMTP access (12-char hex)
         const smtpPassword = crypto.randomBytes(6).toString('hex'); 
 
         // 1. Call ImprovMX API
-        const result = await improvmx.createSmtpCredential(user.customEmailAlias, smtpPassword);
+        const domain = process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org';
+        const result = await improvmx.createSmtpCredential(user.customEmailAlias, smtpPassword, domain);
 
         if (result.success) {
             user.hasSmtpAccess = true;
             await user.save();
             
             const successMsg = `SMTP Activated! Your Password is: ${smtpPassword} (SAVE THIS NOW, it will not be shown again!)`;
-            return res.redirect(`/profile?success=${encodeURIComponent(successMsg)}`);
+            if (isAjax) return res.json({ 
+                success: true, 
+                message: successMsg, 
+                smtpPassword, 
+                username: user.customEmailAlias,
+                host: 'smtp.improvmx.com',
+                port: 587
+            });
+            return res.redirect(`${redirectTarget}?success=${encodeURIComponent(successMsg)}`);
         } else {
-            return res.redirect(`/profile?error=${encodeURIComponent(result.message)}`);
+            if (isAjax) return res.status(400).json({ success: false, message: result.message });
+            return res.redirect(`${redirectTarget}?error=${encodeURIComponent(result.message)}`);
         }
     } catch (error) {
         console.error("SMTP generation error:", error);
-        res.redirect('/profile?error=An internal error occurred.');
+        const errorMsg = 'An internal error occurred while generating SMTP credentials.';
+        if (isAjax) return res.status(500).json({ success: false, message: errorMsg });
+        res.redirect(`${redirectTarget}?error=${encodeURIComponent(errorMsg)}`);
     }
 });
 
@@ -8246,7 +8321,11 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
 
 // --- LIVE SUPPORT DASHBOARD ROUTE ---
 app.get('/admin/support', ensureAuthenticated, ensureSupportOrAdmin, async (req, res) => {
-    res.render('pages/admin/support-dashboard');
+    res.render('pages/admin/support-dashboard', {
+        success: req.query.success || null,
+        error: req.query.error || null,
+        domain: process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org'
+    });
 });
 
 // --- AI DIAGNOSTICS & DEBUGGER ROUTES ---
@@ -8684,7 +8763,7 @@ app.post('/create-cashfree-order', async (req, res) => {
                 customer_phone: customerPhone
             },
             order_meta: {
-                return_url: `${baseUrl}/payment/verify-donation`,
+                return_url: `${baseUrl}/payment/verify-donation?order_id={order_id}`,
                 notify_url: `${baseUrl}/webhook/cashfree/pg`
             },
             order_note: `GPL Mods Donation (${cur} ${numAmount})`
@@ -8752,7 +8831,7 @@ app.post('/create-membership-order', async (req, res) => {
                     plan_id: planConfig.planId
                 },
                 subscription_meta: {
-                    return_url: `${baseUrl}/payment/verify-subscription`
+                    return_url: `${baseUrl}/payment/verify-subscription?sub_id={sub_id}`
                 }
             };
 
@@ -8796,7 +8875,7 @@ app.post('/create-membership-order', async (req, res) => {
                 customer_phone: customerPhone
             },
             order_meta: {
-                return_url: `${baseUrl}/payment/verify-membership`,
+                return_url: `${baseUrl}/payment/verify-membership?order_id={order_id}`,
                 notify_url: `${baseUrl}/webhook/cashfree/pg`
             },
             order_note: `GPL Mods+ ${planConfig.name}`
@@ -8832,12 +8911,12 @@ app.post('/create-membership-order', async (req, res) => {
  * 3. Return Verification Handler: Donation
  */
 app.get('/payment/verify-donation', async (req, res) => {
-    try {
-        const orderId = req.query.order_id;
-        if (!orderId) {
-            return res.redirect('/donate');
-        }
+    const orderId = req.query.order_id || req.query.orderId;
+    if (!orderId) {
+        return res.redirect('/donate');
+    }
 
+    try {
         const orderResponse = await cashfree.PGFetchOrder(orderId);
         const orderData = orderResponse.data;
         const isPaid = orderData.order_status === 'PAID';
@@ -8850,28 +8929,15 @@ app.get('/payment/verify-donation', async (req, res) => {
             await donation.save();
         }
 
-        return res.render('pages/payment-status', {
-            status: isPaid ? 'success' : orderData.order_status.toLowerCase(),
-            type: 'donation',
-            title: isPaid ? 'Thank You for Your Support!' : 'Payment Incomplete',
-            message: isPaid 
-                ? 'Your donation to GPL Mods has been received. Your generous support keeps our community alive!' 
-                : `Your transaction status is ${orderData.order_status}. If your account was debited, it will be updated automatically.`,
-            orderId: orderId,
-            amount: orderData.order_amount,
-            currency: orderData.order_currency
-        });
+        if (isPaid) {
+            return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=donation`);
+        } else {
+            const status = (orderData.order_status || 'incomplete').toLowerCase();
+            return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=donation&status=${encodeURIComponent(status)}`);
+        }
     } catch (error) {
         console.error('[Verify Donation Error]:', error.response?.data || error.message);
-        return res.render('pages/payment-status', {
-            status: 'error',
-            type: 'donation',
-            title: 'Verification Error',
-            message: 'Unable to verify order status with payment provider. Please contact support.',
-            orderId: req.query.order_id || '',
-            amount: '',
-            currency: ''
-        });
+        return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=donation&reason=verification_error`);
     }
 });
 
@@ -8879,12 +8945,12 @@ app.get('/payment/verify-donation', async (req, res) => {
  * 4. Return Verification Handler: Membership
  */
 app.get('/payment/verify-membership', async (req, res) => {
-    try {
-        const orderId = req.query.order_id;
-        if (!orderId) {
-            return res.redirect('/membership');
-        }
+    const orderId = req.query.order_id || req.query.orderId;
+    if (!orderId) {
+        return res.redirect('/membership');
+    }
 
+    try {
         const orderResponse = await cashfree.PGFetchOrder(orderId);
         const orderData = orderResponse.data;
         const isPaid = orderData.order_status === 'PAID';
@@ -8909,28 +8975,15 @@ app.get('/payment/verify-membership', async (req, res) => {
             });
         }
 
-        return res.render('pages/payment-status', {
-            status: isPaid ? 'success' : orderData.order_status.toLowerCase(),
-            type: 'membership',
-            title: isPaid ? 'Welcome to GPL Mods+!' : 'Membership Activation Pending',
-            message: isPaid 
-                ? 'Your GPL Mods+ Premium Membership has been activated! Enjoy ad-free downloading and premium perks.' 
-                : `Your transaction status is ${orderData.order_status}. Your account will be upgraded once confirmed.`,
-            orderId: orderId,
-            amount: orderData.order_amount,
-            currency: orderData.order_currency
-        });
+        if (isPaid) {
+            return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=membership`);
+        } else {
+            const status = (orderData.order_status || 'incomplete').toLowerCase();
+            return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=membership&status=${encodeURIComponent(status)}`);
+        }
     } catch (error) {
         console.error('[Verify Membership Error]:', error.response?.data || error.message);
-        return res.render('pages/payment-status', {
-            status: 'error',
-            type: 'membership',
-            title: 'Verification Error',
-            message: 'Unable to verify order status. Please check your dashboard or contact support.',
-            orderId: req.query.order_id || '',
-            amount: '',
-            currency: ''
-        });
+        return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=membership&reason=verification_error`);
     }
 });
 
@@ -8938,12 +8991,12 @@ app.get('/payment/verify-membership', async (req, res) => {
  * 5. Return Verification Handler: Subscription
  */
 app.get('/payment/verify-subscription', async (req, res) => {
-    try {
-        const subId = req.query.subscription_id || req.query.sub_id;
-        if (!subId) {
-            return res.redirect('/membership');
-        }
+    const subId = req.query.subscription_id || req.query.sub_id || req.query.order_id;
+    if (!subId) {
+        return res.redirect('/membership');
+    }
 
+    try {
         let isApproved = false;
         let subData = null;
         try {
@@ -8975,20 +9028,128 @@ app.get('/payment/verify-subscription', async (req, res) => {
             });
         }
 
-        return res.render('pages/payment-status', {
-            status: isApproved ? 'success' : 'pending',
-            type: 'membership',
-            title: isApproved ? 'Subscription Authorized!' : 'Subscription Authorization Incomplete',
-            message: isApproved 
-                ? 'Your recurring subscription has been set up successfully. Welcome to GPL Mods+!' 
-                : 'Your subscription mandate is awaiting bank confirmation.',
-            orderId: subId,
-            amount: memOrder ? memOrder.amount : '',
-            currency: memOrder ? memOrder.currency : 'INR'
-        });
+        if (isApproved) {
+            return res.redirect(`/payment/success?order_id=${encodeURIComponent(subId)}&type=membership&is_sub=true`);
+        } else {
+            return res.redirect(`/payment/failure?order_id=${encodeURIComponent(subId)}&type=membership&status=incomplete`);
+        }
     } catch (error) {
         console.error('[Verify Subscription Error]:', error);
-        return res.redirect('/membership');
+        return res.redirect(`/payment/failure?order_id=${encodeURIComponent(subId)}&type=membership&reason=verification_error`);
+    }
+});
+
+/**
+ * Dedicated Transaction Success Page
+ */
+app.get('/payment/success', async (req, res) => {
+    try {
+        const orderId = req.query.order_id || req.query.orderId || req.query.sub_id || '';
+        let type = req.query.type || '';
+        let amount = '';
+        let currency = 'INR';
+        let planName = '';
+        let expiresAt = null;
+
+        if (orderId) {
+            // Check MembershipOrder
+            const memOrder = await MembershipOrder.findOne({
+                $or: [{ orderId: orderId }, { subscriptionId: orderId }]
+            }).populate('user', 'username email membership');
+
+            if (memOrder) {
+                type = 'membership';
+                amount = memOrder.amount;
+                currency = memOrder.currency || 'INR';
+                const planConfig = MEMBERSHIP_PLANS[memOrder.duration];
+                planName = planConfig ? planConfig.name : 'GPL Mods+ Premium';
+                expiresAt = memOrder.membershipExpiresAt;
+            } else {
+                // Check Donation
+                const donation = await Donation.findOne({ orderId: orderId });
+                if (donation) {
+                    type = 'donation';
+                    amount = donation.amount;
+                    currency = donation.currency || 'INR';
+                }
+            }
+        }
+
+        if (!type) {
+            type = (req.user && req.user.membership === 'premium') ? 'membership' : 'donation';
+        }
+
+        return res.render('pages/payment-success', {
+            pageTitle: 'Payment Successful',
+            orderId: orderId,
+            type: type,
+            amount: amount,
+            currency: currency,
+            planName: planName,
+            expiresAt: expiresAt
+        });
+    } catch (err) {
+        console.error('[Payment Success Route Error]:', err);
+        return res.render('pages/payment-success', {
+            pageTitle: 'Payment Successful',
+            orderId: req.query.order_id || '',
+            type: req.query.type || 'membership',
+            amount: '',
+            currency: 'INR',
+            planName: 'GPL Mods+ Premium',
+            expiresAt: null
+        });
+    }
+});
+
+/**
+ * Dedicated Transaction Failure Page
+ */
+app.get('/payment/failure', async (req, res) => {
+    try {
+        const orderId = req.query.order_id || req.query.orderId || req.query.sub_id || '';
+        const type = req.query.type || 'membership';
+        const status = req.query.status || 'failed';
+        const reason = req.query.reason || '';
+        let amount = '';
+        let currency = 'INR';
+
+        if (orderId) {
+            const memOrder = await MembershipOrder.findOne({
+                $or: [{ orderId: orderId }, { subscriptionId: orderId }]
+            });
+            if (memOrder) {
+                amount = memOrder.amount;
+                currency = memOrder.currency;
+            } else {
+                const donation = await Donation.findOne({ orderId: orderId });
+                if (donation) {
+                    amount = donation.amount;
+                    currency = donation.currency;
+                }
+            }
+        }
+
+        return res.render('pages/payment-failure', {
+            pageTitle: 'Payment Incomplete',
+            orderId: orderId,
+            type: type,
+            status: status,
+            reason: reason,
+            amount: amount,
+            currency: currency
+        });
+    } catch (err) {
+        console.error('[Payment Failure Route Error]:', err);
+        return res.render('pages/payment-failure', {
+            pageTitle: 'Payment Incomplete',
+            orderId: req.query.order_id || '',
+            type: req.query.type || 'membership',
+            status: 'failed',
+            reason: '',
+            amount: '',
+            currency: 'INR'
+        });
     }
 });
 
@@ -10575,31 +10736,75 @@ const startServer = async () => {
         // ✅ CRITICAL FIX: Make Socket.IO globally accessible HERE, inside the function!
         app.set('io', io); 
 
-        // Tracking connected support members & agents
+        // Tracking connected support members, staff & live users
         const connectedSupportSockets = new Set();
         const connectedAgentSockets = new Set();
+        const connectedUsers = new Map(); // socket.id -> { userId, username, role, avatarUrl, isStaff }
+
+        async function resolveUserAvatar(u) {
+            if (!u) return '/images/default-avatar.png';
+            if (u.profileImageKey) {
+                try {
+                    return await getSmartImageUrl(u.profileImageKey);
+                } catch (e) {
+                    return '/images/default-avatar.png';
+                }
+            }
+            if (u.signedAvatarUrl) return u.signedAvatarUrl;
+            return '/images/default-avatar.png';
+        }
+
+        function getLiveUsersList() {
+            const uniqueMap = new Map();
+            for (const u of connectedUsers.values()) {
+                if (u && u.userId && !uniqueMap.has(u.userId)) {
+                    uniqueMap.set(u.userId, u);
+                }
+            }
+            const list = Array.from(uniqueMap.values());
+            // Prioritize staff members first (owner, admin, support)
+            list.sort((a, b) => (b.isStaff ? 1 : 0) - (a.isStaff ? 1 : 0));
+            return list.map(u => ({
+                userId: u.userId,
+                username: u.username,
+                role: u.role,
+                avatarUrl: u.avatarUrl,
+                isStaff: u.isStaff
+            }));
+        }
 
         function broadcastOnlineStats() {
+            const liveUsers = getLiveUsersList();
+            const staffCount = liveUsers.filter(u => u.isStaff).length;
             const stats = {
                 agentsOnline: connectedAgentSockets.size,
+                staffOnline: staffCount,
                 membersOnline: connectedSupportSockets.size,
+                liveUsers: liveUsers,
                 aiStatus: aiDebuggerStatus
             };
             io.emit('support_stats_update', stats);
         }
 
        // Socket.IO logic
-        io.on('connection', (socket) => {
+        io.on('connection', async (socket) => {
             console.log('A user connected to chat');
             connectedSupportSockets.add(socket.id);
+
+            if (socket.request && socket.request.user) {
+                const u = socket.request.user;
+                const avatar = await resolveUserAvatar(u);
+                connectedUsers.set(socket.id, {
+                    userId: String(u._id || u.id),
+                    username: u.username || 'Member',
+                    role: u.role || 'user',
+                    avatarUrl: avatar,
+                    isStaff: ['support', 'admin', 'owner'].includes(u.role)
+                });
+            }
             broadcastOnlineStats();
 
             socket.emit('chat history', recentMessages);
-            socket.emit('support_stats_update', {
-                agentsOnline: connectedAgentSockets.size,
-                membersOnline: connectedSupportSockets.size,
-                aiStatus: aiDebuggerStatus
-            });
             
             socket.on('chat message', (msg) => {
                 // --- FIXED: Sanitize chat messages with Try/Catch ---
@@ -10637,9 +10842,19 @@ const startServer = async () => {
             // 1. Agent Joins the Dashboard
             socket.on('agent_join', async (data) => {
                 const agent = socket.request.user;
-                if (!agent || !['support', 'admin'].includes(agent.role)) return;
+                if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
                 socket.join('support_agents');
                 connectedAgentSockets.add(socket.id);
+                try {
+                    const avatar = await resolveUserAvatar(agent);
+                    connectedUsers.set(socket.id, {
+                        userId: String(agent._id || agent.id),
+                        username: agent.username || 'Staff Agent',
+                        role: agent.role,
+                        avatarUrl: avatar,
+                        isStaff: true
+                    });
+                } catch (e) {}
                 broadcastOnlineStats();
                 try {
                     const activeChats = await ChatSession.find({ status: { $in: ['waiting-for-agent', 'active-agent'] } })
@@ -10697,7 +10912,26 @@ const startServer = async () => {
             // 2. User Joins Chat (With New Chat Support)
             socket.on('join_support_chat', async (data) => {
                 try {
-                    const authenticatedUser = socket.request.user;
+                    let authenticatedUser = socket.request.user;
+                    if (!authenticatedUser && data.userId) {
+                        try {
+                            authenticatedUser = await User.findById(data.userId);
+                        } catch (e) {}
+                    }
+                    if (authenticatedUser) {
+                        let avatar = data.avatarUrl;
+                        if (!avatar || avatar === '/images/default-avatar.png') {
+                            avatar = await resolveUserAvatar(authenticatedUser);
+                        }
+                        connectedUsers.set(socket.id, {
+                            userId: String(authenticatedUser._id || authenticatedUser.id),
+                            username: authenticatedUser.username || data.username || 'Member',
+                            role: authenticatedUser.role || 'user',
+                            avatarUrl: avatar,
+                            isStaff: ['support', 'admin', 'owner'].includes(authenticatedUser.role)
+                        });
+                        broadcastOnlineStats();
+                    }
                     const userId = authenticatedUser ? authenticatedUser._id : null;
                     let expiresAt = new Date(Date.now() + (userId ? 24 * 60 : 24) * 60 * 60 * 1000);
                     let session = null;
@@ -11036,6 +11270,7 @@ const startServer = async () => {
                 console.log('User disconnected from chat');
                 connectedSupportSockets.delete(socket.id);
                 connectedAgentSockets.delete(socket.id);
+                connectedUsers.delete(socket.id);
                 broadcastOnlineStats();
             });
         });

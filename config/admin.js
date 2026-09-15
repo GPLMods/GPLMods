@@ -130,6 +130,11 @@ async function createAdminRouter() {
         rootPath: '/admin',
         componentLoader: componentLoader, 
         
+        branding: {
+            companyName: 'GPL Mods',
+            logo: '/images/logo.png',
+            withMadeWithLove: false,
+        },
         defaultTheme: 'dark', 
         availableThemes: [gplModsTheme, light], 
         
