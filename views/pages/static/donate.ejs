@@ -1,20 +1,176 @@
 <%- include('../../partials/header') %>
 
 <style>
-    .donate-wrapper { max-width: 700px; margin: 60px auto; background-color: var(--dark-gray); padding: 50px 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border-top: 4px solid var(--gold); }
-    .donate-wrapper h1 { color: var(--white); font-size: 2.8em; margin-bottom: 15px; }
+    .donate-wrapper { 
+        max-width: 720px; 
+        margin: 50px auto 30px auto; 
+        background-color: var(--dark-gray); 
+        padding: 45px 35px; 
+        border-radius: 16px; 
+        text-align: center; 
+        box-shadow: 0 12px 35px rgba(0,0,0,0.45); 
+        border-top: 4px solid var(--gold); 
+    }
+    .donate-wrapper h1 { color: var(--white); font-size: 2.8em; margin-bottom: 12px; }
     .donate-wrapper h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-    .donate-wrapper p { color: var(--silver); line-height: 1.8; font-size: 1.1em; margin-bottom: 30px; }
-    
-    /* --- NEW: Custom Currency Switcher Styles --- */
-    .currency-selector-container { margin-bottom: 30px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .donate-wrapper p.donate-intro { color: var(--silver); line-height: 1.7; font-size: 1.05em; margin-bottom: 25px; }
+
+    /* ======== 24H DAILY DONATION CAP METER ======== */
+    .daily-cap-card {
+        background: rgba(18, 18, 22, 0.85);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 14px;
+        padding: 22px 25px;
+        margin-bottom: 30px;
+        text-align: left;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        position: relative;
+        overflow: hidden;
+    }
+    .daily-cap-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, var(--gold), #2ecc71);
+    }
+    .daily-cap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .cap-title-area {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .cap-icon-badge {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .cap-card-title {
+        color: var(--white);
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin: 0 0 3px 0;
+    }
+    .cap-rolling-note {
+        color: #888;
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .cap-status-pill {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cap-status-ok {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.35);
+    }
+    .cap-status-limit {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.35);
+    }
+
+    /* Cap Meter Progress Bar */
+    .cap-meter-container {
+        width: 100%;
+        height: 10px;
+        background: #252528;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 14px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .cap-meter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2ecc71, var(--gold));
+        border-radius: 10px;
+        transition: width 0.5s ease, background 0.5s ease;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+    }
+
+    .cap-stats-grid {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.95rem;
+    }
+    .cap-stat-box {
+        display: flex;
+        flex-direction: column;
+    }
+    .cap-stat-title {
+        color: #999;
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cap-stat-number {
+        color: var(--gold);
+        font-size: 1.35rem;
+        font-weight: 800;
+        font-family: 'Poppins', sans-serif;
+    }
+    .cap-max-number {
+        color: var(--silver);
+        font-size: 1.05rem;
+    }
+
+    .cap-exhausted-banner {
+        margin-top: 14px;
+        background: rgba(231, 76, 60, 0.12);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 8px;
+        padding: 12px 15px;
+        color: #ff9999;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        line-height: 1.5;
+    }
+    .cap-exhausted-banner i {
+        color: #e74c3c;
+        margin-top: 2px;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    /* ------------------------------------------- */
+
+    /* Custom Currency Switcher Styles */
+    .currency-selector-container { 
+        margin-bottom: 25px; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        gap: 15px; 
+    }
     .currency-selector-container label { color: var(--silver); font-weight: 600; font-size: 0.95em; }
 
-    /* Custom Select Wrapper (Imported from search page & adapted) */
     .custom-select-wrapper {
         position: relative;
         user-select: none;
-        width: 140px; /* Fixed width for the currency dropdown */
+        width: 145px;
         text-align: left;
     }
     .custom-select {
@@ -29,13 +185,16 @@
         transition: all 0.3s ease;
     }
     .custom-select:hover { border-color: var(--gold); }
-    .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-    
+    .custom-select-wrapper.open .custom-select { 
+        border-color: var(--gold); 
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); 
+        border-bottom-left-radius: 0; 
+        border-bottom-right-radius: 0; 
+    }
     .selected-text { color: var(--gold); font-size: 1em; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
     .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
-    
-    /* Custom Options Dropdown */
+
     .custom-options {
         position: absolute;
         top: 100%;
@@ -60,7 +219,6 @@
         visibility: visible;
         transform: translateY(0);
     }
-    
     .custom-option {
         padding: 12px 20px;
         color: var(--silver);
@@ -71,7 +229,6 @@
     }
     .custom-option:last-child { border-bottom: none; }
     .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
-    /* ------------------------------------------- */
 
     /* Preset Donation Buttons */
     .donation-options { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
@@ -80,10 +237,24 @@
         padding: 15px 30px; font-size: 1.4em; font-weight: 700; border-radius: 10px; 
         cursor: pointer; transition: all 0.3s ease; min-width: 130px; font-family: 'Poppins', sans-serif;
     }
-    .donation-btn:hover, .donation-btn.selected { background-color: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); transform: translateY(-3px); }
+    .donation-btn:hover, .donation-btn.selected { 
+        background-color: var(--gold); 
+        color: var(--black); 
+        box-shadow: 0 0 15px var(--glow-gold); 
+        transform: translateY(-3px); 
+    }
+    .donation-btn.btn-disabled-limit {
+        opacity: 0.35;
+        cursor: not-allowed;
+        border-color: #555;
+        color: #777;
+        pointer-events: none;
+        transform: none !important;
+        box-shadow: none !important;
+    }
 
     /* Custom Amount Input */
-    .custom-amount-wrapper { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .custom-amount-wrapper { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
     .custom-input-group { position: relative; width: 100%; max-width: 300px; display: flex; align-items: center; }
     .custom-input-symbol { position: absolute; left: 20px; font-size: 1.5em; font-weight: bold; color: var(--silver); }
     .custom-amount-input { 
@@ -92,24 +263,163 @@
         font-family: 'Poppins', sans-serif;
     }
     .custom-amount-input:focus { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
-    
-    /* Hide number input arrows */
+    .custom-amount-input:disabled { background-color: #222; border-color: #333; color: #666; cursor: not-allowed; }
     .custom-amount-input::-webkit-outer-spin-button, .custom-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .custom-amount-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
     /* Submit Button */
     .final-donate-btn { 
-        width: 100%; max-width: 300px; margin: 0 auto 20px auto; display: block;
+        width: 100%; max-width: 320px; margin: 0 auto 20px auto; display: block;
         background-color: var(--gold); color: var(--black); padding: 18px; 
         font-size: 1.2em; font-weight: 800; border: none; border-radius: 10px; 
         cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); text-transform: uppercase; letter-spacing: 1px;
     }
     .final-donate-btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); background-color: #fff; }
-    .final-donate-btn:disabled { background-color: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
+    .final-donate-btn:disabled { background-color: #444; color: #777; cursor: not-allowed; box-shadow: none; transform: none; }
 
     /* Terms */
     .terms-box { background: rgba(0,0,0,0.3); border: 1px dashed #444; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 0.85em; color: var(--silver); line-height: 1.5; }
     .terms-box i { color: var(--red); margin-right: 5px; }
+
+    /* ======== DONATION HISTORY SECTION ======== */
+    .donation-history-wrapper {
+        max-width: 720px;
+        margin: 0 auto 60px auto;
+        background-color: var(--dark-gray);
+        padding: 35px 30px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        border: 1px solid #333;
+    }
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #333;
+    }
+    .history-header h2 {
+        color: var(--white);
+        font-size: 1.4rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+    .history-badge {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    .history-table-container {
+        overflow-x: auto;
+    }
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.92rem;
+    }
+    .history-table th {
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.8px;
+        padding: 12px 10px;
+        border-bottom: 1px solid #333;
+    }
+    .history-table td {
+        padding: 14px 10px;
+        border-bottom: 1px solid #282828;
+        color: var(--silver);
+    }
+    .history-table tr:last-child td {
+        border-bottom: none;
+    }
+    .history-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .history-date {
+        color: #bbb;
+        white-space: nowrap;
+    }
+    .history-order-id code {
+        background: rgba(0,0,0,0.5);
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-size: 0.82rem;
+        color: var(--gold);
+        border: 1px solid #333;
+    }
+    .history-amount {
+        font-weight: 700;
+        color: var(--white);
+        white-space: nowrap;
+    }
+    .status-pill {
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .status-pill-success {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+    .status-pill-pending {
+        background: rgba(241, 196, 15, 0.15);
+        color: #f1c40f;
+        border: 1px solid rgba(241, 196, 15, 0.3);
+    }
+    .status-pill-failed {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+    .btn-history-receipt {
+        color: var(--gold);
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s;
+    }
+    .btn-history-receipt:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+    .history-empty-state {
+        text-align: center;
+        padding: 35px 20px;
+        color: #777;
+    }
+    .history-empty-state i {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+        color: #444;
+        display: block;
+    }
+    .history-empty-state p {
+        margin: 0 0 5px 0;
+        color: var(--silver);
+        font-size: 0.95rem;
+    }
+    .history-empty-state .empty-subtext {
+        font-size: 0.82rem;
+        color: #666;
+    }
 </style>
 
 <main class="container">
@@ -123,9 +433,50 @@
     
     <div class="donate-wrapper">
         <h1>Support <span>GPL Mods</span></h1>
-        <p>
+        <p class="donate-intro">
             If you find this site useful, please consider making a donation. Your support helps cover our heavy server costs and allows us to continue building new features for the community!
         </p>
+
+        <!-- ======== 24H DAILY DONATION CAP METER ======== -->
+        <div class="daily-cap-card">
+            <div class="daily-cap-header">
+                <div class="cap-title-area">
+                    <span class="cap-icon-badge"><i class="fas fa-hand-holding-heart"></i></span>
+                    <div>
+                        <h3 class="cap-card-title">Daily Donation Limit</h3>
+                        <span class="cap-rolling-note"><i class="fas fa-history"></i> Max ₹2,000 / day &bull; Resets rolling 24h</span>
+                    </div>
+                </div>
+                <div>
+                    <span id="cap-tier-badge" class="cap-status-pill cap-status-ok">Available</span>
+                </div>
+            </div>
+
+            <!-- Progress Meter -->
+            <div class="cap-meter-container">
+                <div class="cap-meter-fill" id="cap-meter-fill" style="width: 100%;"></div>
+            </div>
+
+            <div class="cap-stats-grid">
+                <div class="cap-stat-box">
+                    <span class="cap-stat-title">Remaining Today</span>
+                    <span class="cap-stat-number" id="cap-remaining-display">₹2,000</span>
+                </div>
+                <div class="cap-stat-box" style="text-align: right;">
+                    <span class="cap-stat-title">Daily Cap Limit</span>
+                    <span class="cap-stat-number cap-max-number" id="cap-max-display">₹2,000 / day</span>
+                </div>
+            </div>
+
+            <!-- Cap Exhausted Notice Banner -->
+            <div id="cap-exhausted-banner" class="cap-exhausted-banner" style="display: none;">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Daily Cap Limit Reached:</strong> You have reached your <span id="exhausted-amount-text">₹2,000</span> daily donation allowance. Thank you so much for your immense support! Your daily cap will automatically replenish within 24 hours.
+                </div>
+            </div>
+        </div>
+        <!-- ============================================== -->
 
         <!-- ======== CUSTOM CURRENCY SWITCHER ======== -->
         <div class="currency-selector-container">
@@ -173,12 +524,12 @@
         <div class="custom-amount-wrapper">
             <div class="custom-input-group">
                 <span class="custom-input-symbol" id="input-currency-symbol">₹</span>
-                <input type="number" id="custom-amount" class="custom-amount-input" value="100" min="100" max="5000">
+                <input type="number" id="custom-amount" class="custom-amount-input" value="100" min="100" max="2000">
             </div>
         </div>
         
         <p id="limit-message" style="color: var(--silver); font-size: 0.85em; margin-bottom: 25px;">
-            Limits: <span id="min-limit-text">₹100</span> - <span id="max-limit-text">₹5000</span>
+            Limits: <span id="min-limit-text">₹100</span> - <span id="max-limit-text">₹2000</span>
         </p>
 
         <!-- Submit Button -->
@@ -196,12 +547,78 @@
         </div>
         <p style="font-size: 0.85em; color: #666; margin-top: 15px;"><i class="fas fa-lock"></i> Payments are securely processed by Cashfree.</p>
     </div>
+
+    <!-- ======== DONATION HISTORY SECTION ======== -->
+    <div class="donation-history-wrapper">
+        <div class="history-header">
+            <h2><i class="fas fa-history" style="color: var(--gold); margin-right: 10px;"></i> Your Donation History</h2>
+            <span class="history-badge" id="history-count-badge"><%= typeof donationHistory !== 'undefined' && donationHistory ? donationHistory.length : 0 %> Donations</span>
+        </div>
+
+        <% if (typeof donationHistory !== 'undefined' && donationHistory && donationHistory.length > 0) { %>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Order ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% donationHistory.forEach(function(item) { %>
+                            <tr>
+                                <td class="history-date">
+                                    <%= new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                                </td>
+                                <td class="history-order-id">
+                                    <code><%= item.orderId %></code>
+                                </td>
+                                <td class="history-amount">
+                                    <%= item.currency === 'INR' ? '₹' : (item.currency === 'USD' ? '$' : (item.currency === 'EUR' ? '€' : '£')) %><%= Number(item.amount).toLocaleString('en-IN') %>
+                                </td>
+                                <td>
+                                    <% if (item.status === 'successful') { %>
+                                        <span class="status-pill status-pill-success"><i class="fas fa-check"></i> Completed</span>
+                                    <% } else if (item.status === 'pending') { %>
+                                        <span class="status-pill status-pill-pending"><i class="fas fa-clock"></i> Processing</span>
+                                    <% } else { %>
+                                        <span class="status-pill status-pill-failed"><i class="fas fa-times"></i> Failed</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (item.status === 'successful') { %>
+                                        <a href="/payment/success?order_id=<%= encodeURIComponent(item.orderId) %>&type=donation" class="btn-history-receipt" target="_blank">
+                                            <i class="fas fa-receipt"></i> Receipt
+                                        </a>
+                                    <% } else { %>
+                                        <span style="color: #666; font-size: 0.85em;">-</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="history-empty-state">
+                <i class="fas fa-receipt"></i>
+                <p>No previous donations found on this <%= user ? 'account' : 'browser' %> yet.</p>
+                <span class="empty-subtext">Completed donations will appear here with instant receipt access.</span>
+            </div>
+        <% } %>
+    </div>
 </main>
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Custom Dropdown Logic (Imported from Search Page) ---
+        // --- Server-Injected Daily Cap Data ---
+        let currentCapData = <%- JSON.stringify(typeof capData !== 'undefined' ? capData : { totalCapInr: 2000, spentInr: 0, remainingInr: 2000, rates: { INR: 1, USD: 85, EUR: 92, GBP: 108 } }) %>;
+
+        // --- 1. Custom Dropdown Logic ---
         function setupCustomSelect(wrapperId, nativeSelectId) {
             const wrapper = document.getElementById(wrapperId);
             const nativeSelect = document.getElementById(nativeSelectId);
@@ -211,13 +628,11 @@
             const selectedText = wrapper.querySelector('.selected-text');
             const optionsContainer = wrapper.querySelector('.custom-options');
 
-            // Click to open/close
             customSelect.addEventListener('click', (e) => {
                 wrapper.classList.toggle('open');
                 e.stopPropagation(); 
             });
 
-            // Delegate click events for options
             optionsContainer.addEventListener('click', (e) => {
                 const optionEl = e.target.closest('.custom-option');
                 if (!optionEl) return;
@@ -227,9 +642,6 @@
 
                 selectedText.textContent = text;
                 nativeSelect.value = value;
-                
-                // CRITICAL: Manually trigger the 'change' event on the native select
-                // so the pricing logic further down the script knows it changed!
                 nativeSelect.dispatchEvent(new Event('change'));
 
                 wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
@@ -237,7 +649,6 @@
                 wrapper.classList.remove('open');
             });
 
-            // Close dropdowns when clicking outside
             document.addEventListener('click', (e) => {
                 if (!wrapper.contains(e.target)) {
                     wrapper.classList.remove('open');
@@ -245,11 +656,9 @@
             });
         }
 
-        // Initialize the custom dropdown
         setupCustomSelect('wrapper-currency', 'currency-select');
 
-
-        // --- 2. Element Selection for Pricing ---
+        // --- 2. Element Selection for Pricing & Cap ---
         const currencySelect = document.getElementById('currency-select');
         const donationButtons = document.querySelectorAll('.donation-btn');
         const customInput = document.getElementById('custom-amount');
@@ -260,36 +669,140 @@
         const minLimitText = document.getElementById('min-limit-text');
         const maxLimitText = document.getElementById('max-limit-text');
         const errorMessage = document.getElementById('error-message');
+
+        // Cap UI elements
+        const capRemainingDisplay = document.getElementById('cap-remaining-display');
+        const capMaxDisplay = document.getElementById('cap-max-display');
+        const capMeterFill = document.getElementById('cap-meter-fill');
+        const capTierBadge = document.getElementById('cap-tier-badge');
+        const capExhaustedBanner = document.getElementById('cap-exhausted-banner');
+        const exhaustedAmountText = document.getElementById('exhausted-amount-text');
         
-        // --- 3. Configuration & Limits ---
+        // --- 3. Configuration & Base Limits ---
         const limits = {
-            'INR': { min: 100, max: 5000, symbol: '₹' },
-            'USD': { min: 5, max: 100, symbol: '$' },
-            'EUR': { min: 5, max: 100, symbol: '€' },
-            'GBP': { min: 5, max: 100, symbol: '£' }
+            'INR': { min: 100, max: 2000, symbol: '₹' },
+            'USD': { min: 2, max: 23.53, symbol: '$' },
+            'EUR': { min: 1.80, max: 21.74, symbol: '€' },
+            'GBP': { min: 1.50, max: 18.52, symbol: '£' }
         };
 
-        function updateLimits(currency) {
-            const rules = limits[currency];
-            customInput.min = rules.min;
-            customInput.max = rules.max;
-            minLimitText.textContent = rules.symbol + rules.min;
-            maxLimitText.textContent = rules.symbol + rules.max;
+        function formatCurrencyAmount(val, cur) {
+            if (cur === 'INR') {
+                return Math.floor(val).toLocaleString('en-IN');
+            }
+            return Number(val).toFixed(2);
+        }
+
+        function updateCapAndLimits(selectedCurrency) {
+            const rules = limits[selectedCurrency];
+            const rate = (currentCapData.rates && currentCapData.rates[selectedCurrency]) ? currentCapData.rates[selectedCurrency] : 1;
+
+            const remainingInCur = currentCapData.remainingInr / rate;
+            const totalInCur = currentCapData.totalCapInr / rate;
+            const spentInCur = currentCapData.spentInr / rate;
+
+            // Update Cap Display Numbers
+            const formattedRemaining = formatCurrencyAmount(remainingInCur, selectedCurrency);
+            const formattedTotal = formatCurrencyAmount(totalInCur, selectedCurrency);
+            capRemainingDisplay.textContent = `${rules.symbol}${formattedRemaining}`;
+            capMaxDisplay.textContent = `${rules.symbol}${formattedTotal} / day`;
+
+            // Progress Meter
+            const percentage = Math.max(0, Math.min(100, (currentCapData.remainingInr / currentCapData.totalCapInr) * 100));
+            capMeterFill.style.width = `${percentage}%`;
+
+            if (percentage <= 0) {
+                capMeterFill.style.background = '#e74c3c';
+                capMeterFill.style.boxShadow = '0 0 10px rgba(231, 76, 60, 0.5)';
+            } else if (percentage < 30) {
+                capMeterFill.style.background = 'linear-gradient(90deg, #e67e22, #f1c40f)';
+                capMeterFill.style.boxShadow = '0 0 10px rgba(230, 126, 34, 0.4)';
+            } else {
+                capMeterFill.style.background = 'linear-gradient(90deg, #2ecc71, var(--gold))';
+                capMeterFill.style.boxShadow = '0 0 10px rgba(46, 204, 113, 0.4)';
+            }
+
+            // Calculate Effective Max Amount for this Currency
+            const effectiveMax = Math.min(rules.max, remainingInCur);
+            const isExhausted = currentCapData.remainingInr <= 0 || remainingInCur < rules.min;
+
+            if (isExhausted) {
+                capTierBadge.textContent = 'Cap Reached';
+                capTierBadge.className = 'cap-status-pill cap-status-limit';
+                capExhaustedBanner.style.display = 'flex';
+                exhaustedAmountText.textContent = `${rules.symbol}${formattedTotal}`;
+
+                customInput.disabled = true;
+                customInput.value = 0;
+                finalDonateBtn.disabled = true;
+                finalDonateBtn.textContent = 'Daily Limit Reached';
+            } else {
+                capTierBadge.textContent = 'Available';
+                capTierBadge.className = 'cap-status-pill cap-status-ok';
+                capExhaustedBanner.style.display = 'none';
+
+                customInput.disabled = false;
+                customInput.min = rules.min;
+                customInput.max = selectedCurrency === 'INR' ? Math.floor(effectiveMax) : effectiveMax.toFixed(2);
+                
+                minLimitText.textContent = rules.symbol + rules.min;
+                maxLimitText.textContent = rules.symbol + (selectedCurrency === 'INR' ? Math.floor(effectiveMax).toLocaleString('en-IN') : effectiveMax.toFixed(2));
+            }
+
+            // Preset Buttons Validation against Remaining Cap
+            donationButtons.forEach(btn => {
+                const btnVal = parseFloat(btn.getAttribute(`data-${selectedCurrency.toLowerCase()}`));
+                if (isExhausted || btnVal > (remainingInCur + 0.05)) {
+                    btn.classList.add('btn-disabled-limit');
+                    if (btn.classList.contains('selected')) {
+                        btn.classList.remove('selected');
+                    }
+                } else {
+                    btn.classList.remove('btn-disabled-limit');
+                }
+            });
+
+            // Adjust Custom Input Value if it currently exceeds effectiveMax
+            let currentVal = parseFloat(customInput.value);
+            if (!isExhausted) {
+                if (isNaN(currentVal) || currentVal < rules.min) {
+                    customInput.value = rules.min;
+                } else if (currentVal > effectiveMax) {
+                    customInput.value = selectedCurrency === 'INR' ? Math.floor(effectiveMax) : effectiveMax.toFixed(2);
+                }
+            }
+
+            syncFinalButton();
         }
 
         function syncFinalButton() {
-            let val = parseFloat(customInput.value);
             const currency = currencySelect.value;
             const rules = limits[currency];
+            const rate = (currentCapData.rates && currentCapData.rates[currency]) ? currentCapData.rates[currency] : 1;
+            const remainingInCur = currentCapData.remainingInr / rate;
 
+            let val = parseFloat(customInput.value);
             if (isNaN(val)) val = 0;
             
             btnSymbol.textContent = rules.symbol;
-            btnAmountValue.textContent = val;
+            btnAmountValue.textContent = currency === 'INR' ? Math.floor(val) : val.toFixed(2);
 
-            if (val < rules.min || val > rules.max) {
+            if (currentCapData.remainingInr <= 0 || remainingInCur < rules.min) {
                 finalDonateBtn.disabled = true;
-                errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
+                finalDonateBtn.textContent = 'Daily Limit Reached';
+                errorMessage.textContent = `You have reached your daily donation limit of ${rules.symbol}${formatCurrencyAmount(currentCapData.totalCapInr / rate, currency)}.`;
+                return;
+            }
+
+            finalDonateBtn.innerHTML = `Donate <span id="btn-currency-symbol">${rules.symbol}</span><span id="btn-amount-value">${currency === 'INR' ? Math.floor(val) : val}</span>`;
+
+            if (val < rules.min) {
+                finalDonateBtn.disabled = true;
+                errorMessage.textContent = `Minimum donation amount is ${rules.symbol}${rules.min}`;
+            } else if (val > (remainingInCur + 0.05)) {
+                finalDonateBtn.disabled = true;
+                const formattedRem = currency === 'INR' ? Math.floor(remainingInCur).toLocaleString('en-IN') : remainingInCur.toFixed(2);
+                errorMessage.textContent = `Amount exceeds your remaining daily limit of ${rules.symbol}${formattedRem}`;
             } else {
                 finalDonateBtn.disabled = false;
                 errorMessage.textContent = "";
@@ -298,7 +811,7 @@
 
         // --- 4. Event Listeners ---
 
-        // A. Currency Switcher (Fired by the custom dropdown logic!)
+        // A. Currency Switcher
         currencySelect.addEventListener('change', function() {
             const selectedCurrency = this.value;
             const rules = limits[selectedCurrency];
@@ -310,10 +823,15 @@
             });
 
             inputSymbol.textContent = rules.symbol;
-            updateLimits(selectedCurrency);
+            updateCapAndLimits(selectedCurrency);
 
-            const middleBtnVal = document.querySelector('.donation-btn.selected').getAttribute(`data-${selectedCurrency.toLowerCase()}`);
-            customInput.value = middleBtnVal;
+            // Select an allowed preset button or fallback to custom
+            const firstAllowedBtn = document.querySelector('.donation-btn:not(.btn-disabled-limit)');
+            if (firstAllowedBtn) {
+                donationButtons.forEach(b => b.classList.remove('selected'));
+                firstAllowedBtn.classList.add('selected');
+                customInput.value = firstAllowedBtn.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
+            }
 
             syncFinalButton();
         });
@@ -321,6 +839,7 @@
         // B. Preset Buttons Click
         donationButtons.forEach(button => {
             button.addEventListener('click', function() {
+                if (this.classList.contains('btn-disabled-limit')) return;
                 donationButtons.forEach(btn => btn.classList.remove('selected'));
                 this.classList.add('selected');
                 
@@ -339,8 +858,18 @@
         });
 
         // Initialize on load
-        updateLimits('INR');
-        syncFinalButton();
+        updateCapAndLimits('INR');
+
+        // Optional Background Refresh of Live Cap Data
+        fetch('/api/donation-cap')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    currentCapData = data;
+                    updateCapAndLimits(currencySelect.value);
+                }
+            })
+            .catch(() => {});
 
         // --- 5. Cashfree Payment Logic ---
         const cashfree = Cashfree({ mode: "sandbox" }); 
@@ -351,9 +880,17 @@
             const amount = parseFloat(customInput.value);
             const currency = currencySelect.value;
             const rules = limits[currency];
+            const rate = (currentCapData.rates && currentCapData.rates[currency]) ? currentCapData.rates[currency] : 1;
+            const remainingInCur = currentCapData.remainingInr / rate;
 
-            if (isNaN(amount) || amount < rules.min || amount > rules.max) {
-                errorMessage.textContent = `Amount must be between ${rules.symbol}${rules.min} and ${rules.symbol}${rules.max}`;
+            if (isNaN(amount) || amount < rules.min) {
+                errorMessage.textContent = `Amount must be at least ${rules.symbol}${rules.min}`;
+                return;
+            }
+
+            if (amount > (remainingInCur + 0.05)) {
+                const formattedRem = currency === 'INR' ? Math.floor(remainingInCur).toLocaleString('en-IN') : remainingInCur.toFixed(2);
+                errorMessage.textContent = `Amount exceeds your remaining daily limit of ${rules.symbol}${formattedRem}`;
                 return;
             }
 

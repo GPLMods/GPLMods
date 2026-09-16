@@ -16,6 +16,8 @@ const DonationSchema = new Schema({
     donorEmail: { type: String },
     donorPhone: { type: String },
     transactionId: { type: String },
+    guestId: { type: String, index: true, default: null },
+    donorIp: { type: String, default: null },
     status: { type: String, enum: ['pending', 'successful', 'failed'], default: 'pending' }
 }, { timestamps: true });
 

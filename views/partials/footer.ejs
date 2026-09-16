@@ -909,16 +909,28 @@
                 const deviceInfo = { browser: browserName, os: os };
 
                 const currentGuestEmail = () => guestEmailInput ? guestEmailInput.value.trim() : '';
-                socket.emit('join_support_chat', { 
-                    userId, 
-                    guestId, 
-                    sessionId, 
-                    deviceInfo, 
-                    guestEmail: currentGuestEmail(), 
-                    currentPage: window.location.pathname,
-                    avatarUrl: '<%= typeof user !== "undefined" && user && user.signedAvatarUrl ? user.signedAvatarUrl : "" %>',
-                    username: '<%= typeof user !== "undefined" && user ? user.username : "" %>'
+                function emitJoinChat() {
+                    try {
+                        if (socket && socket.connected) {
+                            socket.emit('join_support_chat', { 
+                                userId, 
+                                guestId, 
+                                sessionId, 
+                                deviceInfo, 
+                                guestEmail: currentGuestEmail(), 
+                                currentPage: window.location.pathname,
+                                avatarUrl: '<%= typeof user !== "undefined" && user && user.signedAvatarUrl ? user.signedAvatarUrl : "" %>',
+                                username: '<%= typeof user !== "undefined" && user ? user.username : "" %>'
+                            });
+                        }
+                    } catch (e) {}
+                }
+
+                // Initial connect / reconnect listener
+                socket.on('connect', () => {
+                    emitJoinChat();
                 });
+                emitJoinChat();
 
                 if (guestEmailInput) guestEmailInput.addEventListener('change', () => {
                     if (sessionId) socket.emit('set_support_email', { sessionId, guestId, guestEmail: currentGuestEmail() });
@@ -1016,6 +1028,49 @@
                     isSupportOnline = ((stats.staffOnline || stats.agentsOnline) > 0 || (stats.liveUsers && stats.liveUsers.length > 0));
                     renderSupportAvatarsAndStatus(stats);
                 });
+
+                // Immediate offline, disconnect, and network failure cleanup
+                function handleOfflineState(reason) {
+                    isSupportOnline = false;
+                    renderSupportAvatarsAndStatus({
+                        liveUsers: [],
+                        staffOnline: 0,
+                        agentsOnline: 0,
+                        aiStatus: { status: 'offline', lastError: reason || 'Offline' }
+                    });
+                }
+
+                socket.on('disconnect', (reason) => {
+                    handleOfflineState('Disconnected from server');
+                });
+
+                socket.on('connect_error', (err) => {
+                    handleOfflineState('Connection error');
+                });
+
+                window.addEventListener('offline', () => {
+                    handleOfflineState('Device is offline');
+                });
+
+                window.addEventListener('online', () => {
+                    if (socket && socket.disconnected) {
+                        socket.connect();
+                    } else {
+                        emitJoinChat();
+                    }
+                });
+
+                // Immediately emit leave_support_chat and disconnect when tab unloads or hides
+                const handleLeave = () => {
+                    try {
+                        if (socket && socket.connected) {
+                            socket.emit('leave_support_chat', { userId, guestId });
+                            socket.disconnect();
+                        }
+                    } catch (e) {}
+                };
+                window.addEventListener('beforeunload', handleLeave);
+                window.addEventListener('pagehide', handleLeave);
 
                 socket.on('support_chat_ready', (data) => {
                     localStorage.setItem('gplChatSessionId', data.sessionId);

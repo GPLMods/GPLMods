@@ -46,7 +46,7 @@
         background-position: center; 
         z-index: 1;
         /* Dynamic User Background or Fallback */
-        background-image: url('<%= cardUser.cardBgUrl || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop" %>');
+        background-image: url('<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || "/images/card-bg.png" %>');
     }
     .id-card-bg::after {
         content: ''; 
@@ -156,6 +156,20 @@
         <p style="color: var(--silver);">Your verified digital credential for GPL Mods.</p>
     </div>
 
+    <% if (cardUser.cardStatus === 'suspended' || (!cardUser.twoFactorEnabled && !cardUser.is2FAEnabled)) { %>
+        <div style="max-width: 500px; width: 100%; margin: 0 auto 25px auto; background: rgba(229, 57, 53, 0.15); border: 2px solid var(--red); border-radius: 12px; padding: 16px 20px; text-align: center; color: #ff8585;">
+            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 6px; color: var(--white);">
+                <i class="fas fa-exclamation-triangle" style="color: var(--red); margin-right: 8px;"></i> Card Currently Suspended
+            </div>
+            <p style="margin: 0 0 12px 0; font-size: 0.9em; color: var(--silver);">
+                2FA was disabled on your account. Quick-Login QR is suspended until you re-enable Two-Factor Authentication.
+            </p>
+            <a href="/account/2fa/setup" class="btn btn-primary" style="display: inline-block; padding: 8px 18px; font-size: 0.9em; text-decoration: none;">
+                Re-enable 2FA Now
+            </a>
+        </div>
+    <% } %>
+
     <!-- THE CARD (Target for Export) -->
     <div id="exportable-card" class="id-card-wrapper">
         <div class="id-card-bg"></div>
@@ -176,10 +190,14 @@
                         roleName = 'Admin';
                     }
                 %>
-                <span class="card-role-badge" style="background: <%= roleBg %>; box-shadow: 0 0 10px <%= roleShadow %>;"><%= roleName %></span>
+                <% if (cardUser.cardStatus === 'suspended' || (!cardUser.twoFactorEnabled && !cardUser.is2FAEnabled)) { %>
+                    <span class="card-role-badge" style="background: var(--red); box-shadow: 0 0 10px rgba(229, 57, 53, 0.5);">SUSPENDED</span>
+                <% } else { %>
+                    <span class="card-role-badge" style="background: <%= roleBg %>; box-shadow: 0 0 10px <%= roleShadow %>;"><%= roleName %></span>
+                <% } %>
             </div>
             
-            <img src="<%= cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" crossorigin="anonymous">
+            <img id="rendered-card-avatar" src="<%= cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" crossorigin="anonymous">
             
             <h2 class="card-name"><%= cardUser.username %></h2>
             
@@ -231,20 +249,91 @@
 
         <h3 style="color: var(--white); margin-bottom: 20px;">Customize Your Card</h3>
         <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> You may edit your custom popup message and background image once every 7 days.
+            <i class="fas fa-info-circle"></i> You may edit your custom popup message, background image, and card avatar once every 7 days.
         </p>
 
-        <form action="/id-card/edit" method="POST">
+        <form action="/id-card/edit" method="POST" enctype="multipart/form-data" id="cardCustomForm">
             <div class="form-group">
-                <label>Custom Profile Scan Message</label>
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-comment-dots" style="color: var(--gold);"></i> Custom Profile Scan Message
+                </label>
                 <input type="text" name="cardMessage" value="<%= cardUser.cardMessage %>" maxlength="120" placeholder="e.g., Welcome to my official distributor page!" required>
+                <small style="color: var(--silver); font-size: 0.8em; margin-top: 5px; display: block;">Displays when others scan your public ID QR code (max 120 characters).</small>
             </div>
-            <div class="form-group">
-                <label>Card Background Image URL (Optional)</label>
-                <input type="url" name="cardBgUrl" value="<%= cardUser.cardBgUrl %>" placeholder="https://images.unsplash.com/...">
+
+            <!-- Card Background Section -->
+            <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                    <label style="margin: 0; font-weight: 700; color: var(--gold); font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-image"></i> Card Background
+                    </label>
+                    <button type="button" id="btnResetBg" class="btn-mode" style="padding: 5px 14px; font-size: 0.8em; border-color: var(--silver); color: var(--silver); border-radius: 6px;">
+                        <i class="fas fa-undo"></i> Reset to Default
+                    </button>
+                </div>
+                <input type="hidden" name="resetBgToDefault" id="resetBgToDefault" value="false">
+
+                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 240px;">
+                        <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 10px;">Upload a custom image (JPG, PNG, WebP up to 5MB) or enter an image URL:</p>
+                        <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <label for="cardBgFile" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,215,0,0.15); border: 1px dashed var(--gold); padding: 9px 16px; border-radius: 8px; color: var(--gold); cursor: pointer; font-weight: 600; font-size: 0.88em; transition: 0.2s;">
+                                <i class="fas fa-cloud-upload-alt"></i> Choose Background File
+                            </label>
+                            <input type="file" id="cardBgFile" name="cardBgFile" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            <span id="bgFileName" style="font-size: 0.82em; color: var(--silver); word-break: break-all;"></span>
+                        </div>
+                        <input type="url" id="cardBgUrl" name="cardBgUrl" value="<%= cardUser.cardBgUrl %>" placeholder="Or enter direct background image URL (https://...)">
+                    </div>
+                    <div style="width: 75px; height: 110px; border-radius: 8px; overflow: hidden; border: 1.5px solid rgba(255,215,0,0.4); background: #000; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                        <img id="bgPreviewImg" src="<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || '/images/card-bg.png' %>" alt="Background Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 8px; background: var(--gold); color: var(--black); border: none; font-weight: bold; cursor: pointer;">
-                Update Card Design
+
+            <!-- Card Avatar Section -->
+            <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                    <label style="margin: 0; font-weight: 700; color: var(--gold); font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-circle"></i> Card Avatar
+                    </label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="btnFetchCardGravatar" class="btn-mode" style="padding: 5px 14px; font-size: 0.8em; border-color: #46b5e8; color: #46b5e8; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: #46b5e8;">
+                                <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"/>
+                            </svg>
+                            Fetch from Gravatar
+                        </button>
+                        <button type="button" id="btnResetAvatar" class="btn-mode" style="padding: 5px 14px; font-size: 0.8em; border-color: var(--silver); color: var(--silver); border-radius: 6px;">
+                            <i class="fas fa-undo"></i> Use Account Avatar
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" name="resetAvatarToAccount" id="resetAvatarToAccount" value="false">
+
+                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 240px;">
+                        <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 10px;">Upload a dedicated card avatar (JPG, PNG, WebP up to 5MB), sync from Gravatar, or enter an image link:</p>
+                        <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <label for="cardAvatarFile" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,215,0,0.15); border: 1px dashed var(--gold); padding: 9px 16px; border-radius: 8px; color: var(--gold); cursor: pointer; font-weight: 600; font-size: 0.88em; transition: 0.2s;">
+                                <i class="fas fa-cloud-upload-alt"></i> Choose Avatar File
+                            </label>
+                            <input type="file" id="cardAvatarFile" name="cardAvatarFile" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            <span id="avatarFileName" style="font-size: 0.82em; color: var(--silver); word-break: break-all;"></span>
+                        </div>
+                        <input type="url" id="cardAvatarUrl" name="cardAvatarUrl" value="<%= cardUser.cardAvatarUrl %>" placeholder="Or enter direct avatar image URL (https://...)">
+                        <div id="cardGravatarLoading" style="display: none; margin-top: 10px; color: #46b5e8; font-size: 0.88em; font-weight: 600;">
+                            <i class="fas fa-spinner fa-spin"></i> Syncing avatar from Gravatar...
+                        </div>
+                    </div>
+                    <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 2.5px solid var(--gold); background: #000; flex-shrink: 0; box-shadow: 0 0 15px rgba(255,215,0,0.4);">
+                        <img id="avatarPreviewImg" src="<%= cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 8px; background: var(--gold); color: var(--black); border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.3); transition: transform 0.2s;">
+                <i class="fas fa-save" style="margin-right: 8px;"></i> Update Card Design
             </button>
         </form>
     </div>
@@ -315,6 +404,145 @@
                 btn.disabled = false;
             });
         }, 100);
+    }
+
+    // --- LIVE PREVIEWS & CUSTOMIZATION INTERACTION ---
+    const cardBgEl = document.querySelector('.id-card-bg');
+    const cardAvatarEl = document.getElementById('rendered-card-avatar');
+    const bgPreviewImg = document.getElementById('bgPreviewImg');
+    const avatarPreviewImg = document.getElementById('avatarPreviewImg');
+    const cardBgFile = document.getElementById('cardBgFile');
+    const cardAvatarFile = document.getElementById('cardAvatarFile');
+    const cardBgUrl = document.getElementById('cardBgUrl');
+    const cardAvatarUrl = document.getElementById('cardAvatarUrl');
+    const bgFileName = document.getElementById('bgFileName');
+    const avatarFileName = document.getElementById('avatarFileName');
+    const resetBgToDefault = document.getElementById('resetBgToDefault');
+    const resetAvatarToAccount = document.getElementById('resetAvatarToAccount');
+    const btnResetBg = document.getElementById('btnResetBg');
+    const btnResetAvatar = document.getElementById('btnResetAvatar');
+    const btnFetchCardGravatar = document.getElementById('btnFetchCardGravatar');
+    const cardGravatarLoading = document.getElementById('cardGravatarLoading');
+
+    // Live preview background file
+    if (cardBgFile) {
+        cardBgFile.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                bgFileName.textContent = file.name;
+                resetBgToDefault.value = 'false';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    bgPreviewImg.src = e.target.result;
+                    if (cardBgEl) cardBgEl.style.backgroundImage = `url('${e.target.result}')`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Live preview background URL
+    if (cardBgUrl) {
+        cardBgUrl.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val) {
+                resetBgToDefault.value = 'false';
+                bgPreviewImg.src = val;
+                if (cardBgEl) cardBgEl.style.backgroundImage = `url('${val}')`;
+            }
+        });
+    }
+
+    // Reset background to default (/images/card-bg.png)
+    if (btnResetBg) {
+        btnResetBg.addEventListener('click', function() {
+            resetBgToDefault.value = 'true';
+            if (cardBgFile) cardBgFile.value = '';
+            if (cardBgUrl) cardBgUrl.value = '';
+            bgFileName.textContent = 'Will reset to default on save';
+            bgPreviewImg.src = '/images/card-bg.png';
+            if (cardBgEl) cardBgEl.style.backgroundImage = "url('/images/card-bg.png')";
+        });
+    }
+
+    // Live preview avatar file
+    if (cardAvatarFile) {
+        cardAvatarFile.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                avatarFileName.textContent = file.name;
+                resetAvatarToAccount.value = 'false';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreviewImg.src = e.target.result;
+                    if (cardAvatarEl) cardAvatarEl.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Live preview avatar URL
+    if (cardAvatarUrl) {
+        cardAvatarUrl.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val) {
+                resetAvatarToAccount.value = 'false';
+                avatarPreviewImg.src = val;
+                if (cardAvatarEl) cardAvatarEl.src = val;
+            }
+        });
+    }
+
+    // Reset avatar to account avatar
+    if (btnResetAvatar) {
+        btnResetAvatar.addEventListener('click', function() {
+            resetAvatarToAccount.value = 'true';
+            if (cardAvatarFile) cardAvatarFile.value = '';
+            if (cardAvatarUrl) cardAvatarUrl.value = '';
+            avatarFileName.textContent = 'Will reset to account avatar on save';
+            const accountAvatar = "<%= cardUser.signedAvatarUrl || '/images/default-avatar.png' %>";
+            avatarPreviewImg.src = accountAvatar;
+            if (cardAvatarEl) cardAvatarEl.src = accountAvatar;
+        });
+    }
+
+    // Fetch avatar from Gravatar for Card
+    if (btnFetchCardGravatar) {
+        btnFetchCardGravatar.addEventListener('click', async function() {
+            if (cardGravatarLoading) cardGravatarLoading.style.display = 'block';
+            btnFetchCardGravatar.disabled = true;
+
+            try {
+                const res = await fetch('/id-card/fetch-gravatar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    resetAvatarToAccount.value = 'false';
+                    if (cardAvatarFile) cardAvatarFile.value = '';
+                    if (cardAvatarUrl) cardAvatarUrl.value = data.avatarUrl;
+                    avatarPreviewImg.src = data.avatarUrl;
+                    if (cardAvatarEl) cardAvatarEl.src = data.avatarUrl;
+                    avatarFileName.textContent = 'Gravatar synced!';
+                    if (cardGravatarLoading) {
+                        cardGravatarLoading.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71;"></i> ' + (data.message || 'Gravatar synced successfully!');
+                        setTimeout(() => { cardGravatarLoading.style.display = 'none'; cardGravatarLoading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing avatar from Gravatar...'; }, 3000);
+                    }
+                } else {
+                    alert(data.error || 'Could not fetch Gravatar. Please verify your email is registered at Gravatar.com.');
+                    if (cardGravatarLoading) cardGravatarLoading.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Gravatar fetch error:', err);
+                alert('Network error while fetching Gravatar.');
+                if (cardGravatarLoading) cardGravatarLoading.style.display = 'none';
+            } finally {
+                btnFetchCardGravatar.disabled = false;
+            }
+        });
     }
 </script>
 <%- include('../partials/footer') %>

@@ -325,9 +325,122 @@
             }
         }
 
-        /* Ensure mobile sidebar navigation always opens above deployment notices and headers */
+        /* ====================================================================== */
+        /* ✅ MOBILE NAVIGATION DRAWER & WISHLIST BUTTON STYLES                  */
+        /* ====================================================================== */
         .mobile-nav {
             z-index: 100000 !important;
+            box-sizing: border-box !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 18px 50px 18px !important;
+            width: 82% !important;
+            max-width: 320px !important;
+            background-color: #121212 !important;
+            box-shadow: 5px 0 30px rgba(0, 0, 0, 0.85) !important;
+        }
+        .mobile-nav > ul {
+            list-style: none !important;
+            padding: 10px 0 30px 0 !important;
+            margin: 0 !important;
+        }
+        .mobile-nav li {
+            margin-bottom: 10px !important;
+            list-style: none !important;
+        }
+        .mobile-nav a,
+        .mobile-nav li a,
+        .mobile-nav .sub-menu a {
+            text-decoration: none !important;
+            font-size: 1.05em !important;
+            color: var(--silver, #c0c0c0) !important;
+            display: flex !important;
+            align-items: center !important;
+            transition: color 0.2s ease, transform 0.2s ease !important;
+        }
+        .mobile-nav a:hover,
+        .mobile-nav li a:hover,
+        .mobile-nav .sub-menu a:hover {
+            color: var(--gold, #ffd700) !important;
+            text-decoration: none !important;
+        }
+        .mobile-nav .collapsible-trigger {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            user-select: none;
+        }
+        .mobile-nav .has-submenu .arrow {
+            display: inline-block !important;
+            transition: transform 0.3s ease !important;
+            font-size: 0.75em !important;
+            margin-left: 8px !important;
+            line-height: 1 !important;
+        }
+        .mobile-nav .has-submenu.open > .collapsible-trigger .arrow {
+            transform: rotate(180deg) !important;
+        }
+        /* Reset rogue padding/margins causing phantom gap under categories and admin suite */
+        .mobile-nav .sub-menu {
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease !important;
+            box-sizing: border-box !important;
+        }
+        .mobile-nav .has-submenu.open > .sub-menu {
+            max-height: 800px !important; /* Fully displays all 7 items without cutting off */
+            opacity: 1 !important;
+            padding: 8px 0 8px 12px !important;
+            margin-top: 4px !important;
+        }
+        .mobile-nav .sub-menu li {
+            margin-bottom: 8px !important;
+            font-size: 0.92em !important;
+        }
+        .mobile-nav .sub-menu li a {
+            padding: 4px 0 !important;
+            gap: 10px !important;
+        }
+        .mobile-nav .admin-suite-box {
+            background: rgba(255, 215, 0, 0.08) !important;
+            border: 1px solid rgba(255, 215, 0, 0.35) !important;
+            border-radius: 10px !important;
+            padding: 6px 12px !important;
+            margin: 8px 0 !important;
+            box-sizing: border-box !important;
+        }
+        .mobile-nav .admin-suite-box > .collapsible-trigger {
+            padding: 6px 0 !important;
+        }
+        .mobile-nav .admin-suite-box.open {
+            background: rgba(255, 215, 0, 0.12) !important;
+            border-color: rgba(255, 215, 0, 0.6) !important;
+        }
+        .mobile-nav .admin-suite-box .sub-menu {
+            border-top: 1px solid rgba(255, 215, 0, 0.15) !important;
+            margin-top: 6px !important;
+        }
+
+        /* Wishlist button micro-animations (applied to button, not whole card) */
+        .wishlist-btn {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease !important;
+        }
+        .wishlist-btn:hover {
+            transform: scale(1.04) !important;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.25) !important;
+        }
+        .wishlist-btn.is-whitelisted:hover {
+            box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3) !important;
+        }
+        .wishlist-btn:active {
+            transform: scale(0.96) !important;
         }
     </style>
 </head>
@@ -445,31 +558,46 @@
 
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
+        <!-- GPL Mods Branding Header -->
+        <div class="mobile-nav-brand" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0 16px 0; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 215, 0, 0.25);">
+            <a href="<%= user ? '/home' : '/' %>" style="display: flex; align-items: center; gap: 10px; text-decoration: none !important;">
+                <img src="/images/team-logo.png" alt="GPL Mods Logo" style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.35); flex-shrink: 0;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 1.25em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); line-height: 1.1;">GPL <span style="color: var(--silver, #c0c0c0) !important; text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);">Mods</span></span>
+                    <span style="font-size: 0.65em; color: var(--silver); letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">100% Safe &amp; Working</span>
+                </div>
+            </a>
+            <button type="button" id="closeMobileNav" aria-label="Close navigation" style="background: none; border: none; color: var(--silver); font-size: 1.7em; cursor: pointer; padding: 0 6px; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">&times;</button>
+        </div>
         <ul>
-            <li><a href="<%= user ? '/home' : '/' %>">Home</a></li>
+            <li><a href="<%= user ? '/home' : '/' %>"><i class="fas fa-home" style="margin-right: 10px; width: 18px;"></i> Home</a></li>
             <li class="has-submenu">
-                <a href="#" class="collapsible-trigger">Categories <span class="arrow">▼</span></a>
+                <a href="#" class="collapsible-trigger">
+                    <span><i class="fas fa-th-large" style="margin-right: 10px; width: 18px;"></i> Categories</span>
+                    <span class="arrow">▼</span>
+                </a>
                 <ul class="sub-menu">
-                    <li><a href="/category?cat=android">Android</a></li>
-                    <li><a href="/category?cat=ios-jailed">IPA</a></li>
-                    <li><a href="/category?cat=ios-jailbroken">DEB</a></li>
-                    <li><a href="/category?cat=wordpress">WordPress</a></li>
-                    <li><a href="/category?cat=windows">Windows</a></li>
+                    <li><a href="/category?cat=android"><i class="fab fa-android" style="margin-right: 8px; color: #A4C639;"></i> Android</a></li>
+                    <li><a href="/category?cat=ios-jailed"><i class="fab fa-apple" style="margin-right: 8px; color: #fff;"></i> IPA</a></li>
+                    <li><a href="/category?cat=ios-jailbroken"><i class="fas fa-unlock-alt" style="margin-right: 8px; color: #FF9800;"></i> DEB</a></li>
+                    <li><a href="/category?cat=wordpress"><i class="fab fa-wordpress" style="margin-right: 8px; color: #21759B;"></i> WordPress</a></li>
+                    <li><a href="/category?cat=windows"><i class="fab fa-windows" style="margin-right: 8px; color: #0078D6;"></i> Windows</a></li>
                 </ul>
             </li>
             
             <% if (user) { %>
                 <% if (user.role === 'owner') { %>
-                    <li style="margin: 4px 0;">
+                    <li style="margin: 6px 0;">
                         <a href="/owner" style="color: #f44336; font-weight: 700; background: rgba(244, 67, 54, 0.12); border: 1px solid rgba(244, 67, 54, 0.35); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-crown" style="color: #f44336;"></i> Owner Command Center
                         </a>
                     </li>
                 <% } %>
                 <% if (user.role === 'admin' || user.role === 'owner') { %>
-                    <li class="has-submenu" style="background: rgba(255, 215, 0, 0.08); border-radius: 8px; margin: 6px 0; border: 1px solid rgba(255, 215, 0, 0.25);">
+                    <li class="has-submenu admin-suite-box">
                         <a href="#" class="collapsible-trigger" style="color: var(--gold); font-weight: 700;">
-                            <i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite <span class="arrow">▼</span>
+                            <span><i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite</span>
+                            <span class="arrow">▼</span>
                         </a>
                         <ul class="sub-menu">
                             <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
@@ -484,30 +612,30 @@
                         </ul>
                     </li>
                 <% } %>
-                <li><a href="/dashboard"><i class="fas fa-user-circle"></i> Dashboard</a></li>
-                <li><a href="/settings"><i class="fas fa-cog"></i> Settings</a></li>
-                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
-                <li><a href="/licenses"><i class="fas fa-file-contract" aria-hidden="true"></i> License Hub</a></li>
-                <li><a href="/community">Community Forums</a></li>
-                <li><a href="/upload">Upload A New Mod</a></li>
-                <li><a href="/community-chat">Community Chat</a></li>
-                <li><a href="/membership">Membership</a></li>
-                <li><a href="/about">About Us!</a></li>
-                <li><a href="/leaderboard">Leaderboard!</a></li>
-                <li><a href="/donate">Donate Us!</a></li>
-                <li><a href="/request-mod">Required New Mods</a></li>
-                <li><a href="/support">Support Tickets</a></li>
-                <li><a href="/logout" style="color: var(--red);"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="/dashboard"><i class="fas fa-user-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> Dashboard</a></li>
+                <li><a href="/settings"><i class="fas fa-cog" style="margin-right: 10px; width: 18px; text-align: center;"></i> Settings</a></li>
+                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book" style="margin-right: 10px; width: 18px; text-align: center;"></i> Documentation</a></li>
+                <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 10px; width: 18px; text-align: center;"></i> License Hub</a></li>
+                <li><a href="/community"><i class="fas fa-comments" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Forums</a></li>
+                <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
+                <li><a href="/community-chat"><i class="fas fa-comment-dots" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Chat</a></li>
+                <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> Membership</a></li>
+                <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
+                <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
+                <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
+                <li><a href="/request-mod"><i class="fas fa-plus-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> Required New Mods</a></li>
+                <li><a href="/support"><i class="fas fa-headset" style="margin-right: 10px; width: 18px; text-align: center;"></i> Support Tickets</a></li>
+                <li><a href="/logout" style="color: var(--red);"><i class="fas fa-sign-out-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Logout</a></li>
             <% } else { %>
-                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"></i> Documentation</a></li>
-                <li><a href="/licenses"><i class="fas fa-file-contract" aria-hidden="true"></i> License Hub</a></li>
-                <li><a href="/community">Community Forums</a></li>
-                <li><a href="/upload">Upload A New Mod</a></li>
-                <li><a href="/about">About Us!</a></li>
-                <li><a href="/leaderboard">Leaderboard!</a></li>
-                <li><a href="/donate">Donate Us!</a></li>
-                <li><a href="/login">Login</a></li>
-                <li><a href="/register">Sign Up</a></li>               
+                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book" style="margin-right: 10px; width: 18px; text-align: center;"></i> Documentation</a></li>
+                <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 10px; width: 18px; text-align: center;"></i> License Hub</a></li>
+                <li><a href="/community"><i class="fas fa-comments" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Forums</a></li>
+                <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
+                <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
+                <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
+                <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
+                <li><a href="/login"><i class="fas fa-sign-in-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Login</a></li>
+                <li><a href="/register"><i class="fas fa-user-plus" style="margin-right: 10px; width: 18px; text-align: center;"></i> Sign Up</a></li>               
             <% } %>
             <li style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
                 <a href="/cc" title="Purge Web Cache (/cc)" style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">

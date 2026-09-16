@@ -101,20 +101,27 @@
                     <h3 style="color: #ba68c8;">Music Manager</h3>
                     <p>Audio library & playlist sequencer.</p>
                 </a>
-                <a href="/id-card" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #201c10, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.1);">
-                    <i class="fas fa-id-card" style="color: var(--gold);"></i>
-                    <h3 style="color: var(--gold);">Staff ID Card</h3>
-                    <p>Customize & export verified digital credential.</p>
-                </a>
             </div>
         </div>
     <% } %>
 
     <div class="dashboard-grid">
         <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
-            <a href="/id-card" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1f1b11, #141414); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);">
-                <i class="fas fa-id-card" style="color: var(--gold);"></i>
-                <h3 style="color: var(--gold);"><%= user.role === 'distributor' ? 'Distributor ID Card' : 'Official ID Card' %></h3>
+            <% 
+                const isOwner = user.role === 'owner';
+                const isAdmin = user.role === 'admin';
+                const cardTitle = isOwner ? 'Owner ID Card' : (isAdmin ? 'Admin ID Card' : 'Distributor ID Card');
+                const roleBadge = isOwner ? 'Owner Option' : (isAdmin ? 'Admin Option' : 'Distributor Option');
+                const themeColor = isOwner ? '#f44336' : (isAdmin ? 'var(--gold)' : 'var(--blue)');
+                const borderColor = isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin ? 'rgba(255, 215, 0, 0.4)' : 'rgba(33, 150, 243, 0.4)');
+                const bgGradient = isOwner ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin ? 'linear-gradient(145deg, #1f1b11, #141414)' : 'linear-gradient(145deg, #101925, #141414)');
+            %>
+            <a href="/id-card" class="dash-card" style="border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 6px;">
+                    <i class="fas fa-id-card" style="color: <%= themeColor %>; font-size: 1.8em; margin-bottom: 0;"></i>
+                    <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.08); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><%= roleBadge %></span>
+                </div>
+                <h3 style="color: <%= themeColor %>;"><%= cardTitle %></h3>
                 <p>Customize card, Safe QR &amp; Quick-Login.</p>
             </a>
         <% } %>

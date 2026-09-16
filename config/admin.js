@@ -89,6 +89,7 @@ const deleteFromB2Admin = async (fileKey) => {
 async function createAdminRouter() {
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
+    const ValidationError = AdminJS.ValidationError || AdminJSModule.ValidationError;
     
     const AdminJSExpress = await import('@adminjs/express');
     const AdminJSMongoose = await import('@adminjs/mongoose');
@@ -243,15 +244,62 @@ async function createAdminRouter() {
                 resource: User,
                 options: {
                     navigation: usersNav,
-                    listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
+                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
                         bio: { type: 'textarea', description: 'User profile biography' },
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },
+                        role: {
+                            isVisible: {
+                                list: true,
+                                show: true,
+                                filter: true,
+                                edit: (context) => context?.currentAdmin?.role === 'owner',
+                                new: (context) => context?.currentAdmin?.role === 'owner'
+                            },
+                            description: 'Security: Only the Owner can modify user roles.'
+                        },
+                        membership: {
+                            isVisible: {
+                                list: true,
+                                show: true,
+                                filter: true,
+                                edit: (context) => context?.currentAdmin?.role === 'owner',
+                                new: (context) => context?.currentAdmin?.role === 'owner'
+                            },
+                            description: 'Security: Only the Owner can modify user membership or subscription status.'
+                        },
+                        membershipExpiresAt: {
+                            isVisible: {
+                                list: true,
+                                show: true,
+                                filter: true,
+                                edit: (context) => context?.currentAdmin?.role === 'owner',
+                                new: (context) => context?.currentAdmin?.role === 'owner'
+                            }
+                        },
+                        subscriptionId: {
+                            isVisible: {
+                                list: true,
+                                show: true,
+                                filter: true,
+                                edit: (context) => context?.currentAdmin?.role === 'owner',
+                                new: (context) => context?.currentAdmin?.role === 'owner'
+                            }
+                        },
+                        membershipPlan: {
+                            isVisible: {
+                                list: true,
+                                show: true,
+                                filter: true,
+                                edit: (context) => context?.currentAdmin?.role === 'owner',
+                                new: (context) => context?.currentAdmin?.role === 'owner'
+                            }
+                        },
                         'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
                         'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
                         'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
@@ -262,10 +310,34 @@ async function createAdminRouter() {
                         }
                     },
                     actions: {
-                        new: { isAccessible: true },
+                        new: { 
+                            isAccessible: true,
+                            before: async (request, context) => {
+                                const currentAdmin = context?.currentAdmin;
+                                const isOwner = currentAdmin && String(currentAdmin.role).toLowerCase() === 'owner';
+                                if (!isOwner) {
+                                    if (request.payload.role && request.payload.role !== 'member') {
+                                        throw new ValidationError({
+                                            role: { message: 'Only the site owner can assign elevated roles to users.' }
+                                        });
+                                    }
+                                    if (request.payload.membership && request.payload.membership !== 'free') {
+                                        throw new ValidationError({
+                                            membership: { message: 'Only the site owner can configure paid user subscriptions.' }
+                                        });
+                                    }
+                                    request.payload.role = 'member';
+                                    request.payload.membership = 'free';
+                                    delete request.payload.subscriptionId;
+                                    delete request.payload.membershipExpiresAt;
+                                    delete request.payload.membershipPlan;
+                                }
+                                return request;
+                            }
+                        },
                         edit: { 
                             isAccessible: true,
-                            before: async (request) => {
+                            before: async (request, context) => {
                                 const { newPassword, ...payload } = request.payload;
                                 if (newPassword && newPassword.length > 0) {
                                     payload.password = await bcrypt.hash(newPassword, 10);
@@ -274,6 +346,35 @@ async function createAdminRouter() {
                                     payload.cardId = null;
                                     payload.cardLoginToken = null;
                                 }
+
+                                const currentAdmin = context?.currentAdmin;
+                                const isOwner = currentAdmin && String(currentAdmin.role).toLowerCase() === 'owner';
+
+                                if (!isOwner) {
+                                    const restrictedFields = ['role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan'];
+                                    
+                                    // Check if non-owner is attempting to alter restricted fields
+                                    if (context.record && context.record.params) {
+                                        for (const field of restrictedFields) {
+                                            if (payload[field] !== undefined && String(payload[field]) !== String(context.record.params[field] || '')) {
+                                                const fieldLabel = field === 'role' ? 'user roles' : 'user subscriptions';
+                                                throw new ValidationError({
+                                                    [field]: { message: `Only the site owner can change ${fieldLabel}.` }
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    // Strictly strip/restore original values from record
+                                    restrictedFields.forEach(field => {
+                                        if (context.record && context.record.params && context.record.params[field] !== undefined) {
+                                            payload[field] = context.record.params[field];
+                                        } else {
+                                            delete payload[field];
+                                        }
+                                    });
+                                }
+
                                 request.payload = payload;
                                 return request;
                             }

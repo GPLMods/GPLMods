@@ -695,6 +695,29 @@
     <span id="toast-message">Playlist saved successfully!</span>
 </div>
 
+<!-- Custom Delete Confirmation Modal UI -->
+<div id="delete-track-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #161616; border: 1px solid rgba(229, 57, 53, 0.45); border-radius: 16px; max-width: 460px; width: 100%; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 30px rgba(229,57,53,0.2); text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(229, 57, 53, 0.12); border: 2px solid #e53935; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: #e53935; font-size: 1.9em;">
+            <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3 style="margin: 0 0 8px 0; color: #fff; font-size: 1.35em;">Delete Audio Track</h3>
+        <p style="color: var(--silver); font-size: 0.92em; line-height: 1.5; margin: 0 0 14px 0;">
+            Are you sure you want to permanently delete <strong id="delete-modal-track-name" style="color: var(--music-gold);"></strong> from the server storage?
+        </p>
+        <div style="color: #ff8a80; font-size: 0.82em; margin: 0 0 24px 0; background: rgba(229, 57, 53, 0.08); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #e53935; text-align: left; line-height: 1.4;">
+            <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>
+            <strong>Permanent Action:</strong> The audio file will be deleted from disk and removed from the weekly playlist. This cannot be undone.
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" class="btn-action btn-outline" onclick="closeDeleteTrackModal()" style="flex: 1; padding: 10px 16px; border: 1px solid #444; color: #ccc; border-radius: 8px; cursor: pointer; justify-content: center;">Cancel</button>
+            <button type="button" id="confirm-delete-track-btn" onclick="executeDeleteTrack()" style="flex: 1; padding: 10px 16px; background: #e53935; border: none; color: #fff; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s ease;">
+                <i class="fas fa-trash-alt"></i> Delete Permanently
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Initial data passed from server
     let localTracks = <%- JSON.stringify(tracks || []) %>;
@@ -777,6 +800,8 @@
         let html = '';
         currentPlaylist.forEach((item, index) => {
             const isPlaying = currentlyPlayingSrc === item.src && !previewAudio.paused;
+            const trackFilename = item.src ? item.src.split('/').pop() : '';
+            const safeTitle = (item.title || 'Track').replace(/'/g, "\\'");
             html += `
                 <div class="track-row" data-index="${index}">
                     <div class="track-order-badge">#${index + 1}</div>
@@ -796,8 +821,11 @@
                         <button class="icon-btn" onclick="moveTrack(${index}, 1)" ${index === currentPlaylist.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''} title="Move Down">
                             <i class="fas fa-arrow-down"></i>
                         </button>
-                        <button class="icon-btn delete-btn" onclick="removeFromPlaylist(${index})" title="Remove from Playlist">
+                        <button class="icon-btn" onclick="removeFromPlaylist(${index})" title="Remove from Playlist">
                             <i class="fas fa-times"></i>
+                        </button>
+                        <button class="icon-btn delete-btn" onclick="promptDeleteTrack('${trackFilename}', '${safeTitle}')" title="Permanently Delete File from Disk" style="border-color: rgba(229, 57, 53, 0.45); color: #e53935;">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -845,8 +873,8 @@
                             ? `<button class="btn-action btn-outline" style="border-color: #555; color: #888;" disabled><i class="fas fa-check"></i> Added</button>`
                             : `<button class="btn-action btn-gold" onclick="addToPlaylist('${t.src}', '${t.title.replace(/'/g, "\\'")}')"><i class="fas fa-plus"></i> Add to Playlist</button>`
                         }
-                        <button class="icon-btn delete-btn" onclick="deleteAudioFile('${t.filename}')" title="Delete File from Disk">
-                            <i class="fas fa-trash-alt"></i>
+                        <button class="btn-action btn-danger" onclick="promptDeleteTrack('${t.filename}', '${t.title.replace(/'/g, "\\'")}')" title="Delete Track from Disk" style="background: rgba(229, 57, 53, 0.15); border: 1px solid #e53935; color: #ff6b6b; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85em; transition: all 0.2s ease;">
+                            <i class="fas fa-trash-alt"></i> Delete
                         </button>
                     </div>
                 </div>
@@ -951,10 +979,31 @@
         }
     }
 
-    // Delete file from disk
-    async function deleteAudioFile(filename) {
-        if (!confirm(`Are you sure you want to permanently delete "${filename}" from the server disk? This cannot be undone.`)) {
-            return;
+    // Delete Modal & Audio File Management
+    let trackPendingDeletion = null;
+
+    function promptDeleteTrack(filename, title) {
+        if (!filename) return;
+        trackPendingDeletion = filename;
+        const nameEl = document.getElementById('delete-modal-track-name');
+        if (nameEl) nameEl.textContent = `"${title || filename}" (${filename})`;
+        const modal = document.getElementById('delete-track-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeDeleteTrackModal() {
+        trackPendingDeletion = null;
+        const modal = document.getElementById('delete-track-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function executeDeleteTrack() {
+        if (!trackPendingDeletion) return;
+        const filename = trackPendingDeletion;
+        const confirmBtn = document.getElementById('confirm-delete-track-btn');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
         }
 
         try {
@@ -964,16 +1013,33 @@
             const data = await res.json();
             if (data.success) {
                 showToast(data.message, "success");
-                localTracks = data.tracks;
+                localTracks = data.tracks || [];
                 currentPlaylist = currentPlaylist.filter(p => !p.src.endsWith(filename));
                 renderPlaylist();
                 renderLibrary();
+
+                // Update storage stat
+                const totalBytes = (localTracks || []).reduce((acc, t) => acc + (t.size || 0), 0);
+                const storageEl = document.getElementById('stat-storage-used');
+                if (storageEl) storageEl.textContent = (totalBytes / (1024 * 1024)).toFixed(1) + ' MB';
             } else {
                 showToast("Delete failed: " + (data.error || "Unknown error"), "error");
             }
         } catch (e) {
             showToast("Delete error: " + e.message, "error");
+        } finally {
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Permanently';
+            }
+            closeDeleteTrackModal();
         }
+    }
+
+    // Backward-compatibility wrapper
+    function deleteAudioFile(filename) {
+        const tr = localTracks.find(t => t.filename === filename);
+        promptDeleteTrack(filename, tr ? tr.title : filename);
     }
 
     // Drag and drop setup for upload zone

@@ -213,6 +213,12 @@ const UserSchema = new Schema({
         enum: ['google', 'github', 'microsoft', 'none'], 
         default: 'none' 
     },
+    passkey: {
+        credentialID: String,
+        credentialPublicKey: String,
+        counter: Number,
+        transports: [String]
+    },
     passkeys: [{
         credentialID: String,
         credentialPublicKey: String,
@@ -228,9 +234,11 @@ const UserSchema = new Schema({
     // --- TWO-FACTOR AUTHENTICATION & ID CARD ---
     is2FAEnabled: { type: Boolean, default: false },
     cardId: { type: String, unique: true, sparse: true }, // 8-digit unique ID
+    cardStatus: { type: String, enum: ['active', 'suspended', 'revoked'], default: 'active' },
     cardLoginToken: { type: String }, // Secure token for Private QR quick login
     cardMessage: { type: String, default: 'Welcome to my profile! Follow me for the best mods.' },
     cardBgUrl: { type: String, default: '' }, // Custom background image
+    cardAvatarUrl: { type: String, default: '' }, // Custom card avatar image
     cardLastEdited: { type: Date }, // To enforce the 7-day cooldown
 }, { timestamps: true });
 

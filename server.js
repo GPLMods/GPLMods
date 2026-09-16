@@ -56,7 +56,7 @@ const appStoreScraper = require('app-store-scraper');
 const AdmZip = require('adm-zip'); 
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
-const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
+const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
 const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
 const { normalizeSingleValue } = require('./utils/formHelpers');
 const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
@@ -4815,8 +4815,27 @@ app.post('/reset-password/:token', async (req, res, next) => {
 // --- 8. LOGOUT ROUTE ---
 app.get('/logout', async (req, res, next) => {
     if (req.user) {
+        const userIdStr = String(req.user._id);
         // Clear the active session from the database
         await User.findByIdAndUpdate(req.user._id, { $unset: { currentSessionId: "" } });
+
+        // Instantly prune user from live chat online list and broadcast
+        try {
+            const connectedUsers = req.app.get('connectedUsers');
+            const broadcastOnlineStats = req.app.get('broadcastOnlineStats');
+            if (connectedUsers) {
+                for (const [sId, u] of connectedUsers.entries()) {
+                    if (u && String(u.userId) === userIdStr) {
+                        connectedUsers.delete(sId);
+                    }
+                }
+            }
+            if (typeof broadcastOnlineStats === 'function') {
+                broadcastOnlineStats();
+            }
+        } catch (e) {
+            console.error('Error pruning live user on logout:', e);
+        }
     }
     req.logout(err => { 
         if (err) return next(err); 
@@ -5225,8 +5244,10 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 
     // IMMEDIATELY delete the codes from the session so they can never be viewed again
     req.session.tempRecoveryCodes = null;
+    const returnUrl = req.session.returnTo2FA || (['distributor', 'admin', 'owner'].includes(req.user.role) ? '/id-card?success=2FA successfully enabled! Welcome to your ID Card.' : '/profile?success=2FA successfully activated!');
+    req.session.returnTo2FA = null;
 
-    res.render('pages/2fa-recovery-codes', { codes: codes });
+    res.render('pages/2fa-recovery-codes', { codes: codes, returnUrl });
 });
 
 // My Uploads Route
@@ -5395,7 +5416,8 @@ app.get('/users/:username', async (req, res, next) => {
             pageDescription: profileDescription,
             pageImage: profileImage,
             pageKeywords: `gpl mods, ${targetUserObj.username}, distributor profile, mod uploads`,
-            pageUrl: `https://gplmods.webredirect.org/users/${targetUserObj.username}`
+            pageUrl: `https://gplmods.webredirect.org/users/${targetUserObj.username}`,
+            isCardRef: req.query.ref === 'card'
         });
 
     } catch (error) { 
@@ -5862,22 +5884,69 @@ app.post('/account/2fa/generate-totp', ensureAuthenticated, async (req, res) => 
     }
 });
 
+// --- Passkey / WebAuthn Helper Utilities ---
+const getWebAuthnExpectedOrigins = (req) => {
+    const hostHeader = req.headers.host;
+    const clientOrigin = req.headers.origin;
+    return Array.from(new Set([
+        clientOrigin,
+        hostHeader ? `http://${hostHeader}` : null,
+        hostHeader ? `https://${hostHeader}` : null,
+        process.env.BASE_URL,
+        'https://gplmods.webredirect.org',
+        'http://localhost:3000',
+        'https://localhost:3000',
+        'http://127.0.0.1:3000'
+    ].filter(Boolean)));
+};
+
+const getWebAuthnEffectiveRpID = (req) => {
+    let originHost = null;
+    if (req.headers.origin) {
+        try { originHost = new URL(req.headers.origin).hostname; } catch(e) {}
+    }
+    const forwardedHost = req.headers['x-forwarded-host'] ? req.headers['x-forwarded-host'].split(',')[0].trim().split(':')[0] : null;
+    const hostHeader = req.headers.host ? req.headers.host.split(':')[0] : null;
+    const raw = originHost || forwardedHost || hostHeader || req.hostname || 'localhost';
+    return raw === '127.0.0.1' ? 'localhost' : raw;
+};
+
+const getWebAuthnExpectedRPIDs = (req, effectiveRpID) => {
+    const hostHeader = (req.headers['x-forwarded-host'] || req.headers.host || req.hostname || 'localhost').split(':')[0];
+    const baseUrlHost = process.env.BASE_URL ? (() => { try { return new URL(process.env.BASE_URL).hostname; } catch(e) { return null; } })() : null;
+    return Array.from(new Set([
+        effectiveRpID,
+        req.session?.currentChallengeRpID,
+        hostHeader,
+        hostHeader === '127.0.0.1' ? 'localhost' : null,
+        req.hostname,
+        baseUrlHost,
+        'gplmods.webredirect.org',
+        'localhost'
+    ].filter(Boolean)));
+};
+
 // 2. Generate Passkey Options
 app.get('/account/2fa/passkey/generate-options', ensureAuthenticated, async (req, res) => {
     try {
         const stringId = req.user._id.toString();
         const uint8UserId = new Uint8Array(Buffer.from(stringId, 'utf8'));
+        const effectiveRpID = getWebAuthnEffectiveRpID(req);
 
         const options = await generateRegistrationOptions({
             rpName: 'GPL Mods',
-            rpID: req.hostname, // Matches your dynamic domain
+            rpID: effectiveRpID,
             userID: uint8UserId,
             userName: req.user.username,
             attestationType: 'none',
-            authenticatorSelection: { userVerification: 'preferred' },
+            authenticatorSelection: { 
+                userVerification: 'preferred',
+                residentKey: 'preferred'
+            },
         });
         
         req.session.currentChallenge = options.challenge;
+        req.session.currentChallengeRpID = effectiveRpID;
         
         req.session.save((err) => {
             if (err) throw err;
@@ -5896,112 +5965,130 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
         const expectedChallenge = req.session.currentChallenge;
 
         if (!expectedChallenge) {
-            return res.status(400).json({ success: false, error: 'Session expired. Please try again.' });
+            return res.status(400).json({ success: false, error: 'Session expired or challenge missing. Please try again.' });
         }
+
+        const effectiveRpID = getWebAuthnEffectiveRpID(req);
+        const expectedOrigins = getWebAuthnExpectedOrigins(req);
+        const expectedRPIDs = getWebAuthnExpectedRPIDs(req, effectiveRpID);
 
         const verification = await verifyRegistrationResponse({
             response: req.body,
             expectedChallenge,
-            expectedOrigin: req.headers.origin || (process.env.BASE_URL ? process.env.BASE_URL : `http://${req.headers.host}`), 
-            expectedRPID: req.hostname,         
+            expectedOrigin: expectedOrigins,
+            expectedRPID: expectedRPIDs,
+            requireUserVerification: false, // Critical: userVerification was 'preferred'
         });
 
-        if (verification.verified) {
-            const { registrationInfo } = verification;
-            
-            // --- NEW: Handle SimpleWebAuthn Registration Info Safely ---
-            // The library returns these as Uint8Arrays or similar structures in newer versions.
-            // We need to convert them to base64url strings to store them safely in MongoDB.
-            
-            // Function to safely convert Uint8Array/Buffer to base64url
+        if (verification && verification.verified) {
+            const regInfo = verification.registrationInfo;
+            if (!regInfo) {
+                throw new Error("Missing registrationInfo from authenticator.");
+            }
+
             const toBase64Url = (buffer) => {
                 if (!buffer) return '';
-                // If it's already a string, assume it's base64url or similar and use it
                 if (typeof buffer === 'string') return buffer;
-                // Otherwise, convert the Uint8Array/Buffer to a standard buffer then to base64url
                 return Buffer.from(buffer).toString('base64url');
             };
 
-            const credentialIDStr = toBase64Url(registrationInfo.credentialID || registrationInfo.credential.id);
-            const publicKeyStr = toBase64Url(registrationInfo.credentialPublicKey || registrationInfo.credential.publicKey);
-            const counter = registrationInfo.counter || 0;
-            const transports = registrationInfo.credentialDeviceType === 'singleDevice' ? ['internal'] : []; // Optional, but good practice
+            const credential = regInfo.credential || {};
+            const credentialIDStr = typeof credential.id === 'string'
+                ? credential.id
+                : toBase64Url(credential.id || regInfo.credentialID);
+
+            const publicKeyStr = toBase64Url(credential.publicKey || regInfo.credentialPublicKey);
+            const counter = typeof credential.counter === 'number'
+                ? credential.counter
+                : (typeof regInfo.counter === 'number' ? regInfo.counter : 0);
+
+            const transports = (credential.transports && Array.isArray(credential.transports))
+                ? credential.transports
+                : (req.body?.response?.transports || ['internal']);
 
             if (!credentialIDStr || !publicKeyStr) {
                 throw new Error("Missing credential data from authenticator.");
             }
 
-            // Push to your Schema's 'passkeys' array
-            user.passkeys.push({
+            const passkeyData = {
                 credentialID: credentialIDStr,
                 credentialPublicKey: publicKeyStr,
                 counter: counter,
                 transports: transports
-            });
+            };
+
+            user.passkey = passkeyData;
+            if (!user.passkeys) user.passkeys = [];
+            user.passkeys.push(passkeyData);
             
             user.twoFactorMethod = 'passkey';
+            user.twoFactorEnabled = true;
+            user.is2FAEnabled = true;
+            user.cardStatus = 'active'; // Reactivate card if it was suspended!
 
             const rawCodes = generateRecoveryCodes();
             user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
-            
-            user.twoFactorEnabled = true;
 
             await user.save();
 
             req.session.currentChallenge = null;
+            req.session.currentChallengeRpID = null;
             req.session.tempRecoveryCodes = rawCodes;
+
+            const redirectTarget = '/account/2fa/recovery-codes';
             
             req.session.save(() => {
-                res.json({ success: true }); 
+                res.json({ success: true, redirect: redirectTarget }); 
             });
         } else {
-            res.json({ success: false, error: 'Verification failed' });
+            res.status(400).json({ success: false, error: 'Passkey verification failed on server.' });
         }
     } catch (err) {
         console.error("Passkey Verify Error:", err);
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({ success: false, error: err.message || 'Passkey verification error' });
     }
 });
 
 // 4. Enable TOTP or Email Verification
 app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
     try {
-        const { method, token } = req.body;
+        const { method, token, returnTo } = req.body;
+        if (returnTo) req.session.returnTo2FA = returnTo;
         const user = await User.findById(req.user._id);
 
-        // ✅ FIX 1: Strip accidental spaces from the token
+        // Strip accidental spaces from the token
         const cleanToken = token ? token.replace(/\s+/g, '') : '';
 
         if (method === 'email') {
             user.twoFactorMethod = 'email';
         } else if (method === 'totp') {
-            
             const verified = speakeasy.totp.verify({
                 secret: req.session.tempTwoFactorSecret,
                 encoding: 'base32',
-                token: cleanToken // <-- Use the sanitized token here
+                token: cleanToken
             });
 
             if (!verified) {
-                return res.redirect('/account/2fa/setup?error=Invalid TOTP code. Please try again.');
+                const backUrl = req.session.returnTo2FA === '/id-card' ? '/id-card' : '/account/2fa/setup';
+                return res.redirect(`${backUrl}?error=${encodeURIComponent('Invalid TOTP code. Please check your authenticator app.')}`);
             }
             
             user.twoFactorMethod = 'totp';
             user.twoFactorSecret = req.session.tempTwoFactorSecret;
-            req.session.tempTwoFactorSecret = null; // Clean up
+            req.session.tempTwoFactorSecret = null;
         }
 
         const rawCodes = generateRecoveryCodes();
         user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
         
-        // Use your Schema's exact boolean name
         user.twoFactorEnabled = true;
+        user.is2FAEnabled = true;
+        user.cardStatus = 'active'; // Reactivate card!
         
         await user.save();
 
         req.session.tempRecoveryCodes = rawCodes; 
         
-        // ✅ FIX 2: Wait for session to save BEFORE redirecting to avoid a blank recovery codes page
         req.session.save((err) => {
             if (err) console.error("Session save error:", err);
             res.redirect('/account/2fa/recovery-codes');
@@ -6009,7 +6096,8 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
 
     } catch (err) {
         console.error("2FA Enable Error:", err);
-        res.redirect('/account/2fa/setup?error=An error occurred.');
+        const backUrl = req.session.returnTo2FA === '/id-card' ? '/id-card' : '/account/2fa/setup';
+        res.redirect(`${backUrl}?error=${encodeURIComponent('An error occurred while enabling 2FA.')}`);
     }
 });
 
@@ -6017,9 +6105,7 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
 app.post('/login/2fa/verify', async (req, res, next) => {
     if (!req.session.pending2faUserId) return res.redirect('/login');
     try {
-        // ✅ FIX: Extract token and strip any accidental whitespace immediately
         const token = req.body.token ? req.body.token.replace(/\s+/g, '') : '';
-        
         const user = await User.findById(req.session.pending2faUserId);
 
         let isValid = false;
@@ -6037,11 +6123,10 @@ app.post('/login/2fa/verify', async (req, res, next) => {
         } 
         // 2. Otherwise, check TOTP
         else if (user.twoFactorMethod === 'totp') {
-            // Make sure you use speakeasy here to verify the login!
             isValid = speakeasy.totp.verify({
                 secret: user.twoFactorSecret,
                 encoding: 'base32',
-                token: token // Using the clean token
+                token: token
             });
         }
         // 3. Otherwise, check Email OTP
@@ -6070,42 +6155,61 @@ app.post('/login/2fa/verify', async (req, res, next) => {
 });
 
 app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
-    await User.findByIdAndUpdate(req.user._id, { twoFactorEnabled: false, twoFactorMethod: 'none', twoFactorSecret: '' });
-    res.redirect('/dashboard?success=2FA Disabled.');
+    try {
+        const user = await User.findById(req.user._id);
+        if (user) {
+            user.twoFactorEnabled = false;
+            user.is2FAEnabled = false;
+            user.twoFactorMethod = 'none';
+            user.twoFactorSecret = '';
+            user.cardStatus = 'suspended'; // Card suspended when 2FA is disabled!
+            await user.save();
+        }
+        res.redirect('/profile?success=' + encodeURIComponent('2FA Disabled. Note: Your ID Card has been suspended until 2FA is re-enabled.'));
+    } catch (err) {
+        console.error("2FA Disable Error:", err);
+        res.redirect('/profile?error=' + encodeURIComponent('Failed to disable 2FA.'));
+    }
 });
+
 app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => {
     try {
-        const { provider } = req.body;
+        const { provider, returnTo } = req.body;
+        if (returnTo) req.session.returnTo2FA = returnTo;
         const user = await User.findById(req.user._id);
+        const backUrl = req.session.returnTo2FA === '/id-card' ? '/id-card' : '/account/2fa/setup';
 
         if (!['google', 'github', 'microsoft'].includes(provider)) {
-            return res.redirect('/account/2fa/setup?error=Invalid provider.');
+            return res.redirect(`${backUrl}?error=Invalid provider.`);
         }
 
         // Ensure they actually have that provider linked
         if (!user[`${provider}Id`]) {
-             return res.redirect(`/account/2fa/setup?error=You must link a ${provider} account first.`);
+             return res.redirect(`${backUrl}?error=You must link a ${provider} account first.`);
         }
 
         user.twoFactorMethod = 'social';
-        user.twoFactorProvider = provider; // Save which one they want to use
+        user.twoFactorProvider = provider;
+        user.twoFactorEnabled = true;
+        user.is2FAEnabled = true;
+        user.cardStatus = 'active'; // Reactivate card!
 
-        // --- THE CRITICAL FIX: GENERATE RECOVERY CODES HERE ---
         const rawCodes = generateRecoveryCodes();
         user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
-        user.isTwoFactorEnabled = true;
         
         await user.save();
 
         req.session.tempRecoveryCodes = rawCodes;
-        res.redirect('/account/2fa/recovery-codes'); // Redirect to codes page
+        req.session.save(() => {
+            res.redirect('/account/2fa/recovery-codes');
+        });
 
     } catch (err) {
         console.error("Social 2FA Enable Error:", err);
-        res.redirect('/account/2fa/setup?error=An error occurred.');
+        const backUrl = req.session.returnTo2FA === '/id-card' ? '/id-card' : '/account/2fa/setup';
+        res.redirect(`${backUrl}?error=An error occurred.`);
     }
 });
-
 
 // ==========================================
 // PASSKEY LOGIN CHALLENGE ROUTES
@@ -6116,21 +6220,24 @@ app.get('/login/2fa/passkey/options', async (req, res) => {
     if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
     const user = await User.findById(req.session.pending2faUserId);
     
-    if (!user || !user.passkey) return res.status(400).json({error: 'No passkey found for user'});
+    const activePasskey = user?.passkey || (user?.passkeys && user.passkeys.length > 0 ? user.passkeys[user.passkeys.length - 1] : null);
+    if (!user || !activePasskey) return res.status(400).json({error: 'No passkey found for user'});
 
     try {
+        const effectiveRpID = getWebAuthnEffectiveRpID(req);
+
         const options = await generateAuthenticationOptions({
-            rpID: process.env.BASE_URL ? new URL(process.env.BASE_URL).hostname : 'localhost',
+            rpID: effectiveRpID,
             allowCredentials: [{
-                id: Buffer.from(user.passkey.credentialID, 'base64url'),
+                id: Buffer.from(activePasskey.credentialID, 'base64url'),
                 type: 'public-key',
-                transports: ['internal'],
+                transports: activePasskey.transports || ['internal'],
             }],
             userVerification: 'preferred',
         });
         
-        // Save the challenge to the session
         req.session.currentChallenge = options.challenge;
+        req.session.currentChallengeRpID = effectiveRpID;
         res.json(options);
     } catch (e) {
         console.error("Passkey Login Options Error:", e);
@@ -6142,23 +6249,33 @@ app.get('/login/2fa/passkey/options', async (req, res) => {
 app.post('/login/2fa/passkey/verify', async (req, res, next) => {
     if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
     const user = await User.findById(req.session.pending2faUserId);
+    const activePasskey = user?.passkey || (user?.passkeys && user.passkeys.length > 0 ? user.passkeys[user.passkeys.length - 1] : null);
+    if (!user || !activePasskey) return res.status(400).json({error: 'No passkey found for user'});
     
     try {
+        const effectiveRpID = getWebAuthnEffectiveRpID(req);
+        const expectedOrigins = getWebAuthnExpectedOrigins(req);
+        const expectedRPIDs = getWebAuthnExpectedRPIDs(req, effectiveRpID);
+
         const verification = await verifyAuthenticationResponse({
             response: req.body,
             expectedChallenge: req.session.currentChallenge,
-            expectedOrigin: process.env.BASE_URL || `http://${req.headers.host}`,
-            expectedRPID: process.env.BASE_URL ? new URL(process.env.BASE_URL).hostname : 'localhost',
+            expectedOrigin: expectedOrigins,
+            expectedRPID: expectedRPIDs,
             authenticator: {
-                credentialPublicKey: Buffer.from(user.passkey.credentialPublicKey, 'base64url'),
-                credentialID: Buffer.from(user.passkey.credentialID, 'base64url'),
-                counter: user.passkey.counter,
+                credentialPublicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
+                credentialID: Buffer.from(activePasskey.credentialID, 'base64url'),
+                counter: activePasskey.counter || 0,
             },
+            requireUserVerification: false,
         });
 
-        if (verification.verified) {
-            // Update the counter to prevent replay attacks
-            user.passkey.counter = verification.authenticationInfo.newCounter;
+        if (verification && verification.verified) {
+            const newCounter = verification.authenticationInfo?.newCounter || ((activePasskey.counter || 0) + 1);
+            if (user.passkey) user.passkey.counter = newCounter;
+            if (user.passkeys && user.passkeys.length > 0) {
+                user.passkeys[user.passkeys.length - 1].counter = newCounter;
+            }
             await user.save();
             
             // Clean up session vars
@@ -8648,7 +8765,6 @@ const staticPageTemplates = {
     dmca: 'pages/static/dmca',
     'privacy-policy': 'pages/static/privacy-policy',
     'refund-policy': 'pages/static/refund-policy',
-    donate: 'pages/static/donate',
     'partnership-policy': 'pages/static/partnership-policy',
     'distributor-features': 'pages/static/distributor-features',
     'why-choose-us': 'pages/static/why-choose-us',
@@ -8670,6 +8786,213 @@ async function renderStaticPage(req, res, slug) {
 Object.entries(staticPageTemplates).forEach(([slug, template]) => {
     app.get(`/${slug}`, (req, res) => renderStaticPage(req, res, slug));
 });
+
+// ============================================================================
+// DAILY DONATION CAP & TRACKING HELPERS
+// ============================================================================
+const DAILY_DONATION_CAP_INR = 2000;
+
+const CURRENCY_TO_INR_RATES = {
+    INR: 1,
+    USD: 85,
+    EUR: 92,
+    GBP: 108
+};
+
+const DONATION_LIMITS = {
+    'INR': { min: 100, max: 2000, symbol: '₹' },
+    'USD': { min: 2, max: 23.53, symbol: '$' },
+    'EUR': { min: 1.80, max: 21.74, symbol: '€' },
+    'GBP': { min: 1.50, max: 18.52, symbol: '£' }
+};
+
+/**
+ * Helper to get or assign a persistent guest donor ID cookie
+ */
+function getOrSetGuestDonorId(req, res) {
+    let guestId = req.cookies ? req.cookies.gpl_guest_donor_id : null;
+    if (!guestId) {
+        guestId = 'g_' + crypto.randomBytes(16).toString('hex');
+        if (res && res.cookie) {
+            res.cookie('gpl_guest_donor_id', guestId, {
+                maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+                httpOnly: true,
+                sameSite: 'lax'
+            });
+        }
+    }
+    return guestId;
+}
+
+/**
+ * Get client IP address accurately
+ */
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket?.remoteAddress || req.ip || '';
+}
+
+/**
+ * Calculate total INR donated by user or guest in the last 24 hours
+ */
+async function getDailyDonationTotalInr(req, res) {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const guestId = getOrSetGuestDonorId(req, res);
+    const clientIp = getClientIp(req);
+    let matchQuery = null;
+
+    if (req.user && req.user._id) {
+        const orConditions = [{ user: req.user._id }];
+        if (guestId) {
+            orConditions.push({ guestId: guestId, user: null });
+        }
+        matchQuery = {
+            $or: orConditions,
+            status: 'successful',
+            createdAt: { $gte: since24h }
+        };
+    } else {
+        const orConditions = [];
+        if (guestId) orConditions.push({ guestId: guestId });
+        if (clientIp) orConditions.push({ donorIp: clientIp, user: null });
+
+        matchQuery = {
+            $or: orConditions.length > 0 ? orConditions : [{ guestId: 'none' }],
+            status: 'successful',
+            createdAt: { $gte: since24h }
+        };
+    }
+
+    const donations = await Donation.find(matchQuery).lean();
+    let totalInr = 0;
+    for (const d of donations) {
+        const cur = (d.currency || 'INR').toUpperCase();
+        const rate = CURRENCY_TO_INR_RATES[cur] || 1;
+        totalInr += (Number(d.amount) || 0) * rate;
+    }
+
+    return {
+        totalSpentInr: totalInr,
+        remainingInr: Math.max(0, DAILY_DONATION_CAP_INR - totalInr),
+        totalCapInr: DAILY_DONATION_CAP_INR,
+        guestId: guestId
+    };
+}
+
+/**
+ * Fetch recent donations for user or guest
+ */
+async function getUserDonationHistory(req, res) {
+    try {
+        const guestId = req.cookies ? req.cookies.gpl_guest_donor_id : null;
+        const clientIp = getClientIp(req);
+        let matchQuery = null;
+
+        if (req.user && req.user._id) {
+            matchQuery = {
+                $or: [
+                    { user: req.user._id },
+                    ...(guestId ? [{ guestId: guestId, user: null }] : [])
+                ]
+            };
+        } else if (guestId) {
+            matchQuery = {
+                $or: [
+                    { guestId: guestId },
+                    ...(clientIp ? [{ donorIp: clientIp, user: null }] : [])
+                ]
+            };
+        } else {
+            return [];
+        }
+
+        const list = await Donation.find(matchQuery)
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .lean();
+
+        return list.map(d => ({
+            id: String(d._id),
+            orderId: d.orderId,
+            amount: d.amount,
+            currency: d.currency || 'INR',
+            status: d.status,
+            createdAt: d.createdAt
+        }));
+    } catch (e) {
+        console.error('[Donation History Query Error]:', e);
+        return [];
+    }
+}
+
+/**
+ * Dedicated Donation Page with Real-Time Cap & History
+ */
+app.get('/donate', async (req, res) => {
+    try {
+        const capStatus = await getDailyDonationTotalInr(req, res);
+        const history = await getUserDonationHistory(req, res);
+
+        res.render('pages/static/donate', {
+            pageTitle: 'Support GPL Mods',
+            capData: {
+                totalCapInr: capStatus.totalCapInr,
+                spentInr: capStatus.totalSpentInr,
+                remainingInr: capStatus.remainingInr,
+                rates: CURRENCY_TO_INR_RATES
+            },
+            donationHistory: history
+        });
+    } catch (error) {
+        console.error('Donate page error:', error);
+        res.render('pages/static/donate', {
+            pageTitle: 'Support GPL Mods',
+            capData: {
+                totalCapInr: 2000,
+                spentInr: 0,
+                remainingInr: 2000,
+                rates: CURRENCY_TO_INR_RATES
+            },
+            donationHistory: []
+        });
+    }
+});
+
+/**
+ * API: Get Current Donation Cap Status
+ */
+app.get('/api/donation-cap', async (req, res) => {
+    try {
+        const capStatus = await getDailyDonationTotalInr(req, res);
+        res.json({
+            success: true,
+            totalCapInr: capStatus.totalCapInr,
+            spentInr: capStatus.totalSpentInr,
+            remainingInr: capStatus.remainingInr,
+            rates: CURRENCY_TO_INR_RATES
+        });
+    } catch (err) {
+        console.error('[Donation Cap API Error]:', err);
+        res.status(500).json({ error: 'Failed to fetch donation cap status.' });
+    }
+});
+
+/**
+ * API: Get User/Guest Donation History
+ */
+app.get('/api/donation-history', async (req, res) => {
+    try {
+        const history = await getUserDonationHistory(req, res);
+        res.json({ success: true, history });
+    } catch (err) {
+        console.error('[Donation History API Error]:', err);
+        res.status(500).json({ error: 'Failed to fetch donation history.' });
+    }
+});
+
 app.get('/membership', (req, res) => {
     res.render('pages/membership', {
         cashfreeAppId: process.env.CASHFREE_APP_ID,
@@ -8720,16 +9043,9 @@ const MEMBERSHIP_PLANS = {
     }
 };
 
-const DONATION_LIMITS = {
-    'INR': { min: 100, max: 5000 },
-    'USD': { min: 5, max: 100 },
-    'EUR': { min: 5, max: 100 },
-    'GBP': { min: 5, max: 100 }
-};
-
 /**
  * 1. Create Donation Order (Payment Gateway)
- * Enforces minimum 100 INR donation amount
+ * Enforces ₹2,000 Daily Cap and minimum 100 INR donation amount
  */
 app.post('/create-cashfree-order', async (req, res) => {
     try {
@@ -8737,10 +9053,31 @@ app.post('/create-cashfree-order', async (req, res) => {
         const cur = String(currency).toUpperCase();
         const numAmount = parseFloat(amount);
 
-        const limits = DONATION_LIMITS[cur] || { min: 100, max: 5000 };
-        if (isNaN(numAmount) || numAmount < limits.min || numAmount > limits.max) {
+        const rate = CURRENCY_TO_INR_RATES[cur] || 1;
+        const numAmountInInr = numAmount * rate;
+
+        // 1. Check daily donation cap
+        const capStatus = await getDailyDonationTotalInr(req, res);
+        if (capStatus.remainingInr <= 0) {
             return res.status(400).json({ 
-                error: `Donation amount must be between ${limits.min} and ${limits.max} ${cur}.` 
+                error: `You have reached your daily donation cap of ₹${capStatus.totalCapInr.toLocaleString('en-IN')}. Thank you for your support! Please try again tomorrow.` 
+            });
+        }
+
+        // 2. Check if requested amount exceeds remaining cap (with 0.5 INR margin for floating point precision)
+        if (numAmountInInr > capStatus.remainingInr + 0.5) {
+            const allowedInCur = (capStatus.remainingInr / rate).toFixed(cur === 'INR' ? 0 : 2);
+            const symbol = cur === 'INR' ? '₹' : (cur === 'USD' ? '$' : (cur === 'EUR' ? '€' : '£'));
+            return res.status(400).json({ 
+                error: `Donation amount exceeds your remaining daily limit of ${symbol}${allowedInCur} (${cur}).` 
+            });
+        }
+
+        // 3. Minimum donation validation
+        const limits = DONATION_LIMITS[cur] || { min: 100, max: 2000 };
+        if (isNaN(numAmount) || numAmount < limits.min) {
+            return res.status(400).json({ 
+                error: `Minimum donation amount is ${cur === 'INR' ? '₹' : ''}${limits.min} ${cur}.` 
             });
         }
 
@@ -8780,6 +9117,8 @@ app.post('/create-cashfree-order', async (req, res) => {
             paymentSessionId: response.data.payment_session_id,
             donorEmail: customerEmail,
             donorPhone: customerPhone,
+            guestId: capStatus.guestId,
+            donorIp: getClientIp(req),
             status: 'pending'
         }).save();
 
@@ -10543,6 +10882,7 @@ app.post('/api/verify-2fa', ensureAuthenticated, async (req, res) => {
             user.is2FAEnabled = true;
             user.twoFactorEnabled = true;
             user.twoFactorMethod = 'totp';
+            user.cardStatus = 'active';
             await user.save();
             req.login(user, () => res.json({ success: true }));
         } else {
@@ -10566,14 +10906,22 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
 
     // 2. Must have 2FA enabled
     if (!user.twoFactorEnabled && !user.is2FAEnabled) {
+        req.session.returnTo2FA = '/id-card';
         return res.render('pages/setup-2fa', {
             error: req.query.error,
-            message: req.query.message
+            message: req.query.message,
+            isSuspended: Boolean(user.cardId || user.cardStatus === 'suspended')
         });
     }
 
     try {
         const userDoc = await User.findById(user._id);
+
+        // If card was suspended and 2FA is now active, restore active status
+        if (userDoc.cardStatus === 'suspended') {
+            userDoc.cardStatus = 'active';
+            await userDoc.save();
+        }
 
         // 3. Generate 8-Digit ID if missing
         if (!userDoc.cardId) {
@@ -10609,6 +10957,24 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
             margin: 1
         });
 
+        // 4b. Resolve card avatar (defaults to user avatar by default) and card background (defaults to /images/card-bg.png)
+        let resolvedCardAvatarUrl = '/images/default-avatar.png';
+        if (userDoc.cardAvatarUrl) {
+            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.cardAvatarUrl);
+        } else if (req.user.signedAvatarUrl && req.user.signedAvatarUrl !== '/images/default-avatar.png') {
+            resolvedCardAvatarUrl = req.user.signedAvatarUrl;
+        } else if (userDoc.profileImageKey) {
+            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.profileImageKey);
+        }
+
+        let resolvedCardBgUrl = '/images/card-bg.png';
+        if (userDoc.cardBgUrl) {
+            resolvedCardBgUrl = await getSmartImageUrl(userDoc.cardBgUrl);
+        }
+
+        userDoc.resolvedCardAvatarUrl = resolvedCardAvatarUrl;
+        userDoc.resolvedCardBgUrl = resolvedCardBgUrl;
+
         res.render('pages/id-card', {
             cardUser: userDoc,
             publicQrUrl,
@@ -10623,8 +10989,25 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- 4. EDIT CARD SETTINGS (7 Day Cooldown & Bad Words) ---
-app.post('/id-card/edit', ensureAuthenticated, async (req, res) => {
+// --- 4. EDIT CARD SETTINGS (Upload Background/Avatar, 7 Day Cooldown & Bad Words) ---
+const uploadCardMedia = multer({ 
+    storage: memoryStorage, 
+    limits: { fileSize: 5 * 1024 * 1024 } 
+});
+
+app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
+    uploadCardMedia.fields([
+        { name: 'cardBgFile', maxCount: 1 },
+        { name: 'cardAvatarFile', maxCount: 1 }
+    ])(req, res, function (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+            return res.redirect('/id-card?error=' + encodeURIComponent('Uploaded image is too large. Maximum size is 5MB.'));
+        } else if (err) {
+            return res.redirect('/id-card?error=' + encodeURIComponent('An error occurred during file upload.'));
+        }
+        next();
+    });
+}, async (req, res) => {
     try {
         const allowedRoles = ['distributor', 'admin', 'owner'];
         if (!allowedRoles.includes(req.user.role)) {
@@ -10633,21 +11016,51 @@ app.post('/id-card/edit', ensureAuthenticated, async (req, res) => {
 
         const user = await User.findById(req.user._id);
         
-        // Cooldown check (7 days = 604800000 ms)
-        if (user.cardLastEdited && (Date.now() - user.cardLastEdited.getTime() < 604800000)) {
+        // Cooldown check (7 days = 604800000 ms) - owner is exempt
+        if (user.cardLastEdited && user.role !== 'owner' && (Date.now() - user.cardLastEdited.getTime() < 604800000)) {
             const nextEdit = new Date(user.cardLastEdited.getTime() + 604800000).toLocaleDateString();
             return res.redirect(`/id-card?error=You can only edit your card once every 7 days. Next edit available on ${nextEdit}.`);
         }
 
-        const { cardMessage, cardBgUrl } = req.body;
+        const { cardMessage, cardBgUrl, cardAvatarUrl, resetAvatarToAccount, resetBgToDefault } = req.body;
 
         // Profanity Check
         if (cardMessage && profanityFilter.isProfane(cardMessage)) {
             return res.redirect('/id-card?error=Inappropriate language detected. Please modify your message.');
         }
 
-        user.cardMessage = cardMessage ? String(cardMessage).trim().slice(0, 120) : 'Welcome to my profile! Follow me for the best mods.';
-        user.cardBgUrl = cardBgUrl ? String(cardBgUrl).trim() : '';
+        if (cardMessage !== undefined) {
+            user.cardMessage = cardMessage ? String(cardMessage).trim().slice(0, 120) : 'Welcome to my profile! Follow me for the best mods.';
+        }
+
+        // Handle Background: File Upload, URL or Reset
+        if (req.files && req.files['cardBgFile'] && req.files['cardBgFile'][0]) {
+            const file = req.files['cardBgFile'][0];
+            if (file.mimetype.startsWith('image/')) {
+                const bgBaseName = `${user._id}-${user.username}-card-bg`;
+                const bgKey = await uploadToB2(file, 'card-backgrounds', null, null, bgBaseName, { username: user.username });
+                user.cardBgUrl = bgKey;
+            }
+        } else if (resetBgToDefault === 'true' || resetBgToDefault === true) {
+            user.cardBgUrl = '';
+        } else if (cardBgUrl !== undefined) {
+            user.cardBgUrl = String(cardBgUrl).trim();
+        }
+
+        // Handle Avatar: File Upload, URL or Reset to Account Avatar
+        if (req.files && req.files['cardAvatarFile'] && req.files['cardAvatarFile'][0]) {
+            const file = req.files['cardAvatarFile'][0];
+            if (file.mimetype.startsWith('image/')) {
+                const avatarBaseName = `${user._id}-${user.username}-card-avatar`;
+                const avatarKey = await uploadToB2(file, 'card-avatars', null, null, avatarBaseName, { username: user.username });
+                user.cardAvatarUrl = avatarKey;
+            }
+        } else if (resetAvatarToAccount === 'true' || resetAvatarToAccount === true) {
+            user.cardAvatarUrl = '';
+        } else if (cardAvatarUrl !== undefined) {
+            user.cardAvatarUrl = String(cardAvatarUrl).trim();
+        }
+
         user.cardLastEdited = new Date();
         await user.save();
 
@@ -10655,6 +11068,56 @@ app.post('/id-card/edit', ensureAuthenticated, async (req, res) => {
     } catch (e) {
         console.error("ID Card edit error:", e);
         res.redirect('/id-card?error=Error updating card details.');
+    }
+});
+
+// --- 4b. FETCH GRAVATAR FOR CARD AVATAR ---
+app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
+    try {
+        const allowedRoles = ['distributor', 'admin', 'owner'];
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Unauthorized.' });
+        }
+
+        if (!req.user.email) {
+            return res.status(400).json({ error: 'No email associated with this account.' });
+        }
+
+        const email = req.user.email.toLowerCase().trim();
+        const hash = crypto.createHash('md5').update(email).digest('hex');
+        const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=256`;
+
+        let response;
+        try {
+            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer' });
+        } catch (err) {
+            if (err.response && err.response.status === 404) {
+                return res.status(404).json({ error: 'No Gravatar profile image found for your email address (' + req.user.email + ').' });
+            }
+            throw err;
+        }
+
+        const buffer = Buffer.from(response.data, 'binary');
+        const mimetype = response.headers['content-type'] || 'image/jpeg';
+        const mockFile = {
+            buffer: buffer,
+            originalname: `card-gravatar.jpg`,
+            mimetype: mimetype,
+            size: buffer.length
+        };
+
+        const avatarBaseName = `${req.user._id}-${req.user.username}-card-gravatar`;
+        const imageKey = await uploadToB2(mockFile, 'card-avatars', null, null, avatarBaseName, { username: req.user.username });
+
+        const user = await User.findById(req.user._id);
+        user.cardAvatarUrl = imageKey;
+        await user.save();
+
+        const signedUrl = await getSmartImageUrl(imageKey);
+        res.json({ success: true, avatarUrl: signedUrl, message: 'Gravatar card avatar synced successfully!' });
+    } catch (error) {
+        console.error("Error fetching card gravatar:", error);
+        res.status(500).json({ error: 'Could not fetch Gravatar. Please try again.' });
     }
 });
 
@@ -10673,6 +11136,15 @@ app.get('/qr-login/:token', async (req, res, next) => {
 
         if (user.isBanned) {
             return res.redirect('/banned');
+        }
+
+        // Suspended check if 2FA disabled or card status suspended
+        if (!user.twoFactorEnabled && !user.is2FAEnabled) {
+            return res.status(403).redirect('/login?error=' + encodeURIComponent('This ID card is suspended because 2-Factor Authentication is disabled. Please log in with your password and reactivate 2FA.'));
+        }
+
+        if (user.cardStatus === 'suspended' || user.cardStatus === 'revoked') {
+            return res.status(403).redirect('/login?error=' + encodeURIComponent('This ID card is currently suspended. Please log in with your credentials and re-enable 2FA.'));
         }
 
         // Automatically log them in
@@ -10707,8 +11179,28 @@ const startServer = async () => {
         await clientPromise;
         mongoose.Model.count = mongoose.Model.countDocuments; 
 
+        // Automatically purge any empty AI Chatbot sessions
+        ChatSession.deleteMany({
+            $or: [
+                { messages: { $size: 0 } },
+                { messages: { $exists: false } }
+            ]
+        }).catch(() => {}); 
+
         const adminRouter = await createAdminRouter();
-        app.use('/admin', ensureAdminOr404, adminRouter);
+        app.use('/admin', ensureAdminOr404, (req, res, next) => {
+            if (req.session && req.user) {
+                req.session.adminUser = {
+                    id: String(req.user._id),
+                    _id: String(req.user._id),
+                    email: req.user.email,
+                    username: req.user.username,
+                    role: req.user.role,
+                    membership: req.user.membership
+                };
+            }
+            next();
+        }, adminRouter);
         
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json({
@@ -10723,7 +11215,9 @@ const startServer = async () => {
             cors: {
                 origin: allowedOrigins, 
                 methods: ["GET", "POST"]
-            }
+            },
+            pingInterval: 8000,
+            pingTimeout: 5000
         });
 
         // Reuse the site's authenticated session for support sockets. Client-side
@@ -10733,13 +11227,17 @@ const startServer = async () => {
         io.use(wrapSocketMiddleware(passport.initialize()));
         io.use(wrapSocketMiddleware(passport.session()));
         
-        // ✅ CRITICAL FIX: Make Socket.IO globally accessible HERE, inside the function!
-        app.set('io', io); 
-
         // Tracking connected support members, staff & live users
         const connectedSupportSockets = new Set();
         const connectedAgentSockets = new Set();
         const connectedUsers = new Map(); // socket.id -> { userId, username, role, avatarUrl, isStaff }
+
+        // ✅ CRITICAL FIX: Make Socket.IO & state globally accessible to Express routes (e.g. /logout)
+        app.set('io', io); 
+        app.set('connectedUsers', connectedUsers);
+        app.set('connectedSupportSockets', connectedSupportSockets);
+        app.set('connectedAgentSockets', connectedAgentSockets);
+        app.set('broadcastOnlineStats', broadcastOnlineStats);
 
         async function resolveUserAvatar(u) {
             if (!u) return '/images/default-avatar.png';
@@ -10756,7 +11254,18 @@ const startServer = async () => {
 
         function getLiveUsersList() {
             const uniqueMap = new Map();
-            for (const u of connectedUsers.values()) {
+            const activeSockets = io && io.sockets && io.sockets.sockets;
+            for (const [sId, u] of connectedUsers.entries()) {
+                // Instantly prune sockets that have disconnected or no longer exist
+                if (activeSockets) {
+                    const sock = activeSockets.get(sId);
+                    if (!sock || !sock.connected) {
+                        connectedUsers.delete(sId);
+                        connectedSupportSockets.delete(sId);
+                        connectedAgentSockets.delete(sId);
+                        continue;
+                    }
+                }
                 if (u && u.userId && !uniqueMap.has(u.userId)) {
                     uniqueMap.set(u.userId, u);
                 }
@@ -10857,7 +11366,10 @@ const startServer = async () => {
                 } catch (e) {}
                 broadcastOnlineStats();
                 try {
-                    const activeChats = await ChatSession.find({ status: { $in: ['waiting-for-agent', 'active-agent'] } })
+                    const activeChats = await ChatSession.find({ 
+                        status: { $in: ['waiting-for-agent', 'active-agent'] },
+                        'messages.0': { $exists: true }
+                    })
                         .populate('user', 'username email profileImageKey')
                         .sort({ updatedAt: -1 });
                     
@@ -10933,33 +11445,40 @@ const startServer = async () => {
                         broadcastOnlineStats();
                     }
                     const userId = authenticatedUser ? authenticatedUser._id : null;
-                    let expiresAt = new Date(Date.now() + (userId ? 24 * 60 : 24) * 60 * 60 * 1000);
                     let session = null;
 
                     // If forceNew is not requested, try finding by ID
                     if (!data.forceNew && data.sessionId) {
                         session = await ChatSession.findById(data.sessionId);
                         const ownsSession = session && ((userId && session.user && String(session.user) === String(userId)) || (!userId && session.guestId === data.guestId));
-                        if (!ownsSession) session = null;
-                    }
-                    
-                    if (!session) {
-                        session = new ChatSession({
-                            user: userId,
-                            guestId: data.guestId,
-                            guestEmail: !userId && /^\S+@\S+\.\S+$/.test((data.guestEmail || '').trim()) ? data.guestEmail.trim() : undefined,
-                            expiresAt: expiresAt,
-                            adminNotes: data.deviceInfo ? `Device: ${data.deviceInfo.browser || 'Unknown'} on ${data.deviceInfo.os || 'Unknown'}${data.currentPage ? ` | Page: ${data.currentPage}` : ''}` : ''
-                        });
-                        await session.save();
+                        if (!ownsSession) {
+                            session = null;
+                        } else if (!session.messages || session.messages.length === 0) {
+                            // Empty chat detected: automatically discard and do not retain
+                            await ChatSession.deleteOne({ _id: session._id });
+                            session = null;
+                        }
                     }
 
-                    socket.join(`support_${session._id}`);
+                    // Cache pending telemetry on socket without persisting an empty document to MongoDB
+                    socket.data = socket.data || {};
+                    socket.data.pendingChatMeta = {
+                        guestEmail: data.guestEmail,
+                        deviceInfo: data.deviceInfo,
+                        currentPage: data.currentPage
+                    };
+
+                    const isNew = !session;
+                    const activeSessionId = session ? session._id : new mongoose.Types.ObjectId();
+                    const history = session ? session.messages : [];
+                    const status = session ? session.status : 'bot';
+
+                    socket.join(`support_${activeSessionId}`);
                     socket.emit('support_chat_ready', { 
-                        sessionId: session._id, 
-                        history: session.messages,
-                        status: session.status,
-                        isNew: !data.sessionId || data.forceNew
+                        sessionId: activeSessionId, 
+                        history: history,
+                        status: status,
+                        isNew: isNew
                     });
                 } catch (err) {
                     console.error("join_support_chat error:", err);
@@ -10969,11 +11488,16 @@ const startServer = async () => {
             socket.on('set_support_email', async (data) => {
                 try {
                     if (socket.request.user || !/^\S+@\S+\.\S+$/.test((data.guestEmail || '').trim())) return;
+                    if (socket.data?.pendingChatMeta) {
+                        socket.data.pendingChatMeta.guestEmail = data.guestEmail.trim();
+                    }
                     const session = await ChatSession.findById(data.sessionId);
                     if (!session || session.user || session.guestId !== data.guestId) return;
                     session.guestEmail = data.guestEmail.trim();
-                    await session.save();
-                    io.to('support_agents').emit('agent_chat_updated', session);
+                    if (session.messages && session.messages.length > 0) {
+                        await session.save();
+                        io.to('support_agents').emit('agent_chat_updated', session);
+                    }
                 } catch (err) {
                     console.error('set_support_email error:', err);
                 }
@@ -10990,18 +11514,21 @@ const startServer = async () => {
                         return socket.emit('user_chat_history_list', []);
                     }
 
-                    const sessions = await ChatSession.find({ $or: conditions })
+                    const sessions = await ChatSession.find({ 
+                        $or: conditions,
+                        'messages.0': { $exists: true } // Exclude any empty conversations
+                    })
                         .sort({ updatedAt: -1 })
                         .limit(20)
                         .lean();
 
                     const historyList = sessions.map(s => {
                         const msgs = s.messages || [];
-                        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].text : 'Empty conversation';
+                        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].text : '';
                         return {
                             _id: s._id,
                             status: s.status,
-                            snippet: lastMsg && lastMsg.length > 50 ? lastMsg.substring(0, 50) + '...' : (lastMsg || 'No message'),
+                            snippet: lastMsg && lastMsg.length > 50 ? lastMsg.substring(0, 50) + '...' : (lastMsg || 'Chat'),
                             messageCount: msgs.length,
                             updatedAt: s.updatedAt || s.createdAt
                         };
@@ -11018,6 +11545,10 @@ const startServer = async () => {
             socket.on('switch_support_chat', async (data) => {
                 try {
                     const session = await ChatSession.findById(data.sessionId);
+                    if (session && (!session.messages || session.messages.length === 0)) {
+                        await ChatSession.deleteOne({ _id: session._id });
+                        return;
+                    }
                     const userId = socket.request.user?._id;
                     const ownsSession = session && ((userId && session.user && String(session.user) === String(userId)) || (!userId && session.guestId === data.guestId));
                     if (ownsSession) {
@@ -11064,9 +11595,32 @@ const startServer = async () => {
                     const { sessionId, text } = data;
                     if (!sessionId || !text) return;
                     
-                    const session = await ChatSession.findById(sessionId).populate('user');
-                    if (!session) return;
                     const userId = socket.request.user?._id;
+                    let session = await ChatSession.findById(sessionId).populate('user');
+
+                    // If session was deferred and not yet saved in MongoDB, instantiate and save it now
+                    if (!session) {
+                        const authenticatedUser = socket.request.user;
+                        const meta = socket.data?.pendingChatMeta || {};
+                        const expiresAt = new Date(Date.now() + (authenticatedUser ? 24 * 60 : 24) * 60 * 60 * 1000);
+                        const guestEmail = (!userId && /^\S+@\S+\.\S+$/.test((data.guestEmail || meta.guestEmail || '').trim()))
+                            ? (data.guestEmail || meta.guestEmail).trim()
+                            : undefined;
+                        const adminNotes = (data.deviceInfo || meta.deviceInfo)
+                            ? `Device: ${(data.deviceInfo || meta.deviceInfo).browser || 'Unknown'} on ${(data.deviceInfo || meta.deviceInfo).os || 'Unknown'}${(data.currentPage || meta.currentPage) ? ` | Page: ${data.currentPage || meta.currentPage}` : ''}`
+                            : '';
+
+                        session = new ChatSession({
+                            _id: sessionId,
+                            user: userId || null,
+                            guestId: data.guestId,
+                            guestEmail: guestEmail,
+                            expiresAt: expiresAt,
+                            adminNotes: adminNotes,
+                            status: 'bot'
+                        });
+                    }
+
                     const ownsSession = (userId && session.user && String(session.user._id || session.user) === String(userId)) ||
                         (!userId && session.guestId && session.guestId === data.guestId);
                     if (!ownsSession) return;
@@ -11266,6 +11820,33 @@ const startServer = async () => {
                 }
             });
             
+            socket.on('leave_support_chat', (data) => {
+                connectedSupportSockets.delete(socket.id);
+                connectedAgentSockets.delete(socket.id);
+                connectedUsers.delete(socket.id);
+                if (data && data.userId) {
+                    const uId = String(data.userId);
+                    let hasOtherActiveSocket = false;
+                    const activeSockets = io && io.sockets && io.sockets.sockets;
+                    for (const [sId, u] of connectedUsers.entries()) {
+                        if (sId !== socket.id && u && String(u.userId) === uId) {
+                            if (activeSockets && activeSockets.get(sId)?.connected) {
+                                hasOtherActiveSocket = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!hasOtherActiveSocket) {
+                        for (const [sId, u] of connectedUsers.entries()) {
+                            if (u && String(u.userId) === uId) {
+                                connectedUsers.delete(sId);
+                            }
+                        }
+                    }
+                }
+                broadcastOnlineStats();
+            });
+
             socket.on('disconnect', () => {
                 console.log('User disconnected from chat');
                 connectedSupportSockets.delete(socket.id);

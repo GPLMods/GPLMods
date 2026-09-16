@@ -70,6 +70,29 @@
             </a>
         </div>
 
+        <% if (typeof isCardRef !== 'undefined' && isCardRef) { %>
+            <% const isCardSuspended = profileUser.cardStatus === 'suspended' || (!profileUser.twoFactorEnabled && !profileUser.is2FAEnabled); %>
+            <% if (isCardSuspended) { %>
+                <div style="background: rgba(229, 57, 53, 0.15); border: 2px solid var(--red); border-radius: 12px; padding: 14px 20px; margin-bottom: 25px; text-align: center; color: #ff8585;">
+                    <div style="font-weight: bold; font-size: 1.05em; margin-bottom: 4px;">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--red); margin-right: 6px;"></i> Verified ID Card Suspended
+                    </div>
+                    <p style="margin: 0; font-size: 0.9em; color: var(--silver);">
+                        This creator's ID card verification is currently <strong>suspended</strong> because 2-Factor Authentication was disabled.
+                    </p>
+                </div>
+            <% } else { %>
+                <div style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--gold); border-radius: 12px; padding: 14px 20px; margin-bottom: 25px; text-align: center; color: var(--gold);">
+                    <div style="font-weight: bold; font-size: 1.05em; margin-bottom: 4px;">
+                        <i class="fas fa-id-badge" style="margin-right: 6px;"></i> Official Verified Cardholder
+                    </div>
+                    <p style="margin: 0; font-size: 0.9em; color: var(--silver);">
+                        <%= profileUser.cardMessage || 'Welcome to my official distributor page! Follow me for the best mods.' %>
+                    </p>
+                </div>
+            <% } %>
+        <% } %>
+
         <header class="profile-header">
             <!-- Avatar with Dynamic Rank Glow & Badge -->
             <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 5px;">
@@ -108,7 +131,20 @@
             <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 5px; text-shadow: 0 0 10px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
                 <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= profileUser.forumPoints || 0 %> pts)
             </p>
-            <p class="user-role" style="margin-bottom: 15px;"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></p>
+            <p class="user-role" style="margin-bottom: 15px;">
+                <%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %>
+                <% if (profileUser.cardId) { %>
+                    <% if (profileUser.cardStatus === 'suspended' || (!profileUser.twoFactorEnabled && !profileUser.is2FAEnabled)) { %>
+                        <span style="display: inline-block; background: rgba(229,57,53,0.2); color: #ff6b6b; border: 1px solid var(--red); font-size: 0.75em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: normal; vertical-align: middle;">
+                            Card Suspended
+                        </span>
+                    <% } else { %>
+                        <span style="display: inline-block; background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold); font-size: 0.75em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: normal; vertical-align: middle;">
+                            <i class="fas fa-id-card"></i> Card Verified
+                        </span>
+                    <% } %>
+                <% } %>
+            </p>
             
             <!-- ✅ NEW: SOCIAL LINKS MOVED TO HEADER -->
             <% if (profileUser.role === 'admin' || profileUser.role === 'distributor') { %>

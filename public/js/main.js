@@ -697,6 +697,12 @@ function initializeMobileMenu() {
         }
     });
 
+    // Close on explicit close button click
+    const closeBtn = document.getElementById('closeMobileNav');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeNav);
+    }
+
     // Handle collapsible sub-menus
     const collapsibleTriggers = mobileNav.querySelectorAll('.collapsible-trigger');
     collapsibleTriggers.forEach(trigger => {

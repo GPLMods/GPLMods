@@ -60,12 +60,15 @@
             </form>
 
             <!-- 2. Authenticator App Method -->
-            <div class="method-card">
+            <div class="method-card" style="border-color: rgba(33, 150, 243, 0.4);">
                 <div class="method-header">
-                    <h3 id="btn-setup-totp"><i class="fas fa-mobile-alt" style="color: var(--blue); width: 25px;"></i> Authenticator App</h3>
+                    <h3 id="btn-setup-totp">
+                        <i class="fas fa-mobile-alt" style="color: var(--blue); width: 25px;"></i> Authenticator App (QR Code)
+                        <span style="background: rgba(33, 150, 243, 0.2); color: #64b5f6; border: 1px solid var(--blue); font-size: 0.6em; padding: 2px 8px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-left: 8px;">Recommended</span>
+                    </h3>
                     <i class="fas fa-info-circle info-icon" data-info="totp" title="Learn More"></i>
                 </div>
-                <p id="btn-setup-totp-p">Use Google or Microsoft Authenticator for instant codes without internet.</p>
+                <p id="btn-setup-totp-p">Scan a QR Code with Google Authenticator or Authy for instant, offline verification.</p>
             </div>
 
             <!-- 3. Passkeys (WebAuthn) Method -->
@@ -201,6 +204,41 @@
         <div style="display: flex; gap: 15px; justify-content: center;">
             <a href="/profile" class="btn btn-secondary" style="color: var(--red); border: 2px solid var(--red); background: transparent; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none;">Yes, Cancel</a>
             <button type="button" class="btn btn-primary" id="stay-on-setup-btn" style="padding: 10px 20px; border-radius: 8px;">No, Set Up 2FA</button>
+        </div>
+    </div>
+</div>
+
+<!-- Accurate Device Error Modal -->
+<div id="device-error-modal" class="policy-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 999999; padding: 20px;">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 16px; border-top: 4px solid var(--red); max-width: 500px; width: 100%; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 1px solid rgba(229, 57, 53, 0.4);">
+        <div style="width: 65px; height: 65px; border-radius: 50%; background: rgba(229, 57, 53, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px auto; border: 2px solid var(--red);">
+            <i class="fas fa-mobile-alt" style="font-size: 2em; color: var(--red);"></i>
+        </div>
+        <h2 id="device-error-title" style="color: var(--white); margin-bottom: 12px; font-size: 1.4em;">Device Verification Issue</h2>
+        <p id="device-error-desc" style="color: var(--silver); line-height: 1.6; margin-bottom: 15px; text-align: left; font-size: 0.95em;"></p>
+        
+        <!-- Accurate Diagnostic Tips -->
+        <div id="device-error-troubleshoot" style="background: rgba(0,0,0,0.4); border: 1px solid #333; border-radius: 10px; padding: 14px; margin-bottom: 18px; text-align: left; font-size: 0.85em; color: var(--silver);">
+            <strong style="color: var(--gold); display: block; margin-bottom: 6px;"><i class="fas fa-lightbulb"></i> Troubleshooting Steps:</strong>
+            <ul id="device-error-tips" style="padding-left: 20px; margin: 0; line-height: 1.5;">
+            </ul>
+        </div>
+
+        <!-- Technical Detail Accordion -->
+        <div style="text-align: left; margin-bottom: 20px;">
+            <div id="toggle-tech-details" style="font-size: 0.8em; color: var(--silver); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; text-decoration: underline;">
+                <span>Technical Error Details</span> <i class="fas fa-chevron-down" style="font-size: 0.8em;"></i>
+            </div>
+            <pre id="device-error-tech" style="display: none; background: #0c0c0c; border: 1px solid #222; border-radius: 6px; padding: 10px; font-size: 0.75em; color: #ff8585; overflow-x: auto; margin-top: 8px; white-space: pre-wrap; word-break: break-word;"></pre>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" id="device-error-retry-btn" class="btn btn-primary" style="padding: 10px 22px; border-radius: 8px; font-weight: bold; background: var(--gold); color: var(--black); border: none; cursor: pointer;">
+                <i class="fas fa-redo"></i> Try Again
+            </button>
+            <button type="button" id="device-error-close-btn" class="btn btn-secondary" style="padding: 10px 20px; border-radius: 8px; font-weight: bold; border: 1px solid var(--silver); color: var(--silver); background: transparent; cursor: pointer;">
+                Close
+            </button>
         </div>
     </div>
 </div>
@@ -350,37 +388,153 @@
             });
         }
 
-        // --- 5. Passkey (WebAuthn) Setup Logic ---
+        // --- 5. Passkey (WebAuthn) Setup Logic with Device Error Popup ---
+        const deviceErrorModal = document.getElementById('device-error-modal');
+        const deviceErrorCloseBtn = document.getElementById('device-error-close-btn');
+        const deviceErrorRetryBtn = document.getElementById('device-error-retry-btn');
+        const toggleTechDetails = document.getElementById('toggle-tech-details');
+        const deviceErrorTech = document.getElementById('device-error-tech');
+
+        function showDeviceErrorPopup(error) {
+            if (!deviceErrorModal) {
+                alert(error.message || String(error));
+                return;
+            }
+
+            const titleEl = document.getElementById('device-error-title');
+            const descEl = document.getElementById('device-error-desc');
+            const tipsList = document.getElementById('device-error-tips');
+
+            const errName = error.name || '';
+            const errMsg = error.message || String(error);
+            if (deviceErrorTech) {
+                deviceErrorTech.textContent = `[${errName || 'Error'}] ${errMsg}`;
+                deviceErrorTech.style.display = 'none';
+            }
+
+            let title = 'Device Authentication Issue';
+            let desc = 'Your device encountered a problem during biometric passkey verification.';
+            let tips = [];
+
+            if (errName === 'NotAllowedError' || errMsg.toLowerCase().includes('not allowed') || errMsg.toLowerCase().includes('timed out') || errMsg.toLowerCase().includes('cancelled') || errMsg.toLowerCase().includes('canceled')) {
+                title = 'Biometric Verification Cancelled / Timed Out';
+                desc = 'The biometric prompt was closed or timed out before completion on your device.';
+                tips = [
+                    'Ensure your screen is unlocked and prompt notifications are not blocked by Focus or Do Not Disturb.',
+                    'Respond promptly when the Windows Hello (PIN/Fingerprint), TouchID, or FaceID dialog appears.',
+                    'Check your browser permissions to ensure "Security keys & biometrics" access is allowed for this site.',
+                    'If using a physical YubiKey / USB key, make sure it is inserted firmly and tapped when illuminated.'
+                ];
+            } else if (errName === 'NotSupportedError' || errMsg.toLowerCase().includes('not supported') || errMsg.toLowerCase().includes('missing')) {
+                title = 'Device Biometrics Not Supported';
+                desc = 'Your current browser or device operating system does not have hardware support for WebAuthn passkeys.';
+                tips = [
+                    'Try accessing GPL Mods using Google Chrome, Microsoft Edge, Safari, or Brave with platform biometrics enabled.',
+                    'On Windows: Open Windows Settings > Accounts > Sign-in options and make sure Windows Hello (PIN/Fingerprint) is set up.',
+                    'On macOS/iOS: Ensure Touch ID or Face ID is enabled for browser autofill & passkeys in System Settings.',
+                    'Alternatively, switch to the Authenticator App (TOTP) method which works on every phone and browser.'
+                ];
+            } else if (errName === 'InvalidStateError' || errMsg.toLowerCase().includes('already registered')) {
+                title = 'Passkey Already Linked';
+                desc = 'This device or security key has already been registered for your account.';
+                tips = [
+                    'Your device already holds a valid biometric passkey for GPL Mods.',
+                    'You can proceed directly to login using this device.'
+                ];
+            } else if (errName === 'SecurityError' || errMsg.toLowerCase().includes('insecure') || errMsg.toLowerCase().includes('origin')) {
+                title = 'Secure Context Required';
+                desc = 'WebAuthn hardware cryptography is only permitted over HTTPS or localhost.';
+                tips = [
+                    'Ensure your URL starts with https://.',
+                    'Disable any aggressive privacy extensions that may be intercepting navigator.credentials calls.'
+                ];
+            } else if (errMsg.toLowerCase().includes('server') || errMsg.toLowerCase().includes('verify') || errMsg.toLowerCase().includes('failed to save')) {
+                title = 'Server Verification Failed';
+                desc = errMsg || 'The server could not validate the cryptographic signature returned by your device.';
+                tips = [
+                    'Verify that your device date and time are synchronized automatically with network time.',
+                    'Check your internet connection and try again.'
+                ];
+            } else {
+                title = 'Device Verification Notice';
+                desc = errMsg || 'An unexpected response was received from your device authenticator.';
+                tips = [
+                    'Restart your browser and ensure your device operating system has the latest updates.',
+                    'You can always use the Authenticator App (TOTP) option as a reliable alternative.'
+                ];
+            }
+
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+            tipsList.innerHTML = tips.map(t => `<li style="margin-bottom: 6px;">${t}</li>`).join('');
+
+            deviceErrorModal.style.display = 'flex';
+        }
+
+        if (deviceErrorCloseBtn && deviceErrorModal) {
+            deviceErrorCloseBtn.addEventListener('click', () => {
+                deviceErrorModal.style.display = 'none';
+            });
+            deviceErrorModal.addEventListener('click', (e) => {
+                if (e.target === deviceErrorModal) deviceErrorModal.style.display = 'none';
+            });
+        }
+
+        if (toggleTechDetails && deviceErrorTech) {
+            toggleTechDetails.addEventListener('click', () => {
+                deviceErrorTech.style.display = deviceErrorTech.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+
+        async function runPasskeyRegistration() {
+            if (deviceErrorModal) deviceErrorModal.style.display = 'none';
+
+            if (typeof SimpleWebAuthnBrowser === 'undefined') {
+                showDeviceErrorPopup(new Error("Passkey browser library is still loading. Please check your internet connection and try again."));
+                return;
+            }
+
+            const { startRegistration } = SimpleWebAuthnBrowser;
+            try {
+                const resp = await fetch('/account/2fa/passkey/generate-options');
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+                    throw new Error(errData.error || "Backend route missing or failed.");
+                }
+                
+                const options = await resp.json();
+                const attResp = await startRegistration(options);
+                
+                const verificationResp = await fetch('/account/2fa/passkey/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(attResp),
+                });
+                
+                const verification = await verificationResp.json();
+                if (verification.success) {
+                    window.location.href = verification.redirect || '/account/2fa/recovery-codes';
+                } else {
+                    showDeviceErrorPopup(new Error(verification.error || "Failed to save passkey on server."));
+                }
+            } catch (error) {
+                console.error("Passkey Error:", error);
+                showDeviceErrorPopup(error);
+            }
+        }
+
+        if (deviceErrorRetryBtn) {
+            deviceErrorRetryBtn.addEventListener('click', () => {
+                runPasskeyRegistration();
+            });
+        }
+
         const setupPasskeyTriggers = [document.getElementById('btn-setup-passkey'), document.getElementById('btn-setup-passkey-p')];
         setupPasskeyTriggers.forEach(el => {
             if(!el) return;
             el.addEventListener('click', async (e) => {
                 if (e.target.classList.contains('info-icon')) return;
-
-                const { startRegistration } = SimpleWebAuthnBrowser;
-                try {
-                    const resp = await fetch('/account/2fa/passkey/generate-options');
-                    if (!resp.ok) throw new Error("Backend route missing or failed.");
-                    
-                    const options = await resp.json();
-                    const attResp = await startRegistration(options);
-                    
-                    const verificationResp = await fetch('/account/2fa/passkey/verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(attResp),
-                    });
-                    
-                    const verification = await verificationResp.json();
-                    if (verification.success) {
-                        window.location.href = '/account/2fa/recovery-codes';
-                    } else {
-                        alert("Failed to save passkey on server.");
-                    }
-                } catch (error) {
-                    console.error("Passkey Error:", error);
-                    alert("Passkey setup failed or was cancelled by user.");
-                }
+                runPasskeyRegistration();
             });
         });
     });

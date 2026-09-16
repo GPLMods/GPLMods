@@ -24,7 +24,7 @@
             </button>
 
             <!-- Original Confirmation Button -->
-            <a href="/profile?success=2FA successfully activated!" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; text-decoration: none; font-weight: bold; transition: all 0.3s ease;">
+            <a href="<%= (typeof returnUrl !== 'undefined' && returnUrl) ? returnUrl : '/profile?success=2FA successfully activated!' %>" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; text-decoration: none; font-weight: bold; transition: all 0.3s ease;">
                 I Have Saved These Codes
             </a>
         </div>

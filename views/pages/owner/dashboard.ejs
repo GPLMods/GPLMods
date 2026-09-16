@@ -3,40 +3,56 @@
     .owner-header { text-align: center; padding: 40px 20px 20px; }
     .owner-header h1 { font-size: 2.5em; color: var(--white); }
     .owner-header h1 span { color: #f44336; text-shadow: 0 0 15px rgba(244, 67, 54, 0.6); }
-    .owner-header p { color: var(--silver); max-width: 600px; margin: 10px auto; }
+    .owner-header p { color: var(--silver); max-width: 650px; margin: 10px auto; font-size: 0.95em; }
     
-    .owner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto 60px auto; padding: 0 20px; }
+    .owner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto 60px auto; padding: 0 20px; }
     
-    .owner-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 25px; transition: all 0.3s ease; display: flex; flex-direction: column; gap: 15px; position: relative; overflow: hidden; }
+    .owner-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 22px; transition: all 0.3s ease; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden; }
     .owner-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #444; transition: 0.3s; }
     
     .owner-card.render::before { background: #6b4fbb; }
     .owner-card.cloudflare::before { background: #f38020; }
-    .owner-card.improvmx::before { background: #ff9800; }
+    .owner-card.dynu::before { background: #0070ba; }
+    .owner-card.netlify::before { background: #00ad9f; }
     .owner-card.mongo::before { background: #47a248; }
     .owner-card.b2::before { background: #d9241b; }
     .owner-card.failback::before { background: #00bcd4; }
     .owner-card.dns::before { background: #9c27b0; }
+    .owner-card.improvmx::before { background: #ff9800; }
 
     .owner-card:hover { border-color: #555; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
     
-    .card-title { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--white); font-size: 1.3em; }
-    .card-title i { font-size: 1.2em; }
+    .card-title { display: flex; align-items: center; justify-content: space-between; margin: 0; color: var(--white); font-size: 1.25em; }
+    .card-title-left { display: flex; align-items: center; gap: 10px; }
+    .card-title i { font-size: 1.15em; }
     
     .owner-card.render .card-title i { color: #6b4fbb; }
     .owner-card.cloudflare .card-title i { color: #f38020; }
-    .owner-card.improvmx .card-title i { color: #ff9800; }
+    .owner-card.dynu .card-title i { color: #0070ba; }
+    .owner-card.netlify .card-title i { color: #00ad9f; }
     .owner-card.mongo .card-title i { color: #47a248; }
     .owner-card.b2 .card-title i { color: #d9241b; }
     .owner-card.failback .card-title i { color: #00bcd4; }
     .owner-card.dns .card-title i { color: #9c27b0; }
+    .owner-card.improvmx .card-title i { color: #ff9800; }
     
-    .card-desc { color: #aaa; font-size: 0.9em; margin: 0; line-height: 1.4; flex-grow: 1; }
+    .card-desc { color: #aaa; font-size: 0.88em; margin: 0; line-height: 1.4; flex-grow: 1; }
     
-    .action-group { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
-    .action-row { display: flex; gap: 10px; }
+    /* Badges */
+    .owner-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 600; background: #222; border: 1px solid #444; width: fit-content; }
+    .owner-badge.active { color: #4caf50; border-color: #4caf50; background: rgba(76, 175, 80, 0.1); }
+    .owner-badge.warning { color: #ff9800; border-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
+    .owner-badge.info { color: #00bcd4; border-color: #00bcd4; background: rgba(0, 188, 212, 0.1); }
+    .owner-badge.error { color: #f44336; border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+
+    .details-box { max-height: 140px; overflow-y: auto; background: #111; border: 1px solid #2a2a2a; border-radius: 6px; padding: 8px 10px; font-size: 0.8em; color: #bbb; display: none; line-height: 1.4; }
+    .details-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #1f1f1f; }
+    .details-row:last-child { border-bottom: none; }
+
+    .action-group { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+    .action-row { display: flex; gap: 8px; }
     
-    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.9em; transition: 0.2s; background: #2a2a2a; color: #eee; }
+    .btn-action { flex: 1; padding: 9px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.85em; transition: 0.2s; background: #262626; color: #eee; }
     .btn-action:hover { background: #333; }
     .btn-action.primary { background: var(--gold); color: #000; }
     .btn-action.primary:hover { background: #ffca28; }
@@ -44,26 +60,15 @@
     .btn-action.warning:hover { background: #ffa726; }
     .btn-action.danger { background: #d32f2f; color: #fff; }
     .btn-action.danger:hover { background: #b71c1c; }
+    .btn-action.info { background: #0088cc; color: #fff; }
+    .btn-action.info:hover { background: #0099e6; }
     
-    .status-feedback { font-size: 0.85em; text-align: center; margin-top: 5px; height: 16px; color: var(--green); display: none; }
-    
-    /* Specific Link Buttons */
+    .status-feedback { font-size: 0.82em; text-align: center; margin-top: 4px; min-height: 16px; color: var(--green); display: none; word-break: break-word; }
     .btn-link { text-decoration: none; text-align: center; }
-
-    /* ImprovMX custom styles */
-    .improv-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.75em; font-weight: 600; background: #252525; border: 1px solid #444; width: fit-content; }
-    .improv-badge.active { color: #4caf50; border-color: #4caf50; background: rgba(76, 175, 80, 0.1); }
-    .improv-badge.warning { color: #ff9800; border-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
-    .improv-badge.error { color: #f44336; border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
-
-    .improv-aliases-box { max-height: 150px; overflow-y: auto; background: #111; border: 1px solid #333; border-radius: 6px; padding: 8px; font-size: 0.8em; margin-top: 5px; display: none; }
-    .alias-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #222; }
-    .alias-row:last-child { border-bottom: none; }
-    .alias-del-btn { background: none; border: none; color: #f44336; cursor: pointer; padding: 2px 6px; font-size: 0.9em; }
 
     /* Modal styles */
     .owner-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-    .owner-modal-card { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 480px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+    .owner-modal-card { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 500px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
     .owner-modal-card h3 { margin: 0 0 15px 0; color: var(--gold); display: flex; justify-content: space-between; align-items: center; }
     .owner-modal-card .close-btn { cursor: pointer; color: #888; border: none; background: none; font-size: 1.2em; }
     .owner-modal-input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #444; border-radius: 6px; color: #fff; margin-bottom: 12px; font-family: inherit; box-sizing: border-box; }
@@ -71,29 +76,35 @@
 
 <div class="owner-header">
     <h1>Owner <span>Command Center</span></h1>
-    <p>Ultimate infrastructure control panel. Manage external CDNs, databases, cloud storage, custom email, and deployment pipelines from one place.</p>
+    <p>Unified infrastructure control panel. Manage Cloudflare Workers, Backblaze B2, MongoDB Atlas, Dynu DNS, Netlify, InfinityFree FTP, and Anti-Revoke iOS archives from one dashboard.</p>
 </div>
 
 <div class="owner-grid">
-    <!-- Render -->
+    <!-- 1. Render -->
     <div class="owner-card render">
-        <h3 class="card-title"><i class="fas fa-server"></i> Render Deployment</h3>
-        <p class="card-desc">Control the main web service hosted on Render. Trigger manual deployments or fetch service status.</p>
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-server"></i> <span>Render Deployment</span></div>
+        </div>
+        <p class="card-desc">Control the primary Node.js application hosted on Render. Trigger manual zero-downtime deployment pipelines.</p>
         <div class="action-group">
             <button class="btn-action primary" onclick="handleAction(this, '/api/owner/render/deploy')">
-                <i class="fas fa-rocket"></i> Manual Deploy
+                <i class="fas fa-rocket"></i> Trigger Deployment
             </button>
             <a href="https://dashboard.render.com" target="_blank" class="btn-action btn-link">
-                <i class="fas fa-external-link-alt"></i> Open Dashboard
+                <i class="fas fa-external-link-alt"></i> Render Console
             </a>
             <div class="status-feedback"></div>
         </div>
     </div>
 
-    <!-- Cloudflare -->
+    <!-- 2. Cloudflare CDN & Workers -->
     <div class="owner-card cloudflare">
-        <h3 class="card-title"><i class="fas fa-cloud"></i> Cloudflare CDN & Workers</h3>
-        <p class="card-desc">Manage edge caching and Cloudflare Workers integration.</p>
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-cloud"></i> <span>Cloudflare CDN & Workers</span></div>
+            <div id="cfStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Edge CDN cache management and Cloudflare Workers (<code>ios-api-cach</code> CDN & DNS archive gateway).</p>
+        <div id="cfDetailsBox" class="details-box"></div>
         <div class="action-group">
             <div class="action-row">
                 <button class="btn-action danger" onclick="handleAction(this, '/api/owner/cloudflare/purge')">
@@ -103,21 +114,167 @@
                     <i class="fas fa-sync"></i> Reload Workers
                 </button>
             </div>
-            <a href="https://dash.cloudflare.com" target="_blank" class="btn-action btn-link">
-                <i class="fas fa-external-link-alt"></i> Open Dashboard
+            <div class="action-row">
+                <button class="btn-action" onclick="checkCloudflareStatus(this)">
+                    <i class="fas fa-check-circle"></i> Verify Token
+                </button>
+                <a href="https://dash.cloudflare.com" target="_blank" class="btn-action btn-link">
+                    <i class="fas fa-external-link-alt"></i> Cloudflare Dash
+                </a>
+            </div>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 3. Dynu Domain Management -->
+    <div class="owner-card dynu">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-network-wired"></i> <span>Dynu Domains & DNS</span></div>
+            <div id="dynuStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Live domain resolution and DDNS bindings via Dynu v2 REST API (gplmods.webredirect.org & tunnels).</p>
+        <div id="dynuDetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/dynu/sync')">
+                    <i class="fas fa-sync-alt"></i> Sync DNS Records
+                </button>
+                <button class="btn-action" onclick="checkDynuStatus(this)">
+                    <i class="fas fa-redo"></i> Refresh
+                </button>
+            </div>
+            <a href="https://www.dynu.com/ControlPanel" target="_blank" class="btn-action btn-link">
+                <i class="fas fa-external-link-alt"></i> Dynu Control Panel
             </a>
             <div class="status-feedback"></div>
         </div>
     </div>
 
-    <!-- ImprovMX Custom Work Email -->
-    <div class="owner-card improvmx">
-        <h3 class="card-title"><i class="fas fa-envelope-open-text"></i> ImprovMX Custom Email</h3>
-        <p class="card-desc">Manage custom domain email forwarding and SMTP credentials on <b><%= improvmxDomain || 'gplmods.webredirect.org' %></b>.</p>
-        <div id="improvmxStatusBadge" class="improv-badge">
-            <i class="fas fa-circle-notch fa-spin"></i> Checking Domain Status...
+    <!-- 4. Netlify Welcome Screen -->
+    <div class="owner-card netlify">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-desktop"></i> <span>Netlify Welcome Screen</span></div>
+            <div id="netlifyStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
         </div>
-        <div id="improvmxAliasesList" class="improv-aliases-box"></div>
+        <p class="card-desc">Static web hosting for the Welcome Screen and onboarding app (<code>gplmods.netlify.app</code>).</p>
+        <div id="netlifyDetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/netlify/deploy')">
+                    <i class="fas fa-upload"></i> Redeploy
+                </button>
+                <button class="btn-action" onclick="checkNetlifyStatus(this)">
+                    <i class="fas fa-sync-alt"></i> Status
+                </button>
+            </div>
+            <a href="https://app.netlify.com" target="_blank" class="btn-action btn-link">
+                <i class="fas fa-external-link-alt"></i> Netlify Admin
+            </a>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 5. MongoDB Atlas -->
+    <div class="owner-card mongo">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-database"></i> <span>MongoDB Atlas Admin</span></div>
+            <div id="mongoStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Atlas Admin API v2 (Digest Auth). Monitors cluster health, active connections, and organization status.</p>
+        <div id="mongoDetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="checkMongoAtlasStatus(this)">
+                    <i class="fas fa-heartbeat"></i> Ping Atlas API
+                </button>
+                <a href="https://cloud.mongodb.com" target="_blank" class="btn-action btn-link">
+                    <i class="fas fa-external-link-alt"></i> Atlas Console
+                </a>
+            </div>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 6. Backblaze B2 Master -->
+    <div class="owner-card b2">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-box-open"></i> <span>Backblaze B2 Master</span></div>
+            <div id="b2StatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Master Application Key authentication for object storage (<code>gpl-cloud</code> bucket, presigned downloads).</p>
+        <div id="b2DetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/b2/test')">
+                    <i class="fas fa-key"></i> Test Master Auth
+                </button>
+                <button class="btn-action" onclick="checkB2Status(this)">
+                    <i class="fas fa-sync-alt"></i> Bucket Info
+                </button>
+            </div>
+            <a href="https://secure.backblaze.com/b2_buckets.htm" target="_blank" class="btn-action btn-link">
+                <i class="fas fa-external-link-alt"></i> B2 Console
+            </a>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 7. Failback.JS CDN (InfinityFree FTP) -->
+    <div class="owner-card failback">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-shield-alt"></i> <span>Failback.JS CDN</span></div>
+            <span class="owner-badge warning" title="InfinityFree hosting supports FTP only (No REST API)">FTP Only</span>
+        </div>
+        <p class="card-desc">Secondary CDN hosted on InfinityFree. Uses direct FTP socket synchronization (REST API unsupported).</p>
+        <div id="failbackDetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="checkFailbackFtpStatus(this)">
+                    <i class="fas fa-plug"></i> Test FTP
+                </button>
+                <button class="btn-action" onclick="handleAction(this, '/api/owner/failback/sync')">
+                    <i class="fas fa-sync-alt"></i> FTP Sync
+                </button>
+            </div>
+            <button class="btn-action danger" onclick="handleAction(this, '/api/owner/failback/restart')">
+                <i class="fas fa-power-off"></i> Restart Service
+            </button>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 8. GPL Mods Anti-Revoke DNS & iOS Cert Archive -->
+    <div class="owner-card dns">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-globe"></i> <span>Anti-Revoke DNS & iOS Certs</span></div>
+            <div id="dnsStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Custom DNS routing and iOS Certificate Archive hosted on GitHub Pages (<code>GPL-Mods-DNS</code>).</p>
+        <div id="dnsDetailsBox" class="details-box"></div>
+        <div class="action-group">
+            <div class="action-row">
+                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/dns/sync')">
+                    <i class="fas fa-sync-alt"></i> Sync Certs & DNS
+                </button>
+                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/dns/restart')">
+                    <i class="fas fa-power-off"></i> Restart Routing
+                </button>
+            </div>
+            <a href="https://github.com/GPLMods/GPL-Mods-DNS" target="_blank" class="btn-action btn-link">
+                <i class="fab fa-github"></i> View Repo
+            </a>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 9. ImprovMX Custom Email -->
+    <div class="owner-card improvmx">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-envelope-open-text"></i> <span>ImprovMX Custom Email</span></div>
+            <div id="improvmxStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
+        </div>
+        <p class="card-desc">Manage custom domain email forwarding and SMTP credentials on <b><%= improvmxDomain || 'gplmods.webredirect.org' %></b>.</p>
+        <div id="improvmxAliasesList" class="details-box"></div>
         <div class="action-group">
             <div class="action-row">
                 <button class="btn-action warning" onclick="openClaimEmailModal()">
@@ -129,7 +286,7 @@
             </div>
             <div class="action-row">
                 <button class="btn-action" onclick="checkImprovmxStatus(this)">
-                    <i class="fas fa-sync-alt"></i> Check MX & Aliases
+                    <i class="fas fa-sync-alt"></i> Check MX
                 </button>
                 <a href="https://app.improvmx.com" target="_blank" class="btn-action btn-link">
                     <i class="fas fa-external-link-alt"></i> Console
@@ -139,69 +296,12 @@
         </div>
     </div>
 
-    <!-- Failback.JS -->
-    <div class="owner-card failback">
-        <h3 class="card-title"><i class="fas fa-shield-alt"></i> Failback.JS CDN</h3>
-        <p class="card-desc">Fallback content delivery network (InfinityFree project). Manual controls for syncing and restarting.</p>
-        <div class="action-group">
-            <div class="action-row">
-                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/failback/sync')">
-                    <i class="fas fa-sync-alt"></i> Sync
-                </button>
-                <button class="btn-action" onclick="handleAction(this, '/api/owner/failback/reload')">
-                    <i class="fas fa-redo"></i> Reload
-                </button>
-            </div>
-            <button class="btn-action danger" onclick="handleAction(this, '/api/owner/failback/restart')">
-                <i class="fas fa-power-off"></i> Restart Service
-            </button>
-            <div class="status-feedback"></div>
-        </div>
-    </div>
-
-    <!-- GPL Mods Anti-Revoke DNS -->
-    <div class="owner-card dns">
-        <h3 class="card-title"><i class="fas fa-globe"></i> Anti-Revoke DNS</h3>
-        <p class="card-desc">Manage the GPL Mods custom Anti-Revoke DNS layer and routing operations.</p>
-        <div class="action-group">
-            <div class="action-row">
-                <button class="btn-action primary" onclick="handleAction(this, '/api/owner/dns/sync')">
-                    <i class="fas fa-sync-alt"></i> Manual Sync
-                </button>
-                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/dns/restart')">
-                    <i class="fas fa-power-off"></i> Restart DNS
-                </button>
-            </div>
-            <div class="status-feedback"></div>
-        </div>
-    </div>
-
-    <!-- MongoDB Atlas -->
-    <div class="owner-card mongo">
-        <h3 class="card-title"><i class="fas fa-database"></i> MongoDB Atlas</h3>
-        <p class="card-desc">Primary datastore. For full database manipulation, use the MongoDB Atlas web console.</p>
-        <div class="action-group">
-            <a href="https://cloud.mongodb.com" target="_blank" class="btn-action primary btn-link">
-                <i class="fas fa-external-link-alt"></i> Open MongoDB Atlas Console
-            </a>
-        </div>
-    </div>
-
-    <!-- Backblaze B2 -->
-    <div class="owner-card b2">
-        <h3 class="card-title"><i class="fas fa-box-open"></i> Backblaze B2 Cloud</h3>
-        <p class="card-desc">Object storage for media and mods. Manage buckets, CORS, and files via the Backblaze admin panel.</p>
-        <div class="action-group">
-            <a href="https://secure.backblaze.com/b2_buckets.htm" target="_blank" class="btn-action primary btn-link">
-                <i class="fas fa-external-link-alt"></i> Open Backblaze Console
-            </a>
-        </div>
-    </div>
-
-    <!-- Core Server Controls -->
+    <!-- 10. Core Server Controls -->
     <div class="owner-card" style="border-color: #d32f2f;">
-        <h3 class="card-title" style="color: #ef5350;"><i class="fas fa-power-off"></i> Core Server</h3>
-        <p class="card-desc">Danger Zone: Operations affecting the Node.js process and primary datastore.</p>
+        <div class="card-title">
+            <div class="card-title-left" style="color: #ef5350;"><i class="fas fa-power-off"></i> <span>Core Server</span></div>
+        </div>
+        <p class="card-desc">Danger Zone: Node.js process operations, connection recycling, and database purge.</p>
         <div class="action-group">
             <div class="action-row">
                 <button class="btn-action primary" onclick="handleAction(this, '/api/owner/core/restart')">
@@ -214,7 +314,7 @@
             <button class="btn-action" style="background: #e65100;" onclick="handleAction(this, '/api/owner/core/disconnect-db')">
                 <i class="fas fa-unlink"></i> Disconnect DB
             </button>
-            <button class="btn-action danger" style="background: #b71c1c; margin-top: 10px;" onclick="handleDataTermination(this)">
+            <button class="btn-action danger" style="background: #b71c1c; margin-top: 6px;" onclick="handleDataTermination(this)">
                 <i class="fas fa-skull-crossbones"></i> TERMINATE DATA
             </button>
             <div class="status-feedback"></div>
@@ -251,13 +351,239 @@
 
 <script>
     // ==========================================
-    // IMPROVMX API FUNCTIONS
+    // 1. CLOUDFLARE STATUS
+    // ==========================================
+    async function checkCloudflareStatus(btnElement) {
+        const badge = document.getElementById('cfStatusBadge');
+        const box = document.getElementById('cfDetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking...';
+
+        try {
+            const res = await fetch('/api/owner/cloudflare/status');
+            const data = await res.json();
+            if (data.success && data.status === 'active') {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Active Token';
+                box.style.display = 'block';
+                box.innerHTML = `
+                    <div class="details-row"><span>Token ID:</span><span style="color:var(--gold);">${data.tokenId}</span></div>
+                    <div class="details-row"><span>Worker Gateway:</span><span style="color:#00bcd4;">ios-api-cach</span></div>
+                `;
+            } else {
+                badge.className = 'owner-badge error';
+                badge.innerHTML = '<i class="fas fa-times-circle"></i> Error';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> Offline';
+        }
+    }
+
+    // ==========================================
+    // 2. DYNU DOMAINS STATUS
+    // ==========================================
+    async function checkDynuStatus(btnElement) {
+        const badge = document.getElementById('dynuStatusBadge');
+        const box = document.getElementById('dynuDetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Querying...';
+
+        try {
+            const res = await fetch('/api/owner/dynu/status');
+            const data = await res.json();
+            if (data.success && data.domains && data.domains.length > 0) {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = `<i class="fas fa-check-circle"></i> ${data.domains.length} Domains Active`;
+                box.style.display = 'block';
+                box.innerHTML = data.domains.map(d => `
+                    <div class="details-row">
+                        <span><b>${d.name}</b></span>
+                        <span style="color:var(--gold);">${d.ipv4Address || 'Dynamic'}</span>
+                    </div>
+                `).join('');
+            } else {
+                badge.className = 'owner-badge warning';
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No Domains';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> Dynu Error';
+        }
+    }
+
+    // ==========================================
+    // 3. NETLIFY STATUS
+    // ==========================================
+    async function checkNetlifyStatus(btnElement) {
+        const badge = document.getElementById('netlifyStatusBadge');
+        const box = document.getElementById('netlifyDetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking...';
+
+        try {
+            const res = await fetch('/api/owner/netlify/status');
+            const data = await res.json();
+            if (data.success) {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = `<i class="fas fa-check-circle"></i> Connected`;
+                box.style.display = 'block';
+                const site = data.sites && data.sites[0];
+                if (site) {
+                    box.innerHTML = `
+                        <div class="details-row"><span>Site:</span><b style="color:var(--gold);">${site.name}</b></div>
+                        <div class="details-row"><span>State:</span><span style="color:#4caf50;">${site.state || 'ready'}</span></div>
+                        <div class="details-row"><span>Branch:</span><span>${site.branch || 'main'}</span></div>
+                    `;
+                } else {
+                    box.innerHTML = `<div class="details-row"><span>Account:</span><span>${data.account.fullName}</span></div>`;
+                }
+            } else {
+                badge.className = 'owner-badge error';
+                badge.innerHTML = '<i class="fas fa-times-circle"></i> Netlify Error';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> Offline';
+        }
+    }
+
+    // ==========================================
+    // 4. MONGODB ATLAS STATUS
+    // ==========================================
+    async function checkMongoAtlasStatus(btnElement) {
+        const badge = document.getElementById('mongoStatusBadge');
+        const box = document.getElementById('mongoDetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Querying...';
+
+        try {
+            const res = await fetch('/api/owner/mongo-atlas/status');
+            const data = await res.json();
+            if (data.success) {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Cluster Online';
+                box.style.display = 'block';
+                box.innerHTML = `
+                    <div class="details-row"><span>Cluster:</span><b style="color:var(--gold);">${data.clusterName || 'GPLMods DB'}</b></div>
+                    <div class="details-row"><span>Pool Status:</span><span style="color:#4caf50;">Connected</span></div>
+                    ${data.clusterCount ? `<div class="details-row"><span>Clusters:</span><span>${data.clusterCount} active</span></div>` : ''}
+                `;
+            } else {
+                badge.className = 'owner-badge warning';
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Degraded';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> Atlas Error';
+        }
+    }
+
+    // ==========================================
+    // 5. BACKBLAZE B2 STATUS
+    // ==========================================
+    async function checkB2Status(btnElement) {
+        const badge = document.getElementById('b2StatusBadge');
+        const box = document.getElementById('b2DetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying...';
+
+        try {
+            const res = await fetch('/api/owner/b2/status');
+            const data = await res.json();
+            if (data.success) {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Master Key Valid';
+                box.style.display = 'block';
+                box.innerHTML = `
+                    <div class="details-row"><span>Bucket:</span><b style="color:var(--gold);">${data.bucketName}</b></div>
+                    <div class="details-row"><span>Account ID:</span><span>${data.accountId}</span></div>
+                    <div class="details-row"><span>API Node:</span><span style="font-size:0.85em;">${data.apiUrl}</span></div>
+                `;
+            } else {
+                badge.className = 'owner-badge error';
+                badge.innerHTML = '<i class="fas fa-times-circle"></i> Auth Failed';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> B2 Offline';
+        }
+    }
+
+    // ==========================================
+    // 6. FAILBACK.JS FTP STATUS
+    // ==========================================
+    async function checkFailbackFtpStatus(btnElement) {
+        const box = document.getElementById('failbackDetailsBox');
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+        }
+        box.style.display = 'block';
+        box.innerHTML = '<div style="color:#aaa;"><i class="fas fa-circle-notch fa-spin"></i> Testing FTP socket on ftpupload.net...</div>';
+
+        try {
+            const res = await fetch('/api/owner/failback/status');
+            const data = await res.json();
+            if (data.success) {
+                box.innerHTML = `
+                    <div class="details-row"><span>FTP Host:</span><span style="color:var(--gold);">${data.host}</span></div>
+                    <div class="details-row"><span>Latency:</span><span style="color:#4caf50;">${data.latencyMs || 250} ms</span></div>
+                    <div class="details-row"><span>Path:</span><span>${data.basePath} (${data.fileCount || 0} items)</span></div>
+                    <div style="font-size:0.75em; color:#888; margin-top:4px;">${data.note}</div>
+                `;
+            } else {
+                box.innerHTML = `<div style="color:var(--red);"><i class="fas fa-times-circle"></i> ${data.message}</div>`;
+            }
+        } catch (e) {
+            box.innerHTML = '<div style="color:var(--red);"><i class="fas fa-times-circle"></i> Failed to connect via FTP.</div>';
+        } finally {
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = '<i class="fas fa-plug"></i> Test FTP';
+            }
+        }
+    }
+
+    // ==========================================
+    // 7. ANTI-REVOKE DNS & IOS CERTS
+    // ==========================================
+    async function checkDnsArchiveStatus(btnElement) {
+        const badge = document.getElementById('dnsStatusBadge');
+        const box = document.getElementById('dnsDetailsBox');
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking...';
+
+        try {
+            const res = await fetch('/api/owner/dns/archive-status');
+            const data = await res.json();
+            if (data.success) {
+                badge.className = 'owner-badge active';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Active';
+                box.style.display = 'block';
+                box.innerHTML = `
+                    <div class="details-row"><span>CNAME:</span><b style="color:var(--gold);">${data.cname}</b></div>
+                    <div class="details-row"><span>Source:</span><span>${data.repo}</span></div>
+                    <div class="details-row"><span>Worker:</span><span style="color:#00bcd4;">ios-api-cach</span></div>
+                `;
+            } else {
+                badge.className = 'owner-badge error';
+                badge.innerHTML = '<i class="fas fa-times-circle"></i> Error';
+            }
+        } catch (e) {
+            badge.className = 'owner-badge error';
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> Offline';
+        }
+    }
+
+    // ==========================================
+    // 8. IMPROVMX STATUS
     // ==========================================
     async function checkImprovmxStatus(btnElement) {
         const badge = document.getElementById('improvmxStatusBadge');
         const list = document.getElementById('improvmxAliasesList');
-        badge.className = 'improv-badge';
-        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking domain...';
+        badge.className = 'owner-badge';
+        badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking...';
 
         try {
             const res = await fetch('/api/owner/improvmx/status');
@@ -265,22 +591,21 @@
 
             if (data.success) {
                 if (data.validMx) {
-                    badge.className = 'improv-badge active';
-                    badge.innerHTML = `<i class="fas fa-check-circle"></i> MX Active: ${data.domain}`;
+                    badge.className = 'owner-badge active';
+                    badge.innerHTML = `<i class="fas fa-check-circle"></i> MX Active`;
                 } else {
-                    badge.className = 'improv-badge warning';
-                    badge.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Pending MX: ${data.domain}`;
+                    badge.className = 'owner-badge warning';
+                    badge.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Pending MX`;
                 }
             } else {
-                badge.className = 'improv-badge error';
-                badge.innerHTML = `<i class="fas fa-times-circle"></i> ${data.message || 'API Error'}`;
+                badge.className = 'owner-badge error';
+                badge.innerHTML = `<i class="fas fa-times-circle"></i> MX Error`;
             }
 
-            // Also load aliases
             await loadImprovmxAliases();
         } catch (err) {
-            badge.className = 'improv-badge error';
-            badge.innerHTML = `<i class="fas fa-times-circle"></i> Connection Failed`;
+            badge.className = 'owner-badge error';
+            badge.innerHTML = `<i class="fas fa-times-circle"></i> Error`;
         }
     }
 
@@ -294,9 +619,9 @@
                 list.style.display = 'block';
                 list.innerHTML = `<b style="color:var(--gold); font-size:0.85em;">Active Aliases (${data.aliases.length}):</b>` + 
                     data.aliases.map(a => `
-                        <div class="alias-row">
+                        <div class="details-row">
                             <span><b>${a.alias}</b>@${data.domain} &rarr; <span style="color:#aaa;">${a.forward}</span></span>
-                            <button class="alias-del-btn" title="Delete Alias" onclick="deleteAlias('${a.id}', '${a.alias}')"><i class="fas fa-trash"></i></button>
+                            <button style="background:none; border:none; color:#f44336; cursor:pointer;" title="Delete Alias" onclick="deleteAlias('${a.id}', '${a.alias}')"><i class="fas fa-trash"></i></button>
                         </div>
                     `).join('');
             } else if (data.success) {
@@ -390,11 +715,6 @@
         }
     }
 
-    // Auto check status on dashboard load
-    window.addEventListener('DOMContentLoaded', () => {
-        checkImprovmxStatus();
-    });
-
     // ==========================================
     // CORE DASHBOARD ACTIONS
     // ==========================================
@@ -469,9 +789,20 @@
             btnElement.innerHTML = originalText;
             setTimeout(() => {
                 feedbackEl.style.display = 'none';
-            }, 5000);
+            }, 6000);
         }
     }
+
+    // Auto-load diagnostics on startup
+    window.addEventListener('DOMContentLoaded', () => {
+        checkCloudflareStatus();
+        checkDynuStatus();
+        checkNetlifyStatus();
+        checkMongoAtlasStatus();
+        checkB2Status();
+        checkDnsArchiveStatus();
+        checkImprovmxStatus();
+    });
 </script>
 
 <%-include('../../partials/footer') %>
