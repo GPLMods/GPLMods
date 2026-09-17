@@ -52,41 +52,27 @@ const AvatarCell = (props) => {
         return <Box style={{ width: size, height: size, borderRadius: '50%', backgroundColor: '#333' }} />;
     }
 
-    // 2. Fallback State (No image, or image failed to load)
-    if (!imageUrl || hasError) {
-        return (
-            <Box style={{ 
-                width: size, 
-                height: size, 
-                borderRadius: '50%', 
-                backgroundColor: '#FFD700', // GPL Gold
-                color: '#0a0a0a',          // GPL Black
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: where === 'list' ? '14px' : '48px',
-                border: '2px solid #333'
-            }}>
-                {username.charAt(0).toUpperCase()}
-            </Box>
-        );
-    }
+    const defaultAvatar = '/images/default-avatar.png';
 
-    // 3. Success State (Image loaded)
+    // 2. Render Avatar with default image fallback
     return (
         <Box>
             <img 
-                src={imageUrl} 
+                src={(!imageUrl || hasError) ? defaultAvatar : imageUrl} 
                 alt={username}
                 style={{ 
                     width: size, 
                     height: size, 
                     borderRadius: '50%', 
                     objectFit: 'cover',
-                    border: '2px solid #FFD700'
+                    border: '2px solid #FFD700',
+                    backgroundColor: '#1a1a1a'
                 }} 
-                onError={() => setHasError(true)} // Instantly switch to initials if the image breaks!
+                onError={(e) => {
+                    if (e.currentTarget.src !== defaultAvatar) {
+                        e.currentTarget.src = defaultAvatar;
+                    }
+                }}
             />
         </Box>
     );

@@ -19,10 +19,14 @@
             <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
         </div>
         
+        <% 
+            const cardModSlug = file.slug || (typeof slugify === 'function' ? slugify(file.name) : (file.name ? file.name.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '') : file._id));
+            const cardModLink = file.isVariant ? `/mods/${file.category}/${cardModSlug}/${file._id}` : `/mods/${file.category}/${cardModSlug}`;
+        %>
         <div class="mod-card-content">
             <!-- ✅ FIX: The link is placed ONLY on the title, NOT the whole card -->
             <h3 title="<%= file.name %>">
-                <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="full-card-link" style="color: inherit; text-decoration: none;">
+                <a href="<%= cardModLink %>" class="full-card-link" style="color: inherit; text-decoration: none;">
                     <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
                 </a>
             </h3>
@@ -53,7 +57,7 @@
         <div class="download-overlay" style="pointer-events: auto;">
             
             <!-- View Mod Button -->
-            <a href="/<%= file.category %>/<%= file.slug || file._id %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
+            <a href="<%= cardModLink %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
             
             <!-- Add to Wishlist Button -->
             <% if (typeof user !== 'undefined' && user && user.whitelist) { %>

@@ -221,6 +221,15 @@
             position: relative;
             width: 100%;
             user-select: none;
+            z-index: 10;
+        }
+        .custom-calendar-container.open {
+            z-index: 10000;
+        }
+        .form-group:has(.custom-calendar-container.open),
+        .form-group.cal-open {
+            z-index: 1000 !important;
+            position: relative;
         }
         .custom-calendar-trigger {
             width: 100%;
@@ -233,7 +242,7 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            font-family: inherit;
+            font-family: 'Poppins', sans-serif;
             font-size: 1em;
             transition: border-color 0.25s, box-shadow 0.25s;
             box-sizing: border-box;
@@ -268,15 +277,14 @@
             position: absolute;
             top: calc(100% + 8px);
             left: 0;
-            width: 100%;
-            min-width: 310px;
-            max-width: 360px;
+            width: 330px;
+            max-width: calc(100vw - 40px);
             background: #18181c;
             border: 1.5px solid rgba(255, 215, 0, 0.35);
             border-radius: 12px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.85);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.95);
             padding: 16px;
-            z-index: 100;
+            z-index: 99999 !important;
             box-sizing: border-box;
             animation: gplCalPopIn 0.2s ease-out;
         }
@@ -483,7 +491,7 @@
                     </div>
                     <!-- ======== CUSTOM CALENDAR UI FOR DATE OF BIRTH ======== -->
                     <div class="form-group">
-                        <label for="dob-calendar-trigger">Date of Birth</label>
+                        <label for="dob-calendar-trigger"><i class="fas fa-calendar-alt" style="color: var(--gold); margin-right: 6px;"></i> Date of Birth</label>
                         <div class="custom-calendar-container" id="dob-calendar-container">
                             <input type="hidden" name="dateOfBirth" id="dateOfBirth" required>
                             
@@ -714,15 +722,13 @@
 
             if (!container || !trigger || !hiddenInput) return;
 
-            const cutoffDate = new Date();
-            cutoffDate.setFullYear(cutoffDate.getFullYear() - 13);
-            const cutoffYear = cutoffDate.getFullYear();
+            const currentYear = new Date().getFullYear();
             const startYear = 1920;
 
-            // Populate year dropdown (descending from cutoffYear to startYear)
+            // Populate year dropdown (descending from currentYear to startYear, matches profile)
             if (yearSelect) {
                 yearSelect.innerHTML = '';
-                for (let y = cutoffYear; y >= startYear; y--) {
+                for (let y = currentYear; y >= startYear; y--) {
                     const opt = document.createElement('option');
                     opt.value = y;
                     opt.textContent = y;
@@ -738,8 +744,9 @@
                 }
             }
 
-            let viewYear = selectedDate ? selectedDate.getUTCFullYear() : (cutoffYear - 7);
-            let viewMonth = selectedDate ? selectedDate.getUTCMonth() : 0;
+            let viewDate = selectedDate ? new Date(selectedDate) : new Date(Date.UTC(currentYear - 20, 0, 1));
+            let viewYear = viewDate.getUTCFullYear();
+            let viewMonth = viewDate.getUTCMonth();
 
             function updateTriggerDisplay() {
                 if (selectedDate && !isNaN(selectedDate.getTime())) {
@@ -847,12 +854,14 @@
                 updateTriggerDisplay();
                 renderCalendar();
                 container.classList.remove('open');
+                container.closest('.form-group')?.classList.remove('cal-open');
                 trigger.setAttribute('aria-expanded', 'false');
             }
 
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isOpen = container.classList.toggle('open');
+                container.closest('.form-group')?.classList.toggle('cal-open', isOpen);
                 trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
                 if (isOpen) {
                     if (selectedDate) {
@@ -915,6 +924,7 @@
                 closeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     container.classList.remove('open');
+                    container.closest('.form-group')?.classList.remove('cal-open');
                     trigger.setAttribute('aria-expanded', 'false');
                 });
             }
@@ -922,6 +932,7 @@
             document.addEventListener('click', (e) => {
                 if (!container.contains(e.target)) {
                     container.classList.remove('open');
+                    container.closest('.form-group')?.classList.remove('cal-open');
                     trigger.setAttribute('aria-expanded', 'false');
                 }
             });

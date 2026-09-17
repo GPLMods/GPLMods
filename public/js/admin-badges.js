@@ -45,11 +45,43 @@
         'open': 'status-open',
         'rejected': 'status-rejected',
         'banned': 'status-banned',
+        'suspended': 'status-suspended',
         'closed': 'status-closed',
         'resolved': 'status-resolved',
         'clean': 'status-clean',
         'suspicious': 'status-suspicious',
-        'malicious': 'status-malicious'
+        'malicious': 'status-malicious',
+
+        // User Verification & Tags
+        'founder': 'role-founder',
+        'staff': 'role-staff',
+        'partner': 'role-partner',
+        'verified': 'badge-verified',
+        'unverified': 'badge-unverified',
+        'cardholder': 'badge-cardholder',
+        '2fa enabled': 'badge-2fa-on',
+        '2fa disabled': 'badge-2fa-off',
+        'online': 'status-online',
+        'offline': 'status-offline',
+
+        // Mods & Featured Tags
+        'editors-choice': 'tag-editors-choice',
+        "editor's choice": 'tag-editors-choice',
+        'featured': 'tag-featured',
+        'trending': 'tag-trending',
+        'paid': 'tag-paid',
+        'free': 'tag-free',
+        'variant': 'tag-variant',
+
+        // Support & Priorities
+        'urgent': 'priority-urgent',
+        'critical': 'priority-critical',
+        'high': 'priority-high',
+        'medium': 'priority-medium',
+        'low': 'priority-low',
+        'in-progress': 'status-in-progress',
+        'passed': 'status-passed',
+        'failed': 'status-failed'
     };
 
     function colorizeBadges() {
@@ -62,14 +94,17 @@
             }
         });
 
-        // 2. Colorize table cells for key properties (role, membership, category, status)
+        // 2. Colorize table cells for key properties
         const cellSelectors = [
             'td[data-property-name="role"]',
             'td[data-property-name="membership"]',
             'td[data-property-name="membershipPlan"]',
             'td[data-property-name="category"]',
             'td[data-property-name="status"]',
-            'td[data-property-name="securityScanStatus"]'
+            'td[data-property-name="securityScanStatus"]',
+            'td[data-property-name="priority"]',
+            'td[data-property-name="isVerified"]',
+            'td[data-property-name="twoFactorEnabled"]'
         ];
 
         document.querySelectorAll(cellSelectors.join(',')).forEach(cell => {

@@ -106,6 +106,12 @@ async function createAdminRouter() {
         name: 'GPL Mods Premium',
         overrides: {
             ...dark.overrides, 
+            typography: {
+                ...dark.overrides?.typography,
+                fontFamilies: {
+                    primary: "'Poppins', sans-serif"
+                }
+            },
             colors: {
                 ...dark.overrides?.colors, 
                 primary100: '#FFD700', primary80: '#e5c200', primary60: '#ccad00', primary40: '#b29700', primary20: '#332b00',  

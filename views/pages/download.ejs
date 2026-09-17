@@ -1514,7 +1514,8 @@
 
                         <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                             <!-- Button for the Main (Master) Mod -->
-                            <a href="/<%= masterFile.category %>/<%= masterFile.slug %>"
+                            <% const masterSlug = masterFile.slug || (typeof slugify === 'function' ? slugify(masterFile.name) : masterFile._id); %>
+                            <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>"
                                 class="btn <%= !isViewingVariant ? 'btn-primary' : 'btn-secondary' %>"
                                 <%- `style="border-color: ${!isViewingVariant ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
                                 <%= masterFile.uploader %>'s Mod (Main)
@@ -1523,7 +1524,7 @@
                             <!-- Buttons for each Live Variant -->
                             <% masterFile.variants.forEach(variant=> { %>
                                 <% if (variant.status==='live' ) { %>
-                                    <a href="/<%= masterFile.category %>/<%= masterFile.slug %>?variant=<%= variant._id %>"
+                                    <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>/<%= variant._id %>"
                                         class="btn <%= (file._id.toString() === variant._id.toString()) ? 'btn-primary' : 'btn-secondary' %>"
                                         <%- `style="border-color: ${(file._id.toString() === variant._id.toString()) ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
                                         <%= variant.uploader %>'s Mod

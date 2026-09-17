@@ -1,22 +1,35 @@
 <%-include('../partials/header') %>
 
-    <!-- ✅ CDN BYPASS SCRIPT -->
-    <!-- If Cloudflare serves this cached guest page to a logged-in user, 
-     this script instantly detects their login cookie and redirects them to /home -->
+    <!-- ✅ CDN & AUTH BYPASS SCRIPT -->
+    <!-- Ensures logged-in users are always routed to /home and prevents stale cached logout state -->
     <script>
-        // Check if the 'is_logged_in' cookie exists
-        if (document.cookie.split(';').some((item) => item.trim().startsWith('is_logged_in='))) {
-            // Only redirect if we are strictly on the root path '/' and not coming from auth/error pages
-            const isAuthReferrer = document.referrer && (document.referrer.includes('/login') || document.referrer.includes('/logout'));
-            const hasAuthParams = window.location.search.includes('error=') || window.location.search.includes('message=');
-            
-            if (window.location.pathname === '/' && !isAuthReferrer && !hasAuthParams) {
-                window.location.replace('/home' + window.location.search);
-            } else if (isAuthReferrer) {
-                // Clear any stale client-side cookie
-                document.cookie = 'is_logged_in=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        (function() {
+            // Handle back-forward cache (bfcache)
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    window.location.reload();
+                }
+            });
+
+            const hasLogoutParam = window.location.search.includes('logout=true');
+            const hasLoginCookie = document.cookie.split(';').some(function(item) {
+                return item.trim().startsWith('is_logged_in=true');
+            });
+
+            if (hasLogoutParam) {
+                // Force clear any client-side cookie leftovers
+                document.cookie = 'is_logged_in=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0;';
+                try {
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('user');
+                } catch (e) {}
+            } else if (hasLoginCookie <% if (typeof user !== 'undefined' && user) { %> || true <% } %>) {
+                // Confirmed logged-in user: always redirect from / to /home
+                if (window.location.pathname === '/') {
+                    window.location.replace('/home' + window.location.search);
+                }
             }
-        }
+        })();
     </script>
     <section class="hero"></section>
 
@@ -54,7 +67,8 @@
                                 <p><%- desc %></p>
 
                                 <div class="featured-buttons">
-                                    <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>" class="featured-button btn-primary">Know More</a>
+                                    <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>
+                                    <a href="/mods/<%= mod.category %>/<%= councilModSlug %>" class="featured-button btn-primary">Know More</a>
 
                                     <% if (typeof user !=='undefined' && user && user.whitelist) { %>
                                         <% const isWhitelisted = user.whitelist.some(w => w.toString() === mod._id.toString() || (w._id && w._id.toString() === mod._id.toString())); %>

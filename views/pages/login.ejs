@@ -20,6 +20,8 @@
 
     <!-- Add reCAPTCHA script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- jsQR for GPL Card Login Scanner -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     
     <style>
         /* Local overrides for the Auth Page */
@@ -167,11 +169,102 @@
             margin-bottom: 15px;
         }
 
+        /* GPL Card Login Modal & Dropzone */
+        .gpl-card-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .gpl-card-modal-backdrop {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+        }
+        .gpl-card-modal-dialog {
+            position: relative;
+            background: #16161a;
+            border: 1.5px solid rgba(255, 215, 0, 0.45);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            padding: 26px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.15);
+            z-index: 2;
+            box-sizing: border-box;
+            animation: gplModalPop 0.25s ease-out;
+        }
+        @keyframes gplModalPop {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .gpl-card-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+        }
+        .gpl-card-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--silver);
+            font-size: 1.8em;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+        .gpl-card-close-btn:hover { color: var(--gold); }
+        .gpl-card-dropzone {
+            border: 2px dashed rgba(255, 215, 0, 0.45);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.35);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .gpl-card-dropzone:hover, .gpl-card-dropzone.dragover {
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.08);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .dropzone-icon {
+            font-size: 2.8em;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+        .dropzone-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--white);
+            margin: 0 0 6px 0;
+        }
+        .dropzone-sub {
+            font-size: 0.82em;
+            color: var(--silver);
+            margin: 0;
+        }
+        .scanning-spinner {
+            font-size: 2.4em;
+            color: var(--gold);
+        }
+
         @media (max-width: 480px) {
             .auth-container { padding: 25px; border-radius: 0; border: none; box-shadow: none; }
             .auth-page-wrapper { padding: 0; align-items: flex-start; }
+            .gpl-card-modal-dialog { padding: 20px; }
         }
     </style>
+    <!-- jsQR Library for scanning QR code directly from uploaded ID card -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
 
@@ -248,10 +341,66 @@
                     <span>Continue with Microsoft</span>
                 </a>
 
+                <!-- GPL Card Login -->
+                <button type="button" id="btn-open-gpl-card-modal" class="social-signin-btn" style="border-color: var(--gold); color: var(--gold); background: rgba(255, 215, 0, 0.05);">
+                    <i class="fas fa-id-card" style="font-size: 1.25em;"></i>
+                    <span>Login with GPL Card</span>
+                </button>
+
                 <p class="form-switch">Need an account? <a href="/register">Sign Up</a></p>
             </section>
         </div>
     </main>
+
+    <!-- ======== GPL CARD LOGIN MODAL ======== -->
+    <div id="gpl-card-modal" class="gpl-card-modal" style="display: none;">
+        <div class="gpl-card-modal-backdrop" id="gpl-card-backdrop"></div>
+        <div class="gpl-card-modal-dialog">
+            <div class="gpl-card-modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-id-card" style="color: var(--gold); font-size: 1.4em;"></i>
+                    <div>
+                        <h3 style="margin: 0; color: var(--gold); font-size: 1.2em;">Login with GPL Card</h3>
+                        <p style="margin: 2px 0 0 0; color: var(--silver); font-size: 0.8em;">Upload your verified GPLMods ID Card</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-gpl-card-modal" class="gpl-card-close-btn" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="gpl-card-modal-body">
+                <!-- Status / Alert Message -->
+                <div id="card-scan-alert" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.88em; margin-bottom: 15px; text-align: center; font-weight: 600;"></div>
+
+                <!-- Dropzone for Card Upload -->
+                <div id="gpl-card-dropzone" class="gpl-card-dropzone">
+                    <input type="file" id="gplCardFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                    <div class="dropzone-content" id="dropzone-default-view">
+                        <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                        <p class="dropzone-title">Drag &amp; drop your GPL ID Card here, or <span style="color: var(--gold); text-decoration: underline;">Browse</span></p>
+                        <p class="dropzone-sub">Supports PNG, JPG or WebP exported in <strong>Private Mode (Quick Login)</strong></p>
+                    </div>
+                    <!-- Live Scanning State -->
+                    <div class="dropzone-scanning" id="dropzone-scanning-view" style="display: none;">
+                        <i class="fas fa-spinner fa-spin scanning-spinner"></i>
+                        <p style="color: var(--white); font-weight: 600; margin-top: 10px;">Scanning card credentials &amp; QR code...</p>
+                        <p style="color: var(--silver); font-size: 0.82em;">Verifying digital credential</p>
+                    </div>
+                </div>
+
+                <!-- Preview thumbnail if loaded -->
+                <div id="card-preview-wrapper" style="display: none; margin-top: 15px; text-align: center;">
+                    <img id="card-preview-thumb" src="" alt="Card Preview" style="max-width: 130px; max-height: 180px; border-radius: 8px; border: 1px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                </div>
+
+                <div style="margin-top: 18px; text-align: center;">
+                    <p style="font-size: 0.8em; color: var(--silver); margin: 0; line-height: 1.5;">
+                        <i class="fas fa-shield-alt" style="color: var(--gold);"></i> 
+                        Cards skip entering login email &amp; password. If 2FA is active, you will proceed to 2-Factor Authentication.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ✅ ADDED: Footer properly included at the bottom -->
     <%- include('../partials/footer') %>
@@ -285,6 +434,219 @@
                 window.location.href = fallback;
             }
         }
+
+        // ======== GPL CARD LOGIN CONTROLLER ========
+        (function() {
+            const openBtn = document.getElementById('btn-open-gpl-card-modal');
+            const closeBtn = document.getElementById('btn-close-gpl-card-modal');
+            const backdrop = document.getElementById('gpl-card-backdrop');
+            const modal = document.getElementById('gpl-card-modal');
+            const dropzone = document.getElementById('gpl-card-dropzone');
+            const fileInput = document.getElementById('gplCardFileInput');
+            const defaultView = document.getElementById('dropzone-default-view');
+            const scanningView = document.getElementById('dropzone-scanning-view');
+            const previewWrapper = document.getElementById('card-preview-wrapper');
+            const previewThumb = document.getElementById('card-preview-thumb');
+            const alertBox = document.getElementById('card-scan-alert');
+
+            if (!openBtn || !modal) return;
+
+            function showAlert(msg, isError) {
+                if (!alertBox) return;
+                alertBox.style.display = 'block';
+                alertBox.style.backgroundColor = isError ? 'rgba(255, 77, 77, 0.15)' : 'rgba(46, 204, 113, 0.15)';
+                alertBox.style.border = isError ? '1px solid #ff4d4d' : '1px solid #2ecc71';
+                alertBox.style.color = isError ? '#ff4d4d' : '#2ecc71';
+                alertBox.innerHTML = msg;
+            }
+
+            function hideAlert() {
+                if (alertBox) alertBox.style.display = 'none';
+            }
+
+            function setScanningState(isScanning) {
+                if (isScanning) {
+                    if (defaultView) defaultView.style.display = 'none';
+                    if (scanningView) scanningView.style.display = 'block';
+                    if (dropzone) dropzone.style.pointerEvents = 'none';
+                } else {
+                    if (defaultView) defaultView.style.display = 'block';
+                    if (scanningView) scanningView.style.display = 'none';
+                    if (dropzone) dropzone.style.pointerEvents = 'auto';
+                }
+            }
+
+            function resetModal() {
+                hideAlert();
+                setScanningState(false);
+                if (previewWrapper) previewWrapper.style.display = 'none';
+                if (previewThumb) previewThumb.src = '';
+                if (fileInput) fileInput.value = '';
+            }
+
+            function openModal() {
+                resetModal();
+                modal.style.display = 'flex';
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                resetModal();
+            }
+
+            openBtn.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (backdrop) backdrop.addEventListener('click', closeModal);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') {
+                    closeModal();
+                }
+            });
+
+            // Dropzone click & drag-and-drop
+            if (dropzone && fileInput) {
+                dropzone.addEventListener('click', () => fileInput.click());
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('dragover');
+                    }, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('dragover');
+                    }, false);
+                });
+
+                dropzone.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    if (dt && dt.files && dt.files.length > 0) {
+                        processCardFile(dt.files[0]);
+                    }
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        processCardFile(fileInput.files[0]);
+                    }
+                });
+            }
+
+            function processCardFile(file) {
+                if (!file || !file.type.startsWith('image/')) {
+                    showAlert('Please select a valid image file (PNG, JPG, or WebP).', true);
+                    return;
+                }
+
+                hideAlert();
+                setScanningState(true);
+
+                const reader = new FileReader();
+                reader.onerror = () => {
+                    setScanningState(false);
+                    showAlert('Failed to read image file. Please try again.', true);
+                };
+
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (previewWrapper && previewThumb) {
+                            previewThumb.src = e.target.result;
+                            previewWrapper.style.display = 'block';
+                        }
+                        scanImageForQr(img);
+                    };
+                    img.onerror = () => {
+                        setScanningState(false);
+                        showAlert('Invalid image content.', true);
+                    };
+                    img.src = e.target.result;
+                };
+
+                reader.readAsDataURL(file);
+            }
+
+            function scanImageForQr(img) {
+                if (typeof jsQR === 'undefined') {
+                    setScanningState(false);
+                    showAlert('Scanner library not loaded. Please check your internet connection.', true);
+                    return;
+                }
+
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    let code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'attemptBoth'
+                    });
+
+                    // If not found and image is very high resolution, try downscaling for cleaner QR scan
+                    if (!code && (canvas.width > 1200 || canvas.height > 1200)) {
+                        const scale = Math.min(1000 / canvas.width, 1000 / canvas.height);
+                        const scaledCanvas = document.createElement('canvas');
+                        scaledCanvas.width = Math.round(canvas.width * scale);
+                        scaledCanvas.height = Math.round(canvas.height * scale);
+                        const sCtx = scaledCanvas.getContext('2d', { willReadFrequently: true });
+                        sCtx.drawImage(img, 0, 0, scaledCanvas.width, scaledCanvas.height);
+                        const sData = sCtx.getImageData(0, 0, scaledCanvas.width, scaledCanvas.height);
+                        code = jsQR(sData.data, sData.width, sData.height, {
+                            inversionAttempts: 'attemptBoth'
+                        });
+                    }
+
+                    if (code && code.data) {
+                        submitCardToken(code.data);
+                    } else {
+                        setScanningState(false);
+                        showAlert('No valid GPL ID card QR code found.<br><span style="font-weight: normal; font-size: 0.85em;">Ensure your ID card was exported in <strong>Private Mode (Quick Login)</strong>.</span>', true);
+                    }
+                } catch (err) {
+                    console.error('Error scanning card QR:', err);
+                    setScanningState(false);
+                    showAlert('Error analyzing card image. Please try again.', true);
+                }
+            }
+
+            async function submitCardToken(qrData) {
+                showAlert('<i class="fas fa-spinner fa-spin"></i> Card credential detected. Authenticating...', false);
+                try {
+                    const res = await fetch('/auth/card-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ cardLoginToken: qrData })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        showAlert('<i class="fas fa-check-circle"></i> Verification successful! Logging in...', false);
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/home';
+                        }, 500);
+                    } else {
+                        setScanningState(false);
+                        showAlert(data.error || 'Authentication failed for this ID card.', true);
+                    }
+                } catch (err) {
+                    console.error('Network error submitting card login:', err);
+                    setScanningState(false);
+                    showAlert('Network error while validating card. Please try again.', true);
+                }
+            }
+        })();
     </script>
 </body>
 </html>

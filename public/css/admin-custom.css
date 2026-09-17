@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 /* --- 1. GLOBAL TYPOGRAPHY (POPPINS) --- */
-body, html, input, button, select, textarea, table, th, td, [class*="adminjs"], section, header, nav, aside, h1, h2, h3, h4, h5, h6, p, span, div {
+*, *:before, *:after, body, html, input, button, select, textarea, table, th, td, [class*="adminjs"], [class*="Box"], section, header, nav, aside, h1, h2, h3, h4, h5, h6, p, span, div, a, label {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
@@ -214,11 +214,165 @@ span[class*="Badge"][data-variant="warning"] {
 [data-badge-val="status-banned"],
 [data-badge-val="status-closed"],
 [data-badge-val="status-malicious"],
+[data-badge-val="status-suspended"],
 span[class*="Badge"][data-variant="danger"],
 span[class*="Badge"][data-variant="error"] {
     background-color: rgba(229, 57, 53, 0.2) !important;
     color: #ef5350 !important;
     border-color: rgba(229, 57, 53, 0.55) !important;
+}
+
+/* --- 6b. NEW EXTENDED USER & MOD TAG COLOURS --- */
+/* Founder (Imperial Gold Gradient Glow) */
+[data-badge-val="role-founder"] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(255, 140, 0, 0.25)) !important;
+    color: #ffd700 !important;
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4) !important;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
+}
+
+/* Staff (Electric Sky Blue) */
+[data-badge-val="role-staff"] {
+    background-color: rgba(0, 180, 216, 0.2) !important;
+    color: #00b4d8 !important;
+    border-color: rgba(0, 180, 216, 0.6) !important;
+    box-shadow: 0 0 10px rgba(0, 180, 216, 0.25) !important;
+}
+
+/* Partner (Electric Indigo / Violet) */
+[data-badge-val="role-partner"] {
+    background-color: rgba(114, 9, 183, 0.25) !important;
+    color: #ce93d8 !important;
+    border-color: rgba(114, 9, 183, 0.6) !important;
+    box-shadow: 0 0 10px rgba(114, 9, 183, 0.25) !important;
+}
+
+/* Verified (Neon Emerald Cyan) */
+[data-badge-val="badge-verified"],
+span[class*="Badge"]:is([title*="verified" i]):not([title*="unverified" i]) {
+    background-color: rgba(0, 245, 212, 0.18) !important;
+    color: #00f5d4 !important;
+    border-color: rgba(0, 245, 212, 0.6) !important;
+    box-shadow: 0 0 10px rgba(0, 245, 212, 0.3) !important;
+}
+
+/* Unverified (Warm Amber Warning) */
+[data-badge-val="badge-unverified"],
+span[class*="Badge"][title*="unverified" i] {
+    background-color: rgba(255, 183, 3, 0.18) !important;
+    color: #ffb703 !important;
+    border-color: rgba(255, 183, 3, 0.55) !important;
+}
+
+/* Verified Cardholder (Gold & Purple Dual) */
+[data-badge-val="badge-cardholder"] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(156, 39, 176, 0.2)) !important;
+    color: #ffd700 !important;
+    border-color: rgba(255, 215, 0, 0.6) !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+}
+
+/* 2FA Enabled (Mint Shield) */
+[data-badge-val="badge-2fa-on"] {
+    background-color: rgba(32, 191, 107, 0.2) !important;
+    color: #20bf6b !important;
+    border-color: rgba(32, 191, 107, 0.6) !important;
+}
+
+/* 2FA Disabled (Coral Alert) */
+[data-badge-val="badge-2fa-off"] {
+    background-color: rgba(235, 59, 90, 0.2) !important;
+    color: #eb3b5a !important;
+    border-color: rgba(235, 59, 90, 0.6) !important;
+}
+
+/* Online / Offline Presence */
+[data-badge-val="status-online"] {
+    background-color: rgba(46, 213, 115, 0.2) !important;
+    color: #2ed573 !important;
+    border-color: rgba(46, 213, 115, 0.6) !important;
+    box-shadow: 0 0 8px rgba(46, 213, 115, 0.3) !important;
+}
+[data-badge-val="status-offline"] {
+    background-color: rgba(116, 125, 140, 0.2) !important;
+    color: #a4b0be !important;
+    border-color: rgba(116, 125, 140, 0.4) !important;
+}
+
+/* Editor's Choice (Golden Sunburst Tag) */
+[data-badge-val="tag-editors-choice"],
+span[class*="Badge"]:is([title*="editor" i], [title*="choice" i]) {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 152, 0, 0.2)) !important;
+    color: #FFD700 !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.35) !important;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Featured (Electric Magenta Tag) */
+[data-badge-val="tag-featured"],
+span[class*="Badge"][title*="featured" i] {
+    background: linear-gradient(135deg, rgba(233, 30, 99, 0.25), rgba(156, 39, 176, 0.25)) !important;
+    color: #ff4081 !important;
+    border-color: #ff4081 !important;
+    box-shadow: 0 0 10px rgba(255, 64, 129, 0.35) !important;
+}
+
+/* Trending (Flaming Orange) */
+[data-badge-val="tag-trending"],
+span[class*="Badge"][title*="trending" i] {
+    background-color: rgba(255, 87, 34, 0.2) !important;
+    color: #ff7043 !important;
+    border-color: rgba(255, 87, 34, 0.6) !important;
+}
+
+/* Paid & Free Tags */
+[data-badge-val="tag-paid"] {
+    background-color: rgba(0, 200, 83, 0.2) !important;
+    color: #69f0ae !important;
+    border-color: rgba(0, 200, 83, 0.6) !important;
+}
+[data-badge-val="tag-free"] {
+    background-color: rgba(0, 184, 212, 0.2) !important;
+    color: #18ffff !important;
+    border-color: rgba(0, 184, 212, 0.6) !important;
+}
+[data-badge-val="tag-variant"] {
+    background-color: rgba(92, 107, 115, 0.25) !important;
+    color: #b0bec5 !important;
+    border-color: rgba(92, 107, 115, 0.5) !important;
+}
+
+/* Priorities & Security Scan Status */
+[data-badge-val="priority-urgent"],
+[data-badge-val="priority-critical"],
+[data-badge-val="status-failed"] {
+    background-color: rgba(255, 0, 85, 0.25) !important;
+    color: #ff0055 !important;
+    border-color: #ff0055 !important;
+    box-shadow: 0 0 10px rgba(255, 0, 85, 0.4) !important;
+}
+[data-badge-val="priority-high"] {
+    background-color: rgba(255, 112, 67, 0.2) !important;
+    color: #ff7043 !important;
+    border-color: rgba(255, 112, 67, 0.55) !important;
+}
+[data-badge-val="priority-medium"] {
+    background-color: rgba(255, 202, 40, 0.2) !important;
+    color: #ffca28 !important;
+    border-color: rgba(255, 202, 40, 0.55) !important;
+}
+[data-badge-val="priority-low"],
+[data-badge-val="status-in-progress"] {
+    background-color: rgba(38, 166, 154, 0.2) !important;
+    color: #4db6ac !important;
+    border-color: rgba(38, 166, 154, 0.55) !important;
+}
+[data-badge-val="status-passed"] {
+    background-color: rgba(67, 160, 71, 0.2) !important;
+    color: #66bb6a !important;
+    border-color: rgba(67, 160, 71, 0.55) !important;
 }
 
 /* Hover effect on tags */

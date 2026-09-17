@@ -141,7 +141,12 @@
 </style>
 
 <main class="container">
-    <div class="auth-container">
+    <div class="back-btn-wrapper" style="max-width: 620px; margin: 20px auto 0 auto;">
+        <a href="javascript:history.back()" class="dynamic-back-btn">
+            <i class="fas fa-arrow-left"></i> Go Back
+        </a>
+    </div>
+    <div class="auth-container" style="margin-top: 15px;">
         
         <% if (typeof isSuspended !== 'undefined' && isSuspended) { %>
             <!-- CARD SUSPENSION ALERT -->

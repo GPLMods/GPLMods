@@ -881,6 +881,7 @@
             // 3. Socket.IO Logic
             if (typeof io !== 'undefined') {
                 const socket = io();
+                window.gplSupportSocket = socket;
                 
                 let guestId = localStorage.getItem('gplGuestId');
                 if (!guestId) {

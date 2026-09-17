@@ -40,15 +40,18 @@ const ImagePreview = (props) => {
     }, [value]);
 
     if (loading) return <Box style={{ color: '#FFD700', fontSize: '12px' }}>Loading...</Box>;
-    if (!imageUrl) return <Box style={{ color: '#888', fontSize: '12px' }}>N/A</Box>;
+
+    const isAvatar = property.name === 'profileImageKey' || property.name === 'cardAvatarUrl' || property.name === 'avatar';
+    const defaultImage = isAvatar ? '/images/default-avatar.png' : '/images/default-app-icon.png';
+    const displayUrl = imageUrl || defaultImage;
 
     const size = where === 'list' ? '40px' : '150px';
-    const radius = property.name === 'profileImageKey' ? '50%' : '8px';
+    const radius = isAvatar ? '50%' : '8px';
 
     return (
         <Box>
             <img 
-                src={imageUrl} 
+                src={displayUrl} 
                 alt="Preview" 
                 style={{ 
                     width: size, 
@@ -58,6 +61,11 @@ const ImagePreview = (props) => {
                     backgroundColor: '#1a1a1a',
                     border: '1px solid #333'
                 }} 
+                onError={(e) => {
+                    if (e.currentTarget.src !== defaultImage) {
+                        e.currentTarget.src = defaultImage;
+                    }
+                }}
             />
         </Box>
     );

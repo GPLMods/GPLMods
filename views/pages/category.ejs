@@ -212,7 +212,8 @@
                                         <p><%- desc %></p>
 
                                         <div class="featured-buttons">
-                                            <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>"
+                                            <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : (mod.name ? mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : mod._id)); %>
+                                            <a href="/mods/<%= mod.category %>/<%= councilModSlug %>"
                                                 class="featured-button btn-primary">Know More</a>
 
                                             <% if (typeof user !=='undefined' && user && user.whitelist) { %>

@@ -160,9 +160,9 @@
                 const borderColor = isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin ? 'rgba(255, 215, 0, 0.4)' : (isSupport ? 'rgba(33, 150, 243, 0.5)' : 'rgba(33, 150, 243, 0.4)'));
                 const bgGradient = isOwner ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin ? 'linear-gradient(145deg, #1f1b11, #141414)' : 'linear-gradient(145deg, #101925, #141414)');
             %>
-            <a href="/id-card" class="dash-card" style="position: relative; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <span style="position: absolute; top: 12px; right: 12px; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.08); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><%= roleBadge %></span>
-                <i class="fas fa-id-card" style="font-size: 2.5em; color: <%= themeColor %>; margin-bottom: 10px;"></i>
+            <a href="/id-card" class="dash-card" style="position: relative; padding-top: 32px; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <span style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;"><%= roleBadge %></span>
+                <i class="fas fa-id-card" style="font-size: 2.5em; color: <%= themeColor %>; margin-top: 6px; margin-bottom: 10px;"></i>
                 <h3 style="color: <%= themeColor %>;"><%= cardTitle %></h3>
                 <p>Customize card, Safe QR &amp; Quick-Login.</p>
             </a>

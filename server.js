@@ -270,8 +270,16 @@ function formatCompactNumber(number) {
 async function getSmartImageUrl(key) {
     if (!key) return '/images/default-avatar.png'; // Fallback
     
-    // If local path or web URL, just use it directly!
-    if (key.startsWith('/') || key.startsWith('http://') || key.startsWith('https://')) {
+    // If it's a Backblaze B2 URL (expired or active), extract the B2 key to re-sign it fresh
+    if (typeof key === 'string' && key.includes('backblazeb2.com')) {
+        const b2Match = key.match(/(?:card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
+        if (b2Match) {
+            key = b2Match[0];
+        }
+    }
+    
+    // If local path or external web URL (not a B2 raw link), just use it directly!
+    if (key.startsWith('/') || ((key.startsWith('http://') || key.startsWith('https://')) && !key.includes('backblazeb2.com'))) {
         return key;
     }
     
@@ -3227,8 +3235,8 @@ const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
 
 app.get('/search', async (req, res, next) => {
     try {
-        const rawQuery = req.query.q || '';
-        const query = escapeRegex(rawQuery); // We use this strictly for the DB search
+        const rawQuery = (req.query.q || '').trim();
+        if (!rawQuery) return res.redirect('/');
         
         const platform = req.query.platform || 'all';
         const subCategory = req.query.subCategory || 'all'; 
@@ -3236,16 +3244,36 @@ app.get('/search', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const resultsPerPage = 12;
 
-        if (!rawQuery) return res.redirect('/');
+        const tokens = rawQuery.split(/\s+/).filter(Boolean);
+        const queryEscaped = escapeRegex(rawQuery);
+        const queryRegex = new RegExp(queryEscaped, 'i');
         
+        // Multi-token match: each token must match in at least one searchable field
+        const tokenConditions = tokens.map(t => {
+            const tr = new RegExp(escapeRegex(t), 'i');
+            return {
+                $or: [
+                    { name: { $regex: tr } },
+                    { modDescription: { $regex: tr } },
+                    { tags: { $regex: tr } },
+                    { developer: { $regex: tr } },
+                    { category: { $regex: tr } },
+                    { platforms: { $regex: tr } },
+                    { originalApkName: { $regex: tr } }
+                ]
+            };
+        });
+
         let searchQuery = {
             isLatestVersion: true,
-            status: 'live', 
-            $or:[
-                { name: { $regex: query, $options: 'i' } },
-                { modDescription: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } },
-                { developer: { $regex: query, $options: 'i' } }
+            status: 'live',
+            $or: [
+                { name: { $regex: queryRegex } },
+                { modDescription: { $regex: queryRegex } },
+                { tags: { $regex: queryRegex } },
+                { developer: { $regex: queryRegex } },
+                { originalApkName: { $regex: queryRegex } },
+                ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         };
 
@@ -3281,18 +3309,37 @@ app.get('/search', async (req, res, next) => {
             let signedIconUrl = '/images/default-app-icon.png'; 
             if (key) {
                 try {
-                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                    signedIconUrl = await getSmartImageUrl(key);
                 } catch (urlError) {}
             }
             return { ...file, iconUrl: signedIconUrl };
         }));
 
-        // Search for Users
+        // Search for Users matching query tokens
+        const userTokenConditions = tokens.map(t => {
+            const tr = new RegExp(escapeRegex(t), 'i');
+            return {
+                $or: [
+                    { username: { $regex: tr } },
+                    { bio: { $regex: tr } },
+                    { role: { $regex: tr } },
+                    { cardId: { $regex: tr } }
+                ]
+            };
+        });
+
         const userResultsRaw = await User.find({
-            username: { $regex: query, $options: 'i' }
+            isBanned: { $ne: true },
+            $or: [
+                { username: { $regex: queryRegex } },
+                { bio: { $regex: queryRegex } },
+                { role: { $regex: queryRegex } },
+                { cardId: { $regex: queryRegex } },
+                ...(tokens.length > 1 ? [{ $and: userTokenConditions }] : [])
+            ]
         })
-        .select('username role profileImageKey followers following lastSeen')
-        .limit(4);
+        .select('username role profileImageKey followers following lastSeen bio cardId')
+        .limit(24);
 
         const usersWithAvatars = await Promise.all(userResultsRaw.map(async (u) => {
             let avatarUrl = '/images/default-avatar.png';
@@ -5780,8 +5827,12 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
         // Upload new avatar with slugified name
         const avatarBaseName = `${req.user._id}-${req.user.username}-gravatar`;
         const imageKey = await uploadToB2(mockFile, 'avatars', null, null, avatarBaseName, { username: req.user.username });
-        
-        const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
+
+        const updateFields = { profileImageKey: imageKey };
+        if (!req.user.cardAvatarUrl || req.user.cardAvatarUrl.includes('gravatar') || req.user.cardAvatarUrl === req.user.profileImageKey) {
+            updateFields.cardAvatarUrl = imageKey;
+        }
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, updateFields, { new: true });
         
         req.login(updatedUser, (err) => {
             if (err) return next(err);
@@ -8010,28 +8061,121 @@ app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req
 
 app.get('/api/search/suggestions', async (req, res) => {
     try {
-        const query = req.query.q;
+        const rawQuery = (req.query.q || '').trim();
         
-        if (!query || query.length < 2) {
-            return res.json([]);
+        if (!rawQuery || rawQuery.length < 2) {
+            return res.json({ success: true, query: rawQuery, mods: [], users: [], categories: [], names: [] });
         }
 
-        const suggestions = await File.find({
+        const queryEscaped = escapeRegex(rawQuery);
+        const queryRegex = new RegExp(queryEscaped, 'i');
+        const tokens = rawQuery.split(/\s+/).filter(Boolean);
+
+        const tokenConditions = tokens.map(t => {
+            const tr = new RegExp(escapeRegex(t), 'i');
+            return {
+                $or: [
+                    { name: { $regex: tr } },
+                    { tags: { $regex: tr } },
+                    { category: { $regex: tr } },
+                    { developer: { $regex: tr } },
+                    { originalApkName: { $regex: tr } }
+                ]
+            };
+        });
+
+        // 1. Fetch matching mods with icons
+        const modResults = await File.find({
             status: 'live',
             isLatestVersion: true,
-            $or:[
-                { name: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } },
-                { category: { $regex: query, $options: 'i' } },
-                { developer: { $regex: query, $options: 'i' } }
+            $or: [
+                { name: { $regex: queryRegex } },
+                { tags: { $regex: queryRegex } },
+                { category: { $regex: queryRegex } },
+                { developer: { $regex: queryRegex } },
+                { originalApkName: { $regex: queryRegex } },
+                ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         })
-        .select('name') 
-        .limit(6);      
+        .select('name slug category iconKey iconUrl downloads averageRating developer isVariant')
+        .sort({ downloads: -1 })
+        .limit(5)
+        .lean();
 
-        const suggestionNames =[...new Set(suggestions.map(file => file.name))];
+        const modsWithIcons = await Promise.all(modResults.map(async (file) => {
+            let iconUrl = '/images/default-app-icon.png';
+            const key = file.iconUrl || file.iconKey;
+            if (key) {
+                try { iconUrl = await getSmartImageUrl(key); } catch (e) {}
+            }
+            const modSlug = file.slug || slugify(file.name);
+            const modUrl = file.isVariant ? `/mods/${file.category}/${modSlug}/${file._id}` : `/mods/${file.category}/${modSlug}`;
+            return {
+                _id: file._id,
+                name: file.name,
+                category: file.category,
+                developer: file.developer,
+                downloads: file.downloads || 0,
+                rating: file.averageRating || 5.0,
+                iconUrl: iconUrl,
+                url: modUrl
+            };
+        }));
 
-        res.json(suggestionNames);
+        // 2. Fetch matching users with avatars
+        const userResults = await User.find({
+            isBanned: { $ne: true },
+            $or: [
+                { username: { $regex: queryRegex } },
+                { role: { $regex: queryRegex } },
+                { cardId: { $regex: queryRegex } }
+            ]
+        })
+        .select('username role profileImageKey isVerified cardId')
+        .limit(3)
+        .lean();
+
+        const usersWithAvatars = await Promise.all(userResults.map(async (u) => {
+            let avatarUrl = '/images/default-avatar.png';
+            if (u.profileImageKey) {
+                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) {}
+            }
+            return {
+                _id: u._id,
+                username: u.username,
+                role: u.role,
+                isVerified: !!u.isVerified,
+                avatarUrl: avatarUrl,
+                url: `/users/${encodeURIComponent(u.username)}`
+            };
+        }));
+
+        // 3. Match quick categories
+        const categoryCatalog = [
+            { name: 'Android Mods', category: 'android', icon: 'fab fa-android', url: '/category?cat=android' },
+            { name: 'PC Software & Games', category: 'pc', icon: 'fab fa-windows', url: '/category?cat=pc' },
+            { name: 'iOS IPA Mods', category: 'ios', icon: 'fab fa-apple', url: '/category?cat=ios' },
+            { name: 'AI Directory', category: 'ai', icon: 'fas fa-robot', url: '/ai-directory' },
+            { name: 'Community Forum', category: 'forum', icon: 'fas fa-comments', url: '/community' },
+            { name: 'Leaderboard', category: 'leaderboard', icon: 'fas fa-trophy', url: '/leaderboard' },
+            { name: 'Software Licenses', category: 'licenses', icon: 'fas fa-key', url: '/licenses' }
+        ];
+
+        const matchedCategories = categoryCatalog.filter(c => 
+            c.name.toLowerCase().includes(rawQuery.toLowerCase()) || 
+            c.category.toLowerCase().includes(rawQuery.toLowerCase())
+        );
+
+        const suggestionNames = [...new Set(modsWithIcons.map(m => m.name))];
+
+        res.json({
+            success: true,
+            query: rawQuery,
+            mods: modsWithIcons,
+            users: usersWithAvatars,
+            categories: matchedCategories,
+            names: suggestionNames
+        });
 
     } catch (error) {
         console.error("API Suggestion Error:", error);
@@ -11229,12 +11373,12 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
 
         // 4b. Resolve card avatar (defaults to user avatar by default) and card background (defaults to /images/card-bg.png)
         let resolvedCardAvatarUrl = '/images/default-avatar.png';
-        if (userDoc.cardAvatarUrl) {
-            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.cardAvatarUrl);
-        } else if (req.user.signedAvatarUrl && req.user.signedAvatarUrl !== '/images/default-avatar.png') {
-            resolvedCardAvatarUrl = req.user.signedAvatarUrl;
+        if (userDoc.cardAvatarUrl && userDoc.cardAvatarUrl.trim()) {
+            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.cardAvatarUrl.trim());
         } else if (userDoc.profileImageKey) {
             resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.profileImageKey);
+        } else if (req.user.signedAvatarUrl && req.user.signedAvatarUrl !== '/images/default-avatar.png') {
+            resolvedCardAvatarUrl = req.user.signedAvatarUrl;
         }
 
         let resolvedCardBgUrl = '/images/card-bg.png';
@@ -11328,7 +11472,13 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
         } else if (resetAvatarToAccount === 'true' || resetAvatarToAccount === true) {
             user.cardAvatarUrl = '';
         } else if (cardAvatarUrl !== undefined) {
-            user.cardAvatarUrl = String(cardAvatarUrl).trim();
+            let cleanAvatar = String(cardAvatarUrl).trim();
+            const b2Match = cleanAvatar.match(/(?:card-avatars|avatars)\/[^?#\s]+/);
+            if (b2Match) {
+                user.cardAvatarUrl = b2Match[0];
+            } else {
+                user.cardAvatarUrl = cleanAvatar;
+            }
         }
 
         user.cardLastEdited = new Date();
@@ -11384,7 +11534,7 @@ app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
         await user.save();
 
         const signedUrl = await getSmartImageUrl(imageKey);
-        res.json({ success: true, avatarUrl: signedUrl, message: 'Gravatar card avatar synced successfully!' });
+        res.json({ success: true, avatarUrl: signedUrl, imageKey: imageKey, message: 'Gravatar card avatar synced successfully!' });
     } catch (error) {
         console.error("Error fetching card gravatar:", error);
         res.status(500).json({ error: 'Could not fetch Gravatar. Please try again.' });

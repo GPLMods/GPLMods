@@ -624,6 +624,25 @@ function displaySearchHistory() {
     }
 }
 
+function safeEscapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function safeCompactNum(num) {
+    const n = Number(num) || 0;
+    try {
+        return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n);
+    } catch (e) {
+        return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
+    }
+}
+
 async function fetchAndDisplaySuggestions(query) {
     const suggestionsBox = document.getElementById('searchSuggestions');
     if (!suggestionsBox) return;
@@ -631,25 +650,125 @@ async function fetchAndDisplaySuggestions(query) {
     try {
         const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error('Network error');
-        const suggestions = await response.json();
+        const data = await response.json();
         suggestionsBox.innerHTML = '';
 
-        if (suggestions.length > 0) {
+        const mods = (data && data.mods) ? data.mods : [];
+        const users = (data && data.users) ? data.users : [];
+        const categories = (data && data.categories) ? data.categories : [];
+        const legacyNames = Array.isArray(data) ? data : ((data && data.names) ? data.names : []);
+
+        const hasResults = mods.length > 0 || users.length > 0 || categories.length > 0 || legacyNames.length > 0;
+
+        if (!hasResults) {
+            suggestionsBox.innerHTML = `
+                <div class="suggestion-empty" style="padding: 16px 20px; text-align: center; color: var(--silver); font-size: 0.9em;">
+                    <i class="fas fa-search" style="margin-right: 6px; color: var(--gold);"></i> No quick matches for "<strong>${safeEscapeHtml(query)}</strong>"
+                    <div style="margin-top: 6px;">
+                        <a href="/search?q=${encodeURIComponent(query)}" style="color: var(--gold); text-decoration: underline; font-weight: 600;">Press Enter to search all mods &amp; users &rarr;</a>
+                    </div>
+                </div>
+            `;
+            suggestionsBox.style.display = 'block';
+            return;
+        }
+
+        let containerHtml = '';
+
+        // 1. Categories / Quick Navigation
+        if (categories.length > 0) {
+            containerHtml += `<div class="suggestion-header" style="padding: 8px 16px 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.35);"><i class="fas fa-compass" style="margin-right: 6px;"></i> Quick Links</div>`;
+            categories.forEach(cat => {
+                containerHtml += `
+                    <a href="${cat.url}" class="suggestion-item suggestion-cat" style="display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--white); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.3); display: flex; align-items: center; justify-content: center; color: var(--gold); flex-shrink: 0;">
+                            <i class="${cat.icon || 'fas fa-link'}" style="font-size: 0.85em;"></i>
+                        </div>
+                        <div style="flex-grow: 1; font-weight: 600; font-size: 0.88em;">${cat.name}</div>
+                        <span style="font-size: 0.7em; color: var(--silver); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">Direct</span>
+                    </a>
+                `;
+            });
+        }
+
+        // 2. Mods & Apps
+        if (mods.length > 0) {
+            containerHtml += `<div class="suggestion-header" style="padding: 8px 16px 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.35);"><i class="fas fa-cubes" style="margin-right: 6px;"></i> Mods &amp; Apps</div>`;
+            mods.forEach(mod => {
+                const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedQuery, 'gi');
+                const boldedTitle = safeEscapeHtml(mod.name).replace(regex, (match) => `<b>${match}</b>`);
+                containerHtml += `
+                    <a href="${mod.url}" class="suggestion-item suggestion-mod" style="display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--white); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
+                        <img src="${mod.iconUrl || '/images/default-app-icon.png'}" alt="${safeEscapeHtml(mod.name)}" style="width: 34px; height: 34px; border-radius: 8px; object-fit: cover; background: #000; border: 1px solid rgba(255,215,0,0.25); flex-shrink: 0;" onerror="this.onerror=null; this.src='/images/default-app-icon.png';">
+                        <div style="flex-grow: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--white);">${boldedTitle}</div>
+                            <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72em; color: var(--silver); margin-top: 2px;">
+                                <span style="background: rgba(255,215,0,0.12); color: var(--gold); padding: 1px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700;">${mod.category}</span>
+                                ${mod.developer ? `<span><i class="fas fa-code-branch" style="font-size: 0.85em;"></i> ${safeEscapeHtml(mod.developer)}</span>` : ''}
+                                <span><i class="fas fa-download" style="font-size: 0.85em;"></i> ${safeCompactNum(mod.downloads || 0)}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+        }
+
+        // 3. Creators & Members
+        if (users.length > 0) {
+            containerHtml += `<div class="suggestion-header" style="padding: 8px 16px 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #46b5e8; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.35);"><i class="fas fa-users" style="margin-right: 6px;"></i> Creators &amp; Members</div>`;
+            users.forEach(u => {
+                const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedQuery, 'gi');
+                const boldedUser = safeEscapeHtml(u.username).replace(regex, (match) => `<b>${match}</b>`);
+                containerHtml += `
+                    <a href="${u.url}" class="suggestion-item suggestion-user" style="display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--white); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
+                        <img src="${u.avatarUrl || '/images/default-avatar.png'}" alt="${safeEscapeHtml(u.username)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #000; border: 1.5px solid var(--gold); flex-shrink: 0;" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                        <div style="flex-grow: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 0.9em; color: var(--white); display: flex; align-items: center; gap: 6px;">
+                                <span>${boldedUser}</span>
+                                ${u.isVerified ? '<i class="fas fa-check-circle" style="color: #00e676; font-size: 0.85em;" title="Verified"></i>' : ''}
+                            </div>
+                            <div style="font-size: 0.72em; color: var(--silver); text-transform: uppercase; margin-top: 1px;">
+                                <span style="background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px; font-weight: 600;">${u.role}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+        }
+
+        // 4. Fallback for legacy plain array
+        if (mods.length === 0 && users.length === 0 && categories.length === 0 && legacyNames.length > 0) {
             const list = document.createElement('ul');
-            suggestions.forEach(suggestion => {
+            legacyNames.forEach(name => {
                 const listItem = document.createElement('li');
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedQuery, 'gi');
-                const boldedSuggestion = suggestion.replace(regex, (match) => `<b>${match}</b>`);
-                listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(suggestion)}">${boldedSuggestion}</a>`;
+                const bolded = safeEscapeHtml(name).replace(regex, (match) => `<b>${match}</b>`);
+                listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(name)}">${bolded}</a>`;
                 list.appendChild(listItem);
             });
             suggestionsBox.appendChild(list);
-            suggestionsBox.style.display = 'block';
         } else {
-            suggestionsBox.style.display = 'none';
+            // 5. Footer: View all results
+            containerHtml += `
+                <a href="/search?q=${encodeURIComponent(query)}" class="suggestion-footer" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; background: rgba(255,215,0,0.08); color: var(--gold); font-weight: 700; font-size: 0.85em; text-decoration: none; border-top: 1px solid rgba(255,215,0,0.2); transition: background 0.2s ease;">
+                    <i class="fas fa-search"></i> See all results for "<strong>${safeEscapeHtml(query)}</strong>" &rarr;
+                </a>
+            `;
+            suggestionsBox.innerHTML = containerHtml;
         }
+
+        suggestionsBox.style.display = 'block';
+
+        // Add hover effect listeners to suggestion items
+        suggestionsBox.querySelectorAll('.suggestion-item, .suggestion-footer').forEach(el => {
+            el.addEventListener('mouseenter', () => { el.style.backgroundColor = 'rgba(255,255,255,0.08)'; });
+            el.addEventListener('mouseleave', () => { el.style.backgroundColor = el.classList.contains('suggestion-footer') ? 'rgba(255,215,0,0.08)' : 'transparent'; });
+        });
     } catch (error) {
+        console.error("Suggestions display error:", error);
         suggestionsBox.style.display = 'none';
     }
 }

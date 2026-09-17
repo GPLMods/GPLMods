@@ -283,12 +283,15 @@
         <!-- NEW: USER SEARCH RESULTS                       -->
         <!-- ============================================== -->
         <% if (userResults && userResults.length > 0) { %>
-            <section class="user-results-section">
-                <h2>Community Members</h2>
+            <section class="user-results-section" style="margin-bottom: 45px;">
+                <h2 style="color: var(--white); font-size: 1.5em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-users" style="color: #46b5e8; margin-right: 8px;"></i> Community Members</span>
+                    <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= userResults.length %> matched</span>
+                </h2>
                 <div class="user-grid">
                     <% userResults.forEach(u => { %>
                         <a href="/users/<%= slugify(u.username) %>" class="user-card">
-                            <img src="<%= u.signedAvatarUrl %>" alt="<%= u.username %>" class="user-card-avatar">
+                            <img src="<%= u.signedAvatarUrl %>" alt="<%= u.username %>" class="user-card-avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                             
                             <div class="user-card-info">
                                 <span class="user-card-name"><%= u.username %></span>
@@ -320,10 +323,16 @@
 
         <!-- Only show the grid if there are results -->
         <% if(results.length > 0) { %>
-            <section class="mod-grid" id="search-results-grid">
+            <section style="margin-bottom: 30px;">
+                <h2 style="color: var(--white); font-size: 1.5em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-cubes" style="color: var(--gold); margin-right: 8px;"></i> Mods &amp; Applications</span>
+                    <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= totalResults %> total</span>
+                </h2>
+                <div class="mod-grid" id="search-results-grid">
                 <% results.forEach(file => { %>
                     <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
                 <% }) %>
+                </div>
             </section>
         <% } %>
 

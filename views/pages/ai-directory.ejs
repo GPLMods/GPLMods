@@ -183,7 +183,7 @@
                             <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="ai-dir-icon" loading="lazy">
 
                             <div class="ai-dir-info">
-                                <a href="/<%= mod.category %>/<%= mod.slug || mod._id %>">
+                                <a href="/mods/<%= mod.category %>/<%= mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id) %>">
                                     <%= mod.name %>
                                 </a>
                                 <div class="ai-dir-meta">
