@@ -1,51 +1,126 @@
 <%-include('../partials/header') %>
 <style>
-/* Tooltip CSS for the Verified Badge */
-    .tooltip-container {
+    /* ======== LOTTIE BADGES & TOOLTIPS ======== */
+    .lottie-badges-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    
+    .lottie-badge-item {
         position: relative;
         display: inline-flex;
         align-items: center;
         cursor: pointer;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    
-    .tooltip-text {
+    .lottie-badge-item:hover, .lottie-badge-item:active {
+        transform: scale(1.18);
+    }
+
+    .lottie-badge-item .badge-tooltip {
         visibility: hidden;
         opacity: 0;
-        width: max-content;
-        background-color: var(--black);
-        color: var(--gold);
+        width: 220px;
+        max-width: 80vw;
+        background: rgba(18, 18, 18, 0.96);
+        backdrop-filter: blur(10px);
+        color: var(--white);
         text-align: center;
-        border-radius: 6px;
-        padding: 5px 10px;
+        border-radius: 10px;
+        padding: 9px 14px;
         border: 1px solid var(--gold);
-        font-size: 0.75em;
-        font-weight: bold;
-        
+        font-size: 0.8em;
         position: absolute;
-        z-index: 100;
-        bottom: 120%;
+        z-index: 200;
+        bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
-        
-        transition: opacity 0.3s, visibility 0.3s;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+        pointer-events: none;
     }
-    
-    .tooltip-text::after {
+    .lottie-badge-item .badge-tooltip strong {
+        display: block;
+        color: var(--gold);
+        font-size: 1.05em;
+        margin-bottom: 3px;
+        font-weight: 700;
+    }
+    .lottie-badge-item .badge-tooltip span {
+        display: block;
+        color: var(--silver);
+        font-size: 0.92em;
+        line-height: 1.35;
+    }
+    .lottie-badge-item .badge-tooltip::after {
         content: "";
         position: absolute;
         top: 100%;
         left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
+        margin-left: -6px;
+        border-width: 6px;
         border-style: solid;
-        border-color: var(--gold) transparent transparent transparent;
+        border-color: rgba(18, 18, 18, 0.96) transparent transparent transparent;
     }
-
-    .tooltip-container:hover .tooltip-text,
-    .tooltip-container:active .tooltip-text {
+    .lottie-badge-item:hover .badge-tooltip,
+    .lottie-badge-item.active .badge-tooltip {
         visibility: visible;
         opacity: 1;
+        transform: translateX(-50%) translateY(-4px);
+    }
+
+    /* ======== ROLE-BASED PROFILE THEMES ======== */
+    .user-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.88em;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 4px;
+        transition: all 0.25s ease;
+    }
+    .user-role-badge:hover {
+        transform: translateY(-2px);
+    }
+
+    .role-theme-owner {
+        color: #f44336 !important;
+        border-color: #f44336 !important;
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.18), rgba(255, 152, 0, 0.12)) !important;
+        box-shadow: 0 0 16px rgba(244, 67, 54, 0.45) !important;
+    }
+    .role-theme-admin {
+        color: var(--gold) !important;
+        border-color: var(--gold) !important;
+        background: rgba(255, 215, 0, 0.14) !important;
+        box-shadow: 0 0 16px var(--glow-gold) !important;
+    }
+    .role-theme-support {
+        color: #00b0ff !important;
+        border-color: #00b0ff !important;
+        background: rgba(0, 176, 255, 0.15) !important;
+        box-shadow: 0 0 16px rgba(0, 176, 255, 0.45) !important;
+    }
+    .role-theme-distributor {
+        color: #ce93d8 !important;
+        border-color: #ba68c8 !important;
+        background: rgba(186, 104, 200, 0.15) !important;
+        box-shadow: 0 0 16px rgba(186, 104, 200, 0.45) !important;
+    }
+    .role-theme-member {
+        color: var(--silver) !important;
+        border-color: rgba(192, 192, 192, 0.5) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 0 10px rgba(192, 192, 192, 0.25) !important;
     }
 
     /* Social Links Hover Effect */
@@ -93,14 +168,89 @@
             <% } %>
         <% } %>
 
+        <%
+            // Resolve Role UI Theme & Defaults
+            const roleThemeMap = {
+                owner: { 
+                    class: 'role-theme-owner', 
+                    color: '#f44336', 
+                    label: 'Owner & Founder', 
+                    icon: 'fa-crown',
+                    defaultBadge: 'verified.json', 
+                    defaultTitle: 'Owner / Founder', 
+                    defaultDesc: 'Official GPL Mods Platform Owner & Head Developer' 
+                },
+                admin: { 
+                    class: 'role-theme-admin', 
+                    color: '#ffd700', 
+                    label: 'Administrator', 
+                    icon: 'fa-shield-alt',
+                    defaultBadge: 'verified.json', 
+                    defaultTitle: 'Platform Administrator', 
+                    defaultDesc: 'Official GPL Mods System Administrator & Team Lead' 
+                },
+                support: { 
+                    class: 'role-theme-support', 
+                    color: '#00b0ff', 
+                    label: 'Support Team', 
+                    icon: 'fa-headset',
+                    defaultBadge: 'verified.json', 
+                    defaultTitle: 'Support Team Member', 
+                    defaultDesc: 'Official GPL Mods Verification, Moderation & Support Specialist' 
+                },
+                distributor: { 
+                    class: 'role-theme-distributor', 
+                    color: '#ba68c8', 
+                    label: 'Licensed Mod Distributor', 
+                    icon: 'fa-certificate',
+                    defaultBadge: 'card.json', 
+                    defaultTitle: 'Licensed Mod Distributor', 
+                    defaultDesc: 'Officially Verified & Licensed Mod Distributor on GPL Mods' 
+                },
+                member: { 
+                    class: 'role-theme-member', 
+                    color: '#c0c0c0', 
+                    label: 'Member', 
+                    icon: 'fa-user',
+                    defaultBadge: null, 
+                    defaultTitle: null, 
+                    defaultDesc: null 
+                }
+            };
+            const currentRoleTheme = roleThemeMap[profileUser.role] || roleThemeMap.member;
+
+            // Collect profile Lottie badges (max 3)
+            let displayBadges = [];
+            if (currentRoleTheme.defaultBadge) {
+                displayBadges.push({
+                    animation: currentRoleTheme.defaultBadge,
+                    title: currentRoleTheme.defaultTitle,
+                    description: currentRoleTheme.defaultDesc,
+                    color: currentRoleTheme.color
+                });
+            }
+            if (Array.isArray(profileUser.profileLottieBadges)) {
+                for (const b of profileUser.profileLottieBadges) {
+                    if (displayBadges.length < 3 && b && b.animation) {
+                        displayBadges.push({
+                            animation: b.animation,
+                            title: b.title || 'Special Profile Badge',
+                            description: b.description || 'Verified GPL Mods Special Achievement Badge',
+                            color: b.color || currentRoleTheme.color
+                        });
+                    }
+                }
+            }
+        %>
+
         <header class="profile-header">
-            <!-- Avatar with Dynamic Rank Glow & Badge -->
-            <div class="avatar-container" style="position: relative; display: inline-block; margin-bottom: 5px;">
+            <!-- Avatar with Dynamic Role & Rank Glow -->
+            <div class="avatar-container <%= currentRoleTheme.class %>" style="position: relative; display: inline-block; margin-bottom: 5px;">
                 <img src="<%= profileUser.signedAvatarUrl %>" 
                      alt="<%= profileUser.username %>'s Avatar" 
-                     class="profile-avatar"
-                     style="border-color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; 
-                            box-shadow: 0 0 25px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;
+                     class="profile-avatar <%= currentRoleTheme.class %>"
+                     style="border-color: <%= currentRoleTheme.color %>; 
+                            box-shadow: 0 0 25px <%= currentRoleTheme.color %>80;
                             width: 150px; height: 150px; border-radius: 50%; border-width: 4px; border-style: solid; object-fit: cover;">
 
                 <button class="share-btn" onclick="shareProfile()" title="Share Profile" style="position: absolute; bottom: 5px; right: 5px; background: var(--gold); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; z-index: 10;">
@@ -115,36 +265,53 @@
                 </div>
             <% } %>
 
-            <!-- ======== USERNAME AND VERIFIED BADGE ======== -->
-            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                <h1 class="notranslate" style="margin: 0;"><%= profileUser.username %></h1>
+            <!-- ======== USERNAME AND LOTTIE BADGES ======== -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                <h1 class="notranslate" style="margin: 0; font-weight: 700;"><%= profileUser.username %></h1>
 
-                <% if (profileUser.isVerifiedAccount) { %>
-                    <div class="tooltip-container">
-                        <lottie-player src="<%= cdnUrl %>/animations/verified.json" background="transparent" speed="1" style="width: 35px; height: 35px; filter: drop-shadow(0 0 5px var(--glow-gold));" loop autoplay></lottie-player>
-                        <span class="tooltip-text"><%= profileUser.verifiedBadgeText %></span>
+                <% if (displayBadges.length > 0) { %>
+                    <div class="lottie-badges-wrap" style="margin-left: 4px;">
+                        <% displayBadges.forEach(function(badge) { 
+                            const animSrc = badge.animation.startsWith('http') ? badge.animation : (cdnUrl + '/animations/' + badge.animation);
+                        %>
+                            <div class="lottie-badge-item <%= currentRoleTheme.class %>" 
+                                 data-badge-title="<%= badge.title %>"
+                                 data-badge-desc="<%= badge.description %>"
+                                 data-badge-anim="<%= animSrc %>"
+                                 data-badge-color="<%= badge.color %>"
+                                 onclick="showBadgeDetails(this)"
+                                 title="<%= badge.title %>">
+                                <lottie-player src="<%= animSrc %>" background="transparent" speed="1" loop autoplay></lottie-player>
+                                <div class="badge-tooltip">
+                                    <strong><%= badge.title %></strong>
+                                    <span><%= badge.description %></span>
+                                </div>
+                            </div>
+                        <% }); %>
                     </div>
                 <% } %>
             </div>
             
             <!-- Rank & Role -->
-            <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 5px; text-shadow: 0 0 10px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
+            <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 6px; text-shadow: 0 0 10px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
                 <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= profileUser.forumPoints || 0 %> pts)
             </p>
-            <p class="user-role" style="margin-bottom: 15px;">
-                <%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %>
+            <div class="user-role" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                <span class="user-role-badge <%= currentRoleTheme.class %>">
+                    <i class="fas <%= currentRoleTheme.icon %>"></i> <%= currentRoleTheme.label %>
+                </span>
                 <% if (profileUser.cardId) { %>
                     <% if (profileUser.cardStatus === 'suspended' || (!profileUser.twoFactorEnabled && !profileUser.is2FAEnabled)) { %>
-                        <span style="display: inline-block; background: rgba(229,57,53,0.2); color: #ff6b6b; border: 1px solid var(--red); font-size: 0.75em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: normal; vertical-align: middle;">
+                        <span style="display: inline-block; background: rgba(229,57,53,0.2); color: #ff6b6b; border: 1px solid var(--red); font-size: 0.75em; padding: 4px 10px; border-radius: 20px; font-weight: 600; vertical-align: middle;">
                             Card Suspended
                         </span>
                     <% } else { %>
-                        <span style="display: inline-block; background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold); font-size: 0.75em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: normal; vertical-align: middle;">
+                        <span style="display: inline-block; background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold); font-size: 0.75em; padding: 4px 10px; border-radius: 20px; font-weight: 600; vertical-align: middle;">
                             <i class="fas fa-id-card"></i> Card Verified
                         </span>
                     <% } %>
                 <% } %>
-            </p>
+            </div>
             
             <!-- ✅ NEW: SOCIAL LINKS MOVED TO HEADER -->
             <% if (profileUser.role === 'admin' || profileUser.role === 'distributor') { %>
@@ -569,6 +736,46 @@ GLOBAL|Earth
             document.getElementById(targetTabId).classList.add('active');
         });
     });
+
+    // Interactive Lottie Badge Click Modal
+    function showBadgeDetails(el) {
+        const title = el.getAttribute('data-badge-title') || 'Profile Badge';
+        const desc = el.getAttribute('data-badge-desc') || '';
+        const anim = el.getAttribute('data-badge-anim') || '';
+        const color = el.getAttribute('data-badge-color') || 'var(--gold)';
+
+        const existing = document.getElementById('lottie-badge-modal');
+        if (existing) existing.remove();
+
+        const modalHtml = `
+            <div id="lottie-badge-modal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 100000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: 20px; animation: cardFadeIn 0.25s ease-out;">
+                <div style="background: rgba(22, 22, 24, 0.96); border: 1.5px solid ${color}; border-radius: 20px; padding: 32px 28px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 15px 45px rgba(0,0,0,0.8), 0 0 30px ${color}33; position: relative;">
+                    <button onclick="document.getElementById('lottie-badge-modal').remove()" style="position: absolute; top: 14px; right: 16px; background: transparent; border: none; color: var(--silver); font-size: 1.4em; cursor: pointer; line-height: 1;">&times;</button>
+                    
+                    <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                        <lottie-player src="${anim}" background="transparent" speed="1" style="width: 100px; height: 100px; filter: drop-shadow(0 0 15px ${color});" loop autoplay></lottie-player>
+                    </div>
+
+                    <h3 style="color: var(--white); font-size: 1.35em; font-weight: 700; margin: 0 0 8px 0; letter-spacing: 0.5px;">${title}</h3>
+                    <p style="color: var(--silver); font-size: 0.95em; line-height: 1.5; margin: 0 0 24px 0;">${desc}</p>
+                    
+                    <button onclick="document.getElementById('lottie-badge-modal').remove()" class="btn btn-primary" style="background: ${color}; color: #111; border: none; font-weight: 700; padding: 10px 30px; border-radius: 25px; cursor: pointer; transition: transform 0.2s;">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const modal = document.getElementById('lottie-badge-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'lottie-badge-modal') {
+                    e.target.remove();
+                }
+            });
+        }
+    }
 
     // Share Profile Function - UPDATED TO USE NETLIFY GATEWAY
     function shareProfile() {

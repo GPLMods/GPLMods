@@ -23,7 +23,10 @@
     <meta name="description" content="<%= finalDesc %>">
     <meta name="keywords" content="<%= finalKeywords %>">
     <meta name="author" content="GPL Mods Team">
-    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<%= finalUrl %>">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
     <meta property="og:site_name" content="<%= siteName %>">
     <meta property="og:type" content="website">
@@ -37,6 +40,42 @@
     <meta property="twitter:title" content="<%= finalTitle %>">
     <meta property="twitter:description" content="<%= finalDesc %>">
     <meta property="twitter:image" content="<%= finalImage %>">
+
+    <!-- Schema.org JSON-LD Structured Data for Search Engine Bots -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://gplmods.webredirect.org/#organization",
+          "name": "GPL Mods",
+          "url": "https://gplmods.webredirect.org",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://gplmods.webredirect.org/images/logo.png"
+          },
+          "sameAs": [
+            "https://t.me/gplmods"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://gplmods.webredirect.org/#website",
+          "url": "https://gplmods.webredirect.org",
+          "name": "GPL Mods",
+          "publisher": {
+            "@id": "https://gplmods.webredirect.org/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://gplmods.webredirect.org/?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
     
     <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
     <link rel="apple-touch-icon" href="<%= cdnUrl %>/favicon.png">

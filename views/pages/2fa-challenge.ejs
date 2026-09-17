@@ -96,6 +96,33 @@
             </p>
         <% } %>
 
+        <!-- Multi-Option 2FA Switcher -->
+        <% if (typeof availableMethods !== 'undefined' && availableMethods && availableMethods.length > 1) { %>
+            <div class="method-selector-container" style="margin-bottom: 25px;">
+                <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Choose a verification method to continue:</p>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <% availableMethods.forEach(m => { %>
+                        <a href="/login/2fa?method=<%= m %>" 
+                           style="padding: 8px 16px; border-radius: 20px; font-size: 0.85em; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;
+                                  background: <%= method === m ? 'var(--gold)' : 'rgba(255,255,255,0.06)' %>;
+                                  color: <%= method === m ? 'var(--black)' : 'var(--silver)' %>;
+                                  border: 1px solid <%= method === m ? 'var(--gold)' : 'rgba(255,255,255,0.18)' %>;
+                                  box-shadow: <%= method === m ? '0 0 12px var(--glow-gold)' : 'none' %>;">
+                            <% if (m === 'email') { %>
+                                <i class="fas fa-envelope"></i> Email OTP
+                            <% } else if (m === 'totp') { %>
+                                <i class="fas fa-mobile-alt"></i> Authenticator
+                            <% } else if (m === 'passkey') { %>
+                                <i class="fas fa-fingerprint"></i> Passkey
+                            <% } else if (m === 'social') { %>
+                                <i class="fas fa-share-alt"></i> Social
+                            <% } %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+        <% } %>
+
         <!-- SCENARIO 1: EMAIL OR TOTP -->
         <% if (method === 'email' || method === 'totp') { %>
             <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em; line-height: 1.5;">
@@ -106,6 +133,13 @@
                 <input type="text" name="token" class="code-input" placeholder="000000" maxlength="8" required autocomplete="off">
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; font-weight: bold;">Verify & Login</button>
             </form>
+            <% if (method === 'email') { %>
+                <div style="margin-top: 12px;">
+                    <a href="/login/2fa?method=email" style="color: var(--gold); font-size: 0.88em; text-decoration: none;">
+                        <i class="fas fa-redo"></i> Resend Email Code
+                    </a>
+                </div>
+            <% } %>
             <p style="margin-top: 15px; font-size: 0.85em; color: #666;">Lost device access? You can enter one of your 8-character backup codes above.</p>
         
         <!-- SCENARIO 2: SOCIAL 2FA -->

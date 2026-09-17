@@ -1,20 +1,479 @@
-<%-include('../partials/header') %>
+<%- include('../partials/header') %>
 
 <style>
-    .support-page-container { 
-        max-width: 800px; 
-        margin: 4rem auto; 
-        padding: 3rem; 
-        background-color: var(--dark-gray); 
-        border-radius: 15px; 
-        border: 1px solid #333; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    /* Suppress the small floating bottom-right support widget on the dedicated /support page */
+    #supportChatWindow, #supportChatLauncher, #supportChatGreeting, #supportChatDrawer {
+        display: none !important;
     }
-    .support-header { text-align: center; margin-bottom: 3rem; }
-    .support-header h1 { font-size: 2.8em; color: var(--white); margin-bottom: 10px; }
-    .support-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
-    .support-header p { color: var(--silver); font-size: 1.1em; }
-    
+
+    .support-main-wrapper {
+        max-width: 1100px;
+        margin: 2rem auto 4rem auto;
+        padding: 0 1rem;
+    }
+
+    /* ======== 1. CHOICE GATEWAY SCREEN ======== */
+    .support-choice-container {
+        animation: fadeInSupport 0.3s ease-out;
+    }
+
+    .support-hero-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    .support-hero-header h1 {
+        font-size: 2.8em;
+        color: var(--white);
+        margin-bottom: 10px;
+    }
+    .support-hero-header h1 span {
+        color: var(--gold);
+        text-shadow: 0 0 15px var(--glow-gold);
+    }
+    .support-hero-header p {
+        color: var(--silver);
+        font-size: 1.1em;
+        max-width: 650px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .choice-cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-top: 1.5rem;
+    }
+
+    .support-choice-card {
+        background: linear-gradient(160deg, #181818 0%, #101010 100%);
+        border: 1px solid #333;
+        border-radius: 18px;
+        padding: 35px 30px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .support-choice-card:hover {
+        transform: translateY(-6px);
+    }
+    .support-choice-card.live-card {
+        border-top: 4px solid var(--gold);
+    }
+    .support-choice-card.live-card:hover {
+        border-color: var(--gold);
+        box-shadow: 0 12px 35px rgba(255, 215, 0, 0.15);
+    }
+    .support-choice-card.ticket-card {
+        border-top: 4px solid var(--blue);
+    }
+    .support-choice-card.ticket-card:hover {
+        border-color: var(--blue);
+        box-shadow: 0 12px 35px rgba(33, 150, 243, 0.15);
+    }
+
+    .card-badge-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .card-badge {
+        font-size: 0.76em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .badge-live {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+    }
+    .badge-ticket {
+        background: rgba(33, 150, 243, 0.15);
+        color: #64b5f6;
+        border: 1px solid rgba(33, 150, 243, 0.35);
+    }
+
+    .card-icon-halo {
+        width: 70px;
+        height: 70px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+    .halo-gold {
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+    }
+    .halo-blue {
+        background: rgba(33, 150, 243, 0.1);
+        color: #42a5f5;
+        border: 1px solid rgba(33, 150, 243, 0.25);
+    }
+
+    .support-choice-card h2 {
+        font-size: 1.7em;
+        color: var(--white);
+        margin: 0 0 12px 0;
+    }
+    .support-choice-card p {
+        color: var(--silver);
+        font-size: 0.95em;
+        line-height: 1.6;
+        margin: 0 0 20px 0;
+    }
+
+    .card-features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 25px 0;
+    }
+    .card-features-list li {
+        color: #ddd;
+        font-size: 0.9em;
+        margin-bottom: 9px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .card-features-list li i {
+        font-size: 0.9em;
+    }
+    .live-card .card-features-list li i { color: var(--gold); }
+    .ticket-card .card-features-list li i { color: #64b5f6; }
+
+    .choice-btn {
+        width: 100%;
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.05em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: none;
+        transition: all 0.25s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .btn-live-launch {
+        background: var(--gold);
+        color: #000;
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .btn-live-launch:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 25px var(--glow-gold);
+    }
+    .btn-ticket-launch {
+        background: transparent;
+        color: #64b5f6;
+        border: 2px solid #64b5f6;
+    }
+    .btn-ticket-launch:hover {
+        background: rgba(33, 150, 243, 0.15);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    /* ======== 2. FULL-SCREEN LIVE CHAT SCREEN ======== */
+    .fullscreen-chat-container {
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 18px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        display: flex;
+        flex-direction: column;
+        height: 78vh;
+        min-height: 600px;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInSupport 0.3s ease-out;
+    }
+
+    .fullscreen-chat-header {
+        background: #181818;
+        border-bottom: 1px solid #292929;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+    }
+    .chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .chat-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8em;
+        color: var(--green);
+        background: rgba(46, 204, 113, 0.12);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+        padding: 3px 10px;
+        border-radius: 12px;
+        margin-top: 4px;
+    }
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+        animation: pulseAnimation 2s infinite;
+    }
+    @keyframes pulseAnimation {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        50% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.7; }
+    }
+
+    .chat-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .chat-nav-action-btn {
+        background: #242424;
+        border: 1px solid #444;
+        color: var(--silver);
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-size: 0.85em;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.2s;
+    }
+    .chat-nav-action-btn:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: #2a2a2a;
+    }
+    .chat-nav-action-btn.gold {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: rgba(255, 215, 0, 0.08);
+    }
+    .chat-nav-action-btn.gold:hover {
+        background: var(--gold);
+        color: #000;
+    }
+
+    .fullscreen-chat-messages {
+        flex-grow: 1;
+        padding: 25px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background: #0d0d0d;
+    }
+
+    .fs-msg-bubble {
+        max-width: 72%;
+        padding: 13px 18px;
+        border-radius: 16px;
+        line-height: 1.5;
+        font-size: 0.95em;
+        word-wrap: break-word;
+        animation: supportMessageIn 0.22s ease-out;
+    }
+    @keyframes supportMessageIn {
+        from { opacity: 0; transform: translateY(8px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .fs-msg-user {
+        align-self: flex-end;
+        background: #222;
+        border: 1px solid #444;
+        border-bottom-right-radius: 2px;
+        color: var(--white);
+    }
+    .fs-msg-agent {
+        align-self: flex-start;
+        background: var(--blue);
+        color: #fff;
+        border-bottom-left-radius: 2px;
+    }
+    .fs-msg-bot {
+        align-self: flex-start;
+        background: rgba(255, 215, 0, 0.09);
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        border-bottom-left-radius: 2px;
+    }
+    .fs-msg-system {
+        align-self: center;
+        background: transparent;
+        color: var(--silver);
+        font-size: 0.85em;
+        font-style: italic;
+        border: 1px dashed #444;
+        border-radius: 8px;
+        text-align: center;
+        padding: 6px 16px;
+    }
+
+    /* Media attachments tray */
+    .fs-media-tray {
+        padding: 8px 24px;
+        background: #151515;
+        border-top: 1px solid #282828;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        overflow-x: auto;
+    }
+    .fs-tray-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #202020;
+        border: 1px solid #444;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8em;
+        color: var(--gold);
+    }
+    .fs-tray-item .remove-media-btn {
+        color: var(--red);
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        font-size: 1.1em;
+        padding: 0 2px;
+    }
+
+    /* Input area */
+    .fullscreen-chat-input-area {
+        padding: 15px 24px;
+        background: #181818;
+        border-top: 1px solid #282828;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        position: relative;
+    }
+    .fs-tool-btn {
+        background: #252525;
+        border: 1px solid #444;
+        color: var(--silver);
+        border-radius: 8px;
+        padding: 12px 15px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .fs-tool-btn:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: #2c2c2c;
+        transform: scale(1.05);
+    }
+    .fullscreen-chat-input-area input {
+        flex-grow: 1;
+        padding: 14px 18px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        background: #0c0c0c;
+        color: var(--white);
+        outline: none;
+        font-family: inherit;
+        font-size: 0.95em;
+        transition: border-color 0.2s;
+    }
+    .fullscreen-chat-input-area input:focus {
+        border-color: var(--gold);
+    }
+    .fs-submit-btn {
+        padding: 14px 22px;
+        border-radius: 8px;
+        border: none;
+        background: var(--gold);
+        color: #000;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 1.05em;
+    }
+    .fs-submit-btn:hover {
+        filter: brightness(1.1);
+        transform: scale(1.02);
+    }
+
+    /* Emoji Popover */
+    .fs-emoji-popover {
+        position: absolute;
+        bottom: 75px;
+        left: 24px;
+        width: 320px;
+        background: #1c1c1c;
+        border: 1px solid #444;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        z-index: 1000;
+        padding: 12px;
+    }
+    .fs-emoji-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 4px;
+    }
+    .fs-emoji-item {
+        font-size: 1.35em;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 4px;
+        transition: background 0.15s, transform 0.15s;
+        user-select: none;
+    }
+    .fs-emoji-item:hover {
+        background: #2a2a2a;
+        transform: scale(1.2);
+    }
+
+    /* ======== 3. TICKET DESK SCREEN ======== */
+    .support-ticket-container {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 3rem;
+        background-color: var(--dark-gray);
+        border-radius: 18px;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: fadeInSupport 0.3s ease-out;
+    }
+
     .form-group { margin-bottom: 25px; position: relative; }
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
     .form-group input, .form-group textarea { 
@@ -39,19 +498,10 @@
     .alert-success { background-color: rgba(46, 204, 113, 0.1); color: #2ecc71; border: 1px solid #2ecc71; }
     .alert-error { background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); }
 
-    /* --- ✅ NEW: CUSTOM SELECT DROPDOWN CSS --- */
-    .form-group.dropdown-group {
-        position: relative;
-        z-index: 50;
-    }
-    .custom-select-wrapper {
-        position: relative;
-        user-select: none;
-        width: 100%;
-    }
-    .custom-select-wrapper.open {
-        z-index: 100;
-    }
+    /* Custom select dropdown */
+    .form-group.dropdown-group { position: relative; z-index: 50; }
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .custom-select-wrapper.open { z-index: 100; }
     .custom-select {
         position: relative;
         display: flex;
@@ -66,7 +516,6 @@
         font-size: 1em;
         transition: all 0.3s ease;
     }
-    /* When the dropdown is open */
     .custom-select-wrapper.open .custom-select {
         border-color: var(--gold);
         box-shadow: 0 0 10px var(--glow-gold);
@@ -77,7 +526,6 @@
         transform: rotate(180deg);
         color: var(--gold);
     }
-    /* The dropdown menu */
     .custom-options {
         position: absolute;
         top: 100%;
@@ -89,13 +537,11 @@
         border-radius: 0 0 8px 8px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         z-index: 999;
-        display: none; /* Hidden by default */
+        display: none;
         max-height: 250px;
         overflow-y: auto;
     }
-    .custom-select-wrapper.open .custom-options {
-        display: block; /* Shown when open */
-    }
+    .custom-select-wrapper.open .custom-options { display: block; }
     .custom-option {
         padding: 12px 15px;
         cursor: pointer;
@@ -106,205 +552,663 @@
     .custom-option:last-child { border-bottom: none; }
     .custom-option:hover { background-color: var(--black); color: var(--gold); }
     .custom-option.selected { background-color: var(--black); color: var(--gold); font-weight: bold; }
-    /* ------------------------------------------- */
 
-    /* Ticket History Styles */
+    /* Ticket History */
     .ticket-history { margin-top: 5rem; border-top: 1px solid #333; padding-top: 3rem; }
     .ticket-history h2 { color: var(--white); margin-bottom: 2rem; font-size: 2em; }
-    .ticket-card { background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 25px; margin-bottom: 20px; transition: transform 0.2s, box-shadow 0.2s; }
-    .ticket-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-color: #444; }
+    .ticket-card-item { background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 25px; margin-bottom: 20px; transition: transform 0.2s, box-shadow 0.2s; }
+    .ticket-card-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-color: #444; }
     .ticket-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 15px; }
     .ticket-subject { font-size: 1.3em; color: var(--gold); font-weight: 600; margin: 0; }
-    .ticket-category { font-size: 0.85em; color: var(--silver); background: #222; padding: 5px 12px; border-radius: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ticket-category-tag { font-size: 0.85em; color: var(--silver); background: #222; padding: 5px 12px; border-radius: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
     
     .status-badge { padding: 6px 15px; border-radius: 15px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-open { background-color: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold); }
     .status-in-progress { background-color: rgba(33, 150, 243, 0.1); color: var(--blue); border: 1px solid var(--blue); }
     .status-resolved, .status-closed { background-color: rgba(46, 204, 113, 0.1); color: var(--green); border: 1px solid var(--green); }
 
-    @media (max-width: 768px) {
-        .support-page-container { padding: 2rem 1.5rem; margin: 2rem auto; }
-        .support-header h1 { font-size: 2.2em; }
-        .ticket-card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-        .status-badge { align-self: flex-start; }
+    @keyframes fadeInSupport {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+        .choice-cards-grid { grid-template-columns: 1fr; }
+        .fullscreen-chat-container { height: calc(100vh - 120px); border-radius: 10px; }
+        .fullscreen-chat-header { padding: 12px 16px; }
+        .fullscreen-chat-messages { padding: 14px; gap: 10px; }
+        .fs-msg-bubble { max-width: 88%; }
+        .fullscreen-chat-input-area { padding: 10px 14px; }
+        .support-ticket-container { padding: 2rem 1.5rem; }
     }
 </style>
 
 <main class="container">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
-    <div class="support-page-container" style="margin-top: 1rem;">
-        <div class="support-header">
-            <h1>Contact <span>Support</span></h1>
-            <p>Need help? Submit a ticket and our team will reply via your Notifications.</p>
+    <div class="support-main-wrapper">
+
+        <!-- ============================================== -->
+        <!-- SCREEN 1: SUPPORT CHOICE / GATEWAY HUB -->
+        <!-- ============================================== -->
+        <div id="supportChoiceScreen" class="support-choice-container">
+            <div style="display: flex; justify-content: flex-start; margin-bottom: 1.5rem;">
+                <a href="javascript:history.back()" class="dynamic-back-btn">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </a>
+            </div>
+
+            <div class="support-hero-header">
+                <h1>Help & <span>Support Desk</span></h1>
+                <p>Welcome to the GPL Mods Support Hub. Choose your preferred channel to get real-time assistance or submit an inquiry.</p>
+            </div>
+
+            <div class="choice-cards-grid">
+                <!-- Option 1: Live Chat -->
+                <div class="support-choice-card live-card" id="cardChooseLiveChat">
+                    <div>
+                        <div class="card-badge-wrap">
+                            <span class="card-badge badge-live"><i class="fas fa-bolt"></i> Instant 24/7 Response</span>
+                        </div>
+                        <div class="card-icon-halo halo-gold">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <h2>Live Support Chat</h2>
+                        <p>Engage in real-time interactive conversation with our 24/7 AI or live human support agents. Ask questions, troubleshoot mods, or share error screenshots instantly.</p>
+                        
+                        <ul class="card-features-list">
+                            <li><i class="fas fa-check-circle"></i> Instant replies & zero wait time</li>
+                            <li><i class="fas fa-check-circle"></i> Seamless handoff to human support staff</li>
+                            <li><i class="fas fa-check-circle"></i> Upload and send photos or video captures</li>
+                            <li><i class="fas fa-check-circle"></i> Full-screen focused chat experience</li>
+                        </ul>
+                    </div>
+
+                    <button type="button" class="choice-btn btn-live-launch">
+                        <i class="fas fa-comments"></i> Launch Live Chat
+                    </button>
+                </div>
+
+                <!-- Option 2: Submit a Ticket -->
+                <div class="support-choice-card ticket-card" id="cardChooseTicket">
+                    <div>
+                        <div class="card-badge-wrap">
+                            <span class="card-badge badge-ticket"><i class="fas fa-file-alt"></i> Official Inquiry</span>
+                        </div>
+                        <div class="card-icon-halo halo-blue">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <h2>Submit a Support Ticket</h2>
+                        <p>Need in-depth investigation, billing reconciliation, or distributor partnership support? Submit a detailed ticket for our dedicated review team.</p>
+                        
+                        <ul class="card-features-list">
+                            <li><i class="fas fa-check-circle"></i> Dedicated case tracker with ticket IDs</li>
+                            <li><i class="fas fa-check-circle"></i> Receive reply alerts right in your Notifications</li>
+                            <li><i class="fas fa-check-circle"></i> Detailed category classification</li>
+                            <li><i class="fas fa-check-circle"></i> Historical records of past inquiries</li>
+                        </ul>
+                    </div>
+
+                    <button type="button" class="choice-btn btn-ticket-launch">
+                        <i class="fas fa-paper-plane"></i> Submit a Ticket
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert-msg alert-error"><%= error %></div>
-        <% } %>
-        <% if (typeof message !== 'undefined' && message) { %>
-            <div class="alert-msg alert-success"><%= message %></div>
-        <% } %>
 
-        <!-- Support Form -->
-        <form action="/support" method="POST" id="supportForm">
-            
-            <div class="form-group dropdown-group">
-                <label>What do you need help with?*</label>
-                
-                <!-- 1. The Hidden Native Select (Used to actually submit the data to the backend) -->
-                <select id="category" name="category" style="display: none;">
-                    <option value="" disabled selected>Select a category...</option>
-                    <option value="account">Account / Login Issues</option>
-                    <option value="upload-issue">Problem Uploading a Mod</option>
-                    <option value="download-issue">Problem Downloading a Mod</option>
-                    <option value="billing">Billing / Premium Membership</option>
-                    <option value="bug-report">Report a Website Bug</option>
-                    <option value="other">Other</option>
-                </select>
-
-                <!-- 2. The Custom Interactive UI -->
-                <div class="custom-select-wrapper">
-                    <div class="custom-select">
-                        <span class="selected-text">Select a category...</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option" data-value="account">Account / Login Issues</div>
-                        <div class="custom-option" data-value="upload-issue">Problem Uploading a Mod</div>
-                        <div class="custom-option" data-value="download-issue">Problem Downloading a Mod</div>
-                        <div class="custom-option" data-value="billing">Billing / Premium Membership</div>
-                        <div class="custom-option" data-value="bug-report">Report a Website Bug</div>
-                        <div class="custom-option" data-value="other">Other</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="subject">Subject*</label>
-                <input type="text" id="subject" name="subject" placeholder="Brief summary of the issue" required autocomplete="off">
-            </div>
-
-            <div class="form-group">
-                <label for="message">Message Details*</label>
-                <textarea id="message" name="message" placeholder="Please provide as much detail as possible so we can help you quickly..." required></textarea>
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">Submit Ticket</button>
-        </form>
-
-        <!-- Ticket History -->
-        <div class="ticket-history">
-            <h2>Your Recent Tickets</h2>
-            <% if (tickets && tickets.length > 0) { %>
-                <% tickets.forEach(ticket => { %>
-                    <div class="ticket-card">
-                        <div class="ticket-card-header">
-                            <span class="ticket-category"><i class="fas fa-tag" style="margin-right: 5px;"></i><%= ticket.category.toUpperCase().replace('-', ' ') %></span>
-                            <span class="status-badge status-<%= ticket.status %>"><%= ticket.status %></span>
+        <!-- ============================================== -->
+        <!-- SCREEN 2: FULL-SCREEN LIVE CHAT -->
+        <!-- ============================================== -->
+        <div id="supportChatScreen" class="fullscreen-chat-container" style="display: none;">
+            <!-- Header -->
+            <div class="fullscreen-chat-header">
+                <div class="chat-header-info">
+                    <button type="button" class="chat-nav-action-btn" id="btnChatBackToChoice" title="Back to Options">
+                        <i class="fas fa-th-large"></i> <span>Options</span>
+                    </button>
+                    <div>
+                        <h3 style="margin: 0; color: var(--white); font-size: 1.1em;">GPL Live Support</h3>
+                        <div class="chat-status-pill">
+                            <span class="pulse-dot"></span>
+                            <span id="chatStatusText">AI & Staff Online</span>
                         </div>
-                        <h3 class="ticket-subject"><%= ticket.subject %></h3>
-                        <p style="color: var(--silver); font-size: 0.85em; margin: 10px 0 15px 0;">
-                            <i class="far fa-calendar-alt" style="margin-right: 5px;"></i>Submitted: <%= new Date(ticket.createdAt).toLocaleDateString() %>
-                        </p>
-                        <p style="color: var(--white); font-size: 0.95em; line-height: 1.6; margin: 0;"><%- ticket.message.replace(/\n/g, '<br>') %></p>
                     </div>
-                <% }) %>
-            <% } else { %>
-                <div style="text-align: center; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed #444;">
-                    <lottie-player src="<%= cdnUrl %>/animations/ticket.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto 15px auto; filter: drop-shadow(0 0 15px rgba(225, 225, 225, 0.5));" autoplay></lottie-player>
-                    <h3 style="color: var(--silver); margin: 0;">No Active Tickets</h3>
-                    <p style="color: #777; font-size: 0.9em; margin-top: 10px;">You haven't submitted any support requests yet.</p>
                 </div>
-            <% } %>
+
+                <div class="chat-header-actions">
+                    <button type="button" class="chat-nav-action-btn" id="btnChatNewSession" title="Start fresh conversation">
+                        <i class="fas fa-plus"></i> <span>New Chat</span>
+                    </button>
+                    <button type="button" class="chat-nav-action-btn gold" id="btnChatSwitchToTicket" title="Switch to Ticket Desk">
+                        <i class="fas fa-ticket-alt"></i> <span>Ticket Desk</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Stream -->
+            <div class="fullscreen-chat-messages" id="fullscreenChatMessages">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Media Preview Tray -->
+            <div class="fs-media-tray" id="fullscreenMediaTray" style="display: none;"></div>
+
+            <!-- Input Bar -->
+            <form class="fullscreen-chat-input-area" id="fullscreenChatForm">
+                <!-- Emoji Button -->
+                <button type="button" class="fs-tool-btn" id="fsEmojiBtn" title="Insert Emoji">
+                    <i class="far fa-smile"></i>
+                </button>
+                
+                <!-- Media Attachment Button -->
+                <button type="button" class="fs-tool-btn" id="fsMediaBtn" title="Upload Image or Video">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="file" id="fsMediaFileInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" style="display: none;">
+
+                <!-- Floating Emoji Popover -->
+                <div class="fs-emoji-popover" id="fsEmojiPopover" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.75em; color: var(--gold); font-weight: 700; text-transform: uppercase;">Quick Emojis</span>
+                        <span id="closeFsEmojiBtn" style="font-size: 0.7em; color: var(--silver); cursor: pointer;">&times; Close</span>
+                    </div>
+                    <div class="fs-emoji-grid" id="fsEmojiGrid"></div>
+                </div>
+
+                <input type="text" id="fullscreenChatInput" placeholder="Type your message, or type 'human' to speak with staff..." autocomplete="off">
+                <button type="submit" id="fullscreenChatSubmit" class="fs-submit-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- SCREEN 3: TICKET DESK FORM & HISTORY -->
+        <!-- ============================================== -->
+        <div id="supportTicketScreen" style="display: none;">
+            <!-- Top Controls -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; max-width: 850px; margin-left: auto; margin-right: auto;">
+                <button type="button" class="chat-nav-action-btn" id="btnTicketBackToChoice">
+                    <i class="fas fa-arrow-left"></i> <span>Back to Options</span>
+                </button>
+                <button type="button" class="chat-nav-action-btn gold" id="btnTicketSwitchToChat">
+                    <i class="fas fa-comments"></i> <span>Prefer Live Chat? Switch Now</span>
+                </button>
+            </div>
+
+            <div class="support-ticket-container">
+                <div class="support-header" style="text-align: center; margin-bottom: 2.5rem;">
+                    <h1 style="font-size: 2.5em; color: var(--white); margin-bottom: 10px;">Submit a <span>Support Ticket</span></h1>
+                    <p style="color: var(--silver); font-size: 1.05em;">Our team investigates all tickets thoroughly and responds directly via your Notifications.</p>
+                </div>
+
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert-msg alert-error"><%= error %></div>
+                <% } %>
+                <% if (typeof message !== 'undefined' && message) { %>
+                    <div class="alert-msg alert-success"><%= message %></div>
+                <% } %>
+
+                <!-- Support Form -->
+                <form action="/support" method="POST" id="supportForm">
+                    <div class="form-group dropdown-group">
+                        <label>What do you need help with?*</label>
+                        
+                        <!-- Real Native Select -->
+                        <select id="category" name="category" style="display: none;">
+                            <option value="" disabled selected>Select a category...</option>
+                            <option value="account">Account / Login Issues</option>
+                            <option value="upload-issue">Problem Uploading a Mod</option>
+                            <option value="download-issue">Problem Downloading a Mod</option>
+                            <option value="billing">Billing / Premium Membership</option>
+                            <option value="bug-report">Report a Website Bug</option>
+                            <option value="other">Other</option>
+                        </select>
+
+                        <!-- Custom UI -->
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select">
+                                <span class="selected-text">Select a category...</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <div class="custom-option" data-value="account">Account / Login Issues</div>
+                                <div class="custom-option" data-value="upload-issue">Problem Uploading a Mod</div>
+                                <div class="custom-option" data-value="download-issue">Problem Downloading a Mod</div>
+                                <div class="custom-option" data-value="billing">Billing / Premium Membership</div>
+                                <div class="custom-option" data-value="bug-report">Report a Website Bug</div>
+                                <div class="custom-option" data-value="other">Other</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject*</label>
+                        <input type="text" id="subject" name="subject" placeholder="Brief summary of the issue" required autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message Details*</label>
+                        <textarea id="message" name="message" placeholder="Please provide as much detail as possible so we can help you quickly..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">Submit Ticket</button>
+                </form>
+
+                <!-- Ticket History -->
+                <div class="ticket-history">
+                    <h2>Your Recent Tickets</h2>
+                    <% if (tickets && tickets.length > 0) { %>
+                        <% tickets.forEach(ticket => { %>
+                            <div class="ticket-card-item">
+                                <div class="ticket-card-header">
+                                    <span class="ticket-category-tag"><i class="fas fa-tag" style="margin-right: 5px;"></i><%= ticket.category.toUpperCase().replace('-', ' ') %></span>
+                                    <span class="status-badge status-<%= ticket.status %>"><%= ticket.status %></span>
+                                </div>
+                                <h3 class="ticket-subject"><%= ticket.subject %></h3>
+                                <p style="color: var(--silver); font-size: 0.85em; margin: 10px 0 15px 0;">
+                                    <i class="far fa-calendar-alt" style="margin-right: 5px;"></i>Submitted: <%= new Date(ticket.createdAt).toLocaleDateString() %>
+                                </p>
+                                <p style="color: var(--white); font-size: 0.95em; line-height: 1.6; margin: 0;"><%- ticket.message.replace(/\n/g, '<br>') %></p>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div style="text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.25); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15);">
+                            <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+                                <lottie-player src="<%= cdnUrl %>/animations/ticket.json" background="transparent" speed="1" style="width: 130px; height: 130px; filter: drop-shadow(0 0 15px rgba(0, 176, 255, 0.35));" loop autoplay></lottie-player>
+                            </div>
+                            <h3 style="color: var(--white); font-weight: 700; margin: 0 0 8px 0; font-size: 1.2em;">No Active Tickets</h3>
+                            <p style="color: var(--silver); font-size: 0.92em; margin: 0; max-width: 340px; margin-left: auto; margin-right: auto; line-height: 1.5;">You haven't submitted any support requests yet. Create a ticket above if you need assistance.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
         </div>
 
     </div>
 </main>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- ✅ NEW: CUSTOM SELECT JAVASCRIPT LOGIC ---
-        const wrapper = document.querySelector('.custom-select-wrapper');
-        const customSelect = wrapper.querySelector('.custom-select');
-        const selectedText = wrapper.querySelector('.selected-text');
-        const optionsContainer = wrapper.querySelector('.custom-options');
-        const options = wrapper.querySelectorAll('.custom-option');
-        const nativeSelect = document.getElementById('category'); // The hidden real select
+document.addEventListener('DOMContentLoaded', () => {
+    // ==========================================
+    // 1. SCREEN SWITCHER CONTROLLER
+    // ==========================================
+    const choiceScreen = document.getElementById('supportChoiceScreen');
+    const chatScreen = document.getElementById('supportChatScreen');
+    const ticketScreen = document.getElementById('supportTicketScreen');
 
-        if (wrapper && customSelect && nativeSelect) {
-            // 1. Toggle dropdown open/close when clicking the main box
-            customSelect.addEventListener('click', function(e) {
-                e.stopPropagation();
-                wrapper.classList.toggle('open');
-                // Reset error styling if it was triggered
-                this.style.borderColor = '';
-                this.style.boxShadow = '';
-            });
+    function showScreen(mode) {
+        choiceScreen.style.display = 'none';
+        chatScreen.style.display = 'none';
+        ticketScreen.style.display = 'none';
 
-            // 2. Handle clicking an option
-            options.forEach(option => {
-                option.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const value = this.getAttribute('data-value');
-                    const text = this.textContent;
-
-                    // Update UI text
-                    selectedText.textContent = text;
-                    selectedText.style.color = 'var(--white)'; // Highlight selected text
-
-                    // Update the hidden native select value (so the form submits correctly)
-                    nativeSelect.value = value;
-
-                    // Manage selected state styling
-                    options.forEach(opt => opt.classList.remove('selected'));
-                    this.classList.add('selected');
-
-                    // Close the dropdown
-                    wrapper.classList.remove('open');
-                });
-            });
-
-            // 3. Close dropdown when clicking anywhere outside of it
-            document.addEventListener('click', function(e) {
-                if (!wrapper.contains(e.target)) {
-                    wrapper.classList.remove('open');
-                }
-            });
+        if (mode === 'chat') {
+            chatScreen.style.display = 'flex';
+            window.location.hash = 'live-chat';
+            initLiveChat();
+        } else if (mode === 'ticket') {
+            ticketScreen.style.display = 'block';
+            window.location.hash = 'ticket-desk';
+        } else {
+            choiceScreen.style.display = 'block';
+            if (history.replaceState) {
+                history.replaceState(null, null, window.location.pathname + window.location.search);
+            }
         }
-        // ----------------------------------------------
+    }
+
+    // Navigation triggers
+    document.getElementById('cardChooseLiveChat')?.addEventListener('click', () => showScreen('chat'));
+    document.getElementById('cardChooseTicket')?.addEventListener('click', () => showScreen('ticket'));
+
+    document.getElementById('btnChatBackToChoice')?.addEventListener('click', () => showScreen('choice'));
+    document.getElementById('btnChatSwitchToTicket')?.addEventListener('click', () => showScreen('ticket'));
+
+    document.getElementById('btnTicketBackToChoice')?.addEventListener('click', () => showScreen('choice'));
+    document.getElementById('btnTicketSwitchToChat')?.addEventListener('click', () => showScreen('chat'));
+
+    // Check URL parameters or hashes on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    const hasTicketAlert = '<%= (typeof message !== "undefined" && message) || (typeof error !== "undefined" && error) ? "true" : "false" %>';
+
+    if (hasTicketAlert === 'true' || urlParams.get('mode') === 'ticket' || hash === '#ticket-desk') {
+        showScreen('ticket');
+    } else if (urlParams.get('mode') === 'chat' || hash === '#live-chat' || urlParams.get('chat') === '1') {
+        showScreen('chat');
+    } else {
+        showScreen('choice');
+    }
 
 
-        // --- Existing Form Submission Logic ---
-        const form = document.getElementById('supportForm');
-        const submitBtn = document.getElementById('submitBtn');
+    // ==========================================
+    // 2. FULL-SCREEN LIVE CHAT CONTROLLER
+    // ==========================================
+    let chatInitialized = false;
+    let fsPendingMedia = [];
 
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                // Validate that the user actually chose an option from the custom dropdown
-                if (!nativeSelect.value) {
-                    e.preventDefault(); // Stop submission
-                    alert('Please select a support category from the dropdown menu.');
-                    
-                    // Highlight the dropdown in red to show the error
-                    if (customSelect) {
-                        customSelect.style.borderColor = 'var(--red)';
-                        customSelect.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
-                    }
-                } else {
-                    // If valid, disable the button and show a loading spinner
-                    submitBtn.disabled = true;
-                    submitBtn.style.opacity = '0.7';
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Submitting...';
-                }
-            });
+    const fsChatMessages = document.getElementById('fullscreenChatMessages');
+    const fsChatForm = document.getElementById('fullscreenChatForm');
+    const fsChatInput = document.getElementById('fullscreenChatInput');
+    const fsMediaTray = document.getElementById('fullscreenMediaTray');
+    const fsEmojiBtn = document.getElementById('fsEmojiBtn');
+    const fsMediaBtn = document.getElementById('fsMediaBtn');
+    const fsMediaFileInput = document.getElementById('fsMediaFileInput');
+    const fsEmojiPopover = document.getElementById('fsEmojiPopover');
+    const fsEmojiGrid = document.getElementById('fsEmojiGrid');
+    const closeFsEmojiBtn = document.getElementById('closeFsEmojiBtn');
+    const btnChatNewSession = document.getElementById('btnChatNewSession');
+
+    const EMOJIS = [
+        "👍", "👎", "❤️", "😊", "😂", "🎉", "🔥", "🚀", 
+        "💡", "⚠️", "❌", "✔️", "💻", "📱", "📦", "⚡", 
+        "🙌", "👋", "🙏", "😎", "🥳", "🤔", "👀", "✨", 
+        "💯", "🔒", "🔑", "🛠️", "⚙️", "📎", "📩", "⭐"
+    ];
+
+    if (fsEmojiGrid) {
+        EMOJIS.forEach(emoji => {
+            const span = document.createElement('span');
+            span.className = 'fs-emoji-item';
+            span.textContent = emoji;
+            span.onclick = () => {
+                insertFsEmoji(emoji);
+                if (fsEmojiPopover) fsEmojiPopover.style.display = 'none';
+            };
+            fsEmojiGrid.appendChild(span);
+        });
+    }
+
+    function insertFsEmoji(emoji) {
+        if (!fsChatInput) return;
+        const start = fsChatInput.selectionStart || 0;
+        const end = fsChatInput.selectionEnd || 0;
+        const val = fsChatInput.value;
+        fsChatInput.value = val.substring(0, start) + emoji + val.substring(end);
+        fsChatInput.selectionStart = fsChatInput.selectionEnd = start + emoji.length;
+        fsChatInput.focus();
+    }
+
+    if (fsEmojiBtn) {
+        fsEmojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = fsEmojiPopover.style.display === 'block';
+            fsEmojiPopover.style.display = isOpen ? 'none' : 'block';
+        });
+    }
+
+    if (closeFsEmojiBtn) {
+        closeFsEmojiBtn.addEventListener('click', () => {
+            fsEmojiPopover.style.display = 'none';
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (fsEmojiPopover && !fsEmojiPopover.contains(e.target) && e.target !== fsEmojiBtn && (!fsEmojiBtn || !fsEmojiBtn.contains(e.target))) {
+            fsEmojiPopover.style.display = 'none';
         }
     });
+
+    // Attachment uploading
+    if (fsMediaBtn && fsMediaFileInput) {
+        fsMediaBtn.addEventListener('click', () => fsMediaFileInput.click());
+
+        fsMediaFileInput.addEventListener('change', async () => {
+            const file = fsMediaFileInput.files[0];
+            if (!file) return;
+            if (file.size > 25 * 1024 * 1024) {
+                alert('File is too large. Maximum allowed size is 25MB.');
+                fsMediaFileInput.value = '';
+                return;
+            }
+
+            fsMediaTray.style.display = 'flex';
+            fsMediaTray.innerHTML = '<span style="color: var(--gold); font-size: 0.85em;"><i class="fas fa-spinner fa-spin"></i> Uploading attachment...</span>';
+
+            const formData = new FormData();
+            formData.append('media', file);
+
+            try {
+                const res = await fetch('/api/support/upload-media', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                fsMediaFileInput.value = '';
+                if (data.success && data.url) {
+                    fsPendingMedia.push(data.url);
+                    renderFsMediaTray();
+                } else {
+                    alert(data.message || 'Media upload failed.');
+                    renderFsMediaTray();
+                }
+            } catch (err) {
+                fsMediaFileInput.value = '';
+                alert('Network error while uploading attachment.');
+                renderFsMediaTray();
+            }
+        });
+    }
+
+    function renderFsMediaTray() {
+        if (!fsMediaTray) return;
+        if (fsPendingMedia.length === 0) {
+            fsMediaTray.style.display = 'none';
+            fsMediaTray.innerHTML = '';
+            return;
+        }
+        fsMediaTray.style.display = 'flex';
+        fsMediaTray.innerHTML = '';
+        fsPendingMedia.forEach((url, idx) => {
+            const item = document.createElement('div');
+            item.className = 'fs-tray-item';
+            const isVid = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url);
+            item.innerHTML = `
+                <i class="${isVid ? 'fas fa-film' : 'fas fa-image'}"></i>
+                <span>Attachment ${idx + 1}</span>
+                <button type="button" class="remove-media-btn" title="Remove attachment">&times;</button>
+            `;
+            item.querySelector('.remove-media-btn').onclick = () => {
+                fsPendingMedia.splice(idx, 1);
+                renderFsMediaTray();
+            };
+            fsMediaTray.appendChild(item);
+        });
+    }
+
+    function appendFsMessage(text, sender, senderName, mediaUrls = []) {
+        if (!fsChatMessages) return;
+        const div = document.createElement('div');
+        let typeClass = 'fs-msg-system';
+        if (sender === 'user') typeClass = 'fs-msg-user';
+        if (sender === 'agent') typeClass = 'fs-msg-agent';
+        if (sender === 'bot') typeClass = 'fs-msg-bot';
+
+        div.className = `fs-msg-bubble ${typeClass}`;
+
+        let mediaHtml = '';
+        if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+            mediaHtml = '<div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">';
+            mediaUrls.forEach(url => {
+                const isVid = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url);
+                if (isVid) {
+                    mediaHtml += `<video controls src="${url}" style="max-width: 100%; max-height: 280px; border-radius: 8px; background: #000;" preload="metadata"></video>`;
+                } else {
+                    mediaHtml += `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" style="max-width: 100%; max-height: 280px; border-radius: 8px; object-fit: contain; cursor: pointer;" alt="Attachment"></a>`;
+                }
+            });
+            mediaHtml += '</div>';
+        }
+
+        div.innerHTML = `
+            ${sender === 'agent' || sender === 'bot' ? `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${senderName || (sender === 'bot' ? 'GPL Assistant' : 'Support Agent')}</strong>` : ''}
+            ${text ? `<div>${text.replace(/\n/g, '<br>')}</div>` : ''}
+            ${mediaHtml}
+        `;
+        fsChatMessages.appendChild(div);
+        fsChatMessages.scrollTop = fsChatMessages.scrollHeight;
+    }
+
+    function initLiveChat() {
+        if (chatInitialized) {
+            setTimeout(() => { if (fsChatInput) fsChatInput.focus(); }, 100);
+            return;
+        }
+        chatInitialized = true;
+
+        const socket = window.gplSupportSocket || (typeof io !== 'undefined' ? io() : null);
+        if (!socket) {
+            appendFsMessage("Live Chat is currently connecting. Please wait a moment...", "system");
+            return;
+        }
+
+        let guestId = localStorage.getItem('gplGuestId');
+        if (!guestId) {
+            guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('gplGuestId', guestId);
+        }
+
+        const userId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
+        let sessionId = localStorage.getItem('gplChatSessionId');
+
+        function joinSupport() {
+            socket.emit('join_support_chat', {
+                userId,
+                guestId,
+                sessionId,
+                deviceInfo: { browser: navigator.userAgent, os: navigator.platform },
+                currentPage: window.location.pathname,
+                avatarUrl: '<%= typeof user !== "undefined" && user && user.signedAvatarUrl ? user.signedAvatarUrl : "" %>',
+                username: '<%= typeof user !== "undefined" && user ? user.username : "" %>'
+            });
+        }
+
+        socket.on('support_chat_ready', (data) => {
+            localStorage.setItem('gplChatSessionId', data.sessionId);
+            sessionId = data.sessionId;
+            fsChatMessages.innerHTML = '';
+
+            if (data.history && data.history.length > 0) {
+                data.history.forEach(msg => appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls));
+            } else {
+                appendFsMessage("Hello! 👋 I'm the GPL AI Assistant. How can I help you today? Type 'human' at any time to connect with our support agents.", "bot");
+            }
+            setTimeout(() => { if (fsChatInput) fsChatInput.focus(); }, 150);
+        });
+
+        socket.on('new_support_message', (msg) => {
+            appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls);
+        });
+
+        socket.on('support_chat_deleted', () => {
+            localStorage.removeItem('gplChatSessionId');
+            sessionId = null;
+            fsChatMessages.innerHTML = '';
+            appendFsMessage("Chat reset. Starting a fresh conversation...", "system");
+            socket.emit('join_support_chat', { userId, guestId, sessionId: null, forceNew: true });
+        });
+
+        joinSupport();
+
+        // Send Message
+        if (fsChatForm) {
+            fsChatForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = fsChatInput.value.trim();
+                const mediaUrls = [...fsPendingMedia];
+
+                if (!text && mediaUrls.length === 0) return;
+
+                const activeSessionId = localStorage.getItem('gplChatSessionId');
+                socket.emit('send_support_message', {
+                    sessionId: activeSessionId,
+                    text,
+                    mediaUrls,
+                    guestId
+                });
+
+                fsChatInput.value = '';
+                fsPendingMedia = [];
+                renderFsMediaTray();
+                if (fsChatInput) fsChatInput.focus();
+            });
+        }
+
+        // New Chat Button
+        if (btnChatNewSession) {
+            btnChatNewSession.addEventListener('click', () => {
+                if (confirm('Start a new support conversation?')) {
+                    localStorage.removeItem('gplChatSessionId');
+                    sessionId = null;
+                    fsChatMessages.innerHTML = '';
+                    appendFsMessage("Starting a new conversation...", "system");
+                    socket.emit('join_support_chat', { userId, guestId, sessionId: null, forceNew: true });
+                }
+            });
+        }
+    }
+
+
+    // ==========================================
+    // 3. TICKET FORM CUSTOM SELECT DROPDOWN LOGIC
+    // ==========================================
+    const wrapper = document.querySelector('.custom-select-wrapper');
+    const customSelect = wrapper ? wrapper.querySelector('.custom-select') : null;
+    const selectedText = wrapper ? wrapper.querySelector('.selected-text') : null;
+    const options = wrapper ? wrapper.querySelectorAll('.custom-option') : [];
+    const nativeSelect = document.getElementById('category');
+
+    if (wrapper && customSelect && nativeSelect) {
+        customSelect.addEventListener('click', function(e) {
+            e.stopPropagation();
+            wrapper.classList.toggle('open');
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+
+                selectedText.textContent = text;
+                selectedText.style.color = 'var(--white)';
+                nativeSelect.value = value;
+
+                options.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) {
+                wrapper.classList.remove('open');
+            }
+        });
+    }
+
+    const ticketForm = document.getElementById('supportForm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (ticketForm && submitBtn && nativeSelect) {
+        ticketForm.addEventListener('submit', (e) => {
+            if (!nativeSelect.value) {
+                e.preventDefault();
+                alert('Please select a support category from the dropdown menu.');
+                if (customSelect) {
+                    customSelect.style.borderColor = 'var(--red)';
+                    customSelect.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                }
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.7';
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i> Submitting...';
+            }
+        });
+    }
+});
 </script>
 
 <%- include('../partials/footer') %>

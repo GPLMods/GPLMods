@@ -245,11 +245,12 @@ async function createAdminRouter() {
                 options: {
                     navigation: usersNav,
                     listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
+                        profileLottieBadges: { description: 'Custom profile Lottie badges (max 3). Specify animation (e.g. verified.json, card.json, crown.json), title, description, and color.' },
                         bio: { type: 'textarea', description: 'User profile biography' },
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },

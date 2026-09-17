@@ -206,6 +206,14 @@ const UserSchema = new Schema({
         enum: ['none', 'email', 'totp', 'passkey', 'social'],
         default: 'none' 
     },
+    twoFactorMethods: {
+        type: [{
+            type: String,
+            enum: ['email', 'totp', 'passkey', 'social']
+        }],
+        validate: [val => val.length <= 3, '{PATH} exceeds the limit of 3 two-factor methods'],
+        default: []
+    },
     twoFactorSecret: { type: String },
     twoFactorRecoveryCodes: [{ type: String }],
     twoFactorSocialProvider: { 
@@ -229,6 +237,18 @@ const UserSchema = new Schema({
     musicSettings: {
         allowThemeMusic: { type: Boolean, default: true },
         autoPlayTheme: { type: Boolean, default: true }
+    },
+
+    // --- ADMIN-ASSIGNED PROFILE LOTTIE BADGES (MAX 3) ---
+    profileLottieBadges: {
+        type: [{
+            animation: { type: String, trim: true, default: 'verified.json' },
+            title: { type: String, trim: true, default: 'Verified Badge' },
+            description: { type: String, trim: true, default: 'Verified by GPL Mods Team' },
+            color: { type: String, trim: true, default: '#FFD700' }
+        }],
+        validate: [val => val.length <= 3, '{PATH} exceeds the limit of 3 profile badges'],
+        default: []
     },
 
     // --- TWO-FACTOR AUTHENTICATION & ID CARD ---

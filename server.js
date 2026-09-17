@@ -4525,8 +4525,16 @@ const processSuccessfulLogin = async (req, res, next, user) => {
     if (user.twoFactorEnabled) {
         // Place user in 2FA limbo
         req.session.pending2faUserId = user._id.toString();
+
+        // Priority method is the 1st enabled method in twoFactorMethods, fallback to twoFactorMethod
+        const availableMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0)
+            ? user.twoFactorMethods
+            : (user.twoFactorMethod && user.twoFactorMethod !== 'none' ? [user.twoFactorMethod] : ['email']);
+
+        const priorityMethod = availableMethods[0] || 'email';
+        req.session.active2faMethod = priorityMethod;
         
-        if (user.twoFactorMethod === 'email') {
+        if (priorityMethod === 'email') {
             try {
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
                 user.verificationOtp = otp;
@@ -6109,6 +6117,11 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
             user.twoFactorEnabled = true;
             user.is2FAEnabled = true;
             user.cardStatus = 'active'; // Reactivate card if it was suspended!
+            if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
+            if (!user.twoFactorMethods.includes('passkey')) {
+                if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
+                user.twoFactorMethods.push('passkey');
+            }
 
             const rawCodes = generateRecoveryCodes();
             user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
@@ -6143,8 +6156,13 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
         // Strip accidental spaces from the token
         const cleanToken = token ? token.replace(/\s+/g, '') : '';
 
+        if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
         if (method === 'email') {
             user.twoFactorMethod = 'email';
+            if (!user.twoFactorMethods.includes('email')) {
+                if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
+                user.twoFactorMethods.push('email');
+            }
         } else if (method === 'totp') {
             const verified = speakeasy.totp.verify({
                 secret: req.session.tempTwoFactorSecret,
@@ -6160,6 +6178,10 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
             user.twoFactorMethod = 'totp';
             user.twoFactorSecret = req.session.tempTwoFactorSecret;
             req.session.tempTwoFactorSecret = null;
+            if (!user.twoFactorMethods.includes('totp')) {
+                if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
+                user.twoFactorMethods.push('totp');
+            }
         }
 
         const rawCodes = generateRecoveryCodes();
@@ -6185,13 +6207,15 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- Update 2FA Login Challenge to Accept Backup Codes ---
+// --- Update 2FA Login Challenge to Accept Backup Codes and Multi-Option Switcher ---
 app.post('/login/2fa/verify', async (req, res, next) => {
     if (!req.session.pending2faUserId) return res.redirect('/login');
     try {
         const token = req.body.token ? req.body.token.replace(/\s+/g, '') : '';
         const user = await User.findById(req.session.pending2faUserId);
+        if (!user) return res.redirect('/login');
 
+        const currentMethod = req.session.active2faMethod || user.twoFactorMethod || 'email';
         let isValid = false;
         let usedRecoveryCodeIndex = -1;
 
@@ -6205,26 +6229,40 @@ app.post('/login/2fa/verify', async (req, res, next) => {
                 }
             }
         } 
-        // 2. Otherwise, check TOTP
-        else if (user.twoFactorMethod === 'totp') {
-            isValid = speakeasy.totp.verify({
-                secret: user.twoFactorSecret,
-                encoding: 'base32',
-                token: token
-            });
+        // 2. Check TOTP
+        else if (currentMethod === 'totp' || (user.twoFactorSecret && user.twoFactorSecret.length > 0)) {
+            if (user.twoFactorSecret) {
+                isValid = speakeasy.totp.verify({
+                    secret: user.twoFactorSecret,
+                    encoding: 'base32',
+                    token: token
+                });
+            }
+            // Cross-fallback: in case user entered email code while viewing TOTP screen
+            if (!isValid && user.verificationOtp === token && user.otpExpires > Date.now()) {
+                isValid = true;
+            }
         }
-        // 3. Otherwise, check Email OTP
-        else if (user.twoFactorMethod === 'email') {
+        // 3. Check Email OTP
+        else if (currentMethod === 'email') {
             isValid = (user.verificationOtp === token && user.otpExpires > Date.now());
+            // Cross-fallback: in case user entered authenticator code while viewing email screen
+            if (!isValid && user.twoFactorSecret) {
+                isValid = speakeasy.totp.verify({
+                    secret: user.twoFactorSecret,
+                    encoding: 'base32',
+                    token: token
+                });
+            }
         }
 
-        if (!isValid) return res.redirect('/login/2fa?error=Invalid code. Please try again.');
+        if (!isValid) return res.redirect(`/login/2fa?method=${currentMethod}&error=${encodeURIComponent('Invalid code. Please try again.')}`);
 
         // Cleanup: Remove used recovery code or email OTP
         if (usedRecoveryCodeIndex !== -1) {
             user.twoFactorRecoveryCodes.splice(usedRecoveryCodeIndex, 1);
         }
-        if (user.twoFactorMethod === 'email') {
+        if (user.verificationOtp === token) {
             user.verificationOtp = undefined;
             user.otpExpires = undefined;
         }
@@ -6245,6 +6283,7 @@ app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
             user.twoFactorEnabled = false;
             user.is2FAEnabled = false;
             user.twoFactorMethod = 'none';
+            user.twoFactorMethods = [];
             user.twoFactorSecret = '';
             user.cardStatus = 'suspended'; // Card suspended when 2FA is disabled!
             await user.save();
@@ -6277,6 +6316,11 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
         user.twoFactorEnabled = true;
         user.is2FAEnabled = true;
         user.cardStatus = 'active'; // Reactivate card!
+        if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
+        if (!user.twoFactorMethods.includes('social')) {
+            if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
+            user.twoFactorMethods.push('social');
+        }
 
         const rawCodes = generateRecoveryCodes();
         user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
@@ -6420,7 +6464,39 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
 app.get('/login/2fa', async (req, res) => {
     if (!req.session.pending2faUserId) return res.redirect('/login');
     const user = await User.findById(req.session.pending2faUserId);
-    res.render('pages/2fa-challenge', { method: user.twoFactorMethod, error: req.query.error });
+    if (!user) return res.redirect('/login');
+
+    const availableMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0)
+        ? user.twoFactorMethods
+        : (user.twoFactorMethod && user.twoFactorMethod !== 'none' ? [user.twoFactorMethod] : ['email']);
+
+    let currentMethod = req.query.method || req.session.active2faMethod || availableMethods[0] || user.twoFactorMethod || 'email';
+    if (!availableMethods.includes(currentMethod)) {
+        currentMethod = availableMethods[0];
+    }
+
+    // If user switched to email, send OTP if none exists or expired
+    if (currentMethod === 'email' && req.query.method === 'email') {
+        try {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            user.verificationOtp = otp;
+            user.otpExpires = Date.now() + 600000;
+            await user.save();
+            await send2faEmail(user, otp);
+        } catch (e) {
+            console.error("2FA Email Switch Error:", e);
+        }
+    }
+
+    req.session.active2faMethod = currentMethod;
+    req.session.save(() => {
+        res.render('pages/2fa-challenge', { 
+            method: currentMethod, 
+            availableMethods: availableMethods,
+            error: req.query.error,
+            user: user
+        });
+    });
 });
 
 app.post('/account/delete', ensureAuthenticated, async (req, res, next) => {
@@ -9811,9 +9887,18 @@ Allow: /why-choose-us
 Allow: /understanding-scans
 Allow: /membership
 Allow: /docs/
-Allow: /upload-policy/
+Allow: /upload-policy
+Allow: /category
+Allow: /users/
+Allow: /leaderboard
+Allow: /licenses
+Allow: /request-mod
 
 Disallow: /admin/
+Disallow: /owner/
+Disallow: /dashboard
+Disallow: /id-card
+Disallow: /cc
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
@@ -9866,14 +9951,35 @@ app.get('/sitemap-pages.xml', (req, res) => {
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-    const staticPages = ['', 'upload-policy', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
+    const staticPages = [
+        '', 
+        '/about', 
+        '/faq', 
+        '/dmca', 
+        '/tos', 
+        '/privacy-policy', 
+        '/refund-policy', 
+        '/donate', 
+        '/partnership-policy', 
+        '/distributor-features', 
+        '/why-choose-us', 
+        '/understanding-scans', 
+        '/membership', 
+        '/upload-policy', 
+        '/docs', 
+        '/community', 
+        '/leaderboard', 
+        '/licenses', 
+        '/request-mod', 
+        '/ai-directory'
+    ];
     staticPages.forEach(page => {
-        xml += `  <url>\n    <loc>${escapeXML(baseUrl + page)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + page)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${page === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
     });
 
     const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
     categories.forEach(cat => {
-         xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+         xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
     });
 
     xml += '</urlset>';
@@ -9924,9 +10030,19 @@ app.get('/sitemap-users.xml', async (req, res) => {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
-        uniqueUploaders.forEach(uploader => {
-             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/users/' + encodeURIComponent(uploader))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true });
+        const staffOrDistributors = await User.find({
+            role: { $in: ['distributor', 'owner', 'admin', 'support'] },
+            isBanned: false
+        }).select('username').lean();
+
+        const allUsers = new Set([
+            ...uniqueUploaders,
+            ...staffOrDistributors.map(u => u.username)
+        ].filter(Boolean));
+
+        allUsers.forEach(username => {
+             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/users/' + encodeURIComponent(username))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
         xml += '</urlset>';
         res.send(xml);

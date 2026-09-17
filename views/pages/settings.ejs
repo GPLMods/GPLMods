@@ -26,11 +26,30 @@
             <h1 style="color: var(--white); font-size: 2.8em; margin-bottom: 10px;">Account <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">Settings</span></h1>
         </div>
 
-        <!-- 2FA Settings (RESTORED) -->
+        <!-- 2FA Settings (RESTORED & MULTI-OPTION SUPPORT) -->
         <div class="settings-section">
             <div class="settings-info">
                 <h3><i class="fas fa-shield-alt" style="color: var(--gold);"></i> Two-Factor Auth (2FA)</h3>
-                <p>Add an extra layer of security to your account.</p>
+                <p>Protect your account with up to 2-3 verification options (Email OTP, Authenticator, Passkey).</p>
+                <% if (user.twoFactorEnabled) { %>
+                    <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <% 
+                            const activeMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0) 
+                                ? user.twoFactorMethods 
+                                : [user.twoFactorMethod || 'email'];
+                            activeMethods.forEach((m, idx) => { 
+                        %>
+                            <span style="font-size: 0.78em; background: rgba(255,215,0,0.12); color: var(--gold); border: 1px solid rgba(255,215,0,0.35); padding: 3px 10px; border-radius: 12px; font-weight: 600;">
+                                <%= idx === 0 ? 'Primary: ' : '' %><%= m === 'totp' ? 'Authenticator' : (m === 'passkey' ? 'Passkey' : (m === 'social' ? 'Social 2FA' : 'Email OTP')) %>
+                            </span>
+                        <% }); %>
+                        <% if (activeMethods.length < 3) { %>
+                            <a href="/account/2fa/setup" style="font-size: 0.78em; background: rgba(255,255,255,0.08); color: var(--silver); border: 1px solid #444; padding: 3px 10px; border-radius: 12px; text-decoration: none; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='#444'">
+                                <i class="fas fa-plus"></i> Add Method (<%= activeMethods.length %>/3)
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
             </div>
             <form action="<%= user.twoFactorEnabled ? '/account/2fa/disable' : '/account/2fa/setup' %>" method="<%= user.twoFactorEnabled ? 'POST' : 'GET' %>" style="margin: 0;">
                 <label class="switch">
@@ -199,6 +218,24 @@
         <div style="display: flex; gap: 15px; justify-content: center;">
             <button type="button" id="confirm-leave-partnership-btn" class="btn btn-primary" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 0 15px var(--glow-gold);">Yes, I want to leave</button>
             <button type="button" class="btn btn-secondary" id="cancel-leave-partnership-btn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ======== CUSTOM CLEAR CACHE MODAL ======== -->
+<div id="clear-cache-modal-container" class="policy-modal">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 440px; width: 90%; border-top: 4px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+        <i class="fas fa-broom" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.8em;">Clear Web Cache?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6;">
+            This will purge your browser's cached files, service workers, and temporary offline storage, then reload the page fresh.
+        </p>
+        <div id="cache-modal-status" style="margin-bottom: 20px; font-size: 0.9em; display: none; padding: 10px; border-radius: 8px;"></div>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" id="confirmClearCacheBtn" class="btn btn-primary" style="background-color: var(--gold); color: var(--black); padding: 12px 25px; border-radius: 25px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 0 15px var(--glow-gold);">
+                <i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Yes, Clear Cache
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelClearCacheBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer;">Cancel</button>
         </div>
     </div>
 </div>
@@ -469,10 +506,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Clear Web Cache Modal Controls
+    const clearCacheModal = document.getElementById('clear-cache-modal-container');
+    const cancelClearCacheBtn = document.getElementById('cancelClearCacheBtn');
+    const confirmClearCacheBtn = document.getElementById('confirmClearCacheBtn');
+    const cacheModalStatus = document.getElementById('cache-modal-status');
+
+    if (cancelClearCacheBtn) {
+        cancelClearCacheBtn.addEventListener('click', () => closeModal(clearCacheModal));
+    }
+
     // Close Modals on outside click
     window.addEventListener('click', (e) => {
         if (e.target === newsModal) closeModal(newsModal);
         if (e.target === logoutModal) closeModal(logoutModal);
+        if (e.target === clearCacheModal) closeModal(clearCacheModal);
         if (e.target === deleteModal) {
             closeModal(deleteModal);
             setTimeout(resetDeleteModal, 250);
@@ -511,11 +559,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const cacheStatus = document.getElementById('cache-clean-status');
 
     if (purgeCacheBtn) {
-        purgeCacheBtn.addEventListener('click', async () => {
-            if (!confirm('Clear all local web cache, service workers, and temporary offline storage? This will perform a fresh page reload.')) return;
+        purgeCacheBtn.addEventListener('click', () => {
+            if (cacheModalStatus) {
+                cacheModalStatus.style.display = 'none';
+                cacheModalStatus.textContent = '';
+            }
+            if (confirmClearCacheBtn) {
+                confirmClearCacheBtn.disabled = false;
+                confirmClearCacheBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Yes, Clear Cache';
+            }
+            openModal(clearCacheModal);
+        });
+    }
+
+    if (confirmClearCacheBtn) {
+        confirmClearCacheBtn.addEventListener('click', async () => {
+            confirmClearCacheBtn.disabled = true;
+            if (cancelClearCacheBtn) cancelClearCacheBtn.disabled = true;
+            confirmClearCacheBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Cleaning Cache...';
             
-            purgeCacheBtn.disabled = true;
-            purgeCacheBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Cleaning Cache...';
+            if (cacheModalStatus) {
+                cacheModalStatus.style.display = 'block';
+                cacheModalStatus.style.background = 'rgba(255, 215, 0, 0.1)';
+                cacheModalStatus.style.border = '1px solid var(--gold)';
+                cacheModalStatus.style.color = 'var(--gold)';
+                cacheModalStatus.textContent = 'Purging Service Workers & CacheStorage...';
+            }
             if (cacheStatus) {
                 cacheStatus.style.display = 'block';
                 cacheStatus.style.color = 'var(--gold)';
@@ -541,6 +610,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 try { localStorage.clear(); } catch(e){}
                 try { sessionStorage.clear(); } catch(e){}
 
+                if (cacheModalStatus) {
+                    cacheModalStatus.style.background = 'rgba(46, 204, 113, 0.15)';
+                    cacheModalStatus.style.border = '1px solid var(--green)';
+                    cacheModalStatus.style.color = 'var(--green)';
+                    cacheModalStatus.textContent = '✔ All caches cleared! Reloading fresh...';
+                }
                 if (cacheStatus) {
                     cacheStatus.style.color = 'var(--green)';
                     cacheStatus.textContent = '✔ All caches cleared! Reloading fresh...';
@@ -548,15 +623,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setTimeout(() => {
                     window.location.replace(window.location.pathname + '?_cc=' + Date.now() + '&cache_cleared=1');
-                }, 500);
+                }, 600);
             } catch (err) {
                 console.error("Cache purge failed:", err);
-                if (cacheStatus) {
-                    cacheStatus.style.color = 'var(--red)';
-                    cacheStatus.textContent = '✖ Error clearing cache: ' + err.message;
+                if (cacheModalStatus) {
+                    cacheModalStatus.style.background = 'rgba(229, 57, 53, 0.15)';
+                    cacheModalStatus.style.border = '1px solid var(--red)';
+                    cacheModalStatus.style.color = 'var(--red)';
+                    cacheModalStatus.textContent = '✖ Error clearing cache: ' + err.message;
                 }
-                purgeCacheBtn.disabled = false;
-                purgeCacheBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Clear Web Cache Now';
+                confirmClearCacheBtn.disabled = false;
+                if (cancelClearCacheBtn) cancelClearCacheBtn.disabled = false;
+                confirmClearCacheBtn.innerHTML = '<i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Retry Cache Clear';
             }
         });
     }
