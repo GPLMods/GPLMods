@@ -142,7 +142,7 @@ async function createAdminRouter() {
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
             styles: isProduction ? ['/.adminjs/bundle.css', '/css/admin-custom.css'] : ['/css/admin-custom.css'],
-            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js'] : ['/js/image-fallback.js'],
+            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js', '/js/admin-badges.js'] : ['/js/admin-badges.js', '/js/image-fallback.js'],
         },
         dashboard: { 
             component: Components.Dashboard,

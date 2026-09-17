@@ -1,133 +1,236 @@
 /* ==========================================================================
    GPL Mods AdminJS Custom Stylesheet
-   - Colorful Status, Role, and Platform Badges/Tags
+   - Typography: Poppins Font across all AdminJS interfaces
+   - Dynamic Colorful Badges & Tags for Ranks, Platforms, Memberships & Statuses
    - Mobile UI & Touch Optimizations
    ========================================================================== */
 
-/* --- 1. BADGES & TAGS STYLING --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* --- 1. GLOBAL TYPOGRAPHY (POPPINS) --- */
+body, html, input, button, select, textarea, table, th, td, [class*="adminjs"], section, header, nav, aside, h1, h2, h3, h4, h5, h6, p, span, div {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* --- 2. BASE BADGES & TAGS STYLING --- */
 span[class*="Badge"],
 span[class*="Tag"],
 .adminjs_Badge,
-.adminjs_Tag {
+.adminjs_Tag,
+.admin-custom-chip {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 4px !important;
-    padding: 3px 8px !important;
-    border-radius: 6px !important;
+    gap: 5px !important;
+    padding: 3px 10px !important;
+    border-radius: 20px !important;
     font-size: 11px !important;
     font-weight: 700 !important;
-    letter-spacing: 0.04em !important;
+    letter-spacing: 0.05em !important;
     text-transform: uppercase !important;
     border: 1px solid transparent !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
 }
 
-/* Green Status: Live, Approved, Active, Resolved */
-span[class*="Badge"][data-variant="success"],
-span[class*="Badge"]:is([title*="live" i], [title*="approved" i], [title*="active" i], [title*="resolved" i]),
-.adminjs_Badge:is([title*="live" i], [title*="approved" i], [title*="active" i], [title*="resolved" i]) {
-    background-color: rgba(67, 160, 71, 0.18) !important;
-    color: #43a047 !important;
-    border-color: rgba(67, 160, 71, 0.45) !important;
+/* --- 3. ROLES & RANKS (VIBRANT) --- */
+/* Owner (Ruby Red) */
+[data-badge-val="role-owner"],
+span[class*="Badge"][title*="owner" i],
+.adminjs_Badge[title*="owner" i] {
+    background-color: rgba(244, 67, 54, 0.2) !important;
+    color: #ff5252 !important;
+    border-color: rgba(244, 67, 54, 0.6) !important;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.25) !important;
+    text-shadow: 0 0 8px rgba(244, 67, 54, 0.4) !important;
+}
+
+/* Admin (Royal Gold) */
+[data-badge-val="role-admin"],
+span[class*="Badge"]:is([title*="admin" i], [title*="gold" i]),
+.adminjs_Badge:is([title*="admin" i], [title*="gold" i]) {
+    background-color: rgba(255, 215, 0, 0.18) !important;
+    color: #FFD700 !important;
+    border-color: rgba(255, 215, 0, 0.6) !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Moderator (Emerald Green) */
+[data-badge-val="role-moderator"],
+span[class*="Badge"][title*="moderator" i],
+.adminjs_Badge[title*="moderator" i] {
+    background-color: rgba(0, 230, 118, 0.18) !important;
+    color: #00e676 !important;
+    border-color: rgba(0, 230, 118, 0.55) !important;
+}
+
+/* Support (Electric Cyan/Blue) */
+[data-badge-val="role-support"],
+span[class*="Badge"][title*="support" i],
+.adminjs_Badge[title*="support" i] {
+    background-color: rgba(0, 176, 255, 0.18) !important;
+    color: #00b0ff !important;
+    border-color: rgba(0, 176, 255, 0.55) !important;
+}
+
+/* Distributor (Amethyst Purple) */
+[data-badge-val="role-distributor"],
+span[class*="Badge"][title*="distributor" i],
+.adminjs_Badge[title*="distributor" i] {
+    background-color: rgba(186, 104, 200, 0.18) !important;
+    color: #ce93d8 !important;
+    border-color: rgba(186, 104, 200, 0.55) !important;
+}
+
+/* Creator / Uploader (Sunset Orange) */
+[data-badge-val="role-creator"],
+[data-badge-val="role-uploader"],
+span[class*="Badge"]:is([title*="creator" i], [title*="uploader" i]) {
+    background-color: rgba(255, 152, 0, 0.18) !important;
+    color: #ffb74d !important;
+    border-color: rgba(255, 152, 0, 0.55) !important;
+}
+
+/* Member / User (Clean Silver) */
+[data-badge-val="role-member"],
+[data-badge-val="role-user"],
+span[class*="Badge"]:is([title*="member" i], [title*="user" i]) {
+    background-color: rgba(192, 192, 192, 0.15) !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(192, 192, 192, 0.4) !important;
+}
+
+/* --- 4. MEMBERSHIP TIERS --- */
+/* Premium (Luxury Gold Gradient) */
+[data-badge-val="plan-premium"],
+[data-badge-val="plan-vip"],
+span[class*="Badge"][title*="premium" i],
+.adminjs_Badge[title*="premium" i] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 152, 0, 0.15)) !important;
+    color: #FFD700 !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3) !important;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Standard / Free */
+[data-badge-val="plan-standard"] {
+    background-color: rgba(66, 165, 245, 0.18) !important;
+    color: #64b5f6 !important;
+    border-color: rgba(66, 165, 245, 0.5) !important;
+}
+[data-badge-val="plan-free"] {
+    background-color: rgba(144, 164, 174, 0.15) !important;
+    color: #b0bec5 !important;
+    border-color: rgba(144, 164, 174, 0.4) !important;
+}
+[data-badge-val="plan-lifetime"] {
+    background: linear-gradient(135deg, rgba(224, 64, 251, 0.25), rgba(124, 77, 255, 0.15)) !important;
+    color: #ea80fc !important;
+    border-color: #e040fb !important;
+    box-shadow: 0 0 10px rgba(224, 64, 251, 0.3) !important;
+}
+
+/* --- 5. PLATFORMS & CATEGORIES --- */
+/* Android (Lime Green) */
+[data-badge-val="platform-android"],
+span[class*="Badge"][title*="android" i] {
+    background-color: rgba(164, 198, 57, 0.2) !important;
+    color: #c6e377 !important;
+    border-color: rgba(164, 198, 57, 0.55) !important;
+}
+
+/* Windows (Azure Blue) */
+[data-badge-val="platform-windows"],
+span[class*="Badge"][title*="windows" i] {
+    background-color: rgba(0, 164, 239, 0.2) !important;
+    color: #40c4ff !important;
+    border-color: rgba(0, 164, 239, 0.55) !important;
+}
+
+/* WordPress (WP Blue) */
+[data-badge-val="platform-wordpress"],
+span[class*="Badge"][title*="wordpress" i] {
+    background-color: rgba(33, 117, 155, 0.25) !important;
+    color: #4dd0e1 !important;
+    border-color: rgba(33, 117, 155, 0.6) !important;
+}
+
+/* iOS / IPA (Clean Apple Silver/White) */
+[data-badge-val="platform-ios-jailed"],
+[data-badge-val="platform-ipa"],
+[data-badge-val="platform-ios"],
+span[class*="Badge"]:is([title*="ios" i], [title*="ipa" i]) {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.35) !important;
+}
+
+/* iOS Jailbroken / DEB (Tangerine Orange) */
+[data-badge-val="platform-ios-jailbroken"],
+[data-badge-val="platform-deb"] {
+    background-color: rgba(255, 145, 0, 0.2) !important;
+    color: #ffab40 !important;
+    border-color: rgba(255, 145, 0, 0.55) !important;
+}
+
+/* Mac & Linux */
+[data-badge-val="platform-mac"] {
+    background-color: rgba(179, 136, 255, 0.2) !important;
+    color: #d1c4e9 !important;
+    border-color: rgba(179, 136, 255, 0.5) !important;
+}
+[data-badge-val="platform-linux"] {
+    background-color: rgba(255, 193, 7, 0.2) !important;
+    color: #ffe082 !important;
+    border-color: rgba(255, 193, 7, 0.5) !important;
+}
+
+/* --- 6. STATUS BADGES --- */
+/* Green Status: Live, Approved, Active, Resolved, Clean */
+[data-badge-val="status-live"],
+[data-badge-val="status-approved"],
+[data-badge-val="status-active"],
+[data-badge-val="status-resolved"],
+[data-badge-val="status-clean"],
+span[class*="Badge"][data-variant="success"] {
+    background-color: rgba(67, 160, 71, 0.2) !important;
+    color: #66bb6a !important;
+    border-color: rgba(67, 160, 71, 0.55) !important;
 }
 
 /* Amber/Orange Status: Pending, In-Review, Open */
-span[class*="Badge"][data-variant="warning"],
-span[class*="Badge"]:is([title*="pending" i], [title*="in-review" i], [title*="open" i]),
-.adminjs_Badge:is([title*="pending" i], [title*="in-review" i], [title*="open" i]) {
-    background-color: rgba(255, 152, 0, 0.18) !important;
+[data-badge-val="status-pending"],
+[data-badge-val="status-open"],
+span[class*="Badge"][data-variant="warning"] {
+    background-color: rgba(255, 152, 0, 0.2) !important;
     color: #ffa726 !important;
-    border-color: rgba(255, 152, 0, 0.45) !important;
+    border-color: rgba(255, 152, 0, 0.55) !important;
 }
 
-/* Red Status: Rejected, Banned, Deleted, Hidden, Closed */
+/* Red Status: Rejected, Banned, Deleted, Hidden, Closed, Malicious */
+[data-badge-val="status-rejected"],
+[data-badge-val="status-banned"],
+[data-badge-val="status-closed"],
+[data-badge-val="status-malicious"],
 span[class*="Badge"][data-variant="danger"],
-span[class*="Badge"][data-variant="error"],
-span[class*="Badge"]:is([title*="rejected" i], [title*="banned" i], [title*="deleted" i], [title*="hidden" i], [title*="closed" i]),
-.adminjs_Badge:is([title*="rejected" i], [title*="banned" i], [title*="deleted" i], [title*="hidden" i], [title*="closed" i]) {
-    background-color: rgba(229, 57, 53, 0.18) !important;
+span[class*="Badge"][data-variant="error"] {
+    background-color: rgba(229, 57, 53, 0.2) !important;
     color: #ef5350 !important;
-    border-color: rgba(229, 57, 53, 0.45) !important;
+    border-color: rgba(229, 57, 53, 0.55) !important;
 }
 
-/* Gold / Yellow: Admin, Premium, Featured */
-span[class*="Badge"]:is([title*="admin" i], [title*="featured" i], [title*="gold" i]),
-.adminjs_Badge:is([title*="admin" i], [title*="featured" i], [title*="gold" i]) {
-    background-color: rgba(255, 215, 0, 0.15) !important;
-    color: #FFD700 !important;
-    border-color: rgba(255, 215, 0, 0.4) !important;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.25) !important;
-}
-
-/* Ruby Red: Owner */
-span[class*="Badge"][title*="owner" i],
-.adminjs_Badge[title*="owner" i] {
-    background-color: rgba(244, 67, 54, 0.18) !important;
-    color: #f44336 !important;
-    border-color: rgba(244, 67, 54, 0.5) !important;
-}
-
-/* Royal Purple: Distributor */
-span[class*="Badge"][title*="distributor" i],
-.adminjs_Badge[title*="distributor" i] {
-    background-color: rgba(171, 71, 188, 0.18) !important;
-    color: #ba68c8 !important;
-    border-color: rgba(171, 71, 188, 0.45) !important;
-}
-
-/* Blue: Member, User, Normal */
-span[class*="Badge"][data-variant="primary"],
-span[class*="Badge"][data-variant="info"],
-span[class*="Badge"]:is([title*="member" i], [title*="user" i]),
-.adminjs_Badge:is([title*="member" i], [title*="user" i]) {
-    background-color: rgba(33, 150, 243, 0.18) !important;
-    color: #42a5f5 !important;
-    border-color: rgba(33, 150, 243, 0.4) !important;
-}
-
-/* Category & Platform Chips */
-span[class*="Badge"]:is([title*="android" i]),
-.adminjs_Badge:is([title*="android" i]) {
-    background-color: rgba(164, 198, 57, 0.18) !important;
-    color: #a4c639 !important;
-    border-color: rgba(164, 198, 57, 0.4) !important;
-}
-span[class*="Badge"]:is([title*="ios" i], [title*="ipa" i], [title*="deb" i]),
-.adminjs_Badge:is([title*="ios" i], [title*="ipa" i], [title*="deb" i]) {
-    background-color: rgba(0, 120, 214, 0.18) !important;
-    color: #29b6f6 !important;
-    border-color: rgba(0, 120, 214, 0.4) !important;
-}
-span[class*="Badge"]:is([title*="windows" i]),
-.adminjs_Badge:is([title*="windows" i]) {
-    background-color: rgba(0, 164, 239, 0.18) !important;
-    color: #00b0ff !important;
-    border-color: rgba(0, 164, 239, 0.4) !important;
-}
-span[class*="Badge"]:is([title*="wordpress" i]),
-.adminjs_Badge:is([title*="wordpress" i]) {
-    background-color: rgba(33, 117, 155, 0.18) !important;
-    color: #4dd0e1 !important;
-    border-color: rgba(33, 117, 155, 0.4) !important;
-}
-
-/* Tag component overrides (chips) */
-span[class*="Tag"],
-.adminjs_Tag {
-    background-color: rgba(255, 255, 255, 0.07) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #e0e0e0 !important;
-}
+/* Hover effect on tags */
 span[class*="Tag"]:hover,
-.adminjs_Tag:hover {
-    border-color: #FFD700 !important;
-    color: #FFD700 !important;
+.adminjs_Tag:hover,
+span[class*="Badge"]:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* --- 2. ADMINJS MOBILE UI OPTIMIZATIONS --- */
+/* --- 7. ADMINJS MOBILE & TOUCH OPTIMIZATIONS --- */
 @media (max-width: 992px) {
-    /* Responsive Table Container */
     section[class*="Table"],
     div[class*="Table"],
     table {
@@ -137,14 +240,12 @@ span[class*="Tag"]:hover,
         -webkit-overflow-scrolling: touch !important;
     }
 
-    /* Keep table cells readable on touch */
     td, th {
         padding: 10px 8px !important;
         font-size: 13px !important;
         white-space: nowrap !important;
     }
 
-    /* Action bar flex wrap on mobile */
     div[class*="ActionBar"],
     header[class*="PageHeader"] {
         flex-direction: column !important;
@@ -153,19 +254,16 @@ span[class*="Tag"]:hover,
         padding: 14px 12px !important;
     }
 
-    /* Buttons full width on mobile */
     div[class*="ButtonGroup"] {
         flex-wrap: wrap !important;
         width: 100% !important;
     }
 
-    /* Drawer / Sidebar touch usability */
     aside[class*="Sidebar"],
     nav[class*="Sidebar"] {
         max-width: 85vw !important;
     }
 
-    /* Filter drawer sizing */
     section[class*="FilterDrawer"] {
         width: 100% !important;
         max-width: 100vw !important;
@@ -173,33 +271,20 @@ span[class*="Tag"]:hover,
 }
 
 @media (max-width: 480px) {
-    body {
-        font-size: 13px !important;
-    }
-
-    /* Top navbar spacing */
-    header[class*="NavBar"] {
-        padding: 8px 10px !important;
-    }
-
-    /* Modal dialogs touch sizing */
-    div[class*="Modal"] {
-        width: 95% !important;
-        margin: 10px auto !important;
-    }
+    body { font-size: 13px !important; }
+    header[class*="NavBar"] { padding: 8px 10px !important; }
+    div[class*="Modal"] { width: 95% !important; margin: 10px auto !important; }
 }
 
-/* Sidebar Branding / Logo Clickable Link to /admin */
+/* Clickable Sidebar Branding */
 [data-css*="sidebar-branding"],
 [data-css*="branding"],
 .adminjs_Branding,
 [class*="SidebarBranding"] {
     cursor: pointer !important;
 }
-
 [data-css*="sidebar-branding"] a,
 .adminjs_Branding a {
     cursor: pointer !important;
     text-decoration: none !important;
 }
-

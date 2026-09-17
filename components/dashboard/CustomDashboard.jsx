@@ -252,19 +252,19 @@ const CustomDashboard = () => {
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div style={{ backgroundColor: C.bg, minHeight: '100vh', padding: '32px 40px', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+    <div style={{ backgroundColor: C.bg, minHeight: '100vh', padding: '32px 40px', fontFamily: "'Poppins', sans-serif" }}>
       
       {/* ═══ HEADER ═══ */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingBottom: '24px', borderBottom: `1px solid ${C.border}`, marginBottom: '28px' }}>
         <div>
           <a href="/admin" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-            <H2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <H2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Poppins', sans-serif" }}>
               <span style={{ color: C.gold, textShadow: `0 0 20px ${C.goldGlow}`, fontWeight: 800 }}>GPL</span>
-              <span style={{ color: '#c0c0c0', fontWeight: 700 }}>Mods</span>
-              <span style={{ color: C.textDim, fontSize: '0.5em', fontWeight: 400, marginLeft: '12px', background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${C.border}` }}>Admin Dashboard</span>
+              <span style={{ color: '#c0c0c0', textShadow: '0 0 15px rgba(192, 192, 192, 0.6)', fontWeight: 700 }}>Mods</span>
+              <span style={{ color: C.textDim, fontSize: '0.5em', fontWeight: 400, marginLeft: '12px', background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${C.border}`, fontFamily: "'Poppins', sans-serif" }}>Admin Dashboard</span>
             </H2>
           </a>
-          <Text style={{ color: C.textMuted, marginTop: '6px' }}>
+          <Text style={{ color: C.textMuted, marginTop: '6px', fontFamily: "'Poppins', sans-serif" }}>
             {greeting}! Here's your platform overview for {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
           </Text>
         </div>
@@ -272,13 +272,13 @@ const CustomDashboard = () => {
         {/* ═══ ADMIN SUITE SHORTCUT BUTTONS ═══ */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
           <a 
-            href="/admin" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: C.gold, backgroundColor: C.goldDim, border: `1px solid ${C.gold}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            href="/dashboard" 
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: C.gold, backgroundColor: C.goldDim, border: `1px solid ${C.gold}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s', fontFamily: "'Poppins', sans-serif" }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,215,0,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = C.goldDim; }}
-            title="AdminJS Main Dashboard"
+            title="Go Back To Dashboard"
           >
-            <Icon icon="Home" size={14} /> AdminJS
+            <Icon icon="ArrowLeft" size={14} /> Go Back To Dashboard
           </a>
 
           <a 

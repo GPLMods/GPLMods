@@ -156,35 +156,36 @@
 </style>
 
 <div class="council-header">
-    <h1>Editor's Choice <span>Councils</span></h1>
-    <p>Manage separate councils for Android, iOS, WordPress, and Windows. Featured apps appear in the top showcase carousel for their specific platform.</p>
+    <h1>Editor's Choice <span>For Platforms</span></h1>
+    <p>Manage separate featured showcases for Android, iOS, WordPress, and Windows. Featured apps appear in the top showcase carousel for their specific platform.</p>
 </div>
 
 <div class="council-container">
     <!-- Council Navigation Tabs -->
     <div class="council-nav">
         <button class="council-tab-btn active" data-council="android" onclick="switchCouncil('android')">
-            <i class="fab fa-android"></i> Android Council <span class="badge-count" id="count-android"><%= councils.android.length %></span>
+            <i class="fab fa-android"></i> Editor Choice For Android <span class="badge-count" id="count-android"><%= councils.android.length %></span>
         </button>
         <button class="council-tab-btn" data-council="ios" onclick="switchCouncil('ios')">
-            <i class="fab fa-apple"></i> iOS Council <span class="badge-count" id="count-ios"><%= councils.ios.length %></span>
+            <i class="fab fa-apple"></i> Editor Choice For iOS <span class="badge-count" id="count-ios"><%= councils.ios.length %></span>
         </button>
         <button class="council-tab-btn" data-council="wordpress" onclick="switchCouncil('wordpress')">
-            <i class="fab fa-wordpress"></i> WordPress Council <span class="badge-count" id="count-wordpress"><%= councils.wordpress.length %></span>
+            <i class="fab fa-wordpress"></i> Editor Choice For WordPress <span class="badge-count" id="count-wordpress"><%= councils.wordpress.length %></span>
         </button>
         <button class="council-tab-btn" data-council="windows" onclick="switchCouncil('windows')">
-            <i class="fab fa-windows"></i> Windows Council <span class="badge-count" id="count-windows"><%= councils.windows.length %></span>
+            <i class="fab fa-windows"></i> Editor Choice For Windows <span class="badge-count" id="count-windows"><%= councils.windows.length %></span>
         </button>
     </div>
 
     <!-- Council Panels -->
     <% ['android', 'ios', 'wordpress', 'windows'].forEach((platform, idx) => { %>
+        <% const platformLabel = platform === 'ios' ? 'iOS' : (platform === 'wordpress' ? 'WordPress' : (platform === 'windows' ? 'Windows' : 'Android')); %>
         <div class="council-panel <%= idx === 0 ? 'active' : '' %>" id="panel-<%= platform %>">
             
             <!-- Search & Add Form for this platform -->
             <div class="council-search-box">
                 <div style="font-size: 0.9em; font-weight: 600; color: var(--gold);">
-                    <i class="fas fa-plus-circle"></i> Add App to <%= platform.toUpperCase() %> Council
+                    <i class="fas fa-plus-circle"></i> Add App to Editor Choice For <%= platformLabel %>
                 </div>
                 <div class="council-search-input-wrapper">
                     <input type="text" 
@@ -225,7 +226,8 @@
                                 <button class="btn-edit-desc" onclick="editDescription('<%= app._id %>', '<%= platform %>')">
                                     <i class="fas fa-edit"></i> Edit Note
                                 </button>
-                                <a href="/<%= app.category %>/<%= app.slug || app._id %>" target="_blank" class="btn-edit-desc" style="text-decoration:none; display:flex; align-items:center;" title="View Mod Page">
+                                <% const edSlug = app.slug || (typeof slugify === 'function' ? slugify(app.name) : app._id); %>
+                                <a href="/mods/<%= app.category %>/<%= edSlug %>" target="_blank" class="btn-edit-desc" style="text-decoration:none; display:flex; align-items:center;" title="View Mod Page">
                                     <i class="fas fa-external-link-alt"></i>
                                 </a>
                             </div>
@@ -235,8 +237,8 @@
             <% } else { %>
                 <div class="empty-council-box" id="empty-<%= platform %>">
                     <i class="fas fa-shield-alt" style="font-size: 3em; margin-bottom: 15px; color: #444;"></i>
-                    <h3 style="color: var(--white); margin: 0 0 8px 0;">No Apps in <%= platform.toUpperCase() %> Council</h3>
-                    <p style="margin: 0;">Use the search bar above to select and feature mods in the <%= platform.toUpperCase() %> Editor's Choice Council.</p>
+                    <h3 style="color: var(--white); margin: 0 0 8px 0;">No Apps in Editor Choice For <%= platformLabel %></h3>
+                    <p style="margin: 0;">Use the search bar above to select and feature mods in the Editor Choice For <%= platformLabel %> showcase.</p>
                 </div>
             <% } %>
 
@@ -292,7 +294,7 @@
                             </div>
                         </div>
                         <button class="btn btn-secondary" style="border-color:var(--gold); color:var(--gold); font-size:0.8em; padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="addToCouncil('${mod._id}', '${platform}', '${mod.name.replace(/'/g, "\\'")}')">
-                            <i class="fas fa-plus"></i> Add to Council
+                            <i class="fas fa-plus"></i> Feature in Editor Choice
                         </button>
                     </div>
                 `).join('');
@@ -314,7 +316,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(`✔ "${modName}" added to ${platform.toUpperCase()} Council!`);
+                alert(`✔ "${modName}" featured in Editor Choice For ${platform.toUpperCase()}!`);
                 window.location.reload();
             } else {
                 alert('✖ Failed: ' + (data.message || 'Error updating mod'));
@@ -325,7 +327,7 @@
     }
 
     async function removeFromCouncil(modId, platform, modName) {
-        if (!confirm(`Remove "${modName}" from the ${platform.toUpperCase()} Editor's Choice Council?`)) return;
+        if (!confirm(`Remove "${modName}" from Editor Choice For ${platform.toUpperCase()}?`)) return;
 
         try {
             const res = await fetch('/api/admin/editors-choice/toggle', {

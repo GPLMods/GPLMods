@@ -135,6 +135,7 @@ async function runAdminBuilder() {
     }
     
     console.log('⚙️ Starting AdminJS Webpack Build Process. This will take a moment...\n');
+    process.env.NODE_ENV = 'production';
 
     // --- STEP 4: Execute Build ---
     try {

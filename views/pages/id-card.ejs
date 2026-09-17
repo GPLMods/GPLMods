@@ -44,6 +44,7 @@
         top: 0; left: 0; width: 100%; height: 100%;
         background-size: cover; 
         background-position: center; 
+        background-repeat: no-repeat;
         z-index: 1;
         /* Dynamic User Background or Fallback */
         background-image: url('<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || "/images/card-bg.png" %>');
@@ -51,8 +52,7 @@
     .id-card-bg::after {
         content: ''; 
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(180deg, rgba(10,10,10,0.8) 0%, rgba(10,10,10,0.95) 100%);
-        backdrop-filter: blur(8px);
+        background: linear-gradient(180deg, rgba(10,10,10,0.25) 0%, rgba(10,10,10,0.6) 100%);
     }
 
     .id-card-content {
@@ -172,7 +172,7 @@
 
     <!-- THE CARD (Target for Export) -->
     <div id="exportable-card" class="id-card-wrapper">
-        <div class="id-card-bg"></div>
+        <div class="id-card-bg" style="background-image: url('<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || '/images/card-bg.png' %>');"></div>
         <div class="id-card-content">
             <div class="card-header-top">
                 <span class="card-logo">GPL<span style="color: white;">Mods</span></span>
@@ -185,9 +185,13 @@
                         roleShadow = 'rgba(244, 67, 54, 0.5)';
                         roleName = 'Owner';
                     } else if (cardUser.role === 'admin') {
-                        roleBg = 'var(--red)';
-                        roleShadow = 'rgba(229, 57, 53, 0.5)';
+                        roleBg = 'var(--gold)';
+                        roleShadow = 'rgba(255, 215, 0, 0.5)';
                         roleName = 'Admin';
+                    } else if (cardUser.role === 'support') {
+                        roleBg = 'var(--blue)';
+                        roleShadow = 'rgba(33, 150, 243, 0.5)';
+                        roleName = 'Support';
                     }
                 %>
                 <% if (cardUser.cardStatus === 'suspended' || (!cardUser.twoFactorEnabled && !cardUser.is2FAEnabled)) { %>

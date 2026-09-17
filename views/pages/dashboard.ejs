@@ -54,33 +54,74 @@
         </div>
     </div>
 
-    <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
-        <!-- ═══ ADMINISTRATOR & OWNER SUITE ═══ -->
+    <% if (user && (user.role === 'admin' || user.role === 'owner' || user.role === 'support')) { %>
+        <%
+            const isOwner = user.role === 'owner';
+            const isAdmin = user.role === 'admin';
+            const isSupport = user.role === 'support';
+
+            let suiteTitle = 'Administrator Suite';
+            let accessBadge = 'Admin Access';
+            let suiteColor = 'var(--gold)';
+            let suiteBorderColor = 'rgba(255, 215, 0, 0.35)';
+            let suiteBadgeBg = 'rgba(255, 215, 0, 0.12)';
+            let suiteBadgeBorder = 'rgba(255, 215, 0, 0.4)';
+            let suiteIcon = 'fa-shield-alt';
+
+            if (isOwner) {
+                suiteTitle = 'Owner Command Suite';
+                accessBadge = 'Owner Access';
+                suiteColor = '#f44336';
+                suiteBorderColor = 'rgba(244, 67, 54, 0.35)';
+                suiteBadgeBg = 'rgba(244, 67, 54, 0.12)';
+                suiteBadgeBorder = 'rgba(244, 67, 54, 0.4)';
+                suiteIcon = 'fa-crown';
+            } else if (isAdmin) {
+                suiteTitle = 'Admin Command Suite';
+                accessBadge = 'Admin Access';
+                suiteColor = 'var(--gold)';
+                suiteBorderColor = 'rgba(255, 215, 0, 0.35)';
+                suiteBadgeBg = 'rgba(255, 215, 0, 0.12)';
+                suiteBadgeBorder = 'rgba(255, 215, 0, 0.4)';
+                suiteIcon = 'fa-shield-alt';
+            } else if (isSupport) {
+                suiteTitle = 'Support Command Suite';
+                accessBadge = 'Support Access';
+                suiteColor = '#2196f3';
+                suiteBorderColor = 'rgba(33, 150, 243, 0.35)';
+                suiteBadgeBg = 'rgba(33, 150, 243, 0.12)';
+                suiteBadgeBorder = 'rgba(33, 150, 243, 0.4)';
+                suiteIcon = 'fa-headset';
+            }
+        %>
+        <!-- ═══ ROLE-BASED COMMAND SUITE ═══ -->
         <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 215, 0, 0.35); padding-bottom: 12px; margin-bottom: 20px;">
-                <h2 style="color: var(--gold); font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px rgba(255,215,0,0.3);">
-                    <i class="fas fa-shield-alt"></i> <%= user.role === 'owner' ? 'Owner & Admin Command Suite' : 'Administrator Suite' %>
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid <%= suiteBorderColor %>; padding-bottom: 12px; margin-bottom: 20px;">
+                <h2 style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px <%= suiteBorderColor %>;">
+                    <i class="fas <%= suiteIcon %>"></i> <%= suiteTitle %>
                 </h2>
-                <span style="background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><%= user.role === 'owner' ? 'Owner & Admin Access' : 'Admin Only' %></span>
+                <span style="background: <%= suiteBadgeBg %>; color: <%= suiteColor %>; border: 1px solid <%= suiteBadgeBorder %>; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><%= accessBadge %></span>
             </div>
             <div class="dashboard-grid" style="margin-bottom: 0;">
-                <% if (user.role === 'owner') { %>
+                <% if (isOwner) { %>
                     <a href="/owner" class="dash-card" style="border: 1px solid rgba(244, 67, 54, 0.6); background: linear-gradient(145deg, #231214, #141414); box-shadow: 0 4px 15px rgba(244,67,54,0.15);">
                         <i class="fas fa-crown" style="color: #f44336;"></i>
                         <h3 style="color: #f44336;">Owner Center</h3>
                         <p>Render, DNS, ImprovMX & server controls.</p>
                     </a>
                 <% } %>
-                <a href="/admin" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
-                    <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
-                    <h3 style="color: var(--gold);">AdminJS Panel</h3>
-                    <p>Full database & resource manager.</p>
-                </a>
-                <a href="/admin/editors-choice" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1e1b12, #141414);">
-                    <i class="fas fa-star" style="color: var(--gold);"></i>
-                    <h3 style="color: var(--gold);">Council Manager</h3>
-                    <p>Editor's choice councils (Android, iOS, WP, Win).</p>
-                </a>
+                <% if (isOwner || isAdmin) { %>
+                    <a href="/admin" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
+                        <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
+                        <h3 style="color: var(--gold);">AdminJS Panel</h3>
+                        <p>Full database & resource manager.</p>
+                    </a>
+                    <a href="/admin/editors-choice" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1e1b12, #141414);">
+                        <i class="fas fa-star" style="color: var(--gold);"></i>
+                        <h3 style="color: var(--gold);">Editor Choice For Platforms</h3>
+                        <p>Featured mods for Android, iOS, WP & Windows.</p>
+                    </a>
+                <% } %>
                 <a href="/admin/reports" class="dash-card" style="border: 1px solid rgba(229, 57, 53, 0.4); background: linear-gradient(145deg, #1f1314, #141414);">
                     <i class="fas fa-flag" style="color: #e53935;"></i>
                     <h3>Reports Dashboard</h3>
@@ -96,31 +137,32 @@
                     <h3>System Health</h3>
                     <p>Live MongoDB, B2 & server diagnostics.</p>
                 </a>
-                <a href="/admin/music" class="dash-card" style="border: 1px solid rgba(186, 104, 200, 0.4); background: linear-gradient(145deg, #1c1322, #141414);">
-                    <i class="fas fa-music" style="color: #ba68c8;"></i>
-                    <h3 style="color: #ba68c8;">Music Manager</h3>
-                    <p>Audio library & playlist sequencer.</p>
-                </a>
+                <% if (isOwner || isAdmin) { %>
+                    <a href="/admin/music" class="dash-card" style="border: 1px solid rgba(186, 104, 200, 0.4); background: linear-gradient(145deg, #1c1322, #141414);">
+                        <i class="fas fa-music" style="color: #ba68c8;"></i>
+                        <h3 style="color: #ba68c8;">Music Manager</h3>
+                        <p>Audio library & playlist sequencer.</p>
+                    </a>
+                <% } %>
             </div>
         </div>
     <% } %>
 
     <div class="dashboard-grid">
-        <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
+        <% if (user && (user.role === 'distributor' || user.role === 'support' || user.role === 'admin' || user.role === 'owner')) { %>
             <% 
                 const isOwner = user.role === 'owner';
                 const isAdmin = user.role === 'admin';
-                const cardTitle = isOwner ? 'Owner ID Card' : (isAdmin ? 'Admin ID Card' : 'Distributor ID Card');
-                const roleBadge = isOwner ? 'Owner Option' : (isAdmin ? 'Admin Option' : 'Distributor Option');
-                const themeColor = isOwner ? '#f44336' : (isAdmin ? 'var(--gold)' : 'var(--blue)');
-                const borderColor = isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin ? 'rgba(255, 215, 0, 0.4)' : 'rgba(33, 150, 243, 0.4)');
+                const isSupport = user.role === 'support';
+                const cardTitle = isOwner ? 'Owner ID Card' : (isAdmin ? 'Admin ID Card' : (isSupport ? 'Support ID Card' : 'Distributor ID Card'));
+                const roleBadge = isOwner ? 'Owner Option' : (isAdmin ? 'Admin Option' : (isSupport ? 'Support Option' : 'Distributor Option'));
+                const themeColor = isOwner ? '#f44336' : (isAdmin ? 'var(--gold)' : (isSupport ? '#2196f3' : 'var(--blue)'));
+                const borderColor = isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin ? 'rgba(255, 215, 0, 0.4)' : (isSupport ? 'rgba(33, 150, 243, 0.5)' : 'rgba(33, 150, 243, 0.4)'));
                 const bgGradient = isOwner ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin ? 'linear-gradient(145deg, #1f1b11, #141414)' : 'linear-gradient(145deg, #101925, #141414)');
             %>
-            <a href="/id-card" class="dash-card" style="border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 6px;">
-                    <i class="fas fa-id-card" style="color: <%= themeColor %>; font-size: 1.8em; margin-bottom: 0;"></i>
-                    <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.08); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><%= roleBadge %></span>
-                </div>
+            <a href="/id-card" class="dash-card" style="position: relative; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                <span style="position: absolute; top: 12px; right: 12px; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; background: rgba(255,255,255,0.08); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><%= roleBadge %></span>
+                <i class="fas fa-id-card" style="font-size: 2.5em; color: <%= themeColor %>; margin-bottom: 10px;"></i>
                 <h3 style="color: <%= themeColor %>;"><%= cardTitle %></h3>
                 <p>Customize card, Safe QR &amp; Quick-Login.</p>
             </a>

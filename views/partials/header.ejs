@@ -428,6 +428,46 @@
             margin-top: 6px !important;
         }
 
+        .mobile-nav .owner-suite-box {
+            background: rgba(244, 67, 54, 0.08) !important;
+            border: 1px solid rgba(244, 67, 54, 0.35) !important;
+            border-radius: 10px !important;
+            padding: 6px 12px !important;
+            margin: 8px 0 !important;
+            box-sizing: border-box !important;
+        }
+        .mobile-nav .owner-suite-box > .collapsible-trigger {
+            padding: 6px 0 !important;
+        }
+        .mobile-nav .owner-suite-box.open {
+            background: rgba(244, 67, 54, 0.14) !important;
+            border-color: rgba(244, 67, 54, 0.6) !important;
+        }
+        .mobile-nav .owner-suite-box .sub-menu {
+            border-top: 1px solid rgba(244, 67, 54, 0.2) !important;
+            margin-top: 6px !important;
+        }
+
+        .mobile-nav .support-suite-box {
+            background: rgba(33, 150, 243, 0.08) !important;
+            border: 1px solid rgba(33, 150, 243, 0.35) !important;
+            border-radius: 10px !important;
+            padding: 6px 12px !important;
+            margin: 8px 0 !important;
+            box-sizing: border-box !important;
+        }
+        .mobile-nav .support-suite-box > .collapsible-trigger {
+            padding: 6px 0 !important;
+        }
+        .mobile-nav .support-suite-box.open {
+            background: rgba(33, 150, 243, 0.14) !important;
+            border-color: rgba(33, 150, 243, 0.6) !important;
+        }
+        .mobile-nav .support-suite-box .sub-menu {
+            border-top: 1px solid rgba(33, 150, 243, 0.2) !important;
+            margin-top: 6px !important;
+        }
+
         /* Wishlist button micro-animations (applied to button, not whole card) */
         .wishlist-btn {
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease !important;
@@ -534,15 +574,21 @@
                 <!-- Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
-                        <% if (user.role === 'admin' || user.role === 'owner') { %>
+                        <% if (user.role === 'owner') { %>
                             <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
                                 <i class="fas fa-shield-alt"></i> Admin Panel
                             </a>
-                            <% if (user.role === 'owner') { %>
-                                <a href="/owner" class="btn btn-login" style="border-color: #f44336; color: #f44336; font-weight: 600;" title="Owner Command Center">
-                                    <i class="fas fa-crown"></i> Owner Center
-                                </a>
-                            <% } %>
+                            <a href="/owner" class="btn btn-login" style="border-color: #f44336; color: #f44336; font-weight: 600;" title="Owner Command Center">
+                                <i class="fas fa-crown"></i> Owner Center
+                            </a>
+                        <% } else if (user.role === 'admin') { %>
+                            <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
+                                <i class="fas fa-shield-alt"></i> Admin Panel
+                            </a>
+                        <% } else if (user.role === 'support') { %>
+                            <a href="/admin/support" class="btn btn-login" style="border-color: #2196f3; color: #2196f3; font-weight: 600;" title="Support Console">
+                                <i class="fas fa-headset"></i> Support Console
+                            </a>
                         <% } %>
                         <a href="/upload" class="btn btn-login">Upload A New Mod</a>
                         <a href="/logout" class="btn btn-signup">Logout</a>
@@ -587,13 +633,22 @@
             
             <% if (user) { %>
                 <% if (user.role === 'owner') { %>
-                    <li style="margin: 6px 0;">
-                        <a href="/owner" style="color: #f44336; font-weight: 700; background: rgba(244, 67, 54, 0.12); border: 1px solid rgba(244, 67, 54, 0.35); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-crown" style="color: #f44336;"></i> Owner Command Center
+                    <li class="has-submenu owner-suite-box">
+                        <a href="#" class="collapsible-trigger" style="color: #f44336; font-weight: 700;">
+                            <span><i class="fas fa-crown" style="color: #f44336; margin-right: 8px;"></i> Owner Suite</span>
+                            <span class="arrow">▼</span>
                         </a>
+                        <ul class="sub-menu">
+                            <li><a href="/owner"><i class="fas fa-crown" style="margin-right: 8px; color: #f44336;"></i> Owner Center</a></li>
+                            <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
+                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editor Choice For Platforms</a></li>
+                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
+                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
+                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
+                            <li><a href="/admin/music"><i class="fas fa-music" style="margin-right: 8px; color: #ba68c8;"></i> Music Manager</a></li>
+                        </ul>
                     </li>
-                <% } %>
-                <% if (user.role === 'admin' || user.role === 'owner') { %>
+                <% } else if (user.role === 'admin') { %>
                     <li class="has-submenu admin-suite-box">
                         <a href="#" class="collapsible-trigger" style="color: var(--gold); font-weight: 700;">
                             <span><i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite</span>
@@ -601,14 +656,23 @@
                         </a>
                         <ul class="sub-menu">
                             <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
-                            <% if (user.role === 'owner') { %>
-                                <li><a href="/owner"><i class="fas fa-crown" style="margin-right: 8px; color: #f44336;"></i> Owner Center</a></li>
-                            <% } %>
-                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editors Choice Council</a></li>
+                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editor Choice For Platforms</a></li>
                             <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
                             <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
                             <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
                             <li><a href="/admin/music"><i class="fas fa-music" style="margin-right: 8px; color: #ba68c8;"></i> Music Manager</a></li>
+                        </ul>
+                    </li>
+                <% } else if (user.role === 'support') { %>
+                    <li class="has-submenu support-suite-box">
+                        <a href="#" class="collapsible-trigger" style="color: #2196f3; font-weight: 700;">
+                            <span><i class="fas fa-headset" style="color: #2196f3; margin-right: 8px;"></i> Support Suite</span>
+                            <span class="arrow">▼</span>
+                        </a>
+                        <ul class="sub-menu">
+                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
+                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
+                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
                         </ul>
                     </li>
                 <% } %>

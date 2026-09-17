@@ -43,14 +43,14 @@ const SidebarBranding = () => {
         onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
       >
         <img 
-          src="/images/logo.png" 
+          src="/images/team-logo.png" 
           alt="Logo" 
-          style={{ height: '32px', width: 'auto', filter: 'drop-shadow(0 0 6px rgba(255,215,0,0.3))' }} 
+          style={{ height: '32px', width: '32px', objectFit: 'cover', borderRadius: '6px', filter: 'drop-shadow(0 0 6px rgba(255,215,0,0.3))' }} 
           onError={(e) => e.target.style.display = 'none'}
         />
-        <div style={{ fontSize: '22px', fontWeight: 'bold', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+        <div style={{ fontSize: '22px', fontWeight: 'bold', fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'baseline', gap: '4px' }}>
           <span style={{ color: '#FFD700', textShadow: '0 0 12px rgba(255, 215, 0, 0.4)' }}>GPL</span>
-          <span style={{ color: '#c0c0c0' }}>Mods</span>
+          <span style={{ color: '#c0c0c0', textShadow: '0 0 12px rgba(192, 192, 192, 0.5)' }}>Mods</span>
           <span style={{ fontSize: '9px', color: '#555', fontWeight: 600, marginLeft: '6px', letterSpacing: '0.05em' }}>v2.5</span>
         </div>
       </a>

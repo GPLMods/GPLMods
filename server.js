@@ -270,8 +270,8 @@ function formatCompactNumber(number) {
 async function getSmartImageUrl(key) {
     if (!key) return '/images/default-avatar.png'; // Fallback
     
-    // If the admin pasted a direct web URL, just use it directly!
-    if (key.startsWith('http://') || key.startsWith('https://')) {
+    // If local path or web URL, just use it directly!
+    if (key.startsWith('/') || key.startsWith('http://') || key.startsWith('https://')) {
         return key;
     }
     
@@ -1893,12 +1893,16 @@ app.get('/cc', (req, res) => {
     res.render('pages/cache-cleaner', { returnUrl });
 });
 
-// 1. The Root Route (Heavily cached by Cloudflare for Guests)
+// 1. The Root Route
 app.get('/', async (req, res) => {
-    // If a user happens to hit the root URL but they have a valid session cookie, 
-    // redirect them to the un-cached /home route immediately.
+    // Prevent stale caching so logout and login status stay synchronized
+    res.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+
+    // If a user is authenticated, always redirect them to /home immediately
     if (req.isAuthenticated()) {
-        return res.redirect('/home');
+        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+        return res.redirect('/home' + queryString);
     }
     // Otherwise, render the homepage for the guest
     await renderHomepage(req, res);
@@ -1906,7 +1910,8 @@ app.get('/', async (req, res) => {
 
 // 2. The Logged-In Route (Bypasses Cloudflare's strict root cache)
 app.get('/home', ensureAuthenticated, async (req, res) => {
-    // Render the exact same content, but on a URL that Cloudflare treats differently
+    res.set('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
     await renderHomepage(req, res);
 });
 
@@ -3591,27 +3596,16 @@ app.get('/mods/:id', async (req, res, next) => {
 });
 
 // ==========================================
-// ADVANCED: SEO-Friendly "Umbrella" Mod Page Route
+// ADVANCED: SEO-Friendly "Umbrella" Mod Page Core Renderer & Routes
 // ==========================================
-app.get('/:category/:slug', async (req, res, next) => {
+async function renderModDownloadPage(req, res, next, { category, slug, variantId }) {
     try {
-        const category = req.params.category.toLowerCase();
-        const slug = req.params.slug.toLowerCase();
-        const variantId = req.query.variant;
-
-        // 1. Prevent this route from capturing system URLs
-        const reservedPaths = [
-            'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
-            'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
-            'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
-            'download-file', 'upload-details', 'reset-password', 'docs', 'licenses'
-        ];
-        
-        if (reservedPaths.includes(category)) return next();
+        category = (category || '').toLowerCase();
+        slug = (slug || '').toLowerCase();
 
         let masterFile = null;
 
-        // 2. PRIMARY SEARCH: Try to find by exact slug
+        // 1. PRIMARY SEARCH: Try to find by exact slug
         masterFile = await File.findOne({ 
             category: category, 
             slug: slug,
@@ -3619,7 +3613,7 @@ app.get('/:category/:slug', async (req, res, next) => {
             isVariant: { $ne: true } 
         }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
 
-        // 3. SECONDARY SEARCH: If exact slug fails and slug is a valid ObjectId, search by _id
+        // 2. SECONDARY SEARCH: If exact slug fails and slug is a valid ObjectId, search by _id
         if (!masterFile && Types.ObjectId.isValid(slug)) {
             const fileById = await File.findById(slug).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
             if (fileById) {
@@ -3627,23 +3621,25 @@ app.get('/:category/:slug', async (req, res, next) => {
                 if (fileById.isVariant && fileById.masterFile) {
                     const parentMaster = await File.findById(fileById.masterFile).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
                     if (parentMaster) {
-                        const targetSlug = parentMaster.slug || parentMaster._id.toString();
-                        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : `?variant=${fileById._id}`;
-                        return res.redirect(301, `/${parentMaster.category}/${targetSlug}${queryString}`);
+                        const targetSlug = parentMaster.slug || slugify(parentMaster.name) || parentMaster._id.toString();
+                        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+                        return res.redirect(301, `/mods/${parentMaster.category}/${targetSlug}/${fileById._id}${queryString}`);
                     }
                 } else {
                     masterFile = fileById;
                     // If the file has a slug and it differs from the requested URL parameter (which was the ID),
                     // perform a 301 redirect to the SEO-friendly slug URL.
-                    if (masterFile.slug && masterFile.slug.toLowerCase() !== slug) {
+                    const targetSlug = masterFile.slug || slugify(masterFile.name);
+                    if (targetSlug && targetSlug.toLowerCase() !== slug) {
                         const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-                        return res.redirect(301, `/${masterFile.category}/${masterFile.slug}${queryString}`);
+                        const varPart = variantId ? `/${variantId}` : '';
+                        return res.redirect(301, `/mods/${masterFile.category}/${targetSlug}${varPart}${queryString}`);
                     }
                 }
             }
         }
 
-        // 4. TERTIARY SEARCH: If exact slug and ID fail, use RegEx on the name field
+        // 3. TERTIARY SEARCH: If exact slug and ID fail, use RegEx on the name field
         if (!masterFile) {
             const nameSearchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
             masterFile = await File.findOne({
@@ -3654,6 +3650,21 @@ app.get('/:category/:slug', async (req, res, next) => {
             }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
         }
 
+        // 4. CROSS-CATEGORY SEARCH: If still not found, check if slug exists under another category
+        if (!masterFile) {
+            masterFile = await File.findOne({
+                slug: slug,
+                isLatestVersion: true,
+                isVariant: { $ne: true }
+            }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
+            if (masterFile) {
+                const targetSlug = masterFile.slug || slugify(masterFile.name) || masterFile._id.toString();
+                const varPart = variantId ? `/${variantId}` : '';
+                const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+                return res.redirect(301, `/mods/${masterFile.category}/${targetSlug}${varPart}${queryString}`);
+            }
+        }
+
         // 5. If STILL not found, throw 404
         if (!masterFile) {
             return next(); 
@@ -3661,9 +3672,10 @@ app.get('/:category/:slug', async (req, res, next) => {
 
         // --- Category Normalization Redirect ---
         if (masterFile.category && masterFile.category.toLowerCase() !== category) {
-            const targetSlug = masterFile.slug || masterFile._id.toString();
+            const targetSlug = masterFile.slug || slugify(masterFile.name) || masterFile._id.toString();
+            const varPart = variantId ? `/${variantId}` : '';
             const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-            return res.redirect(301, `/${masterFile.category}/${targetSlug}${queryString}`);
+            return res.redirect(301, `/mods/${masterFile.category}/${targetSlug}${varPart}${queryString}`);
         }
 
         // --- Security Check for Drafts/Pending ---
@@ -3714,10 +3726,9 @@ app.get('/:category/:slug', async (req, res, next) => {
         }
 
         // ==========================================
-        // ✅ BUG 1 & 2 FIXED: VIEW TRACKING MOVED HERE
+        // VIEW TRACKING
         // ==========================================
         let shouldIncrementView = false;
-        // We use masterFile._id so all variants share the same view count pool
         const trackingId = masterFile._id.toString(); 
 
         if (req.isAuthenticated()) {
@@ -3735,16 +3746,11 @@ app.get('/:category/:slug', async (req, res, next) => {
 
         if (shouldIncrementView) {
             masterFile.views += 1;
-            // Since we updated masterFile, we must save it
             await masterFile.save();
-            
-            // If we are viewing a variant, ensure the view count displays correctly on the page right now
             if (isViewingVariant) {
                 displayFile.views = masterFile.views;
             }
         }
-        // ==========================================
-
 
         // --- IMAGE HANDLING ---
         const iconKey = masterFile.iconUrl || masterFile.iconKey;
@@ -3765,17 +3771,15 @@ app.get('/:category/:slug', async (req, res, next) => {
             return { ...review.toObject(), user: { ...review.user.toObject(), signedAvatarUrl: avatarUrl } };
         }));
 
-        // ✅ BUG 3 FIXED: SORT REVIEWS *AFTER* MAPPING
         if (req.user) {
             reviewsWithAvatars.sort((a, b) => {
                 const isA = a.user._id.toString() === req.user._id.toString();
                 const isB = b.user._id.toString() === req.user._id.toString();
-                if (isA && !isB) return -1; // Push A to top
-                if (!isA && isB) return 1;  // Push B to top
+                if (isA && !isB) return -1;
+                if (!isA && isB) return 1;
                 return 0; 
             });
         }
-        // ----------------------------------------------------
 
         let versionHistory = [];
         let fileForHistory = await File.findById(displayFile._id).populate('olderVersions');
@@ -3789,7 +3793,6 @@ app.get('/:category/:slug', async (req, res, next) => {
         let userVotedWorking = false;
         let userVotedNotWorking = false;
         if (req.user) {
-            // Check displayFile instead of currentFile to support variant voting
             const currentUserId = req.user._id.toString();
             userVotedWorking = (displayFile.votedWorkingBy || []).some(id => id.toString() === currentUserId);
             userVotedNotWorking = (displayFile.votedNotWorkingBy || []).some(id => id.toString() === currentUserId);
@@ -3809,6 +3812,8 @@ app.get('/:category/:slug', async (req, res, next) => {
         const rawDescription = displayFile.modDescription ? displayFile.modDescription.replace(/<[^>]*>?/gm, '').trim() : `Download the latest premium unlocked mod for ${displayFile.name}.`;
         const seoDescription = rawDescription.length > 160 ? `${rawDescription.substring(0, 157)}...` : rawDescription;
         const tagsForSeo = Array.isArray(displayFile.tags) && displayFile.tags.length ? displayFile.tags.join(', ') : `gpl mods, ${displayFile.name}, premium unlocked mod`;
+        const currentModSlug = masterFile.slug || slugify(masterFile.name) || masterFile._id.toString();
+        const canonicalModUrl = `https://gplmods.webredirect.org/mods/${category}/${currentModSlug}${isViewingVariant ? `/${displayFile._id}` : ''}`;
 
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
@@ -3827,12 +3832,86 @@ app.get('/:category/:slug', async (req, res, next) => {
             pageDescription: seoDescription,
             pageImage: iconUrl,
             pageKeywords: tagsForSeo,
-            pageUrl: `https://gplmods.webredirect.org/${category}/${slug}`
+            pageUrl: canonicalModUrl
         });
 
     } catch (e) {
-        console.error("Error on /:category/:slug route:", e);
+        console.error("Error rendering mod page:", e);
         return next(e); 
+    }
+}
+
+// 1. Main mod route: /mods/:platform/:slug
+app.get('/mods/:platform/:slug', async (req, res, next) => {
+    const platform = (req.params.platform || '').toLowerCase();
+    const slug = (req.params.slug || '').toLowerCase();
+    const variantId = req.query.variant;
+    return renderModDownloadPage(req, res, next, { category: platform, slug, variantId });
+});
+
+// 2. Variant mod route: /mods/:platform/:slug/:id
+app.get('/mods/:platform/:slug/:id', async (req, res, next) => {
+    const platform = (req.params.platform || '').toLowerCase();
+    const slug = (req.params.slug || '').toLowerCase();
+    const variantId = req.params.id;
+    return renderModDownloadPage(req, res, next, { category: platform, slug, variantId });
+});
+
+// 3. Static ID fallback route: /mods/:id (301 redirect to slugified URL)
+app.get('/mods/:id', async (req, res, next) => {
+    const id = req.params.id;
+    if (Types.ObjectId.isValid(id)) {
+        try {
+            const file = await File.findById(id).populate('masterFile');
+            if (file) {
+                const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+                if (file.isVariant && file.masterFile) {
+                    const master = await File.findById(file.masterFile);
+                    if (master) {
+                        const mSlug = master.slug || slugify(master.name) || master._id.toString();
+                        return res.redirect(301, `/mods/${master.category}/${mSlug}/${file._id}${queryString}`);
+                    }
+                } else {
+                    const mSlug = file.slug || slugify(file.name) || file._id.toString();
+                    return res.redirect(301, `/mods/${file.category}/${mSlug}${queryString}`);
+                }
+            }
+        } catch (err) {
+            console.error("Static ID fallback error:", err);
+        }
+    }
+    return next();
+});
+
+// 4. Backward Compatibility: /:category/:slug (redirects to /mods/:category/:slug)
+app.get('/:category/:slug', async (req, res, next) => {
+    try {
+        const category = (req.params.category || '').toLowerCase();
+        const slug = (req.params.slug || '').toLowerCase();
+        const variantId = req.query.variant;
+
+        // Prevent capturing system reserved URLs
+        const reservedPaths = [
+            'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
+            'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
+            'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
+            'download-file', 'upload-details', 'reset-password', 'docs', 'licenses'
+        ];
+        
+        if (reservedPaths.includes(category)) return next();
+
+        const knownPlatforms = ['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'];
+        if (knownPlatforms.includes(category)) {
+            const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+            if (variantId) {
+                return res.redirect(301, `/mods/${category}/${slug}/${variantId}${queryString}`);
+            }
+            return res.redirect(301, `/mods/${category}/${slug}${queryString}`);
+        }
+
+        return renderModDownloadPage(req, res, next, { category, slug, variantId });
+    } catch (e) {
+        return next(e);
     }
 });
 
@@ -4842,9 +4921,14 @@ app.get('/logout', async (req, res, next) => {
         
         req.session.destroy(() => {
             res.clearCookie('connect.sid', { path: '/' });
-            // Clear the readable cookie on logout
-            res.clearCookie('is_logged_in', { path: '/' }); 
-            res.redirect('/?message=You have been successfully logged out.'); 
+            res.clearCookie('is_logged_in', { path: '/' });
+            try {
+                res.clearCookie('is_logged_in', { path: '/', domain: req.hostname });
+            } catch (e) {}
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            res.set('Pragma', 'no-cache');
+            res.set('Clear-Site-Data', '"cache"');
+            res.redirect('/?message=You+have+been+successfully+logged+out.&logout=true'); 
         });
     });
 });
@@ -5244,7 +5328,7 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 
     // IMMEDIATELY delete the codes from the session so they can never be viewed again
     req.session.tempRecoveryCodes = null;
-    const returnUrl = req.session.returnTo2FA || (['distributor', 'admin', 'owner'].includes(req.user.role) ? '/id-card?success=2FA successfully enabled! Welcome to your ID Card.' : '/profile?success=2FA successfully activated!');
+    const returnUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(req.user.role) ? '/id-card?success=2FA successfully enabled! Welcome to your ID Card.' : '/profile?success=2FA successfully activated!');
     req.session.returnTo2FA = null;
 
     res.render('pages/2fa-recovery-codes', { codes: codes, returnUrl });
@@ -10691,6 +10775,76 @@ app.post('/support', ensureAuthenticated, async (req, res) => {
         res.redirect('/support?error=An error occurred while submitting your ticket.');
     }
 });
+
+// Support Chat Media Upload (Images & Videos)
+const uploadSupportMedia = multer({
+    storage: memoryStorage,
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /image\/(jpeg|jpg|png|webp|gif)|video\/(mp4|webm|quicktime|ogg)/i;
+        if (allowedTypes.test(file.mimetype) || /\.(jpeg|jpg|png|webp|gif|mp4|webm|mov|ogg)$/i.test(file.originalname)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image (JPEG, PNG, WebP, GIF) and video (MP4, WebM, QuickTime) files are allowed.'));
+        }
+    }
+});
+
+app.post('/api/support/upload-media', (req, res, next) => {
+    uploadSupportMedia.single('media')(req, res, function (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ success: false, message: 'File is too large. Maximum size is 25MB.' });
+        } else if (err) {
+            return res.status(400).json({ success: false, message: err.message || 'File upload error.' });
+        }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No media file provided.' });
+        }
+
+        const ext = path.extname(req.file.originalname).toLowerCase() || '.bin';
+        const isVideo = req.file.mimetype.startsWith('video/') || ['.mp4', '.webm', '.mov', '.ogg'].includes(ext);
+        const prefix = isVideo ? 'video' : 'img';
+        const uniqueName = `support-${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}${ext}`;
+
+        let mediaUrl = null;
+
+        // 1. Try Backblaze B2 if configured
+        if (process.env.B2_BUCKET_NAME && s3Client) {
+            try {
+                const b2Key = await uploadToB2(req.file, 'support', null, null, uniqueName);
+                mediaUrl = await getSmartImageUrl(b2Key);
+            } catch (b2Err) {
+                console.warn("Support media B2 upload error, using local storage fallback:", b2Err.message);
+            }
+        }
+
+        // 2. Fallback to local disk storage
+        if (!mediaUrl) {
+            const localDir = path.join(__dirname, 'public', 'uploads', 'support-media');
+            if (!fs.existsSync(localDir)) {
+                fs.mkdirSync(localDir, { recursive: true });
+            }
+            const localFilePath = path.join(localDir, uniqueName);
+            fs.writeFileSync(localFilePath, req.file.buffer);
+            mediaUrl = `/uploads/support-media/${uniqueName}`;
+        }
+
+        return res.json({
+            success: true,
+            url: mediaUrl,
+            fileName: req.file.originalname,
+            fileType: req.file.mimetype,
+            isVideo: isVideo
+        });
+    } catch (err) {
+        console.error("Error in /api/support/upload-media:", err);
+        return res.status(500).json({ success: false, message: 'Server error uploading support media.' });
+    }
+});
 // ===================================
 // 15. DISTRIBUTOR PARTNERSHIP ROUTES
 // ===================================
@@ -10898,8 +11052,8 @@ app.post('/api/verify-2fa', ensureAuthenticated, async (req, res) => {
 app.get('/id-card', ensureAuthenticated, async (req, res) => {
     const user = req.user;
 
-    // 1. Must be Distributor, Admin, or Owner
-    const allowedRoles = ['distributor', 'admin', 'owner'];
+    // 1. Must be Distributor, Support, Admin, or Owner
+    const allowedRoles = ['distributor', 'support', 'admin', 'owner'];
     if (!allowedRoles.includes(user.role)) {
         return res.status(403).render('pages/403');
     }
@@ -11009,7 +11163,7 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
     });
 }, async (req, res) => {
     try {
-        const allowedRoles = ['distributor', 'admin', 'owner'];
+        const allowedRoles = ['distributor', 'support', 'admin', 'owner'];
         if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).render('pages/403');
         }
@@ -11074,7 +11228,7 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
 // --- 4b. FETCH GRAVATAR FOR CARD AVATAR ---
 app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
     try {
-        const allowedRoles = ['distributor', 'admin', 'owner'];
+        const allowedRoles = ['distributor', 'support', 'admin', 'owner'];
         if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ error: 'Unauthorized.' });
         }
@@ -11121,7 +11275,7 @@ app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- 5. SECURE QR LOGIN ROUTE ---
+// --- 5. SECURE QR / CARD LOGIN ROUTES ---
 app.get('/qr-login/:token', async (req, res, next) => {
     try {
         const token = req.params.token;
@@ -11147,22 +11301,91 @@ app.get('/qr-login/:token', async (req, res, next) => {
             return res.status(403).redirect('/login?error=' + encodeURIComponent('This ID card is currently suspended. Please log in with your credentials and re-enable 2FA.'));
         }
 
-        // Automatically log them in
-        req.login(user, (err) => {
-            if (err) return next(err);
-            
-            // Regenerate session for security
-            let tempPassport = req.session.passport;
-            req.session.regenerate((regenErr) => {
-                if (regenErr) console.error("QR Session regeneration error:", regenErr);
-                req.session.passport = tempPassport;
-                req.session.save(() => {
-                    return res.redirect('/profile?message=Successfully logged in via Quick-Scan!');
-                });
-            });
-        });
+        // ✅ REQUIRE 2FA: Route through processSuccessfulLogin so 2FA is required if enabled
+        processSuccessfulLogin(req, res, next, user);
     } catch (error) {
         console.error("QR Login Error:", error);
+        res.status(500).render('pages/500');
+    }
+});
+
+// --- 5b. GPL CARD LOGIN VIA IMAGE UPLOAD (AJAX / FORM) ---
+app.post('/auth/card-login', async (req, res, next) => {
+    const isAjax = req.xhr || req.headers.accept?.includes('json') || req.is('json');
+    try {
+        let token = req.body.token || req.body.cardLoginToken;
+        if (!token || typeof token !== 'string') {
+            const err = 'Card login token was not found on the uploaded card.';
+            return isAjax ? res.status(400).json({ success: false, error: err }) : res.redirect('/login?error=' + encodeURIComponent(err));
+        }
+
+        token = token.trim();
+        // Extract raw token if full URL was scanned (e.g. https://.../qr-login/<token>)
+        if (token.includes('/qr-login/')) {
+            token = token.split('/qr-login/')[1].split(/[?#]/)[0];
+        }
+
+        const user = await User.findOne({ cardLoginToken: token });
+        if (!user) {
+            const err = 'Invalid or expired GPL ID Card credentials. Please ensure your card was exported in Private Mode (Quick-Login).';
+            return isAjax ? res.status(401).json({ success: false, error: err }) : res.redirect('/login?error=' + encodeURIComponent(err));
+        }
+
+        if (user.isBanned) {
+            return isAjax ? res.json({ success: false, error: 'Account suspended.', redirect: '/banned' }) : res.redirect('/banned');
+        }
+
+        if (!user.twoFactorEnabled && !user.is2FAEnabled) {
+            const err = 'This ID card is suspended because 2-Factor Authentication is disabled. Please log in with your password and reactivate 2FA.';
+            return isAjax ? res.status(403).json({ success: false, error: err }) : res.redirect('/login?error=' + encodeURIComponent(err));
+        }
+
+        if (user.cardStatus === 'suspended' || user.cardStatus === 'revoked') {
+            const err = 'This ID card is currently suspended. Please log in with your credentials and re-enable 2FA.';
+            return isAjax ? res.status(403).json({ success: false, error: err }) : res.redirect('/login?error=' + encodeURIComponent(err));
+        }
+
+        // ✅ REQUIRE 2FA: Process login
+        if (user.twoFactorEnabled) {
+            req.session.pending2faUserId = user._id.toString();
+            if (user.twoFactorMethod === 'email') {
+                try {
+                    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                    user.verificationOtp = otp;
+                    user.otpExpires = Date.now() + 600000;
+                    await user.save();
+                    await send2faEmail(user, otp);
+                } catch (e) { console.error("2FA Email Error on Card Login:", e); }
+            }
+            req.session.save((err) => {
+                if (err) console.error("Session save error on card login:", err);
+                if (isAjax) {
+                    return res.json({ success: true, redirect: '/login/2fa' });
+                }
+                return res.redirect('/login/2fa');
+            });
+        } else {
+            req.logIn(user, (loginErr) => {
+                if (loginErr) {
+                    return isAjax ? res.status(500).json({ success: false, error: 'Login session failed.' }) : next(loginErr);
+                }
+                res.cookie('is_logged_in', 'true', { 
+                    maxAge: 1000 * 60 * 60 * 24 * 3,
+                    path: '/',
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                });
+                if (isAjax) {
+                    return res.json({ success: true, redirect: '/home?message=Successfully logged in via GPL Card!' });
+                }
+                return finalizeLogin(req, res, user, '/home?message=Successfully logged in via GPL Card!');
+            });
+        }
+    } catch (error) {
+        console.error("Card Login POST Error:", error);
+        if (isAjax) {
+            return res.status(500).json({ success: false, error: 'Error authenticating with GPL Card.' });
+        }
         res.status(500).render('pages/500');
     }
 });
@@ -11370,7 +11593,7 @@ const startServer = async () => {
                         status: { $in: ['waiting-for-agent', 'active-agent'] },
                         'messages.0': { $exists: true }
                     })
-                        .populate('user', 'username email profileImageKey')
+                        .populate('user', 'username email profileImageKey role isPremium badges')
                         .sort({ updatedAt: -1 });
                     
                     socket.emit('load_active_chats', activeChats);
@@ -11592,8 +11815,8 @@ const startServer = async () => {
             // 5. User Sends Message
             socket.on('send_support_message', async (data) => {
                 try {
-                    const { sessionId, text } = data;
-                    if (!sessionId || !text) return;
+                    const { sessionId, text, mediaUrls } = data;
+                    if (!sessionId || (!text && (!mediaUrls || !mediaUrls.length))) return;
                     
                     const userId = socket.request.user?._id;
                     let session = await ChatSession.findById(sessionId).populate('user');
@@ -11625,7 +11848,11 @@ const startServer = async () => {
                         (!userId && session.guestId && session.guestId === data.guestId);
                     if (!ownsSession) return;
 
-                    const userMsg = { sender: 'user', text: text };
+                    const userMsg = { 
+                        sender: 'user', 
+                        text: text || '',
+                        mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : []
+                    };
                     session.messages.push(userMsg);
                     await session.save();
                     
@@ -11633,7 +11860,7 @@ const startServer = async () => {
 
                     // --- HUMAN HANDOFF / GUEST EMAIL CAPTURE ---
                     if (session.status === 'waiting-for-agent' && !session.user && !session.guestEmail) {
-                        if (/^\S+@\S+\.\S+$/.test(text.trim())) {
+                        if (text && /^\S+@\S+\.\S+$/.test(text.trim())) {
                             session.guestEmail = text.trim();
                             await session.save();
                             const sysMsg = { sender: 'system', text: "Thank you! Your email has been saved. Our support team will reply shortly." };
@@ -11660,7 +11887,7 @@ const startServer = async () => {
                     // --- AI PROCESSING (Status is 'bot') ---
                     if (session.status === 'bot') {
                         const triggerWords = ['human', 'agent', 'support', 'real person', 'help me', 'admin', 'talk to a human'];
-                        if (triggerWords.some(word => text.toLowerCase().includes(word))) {
+                        if (text && triggerWords.some(word => text.toLowerCase().includes(word))) {
                             session.status = 'waiting-for-agent';
                             let handoffMsg = "Transferring you to our human support team. Please hold on!";
                             if (!session.user && !session.guestEmail) {
@@ -11685,54 +11912,37 @@ const startServer = async () => {
                             }
 
                             // Fetch active knowledge base for customized prompt context
-                            const trainingData = await AIKnowledge.find({ isActive: true });
-                            let customContext = "";
-                            if (trainingData.length > 0) {
-                                customContext = "Use this knowledge base if applicable:\n";
-                                trainingData.forEach(item => {
-                                    customContext += `Q: ${item.keywords} | A: ${item.response}\n`;
-                                });
-                                customContext += "\n";
-                            }
-                            const accountContext = session.user ? `Registered support context: username=${session.user.username || 'unknown'}; role=${session.user.role || 'member'}; email=${session.user.email || 'unknown'}; country=${session.user.country || 'not provided'}; profile bio=${session.user.bio || 'not provided'}; page/device context=${session.adminNotes || 'not provided'}. Use this only to personalize support in this conversation; never reveal it unnecessarily.\n` : '';
+                            const activeDocArticles = await DocArticle.find({ isPublished: true }).select('title content category').lean();
+                            let systemKnowledgePrompt = `You are the official GPL AI Support Assistant for GPL Mods. Answer user inquiries politely, concisely, and accurately based on our services.\n\nKnowledge Base:\n`;
+                            
+                            activeDocArticles.slice(0, 10).forEach(art => {
+                                systemKnowledgePrompt += `- [${art.category}] ${art.title}: ${art.content ? art.content.slice(0, 150) : ''}...\n`;
+                            });
 
-                            const history = session.messages
-                                .filter(m => m.sender === 'user' || m.sender === 'bot')
-                                .slice(-10) // Keep last 10 messages for context
-                                .map(m => ({
-                                    role: m.sender === 'user' ? 'user' : 'model',
-                                    parts: [{ text: m.text || '' }]
-                                }));
+                            const chat = aiModel.startChat({
+                                history: [
+                                    {
+                                        role: "user",
+                                        parts: [{ text: systemKnowledgePrompt + "\nAcknowledge you understand your role." }]
+                                    },
+                                    {
+                                        role: "model",
+                                        parts: [{ text: "Understood. I am the GPL AI Support Assistant ready to assist members." }]
+                                    }
+                                ]
+                            });
 
-                            // Remove last message from history since sendMessage will pass it
-                            if (history.length > 0 && history[history.length - 1].role === 'user') {
-                                history.pop();
-                            }
+                            const aiResult = await chat.sendMessage(text || "Sent an attachment.");
+                            const aiResponseText = aiResult.response.text();
 
-                            // Ensure history begins with a user turn (Gemini API requirement)
-                            while (history.length > 0 && history[0].role !== 'user') {
-                                history.shift();
-                            }
-
-                            aiDebuggerStatus.totalRequests++;
-                            const aiStartTime = Date.now();
-
-                            const chat = aiModel.startChat({ history: history });
-                            const promptText = `${accountContext}${customContext}User asks: ${text}`;
-                            const result = await chat.sendMessage(promptText);
-                            const botText = result.response.text();
-
-                            aiDebuggerStatus.latencyMs = Date.now() - aiStartTime;
-                            aiDebuggerStatus.status = 'online';
-                            aiDebuggerStatus.lastPing = new Date();
-                            aiDebuggerStatus.lastError = null;
-
-                            const botMsg = { sender: 'bot', senderName: 'GPL Assistant', text: botText };
+                            const botMsg = { sender: 'bot', text: aiResponseText };
                             session.messages.push(botMsg);
-                            session.expiresAt = new Date(Date.now() + (session.user ? 60 * 24 : 24) * 60 * 60 * 1000);
                             await session.save();
 
                             io.to(`support_${session._id}`).emit('new_support_message', botMsg);
+                            
+                            aiDebuggerStatus.totalRequests++;
+                            aiDebuggerStatus.lastPing = new Date();
                             io.to('support_agents').emit('ai_status_update', aiDebuggerStatus);
                             broadcastOnlineStats();
 
@@ -11763,7 +11973,7 @@ const startServer = async () => {
             socket.on('agent_claim_chat', async (data) => {
                 try {
                     const agent = socket.request.user;
-                    if (!agent || !['support', 'admin'].includes(agent.role)) return;
+                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         session.status = 'active-agent';
@@ -11771,7 +11981,7 @@ const startServer = async () => {
                         
                         socket.join(`support_${session._id}`);
                         
-                        const sysMsg = { sender: 'system', text: `Agent ${data.agentName || 'Support'} has joined the chat.` };
+                        const sysMsg = { sender: 'system', text: `Agent ${data.agentName || agent.username || 'Support'} has joined the chat.` };
                         session.messages.push(sysMsg);
                         await session.save();
                         
@@ -11787,13 +11997,14 @@ const startServer = async () => {
             socket.on('agent_send_message', async (data) => {
                 try {
                     const agent = socket.request.user;
-                    if (!agent || !['support', 'admin'].includes(agent.role)) return;
+                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         const agentMsg = { 
                             sender: 'agent', 
                             senderName: agent.username || 'Support Agent',
-                            text: data.text 
+                            text: data.text || '',
+                            mediaUrls: Array.isArray(data.mediaUrls) ? data.mediaUrls : []
                         };
                         session.messages.push(agentMsg);
                         await session.save();
@@ -11809,7 +12020,7 @@ const startServer = async () => {
             socket.on('agent_delete_chat', async (data) => {
                 try {
                     const agent = socket.request.user;
-                    if (!agent || !['support', 'admin'].includes(agent.role)) return;
+                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (!session) return;
                     await ChatSession.deleteOne({ _id: session._id });
