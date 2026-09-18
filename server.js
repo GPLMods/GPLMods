@@ -422,6 +422,44 @@ function generateRecoveryCodes() {
     return codes;
 }
 
+// --- HELPER: Get all active, configured 2FA methods for a user ---
+function getAvailable2FAMethods(user) {
+    if (!user) return ['email'];
+    const methods = [];
+    const rawMethods = Array.isArray(user.twoFactorMethods) ? user.twoFactorMethods : [];
+    
+    // Check credentials and enabled flags
+    const hasTotp = rawMethods.includes('totp') || (user.twoFactorSecret && user.twoFactorSecret.length > 0) || user.twoFactorMethod === 'totp';
+    const hasPasskey = rawMethods.includes('passkey') || (user.passkey && user.passkey.credentialID) || (Array.isArray(user.passkeys) && user.passkeys.length > 0) || user.twoFactorMethod === 'passkey';
+    const hasSocial = rawMethods.includes('social') || ((user.twoFactorSocialProvider && user.twoFactorSocialProvider !== 'none') || (user.twoFactorProvider && user.twoFactorProvider !== 'none')) || user.twoFactorMethod === 'social';
+    const hasEmail = rawMethods.includes('email') || user.twoFactorMethod === 'email';
+    
+    // Preserve existing array order first
+    rawMethods.forEach(m => {
+        if (m === 'totp' && hasTotp && !methods.includes('totp')) methods.push('totp');
+        if (m === 'passkey' && hasPasskey && !methods.includes('passkey')) methods.push('passkey');
+        if (m === 'social' && hasSocial && !methods.includes('social')) methods.push('social');
+        if (m === 'email' && !methods.includes('email')) methods.push('email');
+    });
+
+    // Append any methods that are configured on the user model but missing from rawMethods
+    if (hasTotp && !methods.includes('totp')) methods.push('totp');
+    if (hasPasskey && !methods.includes('passkey')) methods.push('passkey');
+    if (hasSocial && !methods.includes('social')) methods.push('social');
+    if (hasEmail && !methods.includes('email')) methods.push('email');
+
+    // If still empty but 2FA is active, default to user's primary method or email
+    if (methods.length === 0 && (user.twoFactorEnabled || user.is2FAEnabled)) {
+        if (user.twoFactorMethod && user.twoFactorMethod !== 'none') {
+            methods.push(user.twoFactorMethod);
+        } else {
+            methods.push('email');
+        }
+    }
+
+    return methods.slice(0, 3); // Max 3 methods
+}
+
 async function createWelcomeNotification(user) {
     if (!user || !user._id) return;
 
@@ -4623,11 +4661,15 @@ const processSuccessfulLogin = async (req, res, next, user) => {
         req.session.pending2faUserId = user._id.toString();
 
         // Priority method is the 1st enabled method in twoFactorMethods, fallback to twoFactorMethod
-        const availableMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0)
-            ? user.twoFactorMethods
-            : (user.twoFactorMethod && user.twoFactorMethod !== 'none' ? [user.twoFactorMethod] : ['email']);
+        const availableMethods = getAvailable2FAMethods(user);
+        if (JSON.stringify(user.twoFactorMethods) !== JSON.stringify(availableMethods)) {
+            user.twoFactorMethods = availableMethods;
+            user.save().catch(err => console.error("Error updating twoFactorMethods on login:", err));
+        }
 
-        const priorityMethod = availableMethods[0] || 'email';
+        const priorityMethod = (req.session.active2faMethod && availableMethods.includes(req.session.active2faMethod))
+            ? req.session.active2faMethod
+            : availableMethods[0] || 'email';
         req.session.active2faMethod = priorityMethod;
         
         if (priorityMethod === 'email') {
@@ -6214,29 +6256,48 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
             user.passkeys.push(passkeyData);
             
             user.twoFactorMethod = 'passkey';
-            user.twoFactorEnabled = true;
-            user.is2FAEnabled = true;
             user.cardStatus = 'active'; // Reactivate card if it was suspended!
             if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
             if (!user.twoFactorMethods.includes('passkey')) {
                 if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
                 user.twoFactorMethods.push('passkey');
             }
+            user.twoFactorMethods = getAvailable2FAMethods(user);
 
-            const rawCodes = generateRecoveryCodes();
-            user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+            // Check if user already had 2FA active with recovery codes
+            const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
+                Array.isArray(user.twoFactorRecoveryCodes) && 
+                user.twoFactorRecoveryCodes.length > 0;
 
-            await user.save();
+            user.twoFactorEnabled = true;
+            user.is2FAEnabled = true;
 
             req.session.currentChallenge = null;
             req.session.currentChallengeRpID = null;
-            req.session.tempRecoveryCodes = rawCodes;
 
-            const redirectTarget = '/account/2fa/recovery-codes';
-            
-            req.session.save(() => {
-                res.json({ success: true, redirect: redirectTarget }); 
-            });
+            if (!hasExistingCodes) {
+                // First-time 2FA setup or re-enabling after complete disable: Generate new codes
+                const rawCodes = generateRecoveryCodes();
+                user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+                await user.save();
+
+                req.session.tempRecoveryCodes = rawCodes;
+                const redirectTarget = '/account/2fa/recovery-codes';
+                
+                req.session.save(() => {
+                    res.json({ success: true, redirect: redirectTarget }); 
+                });
+            } else {
+                // Secondary/tertiary method added: preserve existing recovery codes, don't regenerate!
+                await user.save();
+                const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
+                req.session.returnTo2FA = null;
+                const redirectTarget = `${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent('Passkey added successfully!')}`;
+                
+                req.session.save(() => {
+                    res.json({ success: true, redirect: redirectTarget }); 
+                });
+            }
         } else {
             res.status(400).json({ success: false, error: 'Passkey verification failed on server.' });
         }
@@ -6284,21 +6345,41 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
             }
         }
 
-        const rawCodes = generateRecoveryCodes();
-        user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
-        
+        user.twoFactorMethods = getAvailable2FAMethods(user);
+
+        // Check if user already had 2FA active with recovery codes
+        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
+            Array.isArray(user.twoFactorRecoveryCodes) && 
+            user.twoFactorRecoveryCodes.length > 0;
+
         user.twoFactorEnabled = true;
         user.is2FAEnabled = true;
         user.cardStatus = 'active'; // Reactivate card!
-        
-        await user.save();
 
-        req.session.tempRecoveryCodes = rawCodes; 
-        
-        req.session.save((err) => {
-            if (err) console.error("Session save error:", err);
-            res.redirect('/account/2fa/recovery-codes');
-        });
+        if (!hasExistingCodes) {
+            // First time setup or after complete disable: Generate new recovery codes
+            const rawCodes = generateRecoveryCodes();
+            user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+            await user.save();
+
+            req.session.tempRecoveryCodes = rawCodes; 
+            
+            req.session.save((err) => {
+                if (err) console.error("Session save error:", err);
+                res.redirect('/account/2fa/recovery-codes');
+            });
+        } else {
+            // Secondary/tertiary method added: Preserve existing codes and redirect
+            await user.save();
+            const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
+            req.session.returnTo2FA = null;
+            const successMsg = method === 'email' ? 'Email OTP added successfully!' : 'Authenticator App added successfully!';
+            
+            req.session.save((err) => {
+                if (err) console.error("Session save error:", err);
+                res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent(successMsg)}`);
+            });
+        }
 
     } catch (err) {
         console.error("2FA Enable Error:", err);
@@ -6385,6 +6466,11 @@ app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
             user.twoFactorMethod = 'none';
             user.twoFactorMethods = [];
             user.twoFactorSecret = '';
+            user.twoFactorRecoveryCodes = []; // Completely cleared so re-enabling generates fresh codes!
+            user.passkey = null;
+            user.passkeys = [];
+            user.twoFactorSocialProvider = 'none';
+            user.twoFactorProvider = 'none';
             user.cardStatus = 'suspended'; // Card suspended when 2FA is disabled!
             await user.save();
         }
@@ -6412,25 +6498,40 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
         }
 
         user.twoFactorMethod = 'social';
+        user.twoFactorSocialProvider = provider;
         user.twoFactorProvider = provider;
-        user.twoFactorEnabled = true;
-        user.is2FAEnabled = true;
         user.cardStatus = 'active'; // Reactivate card!
         if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
         if (!user.twoFactorMethods.includes('social')) {
             if (user.twoFactorMethods.length >= 3) user.twoFactorMethods.pop();
             user.twoFactorMethods.push('social');
         }
+        user.twoFactorMethods = getAvailable2FAMethods(user);
 
-        const rawCodes = generateRecoveryCodes();
-        user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
-        
-        await user.save();
+        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
+            Array.isArray(user.twoFactorRecoveryCodes) && 
+            user.twoFactorRecoveryCodes.length > 0;
 
-        req.session.tempRecoveryCodes = rawCodes;
-        req.session.save(() => {
-            res.redirect('/account/2fa/recovery-codes');
-        });
+        user.twoFactorEnabled = true;
+        user.is2FAEnabled = true;
+
+        if (!hasExistingCodes) {
+            const rawCodes = generateRecoveryCodes();
+            user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
+            await user.save();
+
+            req.session.tempRecoveryCodes = rawCodes;
+            req.session.save(() => {
+                res.redirect('/account/2fa/recovery-codes');
+            });
+        } else {
+            await user.save();
+            const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
+            req.session.returnTo2FA = null;
+            req.session.save(() => {
+                res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent('Social verification added successfully!')}`);
+            });
+        }
 
     } catch (err) {
         console.error("Social 2FA Enable Error:", err);
@@ -6445,22 +6546,28 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
 
 // 1. Generate the challenge for the user trying to log in
 app.get('/login/2fa/passkey/options', async (req, res) => {
-    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
+    if (!req.session.pending2faUserId) return res.status(400).json({ error: 'No pending login session' });
     const user = await User.findById(req.session.pending2faUserId);
+    if (!user) return res.status(400).json({ error: 'User not found' });
     
-    const activePasskey = user?.passkey || (user?.passkeys && user.passkeys.length > 0 ? user.passkeys[user.passkeys.length - 1] : null);
-    if (!user || !activePasskey) return res.status(400).json({error: 'No passkey found for user'});
+    const passkeyList = (Array.isArray(user.passkeys) && user.passkeys.length > 0)
+        ? user.passkeys
+        : (user.passkey && user.passkey.credentialID ? [user.passkey] : []);
+
+    if (passkeyList.length === 0) return res.status(400).json({ error: 'No passkey found for user' });
 
     try {
         const effectiveRpID = getWebAuthnEffectiveRpID(req);
 
+        const allowCredentials = passkeyList.map(pk => ({
+            id: pk.credentialID, // MUST BE STRING in @simplewebauthn v13!
+            type: 'public-key',
+            transports: pk.transports || ['internal', 'hybrid', 'usb', 'ble', 'nfc'],
+        }));
+
         const options = await generateAuthenticationOptions({
             rpID: effectiveRpID,
-            allowCredentials: [{
-                id: Buffer.from(activePasskey.credentialID, 'base64url'),
-                type: 'public-key',
-                transports: activePasskey.transports || ['internal'],
-            }],
+            allowCredentials,
             userVerification: 'preferred',
         });
         
@@ -6473,13 +6580,22 @@ app.get('/login/2fa/passkey/options', async (req, res) => {
     }
 });
 
-// 2. Verify the biometric response from the user's device
+// 2. Verify the biometric / device PIN response from the user's device
 app.post('/login/2fa/passkey/verify', async (req, res, next) => {
-    if (!req.session.pending2faUserId) return res.status(400).json({error: 'No pending login session'});
+    if (!req.session.pending2faUserId) return res.status(400).json({ error: 'No pending login session' });
     const user = await User.findById(req.session.pending2faUserId);
-    const activePasskey = user?.passkey || (user?.passkeys && user.passkeys.length > 0 ? user.passkeys[user.passkeys.length - 1] : null);
-    if (!user || !activePasskey) return res.status(400).json({error: 'No passkey found for user'});
+    if (!user) return res.status(400).json({ error: 'User not found' });
+
+    const passkeyList = (Array.isArray(user.passkeys) && user.passkeys.length > 0)
+        ? user.passkeys
+        : (user.passkey && user.passkey.credentialID ? [user.passkey] : []);
+
+    if (passkeyList.length === 0) return res.status(400).json({ error: 'No passkey found for user' });
     
+    const credentialId = req.body?.id;
+    const activePasskey = passkeyList.find(pk => pk.credentialID === credentialId) || user.passkey || passkeyList[0];
+    if (!activePasskey) return res.status(400).json({ error: 'No matching passkey found for user' });
+
     try {
         const effectiveRpID = getWebAuthnEffectiveRpID(req);
         const expectedOrigins = getWebAuthnExpectedOrigins(req);
@@ -6490,31 +6606,33 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
             expectedChallenge: req.session.currentChallenge,
             expectedOrigin: expectedOrigins,
             expectedRPID: expectedRPIDs,
-            authenticator: {
-                credentialPublicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
-                credentialID: Buffer.from(activePasskey.credentialID, 'base64url'),
+            credential: {
+                id: activePasskey.credentialID,
+                publicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
                 counter: activePasskey.counter || 0,
+                transports: activePasskey.transports,
             },
             requireUserVerification: false,
         });
 
         if (verification && verification.verified) {
             const newCounter = verification.authenticationInfo?.newCounter || ((activePasskey.counter || 0) + 1);
-            if (user.passkey) user.passkey.counter = newCounter;
-            if (user.passkeys && user.passkeys.length > 0) {
-                user.passkeys[user.passkeys.length - 1].counter = newCounter;
+            if (activePasskey) activePasskey.counter = newCounter;
+            if (user.passkey && user.passkey.credentialID === activePasskey.credentialID) {
+                user.passkey.counter = newCounter;
             }
             await user.save();
             
             // Clean up session vars
             req.session.pending2faUserId = null;
             req.session.currentChallenge = null;
+            req.session.currentChallengeRpID = null;
+            req.session.active2faMethod = null;
             
             // Login successful! Use centralized session finalization with JSON callback
             req.logIn(user, (err) => {
                 if (err) return res.status(500).json({ success: false, error: err.message });
                 
-                // ✅ FIX: For passkey (JSON response), use a custom finalization
                 let tempSession = req.session.passport;
                 
                 // Invalidate old session if exists
@@ -6566,9 +6684,11 @@ app.get('/login/2fa', async (req, res) => {
     const user = await User.findById(req.session.pending2faUserId);
     if (!user) return res.redirect('/login');
 
-    const availableMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0)
-        ? user.twoFactorMethods
-        : (user.twoFactorMethod && user.twoFactorMethod !== 'none' ? [user.twoFactorMethod] : ['email']);
+    const availableMethods = getAvailable2FAMethods(user);
+    if (JSON.stringify(user.twoFactorMethods) !== JSON.stringify(availableMethods)) {
+        user.twoFactorMethods = availableMethods;
+        user.save().catch(err => console.error("Error updating twoFactorMethods:", err));
+    }
 
     let currentMethod = req.query.method || req.session.active2faMethod || availableMethods[0] || user.twoFactorMethod || 'email';
     if (!availableMethods.includes(currentMethod)) {
@@ -11781,7 +11901,10 @@ app.post('/auth/card-login', async (req, res, next) => {
         // ✅ REQUIRE 2FA: Process login
         if (user.twoFactorEnabled) {
             req.session.pending2faUserId = user._id.toString();
-            if (user.twoFactorMethod === 'email') {
+            const availableMethods = getAvailable2FAMethods(user);
+            const priorityMethod = availableMethods[0] || 'email';
+            req.session.active2faMethod = priorityMethod;
+            if (priorityMethod === 'email') {
                 try {
                     const otp = Math.floor(100000 + Math.random() * 900000).toString();
                     user.verificationOtp = otp;
@@ -12030,10 +12153,26 @@ const startServer = async () => {
             // --- LIVE SUPPORT & GEMINI AI CHAT LOGIC ---
             // ==========================================
             
+            // Helper to resolve agent from session or payload ID with staff role verification
+            async function resolveAgent(data) {
+                let agent = socket.request.user || socket.data?.agent;
+                if (!agent && data?.agentId) {
+                    try {
+                        const found = await User.findById(data.agentId);
+                        if (found && ['support', 'admin', 'owner'].includes(found.role)) {
+                            agent = found;
+                            socket.data = socket.data || {};
+                            socket.data.agent = agent;
+                        }
+                    } catch (e) {}
+                }
+                return (agent && ['support', 'admin', 'owner'].includes(agent.role)) ? agent : null;
+            }
+
             // 1. Agent Joins the Dashboard
             socket.on('agent_join', async (data) => {
-                const agent = socket.request.user;
-                if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                const agent = await resolveAgent(data);
+                if (!agent) return;
                 socket.join('support_agents');
                 connectedAgentSockets.add(socket.id);
                 try {
@@ -12231,8 +12370,9 @@ const startServer = async () => {
                         await ChatSession.deleteOne({ _id: session._id });
                         return;
                     }
-                    const userId = socket.request.user?._id;
-                    const ownsSession = session && ((userId && session.user && String(session.user) === String(userId)) || (!userId && session.guestId === data.guestId));
+                    const userId = (socket.request.user && socket.request.user._id) ? String(socket.request.user._id) : (data.userId ? String(data.userId) : null);
+                    const sessionUserId = session && session.user ? String(session.user._id || session.user) : null;
+                    const ownsSession = session && ((userId && sessionUserId && sessionUserId === userId) || (!userId && session.guestId === data.guestId) || (data.guestId && session.guestId === data.guestId));
                     if (ownsSession) {
                         socket.join(`support_${session._id}`);
                         socket.emit('support_chat_ready', { 
@@ -12254,10 +12394,12 @@ const startServer = async () => {
                     const session = await ChatSession.findById(data.sessionId);
                     if (!session) return socket.emit('support_chat_deleted', { sessionId: data.sessionId });
 
-                    const userId = socket.request.user?._id;
-                    const ownsUserSession = session.user && userId && String(session.user) === String(userId);
-                    const ownsGuestSession = !session.user && !userId && session.guestId && data.guestId && session.guestId === data.guestId;
-                    if (!ownsUserSession && !ownsGuestSession) {
+                    const userId = (socket.request.user && socket.request.user._id) ? String(socket.request.user._id) : (data.userId ? String(data.userId) : null);
+                    const sessionUserId = session.user ? String(session.user._id || session.user) : null;
+                    const ownsUserSession = sessionUserId && userId && sessionUserId === userId;
+                    const ownsGuestSession = !sessionUserId && session.guestId && data.guestId && session.guestId === data.guestId;
+                    const ownsByGuestMatch = data.guestId && session.guestId === data.guestId;
+                    if (!ownsUserSession && !ownsGuestSession && !ownsByGuestMatch) {
                         return socket.emit('support_chat_delete_error', { message: 'You can only delete your own conversations.' });
                     }
 
@@ -12431,8 +12573,8 @@ const startServer = async () => {
             // 6. Agent Claims Chat
             socket.on('agent_claim_chat', async (data) => {
                 try {
-                    const agent = socket.request.user;
-                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                    const agent = await resolveAgent(data);
+                    if (!agent) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         session.status = 'active-agent';
@@ -12455,8 +12597,8 @@ const startServer = async () => {
             // 7. Agent Sends Message
             socket.on('agent_send_message', async (data) => {
                 try {
-                    const agent = socket.request.user;
-                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                    const agent = await resolveAgent(data);
+                    if (!agent) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         const agentMsg = { 
@@ -12478,8 +12620,8 @@ const startServer = async () => {
 
             socket.on('agent_delete_chat', async (data) => {
                 try {
-                    const agent = socket.request.user;
-                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                    const agent = await resolveAgent(data);
+                    if (!agent) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (!session) return;
                     await ChatSession.deleteOne({ _id: session._id });
@@ -12493,8 +12635,8 @@ const startServer = async () => {
             // 8. Agent Transfers Chat back to Gemini Bot (Issue Resolved or Transfer)
             socket.on('agent_transfer_to_bot', async (data) => {
                 try {
-                    const agent = socket.request.user;
-                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                    const agent = await resolveAgent(data);
+                    if (!agent) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         session.status = 'bot';
@@ -12525,9 +12667,11 @@ const startServer = async () => {
                     const session = await ChatSession.findById(data.sessionId);
                     if (!session) return;
 
-                    const userId = socket.request.user?._id;
-                    const ownsSession = (userId && session.user && String(session.user) === String(userId)) ||
-                        (!userId && session.guestId && session.guestId === data.guestId);
+                    const userId = (socket.request.user && socket.request.user._id) ? String(socket.request.user._id) : (data.userId ? String(data.userId) : null);
+                    const sessionUserId = session.user ? String(session.user._id || session.user) : null;
+                    const ownsSession = (userId && sessionUserId && sessionUserId === userId) ||
+                        (!sessionUserId && session.guestId && session.guestId === data.guestId) ||
+                        (data.guestId && session.guestId === data.guestId);
                     if (!ownsSession) return;
 
                     session.status = 'bot';

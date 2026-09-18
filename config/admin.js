@@ -151,11 +151,9 @@ async function createAdminRouter() {
         assets: {
             styles: [
                 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap',
-                ...(fs.existsSync(path.join(__dirname, '../.adminjs/bundle.css')) ? ['/.adminjs/bundle.css'] : []),
                 '/css/admin-custom.css'
             ],
             scripts: [
-                ...(fs.existsSync(path.join(__dirname, '../.adminjs/bundle.js')) ? ['/.adminjs/bundle.js'] : []),
                 '/js/image-fallback.js',
                 '/js/admin-badges.js'
             ],

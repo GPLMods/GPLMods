@@ -3,6 +3,7 @@ import { Box } from '@adminjs/design-system';
 
 const AvatarCell = (props) => {
     const { record, property, where } = props; 
+    if (!record || !record.params || !property) return null;
     const key = record.params[property.name]; // This is the profileImageKey
     const username = record.params.username || 'User';
 

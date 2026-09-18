@@ -792,6 +792,14 @@
             let pendingDeleteSessionId = null;
             let isSupportOnline = true;
 
+            const userId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
+            let guestId = localStorage.getItem('gplGuestId');
+            if (!guestId) {
+                guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('gplGuestId', guestId);
+            }
+            let sessionId = localStorage.getItem('gplChatSessionId');
+
             // Gemini switch modal elements
             const switchToAiBtn = document.getElementById('gplChatSwitchToAiBtn');
             const geminiModal = document.getElementById('gplChatGeminiModal');
@@ -836,12 +844,15 @@
             if (geminiCancelBtn) geminiCancelBtn.addEventListener('click', closeGeminiConfirmModal);
             if (geminiConfirmBtn) {
                 geminiConfirmBtn.addEventListener('click', () => {
-                    if (sessionId) {
-                        socket.emit('user_transfer_to_bot', { sessionId, guestId });
+                    const activeSessionId = sessionId || localStorage.getItem('gplChatSessionId');
+                    if (activeSessionId && typeof io !== 'undefined') {
+                        const s = window.gplSupportSocket;
+                        if (s) s.emit('user_transfer_to_bot', { sessionId: activeSessionId, guestId, userId });
                     }
                     closeGeminiConfirmModal();
                     currentChatStatus = 'bot';
                     updateSwitchToAiBtn();
+                    appendMsg("You have switched back to Gemini AI Assistant. How can I help you today?", "system");
                 });
             }
 
@@ -963,19 +974,19 @@
                 }
             });
 
+            // Hide floating widget on /support as it has dedicated live chat & ticket desk
+            if (window.location.pathname === '/support') {
+                if (chatBtn) chatBtn.style.display = 'none';
+                if (chatWindow) chatWindow.style.display = 'none';
+            }
+
             // 3. Socket.IO Logic
             if (typeof io !== 'undefined') {
                 const socket = io();
                 window.gplSupportSocket = socket;
-                
-                let guestId = localStorage.getItem('gplGuestId');
-                if (!guestId) {
-                    guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('gplGuestId', guestId);
-                }
-                
-                const userId = '<%= typeof user !== "undefined" && user ? user._id : "" %>';
-                let sessionId = localStorage.getItem('gplChatSessionId');
+
+                // Sync current active session
+                sessionId = localStorage.getItem('gplChatSessionId');
 
                 // Device telemetry
                 const browserInfo = navigator.userAgent || '';

@@ -3,6 +3,7 @@ import { Box } from '@adminjs/design-system';
 
 const ImagePreview = (props) => {
     const { record, property, where } = props; 
+    if (!record || !record.params || !property) return null;
     const value = record.params[property.name];
 
     const [imageUrl, setImageUrl] = useState(null);

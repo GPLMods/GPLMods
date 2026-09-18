@@ -2,6 +2,7 @@ import React from 'react';
 
 const VariantBadge = (props) => {
   const { record, property } = props;
+  if (!record || !record.params || !property) return null;
   const isVariant = record.params[property.name];
 
   if (isVariant === true || isVariant === 'true') {

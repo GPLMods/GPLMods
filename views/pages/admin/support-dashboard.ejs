@@ -275,34 +275,46 @@
                 display: inline-flex !important;
             }
             .chat-header {
-                padding: 12px 16px;
+                padding: 10px 14px;
                 gap: 8px;
+                flex-wrap: nowrap;
             }
             .chat-header h3 {
-                font-size: 1.05em;
+                font-size: 1em;
             }
             .chat-header .device-info {
-                font-size: 0.75em;
+                font-size: 0.72em;
             }
             .chat-messages {
-                padding: 14px;
+                padding: 12px;
                 gap: 10px;
             }
             .msg-bubble {
                 max-width: 88%;
-                padding: 10px 14px;
+                padding: 10px 13px;
                 font-size: 0.9em;
             }
             .chat-input-area {
-                padding: 10px 14px;
-                gap: 8px;
+                padding: 10px 12px;
+                gap: 6px;
             }
             .chat-input-area input {
-                padding: 11px 14px;
-                font-size: 0.9em;
+                padding: 11px 12px;
+                font-size: 16px; /* Prevents auto-zoom on iOS */
             }
-            .chat-input-area button {
-                padding: 11px 18px;
+            .chat-tool-btn {
+                padding: 10px 11px;
+                font-size: 1em;
+            }
+            .chat-input-area button.submit-btn {
+                padding: 11px 16px;
+            }
+            .emoji-picker-popover {
+                width: calc(100% - 24px) !important;
+                left: 12px !important;
+                right: 12px !important;
+                max-width: 360px;
+                bottom: 68px;
             }
             .stats-bar {
                 padding: 8px 14px;
@@ -313,6 +325,38 @@
             }
             .sidebar-header {
                 padding: 14px 16px;
+            }
+        }
+
+        @media (max-width: 540px) {
+            .chat-header {
+                padding: 8px 10px;
+                gap: 6px;
+            }
+            .chat-header .chat-header-actions {
+                gap: 4px !important;
+            }
+            #emailCustomerBtn {
+                padding: 6px 9px !important;
+                font-size: 0.75em !important;
+            }
+            #claimBtn {
+                padding: 6px 10px !important;
+                font-size: 0.75em !important;
+            }
+            #transferToGeminiBtn {
+                padding: 6px 9px !important;
+                font-size: 0.75em !important;
+            }
+            #transferToGeminiBtn span {
+                display: none;
+            }
+            #deleteChatBtn {
+                padding: 6px 9px !important;
+                font-size: 0.75em !important;
+            }
+            .media-tray {
+                padding: 6px 12px;
             }
         }
     </style>
@@ -553,6 +597,28 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal for Agent Transfer to Gemini AI Assistant -->
+    <div id="deskGeminiTransferModal" class="policy-modal" style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.78); opacity:0; transition:opacity .2s ease; backdrop-filter: blur(4px);">
+        <div style="background: linear-gradient(145deg, #1b2230 0%, #11141c 50%, #0a0c12 100%); color:var(--white); padding:30px 24px; text-align:center; border-radius:16px; max-width:440px; width:92%; border: 1.5px solid rgba(0, 230, 118, 0.45); box-shadow:0 15px 40px rgba(0,0,0,.85), 0 0 25px rgba(0, 176, 255, 0.25);">
+            <div style="width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, rgba(0, 176, 255, 0.2), rgba(0, 230, 118, 0.15)); border: 1.5px solid rgba(0, 230, 118, 0.5); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; box-shadow: 0 0 22px rgba(0, 230, 118, 0.35); position: relative;">
+                <img src="/images/gemini.png" alt="Gemini AI" style="width: 34px; height: 34px; object-fit: contain;">
+                <span style="position: absolute; bottom: -3px; right: -3px; width: 13px; height: 13px; border-radius: 50%; background: #00e676; border: 2px solid #11141c; box-shadow: 0 0 8px #00e676;"></span>
+            </div>
+            <h2 style="color:var(--white); font-size: 1.25em; margin:0 0 10px; font-weight: 700;">Transfer to Gemini AI?</h2>
+            <p style="margin:0 0 22px; color:var(--silver); font-size: 0.88em; line-height:1.6;">
+                Are you sure you want to mark this issue as resolved and hand the customer back to Gemini AI Assistant?
+            </p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button type="button" id="cancelDeskGeminiBtn" style="background:rgba(255,255,255,0.06); color:#ccc; border:1.5px solid #3d4250; padding:10px 20px; border-radius:10px; font-weight:600; font-size: 0.88em; cursor:pointer; transition: all 0.2s;">
+                    Keep Chat
+                </button>
+                <button type="button" id="confirmDeskGeminiBtn" style="background:linear-gradient(135deg, #00e676 0%, #00b0ff 100%); color:#000; padding:10px 22px; border-radius:10px; font-weight:700; font-size: 0.88em; border:0; cursor:pointer; box-shadow:0 0 16px rgba(0, 230, 118, 0.4); transition: all 0.2s;">
+                    <i class="fas fa-robot" style="margin-right: 5px;"></i> Transfer to Gemini
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -696,22 +762,32 @@
 
         // 7. Another agent claimed or updated
         socket.on('agent_chat_updated', (session) => {
+            if (session.status === 'bot') {
+                activeChats = activeChats.filter(c => String(c._id) !== String(session._id));
+                if (String(currentSessionId) === String(session._id)) {
+                    closeMobileChat();
+                } else {
+                    renderChatList();
+                }
+                return;
+            }
             const index = activeChats.findIndex(c => c._id === session._id);
             if (index !== -1) {
                 activeChats[index] = session;
-                renderChatList();
-                if (currentSessionId === session._id) openChat(session._id);
+            } else {
+                activeChats.unshift(session);
             }
+            renderChatList();
+            if (currentSessionId === session._id) openChat(session._id);
         });
 
         socket.on('agent_chat_deleted', ({ sessionId }) => {
             activeChats = activeChats.filter(chat => String(chat._id) !== String(sessionId));
             if (String(currentSessionId) === String(sessionId)) {
-                currentSessionId = null;
-                mainChatEl.style.display = 'none';
-                emptyStateEl.style.display = 'flex';
+                closeMobileChat();
+            } else {
+                renderChatList();
             }
-            renderChatList();
         });
 
         // --- UI RENDER FUNCTIONS ---
@@ -1081,9 +1157,12 @@
         if (confirmDeskGeminiBtn) {
             confirmDeskGeminiBtn.addEventListener('click', () => {
                 if (!currentSessionId) return closeDeskGeminiModal();
-                socket.emit('agent_transfer_to_bot', { sessionId: currentSessionId });
+                const targetId = currentSessionId;
+                socket.emit('agent_transfer_to_bot', { sessionId: targetId, agentId });
                 closeDeskGeminiModal();
                 if (transferToGeminiBtn) transferToGeminiBtn.style.display = 'none';
+                activeChats = activeChats.filter(c => String(c._id) !== String(targetId));
+                closeMobileChat();
             });
         }
 
@@ -1099,8 +1178,11 @@
         cancelDeleteChatBtn.addEventListener('click', closeDeleteChatModal);
         confirmDeleteChatBtn.addEventListener('click', () => {
             if (!currentSessionId) return closeDeleteChatModal();
-            socket.emit('agent_delete_chat', { sessionId: currentSessionId, agentId });
+            const targetId = currentSessionId;
+            socket.emit('agent_delete_chat', { sessionId: targetId, agentId });
             closeDeleteChatModal();
+            activeChats = activeChats.filter(chat => String(chat._id) !== String(targetId));
+            closeMobileChat();
         });
 
         document.getElementById('agentForm').addEventListener('submit', (e) => {
@@ -1111,6 +1193,7 @@
                     sessionId: currentSessionId, 
                     text, 
                     agentName,
+                    agentId,
                     mediaUrls: [...pendingUploadedMedia]
                 });
                 agentInput.value = '';

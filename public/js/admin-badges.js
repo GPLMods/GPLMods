@@ -106,23 +106,20 @@
         'failed': 'status-failed'
     };
 
-    function applyChipToCell(cell, valAttr, displayText) {
+    function applyChipToCell(cell, valAttr) {
         if (!cell) return;
-        cell.setAttribute('data-admin-enhanced', 'true');
-        let span = cell.querySelector('span.admin-custom-chip, span[data-badge-val]');
-        if (!span) {
-            span = cell.querySelector('span[class*="Badge"], span[class*="Tag"], .adminjs_Badge, .adminjs_Tag, span');
+        if (cell.getAttribute('data-admin-enhanced') === valAttr) return;
+
+        let span = cell.querySelector('span.admin-custom-chip, span[data-badge-val], span[class*="Badge"], span[class*="Tag"], .adminjs_Badge, .adminjs_Tag, span');
+        if (span) {
+            if (span.getAttribute('data-badge-val') !== valAttr) {
+                span.setAttribute('data-badge-val', valAttr);
+            }
+            if (!span.classList.contains('admin-custom-chip')) {
+                span.classList.add('admin-custom-chip');
+            }
         }
-        if (!span) {
-            span = document.createElement('span');
-            cell.textContent = '';
-            cell.appendChild(span);
-        }
-        span.setAttribute('data-badge-val', valAttr);
-        span.classList.add('admin-custom-chip');
-        if (displayText) {
-            span.textContent = displayText;
-        }
+        cell.setAttribute('data-admin-enhanced', valAttr);
     }
 
     function colorizeBadges() {
@@ -244,32 +241,33 @@
             avatarUrl = '/images/default-avatar.png';
         }
 
-        // 1. Direct Avatar elements rendered by AdminJS or header elements with 1 initial letter
-        const potentialAvatars = document.querySelectorAll(
-            'header [class*="Avatar"], nav [class*="Avatar"], [class*="CurrentUserNav"] [class*="Avatar"], header div, header span, nav span, nav div'
-        );
+        // Target avatar containers inside current user nav or navbar
+        const userNavs = document.querySelectorAll('[class*="CurrentUserNav"], [class*="CurrentUser"], header [class*="NavBar"]');
+        userNavs.forEach(nav => {
+            const potentialAvatars = nav.querySelectorAll('[class*="Avatar"], div, span');
+            potentialAvatars.forEach(el => {
+                if (el.querySelector('img.admin-topbar-avatar') || el.getAttribute('data-avatar-set') === 'true') return;
+                const txt = (el.innerText || el.textContent || '').trim();
+                // Single letter avatar circle (e.g. "G")
+                if (txt.length === 1 && /^[a-zA-Z]$/.test(txt) && el.children.length === 0) {
+                    el.setAttribute('data-avatar-set', 'true');
+                    el.innerHTML = `<img src="${avatarUrl}" class="admin-topbar-avatar" alt="Admin Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';" />`;
+                    el.style.background = 'transparent';
+                    el.style.border = 'none';
+                    el.style.boxShadow = 'none';
+                    el.style.padding = '0';
+                    el.style.display = 'inline-flex';
+                    el.style.alignItems = 'center';
+                    el.style.justifyContent = 'center';
+                }
+            });
 
-        potentialAvatars.forEach(el => {
-            if (el.querySelector('img.admin-topbar-avatar')) return;
-            const txt = (el.innerText || el.textContent || '').trim();
-            // Single letter avatar circle (e.g. "G")
-            if (txt.length === 1 && /^[a-zA-Z]$/.test(txt) && el.children.length === 0) {
-                el.innerHTML = `<img src="${avatarUrl}" class="admin-topbar-avatar" alt="Admin Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';" />`;
-                el.style.background = 'transparent';
-                el.style.border = 'none';
-                el.style.boxShadow = 'none';
-                el.style.padding = '0';
-                el.style.display = 'inline-flex';
-                el.style.alignItems = 'center';
-                el.style.justifyContent = 'center';
-            }
-        });
-
-        // 2. Any image inside user nav gets the gold ring
-        document.querySelectorAll('[class*="CurrentUserNav"] img, header [class*="NavBar"] img, header img').forEach(img => {
-            if (!img.classList.contains('admin-topbar-avatar') && (img.src.includes('avatar') || img.alt.toLowerCase().includes('avatar') || img.closest('[class*="CurrentUserNav"]'))) {
-                img.classList.add('admin-topbar-avatar');
-            }
+            // Images inside user nav get the gold ring
+            nav.querySelectorAll('img').forEach(img => {
+                if (!img.classList.contains('admin-topbar-avatar') && (img.src.includes('avatar') || img.alt.toLowerCase().includes('avatar') || img.closest('[class*="CurrentUserNav"]'))) {
+                    img.classList.add('admin-topbar-avatar');
+                }
+            });
         });
     }
 
@@ -338,10 +336,29 @@
         }, true);
     }
 
+    let isMutating = false;
+    let debounceTimer = null;
+
     function runAll() {
-        colorizeBadges();
-        updateTopBarAvatar();
-        setupLogoutConfirmation();
+        if (isMutating) return;
+        isMutating = true;
+        try {
+            colorizeBadges();
+            updateTopBarAvatar();
+            setupLogoutConfirmation();
+        } catch (e) {
+            console.error('[AdminJS Badges Error]', e);
+        } finally {
+            setTimeout(() => {
+                isMutating = false;
+            }, 50);
+        }
+    }
+
+    function scheduleRun() {
+        if (isMutating) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runAll, 80);
     }
 
     if (document.readyState === 'loading') {
@@ -350,8 +367,34 @@
         runAll();
     }
 
-    const observer = new MutationObserver(() => {
-        runAll();
+    const observer = new MutationObserver((mutations) => {
+        if (isMutating) return;
+        let hasRelevantMutation = false;
+        for (let i = 0; i < mutations.length; i++) {
+            const m = mutations[i];
+            if (m.type === 'childList' && m.addedNodes.length > 0) {
+                for (let j = 0; j < m.addedNodes.length; j++) {
+                    const node = m.addedNodes[j];
+                    if (node.nodeType === 1) { // Element node
+                        if (
+                            node.id === 'adminLogoutModal' || 
+                            (node.classList && (
+                                node.classList.contains('admin-logout-modal-backdrop') ||
+                                node.classList.contains('admin-topbar-avatar')
+                            ))
+                        ) {
+                            continue;
+                        }
+                        hasRelevantMutation = true;
+                        break;
+                    }
+                }
+            }
+            if (hasRelevantMutation) break;
+        }
+        if (hasRelevantMutation) {
+            scheduleRun();
+        }
     });
 
     observer.observe(document.body, {

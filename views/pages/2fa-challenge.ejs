@@ -6,7 +6,7 @@
         padding: 40px; 
         border-radius: 15px; 
         border: 1px solid #2a2a2a; 
-        max-width: 450px; 
+        max-width: 460px; 
         width: 100%; 
         text-align: center; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
@@ -18,13 +18,13 @@
         justify-content: center;
         gap: 12px;
         width: 100%;
-        padding: 12px;
+        padding: 13px;
         margin-bottom: 12px;
         background-color: transparent; 
         border: 2px solid var(--silver); 
         color: var(--silver);           
         border-radius: 8px;
-        font-size: 1.1em;
+        font-size: 1.05em;
         font-weight: 600;
         text-decoration: none;
         cursor: pointer;
@@ -75,18 +75,75 @@
     }
     .divider::before { left: 0; }
     .divider::after { right: 0; }
+
+    /* Method Selector Pills */
+    .method-selector-container {
+        background: rgba(0, 0, 0, 0.45);
+        padding: 12px 10px;
+        border-radius: 12px;
+        border: 1px solid #333;
+        margin-bottom: 25px;
+    }
+    .method-nav-pill {
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.25s ease;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--silver);
+    }
+    .method-nav-pill:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--white);
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .method-nav-pill.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 14px var(--glow-gold);
+        font-weight: 700;
+    }
+
+    .alt-method-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: var(--silver);
+        font-size: 0.88em;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+    .alt-method-btn:hover {
+        background: rgba(255, 215, 0, 0.08);
+        border-color: var(--gold);
+        color: var(--gold);
+        transform: translateY(-1px);
+    }
 </style>
 
 <main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 75vh; padding: 40px 0;">
     <div class="challenge-container">
-    <div class="back-btn-wrapper" style="margin-bottom: 20px; justify-content: flex-start;">
-        <a href="/login" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+        <div class="back-btn-wrapper" style="margin-bottom: 20px; justify-content: flex-start;">
+            <a href="/login" class="dynamic-back-btn">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
         
-        <i class="fas fa-shield-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));"></i>
-        <h2 style="color: var(--white); margin-bottom: 10px;">Security Verification</h2>
+        <i class="fas fa-shield-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 15px; filter: drop-shadow(0 0 12px rgba(255,215,0,0.35));"></i>
+        <h2 style="color: var(--white); margin-bottom: 8px; font-size: 1.6em;">Security Verification</h2>
         
         <% if (error) { %>
             <p style="background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 0.9em;">
@@ -96,16 +153,12 @@
 
         <!-- Multi-Option 2FA Switcher -->
         <% if (typeof availableMethods !== 'undefined' && availableMethods && availableMethods.length > 1) { %>
-            <div class="method-selector-container" style="margin-bottom: 25px;">
-                <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Choose a verification method to continue:</p>
+            <div class="method-selector-container">
+                <p style="font-size: 0.82em; color: var(--silver); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Choose Verification Method:</p>
                 <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                     <% availableMethods.forEach(m => { %>
                         <a href="/login/2fa?method=<%= m %>" 
-                           style="padding: 8px 16px; border-radius: 20px; font-size: 0.85em; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;
-                                  background: <%= method === m ? 'var(--gold)' : 'rgba(255,255,255,0.06)' %>;
-                                  color: <%= method === m ? 'var(--black)' : 'var(--silver)' %>;
-                                  border: 1px solid <%= method === m ? 'var(--gold)' : 'rgba(255,255,255,0.18)' %>;
-                                  box-shadow: <%= method === m ? '0 0 12px var(--glow-gold)' : 'none' %>;">
+                           class="method-nav-pill <%= method === m ? 'active' : '' %>">
                             <% if (m === 'email') { %>
                                 <i class="fas fa-envelope"></i> Email OTP
                             <% } else if (m === 'totp') { %>
@@ -128,7 +181,7 @@
             </p>
             <form action="/login/2fa/verify" method="POST">
                 <!-- Can accept either 6 digit TOTP or 8 char Backup Code -->
-                <input type="text" name="token" class="code-input" placeholder="000000" maxlength="8" required autocomplete="off">
+                <input type="text" name="token" class="code-input" placeholder="000000" maxlength="8" required autocomplete="off" autofocus>
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; font-weight: bold;">Verify & Login</button>
             </form>
             <% if (method === 'email') { %>
@@ -144,70 +197,108 @@
         <% } else if (method === 'social') { %>
             <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em;">Please verify your identity by logging into your linked social account.</p>
             
-            <!-- We only show the button for the provider they selected during setup -->
             <a href="/auth/google" class="social-verify-btn"><i class="fab fa-google"></i> Verify with Google</a>
             <a href="/auth/github" class="social-verify-btn"><i class="fab fa-github"></i> Verify with GitHub</a>
             <a href="/auth/microsoft" class="social-verify-btn"><i class="fab fa-windows"></i> Verify with Microsoft</a>
 
         <!-- SCENARIO 3: PASSKEY (WEBAUTHN) -->
         <% } else if (method === 'passkey') { %>
-            <p style="color: var(--silver); margin-bottom: 25px; font-size: 0.95em;">Use your device's biometric scanner (FaceID, TouchID) to login securely.</p>
-            <button id="auth-passkey-btn" class="social-verify-btn" style="border-color: var(--gold); color: var(--gold);">
-                <i class="fas fa-fingerprint"></i> Scan Passkey
+            <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.95em; line-height: 1.5;">
+                Use your device's biometric scanner (FaceID, TouchID) or Windows Hello / device PIN to log in securely.
+            </p>
+            
+            <div id="passkey-error-box" style="display: none; background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88em; line-height: 1.4; text-align: left;">
+                <i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> <span id="passkey-error-text"></span>
+            </div>
+
+            <button id="auth-passkey-btn" type="button" class="btn btn-primary" style="width: 100%; padding: 16px; font-size: 1.1em; background: var(--gold); color: var(--black); border: none; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.25);">
+                <i class="fas fa-fingerprint" style="font-size: 1.3em;"></i> Scan Passkey / Device PIN
             </button>
             
             <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
             <script>
-                const { startAuthentication } = SimpleWebAuthnBrowser;
+                document.addEventListener('DOMContentLoaded', () => {
+                    const btn = document.getElementById('auth-passkey-btn');
+                    const errBox = document.getElementById('passkey-error-box');
+                    const errText = document.getElementById('passkey-error-text');
+                    if (!btn) return;
 
-                const bufferToBase64URLString = (buffer) => {
-                    const bytes = new Uint8Array(buffer);
-                    let binary = '';
-                    for (let i = 0; i < bytes.byteLength; i++) {
-                        binary += String.fromCharCode(bytes[i]);
-                    }
-                    return btoa(binary)
-                        .replace(/\+/g, '-')
-                        .replace(/\//g, '_')
-                        .replace(/=+$/, '');
-                };
+                    btn.addEventListener('click', async () => {
+                        if (errBox) errBox.style.display = 'none';
+                        btn.disabled = true;
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Waiting for Device Prompt...';
 
-                const serializeAuthResponse = (response) => {
-                    return JSON.stringify(response, (key, value) => {
-                        if (value instanceof ArrayBuffer) {
-                            return bufferToBase64URLString(value);
+                        try {
+                            if (typeof SimpleWebAuthnBrowser === 'undefined' || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
+                                throw new Error('Your browser or device does not support WebAuthn / Passkeys. Please choose another verification method below.');
+                            }
+
+                            const { startAuthentication } = SimpleWebAuthnBrowser;
+                            const resp = await fetch('/login/2fa/passkey/options');
+                            if (!resp.ok) {
+                                const errJson = await resp.json().catch(() => ({}));
+                                throw new Error(errJson.error || 'Server error initializing passkey');
+                            }
+
+                            const options = await resp.json();
+                            const asseResp = await startAuthentication(options);
+
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying with Server...';
+
+                            const verificationResp = await fetch('/login/2fa/passkey/verify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(asseResp),
+                            });
+
+                            const verification = await verificationResp.json();
+                            if (verification.success) {
+                                window.location.href = verification.redirect || '/home?message=Login successful!';
+                            } else {
+                                throw new Error(verification.error || 'Passkey verification failed on server.');
+                            }
+                        } catch (err) {
+                            console.error('Passkey login error:', err);
+                            let msg = err.message || 'Passkey verification failed.';
+                            if (err.name === 'NotAllowedError') {
+                                msg = 'Device prompt was cancelled or timed out. Click above to try again, or enter your device PIN/password when prompted.';
+                            }
+                            if (errText && errBox) {
+                                errText.textContent = msg;
+                                errBox.style.display = 'block';
+                            } else {
+                                alert(msg);
+                            }
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
                         }
-                        if (ArrayBuffer.isView(value)) {
-                            return bufferToBase64URLString(value.buffer);
-                        }
-                        return value;
                     });
-                };
-
-                document.getElementById('auth-passkey-btn').addEventListener('click', async () => {
-                    try {
-                        const resp = await fetch('/login/2fa/passkey/options');
-                        const options = await resp.json();
-                        const asseResp = await startAuthentication(options);
-                        
-                        const verificationResp = await fetch('/login/2fa/passkey/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: serializeAuthResponse(asseResp),
-                        });
-
-                        const verification = await verificationResp.json();
-                        if (verification.success) {
-                            window.location.href = verification.redirect;
-                        } else {
-                            alert('Passkey verification failed. Please try again.');
-                        }
-                    } catch (error) {
-                        console.error('Passkey login cancelled or failed:', error);
-                        alert('Passkey verification failed or was cancelled.');
-                    }
                 });
             </script>
+        <% } %>
+
+        <!-- ALTERNATIVE METHODS BOTTOM SWITCHER -->
+        <% if (typeof availableMethods !== 'undefined' && availableMethods && availableMethods.length > 1) { %>
+            <div class="alt-methods-container" style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.12);">
+                <p style="font-size: 0.82em; color: var(--silver); margin-bottom: 10px;">Or verify using another method:</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <% availableMethods.filter(m => m !== method).forEach(m => { %>
+                        <a href="/login/2fa?method=<%= m %>" class="alt-method-btn">
+                            <% if (m === 'email') { %>
+                                <i class="fas fa-envelope" style="color: var(--gold);"></i> Use Email Verification Code
+                            <% } else if (m === 'totp') { %>
+                                <i class="fas fa-mobile-alt" style="color: var(--blue);"></i> Use Authenticator App Code
+                            <% } else if (m === 'passkey') { %>
+                                <i class="fas fa-fingerprint" style="color: var(--gold);"></i> Use Passkey / Device PIN
+                            <% } else if (m === 'social') { %>
+                                <i class="fas fa-share-alt" style="color: #2ecc71;"></i> Verify with Social Account
+                            <% } %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
         <% } %>
         
         <!-- UNIVERSAL BACKUP CODE FALLBACK (Only for Social/Passkey, since TOTP/Email share the main input) -->

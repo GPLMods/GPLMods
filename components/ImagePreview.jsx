@@ -4,6 +4,7 @@ import { Box } from '@adminjs/design-system';
 const ImagePreview = (props) => {
     // We extract 'where' to know if we are in the 'list' view or 'show' view
     const { record, property, where } = props; 
+    if (!record || !record.params || !property) return null;
     const value = record.params[property.name];
 
     const [imageUrl, setImageUrl] = useState(null);
