@@ -13,27 +13,28 @@ const catchAsync = (fn) => (req, res, next) => {
 
 // Middleware: Strictly ensure owner authentication only on owner routes
 const ensureOwner = (req, res, next) => {
-    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
-        if (req.session) req.session.returnTo = req.originalUrl || '/owner';
-        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/owner'));
+    const isAuth = Boolean(req.isAuthenticated && typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user);
+    const role = (isAuth && req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
+
+    if (isAuth && role === 'owner') {
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
     }
-    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
-    if (role === 'owner') return next();
     
-    // Return 404 to hide the owner page from non-owners entirely
+    // Return 404 to hide the owner page from public & non-owners entirely
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || (req.path && req.path.startsWith('/api/'))) {
+        return res.status(404).json({ success: false, error: 'Not Found' });
+    }
     return res.status(404).render('pages/error', {
         errorCode: '404',
         errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: 'The page you are looking for does not exist.'
+        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
     });
 };
 
-// Apply owner protection only to /owner and /api/owner routes
+// Apply owner protection to all owner routes in this router
 router.use((req, res, next) => {
-    if (req.path === '/owner' || req.path.startsWith('/owner/') || req.path.startsWith('/api/owner')) {
-        return ensureOwner(req, res, next);
-    }
-    next();
+    return ensureOwner(req, res, next);
 });
 
 // ==========================================

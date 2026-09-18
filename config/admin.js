@@ -89,6 +89,12 @@ const deleteFromB2Admin = async (fileKey) => {
 };
 
 async function createAdminRouter() {
+    // Ensure AdminJS skips bundling user components on restart if .adminjs/bundle.js cache already exists
+    const bundlePath = path.join(process.cwd(), '.adminjs', 'bundle.js');
+    if (fs.existsSync(bundlePath)) {
+        process.env.ADMIN_JS_SKIP_BUNDLE = 'true';
+    }
+
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default || AdminJSModule;
     const ValidationError = AdminJS.ValidationError || AdminJSModule.ValidationError;

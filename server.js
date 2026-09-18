@@ -809,9 +809,6 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
-// ✅ NEW: Serve the pre-built AdminJS assets!
-app.use('/.adminjs', express.static(path.join(__dirname, '.adminjs')));
-
 // 2. Parsers (Crucial for AdminJS and login forms)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({
@@ -1543,6 +1540,18 @@ app.use((req, res, next) => {
 });
 
 // 8. Auth Helper Functions (Used by routes)
+function send404(req, res) {
+    res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || (req.path && req.path.startsWith('/api/'))) {
+        return res.status(404).json({ success: false, error: 'Not Found' });
+    }
+    return res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
+    });
+}
+
 function ensureAuthenticated(req, res, next) {
     if (typeof req.isAuthenticated === 'function' && req.isAuthenticated()) {
         // ✅ NEW: Tell browser NEVER to cache protected pages
@@ -1556,58 +1565,78 @@ function ensureAuthenticated(req, res, next) {
 }
 function ensureAdmin(req, res, next) {
     if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
-        if (req.session) req.session.returnTo = req.originalUrl || '/admin';
-        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
-    }
-    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
-    if (role === 'admin' || role === 'owner') return next();
-    
-    // Use the universal error template
-    res.status(404).render('pages/error', {
-        errorCode: '404',
-        errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: 'The page you are looking for does not exist.'
-    });
-}
-function ensureAdminOr404(req, res, next) {
-    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
-        if (req.session) req.session.returnTo = req.originalUrl || '/admin';
-        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/admin'));
+        return send404(req, res);
     }
     const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
     if (role === 'admin' || role === 'owner') {
         res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
         return next();
     }
-    return res.status(404).render('pages/error', {
-        errorCode: '404',
-        errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: 'The page you are looking for does not exist.'
-    });
+    return send404(req, res);
+}
+function ensureAdminOr404(req, res, next) {
+    return ensureAdmin(req, res, next);
 }
 function ensureSupportOrAdmin(req, res, next) {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'support' || req.user.role === 'owner')) return next();
-    res.status(403).render('pages/error', {
-        errorCode: '403',
-        errorTitle: 'Access <span>Denied</span>',
-        errorMessage: 'You do not have the necessary support or admin permissions to view this page.'
-    });
+    if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
+        return send404(req, res);
+    }
+    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
+    if (role === 'admin' || role === 'support' || role === 'owner') {
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
+    }
+    return send404(req, res);
 }
 function ensureOwner(req, res, next) {
     if (!req.isAuthenticated || typeof req.isAuthenticated !== 'function' || !req.isAuthenticated() || !req.user) {
-        if (req.session) req.session.returnTo = req.originalUrl || '/owner';
-        return res.redirect('/login?returnTo=' + encodeURIComponent(req.originalUrl || '/owner'));
+        return send404(req, res);
     }
-    const role = (req.user && req.user.role) ? req.user.role.toLowerCase() : '';
-    if (role === 'owner') return next();
-    
-    // Return 404 to hide the owner page from non-owners entirely
-    res.status(404).render('pages/error', {
-        errorCode: '404',
-        errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: 'The page you are looking for does not exist.'
-    });
+    const role = (req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
+    if (role === 'owner') {
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
+    }
+    return send404(req, res);
 }
+
+// =========================================================================
+// STEALTH ROUTE SHIELD: HIDE /admin, /owner, AND /.adminjs FROM THE PUBLIC
+// =========================================================================
+app.use((req, res, next) => {
+    const rawPath = (req.path || '').toLowerCase();
+    const isOwnerRoute = rawPath === '/owner' || rawPath.startsWith('/owner/') || rawPath.startsWith('/api/owner');
+    const isAdminRoute = rawPath === '/admin' || rawPath.startsWith('/admin/') || rawPath.startsWith('/api/admin') || rawPath === '/.adminjs' || rawPath.startsWith('/.adminjs');
+
+    if (!isOwnerRoute && !isAdminRoute) {
+        return next();
+    }
+
+    const isAuth = Boolean(typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user);
+    const userRole = isAuth && req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '';
+
+    if (isOwnerRoute) {
+        if (!isAuth || userRole !== 'owner') {
+            return send404(req, res);
+        }
+        return next();
+    }
+
+    if (isAdminRoute) {
+        // Special-case: /admin/support and support-related ping endpoints allow 'support'
+        const isSupportAllowed = rawPath === '/admin/support' || rawPath.startsWith('/api/admin/ai-');
+        if (isSupportAllowed && isAuth && (userRole === 'support' || userRole === 'admin' || userRole === 'owner')) {
+            return next();
+        }
+
+        if (!isAuth || (userRole !== 'admin' && userRole !== 'owner')) {
+            return send404(req, res);
+        }
+        return next();
+    }
+
+    next();
+});
 function redirectIfAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
         const returnTo = req.session && req.session.returnTo && !req.session.returnTo.includes('/login') && !req.session.returnTo.includes('/register') && !req.session.returnTo.includes('/logout') ? req.session.returnTo : '/';
@@ -1807,11 +1836,18 @@ passport.use(new MicrosoftStrategy({
 // ===============================
 
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
-app.get('/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/status', ensureAdmin, async (req, res) => {
     
-        // 1. Gather Basic Server Info
+    // 1. Gather Basic Server Info
     const memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
+
+    // Dynamically determine environment: 'development' if local, 'production' if running online
+    const reqHost = (req.hostname || req.get('host') || '').toLowerCase().split(':')[0];
+    const isLocalHost = reqHost === 'localhost' || reqHost === '127.0.0.1' || reqHost === '::1' || reqHost === '0.0.0.0' || reqHost.startsWith('192.168.') || reqHost.startsWith('10.');
+    const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+    const isOnline = isRender || (!isLocalHost && reqHost !== '');
+    const dynamicEnvironment = isOnline ? 'production' : 'development';
     
     const healthData = {
         status: 'UP',
@@ -1826,7 +1862,7 @@ app.get('/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
             systemTotal: totalMem,         // Server total RAM
             percentage: ((memUsage.rss / totalMem) * 100).toFixed(2) + '%'
         },
-        environment: process.env.NODE_ENV || 'development',
+        environment: dynamicEnvironment,
         services: {
             database: { status: 'UNKNOWN', details: null },
             storage: { status: 'UNKNOWN', details: null },
@@ -2668,7 +2704,7 @@ app.get('/api/music/playlist', async (req, res) => {
 });
 
 // Admin Music Management Page
-app.get('/admin/music', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/admin/music', ensureAdmin, async (req, res) => {
     try {
         const tracks = await getLocalAudioTracks();
         const state = await SiteState.findOne({ singletonId: 'master-state' });
@@ -2685,7 +2721,7 @@ app.get('/admin/music', ensureAuthenticated, ensureAdmin, async (req, res) => {
 });
 
 // Admin API: Get all tracks from public/audio with playlist metadata
-app.get('/api/admin/music/tracks', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/api/admin/music/tracks', ensureAdmin, async (req, res) => {
     try {
         const tracks = await getLocalAudioTracks();
         const state = await SiteState.findOne({ singletonId: 'master-state' });
@@ -2717,7 +2753,7 @@ app.get('/api/admin/music/tracks', ensureAuthenticated, ensureAdmin, async (req,
 });
 
 // Admin API: Upload new audio track to public/audio
-app.post('/api/admin/music/upload', ensureAuthenticated, ensureAdmin, (req, res) => {
+app.post('/api/admin/music/upload', ensureAdmin, (req, res) => {
     uploadAudioTrack.single('audioFile')(req, res, async (err) => {
         if (err) {
             return res.status(400).json({ success: false, error: err.message });
@@ -2743,7 +2779,7 @@ app.post('/api/admin/music/upload', ensureAuthenticated, ensureAdmin, (req, res)
 });
 
 // Admin API: Delete audio track from public/audio
-app.delete('/api/admin/music/track/:filename', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.delete('/api/admin/music/track/:filename', ensureAdmin, async (req, res) => {
     try {
         const rawFilename = path.basename(req.params.filename);
         const filePath = path.join(AUDIO_DIR, rawFilename);
@@ -2772,7 +2808,7 @@ app.delete('/api/admin/music/track/:filename', ensureAuthenticated, ensureAdmin,
     }
 });
 
-app.post('/api/admin/music/playlist', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/api/admin/music/playlist', ensureAdmin, async (req, res) => {
     try {
         const { playlist } = req.body;
         if (!Array.isArray(playlist)) {
@@ -2789,7 +2825,7 @@ app.post('/api/admin/music/playlist', ensureAuthenticated, ensureAdmin, async (r
     }
 });
 
-app.post('/api/admin/music/theme', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/api/admin/music/theme', ensureAdmin, async (req, res) => {
     try {
         const { fileId, themeMusic } = req.body;
         if (!fileId) return res.status(400).json({ success: false, error: 'File ID is required' });
@@ -2804,7 +2840,7 @@ app.post('/api/admin/music/theme', ensureAuthenticated, ensureAdmin, async (req,
 // ==========================================
 // EDITOR'S CHOICE COUNCIL MANAGEMENT ROUTES
 // ==========================================
-app.get('/admin/editors-choice', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/admin/editors-choice', ensureAdmin, async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true, isEditorsChoice: true };
 
@@ -2853,7 +2889,7 @@ app.get('/admin/editors-choice', ensureAuthenticated, ensureAdmin, async (req, r
     }
 });
 
-app.get('/api/admin/editors-choice/search', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/api/admin/editors-choice/search', ensureAdmin, async (req, res) => {
     try {
         const { platform, q } = req.query;
         if (!q || q.trim().length < 2) {
@@ -2901,7 +2937,7 @@ app.get('/api/admin/editors-choice/search', ensureAuthenticated, ensureAdmin, as
     }
 });
 
-app.post('/api/admin/editors-choice/toggle', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/api/admin/editors-choice/toggle', ensureAdmin, async (req, res) => {
     try {
         const { fileId, isEditorsChoice, description } = req.body;
         if (!fileId) return res.status(400).json({ success: false, message: 'File ID is required' });
@@ -8163,7 +8199,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
 // ===================================
 // 9.2 ADMIN: BULK INDEXNOW & GOOGLE SYNC
 // ===================================
-app.get('/api/admin/indexnow-sync', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
     try {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         let urlsToPing =[];
@@ -8944,7 +8980,7 @@ app.post('/files/:fileId/report', ensureAuthenticated, async (req, res) => {
 });
 
 // --- LIVE SUPPORT DASHBOARD ROUTE ---
-app.get('/admin/support', ensureAuthenticated, ensureSupportOrAdmin, async (req, res) => {
+app.get('/admin/support', ensureSupportOrAdmin, async (req, res) => {
     res.render('pages/admin/support-dashboard', {
         success: req.query.success || null,
         error: req.query.error || null,
@@ -8953,11 +8989,11 @@ app.get('/admin/support', ensureAuthenticated, ensureSupportOrAdmin, async (req,
 });
 
 // --- AI DIAGNOSTICS & DEBUGGER ROUTES ---
-app.get('/api/admin/ai-status', ensureAuthenticated, ensureSupportOrAdmin, (req, res) => {
+app.get('/api/admin/ai-status', ensureSupportOrAdmin, (req, res) => {
     res.json(aiDebuggerStatus);
 });
 
-app.post('/api/admin/ai-ping', ensureAuthenticated, ensureSupportOrAdmin, async (req, res) => {
+app.post('/api/admin/ai-ping', ensureSupportOrAdmin, async (req, res) => {
     const start = Date.now();
     try {
         if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
@@ -8992,7 +9028,7 @@ app.post('/api/admin/ai-ping', ensureAuthenticated, ensureSupportOrAdmin, async 
     }
 });
 // --- GEMINI VISIBILITY CONFIGURATION ROUTES ---
-app.get('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/api/admin/gemini-config', ensureAdmin, async (req, res) => {
     try {
         const state = await SiteState.findOne({ singletonId: 'master-state' });
         res.json({
@@ -9005,7 +9041,7 @@ app.get('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (req
     }
 });
 
-app.post('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/api/admin/gemini-config', ensureAdmin, async (req, res) => {
     try {
         const { enableGeminiChatbot, geminiHiddenPages } = req.body;
         let pagesArray = [];
@@ -9041,18 +9077,18 @@ app.post('/api/admin/gemini-config', ensureAuthenticated, ensureAdmin, async (re
     }
 });
 
-app.get('/admin/reports', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/admin/reports', ensureAdmin, async (req, res) => {
     const reports = await Report.find().populate('file').populate('reportingUser').sort({ status: 1, createdAt: -1 });
     res.render('pages/admin/reports', { reports });
 });
 
-app.post('/admin/reports/:reportId/status', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/admin/reports/:reportId/status', ensureAdmin, async (req, res) => {
     await Report.findByIdAndUpdate(req.params.reportId, { status: req.body.status });
     res.redirect('/admin/reports');
 });
 // --- NEW: Secure Signed URL Generator for AdminJS ---
 // Only accessible by Admins. Used by custom React components to view private images.
-app.get('/api/admin/signed-url', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.get('/api/admin/signed-url', ensureAdmin, async (req, res) => {
     try {
         const key = req.query.key;
         if (!key) {
@@ -9069,7 +9105,7 @@ app.get('/api/admin/signed-url', ensureAuthenticated, ensureAdmin, async (req, r
     }
 });
 
-app.post('/admin/reports/delete-file/:fileId', ensureAuthenticated, ensureAdmin, async (req, res) => {
+app.post('/admin/reports/delete-file/:fileId', ensureAdmin, async (req, res) => {
     await File.findByIdAndDelete(req.params.fileId);
     await Review.deleteMany({ file: req.params.fileId });
     await Report.updateMany({ file: req.params.fileId }, { status: 'resolved' });
@@ -12012,6 +12048,12 @@ const startServer = async () => {
                 res.redirect('/logout');
             }
         });
+
+        // Ensure AdminJS skips rebuilding components on restart if .adminjs cache exists
+        const adminBundlePath = path.join(__dirname, '.adminjs', 'bundle.js');
+        if (fs.existsSync(adminBundlePath)) {
+            process.env.ADMIN_JS_SKIP_BUNDLE = 'true';
+        }
 
         const adminRouter = await createAdminRouter();
         app.use('/admin', ensureAdminOr404, (req, res, next) => {
