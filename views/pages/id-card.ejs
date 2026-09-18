@@ -28,7 +28,8 @@
 
     /* --- GLASSMORPHISM & MACHINE TEXTURED CARD DESIGN --- */
     .id-card-wrapper {
-        width: 380px;
+        width: 100%;
+        max-width: 380px;
         min-height: 640px;
         position: relative;
         border-radius: 24px;
@@ -36,7 +37,7 @@
         box-shadow: 0 25px 55px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12);
         font-family: 'Poppins', sans-serif;
         background-color: #0d0e12;
-        margin-bottom: 40px;
+        margin: 0 auto 40px auto;
         box-sizing: border-box;
     }
     
@@ -74,8 +75,18 @@
     .card-logo { 
         font-size: 1.35em; 
         font-weight: 800; 
-        color: var(--gold); 
         letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .card-logo .logo-gold-glow {
+        color: var(--gold);
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.75), 0 0 20px rgba(255, 215, 0, 0.45);
+    }
+    .card-logo .logo-silver-glow {
+        color: #f0f4f8;
+        text-shadow: 0 0 10px rgba(220, 225, 235, 0.75), 0 0 18px rgba(180, 190, 205, 0.4);
     }
     .card-role-badge { 
         padding: 4px 12px; 
@@ -262,8 +273,7 @@
     .controls-panel input[type="url"],
     .controls-panel input[type="email"],
     .controls-panel input[type="tel"],
-    .controls-panel input[type="number"],
-    .controls-panel select {
+    .controls-panel input[type="number"] {
         width: 100%;
         padding: 12px 16px;
         background: linear-gradient(145deg, #1c1f26 0%, #111317 50%, #0a0b0e 100%);
@@ -281,6 +291,42 @@
         box-sizing: border-box;
     }
 
+    /* Custom Machined Dropdown Texture with Metallic Gold Indicator */
+    .controls-panel select {
+        width: 100%;
+        padding: 12px 38px 12px 16px;
+        background-color: #14171d;
+        background-image: 
+            linear-gradient(45deg, transparent 50%, var(--gold) 50%),
+            linear-gradient(135deg, var(--gold) 50%, transparent 50%),
+            linear-gradient(145deg, #1c1f26 0%, #111317 50%, #0a0b0e 100%);
+        background-position: 
+            calc(100% - 20px) calc(1em + 2px),
+            calc(100% - 14px) calc(1em + 2px),
+            center;
+        background-size: 
+            6px 6px,
+            6px 6px,
+            100% 100%;
+        background-repeat: no-repeat;
+        color: #e6e6e6;
+        border: 1.5px solid #333842;
+        border-radius: 10px;
+        outline: none;
+        font-family: 'Poppins', sans-serif;
+        font-size: 0.92em;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.8),
+            inset 0 1px 1px rgba(255, 255, 255, 0.06),
+            0 2px 6px rgba(0, 0, 0, 0.5);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        box-sizing: border-box;
+    }
+
     .controls-panel input:focus,
     .controls-panel select:focus {
         border-color: var(--gold, #FFD700);
@@ -288,6 +334,63 @@
             0 0 15px rgba(255, 215, 0, 0.35),
             inset 0 2px 4px rgba(0, 0, 0, 0.7);
         color: #ffffff;
+    }
+
+    .controls-panel select option {
+        background-color: #111318;
+        color: #f0f0f0;
+        padding: 10px;
+    }
+
+    /* Responsive Grid Layouts for Brand & Social Rows */
+    .brand-platform-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    .social-input-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 10px;
+        margin-bottom: 12px;
+        align-items: center;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 640px) {
+        .id-card-page {
+            padding: 20px 12px 60px 12px;
+        }
+        .page-title h1 {
+            font-size: 2.1em;
+        }
+        .id-card-wrapper {
+            max-width: 350px;
+            min-height: 600px;
+        }
+        .id-card-content {
+            padding: 20px 16px 18px 16px;
+        }
+        .controls-panel {
+            padding: 20px 14px;
+            border-radius: 14px;
+        }
+        .brand-platform-grid {
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        .social-input-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .action-buttons {
+            gap: 10px;
+        }
+        .btn-mode, .btn-download {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
     }
 
     .section-box {
@@ -453,7 +556,7 @@
         <div class="id-card-bg"></div>
         <div class="id-card-content">
             <div class="card-header-top">
-                <span class="card-logo">GPL<span style="color: white;">Mods</span></span>
+                <span class="card-logo"><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></span>
                 <%
                     let roleBg = 'var(--blue)';
                     let roleShadow = 'rgba(33, 150, 243, 0.5)';
@@ -483,21 +586,75 @@
             
             <h2 class="card-name"><%= cardUser.username %></h2>
             
+            <%
+                function resolveCountryDisplay(rawCode) {
+                    if (!rawCode || rawCode === 'Global' || rawCode === 'GLOBAL') {
+                        return { name: 'Global', flag: '🌍' };
+                    }
+                    const map = {
+                        'IN': { name: 'India', flag: '🇮🇳' },
+                        'US': { name: 'United States', flag: '🇺🇸' },
+                        'GB': { name: 'United Kingdom', flag: '🇬🇧' },
+                        'CA': { name: 'Canada', flag: '🇨🇦' },
+                        'AU': { name: 'Australia', flag: '🇦🇺' },
+                        'DE': { name: 'Germany', flag: '🇩🇪' },
+                        'FR': { name: 'France', flag: '🇫🇷' },
+                        'BR': { name: 'Brazil', flag: '🇧🇷' },
+                        'ID': { name: 'Indonesia', flag: '🇮🇩' },
+                        'RU': { name: 'Russia', flag: '🇷🇺' },
+                        'IT': { name: 'Italy', flag: '🇮🇹' },
+                        'ES': { name: 'Spain', flag: '🇪🇸' },
+                        'NL': { name: 'Netherlands', flag: '🇳🇱' },
+                        'JP': { name: 'Japan', flag: '🇯🇵' },
+                        'CN': { name: 'China', flag: '🇨🇳' },
+                        'PK': { name: 'Pakistan', flag: '🇵🇰' },
+                        'BD': { name: 'Bangladesh', flag: '🇧🇩' },
+                        'PH': { name: 'Philippines', flag: '🇵🇭' },
+                        'VN': { name: 'Vietnam', flag: '🇻🇳' },
+                        'TR': { name: 'Turkey', flag: '🇹🇷' },
+                        'SA': { name: 'Saudi Arabia', flag: '🇸🇦' },
+                        'AE': { name: 'United Arab Emirates', flag: '🇦🇪' },
+                        'EG': { name: 'Egypt', flag: '🇪🇬' },
+                        'ZA': { name: 'South Africa', flag: '🇿🇦' },
+                        'NG': { name: 'Nigeria', flag: '🇳🇬' },
+                        'MX': { name: 'Mexico', flag: '🇲🇽' },
+                        'AR': { name: 'Argentina', flag: '🇦🇷' },
+                        'KR': { name: 'South Korea', flag: '🇰🇷' },
+                        'SE': { name: 'Sweden', flag: '🇸🇪' },
+                        'PL': { name: 'Poland', flag: '🇵🇱' },
+                        'UA': { name: 'Ukraine', flag: '🇺🇦' },
+                        'TH': { name: 'Thailand', flag: '🇹🇭' },
+                        'MY': { name: 'Malaysia', flag: '🇲🇾' },
+                        'SG': { name: 'Singapore', flag: '🇸🇬' },
+                        'NZ': { name: 'New Zealand', flag: '🇳🇿' },
+                        'CH': { name: 'Switzerland', flag: '🇨🇭' },
+                        'AT': { name: 'Austria', flag: '🇦🇹' },
+                        'BE': { name: 'Belgium', flag: '🇧🇪' },
+                        'PT': { name: 'Portugal', flag: '🇵🇹' },
+                        'NO': { name: 'Norway', flag: '🇳🇴' },
+                        'DK': { name: 'Denmark', flag: '🇩🇰' },
+                        'FI': { name: 'Finland', flag: '🇫🇮' },
+                        'IE': { name: 'Ireland', flag: '🇮🇪' },
+                        'IL': { name: 'Israel', flag: '🇮🇱' }
+                    };
+                    const codeUpper = String(rawCode).trim().toUpperCase();
+                    if (map[codeUpper]) return map[codeUpper];
+                    let resolvedName = rawCode;
+                    try {
+                        if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+                            resolvedName = new Intl.DisplayNames(['en'], { type: 'region' }).of(codeUpper) || rawCode;
+                        }
+                    } catch (e) {}
+                    let flagEmoji = '🌍';
+                    if (codeUpper.length === 2 && /^[A-Z]{2}$/.test(codeUpper)) {
+                        flagEmoji = String.fromCodePoint(...[...codeUpper].map(c => 127397 + c.charCodeAt(0)));
+                    }
+                    return { name: resolvedName, flag: flagEmoji };
+                }
+                const countryInfo = resolveCountryDisplay(cardUser.country);
+            %>
             <div class="card-country">
-                <% 
-                    let flag = '🌍';
-                    if(cardUser.country === 'US') flag = '🇺🇸';
-                    else if(cardUser.country === 'IN') flag = '🇮🇳';
-                    else if(cardUser.country === 'GB') flag = '🇬🇧';
-                    else if(cardUser.country === 'BR') flag = '🇧🇷';
-                    else if(cardUser.country === 'ID') flag = '🇮🇩';
-                    else if(cardUser.country === 'RU') flag = '🇷🇺';
-                    else if(cardUser.country === 'DE') flag = '🇩🇪';
-                    else if(cardUser.country === 'FR') flag = '🇫🇷';
-                    else if(cardUser.country === 'CA') flag = '🇨🇦';
-                    else if(cardUser.country === 'AU') flag = '🇦🇺';
-                %>
-                <%= flag %> <%= cardUser.country || 'Global' %>
+                <%= countryInfo.flag %> <%= countryInfo.name %>
             </div>
 
             <!-- Contact Meta Row (Email, Phone, Age) -->
@@ -609,7 +766,7 @@
                 <div class="section-title">
                     <i class="fas fa-award"></i> Brand & Collaboration Identity
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="brand-platform-grid">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Your Brand Name</label>
                         <input type="text" id="brandNameInput" name="brandName" value="<%= custom.brandName || '' %>" placeholder="e.g., Arun Mods" maxlength="50">
@@ -729,7 +886,7 @@
                         const s3 = socials[2] || { platform: 'youtube', handleOrUrl: '' };
                     %>
                     <!-- Social Slot 1 -->
-                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 12px; align-items: center;">
+                    <div class="social-input-row">
                         <select name="social1_platform" id="social1Plat">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s1.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
@@ -739,7 +896,7 @@
                     </div>
 
                     <!-- Social Slot 2 -->
-                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 12px; align-items: center;">
+                    <div class="social-input-row">
                         <select name="social2_platform" id="social2Plat">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s2.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
@@ -749,7 +906,7 @@
                     </div>
 
                     <!-- Social Slot 3 -->
-                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 4px; align-items: center;">
+                    <div class="social-input-row" style="margin-bottom: 4px;">
                         <select name="social3_platform" id="social3Plat">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s3.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>

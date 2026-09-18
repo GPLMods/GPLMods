@@ -33,80 +33,246 @@
     </script>
     <section class="hero"></section>
 
-    <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->    <!-- ======== SEPARATED EDITOR'S CHOICE COUNCILS ======== -->
+    <!-- ======== STYLES FOR COUNCIL MOD-CARD UI & PLATFORM TAGS ======== -->
+    <style>
+        .council-featured-section .featured-card {
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        .council-featured-section .featured-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--gold);
+            box-shadow: 0 14px 35px rgba(255, 215, 0, 0.18), 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .council-featured-section .featured-card:active {
+            transform: scale(0.99);
+        }
+        .council-featured-section .featured-icon-wrapper {
+            transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+        .council-featured-section .featured-card:hover .featured-icon-wrapper {
+            transform: scale(1.04);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(255, 215, 0, 0.25);
+        }
+        .council-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0 12px 0;
+            flex-wrap: wrap;
+        }
+        .mod-stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.82em;
+            color: var(--silver);
+            font-weight: 500;
+        }
+        .platform-tag {
+            font-size: 0.72em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .platform-tag-android { background: rgba(61, 220, 132, 0.15); color: #3ddc84; border: 1px solid rgba(61, 220, 132, 0.35); }
+        .platform-tag-ios { background: rgba(0, 122, 255, 0.15); color: #60a5fa; border: 1px solid rgba(0, 122, 255, 0.35); }
+        .platform-tag-wordpress { background: rgba(33, 117, 155, 0.18); color: #38bdf8; border: 1px solid rgba(33, 117, 155, 0.4); }
+        .platform-tag-windows { background: rgba(0, 164, 239, 0.15); color: #38bdf8; border: 1px solid rgba(0, 164, 239, 0.35); }
+        .platform-tag-global { background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.35); }
+    </style>
+
+    <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
     <% 
+        const isGlobal = (typeof globalCouncil !== 'undefined' && globalCouncil);
         const councilsObj = (typeof editorsChoiceByCouncil !== 'undefined' && editorsChoiceByCouncil) ? editorsChoiceByCouncil : {
             android: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'android') : [],
             ios: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category && m.category.startsWith('ios')) : [],
             wordpress: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'wordpress') : [],
             windows: typeof editorsChoiceMods !== 'undefined' ? editorsChoiceMods.filter(m => m.category === 'windows') : []
         };
+        const allCouncilMods = (typeof editorsChoiceMods !== 'undefined' && editorsChoiceMods && editorsChoiceMods.length > 0) ? editorsChoiceMods : [
+            ...(councilsObj.android || []),
+            ...(councilsObj.ios || []),
+            ...(councilsObj.wordpress || []),
+            ...(councilsObj.windows || [])
+        ];
+        const platformLabels = {
+            android: 'Android',
+            ios: 'iOS',
+            'ios-jailed': 'iOS',
+            'ios-jailbroken': 'iOS',
+            wordpress: 'WordPress',
+            windows: 'Windows'
+        };
+        const getPlatformLabel = (cat) => {
+            if (!cat) return 'Global';
+            const clean = cat.toLowerCase().split('-')[0];
+            return platformLabels[clean] || platformLabels[cat] || (clean.charAt(0).toUpperCase() + clean.slice(1));
+        };
+        const getPlatformClass = (cat) => {
+            if (!cat) return 'global';
+            if (cat.startsWith('ios')) return 'ios';
+            return cat.toLowerCase();
+        };
     %>
 
-    <% ['android', 'ios', 'wordpress', 'windows'].forEach((platformName, pIdx) => { 
-        const councilMods = councilsObj[platformName] || [];
-        if (councilMods.length > 0) { 
-    %>
-        <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" style="<%= pIdx === 0 ? '' : 'display: none;' %>">
-            <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="">
+    <% if (isGlobal) { %>
+        <% if (allCouncilMods.length > 0) { %>
+            <section class="featured-section council-featured-section" id="featured-council-global">
+                <img src="<%= allCouncilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-global" alt="">
 
-            <div class="container" style="position: relative;">
-                <div class="featured-carousel" id="featured-carousel-<%= platformName %>">
-                    <% councilMods.forEach((mod, index)=> { %>
-                        <div class="featured-card" id="featured-slide-<%= platformName %>-<%= index %>">
-                            <div class="featured-icon-wrapper">
-                                <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
-                            </div>
-                            <div class="featured-content">
-                                <h2><%= platformName.toUpperCase() %> Council: <span><%= mod.name %></span></h2>
+                <div class="container" style="position: relative;">
+                    <div class="featured-carousel" id="featured-carousel-global">
+                        <% allCouncilMods.forEach((mod, index) => { 
+                            const platLabel = getPlatformLabel(mod.category);
+                            const platClass = getPlatformClass(mod.category);
+                        %>
+                            <div class="featured-card" id="featured-slide-global-<%= index %>">
+                                <div class="featured-icon-wrapper">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                                </div>
+                                <div class="featured-content">
+                                    <h2>Editor Choice For <%= platLabel %>: <span><%= mod.name %></span></h2>
 
-                                <!-- Smart Description Logic -->
-                                <% let desc = mod.editorsChoiceDescription; if (!desc || desc.trim() === '') {
-                                    desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification."; 
-                                } %>
-                                <p><%- desc %></p>
+                                    <div class="council-meta-row">
+                                        <span class="platform-tag platform-tag-<%= platClass %>"><%= platLabel %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-eye" style="color: #60a5fa;"></i> <%= (mod.views || 0).toLocaleString() %> Views</span>
+                                        <span class="mod-stat-pill"><i class="fas fa-star" style="color: #fbbf24;"></i> <%= (mod.averageRating || 5.0).toFixed(1) %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-download" style="color: #34d399;"></i> <%= (mod.downloads || 0).toLocaleString() %></span>
+                                    </div>
 
-                                <div class="featured-buttons">
-                                    <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>
-                                    <a href="/mods/<%= mod.category %>/<%= councilModSlug %>" class="featured-button btn-primary">Know More</a>
+                                    <!-- Smart Description Logic -->
+                                    <% let desc = mod.editorsChoiceDescription; if (!desc || desc.trim() === '') {
+                                        desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification."; 
+                                    } %>
+                                    <p><%- desc %></p>
 
-                                    <% if (typeof user !=='undefined' && user && user.whitelist) { %>
-                                        <% const isWhitelisted = user.whitelist.some(w => w.toString() === mod._id.toString() || (w._id && w._id.toString() === mod._id.toString())); %>
-                                        <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
-                                            <input type="hidden" name="redirectUrl" value="back">
-                                            <% if (isWhitelisted) { %>
-                                                <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
-                                                    <i class="fas fa-heart-broken"></i> Remove Wishlist
-                                                </button>
-                                            <% } else { %>
-                                                <button type="submit" class="featured-button btn-secondary">
-                                                    <i class="fas fa-heart"></i> Add Wishlist
-                                                </button>
-                                            <% } %>
-                                        </form>
-                                    <% } else { %>
-                                        <a href="/login" class="featured-button btn-secondary">
-                                            <i class="fas fa-heart"></i> Login to Wishlist
-                                        </a>
-                                    <% } %>
+                                    <div class="featured-buttons">
+                                        <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>
+                                        <a href="/mods/<%= mod.category %>/<%= councilModSlug %>" class="featured-button btn-primary">Know More</a>
+
+                                        <% if (typeof user !=='undefined' && user && user.whitelist) { %>
+                                            <% const isWhitelisted = user.whitelist.some(w => w.toString() === mod._id.toString() || (w._id && w._id.toString() === mod._id.toString())); %>
+                                            <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
+                                                <input type="hidden" name="redirectUrl" value="back">
+                                                <% if (isWhitelisted) { %>
+                                                    <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
+                                                        <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="submit" class="featured-button btn-secondary">
+                                                        <i class="fas fa-heart"></i> Add Wishlist
+                                                    </button>
+                                                <% } %>
+                                            </form>
+                                        <% } else { %>
+                                            <a href="/login" class="featured-button btn-secondary">
+                                                <i class="fas fa-heart"></i> Login to Wishlist
+                                            </a>
+                                        <% } %>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    <% }) %>
-                </div>
-
-                <!-- Carousel Dots -->
-                <% if (councilMods.length > 1) { %>
-                    <div class="carousel-dots" id="dots-<%= platformName %>">
-                        <% councilMods.forEach((_, index)=> { %>
-                            <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollCouncilSlide('<%= platformName %>', <%= index %>)"></div>
                         <% }) %>
                     </div>
-                <% } %>
-            </div>
-        </section>
-    <%  } 
-    }); %>
+
+                    <!-- Carousel Dots -->
+                    <% if (allCouncilMods.length > 1) { %>
+                        <div class="carousel-dots" id="dots-global">
+                            <% allCouncilMods.forEach((_, index) => { %>
+                                <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollCouncilSlide('global', <%= index %>)"></div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+        <% } %>
+    <% } else { %>
+        <% ['android', 'ios', 'wordpress', 'windows'].forEach((platformName, pIdx) => { 
+            const councilMods = councilsObj[platformName] || [];
+            const platLabel = platformLabels[platformName] || (platformName.charAt(0).toUpperCase() + platformName.slice(1));
+            if (councilMods.length > 0) { 
+        %>
+            <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" style="<%= pIdx === 0 ? '' : 'display: none;' %>">
+                <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="">
+
+                <div class="container" style="position: relative;">
+                    <div class="featured-carousel" id="featured-carousel-<%= platformName %>">
+                        <% councilMods.forEach((mod, index)=> { %>
+                            <div class="featured-card" id="featured-slide-<%= platformName %>-<%= index %>">
+                                <div class="featured-icon-wrapper">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                                </div>
+                                <div class="featured-content">
+                                    <h2>Editor Choice For <%= platLabel %>: <span><%= mod.name %></span></h2>
+
+                                    <div class="council-meta-row">
+                                        <span class="platform-tag platform-tag-<%= platformName %>"><%= platLabel %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-eye" style="color: #60a5fa;"></i> <%= (mod.views || 0).toLocaleString() %> Views</span>
+                                        <span class="mod-stat-pill"><i class="fas fa-star" style="color: #fbbf24;"></i> <%= (mod.averageRating || 5.0).toFixed(1) %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-download" style="color: #34d399;"></i> <%= (mod.downloads || 0).toLocaleString() %></span>
+                                    </div>
+
+                                    <!-- Smart Description Logic -->
+                                    <% let desc = mod.editorsChoiceDescription; if (!desc || desc.trim() === '') {
+                                        desc = mod.modDescription || mod.officialDescription || "An excellent, highly-rated modification."; 
+                                    } %>
+                                    <p><%- desc %></p>
+
+                                    <div class="featured-buttons">
+                                        <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>
+                                        <a href="/mods/<%= mod.category %>/<%= councilModSlug %>" class="featured-button btn-primary">Know More</a>
+
+                                        <% if (typeof user !=='undefined' && user && user.whitelist) { %>
+                                            <% const isWhitelisted = user.whitelist.some(w => w.toString() === mod._id.toString() || (w._id && w._id.toString() === mod._id.toString())); %>
+                                            <form action="/files/<%= mod._id %>/whitelist" method="POST" style="margin: 0;">
+                                                <input type="hidden" name="redirectUrl" value="back">
+                                                <% if (isWhitelisted) { %>
+                                                    <button type="submit" class="featured-button btn-secondary" style="color: var(--red); border-color: var(--red);">
+                                                        <i class="fas fa-heart-broken"></i> Remove Wishlist
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="submit" class="featured-button btn-secondary">
+                                                        <i class="fas fa-heart"></i> Add Wishlist
+                                                    </button>
+                                                <% } %>
+                                            </form>
+                                        <% } else { %>
+                                            <a href="/login" class="featured-button btn-secondary">
+                                                <i class="fas fa-heart"></i> Login to Wishlist
+                                            </a>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+
+                    <!-- Carousel Dots -->
+                    <% if (councilMods.length > 1) { %>
+                        <div class="carousel-dots" id="dots-<%= platformName %>">
+                            <% councilMods.forEach((_, index)=> { %>
+                                <div class="dot <%= index === 0 ? 'active' : '' %>" onclick="scrollCouncilSlide('<%= platformName %>', <%= index %>)"></div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+        <%  } 
+        }); %>
+    <% } %>
     <!-- ============================================== -->
 
     <div class="container" id="mods-container">
@@ -314,6 +480,11 @@
 
                 // Global Council Carousel Handlers
                 window.switchFeaturedCouncil = function(platform) {
+                    const globalCouncil = document.getElementById('featured-council-global');
+                    if (globalCouncil) {
+                        // Global Council mode is enabled: keep unified showcase active
+                        return;
+                    }
                     document.querySelectorAll('.council-featured-section').forEach(sec => {
                         sec.style.display = 'none';
                     });

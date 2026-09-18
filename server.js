@@ -1348,6 +1348,7 @@ app.use(async (req, res, next) => {
         // 1. ======== BASIC LOCALS & HELPERS ========
         res.locals.user = req.user || null;
         res.locals.hideAdultContent = shouldHideAdultContent(req.user);
+        res.locals.globalCouncil = req.user ? !!req.user.globalCouncil : false;
         res.locals.timeAgo = timeAgo;
         res.locals.formatCompactNumber = formatCompactNumber;
         res.locals.formatBytes = formatBytes;
@@ -2877,6 +2878,8 @@ app.get('/api/admin/editors-choice/search', ensureAuthenticated, ensureAdmin, as
                 name: mod.name,
                 category: mod.category,
                 downloads: mod.downloads,
+                views: mod.views || 0,
+                averageRating: mod.averageRating || 5.0,
                 iconUrl: signedIconUrl
             };
         }));
@@ -3233,7 +3236,8 @@ app.get('/category', async (req, res, next) => {
         
         // --- Platform-Specific Editor's Choice Council ---
         let editorQuery = { isLatestVersion: true, status: 'live', isEditorsChoice: true };
-        if (queryFilter.category) {
+        const userGlobalCouncil = req.user && req.user.globalCouncil;
+        if (queryFilter.category && !userGlobalCouncil) {
             editorQuery.category = queryFilter.category;
         }
         
@@ -5266,6 +5270,17 @@ app.post('/settings/adult-content', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Adult-content preference error:', error);
         res.redirect('/settings?error=Unable to update adult-content preference.');
+    }
+});
+
+app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
+    try {
+        const globalCouncil = req.body.globalCouncil === 'on' || req.body.globalCouncil === 'true' || req.body.globalCouncil === true;
+        await User.findByIdAndUpdate(req.user._id, { globalCouncil });
+        res.redirect('/settings?success=Global Council preference updated.');
+    } catch (error) {
+        console.error('Global Council preference error:', error);
+        res.redirect('/settings?error=Unable to update Global Council preference.');
     }
 });
 

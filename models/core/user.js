@@ -180,6 +180,10 @@ const UserSchema = new Schema({
         type: Boolean,
         default: undefined
     },
+    globalCouncil: {
+        type: Boolean,
+        default: false
+    },
     failedLoginAttempts: {
         type: Number,
         default: 0

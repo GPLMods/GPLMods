@@ -101,6 +101,19 @@
 
         <div class="settings-section">
             <div class="settings-info">
+                <h3><i class="fas fa-globe" style="color: var(--gold);"></i> Global Council</h3>
+                <p>When enabled, Editor's Choice Council showcases top mods across all platforms combined instead of filtering by a single platform.</p>
+            </div>
+            <form action="/settings/global-council" method="POST" style="margin: 0;">
+                <label class="switch">
+                    <input type="checkbox" name="globalCouncil" onchange="this.form.submit()" <%= user.globalCouncil ? 'checked' : '' %>>
+                    <span class="slider round"></span>
+                </label>
+            </form>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-info">
                 <h3><i class="fas fa-shield-alt" style="color: var(--red);"></i> Failed Login Alerts</h3>
                 <p>Receive an email after five incorrect password attempts on your account.</p>
             </div>

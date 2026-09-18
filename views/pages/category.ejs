@@ -184,6 +184,64 @@
         </section>
         <!-- ======== NEW: EDITOR'S CHOICE SECTION ======== -->
         <% if (typeof editorsChoiceMods !=='undefined' && editorsChoiceMods.length> 0) { %>
+            <style>
+                .featured-section .featured-card {
+                    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    position: relative;
+                }
+                .featured-section .featured-card:hover {
+                    transform: translateY(-6px);
+                    border-color: var(--gold);
+                    box-shadow: 0 14px 35px rgba(255, 215, 0, 0.18), 0 0 20px rgba(0, 0, 0, 0.8);
+                }
+                .featured-section .featured-card:active {
+                    transform: scale(0.99);
+                }
+                .featured-section .featured-icon-wrapper {
+                    transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+                }
+                .featured-section .featured-card:hover .featured-icon-wrapper {
+                    transform: scale(1.04);
+                    border-color: rgba(255, 215, 0, 0.5);
+                    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.25);
+                }
+                .council-meta-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin: 8px 0 12px 0;
+                    flex-wrap: wrap;
+                }
+                .mod-stat-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    font-size: 0.82em;
+                    color: var(--silver);
+                    font-weight: 500;
+                }
+                .platform-tag {
+                    font-size: 0.72em;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.8px;
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+                .platform-tag-android { background: rgba(61, 220, 132, 0.15); color: #3ddc84; border: 1px solid rgba(61, 220, 132, 0.35); }
+                .platform-tag-ios { background: rgba(0, 122, 255, 0.15); color: #60a5fa; border: 1px solid rgba(0, 122, 255, 0.35); }
+                .platform-tag-wordpress { background: rgba(33, 117, 155, 0.18); color: #38bdf8; border: 1px solid rgba(33, 117, 155, 0.4); }
+                .platform-tag-windows { background: rgba(0, 164, 239, 0.15); color: #38bdf8; border: 1px solid rgba(0, 164, 239, 0.35); }
+                .platform-tag-global { background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.35); }
+            </style>
             <section class="featured-section">
                 <!-- We use the icon of the first featured mod as the blurred background -->
                 <img src="<%= editorsChoiceMods[0].iconUrl %>" class="featured-bg-image" alt="">
@@ -196,14 +254,33 @@
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                                 </div>
                                 <div class="featured-content">
+                                    <% 
+                                        const modCat = (mod.category || '').toLowerCase();
+                                        const platformLabels = {
+                                            android: 'Android',
+                                            ios: 'iOS',
+                                            'ios-jailed': 'iOS',
+                                            'ios-jailbroken': 'iOS',
+                                            wordpress: 'WordPress',
+                                            windows: 'Windows'
+                                        };
+                                        const cleanCat = modCat.split('-')[0];
+                                        const modPlatformLabel = platformLabels[cleanCat] || platformLabels[modCat] || (cleanCat ? cleanCat.charAt(0).toUpperCase() + cleanCat.slice(1) : 'Global');
+                                        const displayPlatform = (typeof currentPlatform !== 'undefined' && currentPlatform && currentPlatform !== 'all') 
+                                            ? (platformLabels[currentPlatform.toLowerCase()] || currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1)) 
+                                            : modPlatformLabel;
+                                    %>
                                     <h2>
-                                        <% if (typeof currentPlatform !== 'undefined' && currentPlatform && currentPlatform !== 'all') { %>
-                                            <%= currentPlatform.toUpperCase() %> Council:
-                                        <% } else { %>
-                                            Editor's Choice Council:
-                                        <% } %>
+                                        Editor Choice For <%= displayPlatform %>:
                                         <span><%= mod.name %></span>
                                     </h2>
+
+                                    <div class="council-meta-row">
+                                        <span class="platform-tag platform-tag-<%= cleanCat || 'global' %>"><%= modPlatformLabel %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-eye" style="color: #60a5fa;"></i> <%= (mod.views || 0).toLocaleString() %> Views</span>
+                                        <span class="mod-stat-pill"><i class="fas fa-star" style="color: #fbbf24;"></i> <%= (mod.averageRating || 5.0).toFixed(1) %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-download" style="color: #34d399;"></i> <%= (mod.downloads || 0).toLocaleString() %></span>
+                                    </div>
 
                                     <!-- Smart Description Logic -->
                                     <% let desc=mod.editorsChoiceDescription; if (!desc || desc.trim()==='' ) {

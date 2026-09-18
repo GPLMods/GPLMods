@@ -547,7 +547,7 @@
         <div class="container header-content">
             
             <!-- Grid Area: Logo -->
-            <a href="<%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? '#' : (user ? '/home' : '/') %>" class="logo" <%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? 'style="pointer-events: none;"' : '' %>>GPL <span>Mods</span></a>
+            <a href="<%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? '#' : (user ? '/home' : '/') %>" class="logo" <%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? 'style="pointer-events: none;"' : '' %>><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></a>
             
             <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
             <!-- Grid Area: Search Bar -->
@@ -664,7 +664,7 @@
             <a href="<%= user ? '/home' : '/' %>" style="display: flex; align-items: center; gap: 10px; text-decoration: none !important;">
                 <img src="/images/team-logo.png" alt="GPL Mods Logo" style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.35); flex-shrink: 0;">
                 <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 1.25em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); line-height: 1.1;">GPL <span style="color: var(--silver, #c0c0c0) !important; text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);">Mods</span></span>
+                    <span style="font-size: 1.25em; font-weight: 700; line-height: 1.1;"><span class="logo-gold-glow" style="color: var(--gold); text-shadow: 0 0 12px rgba(255, 215, 0, 0.75), 0 0 25px rgba(255, 215, 0, 0.45);">GPL</span> <span class="logo-silver-glow" style="color: #f0f4f8 !important; text-shadow: 0 0 12px rgba(220, 225, 235, 0.75), 0 0 20px rgba(180, 190, 205, 0.45);">Mods</span></span>
                     <span style="font-size: 0.65em; color: var(--silver); letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">100% Safe &amp; Working</span>
                 </div>
             </a>

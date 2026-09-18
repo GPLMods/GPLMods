@@ -1211,7 +1211,37 @@ a.overlay-btn-primary:hover {
 /* --- New  Styles For Catagory Page --- */
 
         /* Header & Nav */
-        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-decoration: none; }
+        .logo { 
+            font-size: 1.8em; 
+            font-weight: 800; 
+            color: var(--gold); 
+            text-decoration: none; 
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .logo .logo-gold-glow,
+        .logo-gold-glow {
+            color: var(--gold);
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.75), 0 0 25px rgba(255, 215, 0, 0.45);
+            transition: text-shadow 0.3s ease;
+        }
+        .logo .logo-silver-glow,
+        .logo-silver-glow,
+        .logo span {
+            color: var(--silver, #e0e6ed);
+            text-shadow: 0 0 12px rgba(220, 225, 235, 0.75), 0 0 20px rgba(180, 190, 205, 0.45);
+            transition: text-shadow 0.3s ease;
+        }
+        .logo:hover .logo-gold-glow {
+            text-shadow: 0 0 18px rgba(255, 215, 0, 0.95), 0 0 35px rgba(255, 215, 0, 0.65);
+        }
+        .logo:hover .logo-silver-glow,
+        .logo:hover span {
+            text-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 28px rgba(200, 215, 235, 0.65);
+        }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
         

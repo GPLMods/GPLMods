@@ -87,32 +87,66 @@
     .search-result-item:last-child { border-bottom: none; }
     .search-result-item:hover { background: #222; }
 
-    /* App Cards Grid */
+    /* App Cards Grid & Mod Card Styling */
     .council-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
     .council-card {
-        background: #181818;
-        border: 1px solid #333;
-        border-radius: 12px;
+        background: linear-gradient(145deg, #18191f 0%, #121317 100%);
+        border: 1px solid #2d313a;
+        border-radius: 14px;
         padding: 20px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
         position: relative;
-        transition: all 0.25s ease;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     }
-    .council-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+    .council-card:hover {
+        border-color: var(--gold);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 0 22px rgba(255, 215, 0, 0.25);
+    }
     .council-card-top { display: flex; align-items: center; gap: 15px; }
-    .council-card-icon { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid #333; }
-    .council-card-title { margin: 0; font-size: 1.1em; color: var(--white); }
-    .council-card-sub { font-size: 0.8em; color: var(--silver); margin-top: 3px; }
+    .council-card-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 1.5px solid rgba(255,255,255,0.12);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        flex-shrink: 0;
+    }
+    .council-card-title { margin: 0; font-size: 1.15em; color: var(--white); font-weight: 700; }
+    .council-card-sub { font-size: 0.82em; color: var(--silver); margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    
+    /* Vibrant Platform Tags */
+    .platform-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72em;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        color: #000;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    }
+    .platform-tag.android { background-color: var(--android-color, #A4C639); color: #000; }
+    .platform-tag.ios-jailed, .platform-tag.ios-ipa { background-color: #FFFFFF; color: #000; }
+    .platform-tag.ios-jailbroken, .platform-tag.ios-deb { background-color: #FF9800; color: #000; }
+    .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: #FFF; }
+    .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: #FFF; }
+    
     .council-desc-box {
-        background: #111;
-        border: 1px solid #282828;
+        background: #0f1013;
+        border: 1px solid #23252d;
         border-radius: 8px;
-        padding: 10px;
+        padding: 12px;
         color: #ccc;
         font-size: 0.85em;
-        line-height: 1.4;
+        line-height: 1.45;
         font-style: italic;
     }
     .council-card-actions { display: flex; gap: 10px; margin-top: auto; }
@@ -193,9 +227,6 @@
                            id="search-input-<%= platform %>" 
                            placeholder="Search live <%= platform %> mods by name..." 
                            oninput="handleSearch('<%= platform %>')">
-                    <a href="/cc" class="btn btn-secondary" style="border-color:#444; color:var(--gold); display:flex; align-items:center; gap:6px; font-size:0.85em; text-decoration:none;" title="Purge Cache">
-                        <i class="fas fa-broom"></i> /cc
-                    </a>
                 </div>
                 <div class="search-results-dropdown" id="results-<%= platform %>"></div>
             </div>
@@ -207,12 +238,18 @@
                         <div class="council-card" id="card-<%= app._id %>">
                             <div class="council-card-top">
                                 <img src="<%= app.iconUrl %>" alt="<%= app.name %>" class="council-card-icon">
-                                <div>
-                                    <h4 class="council-card-title"><%= app.name %></h4>
+                                <div style="min-width: 0; flex: 1;">
+                                    <h4 class="council-card-title" title="<%= app.name %>"><%= app.name %></h4>
                                     <div class="council-card-sub">
-                                        <span style="color:var(--gold);"><i class="fas fa-star"></i> <%= app.averageRating || 5.0 %></span> | 
-                                        <span><i class="fas fa-download"></i> <%= app.downloads || 0 %></span> | 
-                                        <span style="text-transform:uppercase; font-size:0.75em; border:1px solid #444; padding:1px 5px; border-radius:4px;"><%= app.category %></span>
+                                        <span style="color:var(--gold); font-weight:600;"><i class="fas fa-star"></i> <%= (app.averageRating || 5.0).toFixed(1) %></span>
+                                        <span style="color:#666;">•</span>
+                                        <span style="color:var(--silver);" title="<%= app.views || 0 %> views"><i class="fas fa-eye"></i> <%= typeof formatCompactNumber !== 'undefined' ? formatCompactNumber(app.views || 0) : (app.views || 0) %></span>
+                                        <span style="color:#666;">•</span>
+                                        <span style="color:var(--silver);" title="<%= app.downloads || 0 %> downloads"><i class="fas fa-download"></i> <%= typeof formatCompactNumber !== 'undefined' ? formatCompactNumber(app.downloads || 0) : (app.downloads || 0) %></span>
+                                        <span style="color:#666;">•</span>
+                                        <span class="platform-tag <%= (app.category || platform).replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                            <%= (app.category || platform).toUpperCase().replace('-', ' ') %>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -287,13 +324,23 @@
                 resultsBox.innerHTML = data.mods.map(mod => `
                     <div class="search-result-item">
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <img src="${mod.iconUrl}" style="width:36px; height:36px; border-radius:8px; object-fit:cover;">
+                            <img src="${mod.iconUrl}" style="width:40px; height:40px; border-radius:10px; object-fit:cover; border:1px solid #333; flex-shrink:0;">
                             <div>
-                                <strong style="color:#fff; font-size:0.9em;">${mod.name}</strong>
-                                <div style="font-size:0.75em; color:#888;">${mod.category} | ${mod.downloads || 0} downloads</div>
+                                <strong style="color:#fff; font-size:0.92em; display:block;">${mod.name}</strong>
+                                <div style="font-size:0.75em; color:#aaa; display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap;">
+                                    <span style="color:var(--gold); font-weight:600;"><i class="fas fa-star"></i> ${(mod.averageRating || 5.0).toFixed(1)}</span>
+                                    <span>•</span>
+                                    <span><i class="fas fa-eye"></i> ${mod.views || 0}</span>
+                                    <span>•</span>
+                                    <span><i class="fas fa-download"></i> ${mod.downloads || 0}</span>
+                                    <span>•</span>
+                                    <span class="platform-tag ${(mod.category || platform).replace('-jailed', '-ipa').replace('-jailbroken', '-deb')}">
+                                        ${(mod.category || platform).toUpperCase().replace('-', ' ')}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary" style="border-color:var(--gold); color:var(--gold); font-size:0.8em; padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="addToCouncil('${mod._id}', '${platform}', '${mod.name.replace(/'/g, "\\'")}')">
+                        <button class="btn btn-secondary" style="border-color:var(--gold); color:var(--gold); font-size:0.8em; padding:7px 14px; border-radius:8px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onclick="addToCouncil('${mod._id}', '${platform}', '${mod.name.replace(/'/g, "\\'")}')">
                             <i class="fas fa-plus"></i> Feature in Editor Choice
                         </button>
                     </div>
