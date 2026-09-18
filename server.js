@@ -291,6 +291,55 @@ async function getSmartImageUrl(key) {
         return '/images/default-avatar.png';
     }
 }
+
+// --- NEW HELPER: CONVERT IMAGE TO BASE64 DATA URL FOR CORS-FREE HTML2CANVAS ---
+async function getImageAsDataUrl(urlOrKey) {
+    try {
+        if (!urlOrKey) return null;
+        if (typeof urlOrKey === 'string' && urlOrKey.startsWith('data:image/')) return urlOrKey;
+
+        // 1. Local public path
+        if (typeof urlOrKey === 'string' && urlOrKey.startsWith('/')) {
+            const localPath = path.join(__dirname, 'public', urlOrKey);
+            if (fs.existsSync(localPath)) {
+                const ext = path.extname(localPath).replace('.', '').toLowerCase() || 'png';
+                const mime = ext === 'svg' ? 'image/svg+xml' : (ext === 'jpg' ? 'image/jpeg' : `image/${ext}`);
+                const buf = fs.readFileSync(localPath);
+                return `data:${mime};base64,${buf.toString('base64')}`;
+            }
+        }
+
+        // 2. Backblaze B2 key or URL
+        let b2Key = urlOrKey;
+        if (typeof urlOrKey === 'string' && urlOrKey.includes('backblazeb2.com')) {
+            const b2Match = urlOrKey.match(/(?:card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
+            if (b2Match) b2Key = b2Match[0];
+        }
+
+        if (typeof b2Key === 'string' && !b2Key.startsWith('http://') && !b2Key.startsWith('https://')) {
+            const s3Res = await s3Client.send(new GetObjectCommand({
+                Bucket: process.env.B2_BUCKET_NAME,
+                Key: b2Key
+            }));
+            const chunks = [];
+            for await (const chunk of s3Res.Body) chunks.push(chunk);
+            const buf = Buffer.concat(chunks);
+            const mime = s3Res.ContentType || 'image/png';
+            return `data:${mime};base64,${buf.toString('base64')}`;
+        }
+
+        // 3. Remote HTTP / HTTPS URL
+        if (typeof urlOrKey === 'string' && (urlOrKey.startsWith('http://') || urlOrKey.startsWith('https://'))) {
+            const resp = await axios.get(urlOrKey, { responseType: 'arraybuffer', timeout: 6000 });
+            const mime = resp.headers['content-type'] || 'image/png';
+            return `data:${mime};base64,${Buffer.from(resp.data).toString('base64')}`;
+        }
+    } catch (error) {
+        console.warn(`[getImageAsDataUrl] Could not convert image to Data URL: ${urlOrKey}`, error.message);
+    }
+    return null;
+}
+
 // --- NEW HELPER: TRUNCATE LONG TEXT ---
 function truncateText(text, maxLength) {
     if (!text) return '';
@@ -6540,12 +6589,21 @@ app.get('/login/2fa', async (req, res) => {
     }
 
     req.session.active2faMethod = currentMethod;
+    
+    // Resolve user avatar for the 2FA header
+    try {
+        user.signedAvatarUrl = user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
+    } catch (e) {
+        user.signedAvatarUrl = '/images/default-avatar.png';
+    }
+
     req.session.save(() => {
         res.render('pages/2fa-challenge', { 
             method: currentMethod, 
             availableMethods: availableMethods,
             error: req.query.error,
-            user: user
+            user: user,
+            is2FAVerification: true
         });
     });
 });
@@ -11373,21 +11431,39 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
 
         // 4b. Resolve card avatar (defaults to user avatar by default) and card background (defaults to /images/card-bg.png)
         let resolvedCardAvatarUrl = '/images/default-avatar.png';
+        let rawAvatarKeyOrUrl = null;
         if (userDoc.cardAvatarUrl && userDoc.cardAvatarUrl.trim()) {
-            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.cardAvatarUrl.trim());
+            rawAvatarKeyOrUrl = userDoc.cardAvatarUrl.trim();
+            resolvedCardAvatarUrl = await getSmartImageUrl(rawAvatarKeyOrUrl);
         } else if (userDoc.profileImageKey) {
-            resolvedCardAvatarUrl = await getSmartImageUrl(userDoc.profileImageKey);
+            rawAvatarKeyOrUrl = userDoc.profileImageKey;
+            resolvedCardAvatarUrl = await getSmartImageUrl(rawAvatarKeyOrUrl);
         } else if (req.user.signedAvatarUrl && req.user.signedAvatarUrl !== '/images/default-avatar.png') {
             resolvedCardAvatarUrl = req.user.signedAvatarUrl;
+            rawAvatarKeyOrUrl = req.user.profileImageKey || req.user.signedAvatarUrl;
         }
 
         let resolvedCardBgUrl = '/images/card-bg.png';
+        let rawBgKeyOrUrl = userDoc.cardBgUrl || null;
         if (userDoc.cardBgUrl) {
             resolvedCardBgUrl = await getSmartImageUrl(userDoc.cardBgUrl);
         }
 
+        // Convert card avatar & card background to Base64 Data URL so html2canvas NEVER encounters CORS or blank avatar!
+        let cardAvatarDataUrl = await getImageAsDataUrl(rawAvatarKeyOrUrl || resolvedCardAvatarUrl);
+        if (!cardAvatarDataUrl) {
+            cardAvatarDataUrl = await getImageAsDataUrl('/images/default-avatar.png');
+        }
+
+        let cardBgDataUrl = null;
+        if (userDoc.cardBgUrl) {
+            cardBgDataUrl = await getImageAsDataUrl(rawBgKeyOrUrl || resolvedCardBgUrl);
+        }
+
         userDoc.resolvedCardAvatarUrl = resolvedCardAvatarUrl;
+        userDoc.cardAvatarDataUrl = cardAvatarDataUrl;
         userDoc.resolvedCardBgUrl = resolvedCardBgUrl;
+        userDoc.cardBgDataUrl = cardBgDataUrl;
 
         res.render('pages/id-card', {
             cardUser: userDoc,
@@ -11403,7 +11479,22 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// --- 4. EDIT CARD SETTINGS (Upload Background/Avatar, 7 Day Cooldown & Bad Words) ---
+// --- API TO CONVERT AVATAR / IMAGE TO DATA URL (FOR REALTIME PREVIEW IN HTML2CANVAS) ---
+app.get('/api/id-card/avatar-data-url', ensureAuthenticated, async (req, res) => {
+    try {
+        const url = req.query.url;
+        if (!url) return res.status(400).json({ success: false, error: 'URL is required' });
+        const dataUrl = await getImageAsDataUrl(url);
+        if (dataUrl) {
+            return res.json({ success: true, dataUrl });
+        }
+        res.status(400).json({ success: false, error: 'Could not convert image' });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// --- 4. EDIT CARD SETTINGS (Upload Background/Avatar, Extended Customization, 7 Day Cooldown & Bad Words) ---
 const uploadCardMedia = multer({ 
     storage: memoryStorage, 
     limits: { fileSize: 5 * 1024 * 1024 } 
@@ -11436,11 +11527,40 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
             return res.redirect(`/id-card?error=You can only edit your card once every 7 days. Next edit available on ${nextEdit}.`);
         }
 
-        const { cardMessage, cardBgUrl, cardAvatarUrl, resetAvatarToAccount, resetBgToDefault } = req.body;
+        const {
+            cardMessage,
+            cardBgUrl,
+            cardAvatarUrl,
+            resetAvatarToAccount,
+            resetBgToDefault,
+            brandName,
+            platform,
+            showEmail,
+            emailType,
+            customEmail,
+            showPhone,
+            phone,
+            showAge,
+            customAge,
+            showSocials,
+            social1_platform,
+            social1_handle,
+            social2_platform,
+            social2_handle,
+            social3_platform,
+            social3_handle,
+            customTagline
+        } = req.body;
 
         // Profanity Check
         if (cardMessage && profanityFilter.isProfane(cardMessage)) {
             return res.redirect('/id-card?error=Inappropriate language detected. Please modify your message.');
+        }
+        if (brandName && profanityFilter.isProfane(brandName)) {
+            return res.redirect('/id-card?error=Inappropriate language detected in Brand Name. Please modify it.');
+        }
+        if (customTagline && profanityFilter.isProfane(customTagline)) {
+            return res.redirect('/id-card?error=Inappropriate language detected in Custom Text. Please modify it.');
         }
 
         if (cardMessage !== undefined) {
@@ -11479,6 +11599,53 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
             } else {
                 user.cardAvatarUrl = cleanAvatar;
             }
+        }
+
+        // Handle Card Customization
+        if (!user.cardCustomization) {
+            user.cardCustomization = {};
+        }
+        if (brandName !== undefined) {
+            user.cardCustomization.brandName = String(brandName).trim().slice(0, 50);
+        }
+        if (platform !== undefined) {
+            user.cardCustomization.platform = String(platform).trim().slice(0, 30);
+        }
+
+        user.cardCustomization.showEmail = (showEmail === 'true' || showEmail === 'on' || showEmail === true);
+        user.cardCustomization.emailType = emailType === 'custom' ? 'custom' : 'account';
+        user.cardCustomization.customEmail = customEmail ? String(customEmail).trim().slice(0, 80) : '';
+
+        user.cardCustomization.showPhone = (showPhone === 'true' || showPhone === 'on' || showPhone === true);
+        user.cardCustomization.phone = phone ? String(phone).trim().slice(0, 25) : '';
+
+        user.cardCustomization.showAge = (showAge === 'true' || showAge === 'on' || showAge === true);
+        if (customAge !== undefined && customAge !== '') {
+            const parsedAge = parseInt(customAge, 10);
+            if (!isNaN(parsedAge) && parsedAge >= 10 && parsedAge <= 120) {
+                user.cardCustomization.customAge = parsedAge;
+            }
+        } else {
+            user.cardCustomization.customAge = undefined;
+        }
+
+        user.cardCustomization.showSocials = (showSocials === 'true' || showSocials === 'on' || showSocials === true);
+        const socialsArr = [];
+        const pushSocial = (plat, handle) => {
+            if (plat && handle && String(handle).trim() && socialsArr.length < 3) {
+                socialsArr.push({
+                    platform: String(plat).toLowerCase().trim(),
+                    handleOrUrl: String(handle).trim().slice(0, 150)
+                });
+            }
+        };
+        pushSocial(social1_platform, social1_handle);
+        pushSocial(social2_platform, social2_handle);
+        pushSocial(social3_platform, social3_handle);
+        user.cardCustomization.socials = socialsArr;
+
+        if (user.role === 'owner' && customTagline !== undefined) {
+            user.cardCustomization.customTagline = String(customTagline).trim().slice(0, 120);
         }
 
         user.cardLastEdited = new Date();
@@ -11676,17 +11843,43 @@ const startServer = async () => {
             ]
         }).catch(() => {}); 
 
+        // Handle AdminJS logout cleanly
+        app.all('/admin/logout', (req, res) => {
+            if (req.session) {
+                delete req.session.adminUser;
+            }
+            if (req.logout && typeof req.logout === 'function') {
+                req.logout(() => {
+                    if (req.session) {
+                        req.session.destroy(() => {
+                            res.clearCookie('connect.sid');
+                            res.clearCookie('admin_avatar');
+                            res.redirect('/login');
+                        });
+                    } else {
+                        res.redirect('/login');
+                    }
+                });
+            } else {
+                res.redirect('/logout');
+            }
+        });
+
         const adminRouter = await createAdminRouter();
         app.use('/admin', ensureAdminOr404, (req, res, next) => {
             if (req.session && req.user) {
+                const avatar = req.user.signedAvatarUrl || '/images/default-avatar.png';
                 req.session.adminUser = {
                     id: String(req.user._id),
                     _id: String(req.user._id),
                     email: req.user.email,
                     username: req.user.username,
                     role: req.user.role,
-                    membership: req.user.membership
+                    membership: req.user.membership,
+                    avatarUrl: avatar,
+                    title: req.user.username || req.user.email
                 };
+                res.cookie('admin_avatar', avatar, { path: '/admin', httpOnly: false });
             }
             next();
         }, adminRouter);
@@ -12294,6 +12487,67 @@ const startServer = async () => {
                     io.to('support_agents').emit('agent_chat_deleted', { sessionId: String(session._id) });
                 } catch (err) {
                     console.error('agent_delete_chat error:', err);
+                }
+            });
+
+            // 8. Agent Transfers Chat back to Gemini Bot (Issue Resolved or Transfer)
+            socket.on('agent_transfer_to_bot', async (data) => {
+                try {
+                    const agent = socket.request.user;
+                    if (!agent || !['support', 'admin', 'owner'].includes(agent.role)) return;
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (session) {
+                        session.status = 'bot';
+                        session.assignedTo = null;
+
+                        const sysMsg = { 
+                            sender: 'system', 
+                            text: `Issue marked as resolved by ${agent.username || 'Support Team'}. You have been transferred back to Gemini AI Assistant. Feel free to ask any further questions!` 
+                        };
+                        session.messages.push(sysMsg);
+                        await session.save();
+
+                        io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
+                        io.to(`support_${session._id}`).emit('support_chat_status_updated', { 
+                            sessionId: String(session._id), 
+                            status: 'bot' 
+                        });
+                        io.to('support_agents').emit('agent_chat_updated', session);
+                    }
+                } catch (err) {
+                    console.error('agent_transfer_to_bot error:', err);
+                }
+            });
+
+            // 9. User Switches back to Gemini Bot
+            socket.on('user_transfer_to_bot', async (data) => {
+                try {
+                    const session = await ChatSession.findById(data.sessionId);
+                    if (!session) return;
+
+                    const userId = socket.request.user?._id;
+                    const ownsSession = (userId && session.user && String(session.user) === String(userId)) ||
+                        (!userId && session.guestId && session.guestId === data.guestId);
+                    if (!ownsSession) return;
+
+                    session.status = 'bot';
+                    session.assignedTo = null;
+
+                    const sysMsg = { 
+                        sender: 'system', 
+                        text: `You have switched back to Gemini AI Assistant. How can I help you today?` 
+                    };
+                    session.messages.push(sysMsg);
+                    await session.save();
+
+                    io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
+                    io.to(`support_${session._id}`).emit('support_chat_status_updated', { 
+                        sessionId: String(session._id), 
+                        status: 'bot' 
+                    });
+                    io.to('support_agents').emit('agent_chat_updated', session);
+                } catch (err) {
+                    console.error('user_transfer_to_bot error:', err);
                 }
             });
             

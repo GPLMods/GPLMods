@@ -10,7 +10,7 @@ const C = {
   border: '#2a2a2a', borderHover: '#3a3a3a',
   gold: '#FFD700', goldDim: 'rgba(255,215,0,0.15)', goldGlow: 'rgba(255,215,0,0.35)',
   blue: '#2196F3', green: '#43a047', purple: '#9C27B0', red: '#e53935', orange: '#FF9800',
-  text: '#ffffff', textMuted: '#999', textDim: '#666',
+  text: '#ffffff', textMuted: '#e2e8f0', textDim: '#cbd5e1',
 };
 
 /* ─── platform chart colours ─── */
@@ -22,17 +22,18 @@ const cardStyle = (accentColor) => ({
   borderRadius: '16px',
   border: `1px solid ${C.border}`,
   borderLeft: accentColor ? `4px solid ${accentColor}` : `1px solid ${C.border}`,
-  padding: '24px',
+  padding: 'clamp(16px, 2.5vw, 24px)',
   transition: 'all 0.25s ease',
   cursor: 'default',
+  boxSizing: 'border-box',
 });
 
 /* ─── Inline SVG Area Chart ─── */
-const AreaChart = ({ data, width = 500, height = 200, color = C.gold }) => {
+const AreaChart = ({ data, width = 500, height = 170, color = C.gold }) => {
   if (!data || data.length === 0) return null;
   const maxVal = Math.max(...data.map(d => d.value), 1);
-  const padX = 40;
-  const padY = 20;
+  const padX = 35;
+  const padY = 16;
   const chartW = width - padX * 2;
   const chartH = height - padY * 2;
 
@@ -51,33 +52,42 @@ const AreaChart = ({ data, width = 500, height = 200, color = C.gold }) => {
     return { y, label };
   });
 
+  const step = data.length > 8 ? Math.ceil(data.length / 5) : 1;
+
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      {/* Grid */}
-      {gridLines.map((g, i) => (
-        <g key={i}>
-          <line x1={padX} y1={g.y} x2={width - padX} y2={g.y} stroke={C.border} strokeWidth="1" strokeDasharray="4 4" />
-          <text x={padX - 6} y={g.y + 4} fill={C.textDim} fontSize="10" textAnchor="end">{g.label}</text>
-        </g>
-      ))}
-      {/* Area fill */}
-      <path d={areaPath} fill="url(#areaFill)" />
-      {/* Line */}
-      <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      {/* Dots + labels */}
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill={C.bg} stroke={color} strokeWidth="2" />
-          <text x={p.x} y={padY + chartH + 16} fill={C.textMuted} fontSize="9" textAnchor="middle">{data[i].label}</text>
-        </g>
-      ))}
-    </svg>
+    <div style={{ width: '100%', overflow: 'hidden' }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block', maxWidth: '100%' }}>
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {/* Grid */}
+        {gridLines.map((g, i) => (
+          <g key={i}>
+            <line x1={padX} y1={g.y} x2={width - padX} y2={g.y} stroke={C.border} strokeWidth="1" strokeDasharray="3 3" />
+            <text x={padX - 6} y={g.y + 4} fill="#94a3b8" fontSize="9" fontFamily="'Poppins', sans-serif" textAnchor="end">{g.label}</text>
+          </g>
+        ))}
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaFill)" />
+        {/* Line */}
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Dots + labels */}
+        {points.map((p, i) => {
+          const showLabel = (i === 0 || i === data.length - 1 || i % step === 0);
+          return (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="3" fill={C.bg} stroke={color} strokeWidth="2" />
+              {showLabel && (
+                <text x={p.x} y={padY + chartH + 14} fill="#cbd5e1" fontSize="9" fontFamily="'Poppins', sans-serif" textAnchor="middle">{data[i].label}</text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 };
 
@@ -252,19 +262,21 @@ const CustomDashboard = () => {
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div style={{ backgroundColor: C.bg, minHeight: '100vh', padding: '32px 40px', fontFamily: "'Poppins', sans-serif" }}>
+    <div style={{ backgroundColor: C.bg, minHeight: '100vh', padding: 'clamp(16px, 3vw, 32px) clamp(14px, 3vw, 36px)', fontFamily: "'Poppins', sans-serif" }}>
       
       {/* ═══ HEADER ═══ */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingBottom: '24px', borderBottom: `1px solid ${C.border}`, marginBottom: '28px' }}>
         <div>
           <a href="/admin" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-            <H2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Poppins', sans-serif" }}>
-              <span style={{ color: C.gold, textShadow: `0 0 20px ${C.goldGlow}`, fontWeight: 800 }}>GPL</span>
-              <span style={{ color: '#c0c0c0', textShadow: '0 0 15px rgba(192, 192, 192, 0.6)', fontWeight: 700 }}>Mods</span>
-              <span style={{ color: C.textDim, fontSize: '0.5em', fontWeight: 400, marginLeft: '12px', background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${C.border}`, fontFamily: "'Poppins', sans-serif" }}>Admin Dashboard</span>
-            </H2>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <H2 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', fontFamily: "'Poppins', sans-serif" }}>
+                <span style={{ color: C.gold, textShadow: `0 0 20px ${C.goldGlow}`, fontWeight: 800 }}>GPL</span>
+                <span style={{ color: '#ffffff', textShadow: '0 0 15px rgba(255, 255, 255, 0.4)', fontWeight: 700 }}>Mods</span>
+              </H2>
+              <span style={{ color: '#ffd700', fontSize: '11px', fontWeight: 600, background: 'rgba(255, 215, 0, 0.12)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(255, 215, 0, 0.35)', fontFamily: "'Poppins', sans-serif", letterSpacing: '0.04em', textTransform: 'uppercase' }}>Admin Dashboard</span>
+            </div>
           </a>
-          <Text style={{ color: C.textMuted, marginTop: '6px', fontFamily: "'Poppins', sans-serif" }}>
+          <Text style={{ color: '#f1f5f9', marginTop: '8px', fontSize: '14px', fontWeight: 400, fontFamily: "'Poppins', sans-serif", lineHeight: 1.5 }}>
             {greeting}! Here's your platform overview for {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
           </Text>
         </div>
@@ -304,7 +316,7 @@ const CustomDashboard = () => {
           <a 
             href="/status" 
             target="_blank" 
-            rel="noopener noreferrer"
+            rel="noopener noreferrer" 
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#81c784', backgroundColor: 'rgba(67,160,71,0.12)', border: '1px solid rgba(67,160,71,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.12)'; }}
@@ -327,9 +339,9 @@ const CustomDashboard = () => {
             href="/home" 
             target="_blank" 
             rel="noopener noreferrer" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#e0e0e0', backgroundColor: C.surfaceAlt, border: `1px solid ${C.border}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ffffff', backgroundColor: C.surfaceAlt, border: `1px solid ${C.border}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = '#e0e0e0'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = '#ffffff'; }}
             title="Open Live Public Site"
           >
             <Icon icon="Globe" size={14} /> Live Site
@@ -338,7 +350,7 @@ const CustomDashboard = () => {
       </div>
 
       {/* ═══ STAT CARDS ═══ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
         <StatCard icon="Users" label="Total Users" value={(stats.totalUsers || 0).toLocaleString()} delta={stats.newUsersThisMonth} accentColor={C.blue} />
         <StatCard icon="Package" label="Total Mods" value={(stats.totalMods || 0).toLocaleString()} delta={stats.newModsThisMonth} accentColor={C.gold} />
         <StatCard icon="Download" label="Total Downloads" value={(stats.totalDownloads || 0).toLocaleString()} accentColor={C.green} />
@@ -346,7 +358,7 @@ const CustomDashboard = () => {
       </div>
 
       {/* ═══ ACTION REQUIRED ═══ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '32px' }}>
         <ActionCard icon="Flag" label="Pending Reports" count={actionRequired.pendingReports || 0} accentColor={C.red} resourceId="Report" />
         <ActionCard icon="CheckSquare" label="Pending Approvals" count={actionRequired.pendingApprovals || 0} accentColor={C.orange} resourceId="File" />
         <ActionCard icon="HelpCircle" label="Open Tickets" count={actionRequired.openTickets || 0} accentColor={C.blue} resourceId="SupportTicket" />
@@ -355,32 +367,32 @@ const CustomDashboard = () => {
       {/* ═══ CHARTS ROW ═══ */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
         {/* User Growth Chart */}
-        <Box style={{ ...cardStyle(), flex: '2', minWidth: '380px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <Box style={{ ...cardStyle(), flex: '2 1 320px', minWidth: 0, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
             <Icon icon="Activity" color={C.gold} />
-            <H5 style={{ color: C.text, margin: 0 }}>User Growth</H5>
-            <Badge style={{ marginLeft: '8px', backgroundColor: C.goldDim, color: C.gold, border: 'none' }}>30 days</Badge>
+            <H5 style={{ color: C.text, margin: 0, fontFamily: "'Poppins', sans-serif" }}>User Growth</H5>
+            <Badge style={{ marginLeft: '8px', backgroundColor: C.goldDim, color: C.gold, border: 'none', fontFamily: "'Poppins', sans-serif" }}>30 days</Badge>
           </div>
           {growthChartData.length > 0 ? (
-            <AreaChart data={growthChartData} color={C.gold} width={600} height={220} />
+            <AreaChart data={growthChartData} color={C.gold} width={500} height={170} />
           ) : (
-            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: C.textDim }}>No user signups in the last 30 days.</Text>
+            <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: C.textDim, fontFamily: "'Poppins', sans-serif" }}>No user signups in the last 30 days.</Text>
             </div>
           )}
         </Box>
 
         {/* Platform Donut */}
-        <Box style={{ ...cardStyle(), flex: '1', minWidth: '300px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <Box style={{ ...cardStyle(), flex: '1 1 280px', minWidth: 0, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
             <Icon icon="PieChart" color={C.blue} />
-            <H5 style={{ color: C.text, margin: 0 }}>Mods by Platform</H5>
+            <H5 style={{ color: C.text, margin: 0, fontFamily: "'Poppins', sans-serif" }}>Mods by Platform</H5>
           </div>
           {modsByPlatform.length > 0 ? (
             <DonutChart data={modsByPlatform} size={180} />
           ) : (
-            <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: C.textDim }}>No platform data available.</Text>
+            <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: C.textDim, fontFamily: "'Poppins', sans-serif" }}>No platform data available.</Text>
             </div>
           )}
         </Box>
@@ -389,70 +401,74 @@ const CustomDashboard = () => {
       {/* ═══ RECENT ACTIVITY ROW ═══ */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
         {/* Recent Users */}
-        <Box style={{ ...cardStyle(), flex: '1', minWidth: '340px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <Box style={{ ...cardStyle(), flex: '1 1 320px', minWidth: 0, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
             <Icon icon="Users" color={C.blue} />
-            <H5 style={{ color: C.text, margin: 0 }}>Recent Users</H5>
-            <a href="/admin/resources/User" style={{ marginLeft: 'auto', color: C.gold, fontSize: '12px', textDecoration: 'none', fontWeight: 600 }}>View All →</a>
+            <H5 style={{ color: C.text, margin: 0, fontFamily: "'Poppins', sans-serif" }}>Recent Users</H5>
+            <a href="/admin/resources/User" style={{ marginLeft: 'auto', color: C.gold, fontSize: '12px', textDecoration: 'none', fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>View All →</a>
           </div>
           {recentUsers.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <th style={{ textAlign: 'left', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Username</th>
-                  <th style={{ textAlign: 'left', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Role</th>
-                  <th style={{ textAlign: 'right', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentUsers.map((u, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                    <td style={{ padding: '10px 0', color: C.text, fontSize: '13px', fontWeight: 500 }}>{u.username}</td>
-                    <td style={{ padding: '10px 0' }}>
-                      <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: u.role === 'admin' ? `${C.gold}20` : `${C.blue}20`, color: u.role === 'admin' ? C.gold : C.blue, fontWeight: 600 }}>{u.role || 'user'}</span>
-                    </td>
-                    <td style={{ padding: '10px 0', color: C.textMuted, fontSize: '12px', textAlign: 'right' }}>{fmtDate(u.date)}</td>
+            <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '300px' }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <th style={{ textAlign: 'left', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Username</th>
+                    <th style={{ textAlign: 'left', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Role</th>
+                    <th style={{ textAlign: 'right', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Joined</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentUsers.map((u, i) => (
+                    <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <td style={{ padding: '10px 0', color: C.text, fontSize: '13px', fontWeight: 500 }}>{u.username}</td>
+                      <td style={{ padding: '10px 0' }}>
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: u.role === 'admin' ? `${C.gold}20` : `${C.blue}20`, color: u.role === 'admin' ? C.gold : C.blue, fontWeight: 600 }}>{u.role || 'user'}</span>
+                      </td>
+                      <td style={{ padding: '10px 0', color: C.textMuted, fontSize: '12px', textAlign: 'right' }}>{fmtDate(u.date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <Text style={{ color: C.textDim, textAlign: 'center', padding: '20px 0' }}>No recent users.</Text>
           )}
         </Box>
 
         {/* Recent Mods */}
-        <Box style={{ ...cardStyle(), flex: '1', minWidth: '340px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <Box style={{ ...cardStyle(), flex: '1 1 320px', minWidth: 0, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
             <Icon icon="Package" color={C.gold} />
-            <H5 style={{ color: C.text, margin: 0 }}>Recent Mods</H5>
-            <a href="/admin/resources/File" style={{ marginLeft: 'auto', color: C.gold, fontSize: '12px', textDecoration: 'none', fontWeight: 600 }}>View All →</a>
+            <H5 style={{ color: C.text, margin: 0, fontFamily: "'Poppins', sans-serif" }}>Recent Mods</H5>
+            <a href="/admin/resources/File" style={{ marginLeft: 'auto', color: C.gold, fontSize: '12px', textDecoration: 'none', fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>View All →</a>
           </div>
           {recentMods.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <th style={{ textAlign: 'left', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Name</th>
-                  <th style={{ textAlign: 'left', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Platform</th>
-                  <th style={{ textAlign: 'left', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Status</th>
-                  <th style={{ textAlign: 'right', padding: '8px 0', color: C.textDim, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Added</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentMods.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                    <td style={{ padding: '10px 0', color: C.text, fontSize: '13px', fontWeight: 500, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</td>
-                    <td style={{ padding: '10px 0' }}>
-                      <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: `${C.blue}20`, color: C.blue, fontWeight: 600, textTransform: 'uppercase' }}>{m.category || '—'}</span>
-                    </td>
-                    <td style={{ padding: '10px 0' }}>
-                      <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: `${statusColor(m.status)}20`, color: statusColor(m.status), fontWeight: 600, textTransform: 'capitalize' }}>{m.status || '—'}</span>
-                    </td>
-                    <td style={{ padding: '10px 0', color: C.textMuted, fontSize: '12px', textAlign: 'right' }}>{fmtDate(m.date)}</td>
+            <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '300px' }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <th style={{ textAlign: 'left', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Name</th>
+                    <th style={{ textAlign: 'left', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Platform</th>
+                    <th style={{ textAlign: 'left', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Status</th>
+                    <th style={{ textAlign: 'right', padding: '8px 0', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Added</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentMods.map((m, i) => (
+                    <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <td style={{ padding: '10px 0', color: C.text, fontSize: '13px', fontWeight: 500, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</td>
+                      <td style={{ padding: '10px 0' }}>
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: `${C.blue}20`, color: C.blue, fontWeight: 600, textTransform: 'uppercase' }}>{m.category || '—'}</span>
+                      </td>
+                      <td style={{ padding: '10px 0' }}>
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: `${statusColor(m.status)}20`, color: statusColor(m.status), fontWeight: 600, textTransform: 'capitalize' }}>{m.status || '—'}</span>
+                      </td>
+                      <td style={{ padding: '10px 0', color: C.textMuted, fontSize: '12px', textAlign: 'right' }}>{fmtDate(m.date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <Text style={{ color: C.textDim, textAlign: 'center', padding: '20px 0' }}>No recent mods.</Text>
           )}
@@ -460,18 +476,18 @@ const CustomDashboard = () => {
       </div>
 
       {/* ═══ FOOTER ═══ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '20px', borderTop: `1px solid ${C.border}` }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '14px', paddingTop: '20px', borderTop: `1px solid ${C.border}` }}>
         <a href="/admin" style={{ textDecoration: 'none' }}>
-          <Text style={{ color: C.textDim, fontSize: '12px', cursor: 'pointer' }}>
-            <span style={{ color: C.gold, fontWeight: 700 }}>GPL</span> <span style={{ color: '#888' }}>Mods</span> • Admin Panel v2.5
+          <Text style={{ color: '#ffffff', fontSize: '13px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+            <span style={{ color: C.gold, fontWeight: 700 }}>GPL</span> <span style={{ color: '#ffffff', fontWeight: 600 }}>Mods</span> • Admin Panel v2.5
           </Text>
         </a>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <a href="/admin/resources/User" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Users</a>
-          <a href="/admin/resources/File" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Mods</a>
-          <a href="/admin/resources/Report" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Reports</a>
-          <a href="/admin/resources/SupportTicket" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Tickets</a>
-          <a href="/admin/music" style={{ color: C.textMuted, fontSize: '12px', textDecoration: 'none' }}>Music</a>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <a href="/admin/resources/User" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', textDecoration: 'none', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Users</a>
+          <a href="/admin/resources/File" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', textDecoration: 'none', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Mods</a>
+          <a href="/admin/resources/Report" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', textDecoration: 'none', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Reports</a>
+          <a href="/admin/resources/SupportTicket" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', textDecoration: 'none', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Tickets</a>
+          <a href="/admin/music" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '8px', fontSize: '12px', textDecoration: 'none', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Music</a>
         </div>
       </div>
     </div>

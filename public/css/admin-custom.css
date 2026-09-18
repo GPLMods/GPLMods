@@ -7,29 +7,43 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-/* --- 1. GLOBAL TYPOGRAPHY (POPPINS) --- */
-*, *:before, *:after, body, html, input, button, select, textarea, table, th, td, [class*="adminjs"], [class*="Box"], section, header, nav, aside, h1, h2, h3, h4, h5, h6, p, span, div, a, label {
+/* --- 1. GLOBAL TYPOGRAPHY (POPPINS) & CRISP WHITE READABILITY --- */
+*, *:before, *:after, body, html, #app, input, button, select, textarea, table, th, td, 
+[class*="adminjs"], [class*="Box"], [class*="Text"], [class*="H1"], [class*="H2"], 
+[class*="H3"], [class*="H4"], [class*="H5"], [class*="H6"], section, header, nav, aside, 
+h1, h2, h3, h4, h5, h6, p, span, div, a, label {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
-/* --- 2. BASE BADGES & TAGS STYLING --- */
+/* Ensure headings and body text are crisp and white/light like GPLMods */
+body, [class*="adminjs_Box"], .adminjs_Table td, h1, h2, h3, h4, h5, h6 {
+    color: #f8fafc !important;
+}
+
+/* --- 2. BASE BADGES & TAGS MACHINE TEXTURE STYLING --- */
 span[class*="Badge"],
 span[class*="Tag"],
 .adminjs_Badge,
 .adminjs_Tag,
-.admin-custom-chip {
+.admin-custom-chip,
+span[data-badge-val],
+[data-badge-val]:not(td) {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 6px !important;
     padding: 3px 10px !important;
     border-radius: 20px !important;
     font-size: 11px !important;
     font-weight: 700 !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.06em !important;
     text-transform: uppercase !important;
+    color: #f8fafc !important;
     border: 1px solid transparent !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    /* Machine bevel highlight & inset shadow */
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.18), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 2px 5px rgba(0, 0, 0, 0.35) !important;
+    user-select: none !important;
+    vertical-align: middle !important;
 }
 
 /* --- 3. ROLES & RANKS (VIBRANT) --- */
@@ -441,4 +455,164 @@ span[class*="Badge"]:hover {
 .adminjs_Branding a {
     cursor: pointer !important;
     text-decoration: none !important;
+}
+
+/* --- 8. EXTENDED MACHINE TEXTURED STATUSES, BOOLEANS & RATINGS --- */
+
+/* Boolean YES / Verified / Active / Show (Machined Emerald Bevel) */
+[data-badge-val="bool-yes"],
+[data-badge-val="verified-yes"],
+[data-badge-val="repo-yes"],
+[data-badge-val="active-yes"],
+.admin-chip-yes {
+    background: linear-gradient(145deg, rgba(0, 230, 118, 0.22) 0%, rgba(0, 150, 60, 0.15) 100%) !important;
+    color: #00e676 !important;
+    border-color: rgba(0, 230, 118, 0.6) !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.22), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 230, 118, 0.25) !important;
+    text-shadow: 0 0 6px rgba(0, 230, 118, 0.4) !important;
+}
+
+/* Boolean NO / Hidden / Inactive (Machined Titanium Gunmetal) */
+[data-badge-val="bool-no"],
+[data-badge-val="repo-no"],
+[data-badge-val="active-no"],
+.admin-chip-no {
+    background: linear-gradient(145deg, #262930 0%, #17181e 50%, #101115 100%) !important;
+    color: #b0bec5 !important;
+    border-color: rgba(176, 190, 197, 0.35) !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.12), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Is Verified Account - YES vs NO */
+[data-badge-val="user-verified-yes"] {
+    background: linear-gradient(135deg, rgba(0, 245, 212, 0.25) 0%, rgba(0, 180, 216, 0.15) 100%) !important;
+    color: #00f5d4 !important;
+    border-color: #00f5d4 !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.25), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 245, 212, 0.35) !important;
+    text-shadow: 0 0 8px rgba(0, 245, 212, 0.4) !important;
+}
+[data-badge-val="user-verified-no"] {
+    background: linear-gradient(145deg, rgba(255, 183, 3, 0.18) 0%, rgba(120, 80, 10, 0.2) 100%) !important;
+    color: #ffb703 !important;
+    border-color: rgba(255, 183, 3, 0.55) !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.15), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(255, 183, 3, 0.2) !important;
+}
+
+/* Is Banned - NO (Active Standby) vs YES (Danger Alert) */
+[data-badge-val="banned-no"] {
+    background: linear-gradient(145deg, rgba(76, 175, 80, 0.18) 0%, rgba(27, 94, 32, 0.15) 100%) !important;
+    color: #81c784 !important;
+    border-color: rgba(76, 175, 80, 0.5) !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.15), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8) !important;
+}
+[data-badge-val="banned-yes"] {
+    background: linear-gradient(145deg, rgba(255, 23, 68, 0.3) 0%, rgba(183, 28, 28, 0.35) 100%) !important;
+    color: #ff1744 !important;
+    border-color: #ff1744 !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.25), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 14px rgba(255, 23, 68, 0.5) !important;
+    text-shadow: 0 0 8px rgba(255, 23, 68, 0.5) !important;
+    animation: adminPulse 2s infinite ease-in-out !important;
+}
+@keyframes adminPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 23, 68, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(255, 23, 68, 0.6); }
+}
+
+/* Status - DRAFT (Machined Titanium Slate) */
+[data-badge-val="status-draft"],
+span[class*="Badge"]:is([title*="draft" i]) {
+    background: linear-gradient(145deg, #30333d 0%, #1e2027 50%, #131419 100%) !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(226, 232, 240, 0.35) !important;
+    box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.15), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Is Variant - MASTER (Machined Obsidian Gold) vs VARIANT (Machined Violet) */
+[data-badge-val="variant-master"],
+span[class*="Badge"]:is([title*="master" i]) {
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.22) 0%, rgba(90, 70, 15, 0.25) 100%) !important;
+    color: #FFD700 !important;
+    border-color: rgba(255, 215, 0, 0.65) !important;
+    box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.22), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 215, 0, 0.25) !important;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.4) !important;
+}
+[data-badge-val="variant-child"],
+span[class*="Badge"]:is([title*="variant" i]):not([title*="master" i]) {
+    background: linear-gradient(145deg, rgba(186, 104, 200, 0.22) 0%, rgba(65, 25, 75, 0.25) 100%) !important;
+    color: #ce93d8 !important;
+    border-color: rgba(186, 104, 200, 0.6) !important;
+    box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.2), inset 0 -1.5px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(186, 104, 200, 0.25) !important;
+}
+
+/* Age Ratings (Machined Circular Coin Badges) */
+[data-badge-val^="age-rating-"],
+.admin-age-badge {
+    border-radius: 50% !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    background: linear-gradient(145deg, #2c303b 0%, #171920 50%, #0d0e12 100%) !important;
+    box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.2), inset 0 -1.5px 2px rgba(0, 0, 0, 0.9), 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+    vertical-align: middle !important;
+}
+[data-badge-val="age-rating-3"] { color: #00e676 !important; border-color: #00e676 !important; box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.2), 0 0 8px rgba(0, 230, 118, 0.35) !important; }
+[data-badge-val="age-rating-7"] { color: #00b0ff !important; border-color: #00b0ff !important; box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.2), 0 0 8px rgba(0, 176, 255, 0.35) !important; }
+[data-badge-val="age-rating-12"] { color: #ffd700 !important; border-color: #ffd700 !important; box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.2), 0 0 8px rgba(255, 215, 0, 0.35) !important; }
+[data-badge-val="age-rating-16"] { color: #ff9800 !important; border-color: #ff9800 !important; box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.2), 0 0 8px rgba(255, 152, 0, 0.35) !important; }
+[data-badge-val="age-rating-18"] { color: #ff1744 !important; border-color: #ff1744 !important; box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.2), 0 0 8px rgba(255, 23, 68, 0.4) !important; }
+
+/* Top Bar User Avatar */
+.admin-topbar-avatar,
+[class*="CurrentUserNav"] img {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid #FFD700 !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4) !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+/* --- 9. ADMINJS LOGOUT CONFIRMATION POPUP --- */
+.admin-logout-modal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    z-index: 9999999 !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0;
+    transition: opacity 0.25s ease !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+.admin-logout-modal-backdrop.show {
+    display: flex !important;
+    opacity: 1 !important;
+}
+.admin-logout-modal-card {
+    background: linear-gradient(145deg, #181116 0%, #0d0e12 100%) !important;
+    border: 1px solid rgba(244, 67, 54, 0.35) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 67, 54, 0.2) !important;
+    border-radius: 18px !important;
+    padding: 30px 24px !important;
+    max-width: 420px !important;
+    width: 90% !important;
+    text-align: center !important;
+    transform: scale(0.95) !important;
+    transition: transform 0.25s ease !important;
+    box-sizing: border-box !important;
+}
+.admin-logout-modal-backdrop.show .admin-logout-modal-card {
+    transform: scale(1) !important;
 }

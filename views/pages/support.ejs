@@ -282,6 +282,32 @@
         color: #000;
     }
 
+    .ticket-top-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+        max-width: 850px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    @media (max-width: 540px) {
+        .ticket-top-controls {
+            gap: 10px;
+        }
+        .ticket-top-controls .chat-nav-action-btn {
+            flex: 1 1 auto;
+            justify-content: center;
+            text-align: center;
+            padding: 8px 10px;
+            font-size: 0.78em;
+            white-space: nowrap;
+        }
+    }
+
     .fullscreen-chat-messages {
         flex-grow: 1;
         padding: 25px;
@@ -727,7 +753,7 @@
         <!-- ============================================== -->
         <div id="supportTicketScreen" style="display: none;">
             <!-- Top Controls -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; max-width: 850px; margin-left: auto; margin-right: auto;">
+            <div class="ticket-top-controls">
                 <button type="button" class="chat-nav-action-btn" id="btnTicketBackToChoice">
                     <i class="fas fa-arrow-left"></i> <span>Back to Options</span>
                 </button>

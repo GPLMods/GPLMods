@@ -6,12 +6,36 @@
     .method-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.1); }
     .method-card:disabled, .method-card.disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; border-color: #333; }
     
-    .method-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-    .method-card h3 { color: var(--white); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.2em; }
+    .method-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+    .method-card h3 { color: var(--white); margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.2em; flex-wrap: wrap; flex: 1; min-width: 0; }
     .method-card p { color: var(--silver); font-size: 0.9em; margin: 0 0 0 35px; line-height: 1.4; }
     
+    .recommended-badge {
+        background: rgba(33, 150, 243, 0.2);
+        color: #64b5f6;
+        border: 1px solid var(--blue);
+        font-size: 0.6em;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+        flex-shrink: 0;
+        vertical-align: middle;
+    }
+
+    @media (max-width: 600px) {
+        .auth-container { padding: 25px 16px; margin: 20px auto; }
+        .method-card { padding: 16px 14px; }
+        .method-card h3 { font-size: 1.05em; }
+        .method-card p { margin: 6px 0 0 0; font-size: 0.85em; }
+    }
+
     /* Info Icon */
-    .info-icon { color: var(--silver); font-size: 1.2em; transition: color 0.2s; padding: 5px; z-index: 10; }
+    .info-icon { color: var(--silver); font-size: 1.2em; transition: color 0.2s; padding: 5px; z-index: 10; flex-shrink: 0; }
     .info-icon:hover { color: var(--gold); }
 
     /* Custom Dropdown Styles (Reused from Forum) */
@@ -68,8 +92,9 @@
             <div class="method-card" style="border-color: rgba(33, 150, 243, 0.4);">
                 <div class="method-header">
                     <h3 id="btn-setup-totp">
-                        <i class="fas fa-mobile-alt" style="color: var(--blue); width: 25px;"></i> Authenticator App (QR Code)
-                        <span style="background: rgba(33, 150, 243, 0.2); color: #64b5f6; border: 1px solid var(--blue); font-size: 0.6em; padding: 2px 8px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-left: 8px;">Recommended</span>
+                        <i class="fas fa-mobile-alt" style="color: var(--blue); width: 25px; flex-shrink: 0;"></i>
+                        <span>Authenticator App (QR Code)</span>
+                        <span class="recommended-badge">Recommended</span>
                     </h3>
                     <i class="fas fa-info-circle info-icon" data-info="totp" title="Learn More"></i>
                 </div>

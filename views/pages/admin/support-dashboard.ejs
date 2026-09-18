@@ -499,6 +499,9 @@
                 <button id="claimBtn" style="padding: 9px 16px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; display: none;">
                     <i class="fas fa-hand-holding-hand" style="margin-right: 4px;"></i> Claim
                 </button>
+                <button id="transferToGeminiBtn" type="button" style="padding: 9px 14px; background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.4); color: #00e676; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85em; display: none; align-items: center; gap: 6px; transition: all 0.2s;" title="Resolve issue and transfer user back to Gemini AI">
+                    <img src="/images/gemini.png" alt="Gemini" style="width: 16px; height: 16px; border-radius: 4px; object-fit: contain;"> <span>Transfer to Gemini</span>
+                </button>
                 <button id="deleteChatBtn" type="button" title="Delete conversation permanently" style="padding: 9px 12px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em;"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
@@ -906,6 +909,15 @@
                 agentInput.focus();
             }
 
+            const transferToGeminiBtn = document.getElementById('transferToGeminiBtn');
+            if (transferToGeminiBtn) {
+                if (chat.status === 'active-agent' || chat.status === 'waiting-for-agent') {
+                    transferToGeminiBtn.style.display = 'inline-flex';
+                } else {
+                    transferToGeminiBtn.style.display = 'none';
+                }
+            }
+
             renderChatList();
         }
 
@@ -1043,6 +1055,37 @@
         claimBtn.addEventListener('click', () => {
             socket.emit('agent_claim_chat', { sessionId: currentSessionId, agentId, agentName });
         });
+
+        const deskGeminiTransferModal = document.getElementById('deskGeminiTransferModal');
+        const cancelDeskGeminiBtn = document.getElementById('cancelDeskGeminiBtn');
+        const confirmDeskGeminiBtn = document.getElementById('confirmDeskGeminiBtn');
+
+        function closeDeskGeminiModal() {
+            if (deskGeminiTransferModal) {
+                deskGeminiTransferModal.style.opacity = '0';
+                setTimeout(() => deskGeminiTransferModal.style.display = 'none', 200);
+            }
+        }
+
+        if (transferToGeminiBtn) {
+            transferToGeminiBtn.addEventListener('click', () => {
+                if (!currentSessionId) return;
+                if (deskGeminiTransferModal) {
+                    deskGeminiTransferModal.style.display = 'flex';
+                    requestAnimationFrame(() => deskGeminiTransferModal.style.opacity = '1');
+                }
+            });
+        }
+
+        if (cancelDeskGeminiBtn) cancelDeskGeminiBtn.addEventListener('click', closeDeskGeminiModal);
+        if (confirmDeskGeminiBtn) {
+            confirmDeskGeminiBtn.addEventListener('click', () => {
+                if (!currentSessionId) return closeDeskGeminiModal();
+                socket.emit('agent_transfer_to_bot', { sessionId: currentSessionId });
+                closeDeskGeminiModal();
+                if (transferToGeminiBtn) transferToGeminiBtn.style.display = 'none';
+            });
+        }
 
         function closeDeleteChatModal() {
             deleteChatModal.style.opacity = '0';
@@ -1335,6 +1378,27 @@
                 <button type="button" id="saveGeminiConfigBtn" style="padding: 8px 18px; background: var(--gold); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Save Settings</button>
             </div>
             <div id="geminiModalFeedback" style="display: none; margin-top: 10px; font-size: 0.8em; text-align: center; color: var(--green);"></div>
+        </div>
+    </div>
+
+    <!-- ======== AGENT TRANSFER TO GEMINI CONFIRMATION MODAL ======== -->
+    <div id="deskGeminiTransferModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.2s ease;">
+        <div style="background: linear-gradient(145deg, #1a1e28 0%, #12141c 50%, #0c0d12 100%); border: 1.5px solid rgba(0, 230, 118, 0.45); border-radius: 14px; max-width: 460px; width: 100%; padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.85), 0 0 25px rgba(0, 230, 118, 0.25); text-align: center; position: relative;">
+            <div style="width: 58px; height: 58px; border-radius: 14px; background: rgba(0, 230, 118, 0.12); border: 1.5px solid rgba(0, 230, 118, 0.5); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; box-shadow: 0 0 20px rgba(0, 230, 118, 0.35);">
+                <img src="/images/gemini.png" alt="Gemini" style="width: 32px; height: 32px; object-fit: contain;">
+            </div>
+            <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1.25em; font-weight: 700;">Transfer to Gemini Chatbot?</h3>
+            <p style="color: var(--silver); font-size: 0.9em; line-height: 1.5; margin: 0 0 24px 0;">
+                Mark this support issue as resolved and hand the conversation back over to the <strong>Gemini AI Assistant</strong>? The user will be notified in real-time and can continue chatting with the AI.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" id="cancelDeskGeminiBtn" style="padding: 10px 20px; background: rgba(255,255,255,0.06); border: 1.5px solid #3d4250; color: #ccc; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Cancel
+                </button>
+                <button type="button" id="confirmDeskGeminiBtn" style="padding: 10px 24px; background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%); border: none; color: #000; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 0 18px rgba(0, 230, 118, 0.45); transition: all 0.2s;">
+                    <i class="fas fa-robot" style="margin-right: 6px;"></i> Yes, Transfer to Gemini
+                </button>
+            </div>
         </div>
     </div>
 </body>

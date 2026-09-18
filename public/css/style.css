@@ -1260,13 +1260,8 @@ a.overlay-btn-primary:hover {
         .results-summary { text-align: center; color: var(--silver); margin: -20px 0 30px 0; }
 
         /* --- Mod Grid & Cards with Platform Tags --- */
-        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .mod-card { text-decoration: none; color: var(--white); display: block; background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; border: 1px solid transparent; transition: all 0.3s ease; }
-        .mod-card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 20px var(--glow-gold); }
-        .mod-card-image { width: 100%; height: 150px; object-fit: cover; background-color: #333; }
-        .mod-card-content { padding: 20px; }
-        .mod-card h3 { font-size: 1.4em; margin-bottom: 10px; }
-        .mod-card p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; }
+        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; justify-content: center; width: 100%; }
+        .mod-grid .mod-card { width: 100%; max-width: 100%; flex: unset; margin: 0 auto; display: flex; flex-direction: column; }
         
         .card-footer { display: flex; justify-content: space-between; align-items: center; }
         .platform-tag {
@@ -1471,14 +1466,8 @@ a.overlay-btn-primary:hover {
         .tab-content p { color: var(--silver); }
         
         /* Mod Cards */
-        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .mod-card-link { text-decoration: none; }
-        .mod-card { background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; transition: transform 0.3s; }
-        .mod-card:hover { transform: translateY(-5px); }
-        .mod-card-image { width: 100%; height: 150px; object-fit: cover; }
-        .mod-card-content { padding: 20px; }
-        .mod-card h3 { font-size: 1.4em; color: var(--white); margin-bottom: 10px; }
-        .mod-card p { font-size: 0.9em; color: var(--silver); }
+        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; justify-content: center; width: 100%; }
+        .mod-grid .mod-card { width: 100%; max-width: 100%; flex: unset; margin: 0 auto; display: flex; flex-direction: column; }
 
         @media (max-width: 768px) {
             .profile-header { padding: 30px 20px; }
@@ -2078,15 +2067,8 @@ a.overlay-btn-primary:hover {
         .results-count { font-weight: 600; color: var(--silver); }
 
         /* Mod Grid & Cards - Automatically adapts to different icon layouts */
-        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .mod-card-link { text-decoration: none; }
-        .mod-card { position: relative; background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; border: 1px solid transparent; transition: all 0.3s ease; cursor: pointer; }
-        .mod-card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 20px var(--glow-gold); }
-        .mod-card-image { width: 100%; height: 150px; object-fit: cover; background-color: #333; }
-        .mod-card-content { padding: 20px; }
-        .mod-card h3 { font-size: 1.4em; color: var(--white); margin-bottom: 10px; }
-        .mod-card p { color: var(--silver); font-size: 0.9em; margin-bottom: 15px; }
-        .mod-type-tag { position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+        .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; justify-content: center; width: 100%; }
+        .mod-grid .mod-card { width: 100%; max-width: 100%; flex: unset; margin: 0 auto; display: flex; flex-direction: column; }
         
         /* No Results Message */
         .no-results { text-align: center; padding: 50px 20px; background-color: var(--dark-gray); border-radius: 15px; }
@@ -2696,6 +2678,40 @@ a.meta-link:hover {
     text-decoration-color: var(--gold) !important;
 }
 
+/* Developer Silver Underline */
+.sidebar-summary .meta-link.developer-meta-link,
+a.meta-link.developer-meta-link,
+.developer-meta-link {
+    color: var(--silver) !important;
+    text-decoration: underline !important;
+    text-decoration-color: var(--silver) !important;
+    text-underline-offset: 4px !important;
+}
+
+.sidebar-summary .meta-link.developer-meta-link strong,
+.developer-meta-link strong,
+.sidebar-summary .meta-link.developer-meta-link .arrow,
+.developer-meta-link .arrow {
+    color: var(--silver) !important;
+}
+
+.sidebar-summary .meta-link.developer-meta-link:visited,
+.developer-meta-link:visited {
+    color: var(--silver) !important;
+    text-decoration-color: var(--silver) !important;
+}
+
+.sidebar-summary .meta-link.developer-meta-link:hover,
+.sidebar-summary .meta-link.developer-meta-link:hover strong,
+.sidebar-summary .meta-link.developer-meta-link:hover .arrow,
+.developer-meta-link:hover,
+.developer-meta-link:hover strong,
+.developer-meta-link:hover .arrow {
+    color: var(--white) !important;
+    text-decoration: underline !important;
+    text-decoration-color: var(--white) !important;
+}
+
 /* ========================================================================== */
 /* 9. Machined Hardware Checkbox UI (Site-Based Theme)                       */
 /* ========================================================================== */
@@ -2768,4 +2784,140 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
     opacity: 0.45 !important;
     cursor: not-allowed !important;
     filter: grayscale(1) !important;
+}
+
+/* ========================================================================== */
+/* 10. Responsive Mod-Grid: 2-Column Centered Layout on Mobile                */
+/* ========================================================================== */
+.mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+    justify-content: center;
+    width: 100%;
+}
+
+.mod-grid .mod-card {
+    width: 100%;
+    max-width: 100%;
+    flex: unset;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    .mod-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+        justify-content: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+    }
+
+    .mod-grid .mod-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: unset !important;
+        margin: 0 auto !important;
+        border-radius: 12px !important;
+    }
+
+    .mod-grid .mod-card-image {
+        height: 125px !important;
+        padding: 8px !important;
+    }
+
+    .mod-grid .mod-card-content {
+        padding: 10px 8px !important;
+    }
+
+    .mod-grid .mod-card h3 {
+        font-size: 0.95em !important;
+        margin-bottom: 3px !important;
+        line-height: 1.25 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+
+    .mod-grid .mod-card p {
+        font-size: 0.78em !important;
+        margin-bottom: 6px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .mod-grid .rating {
+        margin-bottom: 6px !important;
+        font-size: 0.85em !important;
+    }
+
+    .mod-grid .rating-text {
+        font-size: 0.75em !important;
+    }
+
+    .mod-grid .card-footer {
+        gap: 4px !important;
+    }
+
+    .mod-grid .platform-tag {
+        font-size: 0.65em !important;
+        padding: 2px 6px !important;
+    }
+
+    .mod-grid .view-count {
+        font-size: 0.72em !important;
+        gap: 3px !important;
+    }
+
+    .mod-grid .app-feature-tag {
+        top: 6px !important;
+        left: 6px !important;
+        font-size: 0.65em !important;
+        padding: 2px 6px !important;
+        max-width: 58% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .mod-grid .mod-type-tag {
+        top: 6px !important;
+        right: 6px !important;
+        font-size: 0.65em !important;
+        padding: 2px 6px !important;
+        max-width: 38% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .mod-grid .download-overlay {
+        padding: 10px 8px !important;
+        gap: 6px !important;
+        border-radius: 12px !important;
+    }
+
+    .mod-grid .overlay-button {
+        padding: 7px 8px !important;
+        font-size: 0.75em !important;
+        border-radius: 18px !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+@media (max-width: 330px) {
+    .mod-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .mod-grid .mod-card {
+        max-width: 280px !important;
+        margin: 0 auto !important;
+    }
 }

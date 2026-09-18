@@ -26,17 +26,18 @@
         text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
     }
 
-    /* --- GLASSMORPHISM CARD DESIGN --- */
+    /* --- GLASSMORPHISM & MACHINE TEXTURED CARD DESIGN --- */
     .id-card-wrapper {
         width: 380px;
-        height: 600px;
+        min-height: 640px;
         position: relative;
-        border-radius: 20px;
+        border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1);
+        box-shadow: 0 25px 55px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12);
         font-family: 'Poppins', sans-serif;
-        background-color: var(--black);
+        background-color: #0d0e12;
         margin-bottom: 40px;
+        box-sizing: border-box;
     }
     
     .id-card-bg {
@@ -46,39 +47,40 @@
         background-position: center; 
         background-repeat: no-repeat;
         z-index: 1;
-        /* Dynamic User Background or Fallback */
-        background-image: url('<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || "/images/card-bg.png" %>');
+        background-image: url('<%= cardUser.cardBgDataUrl || cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || "/images/card-bg.png" %>');
     }
     .id-card-bg::after {
         content: ''; 
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(180deg, rgba(10,10,10,0.25) 0%, rgba(10,10,10,0.6) 100%);
+        background: linear-gradient(180deg, rgba(10,10,10,0.2) 0%, rgba(10,10,10,0.72) 100%);
     }
 
     .id-card-content {
         position: relative; 
         z-index: 2; 
-        padding: 30px; 
+        padding: 24px 22px 20px 22px; 
         display: flex; 
         flex-direction: column; 
-        height: 100%;
+        min-height: 640px;
+        box-sizing: border-box;
     }
 
     .card-header-top { 
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
-        margin-bottom: 25px; 
+        margin-bottom: 16px; 
     }
     .card-logo { 
-        font-size: 1.4em; 
+        font-size: 1.35em; 
         font-weight: 800; 
         color: var(--gold); 
+        letter-spacing: 0.5px;
     }
     .card-role-badge { 
         padding: 4px 12px; 
         border-radius: 20px; 
-        font-size: 0.75em; 
+        font-size: 0.72em; 
         font-weight: bold; 
         text-transform: uppercase; 
         letter-spacing: 2px;
@@ -86,45 +88,160 @@
     }
 
     .card-avatar { 
-        width: 130px; 
-        height: 130px; 
+        width: 110px; 
+        height: 110px; 
         border-radius: 50%; 
-        border: 4px solid var(--gold); 
+        border: 3.5px solid var(--gold); 
         object-fit: cover; 
-        margin: 0 auto 20px auto; 
+        margin: 0 auto 12px auto; 
         display: block; 
-        box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); 
+        box-shadow: 0 0 22px rgba(255, 215, 0, 0.45); 
+        background: #000;
     }
     
-    .card-name { text-align: center; font-size: 1.8em; margin: 0 0 5px 0; color: var(--white); font-weight: 700; }
-    .card-country { text-align: center; font-size: 1.15em; margin-bottom: auto; color: var(--silver); }
+    .card-name { 
+        text-align: center; 
+        font-size: 1.55em; 
+        margin: 0 0 4px 0; 
+        color: var(--white); 
+        font-weight: 700; 
+        line-height: 1.2;
+    }
+    .card-country { 
+        text-align: center; 
+        font-size: 0.95em; 
+        margin-bottom: 10px; 
+        color: var(--silver); 
+    }
+
+    /* Contact Meta Row (Email, Phone, Age) */
+    .card-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .card-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        font-size: 0.68em;
+        color: #e0e0e0;
+        letter-spacing: 0.2px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .card-meta-pill i {
+        color: var(--gold);
+        font-size: 0.9em;
+    }
+
+    /* Social Icons Row (Max 3) */
+    .card-socials-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .card-social-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #252830 0%, #15161b 100%);
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.15);
+        color: var(--gold);
+        font-size: 0.85em;
+    }
     
     .card-qr-section { 
-        background: rgba(0,0,0,0.6); 
-        border-radius: 15px; 
-        padding: 15px; 
+        background: rgba(0,0,0,0.68); 
+        border-radius: 14px; 
+        padding: 12px 14px; 
         display: flex; 
         align-items: center; 
         justify-content: space-between; 
-        border: 1px solid rgba(255,215,0,0.2); 
+        border: 1px solid rgba(255,215,0,0.25); 
+        margin-bottom: 8px;
     }
-    .card-qr-img { width: 90px; height: 90px; border-radius: 8px; background: #fff; padding: 2px; }
+    .card-qr-img { 
+        width: 82px; 
+        height: 82px; 
+        border-radius: 8px; 
+        background: #fff; 
+        padding: 2px; 
+    }
     
     .card-id-block { text-align: right; }
-    .card-id-label { font-size: 0.65em; color: var(--silver); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px; }
-    .card-id-val { font-family: monospace; font-size: 1.6em; color: var(--gold); font-weight: bold; letter-spacing: 3px; }
+    .card-id-label { font-size: 0.62em; color: var(--silver); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 2px; }
+    .card-id-val { font-family: monospace; font-size: 1.5em; color: var(--gold); font-weight: bold; letter-spacing: 2px; }
 
-    #qr-warning { text-align: center; font-size: 0.75em; color: var(--silver); margin-top: 15px; font-weight: bold; letter-spacing: 1px; transition: opacity 0.2s; }
+    #qr-warning { 
+        text-align: center; 
+        font-size: 0.72em; 
+        color: var(--silver); 
+        margin: 4px 0 12px 0; 
+        font-weight: 600; 
+        letter-spacing: 0.5px; 
+        transition: opacity 0.2s; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
 
-    /* --- CONTROLS PANEL --- */
+    /* Bottom Attribution & Collaboration Text */
+    .card-bottom-attribution {
+        margin-top: auto;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 215, 0, 0.2);
+        text-align: center;
+    }
+    .card-collab-line {
+        font-size: 0.68em;
+        color: #ffffff;
+        font-weight: 500;
+        line-height: 1.35;
+        margin-bottom: 3px;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-collab-line .brand-highlight {
+        color: var(--gold);
+        font-weight: 700;
+    }
+    .card-collab-sub {
+        font-size: 0.58em;
+        color: var(--silver);
+        letter-spacing: 0.3px;
+        margin-bottom: 4px;
+        opacity: 0.9;
+    }
+    .card-site-url {
+        font-size: 0.62em;
+        color: var(--gold);
+        font-family: monospace;
+        letter-spacing: 0.8px;
+        opacity: 0.95;
+    }
+
+    /* --- MACHINE TEXTURE CONTROLS PANEL --- */
     .controls-panel { 
         width: 100%; 
         max-width: 800px; 
-        background: var(--dark-gray); 
+        background: linear-gradient(145deg, #181a20 0%, #111216 50%, #0a0b0d 100%); 
         padding: 30px; 
-        border-radius: 15px; 
-        border: 1px solid #333;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border-radius: 18px; 
+        border: 1.5px solid #2d313a;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.06);
     }
     
     .action-buttons { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
@@ -138,9 +255,151 @@
     .btn-download:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
 
     .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; color: var(--silver); margin-bottom: 8px; font-weight: 600; }
-    .form-group input { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: 1px solid #444; border-radius: 8px; outline: none; transition: border-color 0.3s; }
-    .form-group input:focus { border-color: var(--gold); }
+    .form-group label { display: block; color: var(--silver); margin-bottom: 8px; font-weight: 600; font-size: 0.92em; }
+    
+    /* Machine Texture Inputs */
+    .controls-panel input[type="text"],
+    .controls-panel input[type="url"],
+    .controls-panel input[type="email"],
+    .controls-panel input[type="tel"],
+    .controls-panel input[type="number"],
+    .controls-panel select {
+        width: 100%;
+        padding: 12px 16px;
+        background: linear-gradient(145deg, #1c1f26 0%, #111317 50%, #0a0b0e 100%);
+        color: #e6e6e6;
+        border: 1.5px solid #333842;
+        border-radius: 10px;
+        outline: none;
+        font-family: 'Poppins', sans-serif;
+        font-size: 0.92em;
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.8),
+            inset 0 1px 1px rgba(255, 255, 255, 0.06),
+            0 2px 6px rgba(0, 0, 0, 0.5);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        box-sizing: border-box;
+    }
+
+    .controls-panel input:focus,
+    .controls-panel select:focus {
+        border-color: var(--gold, #FFD700);
+        box-shadow: 
+            0 0 15px rgba(255, 215, 0, 0.35),
+            inset 0 2px 4px rgba(0, 0, 0, 0.7);
+        color: #ffffff;
+    }
+
+    .section-box {
+        background: linear-gradient(145deg, #16181f 0%, #0e0f13 100%);
+        border: 1.5px solid rgba(255, 215, 0, 0.22);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 22px;
+        box-shadow: inset 0 1px 2px rgba(255,255,255,0.05), 0 6px 18px rgba(0,0,0,0.5);
+    }
+    .section-title {
+        margin: 0 0 14px 0;
+        font-weight: 700;
+        color: var(--gold);
+        font-size: 1.05em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Switch styling for individual toggles */
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label {
+        font-weight: 600;
+        font-size: 0.9em;
+        color: #dcdcdc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .custom-switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+    .custom-switch input { opacity: 0; width: 0; height: 0; }
+    .switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #252830;
+        border: 1.5px solid #3c404d;
+        border-radius: 24px;
+        transition: .3s;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 2.5px;
+        background-color: var(--silver);
+        border-radius: 50%;
+        transition: .3s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .custom-switch input:checked + .switch-slider {
+        background: linear-gradient(135deg, #3d3210 0%, #1e1908 100%);
+        border-color: var(--gold);
+    }
+    .custom-switch input:checked + .switch-slider:before {
+        transform: translateX(22px);
+        background-color: var(--gold);
+        box-shadow: 0 0 8px var(--gold);
+    }
+
+    /* Modal Backdrop & Card */
+    .gpl-confirm-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(8px);
+        z-index: 999999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    .gpl-confirm-modal-card {
+        background: linear-gradient(145deg, #1c1f27 0%, #101216 50%, #0a0b0e 100%);
+        border: 1.5px solid var(--gold);
+        box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 215, 0, 0.35);
+        border-radius: 20px;
+        padding: 32px 26px;
+        max-width: 480px;
+        width: 90%;
+        text-align: center;
+        transform: scale(0.95);
+        transition: transform 0.25s ease;
+    }
+    .gpl-confirm-modal-card h3 {
+        color: var(--gold);
+        font-size: 1.35em;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
 </style>
 
 <main class="id-card-page container">
@@ -170,9 +429,28 @@
         </div>
     <% } %>
 
+    <%
+        const custom = cardUser.cardCustomization || {};
+        const brandName = custom.brandName || cardUser.username;
+        const platform = custom.platform || 'Multiplatform';
+        const showEmail = custom.showEmail || false;
+        const emailType = custom.emailType || 'account';
+        const displayEmail = emailType === 'custom' && custom.customEmail ? custom.customEmail : cardUser.email;
+        const showPhone = custom.showPhone || false;
+        const displayPhone = custom.phone || '';
+        const showAge = custom.showAge || false;
+        let displayAge = custom.customAge || '';
+        if (!displayAge && cardUser.dateOfBirth) {
+            const diff = Date.now() - new Date(cardUser.dateOfBirth).getTime();
+            displayAge = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+        }
+        const showSocials = custom.showSocials || false;
+        const socials = Array.isArray(custom.socials) ? custom.socials : [];
+    %>
+
     <!-- THE CARD (Target for Export) -->
     <div id="exportable-card" class="id-card-wrapper">
-        <div class="id-card-bg" style="background-image: url('<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || '/images/card-bg.png' %>');"></div>
+        <div class="id-card-bg"></div>
         <div class="id-card-content">
             <div class="card-header-top">
                 <span class="card-logo">GPL<span style="color: white;">Mods</span></span>
@@ -201,7 +479,7 @@
                 <% } %>
             </div>
             
-            <img id="rendered-card-avatar" src="<%= cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+            <img id="rendered-card-avatar" src="<%= cardUser.cardAvatarDataUrl || cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" crossorigin="anonymous" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
             
             <h2 class="card-name"><%= cardUser.username %></h2>
             
@@ -222,6 +500,40 @@
                 <%= flag %> <%= cardUser.country || 'Global' %>
             </div>
 
+            <!-- Contact Meta Row (Email, Phone, Age) -->
+            <div id="cardMetaRow" class="card-meta-row" style="display: <%= (showEmail || showPhone || showAge) ? 'flex' : 'none' %>;">
+                <span id="cardMetaEmailPill" class="card-meta-pill" style="display: <%= showEmail ? 'inline-flex' : 'none' %>;">
+                    <i class="fas fa-envelope"></i> <span id="cardMetaEmailText"><%= displayEmail %></span>
+                </span>
+                <span id="cardMetaPhonePill" class="card-meta-pill" style="display: <%= showPhone ? 'inline-flex' : 'none' %>;">
+                    <i class="fas fa-phone"></i> <span id="cardMetaPhoneText"><%= displayPhone %></span>
+                </span>
+                <span id="cardMetaAgePill" class="card-meta-pill" style="display: <%= showAge ? 'inline-flex' : 'none' %>;">
+                    <i class="fas fa-birthday-cake"></i> <span id="cardMetaAgeText"><%= displayAge %> yrs</span>
+                </span>
+            </div>
+
+            <!-- Social Icons Row (Max 3) -->
+            <div id="cardSocialsRow" class="card-socials-row" style="display: <%= (showSocials && socials.length > 0) ? 'flex' : 'none' %>;">
+                <% 
+                    const iconMap = {
+                        telegram: 'fab fa-telegram',
+                        discord: 'fab fa-discord',
+                        youtube: 'fab fa-youtube',
+                        github: 'fab fa-github',
+                        twitter: 'fab fa-x-twitter',
+                        instagram: 'fab fa-instagram',
+                        website: 'fas fa-globe',
+                        whatsapp: 'fab fa-whatsapp'
+                    };
+                %>
+                <% socials.slice(0, 3).forEach((s, idx) => { %>
+                    <span class="card-social-badge" id="cardSocialBadge<%= idx %>" title="<%= s.platform %>">
+                        <i class="<%= iconMap[s.platform] || 'fas fa-link' %>"></i>
+                    </span>
+                <% }); %>
+            </div>
+
             <div class="card-qr-section">
                 <!-- Toggle between Public and Private QR -->
                 <img id="qr-display" src="<%= publicQrUrl %>" class="card-qr-img" crossorigin="anonymous">
@@ -230,7 +542,32 @@
                     <span class="card-id-val"><%= cardUser.cardId %></span>
                 </div>
             </div>
-            <p id="qr-warning">SCAN TO VIEW PUBLIC PROFILE</p>
+            
+            <p id="qr-warning">
+                <i class="fas fa-qrcode" style="color: var(--gold); margin-right: 6px;"></i> SCAN TO VIEW PUBLIC PROFILE
+            </p>
+
+            <!-- Bottom Collaboration / Team Attribution -->
+            <div class="card-bottom-attribution">
+                <% if (cardUser.role === 'admin') { %>
+                    <div class="card-collab-line" style="font-weight: 700; color: var(--gold);">Official Member Of GPLMods Admin Team</div>
+                    <div class="card-site-url">https://gplmods.webredirect.org</div>
+                <% } else if (cardUser.role === 'support') { %>
+                    <div class="card-collab-line" style="font-weight: 700; color: #2196f3;">Official Member Of GPLMods Support Team</div>
+                    <div class="card-site-url">https://gplmods.webredirect.org</div>
+                <% } else if (cardUser.role === 'owner') { %>
+                    <div class="card-collab-line" style="font-weight: 700; color: #ff9800;" id="collabOwnerTextPreview">
+                        <%= (custom.customTagline && custom.customTagline.trim()) ? custom.customTagline : 'Official Founder & Head of GPLMods Ecosystem' %>
+                    </div>
+                    <div class="card-site-url">https://gplmods.webredirect.org</div>
+                <% } else { %>
+                    <div class="card-collab-line">
+                        <span id="collabBrandPreview" class="brand-highlight"><%= brandName %></span> Collabed With GPLMods as <span id="collabPlatformPreview" class="brand-highlight"><%= platform %></span> Mod Distributor
+                    </div>
+                    <div class="card-collab-sub">You can also do so to expand your reach</div>
+                    <div class="card-site-url">https://gplmods.webredirect.org</div>
+                <% } %>
+            </div>
         </div>
     </div>
 
@@ -243,20 +580,22 @@
         </div>
 
         <% if (typeof error !== 'undefined' && error) { %>
-            <div style="padding: 15px; background: rgba(229,57,53,0.1); color: var(--red); border: 1px solid var(--red); border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= error %></div>
+            <div style="padding: 15px; background: rgba(229,57,53,0.12); color: var(--red); border: 1.5px solid var(--red); border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= error %></div>
         <% } %>
         <% if (typeof success !== 'undefined' && success) { %>
-            <div style="padding: 15px; background: rgba(46,204,113,0.1); color: #2ecc71; border: 1px solid #2ecc71; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= success %></div>
+            <div style="padding: 15px; background: rgba(46,204,113,0.12); color: #2ecc71; border: 1.5px solid #2ecc71; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold;"><%= success %></div>
         <% } %>
 
-        <hr style="border-color: #333; margin: 30px 0;">
+        <hr style="border-color: #2a2d36; margin: 30px 0;">
 
-        <h3 style="color: var(--white); margin-bottom: 20px;">Customize Your Card</h3>
-        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
-            <i class="fas fa-info-circle"></i> You may edit your custom popup message, background image, and card avatar once every 7 days.
+        <h3 style="color: var(--white); margin-bottom: 12px; font-size: 1.4em;">Customize Your Card</h3>
+        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 25px;">
+            <i class="fas fa-info-circle" style="color: var(--gold);"></i> Personalize your brand identity, contact badges, social channels, and card styling.
         </p>
 
         <form action="/id-card/edit" method="POST" enctype="multipart/form-data" id="cardCustomForm">
+            
+            <!-- Scan Message -->
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-comment-dots" style="color: var(--gold);"></i> Custom Profile Scan Message
@@ -265,8 +604,164 @@
                 <small style="color: var(--silver); font-size: 0.8em; margin-top: 5px; display: block;">Displays when others scan your public ID QR code (max 120 characters).</small>
             </div>
 
+            <!-- Brand Name & Platform (For Collab text) -->
+            <div class="section-box">
+                <div class="section-title">
+                    <i class="fas fa-award"></i> Brand & Collaboration Identity
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Your Brand Name</label>
+                        <input type="text" id="brandNameInput" name="brandName" value="<%= custom.brandName || '' %>" placeholder="e.g., Arun Mods" maxlength="50">
+                        <small style="color: var(--silver); font-size: 0.8em; margin-top: 4px; display: block;">Displayed in the collaboration attribution at the bottom of the card.</small>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Primary Mod Platform</label>
+                        <select id="platformSelect" name="platform">
+                            <option value="Android" <%= platform === 'Android' ? 'selected' : '' %>>Android (APK)</option>
+                            <option value="iOS" <%= platform === 'iOS' ? 'selected' : '' %>>iOS (IPA)</option>
+                            <option value="PC / Windows" <%= platform === 'PC / Windows' ? 'selected' : '' %>>PC / Windows</option>
+                            <option value="Multiplatform" <%= platform === 'Multiplatform' ? 'selected' : '' %>>Multiplatform</option>
+                            <option value="Telegram" <%= platform === 'Telegram' ? 'selected' : '' %>>Telegram Channel</option>
+                            <option value="YouTube" <%= platform === 'YouTube' ? 'selected' : '' %>>YouTube Creator</option>
+                            <option value="Discord" <%= platform === 'Discord' ? 'selected' : '' %>>Discord Community</option>
+                        </select>
+                        <small style="color: var(--silver); font-size: 0.8em; margin-top: 4px; display: block;">Platform you primarily distribute mods for.</small>
+                    </div>
+                </div>
+
+                <% if (cardUser.role === 'owner') { %>
+                    <div class="form-group" style="margin-top: 15px; margin-bottom: 0;">
+                        <label style="color: #ff9800;"><i class="fas fa-crown"></i> Owner Custom Footer Line</label>
+                        <input type="text" id="ownerTaglineInput" name="customTagline" value="<%= custom.customTagline || '' %>" placeholder="Enter custom bottom line text (e.g., Head of GPL Mods Ecosystem)" maxlength="100">
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Contact Information Options (Email, Phone, Age) -->
+            <div class="section-box">
+                <div class="section-title">
+                    <i class="fas fa-address-card"></i> Contact Information & Age Badges
+                </div>
+
+                <!-- Email Toggle -->
+                <div class="toggle-row">
+                    <div class="toggle-label">
+                        <i class="fas fa-envelope" style="color: var(--gold);"></i> Show Email Address on Card
+                    </div>
+                    <label class="custom-switch">
+                        <input type="checkbox" id="showEmailToggle" name="showEmail" value="true" <%= showEmail ? 'checked' : '' %>>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <div id="emailOptionsBox" style="display: <%= showEmail ? 'block' : 'none' %>; padding: 12px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin: 10px 0 16px 0; border: 1px dashed rgba(255,215,0,0.25);">
+                    <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88em; color: #fff; cursor: pointer;">
+                            <input type="radio" name="emailType" value="account" <%= emailType === 'account' ? 'checked' : '' %> id="emailTypeAccount"> Account Email (<%= cardUser.email %>)
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88em; color: #fff; cursor: pointer;">
+                            <input type="radio" name="emailType" value="custom" <%= emailType === 'custom' ? 'checked' : '' %> id="emailTypeCustom"> Custom Business/Contact Email
+                        </label>
+                    </div>
+                    <div id="customEmailInputWrap" style="display: <%= emailType === 'custom' ? 'block' : 'none' %>;">
+                        <input type="email" id="customEmailInput" name="customEmail" value="<%= custom.customEmail || '' %>" placeholder="e.g., contact@arunmods.com" maxlength="80">
+                    </div>
+                </div>
+
+                <!-- Phone Toggle -->
+                <div class="toggle-row">
+                    <div class="toggle-label">
+                        <i class="fas fa-phone" style="color: var(--gold);"></i> Show Phone Number on Card
+                    </div>
+                    <label class="custom-switch">
+                        <input type="checkbox" id="showPhoneToggle" name="showPhone" value="true" <%= showPhone ? 'checked' : '' %>>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <div id="phoneInputWrap" style="display: <%= showPhone ? 'block' : 'none' %>; padding: 10px 0 16px 0;">
+                    <input type="tel" id="phoneInput" name="phone" value="<%= custom.phone || '' %>" placeholder="e.g., +91 98765 43210" maxlength="25">
+                </div>
+
+                <!-- Age Toggle -->
+                <div class="toggle-row">
+                    <div class="toggle-label">
+                        <i class="fas fa-birthday-cake" style="color: var(--gold);"></i> Show Age on Card
+                    </div>
+                    <label class="custom-switch">
+                        <input type="checkbox" id="showAgeToggle" name="showAge" value="true" <%= showAge ? 'checked' : '' %>>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <div id="ageInputWrap" style="display: <%= showAge ? 'block' : 'none' %>; padding: 10px 0 8px 0;">
+                    <input type="number" id="ageInput" name="customAge" value="<%= displayAge || '' %>" placeholder="e.g., 22" min="10" max="120">
+                </div>
+            </div>
+
+            <!-- Social Media Icons Section (Max 3) -->
+            <div class="section-box">
+                <div class="toggle-row" style="border-bottom: none; padding-top: 0;">
+                    <div class="section-title" style="margin-bottom: 0;">
+                        <i class="fas fa-share-alt"></i> Social Icons on Card (Max 3)
+                    </div>
+                    <label class="custom-switch">
+                        <input type="checkbox" id="showSocialsToggle" name="showSocials" value="true" <%= showSocials ? 'checked' : '' %>>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <p style="color: var(--silver); font-size: 0.85em; margin: 4px 0 14px 0;">
+                    Highlight up to 3 official channels with sleek Font Awesome icons on your ID card.
+                </p>
+
+                <div id="socialInputsContainer" style="display: <%= showSocials ? 'block' : 'none' %>;">
+                    <% 
+                        const socialOptions = [
+                            { val: 'telegram', label: 'Telegram (fab fa-telegram)' },
+                            { val: 'discord', label: 'Discord (fab fa-discord)' },
+                            { val: 'youtube', label: 'YouTube (fab fa-youtube)' },
+                            { val: 'github', label: 'GitHub (fab fa-github)' },
+                            { val: 'twitter', label: 'X / Twitter (fab fa-x-twitter)' },
+                            { val: 'instagram', label: 'Instagram (fab fa-instagram)' },
+                            { val: 'website', label: 'Website / Globe (fas fa-globe)' },
+                            { val: 'whatsapp', label: 'WhatsApp (fab fa-whatsapp)' }
+                        ];
+                        const s1 = socials[0] || { platform: 'telegram', handleOrUrl: '' };
+                        const s2 = socials[1] || { platform: 'discord', handleOrUrl: '' };
+                        const s3 = socials[2] || { platform: 'youtube', handleOrUrl: '' };
+                    %>
+                    <!-- Social Slot 1 -->
+                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 12px; align-items: center;">
+                        <select name="social1_platform" id="social1Plat">
+                            <% socialOptions.forEach(opt => { %>
+                                <option value="<%= opt.val %>" <%= s1.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
+                            <% }); %>
+                        </select>
+                        <input type="text" name="social1_handle" id="social1Handle" value="<%= s1.handleOrUrl || '' %>" placeholder="Username, invite, or channel link">
+                    </div>
+
+                    <!-- Social Slot 2 -->
+                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 12px; align-items: center;">
+                        <select name="social2_platform" id="social2Plat">
+                            <% socialOptions.forEach(opt => { %>
+                                <option value="<%= opt.val %>" <%= s2.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
+                            <% }); %>
+                        </select>
+                        <input type="text" name="social2_handle" id="social2Handle" value="<%= s2.handleOrUrl || '' %>" placeholder="Optional 2nd handle or link">
+                    </div>
+
+                    <!-- Social Slot 3 -->
+                    <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 4px; align-items: center;">
+                        <select name="social3_platform" id="social3Plat">
+                            <% socialOptions.forEach(opt => { %>
+                                <option value="<%= opt.val %>" <%= s3.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
+                            <% }); %>
+                        </select>
+                        <input type="text" name="social3_handle" id="social3Handle" value="<%= s3.handleOrUrl || '' %>" placeholder="Optional 3rd handle or link">
+                    </div>
+                </div>
+            </div>
+
             <!-- Card Background Section -->
-            <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+            <div class="section-box">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                     <label style="margin: 0; font-weight: 700; color: var(--gold); font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-image"></i> Card Background
@@ -290,23 +785,20 @@
                         <input type="url" id="cardBgUrl" name="cardBgUrl" value="<%= cardUser.cardBgUrl %>" placeholder="Or enter direct background image URL (https://...)">
                     </div>
                     <div style="width: 75px; height: 110px; border-radius: 8px; overflow: hidden; border: 1.5px solid rgba(255,215,0,0.4); background: #000; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                        <img id="bgPreviewImg" src="<%= cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || '/images/card-bg.png' %>" alt="Background Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img id="bgPreviewImg" src="<%= cardUser.cardBgDataUrl || cardUser.resolvedCardBgUrl || cardUser.cardBgUrl || '/images/card-bg.png' %>" alt="Background Preview" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
                 </div>
             </div>
 
             <!-- Card Avatar Section -->
-            <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,215,0,0.25); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+            <div class="section-box">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                     <label style="margin: 0; font-weight: 700; color: var(--gold); font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-user-circle"></i> Card Avatar
                     </label>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <button type="button" id="btnFetchCardGravatar" class="btn-mode" style="padding: 5px 14px; font-size: 0.8em; border-color: #46b5e8; color: #46b5e8; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: #46b5e8;">
-                                <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"/>
-                            </svg>
-                            Fetch from Gravatar
+                            <i class="fas fa-globe"></i> Fetch from Gravatar
                         </button>
                         <button type="button" id="btnResetAvatar" class="btn-mode" style="padding: 5px 14px; font-size: 0.8em; border-color: var(--silver); color: var(--silver); border-radius: 6px;">
                             <i class="fas fa-undo"></i> Use Account Avatar
@@ -331,17 +823,44 @@
                         </div>
                     </div>
                     <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 2.5px solid var(--gold); background: #000; flex-shrink: 0; box-shadow: 0 0 15px rgba(255,215,0,0.4);">
-                        <img id="avatarPreviewImg" src="<%= cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                        <img id="avatarPreviewImg" src="<%= cardUser.cardAvatarDataUrl || cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" alt="Avatar Preview" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                     </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 8px; background: var(--gold); color: var(--black); border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.3); transition: transform 0.2s;">
+            <!-- Trigger Confirmation Popup -->
+            <button type="button" id="btnOpenSaveConfirm" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em; border-radius: 10px; background: var(--gold); color: var(--black); border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 18px rgba(255,215,0,0.35); transition: transform 0.2s;">
                 <i class="fas fa-save" style="margin-right: 8px;"></i> Update Card Design
             </button>
         </form>
     </div>
 </main>
+
+<!-- CONFIRMATION POPUP MODAL -->
+<div id="cardConfirmModal" class="gpl-confirm-modal-backdrop">
+    <div class="gpl-confirm-modal-card">
+        <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(255, 215, 0, 0.12); border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 1.6rem; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);">
+            <i class="fas fa-id-card"></i>
+        </div>
+        <h3>Confirm ID Card Updates</h3>
+        <p style="color: var(--silver); font-size: 0.9em; line-height: 1.5; margin: 0 0 20px;">
+            Please review the customized details to be saved on your official GPL Mods digital credential:
+        </p>
+        
+        <div id="confirmSummaryBox" style="text-align: left; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 14px 16px; margin-bottom: 22px; font-size: 0.88em; color: #d0d0d0; line-height: 1.6;">
+            <!-- Injected via JavaScript -->
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" id="btnCancelConfirm" style="flex: 1; padding: 12px 16px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: #e2e8f0; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s;">
+                Keep Editing
+            </button>
+            <button type="button" id="btnExecuteSave" style="flex: 1; padding: 12px 16px; background: var(--gold); border: 1px solid var(--gold); color: var(--black); border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(255,215,0,0.4); transition: 0.2s;">
+                <i class="fas fa-check"></i> Confirm & Save
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
     const publicQr = "<%= publicQrUrl %>";
@@ -355,59 +874,81 @@
         
         if (mode === 'safe') {
             qrDisplay.src = publicQr;
-            warning.textContent = "SCAN TO VIEW PUBLIC PROFILE";
+            warning.innerHTML = '<i class="fas fa-qrcode" style="color: var(--gold); margin-right: 6px;"></i> SCAN TO VIEW PUBLIC PROFILE';
             warning.style.color = "var(--silver)";
             btnSafe.classList.add('active');
             btnPrivate.classList.remove('active');
         } else {
             qrDisplay.src = privateQr;
-            warning.textContent = "⚠️ SECRET LOGIN QR - DO NOT SHARE ⚠️";
-            warning.style.color = "var(--red)";
+            warning.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff3333; margin-right: 6px; filter: drop-shadow(0 0 6px rgba(255, 51, 51, 0.6));"></i> SECRET LOGIN QR - DO NOT SHARE <i class="fas fa-exclamation-triangle" style="color: #ff3333; margin-left: 6px; filter: drop-shadow(0 0 6px rgba(255, 51, 51, 0.6));"></i>';
+            warning.style.color = "#ff4444";
             warning.style.fontWeight = "bold";
             btnPrivate.classList.add('active');
             btnSafe.classList.remove('active');
         }
     }
 
-    function downloadCard() {
+    // --- DOWNLOAD CARD WITH GUARANTEED BASE64 AVATAR ---
+    async function downloadCard() {
         const card = document.getElementById('exportable-card');
         const btn = document.querySelector('.btn-download');
+        const avatarImg = document.getElementById('rendered-card-avatar');
         
         // UI Feedback
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         btn.disabled = true;
 
-        // Hide warning text momentarily for a cleaner PNG output
-        document.getElementById('qr-warning').style.opacity = '0';
-        
-        // Wait a tiny bit for the DOM to update
-        setTimeout(() => {
-            html2canvas(card, { 
+        // Hide warning text momentarily for clean PNG output
+        const warningEl = document.getElementById('qr-warning');
+        warningEl.style.opacity = '0';
+
+        try {
+            // Guarantee avatar is loaded as a local Data URL if not already
+            if (avatarImg && avatarImg.src && !avatarImg.src.startsWith('data:image/')) {
+                try {
+                    const proxyRes = await fetch(`/api/id-card/avatar-data-url?url=${encodeURIComponent(avatarImg.src)}`);
+                    const pData = await proxyRes.json();
+                    if (pData && pData.success && pData.dataUrl) {
+                        avatarImg.src = pData.dataUrl;
+                        await new Promise((resolve) => {
+                            if (avatarImg.complete) resolve();
+                            else avatarImg.onload = resolve;
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Avatar proxy fetch warning:", e);
+                }
+            }
+
+            // Small delay for DOM layout repaint
+            await new Promise(r => setTimeout(r, 120));
+
+            const canvas = await html2canvas(card, { 
                 scale: 3,           // High resolution
-                useCORS: true,      // Essential for loading external avatars/backgrounds
+                useCORS: true,      // Handle any remaining CORS assets
+                allowTaint: false,
                 backgroundColor: null, 
                 logging: false 
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `GPLMods-ID-${'<%= cardUser.cardId %>'}.png`;
-                link.href = canvas.toDataURL('image/png', 1.0);
-                link.click();
-                
-                // Restore warning text and button state
-                document.getElementById('qr-warning').style.opacity = '1';
-                btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
-                    btn.disabled = false;
-                }, 2000);
-            }).catch(err => {
-                console.error("html2canvas error:", err);
-                alert("Could not generate image. Please ensure your background URL supports CORS.");
-                document.getElementById('qr-warning').style.opacity = '1';
+            });
+
+            const link = document.createElement('a');
+            link.download = `GPLMods-ID-${'<%= cardUser.cardId %>'}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+            
+            btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+            setTimeout(() => {
                 btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
                 btn.disabled = false;
-            });
-        }, 100);
+            }, 2000);
+        } catch (err) {
+            console.error("html2canvas error:", err);
+            alert("Could not generate image. Please make sure all images are accessible.");
+            btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
+            btn.disabled = false;
+        } finally {
+            warningEl.style.opacity = '1';
+        }
     }
 
     // --- LIVE PREVIEWS & CUSTOMIZATION INTERACTION ---
@@ -427,6 +968,131 @@
     const btnResetAvatar = document.getElementById('btnResetAvatar');
     const btnFetchCardGravatar = document.getElementById('btnFetchCardGravatar');
     const cardGravatarLoading = document.getElementById('cardGravatarLoading');
+
+    // Live preview elements on card
+    const brandNameInput = document.getElementById('brandNameInput');
+    const platformSelect = document.getElementById('platformSelect');
+    const collabBrandPreview = document.getElementById('collabBrandPreview');
+    const collabPlatformPreview = document.getElementById('collabPlatformPreview');
+    const collabOwnerTextPreview = document.getElementById('collabOwnerTextPreview');
+    const ownerTaglineInput = document.getElementById('ownerTaglineInput');
+
+    const showEmailToggle = document.getElementById('showEmailToggle');
+    const emailOptionsBox = document.getElementById('emailOptionsBox');
+    const emailTypeAccount = document.getElementById('emailTypeAccount');
+    const emailTypeCustom = document.getElementById('emailTypeCustom');
+    const customEmailInputWrap = document.getElementById('customEmailInputWrap');
+    const customEmailInput = document.getElementById('customEmailInput');
+    const cardMetaRow = document.getElementById('cardMetaRow');
+    const cardMetaEmailPill = document.getElementById('cardMetaEmailPill');
+    const cardMetaEmailText = document.getElementById('cardMetaEmailText');
+
+    const showPhoneToggle = document.getElementById('showPhoneToggle');
+    const phoneInputWrap = document.getElementById('phoneInputWrap');
+    const phoneInput = document.getElementById('phoneInput');
+    const cardMetaPhonePill = document.getElementById('cardMetaPhonePill');
+    const cardMetaPhoneText = document.getElementById('cardMetaPhoneText');
+
+    const showAgeToggle = document.getElementById('showAgeToggle');
+    const ageInputWrap = document.getElementById('ageInputWrap');
+    const ageInput = document.getElementById('ageInput');
+    const cardMetaAgePill = document.getElementById('cardMetaAgePill');
+    const cardMetaAgeText = document.getElementById('cardMetaAgeText');
+
+    const showSocialsToggle = document.getElementById('showSocialsToggle');
+    const socialInputsContainer = document.getElementById('socialInputsContainer');
+    const cardSocialsRow = document.getElementById('cardSocialsRow');
+
+    function refreshMetaRowVisibility() {
+        if (cardMetaRow) {
+            const hasAny = (showEmailToggle && showEmailToggle.checked) || 
+                           (showPhoneToggle && showPhoneToggle.checked) || 
+                           (showAgeToggle && showAgeToggle.checked);
+            cardMetaRow.style.display = hasAny ? 'flex' : 'none';
+        }
+    }
+
+    // Brand Name Live Update
+    if (brandNameInput && collabBrandPreview) {
+        brandNameInput.addEventListener('input', function() {
+            collabBrandPreview.textContent = this.value.trim() || "<%= cardUser.username %>";
+        });
+    }
+
+    // Platform Live Update
+    if (platformSelect && collabPlatformPreview) {
+        platformSelect.addEventListener('change', function() {
+            collabPlatformPreview.textContent = this.value;
+        });
+    }
+
+    // Owner Custom Tagline Live Update
+    if (ownerTaglineInput && collabOwnerTextPreview) {
+        ownerTaglineInput.addEventListener('input', function() {
+            collabOwnerTextPreview.textContent = this.value.trim() || 'Official Founder & Head of GPLMods Ecosystem';
+        });
+    }
+
+    // Email Toggles & Live Update
+    if (showEmailToggle) {
+        showEmailToggle.addEventListener('change', function() {
+            emailOptionsBox.style.display = this.checked ? 'block' : 'none';
+            cardMetaEmailPill.style.display = this.checked ? 'inline-flex' : 'none';
+            refreshMetaRowVisibility();
+        });
+    }
+    if (emailTypeAccount && emailTypeCustom) {
+        const updateEmailText = () => {
+            if (emailTypeCustom.checked) {
+                customEmailInputWrap.style.display = 'block';
+                cardMetaEmailText.textContent = customEmailInput.value.trim() || "<%= cardUser.email %>";
+            } else {
+                customEmailInputWrap.style.display = 'none';
+                cardMetaEmailText.textContent = "<%= cardUser.email %>";
+            }
+        };
+        emailTypeAccount.addEventListener('change', updateEmailText);
+        emailTypeCustom.addEventListener('change', updateEmailText);
+        if (customEmailInput) {
+            customEmailInput.addEventListener('input', function() {
+                if (emailTypeCustom.checked) {
+                    cardMetaEmailText.textContent = this.value.trim() || "<%= cardUser.email %>";
+                }
+            });
+        }
+    }
+
+    // Phone Live Update
+    if (showPhoneToggle && phoneInputWrap && cardMetaPhonePill && cardMetaPhoneText) {
+        showPhoneToggle.addEventListener('change', function() {
+            phoneInputWrap.style.display = this.checked ? 'block' : 'none';
+            cardMetaPhonePill.style.display = this.checked ? 'inline-flex' : 'none';
+            refreshMetaRowVisibility();
+        });
+        phoneInput.addEventListener('input', function() {
+            cardMetaPhoneText.textContent = this.value.trim() || "No phone";
+        });
+    }
+
+    // Age Live Update
+    if (showAgeToggle && ageInputWrap && cardMetaAgePill && cardMetaAgeText) {
+        showAgeToggle.addEventListener('change', function() {
+            ageInputWrap.style.display = this.checked ? 'block' : 'none';
+            cardMetaAgePill.style.display = this.checked ? 'inline-flex' : 'none';
+            refreshMetaRowVisibility();
+        });
+        ageInput.addEventListener('input', function() {
+            cardMetaAgeText.textContent = (this.value ? this.value.trim() + ' yrs' : '');
+        });
+    }
+
+    // Socials Toggle
+    if (showSocialsToggle && socialInputsContainer && cardSocialsRow) {
+        showSocialsToggle.addEventListener('change', function() {
+            socialInputsContainer.style.display = this.checked ? 'block' : 'none';
+            cardSocialsRow.style.display = this.checked ? 'flex' : 'none';
+        });
+    }
 
     // Live preview background file
     if (cardBgFile) {
@@ -457,7 +1123,7 @@
         });
     }
 
-    // Reset background to default (/images/card-bg.png)
+    // Reset background to default
     if (btnResetBg) {
         btnResetBg.addEventListener('click', function() {
             resetBgToDefault.value = 'true';
@@ -546,6 +1212,60 @@
             } finally {
                 btnFetchCardGravatar.disabled = false;
             }
+        });
+    }
+
+    // --- CONFIRMATION POPUP MODAL LOGIC ---
+    const cardConfirmModal = document.getElementById('cardConfirmModal');
+    const btnOpenSaveConfirm = document.getElementById('btnOpenSaveConfirm');
+    const btnCancelConfirm = document.getElementById('btnCancelConfirm');
+    const btnExecuteSave = document.getElementById('btnExecuteSave');
+    const confirmSummaryBox = document.getElementById('confirmSummaryBox');
+    const cardCustomForm = document.getElementById('cardCustomForm');
+
+    if (btnOpenSaveConfirm && cardConfirmModal && confirmSummaryBox) {
+        btnOpenSaveConfirm.addEventListener('click', function() {
+            // Build summary
+            const bName = brandNameInput ? (brandNameInput.value.trim() || '<%= cardUser.username %> (Default)') : 'N/A';
+            const plat = platformSelect ? platformSelect.value : 'Multiplatform';
+            const hasEmail = showEmailToggle && showEmailToggle.checked;
+            const chosenEmail = (emailTypeCustom && emailTypeCustom.checked && customEmailInput.value.trim()) ? customEmailInput.value.trim() : '<%= cardUser.email %>';
+            const hasPhone = showPhoneToggle && showPhoneToggle.checked;
+            const phoneVal = (phoneInput && phoneInput.value.trim()) || 'Not set';
+            const hasAge = showAgeToggle && showAgeToggle.checked;
+            const ageVal = (ageInput && ageInput.value.trim()) || 'Not set';
+            const hasSocials = showSocialsToggle && showSocialsToggle.checked;
+
+            let summaryHtml = `
+                <div style="margin-bottom: 6px;"><strong>Brand Name:</strong> <span style="color: var(--gold);">${bName}</span></div>
+                <div style="margin-bottom: 6px;"><strong>Mod Platform:</strong> <span style="color: var(--gold);">${plat}</span></div>
+                <div style="margin-bottom: 6px;"><strong>Email on Card:</strong> ${hasEmail ? '<span style="color:#2ecc71;">Enabled (' + chosenEmail + ')</span>' : '<span style="color:#a0aec0;">Hidden</span>'}</div>
+                <div style="margin-bottom: 6px;"><strong>Phone on Card:</strong> ${hasPhone ? '<span style="color:#2ecc71;">Enabled (' + phoneVal + ')</span>' : '<span style="color:#a0aec0;">Hidden</span>'}</div>
+                <div style="margin-bottom: 6px;"><strong>Age on Card:</strong> ${hasAge ? '<span style="color:#2ecc71;">Enabled (' + ageVal + ' yrs)</span>' : '<span style="color:#a0aec0;">Hidden</span>'}</div>
+                <div><strong>Social Icons:</strong> ${hasSocials ? '<span style="color:#2ecc71;">Enabled</span>' : '<span style="color:#a0aec0;">Hidden</span>'}</div>
+            `;
+            confirmSummaryBox.innerHTML = summaryHtml;
+
+            // Open Modal with smooth transition
+            cardConfirmModal.style.display = 'flex';
+            setTimeout(() => {
+                cardConfirmModal.style.opacity = '1';
+                cardConfirmModal.querySelector('.gpl-confirm-modal-card').style.transform = 'scale(1)';
+            }, 10);
+        });
+
+        const closeModal = () => {
+            cardConfirmModal.style.opacity = '0';
+            cardConfirmModal.querySelector('.gpl-confirm-modal-card').style.transform = 'scale(0.95)';
+            setTimeout(() => { cardConfirmModal.style.display = 'none'; }, 250);
+        };
+
+        btnCancelConfirm.addEventListener('click', closeModal);
+
+        btnExecuteSave.addEventListener('click', function() {
+            btnExecuteSave.disabled = true;
+            btnExecuteSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            cardCustomForm.submit();
         });
     }
 </script>

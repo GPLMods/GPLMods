@@ -547,8 +547,9 @@
         <div class="container header-content">
             
             <!-- Grid Area: Logo -->
-            <a href="<%- user ? '/home' : '/' %>" class="logo">GPL <span>Mods</span></a>
+            <a href="<%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? '#' : (user ? '/home' : '/') %>" class="logo" <%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? 'style="pointer-events: none;"' : '' %>>GPL <span>Mods</span></a>
             
+            <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
             <!-- Grid Area: Search Bar -->
             <div class="search-bar" id="animatedSearchBar">
                 <form action="/search" method="GET" class="search-form">
@@ -564,13 +565,14 @@
                 <div id="searchSuggestions" class="search-suggestions"></div>
                 <div id="searchHistory" class="search-history"></div>
             </div>
+            <% } %>
             
             <!-- ========================================== -->
             <!-- UNIFIED USER ACTIONS (All Devices)         -->
             <!-- ========================================== -->
             <div class="header-right-actions">
                 
-                <!-- Language Selector -->
+                <!-- Language Selector: Fully functional across all pages including 2FA -->
                 <div class="lang-dropdown-wrapper" style="position: relative; display: flex; align-items: center;">
                     <button id="lang-btn" class="nav-bell" title="Change Language" style="background:none; border:none; cursor:pointer; font-size: 1.6em; padding: 0; line-height: 0;">
                         <i class="fas fa-globe"></i>
@@ -588,6 +590,8 @@
                         <a href="#" data-lang="id">🇮🇩 Indonesia</a>
                     </div>
                 </div>
+
+                <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
                 <!-- Notification Bell -->
                 <a href="/notifications" class="nav-bell" title="Site Updates" id="nav-bell-link" 
                    data-user-id="<%= user ? user._id : '' %>"
@@ -598,18 +602,28 @@
                     <i class="fas fa-bell"></i>
                     <span id="notification-badge" class="update-badge" style="display: none;"></span>
                 </a>
+                <% } %>
                 
                <!-- Mobile Only Items -->
                 <div class="header-mobile-actions" style="display: flex; align-items: center; gap: 12px;">
                     <% if (user) { %>
-                        <!-- ✅ FIX: Restored the "avatar-placeholder" class and removed inline styles! -->
-                        <a href="/dashboard" class="avatar-placeholder">
-                            <img src="<%= user.signedAvatarUrl %>" alt="User Avatar">
-                        </a>
+                        <% if (typeof is2FAVerification !== 'undefined' && is2FAVerification) { %>
+                            <!-- In 2FA Security Lockdown: Display avatar clearly, non-clickable -->
+                            <div class="avatar-placeholder" style="cursor: default; pointer-events: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);" title="Pending 2FA: <%= user.username %>">
+                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                            </div>
+                        <% } else { %>
+                            <a href="/dashboard" class="avatar-placeholder">
+                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                            </a>
+                        <% } %>
                     <% } %>
-                    <div class="hamburger-menu" id="hamburger"><i class="fas fa-bars"></i></div>
+                    <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
+                        <div class="hamburger-menu" id="hamburger"><i class="fas fa-bars"></i></div>
+                    <% } %>
                 </div>
                 
+                <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
                 <!-- Desktop Only Items -->
                 <div class="desktop-text-buttons">
                     <% if (user) { %>
@@ -637,10 +651,12 @@
                         <a href="/register" class="btn btn-signup">Sign Up</a>
                     <% } %>
                 </div>
+                <% } %>
             </div>
         </div> 
     </header>
 
+    <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
     <!-- Mobile Sidebar Navigation -->
     <nav class="mobile-nav" id="mobileNav">
         <!-- GPL Mods Branding Header -->
@@ -746,5 +762,120 @@
                 </a>
             </li>
         </ul>
-    </nav>    
+    </nav>
+    <% } %>
+
+    <!-- Global Action Confirmation Modals (Logout & Clear Cache) -->
+    <div id="globalLogoutModal" class="gpl-action-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
+        <div class="gpl-action-modal-card" style="background: linear-gradient(145deg, #181116 0%, #0d0e12 100%); border: 1px solid rgba(244, 67, 54, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 67, 54, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(244, 67, 54, 0.12); border: 1px solid rgba(244, 67, 54, 0.35); display: flex; align-items: center; justify-content: center; color: #ff5252; font-size: 1.6rem; box-shadow: 0 0 20px rgba(244, 67, 54, 0.25);">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+            <h3 style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">Confirm Logout</h3>
+            <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
+                Are you sure you want to end your active session? You will need to sign in again to access your licenses, downloads, and account support.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="btn-cancel-logout" style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                    Stay Logged In
+                </button>
+                <a href="/logout" id="confirmLogoutBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(244, 67, 54, 0.4); cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalCcModal" class="gpl-action-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
+        <div class="gpl-action-modal-card" style="background: linear-gradient(145deg, #1c1810 0%, #0d0e12 100%); border: 1px solid rgba(246, 173, 85, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(246, 173, 85, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(246, 173, 85, 0.12); border: 1px solid rgba(246, 173, 85, 0.35); display: flex; align-items: center; justify-content: center; color: #f6ad55; font-size: 1.6rem; box-shadow: 0 0 20px rgba(246, 173, 85, 0.25);">
+                <i class="fas fa-broom"></i>
+            </div>
+            <h3 style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">Purge Web Cache</h3>
+            <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
+                Clear cached scripts, stylesheets, and local device assets? This refreshes your browser state without affecting your saved session or account data.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="btn-cancel-cc" style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                    Cancel
+                </button>
+                <a href="/cc" id="confirmCcBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4); cursor: pointer;">
+                    <i class="fas fa-broom"></i> Purge Now
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            function initActionModals() {
+                var logoutModal = document.getElementById('globalLogoutModal');
+                var ccModal = document.getElementById('globalCcModal');
+
+                function openModal(modal) {
+                    if (!modal) return;
+                    modal.style.display = 'flex';
+                    requestAnimationFrame(function() {
+                        modal.style.opacity = '1';
+                        var card = modal.querySelector('.gpl-action-modal-card');
+                        if (card) card.style.transform = 'scale(1)';
+                    });
+                }
+
+                function closeModal(modal) {
+                    if (!modal) return;
+                    modal.style.opacity = '0';
+                    var card = modal.querySelector('.gpl-action-modal-card');
+                    if (card) card.style.transform = 'scale(0.95)';
+                    setTimeout(function() {
+                        modal.style.display = 'none';
+                    }, 250);
+                }
+
+                document.addEventListener('click', function(e) {
+                    var logoutTarget = e.target.closest('a[href="/logout"]');
+                    if (logoutTarget && logoutTarget.id !== 'confirmLogoutBtn') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openModal(logoutModal);
+                        return;
+                    }
+
+                    var ccTarget = e.target.closest('a[href="/cc"]');
+                    if (ccTarget && ccTarget.id !== 'confirmCcBtn') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openModal(ccModal);
+                        return;
+                    }
+
+                    if (e.target.closest('.btn-cancel-logout')) {
+                        closeModal(logoutModal);
+                        return;
+                    }
+
+                    if (e.target.closest('.btn-cancel-cc')) {
+                        closeModal(ccModal);
+                        return;
+                    }
+
+                    if (e.target === logoutModal) {
+                        closeModal(logoutModal);
+                        return;
+                    }
+
+                    if (e.target === ccModal) {
+                        closeModal(ccModal);
+                        return;
+                    }
+                }, true);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initActionModals);
+            } else {
+                initActionModals();
+            }
+        })();
+    </script>
     <main>

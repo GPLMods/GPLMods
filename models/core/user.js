@@ -260,6 +260,23 @@ const UserSchema = new Schema({
     cardBgUrl: { type: String, default: '' }, // Custom background image
     cardAvatarUrl: { type: String, default: '' }, // Custom card avatar image
     cardLastEdited: { type: Date }, // To enforce the 7-day cooldown
+    cardCustomization: {
+        brandName: { type: String, trim: true, default: '' },
+        platform: { type: String, trim: true, default: '' },
+        showEmail: { type: Boolean, default: false },
+        emailType: { type: String, enum: ['account', 'custom'], default: 'account' },
+        customEmail: { type: String, trim: true, default: '' },
+        showPhone: { type: Boolean, default: false },
+        phone: { type: String, trim: true, default: '' },
+        showAge: { type: Boolean, default: false },
+        customAge: { type: Number },
+        showSocials: { type: Boolean, default: false },
+        socials: [{
+            platform: { type: String, trim: true, default: 'telegram' },
+            handleOrUrl: { type: String, trim: true }
+        }],
+        customTagline: { type: String, trim: true, default: '' } // For owner custom text
+    },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function() {

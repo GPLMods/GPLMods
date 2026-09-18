@@ -1,4 +1,6 @@
 // config/admin.js
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
@@ -147,8 +149,16 @@ async function createAdminRouter() {
         
         env: { NODE_ENV: isProduction ? 'production' : 'development' },
         assets: {
-            styles: isProduction ? ['/.adminjs/bundle.css', '/css/admin-custom.css'] : ['/css/admin-custom.css'],
-            scripts: isProduction ? ['/.adminjs/bundle.js', '/js/image-fallback.js', '/js/admin-badges.js'] : ['/js/admin-badges.js', '/js/image-fallback.js'],
+            styles: [
+                'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap',
+                ...(fs.existsSync(path.join(__dirname, '../.adminjs/bundle.css')) ? ['/.adminjs/bundle.css'] : []),
+                '/css/admin-custom.css'
+            ],
+            scripts: [
+                ...(fs.existsSync(path.join(__dirname, '../.adminjs/bundle.js')) ? ['/.adminjs/bundle.js'] : []),
+                '/js/image-fallback.js',
+                '/js/admin-badges.js'
+            ],
         },
         dashboard: { 
             component: Components.Dashboard,
@@ -256,8 +266,22 @@ async function createAdminRouter() {
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
-                        profileLottieBadges: { description: 'Custom profile Lottie badges (max 3). Specify animation (e.g. verified.json, card.json, crown.json), title, description, and color.' },
                         bio: { type: 'textarea', description: 'User profile biography' },
+                        profileLottieBadges: { 
+                            description: 'Custom profile Lottie badges (max 3, default is 0). Set animation, title, description, and accent color.' 
+                        },
+                        'profileLottieBadges.animation': {
+                            description: 'Lottie JSON filename from /public/animations (e.g. verified.json, card.json, crown.json, shield.json, ticmark.json) or direct URL'
+                        },
+                        'profileLottieBadges.title': {
+                            description: 'Badge display title (e.g. Verified Partner, Code Reviewer, Security Tester)'
+                        },
+                        'profileLottieBadges.description': {
+                            description: 'Hover tooltip explanation of this badge achievement'
+                        },
+                        'profileLottieBadges.color': {
+                            description: 'Accent hex color (e.g. #FFD700 for Gold, #00e676 for Green, #00b0ff for Blue, #f44336 for Red, #ba68c8 for Purple)'
+                        },
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },
                         role: {
