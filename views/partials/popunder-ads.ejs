@@ -16,51 +16,56 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
 
         // --- 1. CONSENT CHECK ---
         // Check if the user has accepted the policies via the banner
-        const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
+        function initPopunderAds() {
+            const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
-        // ONLY run the ad scripts if they have accepted the terms
-        if (hasAcceptedTOS) {
-            
-            console.log("TOS Accepted: Initializing Pop-under Ads.");
+            // ONLY run the ad scripts if they have accepted the terms
+            if (hasAcceptedTOS) {
+                console.log("TOS Accepted: Initializing Pop-under Ads.");
 
-            // --- 2. INJECT HILLTOPADS POP-UNDER SCRIPT ---
-            (function(wiwacw){
-                var d = document,
-                    s = d.createElement('script'),
-                    l = d.scripts[d.scripts.length - 1];
-                s.settings = wiwacw || {};
-                s.src = "\/\/fluffy-management.com\/c.D\/9F6ubS2y5ilGS_WzQn9ANojnkY2FObD-kUycM\/Ss0m2GO-TjYh4kOTT\/Ik1G";
-                s.async = true;
-                s.referrerPolicy = 'no-referrer-when-downgrade';
-                l.parentNode.insertBefore(s, l);
-            })({});
+                // --- 2. INJECT HILLTOPADS POP-UNDER SCRIPT ---
+                (function(wiwacw){
+                    var d = document,
+                        s = d.createElement('script'),
+                        l = d.scripts[d.scripts.length - 1];
+                    s.settings = wiwacw || {};
+                    s.src = "\/\/fluffy-management.com\/c.D\/9F6ubS2y5ilGS_WzQn9ANojnkY2FObD-kUycM\/Ss0m2GO-TjYh4kOTT\/Ik1G";
+                    s.async = true;
+                    s.referrerPolicy = 'no-referrer-when-downgrade';
+                    l.parentNode.insertBefore(s, l);
+                })({});
 
-            // --- 3. BACKGROUND MUSIC PAUSE LOGIC ---
-            // Define the elements that should trigger the pop-under when clicked
-            const triggerElements = document.querySelectorAll('.mod-card-link, .download-button, .part-btn');
-            const backgroundAudio = document.getElementById('background-audio');
+                // --- 3. BACKGROUND MUSIC PAUSE LOGIC ---
+                // Define the elements that should trigger the pop-under when clicked
+                const triggerElements = document.querySelectorAll('.mod-card-link, .download-button, .part-btn');
+                const backgroundAudio = document.getElementById('background-audio');
 
-            triggerElements.forEach(el => {
-                el.addEventListener('click', (e) => {
-                    console.log("Popunder potential trigger clicked.");
-                    
-                    // Pause background music if it is playing to prevent audio clashing
-                    if (backgroundAudio && !backgroundAudio.paused) {
-                        backgroundAudio.pause();
+                triggerElements.forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        console.log("Popunder potential trigger clicked.");
                         
-                        // Update the play/pause icon in the header
-                        const playPauseIcon = document.getElementById('play-pause-icon');
-                        if (playPauseIcon) {
-                            playPauseIcon.className = 'fas fa-play';
+                        // Pause background music if it is playing to prevent audio clashing
+                        if (backgroundAudio && !backgroundAudio.paused) {
+                            backgroundAudio.pause();
+                            
+                            // Update the play/pause icon in the header
+                            const playPauseIcon = document.getElementById('play-pause-icon');
+                            if (playPauseIcon) {
+                                playPauseIcon.className = 'fas fa-play';
+                            }
+                            localStorage.setItem('musicState', 'paused');
                         }
-                        localStorage.setItem('musicState', 'paused');
-                    }
+                    });
                 });
-            });
-
-        } else {
-            console.log("TOS Not Accepted: Blocking Pop-under Ads.");
+            } else {
+                console.log("TOS Not Accepted: Blocking Pop-under Ads.");
+                window.addEventListener('gplmods:policy-accepted', () => {
+                    initPopunderAds();
+                }, { once: true });
+            }
         }
+
+        initPopunderAds();
     });
 </script>
 <% } %>

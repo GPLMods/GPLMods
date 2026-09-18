@@ -46,7 +46,28 @@ const getBrandedEmailHtml = (content) => `
                         </td>
                     </tr>
                     <tr>
-                        <td align="center" style="padding: 25px; background-color: #111111; border-top: 1px solid #2a2a2a; font-size: 12px; color: #888888; line-height: 1.6;">
+                        <td align="center" style="padding: 25px 30px; background-color: #111111; border-top: 1px solid #2a2a2a; font-size: 12px; color: #888888; line-height: 1.6;">
+                            <!-- Professional Brand Icons (1. Gravatar, 2. Globe, 3. GitHub) -->
+                            <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin: 0 auto 16px auto;">
+                                <tr>
+                                    <td align="center" style="padding: 0 10px;">
+                                        <a href="https://gravatar.com" target="_blank" title="Gravatar" style="text-decoration: none; display: inline-block;">
+                                            <img src="https://gplmods.webredirect.org/images/mail-icons/gravatar.png" alt="Gravatar" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; border-radius: 50%; opacity: 0.85;" />
+                                        </a>
+                                    </td>
+                                    <td align="center" style="padding: 0 10px;">
+                                        <a href="https://gplmods.webredirect.org" target="_blank" title="GPL Mods Official Site" style="text-decoration: none; display: inline-block;">
+                                            <img src="https://gplmods.webredirect.org/images/mail-icons/globe.png" alt="Official Website" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; opacity: 0.85;" />
+                                        </a>
+                                    </td>
+                                    <td align="center" style="padding: 0 10px;">
+                                        <a href="https://github.com/GPLMods-Team" target="_blank" title="GPL Mods GitHub" style="text-decoration: none; display: inline-block;">
+                                            <img src="https://gplmods.webredirect.org/images/mail-icons/github.png" alt="GitHub" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; opacity: 0.85;" />
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
                             <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} GPL Mods. All rights reserved.</p>
                             <p style="margin: 0;">This is an automated security message, please do not reply directly to this email.</p>
                             <p style="margin: 15px 0 0 0;">
@@ -313,6 +334,25 @@ exports.processNewsletterCampaign = async (campaignId) => {
         const unsubscribeUrl = `https://gplmods.webredirect.org/unsubscribe`;
         emailHtml += `
             <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; font-size: 12px; color: #888;">
+                <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin: 0 auto 15px auto;">
+                    <tr>
+                        <td align="center" style="padding: 0 8px;">
+                            <a href="https://gravatar.com" target="_blank" title="Gravatar" style="text-decoration: none; display: inline-block;">
+                                <img src="https://gplmods.webredirect.org/images/mail-icons/gravatar.png" alt="Gravatar" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; border-radius: 50%; opacity: 0.85;" />
+                            </a>
+                        </td>
+                        <td align="center" style="padding: 0 8px;">
+                            <a href="https://gplmods.webredirect.org" target="_blank" title="GPL Mods Official Site" style="text-decoration: none; display: inline-block;">
+                                <img src="https://gplmods.webredirect.org/images/mail-icons/globe.png" alt="Official Website" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
+                            </a>
+                        </td>
+                        <td align="center" style="padding: 0 8px;">
+                            <a href="https://github.com/GPLMods-Team" target="_blank" title="GPL Mods GitHub" style="text-decoration: none; display: inline-block;">
+                                <img src="https://gplmods.webredirect.org/images/mail-icons/github.png" alt="GitHub" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
+                            </a>
+                        </td>
+                    </tr>
+                </table>
                 You received this because you subscribed to updates from GPL Mods.<br>
                 <a href="${unsubscribeUrl}" style="color: #888; text-decoration: underline;">Unsubscribe</a>
             </div>

@@ -874,17 +874,45 @@ function initializePolicyBanner() {
     const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
     if (!hasAcceptedTOS) {
-        // --- PHASE 1: Show TOS Modal ---
-        policyModal.style.display = 'flex';
-        policyModal.classList.add('show');
+        // --- PHASE 1: Show TOS Modal (Sequenced strictly after deployment notice) ---
+        function showPolicyModal() {
+            if (localStorage.getItem('gplmods_policy_accepted') === 'true') return;
+            policyModal.style.display = 'flex';
+            policyModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
 
-        setTimeout(() => {
-            const contentBox = policyModal.querySelector('.policy-modal-content');
-            if (contentBox) contentBox.classList.add('active');
-        }, 10);
+            setTimeout(() => {
+                const contentBox = policyModal.querySelector('.policy-modal-content');
+                if (contentBox) contentBox.classList.add('active');
+            }, 10);
+        }
+
+        const isDeploymentNoticePending = () => {
+            if (window.gplmodsDeploymentNoticeActive || window.gplmodsDeploymentNoticePending) return true;
+            const deploymentModal = document.getElementById('deployment-notice-modal');
+            if (deploymentModal) {
+                const testSeen = localStorage.getItem('gplmods_test_deployment_notice_seen') === 'true';
+                const unoffSeen = localStorage.getItem('gplmods_deployment_notice_seen') === 'true';
+                if (!testSeen && !unoffSeen) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (isDeploymentNoticePending()) {
+            // Local development / unofficial developer notice modal must appear FIRST
+            window.addEventListener('gplmods:deployment-notice-dismissed', () => {
+                setTimeout(showPolicyModal, 250);
+            }, { once: true });
+        } else {
+            showPolicyModal();
+        }
 
         acceptBtn.addEventListener('click', () => {
             localStorage.setItem('gplmods_policy_accepted', 'true');
+            window.dispatchEvent(new CustomEvent('gplmods:policy-accepted'));
+            document.body.style.overflow = '';
             const contentBox = policyModal.querySelector('.policy-modal-content');
             if (contentBox) contentBox.classList.remove('active');
             

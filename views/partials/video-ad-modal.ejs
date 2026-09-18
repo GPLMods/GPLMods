@@ -80,22 +80,38 @@
 
             let myFP = null;
 
-            // --- 2. SHOW MODAL (Delayed by 1.5 Minutes = 90000ms) ---
-            const MODAL_DELAY_MS = 90000; 
-            
-            setTimeout(() => { 
-                // Double check cookie in case they opened multiple tabs
-                if (getCookie(adCookieName) === 'true') return;
+            // --- 2. SHOW MODAL (Strictly Suppressed Until Privacy Policy Accepted) ---
+            const MODAL_DELAY_MS = 90000; // 1.5 Minutes
+            let videoAdTimer = null;
 
-                videoModal.style.display = 'flex';
-                setTimeout(() => videoModal.classList.add('show'), 10);
-                document.body.style.overflow = 'hidden'; 
-                
-                if (backgroundAudio && !backgroundAudio.paused) {
-                    backgroundAudio.dataset.adPaused = 'true';
-                    backgroundAudio.pause();
+            function startVideoAdTimer() {
+                if (getCookie(adCookieName) === 'true') return;
+                const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
+                if (!hasAcceptedTOS) {
+                    window.addEventListener('gplmods:policy-accepted', () => {
+                        startVideoAdTimer();
+                    }, { once: true });
+                    return;
                 }
-            }, MODAL_DELAY_MS);
+
+                if (videoAdTimer) clearTimeout(videoAdTimer);
+                videoAdTimer = setTimeout(() => { 
+                    // Double check policy acceptance & cookie
+                    if (localStorage.getItem('gplmods_policy_accepted') !== 'true') return;
+                    if (getCookie(adCookieName) === 'true') return;
+
+                    videoModal.style.display = 'flex';
+                    setTimeout(() => videoModal.classList.add('show'), 10);
+                    document.body.style.overflow = 'hidden'; 
+                    
+                    if (backgroundAudio && !backgroundAudio.paused) {
+                        backgroundAudio.dataset.adPaused = 'true';
+                        backgroundAudio.pause();
+                    }
+                }, MODAL_DELAY_MS);
+            }
+
+            startVideoAdTimer();
 
             // --- 3. CLOSE MODAL LOGIC ---
             function closeAdModal() {

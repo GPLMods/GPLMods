@@ -141,8 +141,14 @@
                 })();
 
                 async function checkUserAdblockStatus() {
+                    const hasAcceptedPolicy = localStorage.getItem('gplmods_policy_accepted') === 'true';
+                    if (!hasAcceptedPolicy) {
+                        window.addEventListener('gplmods:policy-accepted', checkUserAdblockStatus, { once: true });
+                        return;
+                    }
+
                     const currentPath = window.location.pathname;
-                    const isExemptPage = ['/membership', '/login', '/register', '/signup'].includes(currentPath);
+                    const isExemptPage = ['/membership', '/login', '/register', '/signup', '/tos', '/privacy-policy'].includes(currentPath);
 
                     if (!isExemptPage) {
                         try {
@@ -199,17 +205,30 @@
                 </div>
             </div>
             <script>
+                (function() {
+                    const storageKey = '<%= isTestEnv ? "gplmods_test_deployment_notice_seen" : "gplmods_deployment_notice_seen" %>';
+                    if (localStorage.getItem(storageKey) !== 'true') {
+                        window.gplmodsDeploymentNoticePending = true;
+                    }
+                })();
                 window.addEventListener('load', () => {
                     const modal = document.getElementById('deployment-notice-modal');
                     const closeButton = document.getElementById('deployment-notice-close');
                     const storageKey = '<%= isTestEnv ? "gplmods_test_deployment_notice_seen" : "gplmods_deployment_notice_seen" %>';
-                    if (!modal || !closeButton || localStorage.getItem(storageKey) === 'true') return;
+                    if (!modal || !closeButton || localStorage.getItem(storageKey) === 'true') {
+                        window.gplmodsDeploymentNoticePending = false;
+                        return;
+                    }
+                    window.gplmodsDeploymentNoticeActive = true;
                     modal.style.display = 'flex';
                     document.body.style.overflow = 'hidden';
                     closeButton.addEventListener('click', () => {
                         localStorage.setItem(storageKey, 'true');
+                        window.gplmodsDeploymentNoticeActive = false;
+                        window.gplmodsDeploymentNoticePending = false;
                         modal.style.display = 'none';
                         document.body.style.overflow = '';
+                        window.dispatchEvent(new CustomEvent('gplmods:deployment-notice-dismissed'));
                     });
                 });
             </script>
@@ -900,21 +919,61 @@
                 });
             }
 
-            // 1. Randomized Greetings
+            // 1. Randomized Greetings & SFX on 1st message/greeting when closed
             const greetings = [
                 "May I Help You? 👋", 
                 "Looking for a specific mod? 🔍", 
                 "Found a bug? Let me help! 🛠️", 
                 "Need mod suggestions? 💡"
             ];
-            
-            setInterval(() => {
+
+            let hasPlayedGreetingSfx = sessionStorage.getItem('gpl_chat_sfx_played') === 'true';
+            const chatSfxAudio = new Audio('/sfx/chat-sfx.mp3');
+            chatSfxAudio.volume = 0.55;
+            chatSfxAudio.preload = 'auto';
+
+            function playChatGreetingSfx() {
+                if (hasPlayedGreetingSfx) return;
+                if (chatWindow && chatWindow.classList.contains('open')) return;
+
+                const playPromise = chatSfxAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        hasPlayedGreetingSfx = true;
+                        sessionStorage.setItem('gpl_chat_sfx_played', 'true');
+                    }).catch(() => {
+                        // If browser autoplay policy requires user interaction first,
+                        // unlock on the first user interaction
+                        const unlockHandler = () => {
+                            if (!hasPlayedGreetingSfx && chatWindow && !chatWindow.classList.contains('open')) {
+                                chatSfxAudio.play().then(() => {
+                                    hasPlayedGreetingSfx = true;
+                                    sessionStorage.setItem('gpl_chat_sfx_played', 'true');
+                                }).catch(() => {});
+                            }
+                            window.removeEventListener('click', unlockHandler);
+                            window.removeEventListener('keydown', unlockHandler);
+                        };
+                        window.addEventListener('click', unlockHandler, { once: true });
+                        window.addEventListener('keydown', unlockHandler, { once: true });
+                    });
+                }
+            }
+
+            function triggerGreetingMessage() {
                 if (chatWindow && !chatWindow.classList.contains('open') && greeting) {
                     greeting.textContent = greetings[Math.floor(Math.random() * greetings.length)];
                     greeting.classList.add('show');
-                    setTimeout(() => greeting.classList.remove('show'), 5000);
+                    playChatGreetingSfx();
+                    setTimeout(() => greeting.classList.remove('show'), 6000);
                 }
-            }, 120000); // 120 seconds
+            }
+
+            // Initial 1st greeting display 5 seconds after page load if chat is closed
+            setTimeout(triggerGreetingMessage, 5000);
+            
+            // Subsequent randomized greetings every 120s
+            setInterval(triggerGreetingMessage, 120000);
 
             // 2. Toggle Window & Shrink Handlers
             function closeChatWindow() {
@@ -1406,6 +1465,9 @@
                     div.innerHTML = content;
                     chatBody.appendChild(div);
                     chatBody.scrollTop = chatBody.scrollHeight;
+                    if (sender !== 'user' && sender !== 'system') {
+                        playChatGreetingSfx();
+                    }
                 }
             }
         });

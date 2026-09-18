@@ -2838,8 +2838,18 @@ app.get('/admin/editors-choice', ensureAuthenticated, ensureAdmin, async (req, r
             pageTitle: "Editor's Choice Councils"
         });
     } catch (error) {
-        console.error("Editor's Choice Council Page Error:", error);
-        res.status(500).render('pages/error', { errorCode: '500', errorTitle: 'Server Error', errorMessage: 'Could not load Editor Choice Councils.' });
+        res.status(500).render('pages/error', { 
+            errorCode: '500', 
+            errorTitle: 'Server Error', 
+            errorMessage: 'Could not load Editor Choice Councils.',
+            errorDetails: {
+                message: error ? error.message : 'Could not load Editor Choice Councils.',
+                name: error ? error.name : 'Error',
+                path: req.originalUrl || req.url,
+                method: req.method,
+                timestamp: new Date().toISOString()
+            }
+        });
     }
 });
 
@@ -12765,7 +12775,15 @@ app.use((err, req, res, next) => {
     res.status(500).render('pages/error', {
         errorCode: '500',
         errorTitle: 'Server <span>Error</span>',
-        errorMessage: "Something went wrong on our end. Our team has been notified and we're working to fix it."
+        errorMessage: "Something went wrong on our end. Our team has been notified and we're working to fix it.",
+        errorDetails: {
+            message: err.message || 'Internal Server Error',
+            name: err.name || 'Error',
+            path: req.originalUrl || req.url || '/',
+            method: req.method || 'GET',
+            timestamp: new Date().toISOString(),
+            stack: process.env.NODE_ENV === 'production' ? null : (err.stack || null)
+        }
     });
 });
 

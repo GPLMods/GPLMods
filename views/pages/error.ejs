@@ -184,6 +184,282 @@
             .home-button { background: var(--red); color: var(--white); box-shadow: 0 0 15px var(--glow-red); }
             .home-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-red); background-color: #fff; color: var(--black); }
         <% } %>
+
+        /* --- ERROR 500 LOG & DYNAMIC PARTICLE MODAL --- */
+        .error-log-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.05em;
+            font-weight: 600;
+            background: rgba(229, 57, 53, 0.15);
+            color: #ff6b6b;
+            border: 1px solid rgba(229, 57, 53, 0.5);
+            box-shadow: 0 0 15px rgba(229, 57, 53, 0.25);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .error-log-btn:hover {
+            background: rgba(229, 57, 53, 0.3);
+            border-color: #ff3333;
+            color: #ffffff;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(229, 57, 53, 0.55);
+        }
+
+        .error-log-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(8, 8, 12, 0.88);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            animation: fadeInModal 0.25s ease forwards;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #error-particles-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .error-log-card {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 800px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            background: #12131a;
+            border: 1px solid rgba(229, 57, 53, 0.35);
+            border-top: 4px solid #e53935;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(229, 57, 53, 0.2);
+            text-align: left;
+            overflow: hidden;
+            animation: scaleInCard 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes scaleInCard {
+            from { transform: scale(0.92); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .error-log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 24px;
+            background: #171922;
+            border-bottom: 1px solid #252836;
+        }
+
+        .error-log-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95em;
+            color: #ff6b6b;
+            letter-spacing: 0.5px;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3333;
+            box-shadow: 0 0 10px #ff3333;
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        }
+
+        .error-log-close {
+            background: transparent;
+            border: none;
+            color: var(--silver);
+            font-size: 1.8em;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+
+        .error-log-close:hover {
+            color: #ffffff;
+        }
+
+        .error-log-body {
+            padding: 22px 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            font-size: 0.9em;
+        }
+
+        .diag-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .diag-item {
+            background: #181a24;
+            border: 1px solid #282b3a;
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .diag-label {
+            font-size: 0.78em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8a90a4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diag-label i {
+            color: var(--gold);
+        }
+
+        .diag-val {
+            font-weight: 600;
+            color: #f0f2f8;
+            font-family: 'Courier New', Courier, monospace;
+            word-break: break-word;
+            font-size: 0.92em;
+        }
+
+        .diag-section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ff6b6b;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .diag-console {
+            background: #0b0c10;
+            border: 1px solid #202330;
+            border-left: 3px solid #ff3333;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            color: #cfd3dc;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .diag-line {
+            margin-bottom: 4px;
+        }
+
+        .c-red { color: #ff5252; font-weight: bold; }
+        .c-gold { color: var(--gold); font-weight: bold; }
+        .c-silver { color: #8a90a4; }
+        .c-white { color: #ffffff; }
+
+        .diag-stack {
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #ff8a80;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .error-log-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 14px 24px;
+            background: #171922;
+            border-top: 1px solid #252836;
+        }
+
+        .diag-btn-copy {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 20px;
+            border-radius: 20px;
+            background: var(--gold);
+            color: var(--black);
+            font-weight: 700;
+            font-size: 0.88em;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 12px var(--glow-gold);
+            transition: all 0.2s;
+        }
+
+        .diag-btn-copy:hover {
+            transform: translateY(-2px);
+            background: #ffffff;
+        }
+
+        .diag-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 20px;
+            background: transparent;
+            color: var(--silver);
+            border: 1px solid #383d52;
+            font-weight: 600;
+            font-size: 0.88em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diag-btn-secondary:hover {
+            border-color: var(--silver);
+            color: #ffffff;
+        }
+
+        @media (max-width: 640px) {
+            .error-log-card { max-height: 92vh; border-radius: 12px; }
+            .error-log-header, .error-log-body, .error-log-footer { padding: 14px 16px; }
+            .diag-grid { grid-template-columns: 1fr; }
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
@@ -216,8 +492,86 @@
             <a href="<%= targetHome %>" class="home-button">
                 <i class="fas fa-home"></i> Go to Homepage
             </a>
+            <% if (errorCode == '500') { %>
+                <button type="button" class="error-log-btn" id="openErrorLogBtn">
+                    <i class="fas fa-terminal"></i> View Log
+                </button>
+            <% } %>
         </div>
     </main>
+
+    <% if (errorCode == '500') { %>
+        <!-- ======== ERROR 500 DYNAMIC PARTICLE DIAGNOSTIC MODAL ======== -->
+        <div id="error-log-modal" class="error-log-modal" style="display: none;">
+            <canvas id="error-particles-canvas"></canvas>
+            
+            <div class="error-log-card">
+                <div class="error-log-header">
+                    <div class="error-log-badge">
+                        <span class="pulse-dot"></span>
+                        <strong>SYSTEM DIAGNOSTIC LOG (ERROR 500)</strong>
+                    </div>
+                    <button type="button" id="closeErrorLogBtn" class="error-log-close" title="Close Diagnostic Log">&times;</button>
+                </div>
+
+                <div class="error-log-body">
+                    <!-- Client Telemetry Grid -->
+                    <div class="diag-grid">
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fas fa-mobile-alt"></i> Device Type</span>
+                            <span class="diag-val" id="diag-device-type">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fab fa-chrome"></i> Browser</span>
+                            <span class="diag-val" id="diag-browser">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fas fa-desktop"></i> Operating System</span>
+                            <span class="diag-val" id="diag-os">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fas fa-expand"></i> Screen & Viewport</span>
+                            <span class="diag-val" id="diag-screen">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fas fa-clock"></i> Timestamp</span>
+                            <span class="diag-val" id="diag-time">Detecting...</span>
+                        </div>
+                        <div class="diag-item">
+                            <span class="diag-label"><i class="fas fa-wifi"></i> Network Status</span>
+                            <span class="diag-val" id="diag-network">Detecting...</span>
+                        </div>
+                    </div>
+
+                    <!-- Server Error Details Section -->
+                    <div class="diag-section-title">
+                        <i class="fas fa-server"></i> Server Incident Report
+                    </div>
+                    <div class="diag-console">
+                        <div class="diag-line"><span class="c-red">[FATAL HTTP 500]</span> Internal Server Error</div>
+                        <div class="diag-line"><span class="c-silver">URL:</span> <span class="c-gold" id="diag-url"><%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.path ? errorDetails.path : '' %></span></div>
+                        <div class="diag-line"><span class="c-silver">Method:</span> <span class="c-gold" id="diag-method"><%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.method ? errorDetails.method : 'GET' %></span></div>
+                        <div class="diag-line"><span class="c-silver">Server Message:</span> <span class="c-white"><%= (typeof errorDetails !== 'undefined' && errorDetails && errorDetails.message) ? errorDetails.message : errorMessage %></span></div>
+                        <% if (typeof errorDetails !== 'undefined' && errorDetails && errorDetails.stack) { %>
+                            <div class="diag-line"><span class="c-silver">Stack Trace:</span></div>
+                            <pre class="diag-stack"><%= errorDetails.stack %></pre>
+                        <% } else { %>
+                            <div class="diag-line" style="color: #8a90a4; font-size: 0.82em; margin-top: 6px;">Server diagnostics captured and secured. Stack traces are sanitized for production safety.</div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="error-log-footer">
+                    <button type="button" id="copyLogBtn" class="diag-btn-copy">
+                        <i class="fas fa-copy"></i> Copy Error Log
+                    </button>
+                    <button type="button" id="downloadLogBtn" class="diag-btn-secondary">
+                        <i class="fas fa-download"></i> Save Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    <% } %>
 
     <script>
         function smartGoBack(fallbackUrl) {
@@ -248,6 +602,288 @@
                 window.location.href = fallback;
             }
         }
+
+        <% if (errorCode == '500') { %>
+        (function initError500DiagnosticParticle() {
+            const openBtn = document.getElementById('openErrorLogBtn');
+            const closeBtn = document.getElementById('closeErrorLogBtn');
+            const modal = document.getElementById('error-log-modal');
+            const canvas = document.getElementById('error-particles-canvas');
+            const copyBtn = document.getElementById('copyLogBtn');
+            const downloadBtn = document.getElementById('downloadLogBtn');
+
+            if (!openBtn || !modal) return;
+
+            // 1. In-depth Client Environment & Browser/Device Detection
+            function getClientEnvironment() {
+                const ua = navigator.userAgent || '';
+                
+                // Device Type Detection
+                let deviceType = 'Desktop';
+                const isMobileUa = /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua);
+                const isTabletUa = /(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua);
+                const hasTouch = (navigator.maxTouchPoints || 0) > 0;
+                const width = window.innerWidth || (screen && screen.width) || 1024;
+
+                if (isTabletUa || (hasTouch && width >= 768 && width <= 1024)) {
+                    deviceType = 'Tablet';
+                } else if (isMobileUa || (hasTouch && width < 768)) {
+                    deviceType = 'Mobile';
+                } else {
+                    deviceType = 'Desktop';
+                }
+
+                // Browser Detection with exact versioning
+                let browserName = 'Web Browser';
+                let browserVersion = '';
+                if (/Edg\/([0-9.]+)/i.test(ua)) {
+                    browserName = 'Microsoft Edge';
+                    browserVersion = RegExp.$1;
+                } else if (/OPR\/([0-9.]+)/i.test(ua) || /Opera\/([0-9.]+)/i.test(ua)) {
+                    browserName = 'Opera';
+                    browserVersion = RegExp.$1;
+                } else if (/SamsungBrowser\/([0-9.]+)/i.test(ua)) {
+                    browserName = 'Samsung Internet';
+                    browserVersion = RegExp.$1;
+                } else if (/Chrome\/([0-9.]+)/i.test(ua)) {
+                    browserName = 'Google Chrome';
+                    browserVersion = RegExp.$1;
+                } else if (/Firefox\/([0-9.]+)/i.test(ua)) {
+                    browserName = 'Mozilla Firefox';
+                    browserVersion = RegExp.$1;
+                } else if (/Safari\/([0-9.]+)/i.test(ua) && !/Chrome/i.test(ua)) {
+                    browserName = 'Apple Safari';
+                    const vMatch = ua.match(/Version\/([0-9.]+)/i);
+                    browserVersion = vMatch ? vMatch[1] : RegExp.$1;
+                } else {
+                    browserName = navigator.appName || 'Browser';
+                }
+
+                // Operating System Detection
+                let osName = 'Unknown OS';
+                if (/Windows NT 10.0/i.test(ua)) osName = 'Windows 10/11';
+                else if (/Windows NT 6.3/i.test(ua)) osName = 'Windows 8.1';
+                else if (/Windows NT 6.1/i.test(ua)) osName = 'Windows 7';
+                else if (/Windows/i.test(ua)) osName = 'Windows';
+                else if (/Android\s([0-9.]+)/i.test(ua)) osName = 'Android ' + RegExp.$1;
+                else if (/Android/i.test(ua)) osName = 'Android';
+                else if (/iPhone OS\s([0-9_]+)/i.test(ua)) osName = 'iOS ' + RegExp.$1.replace(/_/g, '.');
+                else if (/iPad.*OS\s([0-9_]+)/i.test(ua)) osName = 'iPadOS ' + RegExp.$1.replace(/_/g, '.');
+                else if (/Mac OS X\s([0-9_]+)/i.test(ua)) osName = 'macOS ' + RegExp.$1.replace(/_/g, '.');
+                else if (/Linux/i.test(ua)) osName = 'Linux';
+                else if (/CrOS/i.test(ua)) osName = 'ChromeOS';
+
+                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                const networkType = conn ? (conn.effectiveType || conn.type || '').toUpperCase() : '';
+                const networkStatus = navigator.onLine ? `Online ${networkType ? '(' + networkType + ')' : ''}`.trim() : 'Offline';
+
+                return {
+                    deviceType,
+                    browser: `${browserName} ${browserVersion}`.trim(),
+                    os: osName,
+                    screen: `${screen.width}x${screen.height} (Viewport: ${window.innerWidth}x${window.innerHeight}, DPR: ${window.devicePixelRatio || 1}x)`,
+                    network: networkStatus,
+                    timestamp: new Date().toLocaleString(),
+                    isoTimestamp: new Date().toISOString(),
+                    url: window.location.href,
+                    language: navigator.language || 'en'
+                };
+            }
+
+            function populateDiagnostics() {
+                const client = getClientEnvironment();
+                const devEl = document.getElementById('diag-device-type');
+                const browEl = document.getElementById('diag-browser');
+                const osEl = document.getElementById('diag-os');
+                const scrEl = document.getElementById('diag-screen');
+                const timeEl = document.getElementById('diag-time');
+                const netEl = document.getElementById('diag-network');
+                const urlEl = document.getElementById('diag-url');
+
+                if (devEl) devEl.textContent = client.deviceType;
+                if (browEl) browEl.textContent = client.browser;
+                if (osEl) osEl.textContent = client.os;
+                if (scrEl) scrEl.textContent = client.screen;
+                if (timeEl) timeEl.textContent = client.timestamp;
+                if (netEl) netEl.textContent = client.network;
+                if (urlEl && !urlEl.textContent.trim()) urlEl.textContent = client.url;
+            }
+
+            // 2. Dynamic Red/Gold Particle Canvas System
+            let animationFrameId = null;
+            let particles = [];
+            let ctx = null;
+            let canvasWidth = 0;
+            let canvasHeight = 0;
+
+            function initParticles() {
+                if (!canvas) return;
+                ctx = canvas.getContext('2d');
+                resizeCanvas();
+                
+                particles = [];
+                const count = Math.min(65, Math.floor((canvasWidth * canvasHeight) / 14000));
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: Math.random() * canvasWidth,
+                        y: Math.random() * canvasHeight,
+                        vx: (Math.random() - 0.5) * 1.2,
+                        vy: (Math.random() - 0.5) * 1.2,
+                        radius: Math.random() * 2.5 + 1.2,
+                        color: Math.random() > 0.35 ? 'rgba(229, 57, 53, ' : 'rgba(255, 215, 0, ',
+                        alpha: Math.random() * 0.6 + 0.25
+                    });
+                }
+            }
+
+            function resizeCanvas() {
+                if (!canvas) return;
+                canvasWidth = canvas.width = window.innerWidth;
+                canvasHeight = canvas.height = window.innerHeight;
+            }
+
+            function renderParticles() {
+                if (!ctx) return;
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                // Draw connections
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 110) {
+                            ctx.strokeStyle = `rgba(229, 57, 53, ${0.18 * (1 - dist / 110)})`;
+                            ctx.lineWidth = 0.8;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Update & draw particles
+                for (let p of particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0 || p.x > canvasWidth) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvasHeight) p.vy *= -1;
+
+                    ctx.fillStyle = p.color + p.alpha + ')';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                animationFrameId = requestAnimationFrame(renderParticles);
+            }
+
+            function openModal() {
+                populateDiagnostics();
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                window.addEventListener('resize', resizeCanvas);
+                initParticles();
+                renderParticles();
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+                window.removeEventListener('resize', resizeCanvas);
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            }
+
+            openBtn.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+            });
+
+            // 3. One-Click Copy Error Log
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    const client = getClientEnvironment();
+                    const logPayload = {
+                        statusCode: 500,
+                        title: "Server Error",
+                        message: "<%= errorMessage %>",
+                        timestamp: client.isoTimestamp,
+                        localTime: client.timestamp,
+                        client: {
+                            deviceType: client.deviceType,
+                            browser: client.browser,
+                            os: client.os,
+                            screen: client.screen,
+                            network: client.network,
+                            language: client.language
+                        },
+                        request: {
+                            url: client.url,
+                            method: "<%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.method ? errorDetails.method : 'GET' %>",
+                            path: "<%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.path ? errorDetails.path : '' %>"
+                        }
+                    };
+
+                    const textLog = JSON.stringify(logPayload, null, 2);
+                    navigator.clipboard.writeText(textLog).then(() => {
+                        const originalHtml = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied to Clipboard!';
+                        copyBtn.style.background = '#43a047';
+                        copyBtn.style.color = '#ffffff';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = originalHtml;
+                            copyBtn.style.background = 'var(--gold)';
+                            copyBtn.style.color = 'var(--black)';
+                        }, 2200);
+                    }).catch(() => {
+                        alert("Could not automatically copy log. Please select and copy manually.");
+                    });
+                });
+            }
+
+            // 4. Save Report as Text/JSON file
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', () => {
+                    const client = getClientEnvironment();
+                    const reportText = `================ GPL MODS ERROR 500 DIAGNOSTIC REPORT ================
+Status: HTTP 500 (Internal Server Error)
+Timestamp: ${client.isoTimestamp} (${client.timestamp})
+URL: ${client.url}
+
+-- CLIENT TELEMETRY --
+Device Type: ${client.deviceType}
+Browser: ${client.browser}
+Operating System: ${client.os}
+Display / Viewport: ${client.screen}
+Network: ${client.network}
+Language: ${client.language}
+
+-- INCIDENT DETAILS --
+Method: <%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.method ? errorDetails.method : 'GET' %>
+Path: <%= typeof errorDetails !== 'undefined' && errorDetails && errorDetails.path ? errorDetails.path : '' %>
+Message: <%= (typeof errorDetails !== 'undefined' && errorDetails && errorDetails.message) ? errorDetails.message : errorMessage %>
+======================================================================`;
+
+                    const blob = new Blob([reportText], { type: 'text/plain' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `gplmods-error-500-${Date.now()}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(a.href);
+                });
+            }
+        })();
+        <% } %>
     </script>
 </body>
 </html>
