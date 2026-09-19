@@ -19,7 +19,7 @@
     /* Reusing your standard form styles */
     .upload-form-container { max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; }
     .upload-form-container h2 { text-align: center; font-size: 2.5em; margin-bottom: 1rem; color: var(--white); }
-    .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
     .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
     .form-section legend { padding: 0 10px; margin-left: 15px; font-size: 1.3em; font-weight: 600; color: var(--gold); }
     .form-group { margin-bottom: 25px; position: relative; } 
@@ -134,7 +134,7 @@
         
         <h2>
             Edit 
-            <span style="color: var(--gold); text-shadow: 0 0 15px var(--glow-gold);">
+            <span style="color: var(--gold); text-shadow: 0 0 4px var(--glow-gold);">
                 <%= file.isVariant ? 'Variant: ' : 'Mod: ' %><%= file.name %>
             </span>
         </h2>

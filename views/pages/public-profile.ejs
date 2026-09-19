@@ -84,49 +84,51 @@
     .user-role-badge {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        padding: 5px 16px;
-        border-radius: 20px;
+        gap: 6px;
+        padding: 4px 14px;
+        border-radius: 24px;
         font-weight: 700;
-        font-size: 0.82em;
+        font-size: 0.76em;
         letter-spacing: 0.8px;
         text-transform: uppercase;
         transition: all 0.25s ease;
         border: 1px solid transparent;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 3px 8px rgba(0, 0, 0, 0.4);
+        box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.15), 0 2px 6px rgba(0, 0, 0, 0.5);
+        vertical-align: middle;
     }
     .user-role-badge:hover {
         transform: translateY(-1px);
+        filter: brightness(1.1);
     }
 
     .role-theme-owner {
         color: #ff5252 !important;
-        border-color: rgba(244, 67, 54, 0.5) !important;
-        background: linear-gradient(135deg, rgba(244, 67, 54, 0.16), rgba(229, 57, 53, 0.08)) !important;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(244, 67, 54, 0.25) !important;
+        border-color: rgba(244, 67, 54, 0.6) !important;
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(183, 28, 28, 0.15)) !important;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 6px rgba(244, 67, 54, 0.25) !important;
     }
     .role-theme-admin {
         color: var(--gold) !important;
-        border-color: rgba(255, 215, 0, 0.5) !important;
-        background: rgba(255, 215, 0, 0.1) !important;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 215, 0, 0.2) !important;
+        border-color: rgba(255, 215, 0, 0.6) !important;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(180, 140, 0, 0.12)) !important;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 6px rgba(255, 215, 0, 0.25) !important;
     }
     .role-theme-support {
         color: #38bdf8 !important;
-        border-color: rgba(56, 189, 248, 0.5) !important;
-        background: rgba(56, 189, 248, 0.1) !important;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(56, 189, 248, 0.2) !important;
+        border-color: rgba(56, 189, 248, 0.6) !important;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(14, 116, 144, 0.15)) !important;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 6px rgba(56, 189, 248, 0.25) !important;
     }
     .role-theme-distributor {
         color: #ce93d8 !important;
-        border-color: rgba(186, 104, 200, 0.5) !important;
-        background: rgba(186, 104, 200, 0.1) !important;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(186, 104, 200, 0.2) !important;
+        border-color: rgba(186, 104, 200, 0.6) !important;
+        background: linear-gradient(135deg, rgba(186, 104, 200, 0.18), rgba(123, 31, 162, 0.15)) !important;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 6px rgba(186, 104, 200, 0.25) !important;
     }
     .role-theme-member {
         color: var(--silver) !important;
-        border-color: rgba(192, 192, 192, 0.3) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(192, 192, 192, 0.35) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
         box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
     }
 
@@ -271,13 +273,9 @@
                 </div>
             <% } %>
 
-            <!-- ======== USERNAME ======== -->
-            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+            <!-- ======== USERNAME & ROLE BADGE ======== -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
                 <h1 class="notranslate" style="margin: 0; font-weight: 700; font-size: 2em; letter-spacing: 0.5px;"><%= profileUser.username %></h1>
-            </div>
-
-            <!-- ======== EXECUTIVE ROLE BADGE ======== -->
-            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 8px;">
                 <div class="user-role-badge <%= currentRoleTheme.class %>">
                     <i class="fas <%= currentRoleTheme.icon %>"></i>
                     <span><%= currentRoleTheme.label %></span>

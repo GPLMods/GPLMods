@@ -620,10 +620,18 @@ span[class*="Badge"]:is([title*="variant" i]):not([title*="master" i]) {
 /* ==========================================================================
    AdminJS Tooltip, Popover & Help Text Contrast Readability Fix
    ========================================================================== */
+div[id^="TOOLTIP"],
+div[id^="TOOLTIP"] > *,
+div[id*="TOOLTIP"],
+div[id*="TOOLTIP"] > *,
+div[id*="tooltip"],
+div[id*="tooltip"] > *,
 [role="tooltip"],
 [data-testid="tooltip"],
 .adminjs_Tooltip,
 .adminjs_Popover,
+div[class*="StyledTooltip"],
+section[class*="StyledTooltip"],
 div[class*="Tooltip"],
 div[class*="tooltip"],
 div[class*="Popover"],
@@ -632,23 +640,30 @@ div[class*="popover"],
 span[class*="HelpText"],
 p[class*="HelpText"],
 section[class*="Tooltip"] {
-    background-color: #1e232d !important;
-    background: #1e232d !important;
+    background-color: #12151c !important;
+    background: #12151c !important;
     color: #f8fafc !important;
-    border: 1px solid rgba(255, 215, 0, 0.45) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.15) !important;
+    border: 1px solid rgba(255, 215, 0, 0.6) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 12px rgba(255, 215, 0, 0.25) !important;
     font-size: 12px !important;
     line-height: 1.55 !important;
     font-weight: 500 !important;
     border-radius: 8px !important;
     padding: 8px 14px !important;
-    z-index: 9999999 !important;
+    z-index: 99999999 !important;
+    max-width: 360px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
 }
 
+div[id^="TOOLTIP"] *,
+div[id*="TOOLTIP"] *,
+div[id*="tooltip"] *,
 [role="tooltip"] *,
 [data-testid="tooltip"] *,
 .adminjs_Tooltip *,
 .adminjs_Popover *,
+div[class*="StyledTooltip"] *,
 div[class*="Tooltip"] *,
 div[class*="tooltip"] *,
 div[class*="Popover"] *,
@@ -659,28 +674,14 @@ p[class*="HelpText"] * {
 }
 
 /* Tooltip arrow pointers */
+div[id^="TOOLTIP"] > *::after,
+div[id^="TOOLTIP"] > *::before,
+[class*="StyledTooltip"]::after,
+[class*="StyledTooltip"]::before,
 [role="tooltip"]::after,
 [data-testid="tooltip"]::after,
 .adminjs_Tooltip::after,
 div[class*="Tooltip"]::after {
-    border-color: #1e232d transparent transparent transparent !important;
+    border-color: #12151c transparent transparent transparent !important;
 }
 
-/* Question mark icon next to property labels in AdminJS */
-svg[class*="HelpIcon"],
-svg[data-testid*="help"],
-span[class*="Icon"] svg,
-button[class*="Help"] svg,
-a[class*="Help"] svg {
-    color: #ffd700 !important;
-    fill: currentColor !important;
-    cursor: pointer !important;
-    transition: transform 0.2s ease, filter 0.2s ease !important;
-}
-
-svg[class*="HelpIcon"]:hover,
-svg[data-testid*="help"]:hover,
-span[class*="Icon"] svg:hover {
-    transform: scale(1.15) !important;
-    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5)) !important;
-}

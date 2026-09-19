@@ -29,10 +29,10 @@
             --white: #ffffff;
             --gold: #FFD700;
             --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.25);
-            --glow-silver: rgba(192, 192, 192, 0.22);
+            --glow-gold: rgba(255, 215, 0, 0.12);
+            --glow-silver: rgba(192, 192, 192, 0.10);
             --red: #e53935;
-            --glow-red: rgba(229, 57, 53, 0.25);
+            --glow-red: rgba(229, 57, 53, 0.12);
             --green: #43a047;
             --blue: #2196F3; /* Added for categories */
             /* Platform Tag Colors */
@@ -770,7 +770,7 @@ a.overlay-btn-primary:hover {
 }
 .music-toggle-btn:hover {
     color: var(--white);
-    text-shadow: 0 0 10px var(--glow-gold);
+    text-shadow: 0 0 4px var(--glow-gold);
 }
 
 /* Content wrapper - now always visible or hidden by media query */
@@ -817,7 +817,7 @@ a.overlay-btn-primary:hover {
 .music-controls button.music-btn:hover {
     color: var(--gold);
     transform: scale(1.15);
-    text-shadow: 0 0 10px var(--glow-gold);
+    text-shadow: 0 0 4px var(--glow-gold);
 }
 
 .music-controls button.music-btn:active {
@@ -1155,11 +1155,11 @@ a.overlay-btn-primary:hover {
         }
         .page-header h1 .gold {
             color: var(--gold);
-            text-shadow: 0 0 15px var(--glow-gold);
+            text-shadow: 0 0 4px var(--glow-gold);
         }
         .page-header h1 .silver {
             color: var(--silver);
-            text-shadow: 0 0 10px var(--glow-silver); /* Added for consistency */
+            text-shadow: 0 0 3px var(--glow-silver); /* Added for consistency */
         }
         .page-header p { font-size: 1.2em; color: var(--silver); max-width: 700px; margin: 15px auto 0 auto; }
 
@@ -1225,22 +1225,20 @@ a.overlay-btn-primary:hover {
         .logo .logo-gold-glow,
         .logo-gold-glow {
             color: var(--gold);
-            text-shadow: 0 0 12px rgba(255, 215, 0, 0.75), 0 0 25px rgba(255, 215, 0, 0.45);
+            text-shadow: 0 0 4px rgba(255, 215, 0, 0.32);
             transition: text-shadow 0.3s ease;
         }
         .logo .logo-silver-glow,
-        .logo-silver-glow,
-        .logo span {
+        .logo-silver-glow {
             color: var(--silver, #e0e6ed);
-            text-shadow: 0 0 12px rgba(220, 225, 235, 0.75), 0 0 20px rgba(180, 190, 205, 0.45);
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
             transition: text-shadow 0.3s ease;
         }
         .logo:hover .logo-gold-glow {
-            text-shadow: 0 0 18px rgba(255, 215, 0, 0.95), 0 0 35px rgba(255, 215, 0, 0.65);
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
         }
-        .logo:hover .logo-silver-glow,
-        .logo:hover span {
-            text-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 28px rgba(200, 215, 235, 0.65);
+        .logo:hover .logo-silver-glow {
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.25);
         }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
@@ -1329,7 +1327,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
 
         /* FAQ Accordion Styles */
         .faq-container { max-width: 900px; margin: 0 auto; }
@@ -1361,7 +1359,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
         .page-header p { font-size: 1.1em; color: var(--silver); margin-top: 10px; }
 
         /* Main Content Styles */
@@ -1390,7 +1388,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
         .page-header p { font-size: 1.1em; color: var(--silver); margin-top: 10px; }
 
         /* Main Content Styles */
@@ -1509,7 +1507,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
         .page-header p { font-size: 1.2em; color: var(--silver); max-width: 700px; margin: 15px auto 0 auto; }
 
         /* Upload Layout */
@@ -2086,7 +2084,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--dark-gray); }
         .page-header h1 { font-size: 2.5em; color: var(--white); }
-        .page-header h1 .query { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 .query { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
 
         /* Filter Section */
         .filter-section { display: flex; justify-content: space-between; align-items: center; padding: 30px 0; flex-wrap: wrap; gap: 20px; }
@@ -2119,7 +2117,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
 
         /* Main Content Area */
         .page-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
@@ -2181,7 +2179,7 @@ a.overlay-btn-primary:hover {
         /* Page Header */
         .page-header { text-align: center; padding: 60px 20px; }
         .page-header h1 { font-size: 3em; color: var(--white); }
-        .page-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+        .page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
 
         /* Edit Profile Layout */
         .edit-profile-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start; max-width: 1000px; margin: auto; }

@@ -2,7 +2,7 @@
 <style>
     .dashboard-header { text-align: center; padding: 50px 20px 30px; }
     .dashboard-header h1 { font-size: 2.5em; color: var(--white); }
-    .dashboard-header h1 span { color: var(--gold); text-shadow: 0 0 15px var(--glow-gold); }
+    .dashboard-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
     
     .dashboard-user-card { display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 900px; margin: 0 auto 40px auto; }
     .dashboard-user-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); }
@@ -138,7 +138,7 @@
         <!-- ═══ ROLE-BASED COMMAND SUITE ═══ -->
         <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid <%= suiteBorderColor %>; padding-bottom: 12px; margin-bottom: 20px;">
-                <h2 style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 10px <%= suiteBorderColor %>;">
+                <h2 style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 3px <%= suiteBorderColor %>;">
                     <i class="fas <%= suiteIcon %>"></i> <%= suiteTitle %>
                 </h2>
                 <span style="background: <%= suiteBadgeBg %>; color: <%= suiteColor %>; border: 1px solid <%= suiteBadgeBorder %>; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><%= accessBadge %></span>

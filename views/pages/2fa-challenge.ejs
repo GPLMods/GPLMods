@@ -151,6 +151,12 @@
             </p>
         <% } %>
 
+        <% if (typeof success !== 'undefined' && success) { %>
+            <p style="background: rgba(46, 213, 115, 0.1); border: 1px solid #2ed573; color: #2ed573; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 0.9em;">
+                <i class="fas fa-check-circle" style="margin-right: 6px;"></i> <%= success %>
+            </p>
+        <% } %>
+
         <!-- Multi-Option 2FA Switcher -->
         <% if (typeof availableMethods !== 'undefined' && availableMethods && availableMethods.length > 1) { %>
             <div class="method-selector-container">
@@ -186,7 +192,7 @@
             </form>
             <% if (method === 'email') { %>
                 <div style="margin-top: 12px;">
-                    <a href="/login/2fa?method=email" style="color: var(--gold); font-size: 0.88em; text-decoration: none;">
+                    <a href="/login/2fa?method=email&resend=true" style="color: var(--gold); font-size: 0.88em; text-decoration: none;">
                         <i class="fas fa-redo"></i> Resend Email Code
                     </a>
                 </div>

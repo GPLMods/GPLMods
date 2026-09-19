@@ -412,7 +412,7 @@
                     <% } %>
 
                     <h3 class="current-username notranslate" style="margin: 0 0 4px 0; font-size: 1.8em; color: var(--white);"><%= user.username %></h3>
-                    <p style="margin: 0; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; text-shadow: 0 0 10px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                    <p style="margin: 0; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; text-shadow: 0 0 3px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
                         <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints || 0 %> pts)
                     </p>
                 </div>

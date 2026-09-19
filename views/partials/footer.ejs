@@ -929,7 +929,7 @@
             // Message Chime Audio (plays only when incoming message arrives)
             const chatSfxAudio = new Audio('/sfx/chat-sfx.mp3');
             chatSfxAudio.volume = 0.55;
-            chatSfxAudio.preload = 'auto';
+            chatSfxAudio.preload = 'none';
 
             function playIncomingMessageSfx() {
                 try {
@@ -937,6 +937,53 @@
                     const p = chatSfxAudio.play();
                     if (p && typeof p.catch === 'function') p.catch(() => {});
                 } catch (e) {}
+            }
+            window.playIncomingMessageSfx = playIncomingMessageSfx;
+            window.playChatGreetingSfx = playIncomingMessageSfx;
+
+            function showTypingIndicator() {
+                if (document.getElementById('gplChatTyping') || !chatBody) return;
+                const div = document.createElement('div');
+                div.id = 'gplChatTyping';
+                div.className = 'chat-bubble bubble-typing';
+                div.innerHTML = '<span style="font-size: 0.85em; opacity: 0.8; margin-right: 5px; font-style: italic; vertical-align: middle;">Writing</span><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+                chatBody.appendChild(div);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+
+            function removeTypingIndicator() {
+                const indicator = document.getElementById('gplChatTyping');
+                if (indicator) indicator.remove();
+            }
+
+            function appendMsg(text, sender, senderName) {
+                if (!chatBody) return;
+                const div = document.createElement('div');
+                if (sender === 'system') {
+                    div.className = 'chat-bubble';
+                    div.style.alignSelf = 'center';
+                    div.style.background = 'transparent';
+                    div.style.color = 'var(--silver)';
+                    div.style.border = '1px dashed #555';
+                    div.style.fontSize = '0.85em';
+                    div.style.textAlign = 'center';
+                    div.style.maxWidth = '90%';
+                } else if (sender === 'user') {
+                    div.className = 'chat-bubble bubble-user';
+                } else if (sender === 'agent') {
+                    div.className = 'chat-bubble bubble-agent';
+                } else {
+                    div.className = 'chat-bubble bubble-bot';
+                }
+                
+                let content = '';
+                if (senderName && (sender === 'agent' || sender === 'bot')) {
+                    content += `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${senderName}</strong>`;
+                }
+                content += (text || '').replace(/\n/g, '<br>');
+                div.innerHTML = content;
+                chatBody.appendChild(div);
+                chatBody.scrollTop = chatBody.scrollHeight;
             }
 
             function triggerGreetingMessage() {
@@ -960,6 +1007,7 @@
                 if (chatBtn) chatBtn.classList.remove('active');
                 if (historyDrawer) historyDrawer.classList.remove('open');
                 if (emojiPicker) emojiPicker.classList.remove('active');
+                sessionStorage.removeItem('gplChatOpen');
             }
 
             function openChatWindow() {
@@ -967,6 +1015,10 @@
                 chatWindow.classList.add('open');
                 if (chatBtn) chatBtn.classList.add('active');
                 if (greeting) greeting.classList.remove('show');
+                sessionStorage.setItem('gplChatOpen', 'true');
+                if (typeof initSupportSocket === 'function') {
+                    initSupportSocket();
+                }
                 if (chatInput) {
                     setTimeout(() => chatInput.focus(), 120);
                 }
@@ -979,6 +1031,11 @@
                 } else {
                     openChatWindow();
                 }
+            }
+
+            // Auto-reopen chat only if user previously kept it open in this tab
+            if (sessionStorage.getItem('gplChatOpen') === 'true' && window.location.pathname !== '/support') {
+                openChatWindow();
             }
 
             if (chatBtn) {
@@ -1017,9 +1074,23 @@
                 if (chatWindow) chatWindow.style.display = 'none';
             }
 
-            // 3. Socket.IO Logic
-            if (typeof io !== 'undefined') {
-                const socket = io();
+            // 3. Socket.IO Logic (Lazy connect on opening chat)
+            let socket = null;
+            let isSocketInitialized = false;
+
+            function initSupportSocket() {
+                if (typeof io === 'undefined' || window.location.pathname === '/support') return;
+                if (isSocketInitialized) {
+                    if (socket && socket.disconnected) {
+                        socket.connect();
+                    } else if (socket && socket.connected && typeof emitJoinChat === 'function') {
+                        emitJoinChat();
+                    }
+                    return;
+                }
+                isSocketInitialized = true;
+
+                socket = io();
                 window.gplSupportSocket = socket;
 
                 // Sync current active session
@@ -1403,53 +1474,6 @@
                         }
                     });
                 });
-
-                function showTypingIndicator() {
-                    if (document.getElementById('gplChatTyping')) return;
-                    const div = document.createElement('div');
-                    div.id = 'gplChatTyping';
-                    div.className = 'chat-bubble bubble-typing';
-                    div.innerHTML = '<span style="font-size: 0.85em; opacity: 0.8; margin-right: 5px; font-style: italic; vertical-align: middle;">Writing</span><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-                    chatBody.appendChild(div);
-                    chatBody.scrollTop = chatBody.scrollHeight;
-                }
-
-                function removeTypingIndicator() {
-                    const indicator = document.getElementById('gplChatTyping');
-                    if (indicator) indicator.remove();
-                }
-
-                function appendMsg(text, sender, senderName) {
-                    const div = document.createElement('div');
-                    if (sender === 'system') {
-                        div.className = 'chat-bubble';
-                        div.style.alignSelf = 'center';
-                        div.style.background = 'transparent';
-                        div.style.color = 'var(--silver)';
-                        div.style.border = '1px dashed #555';
-                        div.style.fontSize = '0.85em';
-                        div.style.textAlign = 'center';
-                        div.style.maxWidth = '90%';
-                    } else if (sender === 'user') {
-                        div.className = 'chat-bubble bubble-user';
-                    } else if (sender === 'agent') {
-                        div.className = 'chat-bubble bubble-agent';
-                    } else {
-                        div.className = 'chat-bubble bubble-bot';
-                    }
-                    
-                    let content = '';
-                    if (senderName && (sender === 'agent' || sender === 'bot')) {
-                        content += `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${senderName}</strong>`;
-                    }
-                    content += (text || '').replace(/\n/g, '<br>');
-                    div.innerHTML = content;
-                    chatBody.appendChild(div);
-                    chatBody.scrollTop = chatBody.scrollHeight;
-                    if (sender !== 'user' && sender !== 'system') {
-                        playChatGreetingSfx();
-                    }
-                }
             }
         });
         </script>

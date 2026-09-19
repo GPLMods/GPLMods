@@ -12,5 +12,3 @@ import AvatarCell from '../components/cells/AvatarCell'
 AdminJS.UserComponents.AvatarCell = AvatarCell
 import ImagePreview from '../components/cells/ImagePreview'
 AdminJS.UserComponents.ImagePreview = ImagePreview
-import ManageVotes from '../components/actions/ManageVotes'
-AdminJS.UserComponents.ManageVotes = ManageVotes

@@ -425,36 +425,33 @@ function generateRecoveryCodes() {
 // --- HELPER: Get all active, configured 2FA methods for a user ---
 function getAvailable2FAMethods(user) {
     if (!user) return ['email'];
+    if (!user.twoFactorEnabled && !user.is2FAEnabled) return [];
+
     const methods = [];
     const rawMethods = Array.isArray(user.twoFactorMethods) ? user.twoFactorMethods : [];
-    
-    // Check credentials and enabled flags
-    const hasTotp = rawMethods.includes('totp') || (user.twoFactorSecret && user.twoFactorSecret.length > 0) || user.twoFactorMethod === 'totp';
-    const hasPasskey = rawMethods.includes('passkey') || (user.passkey && user.passkey.credentialID) || (Array.isArray(user.passkeys) && user.passkeys.length > 0) || user.twoFactorMethod === 'passkey';
-    const hasSocial = rawMethods.includes('social') || ((user.twoFactorSocialProvider && user.twoFactorSocialProvider !== 'none') || (user.twoFactorProvider && user.twoFactorProvider !== 'none')) || user.twoFactorMethod === 'social';
-    const hasEmail = rawMethods.includes('email') || user.twoFactorMethod === 'email';
-    
-    // Preserve existing array order first
-    rawMethods.forEach(m => {
-        if (m === 'totp' && hasTotp && !methods.includes('totp')) methods.push('totp');
-        if (m === 'passkey' && hasPasskey && !methods.includes('passkey')) methods.push('passkey');
-        if (m === 'social' && hasSocial && !methods.includes('social')) methods.push('social');
-        if (m === 'email' && !methods.includes('email')) methods.push('email');
-    });
 
-    // Append any methods that are configured on the user model but missing from rawMethods
-    if (hasTotp && !methods.includes('totp')) methods.push('totp');
-    if (hasPasskey && !methods.includes('passkey')) methods.push('passkey');
-    if (hasSocial && !methods.includes('social')) methods.push('social');
-    if (hasEmail && !methods.includes('email')) methods.push('email');
+    // Check credentials for each method
+    const hasTotp = Boolean(user.twoFactorSecret && user.twoFactorSecret.length > 0);
+    const hasPasskey = Boolean((user.passkey && user.passkey.credentialID) || (Array.isArray(user.passkeys) && user.passkeys.length > 0));
+    const hasSocial = Boolean((user.twoFactorSocialProvider && user.twoFactorSocialProvider !== 'none') || (user.twoFactorProvider && user.twoFactorProvider !== 'none'));
+    const hasEmail = Boolean(user.email && user.email.length > 0);
 
-    // If still empty but 2FA is active, default to user's primary method or email
+    // If user has explicitly configured twoFactorMethods array, only respect what is in the array and has credentials
+    if (rawMethods.length > 0) {
+        rawMethods.forEach(m => {
+            if (m === 'totp' && hasTotp && !methods.includes('totp')) methods.push('totp');
+            if (m === 'passkey' && hasPasskey && !methods.includes('passkey')) methods.push('passkey');
+            if (m === 'social' && hasSocial && !methods.includes('social')) methods.push('social');
+            if (m === 'email' && hasEmail && !methods.includes('email')) methods.push('email');
+        });
+    }
+
+    // If array was empty or methods became empty but 2FA is marked enabled (legacy account support)
     if (methods.length === 0 && (user.twoFactorEnabled || user.is2FAEnabled)) {
-        if (user.twoFactorMethod && user.twoFactorMethod !== 'none') {
-            methods.push(user.twoFactorMethod);
-        } else {
-            methods.push('email');
-        }
+        if (user.twoFactorMethod === 'totp' && hasTotp) methods.push('totp');
+        else if (user.twoFactorMethod === 'passkey' && hasPasskey) methods.push('passkey');
+        else if (user.twoFactorMethod === 'social' && hasSocial) methods.push('social');
+        else if (hasEmail) methods.push('email');
     }
 
     return methods.slice(0, 3); // Max 3 methods
@@ -5535,7 +5532,7 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 
     // IMMEDIATELY delete the codes from the session so they can never be viewed again
     req.session.tempRecoveryCodes = null;
-    const returnUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(req.user.role) ? '/id-card?success=2FA successfully enabled! Welcome to your ID Card.' : '/profile?success=2FA successfully activated!');
+    const returnUrl = req.session.returnTo2FA || '/settings?success=2FA successfully activated!';
     req.session.returnTo2FA = null;
 
     res.render('pages/2fa-recovery-codes', { codes: codes, returnUrl });
@@ -6432,7 +6429,7 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
         } else {
             // Secondary/tertiary method added: Preserve existing codes and redirect
             await user.save();
-            const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
+            const backUrl = req.session.returnTo2FA || '/settings';
             req.session.returnTo2FA = null;
             const successMsg = method === 'email' ? 'Email OTP added successfully!' : 'Authenticator App added successfully!';
             
@@ -6498,7 +6495,7 @@ app.post('/login/2fa/verify', async (req, res, next) => {
             }
         }
 
-        if (!isValid) return res.redirect(`/login/2fa?method=${currentMethod}&error=${encodeURIComponent('Invalid code. Please try again.')}`);
+        if (!isValid) return res.redirect(`/login/2fa?error=${encodeURIComponent('Invalid code. Please try again.')}`);
 
         // Cleanup: Remove used recovery code or email OTP
         if (usedRecoveryCodeIndex !== -1) {
@@ -6518,6 +6515,64 @@ app.post('/login/2fa/verify', async (req, res, next) => {
     } catch (e) { res.redirect('/login/2fa?error=Server error.'); }
 });
 
+// 2. Disable Individual 2FA Method Endpoint
+app.post('/account/2fa/disable-method', ensureAuthenticated, async (req, res) => {
+    try {
+        const { method } = req.body;
+        const validMethods = ['email', 'totp', 'passkey', 'social'];
+        if (!validMethods.includes(method)) {
+            return res.redirect('/settings?error=' + encodeURIComponent('Invalid 2FA method.'));
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.redirect('/settings');
+
+        let methods = Array.isArray(user.twoFactorMethods) ? [...user.twoFactorMethods] : [];
+        if (methods.length === 0 && (user.twoFactorEnabled || user.is2FAEnabled)) {
+            methods = [user.twoFactorMethod || 'email'];
+        }
+
+        // Remove the method
+        methods = methods.filter(m => m !== method);
+
+        // Clear associated credentials
+        if (method === 'totp') {
+            user.twoFactorSecret = '';
+        } else if (method === 'passkey') {
+            user.passkey = null;
+            user.passkeys = [];
+        } else if (method === 'social') {
+            user.twoFactorSocialProvider = 'none';
+            user.twoFactorProvider = 'none';
+        }
+
+        user.twoFactorMethods = methods;
+
+        // If disabled method was primary, switch primary
+        if (user.twoFactorMethod === method) {
+            user.twoFactorMethod = methods.length > 0 ? methods[0] : 'none';
+        }
+
+        // If no methods remain, shut down 2FA completely
+        if (methods.length === 0) {
+            user.twoFactorEnabled = false;
+            user.is2FAEnabled = false;
+            user.twoFactorMethod = 'none';
+            user.twoFactorRecoveryCodes = [];
+            user.cardStatus = 'suspended';
+            await user.save();
+            return res.redirect('/settings?success=' + encodeURIComponent(`Disabled ${method.toUpperCase()} 2FA. All 2FA protections are now disabled.`));
+        }
+
+        await user.save();
+        const friendlyName = method === 'totp' ? 'Authenticator App' : (method === 'passkey' ? 'Passkey' : (method === 'social' ? 'Social Verification' : 'Email OTP'));
+        res.redirect('/settings?success=' + encodeURIComponent(`${friendlyName} disabled successfully.`));
+    } catch (err) {
+        console.error("Disable 2FA Method Error:", err);
+        res.redirect('/settings?error=' + encodeURIComponent('Failed to disable 2FA method.'));
+    }
+});
+
 app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -6535,10 +6590,10 @@ app.post('/account/2fa/disable', ensureAuthenticated, async (req, res) => {
             user.cardStatus = 'suspended'; // Card suspended when 2FA is disabled!
             await user.save();
         }
-        res.redirect('/profile?success=' + encodeURIComponent('2FA Disabled. Note: Your ID Card has been suspended until 2FA is re-enabled.'));
+        res.redirect('/settings?success=' + encodeURIComponent('2FA Disabled. Note: Your ID Card has been suspended until 2FA is re-enabled.'));
     } catch (err) {
         console.error("2FA Disable Error:", err);
-        res.redirect('/profile?error=' + encodeURIComponent('Failed to disable 2FA.'));
+        res.redirect('/settings?error=' + encodeURIComponent('Failed to disable 2FA.'));
     }
 });
 
@@ -6587,7 +6642,7 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
             });
         } else {
             await user.save();
-            const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
+            const backUrl = req.session.returnTo2FA || '/settings';
             req.session.returnTo2FA = null;
             req.session.save(() => {
                 res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent('Social verification added successfully!')}`);
@@ -6774,16 +6829,30 @@ app.get('/login/2fa', async (req, res) => {
         currentMethod = availableMethods[0];
     }
 
-    // If user switched to email, send OTP if none exists or expired
-    if (currentMethod === 'email' && req.query.method === 'email') {
-        try {
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            user.verificationOtp = otp;
-            user.otpExpires = Date.now() + 600000;
-            await user.save();
-            await send2faEmail(user, otp);
-        } catch (e) {
-            console.error("2FA Email Switch Error:", e);
+    const previousMethod = req.session.active2faMethod;
+    const isExplicitResend = req.query.resend === 'true' || req.query.resend === '1';
+    const isMethodSwitch = req.query.method === 'email' && previousMethod && previousMethod !== 'email';
+    const hasValidOtp = !!(user.verificationOtp && user.otpExpires && user.otpExpires > Date.now());
+    const hasError = !!req.query.error;
+
+    // Send email OTP ONLY if:
+    // 1. The user explicitly clicked "Resend Email Code" (?resend=true), OR
+    // 2. The user switched to Email OTP from another method AND does not already have an active unexpired OTP.
+    // NEVER send email if there is an error redirect (e.g. invalid code entry) or on passive page load.
+    if (currentMethod === 'email' && !hasError && (isExplicitResend || (isMethodSwitch && !hasValidOtp))) {
+        const lastSent = req.session.last2faEmailSent || 0;
+        const now = Date.now();
+        if (!hasValidOtp || (isExplicitResend && (now - lastSent > 20000))) {
+            try {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                user.verificationOtp = otp;
+                user.otpExpires = now + 600000;
+                await user.save();
+                await send2faEmail(user, otp);
+                req.session.last2faEmailSent = now;
+            } catch (e) {
+                console.error("2FA Email Switch Error:", e);
+            }
         }
     }
 
@@ -6801,6 +6870,7 @@ app.get('/login/2fa', async (req, res) => {
             method: currentMethod, 
             availableMethods: availableMethods,
             error: req.query.error,
+            success: isExplicitResend ? 'A new verification code has been sent to your email.' : (req.query.success || null),
             user: user,
             is2FAVerification: true
         });
@@ -12187,7 +12257,6 @@ const startServer = async () => {
 
        // Socket.IO logic
         io.on('connection', async (socket) => {
-            console.log('A user connected to chat');
             connectedSupportSockets.add(socket.id);
 
             if (socket.request && socket.request.user) {
@@ -12817,7 +12886,6 @@ const startServer = async () => {
             });
 
             socket.on('disconnect', () => {
-                console.log('User disconnected from chat');
                 connectedSupportSockets.delete(socket.id);
                 connectedAgentSockets.delete(socket.id);
                 connectedUsers.delete(socket.id);
