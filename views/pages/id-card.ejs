@@ -152,26 +152,74 @@
         font-size: 0.9em;
     }
 
-    /* Social Icons Row (Max 3) */
-    .card-socials-row {
+    /* Brand Badge on Card */
+    .card-brand-wrap {
         display: flex;
-        gap: 10px;
         justify-content: center;
         align-items: center;
-        margin-bottom: 14px;
+        margin: 2px 0 6px 0;
     }
-    .card-social-badge {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
+    .card-brand-badge {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        background: linear-gradient(145deg, #252830 0%, #15161b 100%);
-        border: 1px solid rgba(255, 215, 0, 0.4);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.15);
+        gap: 6px;
+        padding: 3px 12px;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.18) 0%, rgba(255, 170, 0, 0.08) 100%);
+        border: 1px solid rgba(255, 215, 0, 0.5);
+        border-radius: 16px;
+        font-size: 0.72em;
+        font-weight: 700;
         color: var(--gold);
-        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    .card-brand-badge i {
+        color: var(--gold);
+        font-size: 0.9em;
+    }
+
+    /* Social Pills on Card (Displaying Icon + Handle / URL) */
+    .card-socials-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .card-social-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 14px;
+        background: rgba(18, 20, 26, 0.9);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+        color: #e2e8f0;
+        font-size: 0.68em;
+        font-weight: 500;
+        text-decoration: none;
+        max-width: 175px;
+        transition: all 0.2s ease;
+    }
+    .card-social-pill:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        transform: translateY(-1px);
+    }
+    .card-social-pill i {
+        color: var(--gold);
+        font-size: 0.9em;
+        flex-shrink: 0;
+    }
+    .card-social-pill .card-social-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: 0.2px;
     }
     
     .card-qr-section { 
@@ -503,6 +551,148 @@
         justify-content: center;
         gap: 10px;
     }
+
+    /* --- SIGNATURE GPLMODS CUSTOM DROPDOWN SYSTEM --- */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select-wrapper.open {
+        z-index: 120;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background-color: var(--black);
+        color: var(--white);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95em;
+    }
+    .custom-select:hover {
+        border-color: #555;
+    }
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 12px var(--glow-gold);
+    }
+    .custom-select-arrow {
+        color: var(--gold);
+        font-size: 0.85em;
+        transition: transform 0.3s ease;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+    }
+    .custom-options {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: #14161d;
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.25s ease;
+        z-index: 130;
+        max-height: 240px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .custom-option {
+        padding: 10px 14px;
+        color: var(--silver);
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        border-bottom: 1px solid #22252e;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+    .custom-option:hover,
+    .custom-option.selected {
+        background-color: var(--gold);
+        color: var(--black);
+        font-weight: 600;
+    }
+    .custom-option:hover i,
+    .custom-option.selected i {
+        color: var(--black) !important;
+    }
+
+    /* Actions & Export Dropdown */
+    .card-actions-toolbar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+    }
+    .custom-dropdown-container {
+        position: relative;
+        display: inline-block;
+    }
+    .custom-dropdown-container.open {
+        z-index: 110;
+    }
+    .custom-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 235px;
+        background: #151720;
+        border: 1.5px solid var(--gold);
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.2);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.25s ease;
+        z-index: 120;
+        overflow: hidden;
+        padding: 6px 0;
+    }
+    .custom-dropdown-container.open .custom-dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .dropdown-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        font-size: 0.88em;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        box-sizing: border-box;
+    }
+    .dropdown-item:hover {
+        background-color: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+    }
 </style>
 
 <main class="id-card-page container">
@@ -585,6 +775,14 @@
             <img id="rendered-card-avatar" src="<%= cardUser.cardAvatarDataUrl || cardUser.resolvedCardAvatarUrl || cardUser.cardAvatarUrl || cardUser.signedAvatarUrl || '/images/default-avatar.png' %>" class="card-avatar" crossorigin="anonymous" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
             
             <h2 class="card-name"><%= cardUser.username %></h2>
+            
+            <!-- Brand Name Badge (Prominently displayed on the card) -->
+            <div id="cardBrandContainer" class="card-brand-wrap" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'flex' : 'none' %>;">
+                <span class="card-brand-badge">
+                    <i class="fas fa-crown"></i>
+                    <span id="cardBrandBadgeText"><%= custom.brandName || '' %></span>
+                </span>
+            </div>
             
             <%
                 function resolveCountryDisplay(rawCode) {
@@ -670,24 +868,56 @@
                 </span>
             </div>
 
-            <!-- Social Icons Row (Max 3) -->
+            <!-- Social Badges Row with Icons + Handles/URLs (Max 3) -->
+            <% 
+                const iconMap = {
+                    telegram: 'fab fa-telegram',
+                    discord: 'fab fa-discord',
+                    youtube: 'fab fa-youtube',
+                    github: 'fab fa-github',
+                    twitter: 'fab fa-x-twitter',
+                    instagram: 'fab fa-instagram',
+                    website: 'fas fa-globe',
+                    whatsapp: 'fab fa-whatsapp'
+                };
+
+                function buildSocialHref(plat, handle) {
+                    if (!handle) return '#';
+                    const h = String(handle).trim();
+                    if (h.startsWith('http://') || h.startsWith('https://')) return h;
+                    const clean = h.replace(/^@/, '');
+                    if (plat === 'telegram') return `https://t.me/${clean}`;
+                    if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : `https://discord.com`;
+                    if (plat === 'youtube') return `https://youtube.com/@${clean}`;
+                    if (plat === 'github') return `https://github.com/${clean}`;
+                    if (plat === 'twitter') return `https://x.com/${clean}`;
+                    if (plat === 'instagram') return `https://instagram.com/${clean}`;
+                    if (plat === 'whatsapp') return `https://wa.me/${clean.replace(/[^\d]/g, '')}`;
+                    return `https://${clean}`;
+                }
+
+                function formatSocialDisplay(plat, handle) {
+                    if (!handle) return plat.charAt(0).toUpperCase() + plat.slice(1);
+                    const h = String(handle).trim();
+                    if (h.startsWith('http://') || h.startsWith('https://')) {
+                        try {
+                            const u = new URL(h);
+                            const path = u.pathname.replace(/^\/+|\/+$/g, '');
+                            if (path) return path.startsWith('@') ? path : `@${path}`;
+                            return u.hostname.replace(/^www\./, '');
+                        } catch(e) {
+                            return h;
+                        }
+                    }
+                    return h.startsWith('@') ? h : `@${h}`;
+                }
+            %>
             <div id="cardSocialsRow" class="card-socials-row" style="display: <%= (showSocials && socials.length > 0) ? 'flex' : 'none' %>;">
-                <% 
-                    const iconMap = {
-                        telegram: 'fab fa-telegram',
-                        discord: 'fab fa-discord',
-                        youtube: 'fab fa-youtube',
-                        github: 'fab fa-github',
-                        twitter: 'fab fa-x-twitter',
-                        instagram: 'fab fa-instagram',
-                        website: 'fas fa-globe',
-                        whatsapp: 'fab fa-whatsapp'
-                    };
-                %>
                 <% socials.slice(0, 3).forEach((s, idx) => { %>
-                    <span class="card-social-badge" id="cardSocialBadge<%= idx %>" title="<%= s.platform %>">
+                    <a href="<%= buildSocialHref(s.platform, s.handleOrUrl) %>" target="_blank" rel="noopener noreferrer" class="card-social-pill" id="cardSocialBadge<%= idx %>" title="<%= s.platform %>: <%= s.handleOrUrl || '' %>">
                         <i class="<%= iconMap[s.platform] || 'fas fa-link' %>"></i>
-                    </span>
+                        <span class="card-social-text"><%= formatSocialDisplay(s.platform, s.handleOrUrl) %></span>
+                    </a>
                 <% }); %>
             </div>
 
@@ -707,19 +937,23 @@
             <!-- Bottom Collaboration / Team Attribution -->
             <div class="card-bottom-attribution">
                 <% if (cardUser.role === 'admin') { %>
-                    <div class="card-collab-line" style="font-weight: 700; color: var(--gold);">Official Member Of GPLMods Admin Team</div>
+                    <div class="card-collab-line" style="font-weight: 700; color: var(--gold);">
+                        <span id="collabBrandAdmin" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Admin Team
+                    </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else if (cardUser.role === 'support') { %>
-                    <div class="card-collab-line" style="font-weight: 700; color: #2196f3;">Official Member Of GPLMods Support Team</div>
+                    <div class="card-collab-line" style="font-weight: 700; color: #2196f3;">
+                        <span id="collabBrandSupport" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Support Team
+                    </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else if (cardUser.role === 'owner') { %>
-                    <div class="card-collab-line" style="font-weight: 700; color: #ff9800;" id="collabOwnerTextPreview">
-                        <%= (custom.customTagline && custom.customTagline.trim()) ? custom.customTagline : 'Official Founder & Head of GPLMods Ecosystem' %>
+                    <div class="card-collab-line" style="font-weight: 700; color: #ff9800;">
+                        <span id="collabBrandOwner" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span><span id="collabOwnerTextPreview"><%= (custom.customTagline && custom.customTagline.trim()) ? custom.customTagline : 'Official Founder & Head of GPLMods Ecosystem' %></span>
                     </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else { %>
                     <div class="card-collab-line">
-                        <span id="collabBrandPreview" class="brand-highlight"><%= brandName %></span> Collabed With GPLMods as <span id="collabPlatformPreview" class="brand-highlight"><%= platform %></span> Mod Distributor
+                        <span id="collabBrandPreview" class="brand-highlight"><%= (custom.brandName && custom.brandName.trim()) ? custom.brandName : cardUser.username %></span> Collabed With GPLMods as <span id="collabPlatformPreview" class="brand-highlight"><%= platform %></span> Mod Distributor
                     </div>
                     <div class="card-collab-sub">You can also do so to expand your reach</div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
@@ -730,10 +964,44 @@
 
     <!-- CONTROLS & SETTINGS -->
     <div class="controls-panel">
-        <div class="action-buttons">
-            <button id="btn-safe" onclick="setMode('safe')" class="btn-mode btn-mode-safe active">Safe Mode (Shareable)</button>
-            <button id="btn-private" onclick="setMode('private')" class="btn-mode btn-mode-private">Private Mode (Quick Login)</button>
-            <button onclick="downloadCard()" class="btn-download"><i class="fas fa-download"></i> Save as Image</button>
+        <div class="card-actions-toolbar">
+            <button id="btn-safe" type="button" onclick="setMode('safe')" class="btn-mode btn-mode-safe active">
+                <i class="fas fa-shield-alt"></i> Safe Mode (Shareable)
+            </button>
+            <button id="btn-private" type="button" onclick="setMode('private')" class="btn-mode btn-mode-private">
+                <i class="fas fa-key"></i> Private Mode (Quick Login)
+            </button>
+            
+            <!-- Custom Dropdown for Card Export & Sharing Actions -->
+            <div class="custom-dropdown-container" id="cardActionsDropdownWrap">
+                <button type="button" class="btn-download" id="cardActionsDropdownTrigger" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-download"></i>
+                    <span>Export &amp; Options</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.8em; margin-left: 4px;"></i>
+                </button>
+                <div class="custom-dropdown-menu" id="cardActionsDropdownMenu">
+                    <button type="button" class="dropdown-item" onclick="downloadCard('png')">
+                        <i class="fas fa-file-image" style="color: var(--gold);"></i>
+                        <span>Save as PNG (High-Res)</span>
+                    </button>
+                    <button type="button" class="dropdown-item" onclick="downloadCard('jpeg')">
+                        <i class="fas fa-image" style="color: #46b5e8;"></i>
+                        <span>Save as JPG</span>
+                    </button>
+                    <button type="button" class="dropdown-item" onclick="copyCardId()">
+                        <i class="fas fa-copy" style="color: #2ecc71;"></i>
+                        <span>Copy Verified ID (<%= cardUser.cardId %>)</span>
+                    </button>
+                    <button type="button" class="dropdown-item" onclick="copyPublicProfileLink()">
+                        <i class="fas fa-link" style="color: #ff9800;"></i>
+                        <span>Copy Public Card Link</span>
+                    </button>
+                    <button type="button" class="dropdown-item" onclick="shareCardNative()">
+                        <i class="fas fa-share-alt" style="color: #a855f7;"></i>
+                        <span>Share ID Card</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <% if (typeof error !== 'undefined' && error) { %>
@@ -774,7 +1042,7 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Primary Mod Platform</label>
-                        <select id="platformSelect" name="platform">
+                        <select id="platformSelect" name="platform" style="display: none;">
                             <option value="Android" <%= platform === 'Android' ? 'selected' : '' %>>Android (APK)</option>
                             <option value="iOS" <%= platform === 'iOS' ? 'selected' : '' %>>iOS (IPA)</option>
                             <option value="PC / Windows" <%= platform === 'PC / Windows' ? 'selected' : '' %>>PC / Windows</option>
@@ -783,6 +1051,21 @@
                             <option value="YouTube" <%= platform === 'YouTube' ? 'selected' : '' %>>YouTube Creator</option>
                             <option value="Discord" <%= platform === 'Discord' ? 'selected' : '' %>>Discord Community</option>
                         </select>
+                        <div class="custom-select-wrapper" id="platformSelectWrapper">
+                            <div class="custom-select">
+                                <span class="selected-text"><%= platform === 'Android' ? 'Android (APK)' : (platform === 'iOS' ? 'iOS (IPA)' : (platform === 'PC / Windows' ? 'PC / Windows' : (platform === 'Telegram' ? 'Telegram Channel' : (platform === 'YouTube' ? 'YouTube Creator' : (platform === 'Discord' ? 'Discord Community' : 'Multiplatform'))))) %></span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <div class="custom-option <%= platform === 'Android' ? 'selected' : '' %>" data-value="Android"><i class="fab fa-android" style="color: #3ddc84;"></i> Android (APK)</div>
+                                <div class="custom-option <%= platform === 'iOS' ? 'selected' : '' %>" data-value="iOS"><i class="fab fa-apple" style="color: #fff;"></i> iOS (IPA)</div>
+                                <div class="custom-option <%= platform === 'PC / Windows' ? 'selected' : '' %>" data-value="PC / Windows"><i class="fab fa-windows" style="color: #00a4ef;"></i> PC / Windows</div>
+                                <div class="custom-option <%= platform === 'Multiplatform' ? 'selected' : '' %>" data-value="Multiplatform"><i class="fas fa-cubes" style="color: var(--gold);"></i> Multiplatform</div>
+                                <div class="custom-option <%= platform === 'Telegram' ? 'selected' : '' %>" data-value="Telegram"><i class="fab fa-telegram" style="color: #26a5e4;"></i> Telegram Channel</div>
+                                <div class="custom-option <%= platform === 'YouTube' ? 'selected' : '' %>" data-value="YouTube"><i class="fab fa-youtube" style="color: #ff0000;"></i> YouTube Creator</div>
+                                <div class="custom-option <%= platform === 'Discord' ? 'selected' : '' %>" data-value="Discord"><i class="fab fa-discord" style="color: #5865f2;"></i> Discord Community</div>
+                            </div>
+                        </div>
                         <small style="color: var(--silver); font-size: 0.8em; margin-top: 4px; display: block;">Platform you primarily distribute mods for.</small>
                     </div>
                 </div>
@@ -872,14 +1155,14 @@
                 <div id="socialInputsContainer" style="display: <%= showSocials ? 'block' : 'none' %>;">
                     <% 
                         const socialOptions = [
-                            { val: 'telegram', label: 'Telegram (fab fa-telegram)' },
-                            { val: 'discord', label: 'Discord (fab fa-discord)' },
-                            { val: 'youtube', label: 'YouTube (fab fa-youtube)' },
-                            { val: 'github', label: 'GitHub (fab fa-github)' },
-                            { val: 'twitter', label: 'X / Twitter (fab fa-x-twitter)' },
-                            { val: 'instagram', label: 'Instagram (fab fa-instagram)' },
-                            { val: 'website', label: 'Website / Globe (fas fa-globe)' },
-                            { val: 'whatsapp', label: 'WhatsApp (fab fa-whatsapp)' }
+                            { val: 'telegram', label: 'Telegram (fab fa-telegram)', cleanLabel: 'Telegram' },
+                            { val: 'discord', label: 'Discord (fab fa-discord)', cleanLabel: 'Discord' },
+                            { val: 'youtube', label: 'YouTube (fab fa-youtube)', cleanLabel: 'YouTube' },
+                            { val: 'github', label: 'GitHub (fab fa-github)', cleanLabel: 'GitHub' },
+                            { val: 'twitter', label: 'X / Twitter (fab fa-x-twitter)', cleanLabel: 'X / Twitter' },
+                            { val: 'instagram', label: 'Instagram (fab fa-instagram)', cleanLabel: 'Instagram' },
+                            { val: 'website', label: 'Website / Globe (fas fa-globe)', cleanLabel: 'Website' },
+                            { val: 'whatsapp', label: 'WhatsApp (fab fa-whatsapp)', cleanLabel: 'WhatsApp' }
                         ];
                         const s1 = socials[0] || { platform: 'telegram', handleOrUrl: '' };
                         const s2 = socials[1] || { platform: 'discord', handleOrUrl: '' };
@@ -887,31 +1170,70 @@
                     %>
                     <!-- Social Slot 1 -->
                     <div class="social-input-row">
-                        <select name="social1_platform" id="social1Plat">
+                        <select name="social1_platform" id="social1Plat" style="display: none;">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s1.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
                             <% }); %>
                         </select>
+                        <div class="custom-select-wrapper social-select-wrap" id="social1PlatWrapper">
+                            <div class="custom-select" style="padding: 10px 12px; font-size: 0.9em;">
+                                <span class="selected-text"><i class="<%= iconMap[s1.platform] || 'fas fa-link' %>" style="color: var(--gold); margin-right: 4px;"></i> <%= s1.platform.charAt(0).toUpperCase() + s1.platform.slice(1) %></span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <% socialOptions.forEach(opt => { %>
+                                    <div class="custom-option <%= s1.platform === opt.val ? 'selected' : '' %>" data-value="<%= opt.val %>">
+                                        <i class="<%= iconMap[opt.val] || 'fas fa-link' %>" style="color: var(--gold);"></i> <%= opt.cleanLabel %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
                         <input type="text" name="social1_handle" id="social1Handle" value="<%= s1.handleOrUrl || '' %>" placeholder="Username, invite, or channel link">
                     </div>
 
                     <!-- Social Slot 2 -->
                     <div class="social-input-row">
-                        <select name="social2_platform" id="social2Plat">
+                        <select name="social2_platform" id="social2Plat" style="display: none;">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s2.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
                             <% }); %>
                         </select>
+                        <div class="custom-select-wrapper social-select-wrap" id="social2PlatWrapper">
+                            <div class="custom-select" style="padding: 10px 12px; font-size: 0.9em;">
+                                <span class="selected-text"><i class="<%= iconMap[s2.platform] || 'fas fa-link' %>" style="color: var(--gold); margin-right: 4px;"></i> <%= s2.platform.charAt(0).toUpperCase() + s2.platform.slice(1) %></span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <% socialOptions.forEach(opt => { %>
+                                    <div class="custom-option <%= s2.platform === opt.val ? 'selected' : '' %>" data-value="<%= opt.val %>">
+                                        <i class="<%= iconMap[opt.val] || 'fas fa-link' %>" style="color: var(--gold);"></i> <%= opt.cleanLabel %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
                         <input type="text" name="social2_handle" id="social2Handle" value="<%= s2.handleOrUrl || '' %>" placeholder="Optional 2nd handle or link">
                     </div>
 
                     <!-- Social Slot 3 -->
                     <div class="social-input-row" style="margin-bottom: 4px;">
-                        <select name="social3_platform" id="social3Plat">
+                        <select name="social3_platform" id="social3Plat" style="display: none;">
                             <% socialOptions.forEach(opt => { %>
                                 <option value="<%= opt.val %>" <%= s3.platform === opt.val ? 'selected' : '' %>><%= opt.label %></option>
                             <% }); %>
                         </select>
+                        <div class="custom-select-wrapper social-select-wrap" id="social3PlatWrapper">
+                            <div class="custom-select" style="padding: 10px 12px; font-size: 0.9em;">
+                                <span class="selected-text"><i class="<%= iconMap[s3.platform] || 'fas fa-link' %>" style="color: var(--gold); margin-right: 4px;"></i> <%= s3.platform.charAt(0).toUpperCase() + s3.platform.slice(1) %></span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <% socialOptions.forEach(opt => { %>
+                                    <div class="custom-option <%= s3.platform === opt.val ? 'selected' : '' %>" data-value="<%= opt.val %>">
+                                        <i class="<%= iconMap[opt.val] || 'fas fa-link' %>" style="color: var(--gold);"></i> <%= opt.cleanLabel %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
                         <input type="text" name="social3_handle" id="social3Handle" value="<%= s3.handleOrUrl || '' %>" placeholder="Optional 3rd handle or link">
                     </div>
                 </div>
@@ -1046,18 +1368,25 @@
     }
 
     // --- DOWNLOAD CARD WITH GUARANTEED BASE64 AVATAR ---
-    async function downloadCard() {
+    async function downloadCard(format = 'png') {
         const card = document.getElementById('exportable-card');
-        const btn = document.querySelector('.btn-download');
+        const triggerBtn = document.getElementById('cardActionsDropdownTrigger');
         const avatarImg = document.getElementById('rendered-card-avatar');
         
-        // UI Feedback
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        btn.disabled = true;
+        // Close dropdown
+        const actionsDrop = document.getElementById('cardActionsDropdownWrap');
+        if (actionsDrop) actionsDrop.classList.remove('open');
 
-        // Hide warning text momentarily for clean PNG output
+        // UI Feedback
+        const origBtnHtml = triggerBtn ? triggerBtn.innerHTML : '';
+        if (triggerBtn) {
+            triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            triggerBtn.disabled = true;
+        }
+
+        // Hide warning text momentarily for clean export output
         const warningEl = document.getElementById('qr-warning');
-        warningEl.style.opacity = '0';
+        if (warningEl) warningEl.style.opacity = '0';
 
         try {
             // Guarantee avatar is loaded as a local Data URL if not already
@@ -1089,24 +1418,138 @@
             });
 
             const link = document.createElement('a');
-            link.download = `GPLMods-ID-${'<%= cardUser.cardId %>'}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
+            const ext = format === 'jpeg' ? 'jpg' : 'png';
+            const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+            link.download = `GPLMods-ID-${'<%= cardUser.cardId %>'}.${ext}`;
+            link.href = canvas.toDataURL(mime, 0.95);
             link.click();
             
-            btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+            if (triggerBtn) triggerBtn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
             setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
-                btn.disabled = false;
+                if (triggerBtn) {
+                    triggerBtn.innerHTML = origBtnHtml;
+                    triggerBtn.disabled = false;
+                }
             }, 2000);
         } catch (err) {
             console.error("html2canvas error:", err);
             alert("Could not generate image. Please make sure all images are accessible.");
-            btn.innerHTML = '<i class="fas fa-download"></i> Save as Image';
-            btn.disabled = false;
+            if (triggerBtn) {
+                triggerBtn.innerHTML = origBtnHtml;
+                triggerBtn.disabled = false;
+            }
         } finally {
-            warningEl.style.opacity = '1';
+            if (warningEl) warningEl.style.opacity = '1';
         }
     }
+
+    // Copy Verified ID Number
+    function copyCardId() {
+        const idVal = '<%= cardUser.cardId %>';
+        navigator.clipboard.writeText(idVal).then(() => {
+            alert('Verified ID ' + idVal + ' copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy your Verified ID:', idVal);
+        });
+        const actionsDrop = document.getElementById('cardActionsDropdownWrap');
+        if (actionsDrop) actionsDrop.classList.remove('open');
+    }
+
+    // Copy Public Profile URL
+    function copyPublicProfileLink() {
+        const link = window.location.origin + '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
+        navigator.clipboard.writeText(link).then(() => {
+            alert('Public ID Card link copied to clipboard:\n' + link);
+        }).catch(() => {
+            prompt('Copy public card link:', link);
+        });
+        const actionsDrop = document.getElementById('cardActionsDropdownWrap');
+        if (actionsDrop) actionsDrop.classList.remove('open');
+    }
+
+    // Share Card using Web Share API if supported
+    async function shareCardNative() {
+        const link = window.location.origin + '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
+        const actionsDrop = document.getElementById('cardActionsDropdownWrap');
+        if (actionsDrop) actionsDrop.classList.remove('open');
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: '<%= cardUser.username %> - GPLMods ID Card',
+                    text: 'Check out my verified GPLMods digital credential!',
+                    url: link
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') copyPublicProfileLink();
+            }
+        } else {
+            copyPublicProfileLink();
+        }
+    }
+
+    // --- CUSTOM SELECT DROPDOWN LOGIC ---
+    function setupCustomSelect(wrapperId, selectId, onChangeCallback) {
+        const wrapper = document.getElementById(wrapperId);
+        const nativeSelect = document.getElementById(selectId);
+        if (!wrapper || !nativeSelect) return;
+
+        const trigger = wrapper.querySelector('.custom-select');
+        const selectedText = wrapper.querySelector('.selected-text');
+        const options = wrapper.querySelectorAll('.custom-option');
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            const actionsDrop = document.getElementById('cardActionsDropdownWrap');
+            if (actionsDrop) actionsDrop.classList.remove('open');
+            wrapper.classList.toggle('open');
+        });
+
+        options.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const val = opt.getAttribute('data-value');
+                nativeSelect.value = val;
+                
+                options.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                
+                selectedText.innerHTML = opt.innerHTML;
+                wrapper.classList.remove('open');
+
+                nativeSelect.dispatchEvent(new Event('change'));
+                if (onChangeCallback) onChangeCallback(val);
+            });
+        });
+    }
+
+    // Initialize all custom selects on ID Card page
+    setupCustomSelect('platformSelectWrapper', 'platformSelect', (val) => {
+        const collabPlatformPreview = document.getElementById('collabPlatformPreview');
+        if (collabPlatformPreview) collabPlatformPreview.textContent = val;
+    });
+    setupCustomSelect('social1PlatWrapper', 'social1Plat', () => updateSocialsPreview());
+    setupCustomSelect('social2PlatWrapper', 'social2Plat', () => updateSocialsPreview());
+    setupCustomSelect('social3PlatWrapper', 'social3Plat', () => updateSocialsPreview());
+
+    // Actions dropdown menu toggle & close on outside click
+    const cardActionsTrigger = document.getElementById('cardActionsDropdownTrigger');
+    const cardActionsWrap = document.getElementById('cardActionsDropdownWrap');
+    if (cardActionsTrigger && cardActionsWrap) {
+        cardActionsTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+            cardActionsWrap.classList.toggle('open');
+        });
+    }
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+        if (cardActionsWrap) cardActionsWrap.classList.remove('open');
+    });
 
     // --- LIVE PREVIEWS & CUSTOMIZATION INTERACTION ---
     const cardBgEl = document.querySelector('.id-card-bg');
@@ -1133,6 +1576,11 @@
     const collabPlatformPreview = document.getElementById('collabPlatformPreview');
     const collabOwnerTextPreview = document.getElementById('collabOwnerTextPreview');
     const ownerTaglineInput = document.getElementById('ownerTaglineInput');
+    const cardBrandContainer = document.getElementById('cardBrandContainer');
+    const cardBrandBadgeText = document.getElementById('cardBrandBadgeText');
+    const collabBrandOwner = document.getElementById('collabBrandOwner');
+    const collabBrandAdmin = document.getElementById('collabBrandAdmin');
+    const collabBrandSupport = document.getElementById('collabBrandSupport');
 
     const showEmailToggle = document.getElementById('showEmailToggle');
     const emailOptionsBox = document.getElementById('emailOptionsBox');
@@ -1169,10 +1617,29 @@
         }
     }
 
-    // Brand Name Live Update
-    if (brandNameInput && collabBrandPreview) {
+    // Brand Name Live Update (Updates card badge AND footer collaboration line)
+    if (brandNameInput) {
         brandNameInput.addEventListener('input', function() {
-            collabBrandPreview.textContent = this.value.trim() || "<%= cardUser.username %>";
+            const val = this.value.trim();
+            if (cardBrandBadgeText && cardBrandContainer) {
+                cardBrandBadgeText.textContent = val;
+                cardBrandContainer.style.display = val ? 'flex' : 'none';
+            }
+            if (collabBrandPreview) {
+                collabBrandPreview.textContent = val || "<%= cardUser.username %>";
+            }
+            if (collabBrandOwner) {
+                collabBrandOwner.textContent = val ? val + ' • ' : '';
+                collabBrandOwner.style.display = val ? 'inline' : 'none';
+            }
+            if (collabBrandAdmin) {
+                collabBrandAdmin.textContent = val ? val + ' • ' : '';
+                collabBrandAdmin.style.display = val ? 'inline' : 'none';
+            }
+            if (collabBrandSupport) {
+                collabBrandSupport.textContent = val ? val + ' • ' : '';
+                collabBrandSupport.style.display = val ? 'inline' : 'none';
+            }
         });
     }
 
@@ -1189,6 +1656,78 @@
             collabOwnerTextPreview.textContent = this.value.trim() || 'Official Founder & Head of GPLMods Ecosystem';
         });
     }
+
+    // Socials Live Update helper functions
+    const iconMapDict = {
+        telegram: 'fab fa-telegram',
+        discord: 'fab fa-discord',
+        youtube: 'fab fa-youtube',
+        github: 'fab fa-github',
+        twitter: 'fab fa-x-twitter',
+        instagram: 'fab fa-instagram',
+        website: 'fas fa-globe',
+        whatsapp: 'fab fa-whatsapp'
+    };
+
+    function liveFormatSocialDisplay(plat, handle) {
+        if (!handle) return plat.charAt(0).toUpperCase() + plat.slice(1);
+        const h = String(handle).trim();
+        if (h.startsWith('http://') || h.startsWith('https://')) {
+            try {
+                const u = new URL(h);
+                const path = u.pathname.replace(/^\/+|\/+$/g, '');
+                if (path) return path.startsWith('@') ? path : `@${path}`;
+                return u.hostname.replace(/^www\./, '');
+            } catch(e) {
+                return h;
+            }
+        }
+        return h.startsWith('@') ? h : `@${h}`;
+    }
+
+    function liveBuildSocialHref(plat, handle) {
+        if (!handle) return '#';
+        const h = String(handle).trim();
+        if (h.startsWith('http://') || h.startsWith('https://')) return h;
+        const clean = h.replace(/^@/, '');
+        if (plat === 'telegram') return `https://t.me/${clean}`;
+        if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : `https://discord.com`;
+        if (plat === 'youtube') return `https://youtube.com/@${clean}`;
+        if (plat === 'github') return `https://github.com/${clean}`;
+        if (plat === 'twitter') return `https://x.com/${clean}`;
+        if (plat === 'instagram') return `https://instagram.com/${clean}`;
+        if (plat === 'whatsapp') return `https://wa.me/${clean.replace(/[^\d]/g, '')}`;
+        return `https://${clean}`;
+    }
+
+    function updateSocialsPreview() {
+        if (!cardSocialsRow) return;
+        const sList = [
+            { plat: document.getElementById('social1Plat')?.value || 'telegram', handle: document.getElementById('social1Handle')?.value || '' },
+            { plat: document.getElementById('social2Plat')?.value || 'discord', handle: document.getElementById('social2Handle')?.value || '' },
+            { plat: document.getElementById('social3Plat')?.value || 'youtube', handle: document.getElementById('social3Handle')?.value || '' }
+        ];
+
+        const activeSocials = sList.filter(s => s.handle && s.handle.trim());
+        if (activeSocials.length === 0 || (showSocialsToggle && !showSocialsToggle.checked)) {
+            cardSocialsRow.style.display = 'none';
+        } else {
+            cardSocialsRow.style.display = 'flex';
+        }
+
+        cardSocialsRow.innerHTML = activeSocials.slice(0, 3).map((s, idx) => `
+            <a href="${liveBuildSocialHref(s.plat, s.handle)}" target="_blank" rel="noopener noreferrer" class="card-social-pill" id="cardSocialBadge${idx}" title="${s.plat}: ${s.handle}">
+                <i class="${iconMapDict[s.plat] || 'fas fa-link'}"></i>
+                <span class="card-social-text">${liveFormatSocialDisplay(s.plat, s.handle)}</span>
+            </a>
+        `).join('');
+    }
+
+    // Attach input listeners for live social handle updates
+    ['social1Handle', 'social2Handle', 'social3Handle'].forEach(id => {
+        const inp = document.getElementById(id);
+        if (inp) inp.addEventListener('input', updateSocialsPreview);
+    });
 
     // Email Toggles & Live Update
     if (showEmailToggle) {

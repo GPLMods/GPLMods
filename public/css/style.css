@@ -29,10 +29,10 @@
             --white: #ffffff;
             --gold: #FFD700;
             --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-            --glow-silver: rgba(192, 192, 192, 0.5);
+            --glow-gold: rgba(255, 215, 0, 0.25);
+            --glow-silver: rgba(192, 192, 192, 0.22);
             --red: #e53935;
-            --glow-red: rgba(229, 57, 53, 0.5);
+            --glow-red: rgba(229, 57, 53, 0.25);
             --green: #43a047;
             --blue: #2196F3; /* Added for categories */
             /* Platform Tag Colors */

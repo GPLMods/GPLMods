@@ -189,22 +189,49 @@
                     transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     position: relative;
+                    background-color: rgba(18, 18, 18, 0.85);
+                    backdrop-filter: blur(12px);
+                    border-radius: 20px;
+                    padding: 28px;
+                    gap: 32px;
+                    display: flex;
+                    align-items: center;
                 }
                 .featured-section .featured-card:hover {
-                    transform: translateY(-6px);
-                    border-color: var(--gold);
-                    box-shadow: 0 14px 35px rgba(255, 215, 0, 0.18), 0 0 20px rgba(0, 0, 0, 0.8);
+                    transform: translateY(-4px);
+                    border-color: rgba(255, 215, 0, 0.4);
+                    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 215, 0, 0.15);
                 }
                 .featured-section .featured-card:active {
                     transform: scale(0.99);
                 }
                 .featured-section .featured-icon-wrapper {
+                    width: 240px;
+                    height: 240px;
+                    min-width: 240px;
+                    border-radius: 18px;
+                    background: rgba(10, 10, 10, 0.75);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 16px;
+                    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.5);
                     transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+                    overflow: hidden;
+                    flex-shrink: 0;
                 }
                 .featured-section .featured-card:hover .featured-icon-wrapper {
-                    transform: scale(1.04);
-                    border-color: rgba(255, 215, 0, 0.5);
-                    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.25);
+                    transform: scale(1.02);
+                    border-color: rgba(255, 215, 0, 0.45);
+                    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.18);
+                }
+                .featured-section .featured-icon {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                    border-radius: 12px;
                 }
                 .council-meta-row {
                     display: flex;
@@ -219,7 +246,7 @@
                     gap: 6px;
                     background: rgba(255, 255, 255, 0.06);
                     border: 1px solid rgba(255, 255, 255, 0.1);
-                    padding: 4px 10px;
+                    padding: 4px 12px;
                     border-radius: 20px;
                     font-size: 0.82em;
                     color: var(--silver);
@@ -241,6 +268,25 @@
                 .platform-tag-wordpress { background: rgba(33, 117, 155, 0.18); color: #38bdf8; border: 1px solid rgba(33, 117, 155, 0.4); }
                 .platform-tag-windows { background: rgba(0, 164, 239, 0.15); color: #38bdf8; border: 1px solid rgba(0, 164, 239, 0.35); }
                 .platform-tag-global { background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.35); }
+
+                @media (max-width: 860px) {
+                    .featured-section .featured-card {
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 20px;
+                        padding: 20px;
+                    }
+                    .featured-section .featured-icon-wrapper {
+                        width: 100%;
+                        max-width: 280px;
+                        height: 200px;
+                        min-width: unset;
+                        margin: 0 auto;
+                    }
+                    .council-meta-row, .rating {
+                        justify-content: center;
+                    }
+                }
             </style>
             <section class="featured-section">
                 <!-- We use the icon of the first featured mod as the blurred background -->
@@ -251,6 +297,14 @@
                         <% editorsChoiceMods.forEach((mod, index)=> { %>
                             <div class="featured-card" id="featured-slide-<%= index %>">
                                 <div class="featured-icon-wrapper">
+                                    <% if (mod.certification === 'certified') { %>
+                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5;">✔ Certified</div>
+                                    <% } else if (mod.certification === 'community-tested') { %>
+                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5; background-color: var(--silver); color: var(--black);">Community Tested</div>
+                                    <% } %>
+                                    <% if (mod.version) { %>
+                                        <div class="mod-type-tag" style="position: absolute; top: 12px; right: 12px; z-index: 5;"><%= mod.version %></div>
+                                    <% } %>
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                                 </div>
                                 <div class="featured-content">
@@ -269,17 +323,31 @@
                                         const displayPlatform = (typeof currentPlatform !== 'undefined' && currentPlatform && currentPlatform !== 'all') 
                                             ? (platformLabels[currentPlatform.toLowerCase()] || currentPlatform.charAt(0).toUpperCase() + currentPlatform.slice(1)) 
                                             : modPlatformLabel;
+                                        const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : (mod.name ? mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : mod._id));
                                     %>
                                     <h2>
                                         Editor Choice For <%= displayPlatform %>:
-                                        <span><%= mod.name %></span>
+                                        <a href="/mods/<%= mod.category %>/<%= councilModSlug %>" style="color: inherit; text-decoration: none;"><span><%= mod.name %></span></a>
                                     </h2>
+
+                                    <% if (mod.developer) { %>
+                                        <p style="color: var(--silver); font-size: 0.9em; font-weight: 500; margin: 2px 0 6px 0;">
+                                            <i class="fas fa-code" style="color: var(--gold); margin-right: 5px;"></i> <%= mod.developer %>
+                                        </p>
+                                    <% } %>
+
+                                    <% const actualRating = typeof mod.averageRating === 'number' ? mod.averageRating : 0; %>
+                                    <div class="rating" style="display: flex; align-items: center; gap: 8px; margin: 4px 0 8px 0;">
+                                        <div class="stars-outer">
+                                            <div class="stars-inner" style="width: <%= (actualRating / 5) * 100 %>%;"></div>
+                                        </div>
+                                        <span class="rating-text" style="font-weight: 700; color: var(--gold); font-size: 1.05em;"><%= actualRating.toFixed(1) %></span>
+                                    </div>
 
                                     <div class="council-meta-row">
                                         <span class="platform-tag platform-tag-<%= cleanCat || 'global' %>"><%= modPlatformLabel %></span>
                                         <span class="mod-stat-pill"><i class="fas fa-eye" style="color: #60a5fa;"></i> <%= (mod.views || 0).toLocaleString() %> Views</span>
-                                        <span class="mod-stat-pill"><i class="fas fa-star" style="color: #fbbf24;"></i> <%= (mod.averageRating || 5.0).toFixed(1) %></span>
-                                        <span class="mod-stat-pill"><i class="fas fa-download" style="color: #34d399;"></i> <%= (mod.downloads || 0).toLocaleString() %></span>
+                                        <span class="mod-stat-pill"><i class="fas fa-download" style="color: #34d399;"></i> <%= (mod.downloads || 0).toLocaleString() %> Downloads</span>
                                     </div>
 
                                     <!-- Smart Description Logic -->
@@ -289,7 +357,6 @@
                                         <p><%- desc %></p>
 
                                         <div class="featured-buttons">
-                                            <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : (mod.name ? mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : mod._id)); %>
                                             <a href="/mods/<%= mod.category %>/<%= councilModSlug %>"
                                                 class="featured-button btn-primary">Know More</a>
 
@@ -708,6 +775,22 @@
             carousel.addEventListener('mouseleave', startAutoPlay);
             carousel.addEventListener('touchstart', stopAutoPlay, { passive: true });
             carousel.addEventListener('touchend', startAutoPlay, { passive: true });
+
+            // Synchronize dots on manual touch swipe or scroll
+            let manualScrollDebounce;
+            carousel.addEventListener('scroll', () => {
+                clearTimeout(manualScrollDebounce);
+                manualScrollDebounce = setTimeout(() => {
+                    const card = carousel.querySelector('.featured-card');
+                    if (!card) return;
+                    const cardWidth = card.offsetWidth;
+                    const activeIndex = Math.round(carousel.scrollLeft / (cardWidth || 1));
+                    if (activeIndex >= 0 && activeIndex < slides.length) {
+                        currentIndex = activeIndex;
+                        updateDots(activeIndex);
+                    }
+                }, 50);
+            }, { passive: true });
 
             // 7. Expose the manual click function for the dots
             window.scrollToSlide = function (index) {

@@ -1623,8 +1623,8 @@ app.use((req, res, next) => {
     }
 
     if (isAdminRoute) {
-        // Special-case: /admin/support and support-related ping endpoints allow 'support'
-        const isSupportAllowed = rawPath === '/admin/support' || rawPath.startsWith('/api/admin/ai-');
+        // Special-case: /admin/support and support-related ping/gemini endpoints allow 'support'
+        const isSupportAllowed = rawPath === '/admin/support' || rawPath.startsWith('/api/admin/ai-') || rawPath === '/api/admin/gemini-config';
         if (isSupportAllowed && isAuth && (userRole === 'support' || userRole === 'admin' || userRole === 'owner')) {
             return next();
         }
@@ -6662,6 +6662,22 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
         const expectedOrigins = getWebAuthnExpectedOrigins(req);
         const expectedRPIDs = getWebAuthnExpectedRPIDs(req, effectiveRpID);
 
+        let incomingCounter = 0;
+        if (req.body?.response?.authenticatorData) {
+            try {
+                const authDataBuf = Buffer.from(req.body.response.authenticatorData, 'base64url');
+                if (authDataBuf.length >= 37) {
+                    incomingCounter = authDataBuf.readUInt32BE(33);
+                }
+            } catch (e) {
+                console.warn('[WebAuthn] Failed to parse sign count from authenticatorData:', e.message);
+            }
+        }
+
+        // Multi-device passkeys (iCloud Keychain, Chrome/Android, 1Password) do not maintain signature counters and return 0.
+        // If incomingCounter is 0, supply counter: 0 to bypass @simplewebauthn's counter replay check.
+        const effectiveCounter = (incomingCounter === 0) ? 0 : (activePasskey.counter || 0);
+
         const verification = await verifyAuthenticationResponse({
             response: req.body,
             expectedChallenge: req.session.currentChallenge,
@@ -6670,17 +6686,19 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
             credential: {
                 id: activePasskey.credentialID,
                 publicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
-                counter: activePasskey.counter || 0,
+                counter: effectiveCounter,
                 transports: activePasskey.transports,
             },
             requireUserVerification: false,
         });
 
         if (verification && verification.verified) {
-            const newCounter = verification.authenticationInfo?.newCounter || ((activePasskey.counter || 0) + 1);
-            if (activePasskey) activePasskey.counter = newCounter;
+            const verifiedCounter = typeof verification.authenticationInfo?.newCounter === 'number'
+                ? verification.authenticationInfo.newCounter
+                : incomingCounter;
+            if (activePasskey) activePasskey.counter = verifiedCounter;
             if (user.passkey && user.passkey.credentialID === activePasskey.credentialID) {
-                user.passkey.counter = newCounter;
+                user.passkey.counter = verifiedCounter;
             }
             await user.save();
             
@@ -9028,7 +9046,7 @@ app.post('/api/admin/ai-ping', ensureSupportOrAdmin, async (req, res) => {
     }
 });
 // --- GEMINI VISIBILITY CONFIGURATION ROUTES ---
-app.get('/api/admin/gemini-config', ensureAdmin, async (req, res) => {
+app.get('/api/admin/gemini-config', ensureSupportOrAdmin, async (req, res) => {
     try {
         const state = await SiteState.findOne({ singletonId: 'master-state' });
         res.json({
@@ -9041,7 +9059,7 @@ app.get('/api/admin/gemini-config', ensureAdmin, async (req, res) => {
     }
 });
 
-app.post('/api/admin/gemini-config', ensureAdmin, async (req, res) => {
+app.post('/api/admin/gemini-config', ensureSupportOrAdmin, async (req, res) => {
     try {
         const { enableGeminiChatbot, geminiHiddenPages } = req.body;
         let pagesArray = [];
@@ -12579,13 +12597,20 @@ const startServer = async () => {
                                 throw new Error("Gemini AI is not configured or missing API key.");
                             }
 
-                            // Fetch active knowledge base for customized prompt context
-                            const activeDocArticles = await DocArticle.find({ isPublished: true }).select('title content category').lean();
-                            let systemKnowledgePrompt = `You are the official GPL AI Support Assistant for GPL Mods. Answer user inquiries politely, concisely, and accurately based on our services.\n\nKnowledge Base:\n`;
+                            // Fetch active knowledge base for customized prompt context safely
+                            let systemKnowledgePrompt = `You are the official GPL AI Support Assistant for GPL Mods. Answer user inquiries politely, concisely, and accurately based on our services.\n\n`;
                             
-                            activeDocArticles.slice(0, 10).forEach(art => {
-                                systemKnowledgePrompt += `- [${art.category}] ${art.title}: ${art.content ? art.content.slice(0, 150) : ''}...\n`;
-                            });
+                            try {
+                                const activeKnowledge = await AIKnowledge.find({ isActive: true }).select('topic keywords response').lean();
+                                if (activeKnowledge && activeKnowledge.length) {
+                                    systemKnowledgePrompt += `Knowledge Base Rules & Context:\n`;
+                                    activeKnowledge.slice(0, 15).forEach(k => {
+                                        systemKnowledgePrompt += `- [Topic: ${k.topic}] (Keywords: ${k.keywords}): ${k.response}\n`;
+                                    });
+                                }
+                            } catch (kbErr) {
+                                console.warn("Could not load AIKnowledge for chat prompt:", kbErr.message);
+                            }
 
                             const chat = aiModel.startChat({
                                 history: [
@@ -12609,8 +12634,10 @@ const startServer = async () => {
 
                             io.to(`support_${session._id}`).emit('new_support_message', botMsg);
                             
+                            aiDebuggerStatus.status = 'online';
                             aiDebuggerStatus.totalRequests++;
                             aiDebuggerStatus.lastPing = new Date();
+                            aiDebuggerStatus.lastError = null;
                             io.to('support_agents').emit('ai_status_update', aiDebuggerStatus);
                             broadcastOnlineStats();
 

@@ -67,12 +67,16 @@
             font-size: 1.8em;
             font-weight: 700;
             color: var(--gold);
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 12px rgba(255, 215, 0, 0.22);
             text-decoration: none;
             display: block;
         }
-        .logo-area span { color: var(--silver); }
-        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; }
-        .logo span { color: var(--silver); text-shadow: 0 0 10px var(--glow-silver); }
+        .logo-area span { 
+            color: var(--silver); 
+            text-shadow: 0 0 6px rgba(192, 192, 192, 0.4), 0 0 12px rgba(192, 192, 192, 0.2); 
+        }
+        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 12px rgba(255, 215, 0, 0.22); text-decoration: none; }
+        .logo span { color: var(--silver); text-shadow: 0 0 6px rgba(192, 192, 192, 0.4), 0 0 12px rgba(192, 192, 192, 0.2); }
         .form-container h2 { text-align: center; font-size: 1.8em; margin-bottom: 25px; }
         
         .form-group { margin-bottom: 20px; position: relative; }
@@ -257,10 +261,154 @@
             color: var(--gold);
         }
 
+        /* GPL Card Scanner Mode Tabs */
+        .gpl-card-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.25);
+        }
+        .gpl-card-tab-btn {
+            flex: 1;
+            padding: 9px 12px;
+            background: transparent;
+            border: none;
+            color: var(--silver);
+            font-size: 0.88em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+        .gpl-card-tab-btn.active {
+            background: var(--gold);
+            color: var(--black);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+        }
+
+        /* Camera Viewport & Cyber Viewfinder */
+        .gpl-camera-container {
+            position: relative;
+            width: 100%;
+            height: 270px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1.5px solid rgba(255, 215, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s;
+        }
+        .gpl-camera-container.scan-success {
+            border-color: #2ecc71;
+            box-shadow: 0 0 25px rgba(46, 204, 113, 0.6);
+        }
+        #gplCameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .gpl-camera-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .viewfinder-frame {
+            position: relative;
+            width: 185px;
+            height: 185px;
+            border: 1.5px dashed rgba(255, 215, 0, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);
+        }
+        .viewfinder-frame::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 16px;
+            background: 
+                linear-gradient(to right, var(--gold) 16px, transparent 16px) top left,
+                linear-gradient(to bottom, var(--gold) 16px, transparent 16px) top left,
+                linear-gradient(to left, var(--gold) 16px, transparent 16px) top right,
+                linear-gradient(to bottom, var(--gold) 16px, transparent 16px) top right,
+                linear-gradient(to right, var(--gold) 16px, transparent 16px) bottom left,
+                linear-gradient(to top, var(--gold) 16px, transparent 16px) bottom left,
+                linear-gradient(to left, var(--gold) 16px, transparent 16px) bottom right,
+                linear-gradient(to top, var(--gold) 16px, transparent 16px) bottom right;
+            background-repeat: no-repeat;
+            background-size: 18px 18px;
+            pointer-events: none;
+        }
+        /* Sweeping laser line */
+        .laser-scan-line {
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            height: 2.5px;
+            background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%);
+            box-shadow: 0 0 10px var(--gold), 0 0 18px rgba(255, 215, 0, 0.6);
+            animation: sweepLaser 2s ease-in-out infinite alternate;
+        }
+        @keyframes sweepLaser {
+            0% { top: 10px; opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { top: 165px; opacity: 0.2; }
+        }
+        .camera-hint-badge {
+            margin-top: 14px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            color: #f1f5f9;
+            font-size: 0.74em;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .camera-controls-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            gap: 10px;
+        }
+        .camera-action-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--silver);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .camera-action-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
         @media (max-width: 480px) {
             .auth-container { padding: 25px; border-radius: 0; border: none; box-shadow: none; }
             .auth-page-wrapper { padding: 0; align-items: flex-start; }
             .gpl-card-modal-dialog { padding: 20px; }
+            .gpl-camera-container { height: 230px; }
+            .viewfinder-frame { width: 160px; height: 160px; }
         }
     </style>
     <!-- jsQR Library for scanning QR code directly from uploaded ID card -->
@@ -361,35 +509,71 @@
                     <i class="fas fa-id-card" style="color: var(--gold); font-size: 1.4em;"></i>
                     <div>
                         <h3 style="margin: 0; color: var(--gold); font-size: 1.2em;">Login with GPL Card</h3>
-                        <p style="margin: 2px 0 0 0; color: var(--silver); font-size: 0.8em;">Upload your verified GPLMods ID Card</p>
+                        <p style="margin: 2px 0 0 0; color: var(--silver); font-size: 0.8em;">Scan via Camera or Upload your ID Card</p>
                     </div>
                 </div>
                 <button type="button" id="btn-close-gpl-card-modal" class="gpl-card-close-btn" aria-label="Close">&times;</button>
             </div>
 
             <div class="gpl-card-modal-body">
+                <!-- Mode Tabs: Camera Scan vs Upload File -->
+                <div class="gpl-card-tabs">
+                    <button type="button" class="gpl-card-tab-btn active" id="tabBtnCamera">
+                        <i class="fas fa-camera"></i> Scan with Camera
+                    </button>
+                    <button type="button" class="gpl-card-tab-btn" id="tabBtnUpload">
+                        <i class="fas fa-file-upload"></i> Upload Card File
+                    </button>
+                </div>
+
                 <!-- Status / Alert Message -->
                 <div id="card-scan-alert" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.88em; margin-bottom: 15px; text-align: center; font-weight: 600;"></div>
 
-                <!-- Dropzone for Card Upload -->
-                <div id="gpl-card-dropzone" class="gpl-card-dropzone">
-                    <input type="file" id="gplCardFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
-                    <div class="dropzone-content" id="dropzone-default-view">
-                        <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
-                        <p class="dropzone-title">Drag &amp; drop your GPL ID Card here, or <span style="color: var(--gold); text-decoration: underline;">Browse</span></p>
-                        <p class="dropzone-sub">Supports PNG, JPG or WebP exported in <strong>Private Mode (Quick Login)</strong></p>
+                <!-- VIEW 1: Live Camera Scanner -->
+                <div id="camera-scanner-view" style="display: block;">
+                    <div class="gpl-camera-container" id="gplCameraContainer">
+                        <video id="gplCameraVideo" playsinline autoplay muted></video>
+                        <canvas id="gplCameraCanvas" style="display: none;"></canvas>
+                        <div class="gpl-camera-overlay">
+                            <div class="viewfinder-frame">
+                                <div class="laser-scan-line"></div>
+                            </div>
+                            <span class="camera-hint-badge">
+                                <i class="fas fa-qrcode" style="color: var(--gold); margin-right: 4px;"></i> Align Private Mode QR in frame
+                            </span>
+                        </div>
                     </div>
-                    <!-- Live Scanning State -->
-                    <div class="dropzone-scanning" id="dropzone-scanning-view" style="display: none;">
-                        <i class="fas fa-spinner fa-spin scanning-spinner"></i>
-                        <p style="color: var(--white); font-weight: 600; margin-top: 10px;">Scanning card credentials &amp; QR code...</p>
-                        <p style="color: var(--silver); font-size: 0.82em;">Verifying digital credential</p>
+                    <div class="camera-controls-bar">
+                        <button type="button" class="camera-action-btn" id="btnFlipCamera" title="Switch Front/Back Camera">
+                            <i class="fas fa-sync-alt"></i> <span>Flip Camera</span>
+                        </button>
+                        <button type="button" class="camera-action-btn" id="btnToggleScanner" style="border-color: var(--gold); color: var(--gold);">
+                            <i class="fas fa-pause"></i> <span>Pause Scanner</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Preview thumbnail if loaded -->
-                <div id="card-preview-wrapper" style="display: none; margin-top: 15px; text-align: center;">
-                    <img id="card-preview-thumb" src="" alt="Card Preview" style="max-width: 130px; max-height: 180px; border-radius: 8px; border: 1px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <!-- VIEW 2: Dropzone for Card Upload -->
+                <div id="upload-file-view" style="display: none;">
+                    <div id="gpl-card-dropzone" class="gpl-card-dropzone">
+                        <input type="file" id="gplCardFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                        <div class="dropzone-content" id="dropzone-default-view">
+                            <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                            <p class="dropzone-title">Drag &amp; drop your GPL ID Card here, or <span style="color: var(--gold); text-decoration: underline;">Browse</span></p>
+                            <p class="dropzone-sub">Supports PNG, JPG or WebP exported in <strong>Private Mode (Quick Login)</strong></p>
+                        </div>
+                        <!-- Live Scanning State -->
+                        <div class="dropzone-scanning" id="dropzone-scanning-view" style="display: none;">
+                            <i class="fas fa-spinner fa-spin scanning-spinner"></i>
+                            <p style="color: var(--white); font-weight: 600; margin-top: 10px;">Scanning card credentials &amp; QR code...</p>
+                            <p style="color: var(--silver); font-size: 0.82em;">Verifying digital credential</p>
+                        </div>
+                    </div>
+
+                    <!-- Preview thumbnail if loaded -->
+                    <div id="card-preview-wrapper" style="display: none; margin-top: 15px; text-align: center;">
+                        <img id="card-preview-thumb" src="" alt="Card Preview" style="max-width: 130px; max-height: 180px; border-radius: 8px; border: 1px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                    </div>
                 </div>
 
                 <div style="margin-top: 18px; text-align: center;">
@@ -441,13 +625,36 @@
             const closeBtn = document.getElementById('btn-close-gpl-card-modal');
             const backdrop = document.getElementById('gpl-card-backdrop');
             const modal = document.getElementById('gpl-card-modal');
+            const alertBox = document.getElementById('card-scan-alert');
+
+            // Tabs
+            const tabBtnCamera = document.getElementById('tabBtnCamera');
+            const tabBtnUpload = document.getElementById('tabBtnUpload');
+            const cameraScannerView = document.getElementById('camera-scanner-view');
+            const uploadFileView = document.getElementById('upload-file-view');
+
+            // Camera elements
+            const video = document.getElementById('gplCameraVideo');
+            const canvas = document.getElementById('gplCameraCanvas');
+            const cameraContainer = document.getElementById('gplCameraContainer');
+            const btnFlipCamera = document.getElementById('btnFlipCamera');
+            const btnToggleScanner = document.getElementById('btnToggleScanner');
+
+            // Dropzone elements
             const dropzone = document.getElementById('gpl-card-dropzone');
             const fileInput = document.getElementById('gplCardFileInput');
             const defaultView = document.getElementById('dropzone-default-view');
             const scanningView = document.getElementById('dropzone-scanning-view');
             const previewWrapper = document.getElementById('card-preview-wrapper');
             const previewThumb = document.getElementById('card-preview-thumb');
-            const alertBox = document.getElementById('card-scan-alert');
+
+            // State
+            let cameraStream = null;
+            let isScanning = false;
+            let isPaused = false;
+            let currentFacingMode = 'environment'; // 'environment' (back) or 'user' (selfie/webcam)
+            let scanAnimFrame = null;
+            let activeTab = 'camera'; // 'camera' or 'upload'
 
             if (!openBtn || !modal) return;
 
@@ -464,8 +671,8 @@
                 if (alertBox) alertBox.style.display = 'none';
             }
 
-            function setScanningState(isScanning) {
-                if (isScanning) {
+            function setScanningState(isScann) {
+                if (isScann) {
                     if (defaultView) defaultView.style.display = 'none';
                     if (scanningView) scanningView.style.display = 'block';
                     if (dropzone) dropzone.style.pointerEvents = 'none';
@@ -476,9 +683,171 @@
                 }
             }
 
+            // Tab Switching
+            function switchTab(tab) {
+                activeTab = tab;
+                hideAlert();
+                if (tab === 'camera') {
+                    if (tabBtnCamera) tabBtnCamera.classList.add('active');
+                    if (tabBtnUpload) tabBtnUpload.classList.remove('active');
+                    if (cameraScannerView) cameraScannerView.style.display = 'block';
+                    if (uploadFileView) uploadFileView.style.display = 'none';
+                    startCameraScanner();
+                } else {
+                    if (tabBtnUpload) tabBtnUpload.classList.add('active');
+                    if (tabBtnCamera) tabBtnCamera.classList.remove('active');
+                    if (uploadFileView) uploadFileView.style.display = 'block';
+                    if (cameraScannerView) cameraScannerView.style.display = 'none';
+                    stopCameraScanner();
+                }
+            }
+
+            if (tabBtnCamera) tabBtnCamera.addEventListener('click', () => switchTab('camera'));
+            if (tabBtnUpload) tabBtnUpload.addEventListener('click', () => switchTab('upload'));
+
+            // Camera Engine
+            async function startCameraScanner() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showAlert('Camera access is not supported by your browser or environment. Please upload your card image instead.', true);
+                    switchTab('upload');
+                    return;
+                }
+
+                stopCameraScanner();
+                isPaused = false;
+                if (btnToggleScanner) {
+                    btnToggleScanner.innerHTML = '<i class="fas fa-pause"></i> <span>Pause Scanner</span>';
+                }
+
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: { ideal: currentFacingMode },
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    cameraStream = stream;
+                    if (video) {
+                        video.srcObject = stream;
+                        video.setAttribute('playsinline', 'true');
+                        await video.play();
+                    }
+                    isScanning = true;
+                    if (cameraContainer) cameraContainer.classList.remove('scan-success');
+                    scanCameraLoop();
+                } catch (err) {
+                    console.warn('Camera access error:', err);
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        showAlert('Camera permission was denied. Please allow camera access in your browser or switch to "Upload Card File".', true);
+                    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                        showAlert('No camera device detected on your system. Please upload your card file instead.', true);
+                        switchTab('upload');
+                    } else {
+                        showAlert('Unable to open camera stream (' + (err.message || 'Error') + '). Please upload your card file instead.', true);
+                    }
+                }
+            }
+
+            function stopCameraScanner() {
+                isScanning = false;
+                if (scanAnimFrame) {
+                    cancelAnimationFrame(scanAnimFrame);
+                    scanAnimFrame = null;
+                }
+                if (cameraStream) {
+                    try {
+                        cameraStream.getTracks().forEach(track => track.stop());
+                    } catch (e) {}
+                    cameraStream = null;
+                }
+                if (video) {
+                    video.srcObject = null;
+                }
+                if (cameraContainer) cameraContainer.classList.remove('scan-success');
+            }
+
+            function scanCameraLoop() {
+                if (!isScanning) return;
+
+                if (!isPaused && video && video.readyState === video.HAVE_ENOUGH_DATA && canvas) {
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    if (typeof jsQR !== 'undefined') {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: 'attemptBoth'
+                        });
+
+                        if (code && code.data) {
+                            handleDetectedQr(code.data);
+                            return; // Stop animation loop until verification finishes
+                        }
+                    }
+                }
+
+                scanAnimFrame = requestAnimationFrame(scanCameraLoop);
+            }
+
+            function handleDetectedQr(qrData) {
+                // Check if user scanned public profile link by accident
+                if (qrData.includes('?ref=card') || (qrData.includes('/users/') && !qrData.includes('/qr-login/'))) {
+                    showAlert('<strong>Notice:</strong> This is a Public Profile QR code.<br>Please scan the <strong>Private Mode (Quick Login)</strong> QR code to sign in.', true);
+                    // Pause for 3.5 seconds to let user read
+                    isPaused = true;
+                    setTimeout(() => {
+                        isPaused = false;
+                        if (isScanning) scanCameraLoop();
+                    }, 3500);
+                    return;
+                }
+
+                // QR Detected! Provide feedback
+                if (cameraContainer) cameraContainer.classList.add('scan-success');
+                if (navigator.vibrate) {
+                    try { navigator.vibrate([70, 40, 70]); } catch (e) {}
+                }
+
+                stopCameraScanner();
+                submitCardToken(qrData);
+            }
+
+            // Flip camera button
+            if (btnFlipCamera) {
+                btnFlipCamera.addEventListener('click', () => {
+                    currentFacingMode = (currentFacingMode === 'environment' ? 'user' : 'environment');
+                    if (video) {
+                        video.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+                    }
+                    startCameraScanner();
+                });
+            }
+
+            // Pause / Resume camera scanner button
+            if (btnToggleScanner) {
+                btnToggleScanner.addEventListener('click', () => {
+                    isPaused = !isPaused;
+                    if (isPaused) {
+                        btnToggleScanner.innerHTML = '<i class="fas fa-play"></i> <span>Resume Scanner</span>';
+                        btnToggleScanner.style.color = '#2ecc71';
+                        btnToggleScanner.style.borderColor = '#2ecc71';
+                    } else {
+                        btnToggleScanner.innerHTML = '<i class="fas fa-pause"></i> <span>Pause Scanner</span>';
+                        btnToggleScanner.style.color = 'var(--gold)';
+                        btnToggleScanner.style.borderColor = 'var(--gold)';
+                        if (isScanning) scanCameraLoop();
+                    }
+                });
+            }
+
             function resetModal() {
                 hideAlert();
                 setScanningState(false);
+                stopCameraScanner();
                 if (previewWrapper) previewWrapper.style.display = 'none';
                 if (previewThumb) previewThumb.src = '';
                 if (fileInput) fileInput.value = '';
@@ -487,6 +856,8 @@
             function openModal() {
                 resetModal();
                 modal.style.display = 'flex';
+                // Start with Camera view by default
+                switchTab('camera');
             }
 
             function closeModal() {
@@ -503,6 +874,9 @@
                     closeModal();
                 }
             });
+
+            // Stop camera if page is navigated away or unloaded
+            window.addEventListener('beforeunload', stopCameraScanner);
 
             // Dropzone click & drag-and-drop
             if (dropzone && fileInput) {
@@ -580,23 +954,23 @@
                 }
 
                 try {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    canvas.width = img.naturalWidth || img.width;
-                    canvas.height = img.naturalHeight || img.height;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const c = document.createElement('canvas');
+                    const ctx = c.getContext('2d', { willReadFrequently: true });
+                    c.width = img.naturalWidth || img.width;
+                    c.height = img.naturalHeight || img.height;
+                    ctx.drawImage(img, 0, 0, c.width, c.height);
 
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, c.width, c.height);
                     let code = jsQR(imageData.data, imageData.width, imageData.height, {
                         inversionAttempts: 'attemptBoth'
                     });
 
-                    // If not found and image is very high resolution, try downscaling for cleaner QR scan
-                    if (!code && (canvas.width > 1200 || canvas.height > 1200)) {
-                        const scale = Math.min(1000 / canvas.width, 1000 / canvas.height);
+                    // If not found and image is high resolution, try downscaling
+                    if (!code && (c.width > 1200 || c.height > 1200)) {
+                        const scale = Math.min(1000 / c.width, 1000 / c.height);
                         const scaledCanvas = document.createElement('canvas');
-                        scaledCanvas.width = Math.round(canvas.width * scale);
-                        scaledCanvas.height = Math.round(canvas.height * scale);
+                        scaledCanvas.width = Math.round(c.width * scale);
+                        scaledCanvas.height = Math.round(c.height * scale);
                         const sCtx = scaledCanvas.getContext('2d', { willReadFrequently: true });
                         sCtx.drawImage(img, 0, 0, scaledCanvas.width, scaledCanvas.height);
                         const sData = sCtx.getImageData(0, 0, scaledCanvas.width, scaledCanvas.height);
@@ -606,6 +980,11 @@
                     }
 
                     if (code && code.data) {
+                        if (code.data.includes('?ref=card') || (code.data.includes('/users/') && !code.data.includes('/qr-login/'))) {
+                            setScanningState(false);
+                            showAlert('<strong>Notice:</strong> This is a Public Profile QR code.<br>Please scan or upload a card exported in <strong>Private Mode (Quick Login)</strong> to sign in.', true);
+                            return;
+                        }
                         submitCardToken(code.data);
                     } else {
                         setScanningState(false);

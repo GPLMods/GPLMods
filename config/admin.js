@@ -265,17 +265,37 @@ async function createAdminRouter() {
                 options: {
                     navigation: usersNav,
                     listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties: ['_id', 'username', 'email', 'cardId', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    showProperties: ['_id', 'username', 'email', 'cardId', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
                         bio: { type: 'textarea', description: 'User profile biography' },
+                        showCardVerifiedBadge: {
+                            type: 'boolean',
+                            label: 'Show Card Verified Badge',
+                            description: 'Toggle on/off the Card Verified badge on the public user profile'
+                        },
+                        cardVerifiedBadgeOrder: {
+                            type: 'number',
+                            label: 'Card Verified Badge Order',
+                            description: 'Display order priority of the Card Verified badge (e.g. 1 = first)'
+                        },
                         profileLottieBadges: { 
-                            description: 'Custom profile Lottie badges (max 3, default is 0). Set animation, title, description, and accent color.' 
+                            description: 'Custom profile Lottie badges (max 3, default is 0). Set animation, title, description, accent color, and order.' 
                         },
                         'profileLottieBadges.animation': {
-                            description: 'Lottie JSON filename from /public/animations (e.g. verified.json, card.json, crown.json, shield.json, ticmark.json) or direct URL'
+                            availableValues: [
+                                { value: 'card.json', label: 'card.json (Card Animation)' },
+                                { value: 'verified.json', label: 'verified.json (Verified Animation)' },
+                                { value: 'custom', label: 'Custom (Type name below)' }
+                            ],
+                            description: 'Select one of the 2 default major Lottie animations or select Custom to type a custom JSON name below'
+                        },
+                        'profileLottieBadges.customAnimation': {
+                            type: 'string',
+                            label: 'Custom Lottie Animation JSON / URL',
+                            description: 'Type the custom animation filename (e.g. crown.json, shield.json) or full URL if Custom is selected above'
                         },
                         'profileLottieBadges.title': {
                             description: 'Badge display title (e.g. Verified Partner, Code Reviewer, Security Tester)'
@@ -285,6 +305,11 @@ async function createAdminRouter() {
                         },
                         'profileLottieBadges.color': {
                             description: 'Accent hex color (e.g. #FFD700 for Gold, #00e676 for Green, #00b0ff for Blue, #f44336 for Red, #ba68c8 for Purple)'
+                        },
+                        'profileLottieBadges.order': {
+                            type: 'number',
+                            label: 'Badge Order Priority',
+                            description: 'Display order priority relative to other badges (e.g. 2, 3)'
                         },
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },
@@ -601,52 +626,6 @@ async function createAdminRouter() {
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = vtUrl;
                                 return { record: updatedRecord, notice: { message: 'Opening VirusTotal report...', type: 'success' } };
-                            }
-                        },
-                        manageVotes: {
-                            actionType: 'record',
-                            icon: 'ThumbsUp',
-                            component: Components.ManageVotes, 
-                            handler: async (request, response, context) => {
-                                const file = context.record;
-                                if (request.method === 'post') {
-                                    const { actionType, newWorkingCount, newNotWorkingCount } = request.payload;
-
-                                    try {
-                                        if (actionType === 'reset') {
-                                            await File.findByIdAndUpdate(file.params._id, {
-                                                workingVoteCount: 0,
-                                                notWorkingVoteCount: 0,
-                                                votedWorkingBy: [],
-                                                votedNotWorkingBy: []
-                                            });
-                                            return {
-                                                record: file.toJSON(context.currentAdmin),
-                                                notice: { message: 'All votes have been successfully reset to 0.', type: 'success' },
-                                                redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
-                                            };
-                                        } 
-                                        else if (actionType === 'override') {
-                                            await File.findByIdAndUpdate(file.params._id, {
-                                                workingVoteCount: parseInt(newWorkingCount, 10) || 0,
-                                                notWorkingVoteCount: parseInt(newNotWorkingCount, 10) || 0,
-                                                votedWorkingBy: [],
-                                                votedNotWorkingBy: []
-                                            });
-                                            return {
-                                                record: file.toJSON(context.currentAdmin),
-                                                notice: { message: 'Vote counts have been manually overridden.', type: 'success' },
-                                                redirectUrl: context.h.resourceActionUrl({ resourceId: 'File', actionName: 'list' })
-                                            };
-                                        }
-                                    } catch (error) {
-                                        return {
-                                            record: file.toJSON(context.currentAdmin),
-                                            notice: { message: `Error updating votes: ${error.message}`, type: 'error' }
-                                        };
-                                    }
-                                }
-                                return { record: file.toJSON(context.currentAdmin) };
                             }
                         }
                     }

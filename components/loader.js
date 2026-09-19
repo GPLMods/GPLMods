@@ -9,8 +9,7 @@ const Components = {
     ActionRedirect: componentLoader.add('ActionRedirect', path.resolve(__dirname, './actions/ActionRedirect.jsx')),
     VariantBadge: componentLoader.add('VariantBadge', path.resolve(__dirname, './cells/VariantBadge.jsx')),
     AvatarCell: componentLoader.add('AvatarCell', path.resolve(__dirname, './cells/AvatarCell.jsx')),
-    ImagePreview: componentLoader.add('ImagePreview', path.resolve(__dirname, './cells/ImagePreview.jsx')),
-    ManageVotes: componentLoader.add('ManageVotes', path.resolve(__dirname, './actions/ManageVotes.jsx'))
+    ImagePreview: componentLoader.add('ImagePreview', path.resolve(__dirname, './cells/ImagePreview.jsx'))
 };
 
 module.exports = { componentLoader, Components };

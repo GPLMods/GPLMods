@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>GPL Mods Support Desk & AI Debugger</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -239,28 +239,68 @@
             transform: rotate(-90deg);
         }
 
+        /* Refresh Queue & Stats Button */
+        .refresh-desk-btn {
+            background: rgba(255, 215, 0, 0.12);
+            color: var(--gold);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.82em;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .refresh-desk-btn:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+        }
+        .refresh-desk-btn:active {
+            transform: scale(0.96);
+        }
+        .refresh-desk-btn i.rotating {
+            animation: deskSpin 0.75s linear infinite;
+        }
+        @keyframes deskSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
                 height: 100dvh;
                 height: 100vh;
                 position: relative;
+                overflow: hidden;
             }
             .sidebar {
                 width: 100% !important;
                 min-width: 0 !important;
-                height: 100%;
+                height: 100dvh !important;
+                height: 100% !important;
                 border-right: none;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .main-chat {
                 width: 100% !important;
-                height: 100%;
+                max-width: 100% !important;
+                height: 100dvh !important;
+                height: 100% !important;
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
                 z-index: 100;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
             }
             #empty-state {
                 display: none !important;
@@ -280,7 +320,7 @@
                 flex-wrap: nowrap;
             }
             .chat-header h3 {
-                font-size: 1em;
+                font-size: 0.95em;
             }
             .chat-header .device-info {
                 font-size: 0.72em;
@@ -295,19 +335,43 @@
                 font-size: 0.9em;
             }
             .chat-input-area {
-                padding: 10px 12px;
+                box-sizing: border-box !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 8px 10px;
+                padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
                 gap: 6px;
+                display: flex !important;
+                align-items: center !important;
+                flex-shrink: 0 !important;
+                overflow: hidden !important;
             }
             .chat-input-area input {
+                flex: 1 1 0% !important;
+                min-width: 0 !important;
+                width: auto !important;
                 padding: 11px 12px;
-                font-size: 16px; /* Prevents auto-zoom on iOS */
+                font-size: 16px !important; /* Prevents auto-zoom on mobile */
+                box-sizing: border-box !important;
             }
             .chat-tool-btn {
-                padding: 10px 11px;
+                flex-shrink: 0 !important;
+                width: 38px !important;
+                height: 38px !important;
+                padding: 0 !important;
                 font-size: 1em;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
             .chat-input-area button.submit-btn {
-                padding: 11px 16px;
+                flex-shrink: 0 !important;
+                padding: 10px 14px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                white-space: nowrap !important;
+                font-size: 0.9em !important;
             }
             .emoji-picker-popover {
                 width: calc(100% - 24px) !important;
@@ -326,6 +390,19 @@
             .sidebar-header {
                 padding: 14px 16px;
             }
+            /* Start collapsed on mobile by default to keep chat queue accessible */
+            .ai-debugger-card .ai-debugger-body,
+            .staff-email-card .staff-email-body {
+                display: none;
+            }
+            .ai-debugger-card.expanded .ai-debugger-body,
+            .staff-email-card.expanded .staff-email-body {
+                display: block !important;
+            }
+            .ai-debugger-card:not(.expanded) .ai-collapse-toggle i,
+            .staff-email-card:not(.expanded) .staff-email-toggle i {
+                transform: rotate(-90deg);
+            }
         }
 
         @media (max-width: 540px) {
@@ -337,22 +414,22 @@
                 gap: 4px !important;
             }
             #emailCustomerBtn {
-                padding: 6px 9px !important;
+                padding: 6px 8px !important;
                 font-size: 0.75em !important;
             }
             #claimBtn {
-                padding: 6px 10px !important;
+                padding: 6px 9px !important;
                 font-size: 0.75em !important;
             }
             #transferToGeminiBtn {
-                padding: 6px 9px !important;
+                padding: 6px 8px !important;
                 font-size: 0.75em !important;
             }
             #transferToGeminiBtn span {
                 display: none;
             }
             #deleteChatBtn {
-                padding: 6px 9px !important;
+                padding: 6px 8px !important;
                 font-size: 0.75em !important;
             }
             .media-tray {
@@ -363,12 +440,86 @@
 </head>
 <body>
 
+    <!-- ======== GEMINI VISIBILITY CONFIGURATION MODAL ======== -->
+    <div id="geminiVisibilityModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #181818; border: 1px solid #333; border-radius: 12px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
+                <h3 style="margin: 0; color: var(--gold); font-size: 1.25em; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> Gemini Visibility Settings
+                </h3>
+                <button type="button" id="closeGeminiModalBtn" style="background: none; border: none; color: var(--silver); font-size: 1.4em; cursor: pointer;">&times;</button>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: 600; font-size: 0.95em;">
+                    <input type="checkbox" id="geminiMasterToggle" style="width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;" checked>
+                    <span>Enable Gemini Chatbot on Website</span>
+                </label>
+                <p style="margin: 4px 0 0 28px; font-size: 0.78em; color: var(--silver);">
+                    When checked, Gemini will show on all pages by default, except the paths specified below.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-size: 0.85em; font-weight: 600; color: var(--white); margin-bottom: 6px;">
+                    Hide on Specific Pages / URL Slugs:
+                </label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="newSlugInput" placeholder="e.g. mods/:id, /admin, /upload" style="flex: 1; padding: 9px 12px; background: #0d0d0d; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 0.9em; outline: none;">
+                    <button type="button" id="addSlugBtn" style="padding: 9px 16px; background: var(--gold); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Add</button>
+                </div>
+                <div style="font-size: 0.75em; color: #888; margin-top: 6px;">
+                    Supported formats: <code>/upload</code>, <code>mods/:id</code>, <code>/admin/*</code>, <code>/status</code>
+                </div>
+            </div>
+
+            <!-- List of hidden slugs -->
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 0.8em; color: var(--silver); font-weight: 600; margin-bottom: 6px;">Currently Hidden Pages (<span id="slugCount">0</span>):</div>
+                <div id="slugListContainer" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 8px; background: #101010; border: 1px solid #282828; border-radius: 6px; min-height: 48px;">
+                    <!-- Slugs rendered here -->
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #2a2a2a; padding-top: 14px;">
+                <button type="button" id="cancelGeminiModalBtn" style="padding: 8px 16px; background: transparent; border: 1px solid #444; color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Cancel</button>
+                <button type="button" id="saveGeminiConfigBtn" style="padding: 8px 18px; background: var(--gold); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Save Settings</button>
+            </div>
+            <div id="geminiModalFeedback" style="display: none; margin-top: 10px; font-size: 0.8em; text-align: center; color: var(--green);"></div>
+        </div>
+    </div>
+
+    <!-- ======== AGENT TRANSFER TO GEMINI CONFIRMATION MODAL ======== -->
+    <div id="deskGeminiTransferModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.2s ease;">
+        <div style="background: linear-gradient(145deg, #1a1e28 0%, #12141c 50%, #0c0d12 100%); border: 1.5px solid rgba(0, 230, 118, 0.45); border-radius: 14px; max-width: 460px; width: 100%; padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.85), 0 0 25px rgba(0, 230, 118, 0.25); text-align: center; position: relative;">
+            <div style="width: 58px; height: 58px; border-radius: 14px; background: rgba(0, 230, 118, 0.12); border: 1.5px solid rgba(0, 230, 118, 0.5); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; box-shadow: 0 0 20px rgba(0, 230, 118, 0.35);">
+                <img src="/images/gemini.png" alt="Gemini" style="width: 32px; height: 32px; object-fit: contain;">
+            </div>
+            <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1.25em; font-weight: 700;">Transfer to Gemini Chatbot?</h3>
+            <p style="color: var(--silver); font-size: 0.9em; line-height: 1.5; margin: 0 0 24px 0;">
+                Mark this support issue as resolved and hand the conversation back over to the <strong>Gemini AI Assistant</strong>? The user will be notified in real-time and can continue chatting with the AI.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" id="cancelDeskGeminiBtn" style="padding: 10px 20px; background: rgba(255,255,255,0.06); border: 1.5px solid #3d4250; color: #ccc; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    Cancel
+                </button>
+                <button type="button" id="confirmDeskGeminiBtn" style="padding: 10px 24px; background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%); border: none; color: #000; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 0 18px rgba(0, 230, 118, 0.45); transition: all 0.2s;">
+                    <i class="fas fa-robot" style="margin-right: 6px;"></i> Yes, Transfer to Gemini
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="sidebar">
         <div class="sidebar-header">
-            <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <a href="/admin" class="dynamic-back-btn" style="padding: 6px 14px; font-size: 0.85em; display: inline-flex;">
                     <i class="fas fa-arrow-left"></i> AdminJS
                 </a>
+                <button type="button" id="refreshDeskBtn" class="refresh-desk-btn" title="Refresh Live Queue & Stats">
+                    <i class="fas fa-sync-alt" id="refreshDeskIcon"></i>
+                    <span>Refresh</span>
+                </button>
             </div>
             <h2>Support Desk</h2>
             <p style="margin:4px 0 0 0; font-size: 0.85em; color: var(--silver);">Agent: <%= user.username %></p>
@@ -1373,116 +1524,101 @@
         }
 
         function closeGeminiModal() {
-            geminiModal.style.display = 'none';
+            if (geminiModal) geminiModal.style.display = 'none';
         }
 
-        openGeminiBtn.addEventListener('click', openGeminiModal);
-        closeGeminiBtn.addEventListener('click', closeGeminiModal);
-        cancelGeminiBtn.addEventListener('click', closeGeminiModal);
+        if (openGeminiBtn) openGeminiBtn.addEventListener('click', openGeminiModal);
+        if (closeGeminiBtn) closeGeminiBtn.addEventListener('click', closeGeminiModal);
+        if (cancelGeminiBtn) cancelGeminiBtn.addEventListener('click', closeGeminiModal);
 
-        saveGeminiBtn.addEventListener('click', async () => {
-            saveGeminiBtn.disabled = true;
-            saveGeminiBtn.textContent = 'Saving...';
-            try {
-                const res = await fetch('/api/admin/gemini-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        enableGeminiChatbot: geminiMasterToggle.checked,
-                        geminiHiddenPages: currentHiddenPages
-                    })
-                });
-                const data = await res.json();
-                saveGeminiBtn.disabled = false;
-                saveGeminiBtn.textContent = 'Save Settings';
-                if (data.success) {
-                    feedbackEl.style.display = 'block';
-                    feedbackEl.style.color = 'var(--green)';
-                    feedbackEl.textContent = '✔ Settings saved! Changes are now live.';
-                    setTimeout(closeGeminiModal, 1500);
-                } else {
-                    feedbackEl.style.display = 'block';
-                    feedbackEl.style.color = 'var(--red)';
-                    feedbackEl.textContent = '✖ Failed: ' + (data.error || 'Unknown error');
+        if (saveGeminiBtn) {
+            saveGeminiBtn.addEventListener('click', async () => {
+                saveGeminiBtn.disabled = true;
+                saveGeminiBtn.textContent = 'Saving...';
+                try {
+                    const res = await fetch('/api/admin/gemini-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            enableGeminiChatbot: geminiMasterToggle ? geminiMasterToggle.checked : true,
+                            geminiHiddenPages: currentHiddenPages
+                        })
+                    });
+                    const data = await res.json();
+                    saveGeminiBtn.disabled = false;
+                    saveGeminiBtn.textContent = 'Save Settings';
+                    if (data.success) {
+                        if (feedbackEl) {
+                            feedbackEl.style.display = 'block';
+                            feedbackEl.style.color = 'var(--green)';
+                            feedbackEl.textContent = '✔ Settings saved! Changes are now live.';
+                        }
+                        setTimeout(closeGeminiModal, 1500);
+                    } else {
+                        if (feedbackEl) {
+                            feedbackEl.style.display = 'block';
+                            feedbackEl.style.color = 'var(--red)';
+                            feedbackEl.textContent = '✖ Failed: ' + (data.error || 'Unknown error');
+                        }
+                    }
+                } catch (err) {
+                    saveGeminiBtn.disabled = false;
+                    saveGeminiBtn.textContent = 'Save Settings';
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.color = 'var(--red)';
+                        feedbackEl.textContent = '✖ Network error: ' + err.message;
+                    }
                 }
-            } catch (err) {
-                saveGeminiBtn.disabled = false;
-                saveGeminiBtn.textContent = 'Save Settings';
-                feedbackEl.style.display = 'block';
-                feedbackEl.style.color = 'var(--red)';
-                feedbackEl.textContent = '✖ Network error: ' + err.message;
-            }
-        });
+            });
+        }
+
+        // ==========================================
+        // SUPPORT DESK REFRESH CONTROLLER
+        // ==========================================
+        const refreshBtn = document.getElementById('refreshDeskBtn');
+        const refreshIcon = document.getElementById('refreshDeskIcon');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                if (refreshIcon) refreshIcon.classList.add('rotating');
+                refreshBtn.disabled = true;
+
+                try {
+                    // 1. Emit socket refresh requests
+                    if (typeof socket !== 'undefined' && socket && socket.connected) {
+                        socket.emit('get_active_chats');
+                        socket.emit('get_agent_stats');
+                    }
+                    // 2. Fetch fresh AI status
+                    const res = await fetch('/api/admin/ai-status');
+                    if (res.ok) {
+                        const aiStatus = await res.json();
+                        if (typeof updateAiDiagnosticsUI === 'function') {
+                            updateAiDiagnosticsUI(aiStatus);
+                        }
+                    }
+                    // 3. If currently viewing a chat session, re-fetch messages
+                    if (currentSessionId && typeof socket !== 'undefined' && socket && socket.connected) {
+                        socket.emit('agent_join_chat', { sessionId: currentSessionId });
+                    }
+                } catch (err) {
+                    console.error("Support desk refresh error:", err);
+                } finally {
+                    setTimeout(() => {
+                        if (refreshIcon) refreshIcon.classList.remove('rotating');
+                        refreshBtn.disabled = false;
+                    }, 650);
+                }
+            });
+        }
+
+        // Collapse AI Debugger & Staff Email on mobile on initial load
+        if (window.innerWidth <= 768) {
+            const aiCard = document.getElementById('aiDebuggerCard');
+            if (aiCard) aiCard.classList.add('collapsed');
+            const emailCard = document.getElementById('staffEmailCard');
+            if (emailCard) emailCard.classList.add('collapsed');
+        }
     </script>
-
-    <!-- ======== GEMINI VISIBILITY CONFIGURATION MODAL ======== -->
-    <div id="geminiVisibilityModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
-        <div style="background: #181818; border: 1px solid #333; border-radius: 12px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
-                <h3 style="margin: 0; color: var(--gold); font-size: 1.25em; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-robot"></i> Gemini Visibility Settings
-                </h3>
-                <button type="button" id="closeGeminiModalBtn" style="background: none; border: none; color: var(--silver); font-size: 1.4em; cursor: pointer;">&times;</button>
-            </div>
-
-            <div style="margin-bottom: 18px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: 600; font-size: 0.95em;">
-                    <input type="checkbox" id="geminiMasterToggle" style="width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;" checked>
-                    <span>Enable Gemini Chatbot on Website</span>
-                </label>
-                <p style="margin: 4px 0 0 28px; font-size: 0.78em; color: var(--silver);">
-                    When checked, Gemini will show on all pages by default, except the paths specified below.
-                </p>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.85em; font-weight: 600; color: var(--white); margin-bottom: 6px;">
-                    Hide on Specific Pages / URL Slugs:
-                </label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="newSlugInput" placeholder="e.g. mods/:id, /admin, /upload" style="flex: 1; padding: 9px 12px; background: #0d0d0d; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 0.9em; outline: none;">
-                    <button type="button" id="addSlugBtn" style="padding: 9px 16px; background: var(--gold); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Add</button>
-                </div>
-                <div style="font-size: 0.75em; color: #888; margin-top: 6px;">
-                    Supported formats: <code>/upload</code>, <code>mods/:id</code>, <code>/admin/*</code>, <code>/status</code>
-                </div>
-            </div>
-
-            <!-- List of hidden slugs -->
-            <div style="margin-bottom: 20px;">
-                <div style="font-size: 0.8em; color: var(--silver); font-weight: 600; margin-bottom: 6px;">Currently Hidden Pages (<span id="slugCount">0</span>):</div>
-                <div id="slugListContainer" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 8px; background: #101010; border: 1px solid #282828; border-radius: 6px; min-height: 48px;">
-                    <!-- Slugs rendered here -->
-                </div>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #2a2a2a; padding-top: 14px;">
-                <button type="button" id="cancelGeminiModalBtn" style="padding: 8px 16px; background: transparent; border: 1px solid #444; color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Cancel</button>
-                <button type="button" id="saveGeminiConfigBtn" style="padding: 8px 18px; background: var(--gold); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 0.85em;">Save Settings</button>
-            </div>
-            <div id="geminiModalFeedback" style="display: none; margin-top: 10px; font-size: 0.8em; text-align: center; color: var(--green);"></div>
-        </div>
-    </div>
-
-    <!-- ======== AGENT TRANSFER TO GEMINI CONFIRMATION MODAL ======== -->
-    <div id="deskGeminiTransferModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.2s ease;">
-        <div style="background: linear-gradient(145deg, #1a1e28 0%, #12141c 50%, #0c0d12 100%); border: 1.5px solid rgba(0, 230, 118, 0.45); border-radius: 14px; max-width: 460px; width: 100%; padding: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.85), 0 0 25px rgba(0, 230, 118, 0.25); text-align: center; position: relative;">
-            <div style="width: 58px; height: 58px; border-radius: 14px; background: rgba(0, 230, 118, 0.12); border: 1.5px solid rgba(0, 230, 118, 0.5); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; box-shadow: 0 0 20px rgba(0, 230, 118, 0.35);">
-                <img src="/images/gemini.png" alt="Gemini" style="width: 32px; height: 32px; object-fit: contain;">
-            </div>
-            <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1.25em; font-weight: 700;">Transfer to Gemini Chatbot?</h3>
-            <p style="color: var(--silver); font-size: 0.9em; line-height: 1.5; margin: 0 0 24px 0;">
-                Mark this support issue as resolved and hand the conversation back over to the <strong>Gemini AI Assistant</strong>? The user will be notified in real-time and can continue chatting with the AI.
-            </p>
-            <div style="display: flex; justify-content: center; gap: 12px;">
-                <button type="button" id="cancelDeskGeminiBtn" style="padding: 10px 20px; background: rgba(255,255,255,0.06); border: 1.5px solid #3d4250; color: #ccc; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    Cancel
-                </button>
-                <button type="button" id="confirmDeskGeminiBtn" style="padding: 10px 24px; background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%); border: none; color: #000; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: 0 0 18px rgba(0, 230, 118, 0.45); transition: all 0.2s;">
-                    <i class="fas fa-robot" style="margin-right: 6px;"></i> Yes, Transfer to Gemini
-                </button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

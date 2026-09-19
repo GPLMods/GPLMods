@@ -247,13 +247,19 @@ const UserSchema = new Schema({
     profileLottieBadges: {
         type: [{
             animation: { type: String, trim: true, default: 'verified.json' },
+            customAnimation: { type: String, trim: true, default: '' },
             title: { type: String, trim: true, default: 'Verified Badge' },
             description: { type: String, trim: true, default: 'Verified by GPL Mods Team' },
-            color: { type: String, trim: true, default: '#FFD700' }
+            color: { type: String, trim: true, default: '#FFD700' },
+            order: { type: Number, default: 2 }
         }],
         validate: [val => val.length <= 3, '{PATH} exceeds the limit of 3 profile badges'],
         default: []
     },
+
+    // --- CARD VERIFIED BADGE CONTROLS ---
+    showCardVerifiedBadge: { type: Boolean, default: true },
+    cardVerifiedBadgeOrder: { type: Number, default: 1 },
 
     // --- TWO-FACTOR AUTHENTICATION & ID CARD ---
     is2FAEnabled: { type: Boolean, default: false },
