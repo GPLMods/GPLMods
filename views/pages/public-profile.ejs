@@ -634,11 +634,16 @@ GLOBAL|Earth
                         }
                         const selectedCountry = countries.find(c => c.code === profileUser.country);
                         const countryName = selectedCountry ? selectedCountry.name : profileUser.country;
-                        const flagEmoji = profileUser.country === 'GLOBAL' ? '🌍' : (selectedCountry ? emojiForCountry(profileUser.country) : '🌍');
                     %>
                     <div class="stat-item">
-                        <div class="stat-number" style="font-size: 1.5em;"><%= flagEmoji %></div>
-                        <div class="stat-label">Location:<%= countryName %></div>
+                        <div class="stat-number" style="font-size: 1.5em; display: flex; align-items: center; justify-content: center; min-height: 1.5em;">
+                            <% if (profileUser.country && profileUser.country !== 'GLOBAL' && profileUser.country !== 'Earth') { %>
+                                <span class="fi fi-<%= profileUser.country.toLowerCase() %>" style="border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span>
+                            <% } else { %>
+                                <i class="fas fa-globe" style="color: var(--gold);"></i>
+                            <% } %>
+                        </div>
+                        <div class="stat-label">Location: <%= countryName %></div>
                     </div>
                 <% } %>
 

@@ -1393,6 +1393,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const fsQuickReplies = document.getElementById('fsChatQuickReplies');
+        const fsChatGreetingSfxAudio = new Audio('/sfx/greetings.mp3');
+        fsChatGreetingSfxAudio.volume = 0.55;
+        fsChatGreetingSfxAudio.preload = 'auto';
+
         const fsChatReceiveSfxAudio = new Audio('/sfx/massage-recieve.mp3');
         fsChatReceiveSfxAudio.volume = 0.55;
         fsChatReceiveSfxAudio.preload = 'auto';
@@ -1400,6 +1404,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const fsChatSendSfxAudio = new Audio('/sfx/massage-sent.mp3');
         fsChatSendSfxAudio.volume = 0.55;
         fsChatSendSfxAudio.preload = 'auto';
+
+        function playFsGreetingSfx() {
+            try {
+                fsChatGreetingSfxAudio.currentTime = 0;
+                const p = fsChatGreetingSfxAudio.play();
+                if (p && typeof p.catch === 'function') p.catch(() => {});
+            } catch (e) {}
+        }
 
         function playFsIncomingSfx() {
             try {
@@ -1442,6 +1454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.history.forEach(msg => appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls));
             } else {
                 appendFsMessage("Hello! 👋 I'm the GPL AI Assistant. How can I help you today? Type 'human' at any time to connect with our support agents.", "bot");
+                playFsGreetingSfx();
             }
 
             if (fsQuickReplies) {

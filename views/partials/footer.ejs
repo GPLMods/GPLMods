@@ -960,7 +960,11 @@
                 "Need mod suggestions? 💡"
             ];
 
-            // Message SFX Audio: Incoming (/sfx/massage-recieve.mp3) and Outgoing (/sfx/massage-sent.mp3)
+            // Message SFX Audio: Greeting (/sfx/greetings.mp3), Incoming (/sfx/massage-recieve.mp3), Outgoing (/sfx/massage-sent.mp3)
+            const chatGreetingSfxAudio = new Audio('/sfx/greetings.mp3');
+            chatGreetingSfxAudio.volume = 0.55;
+            chatGreetingSfxAudio.preload = 'none';
+
             const chatReceiveSfxAudio = new Audio('/sfx/massage-recieve.mp3');
             chatReceiveSfxAudio.volume = 0.55;
             chatReceiveSfxAudio.preload = 'none';
@@ -968,6 +972,14 @@
             const chatSendSfxAudio = new Audio('/sfx/massage-sent.mp3');
             chatSendSfxAudio.volume = 0.55;
             chatSendSfxAudio.preload = 'none';
+
+            function playGreetingSfx() {
+                try {
+                    chatGreetingSfxAudio.currentTime = 0;
+                    const p = chatGreetingSfxAudio.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                } catch (e) {}
+            }
 
             function playIncomingMessageSfx() {
                 try {
@@ -985,9 +997,9 @@
                 } catch (e) {}
             }
 
+            window.playChatGreetingSfx = playGreetingSfx;
             window.playIncomingMessageSfx = playIncomingMessageSfx;
             window.playOutgoingMessageSfx = playOutgoingMessageSfx;
-            window.playChatGreetingSfx = playIncomingMessageSfx;
 
             function showTypingIndicator() {
                 if (document.getElementById('gplChatTyping') || !chatBody) return;
@@ -1047,7 +1059,7 @@
                     greeting.classList.add('show');
                     // Play SFX only on the very first greeting per session
                     if (!sessionStorage.getItem('gplGreetingSfxPlayed')) {
-                        playIncomingMessageSfx();
+                        playGreetingSfx();
                         sessionStorage.setItem('gplGreetingSfxPlayed', '1');
                     }
                     setTimeout(() => greeting.classList.remove('show'), 6000);
@@ -1417,6 +1429,7 @@
                     sessionId = null;
                     chatBody.innerHTML = '';
                     appendMsg("Hello! 👋 I'm the GPL AI Assistant. How can I help you find the perfect mod today?", "bot");
+                    playGreetingSfx();
                     if (quickReplyContainer) quickReplyContainer.style.display = 'flex';
                     if (historyDrawer) historyDrawer.classList.remove('open');
                     socket.emit('join_support_chat', { userId, guestId, sessionId: null, deviceInfo, guestEmail: currentGuestEmail(), currentPage: window.location.pathname, forceNew: true });

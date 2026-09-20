@@ -67,11 +67,96 @@
     .btn-link { text-decoration: none; text-align: center; }
 
     /* Modal styles */
-    .owner-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-    .owner-modal-card { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 500px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+    .owner-modal-overlay { 
+        display: none; 
+        position: fixed; 
+        inset: 0; 
+        background: rgba(0,0,0,0.85); 
+        z-index: 100050; 
+        justify-content: center; 
+        align-items: center; 
+        backdrop-filter: blur(8px); 
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    .owner-modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+    .owner-modal-card { 
+        background: #18181c; 
+        border: 1px solid #383842; 
+        border-radius: 14px; 
+        width: 90%; 
+        max-width: 480px; 
+        padding: 26px; 
+        box-shadow: 0 15px 40px rgba(0,0,0,0.85); 
+        transform: scale(0.95);
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .owner-modal-overlay.show .owner-modal-card {
+        transform: scale(1);
+    }
     .owner-modal-card h3 { margin: 0 0 15px 0; color: var(--gold); display: flex; justify-content: space-between; align-items: center; }
-    .owner-modal-card .close-btn { cursor: pointer; color: #888; border: none; background: none; font-size: 1.2em; }
+    .owner-modal-card .close-btn { cursor: pointer; color: #888; border: none; background: none; font-size: 1.2em; transition: color 0.2s; }
+    .owner-modal-card .close-btn:hover { color: #fff; }
     .owner-modal-input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #444; border-radius: 6px; color: #fff; margin-bottom: 12px; font-family: inherit; box-sizing: border-box; }
+    
+    .owner-modal-card.danger-modal {
+        border-color: rgba(244, 67, 54, 0.45);
+        box-shadow: 0 0 30px rgba(244, 67, 54, 0.22), 0 15px 40px rgba(0,0,0,0.85);
+    }
+    .owner-modal-card.success-modal {
+        border-color: rgba(76, 175, 80, 0.45);
+        box-shadow: 0 0 30px rgba(76, 175, 80, 0.22), 0 15px 40px rgba(0,0,0,0.85);
+    }
+    .modal-icon-badge {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75em;
+        margin: 0 auto 16px auto;
+    }
+    .modal-icon-badge.danger {
+        background: rgba(244, 67, 54, 0.15);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.35);
+        box-shadow: 0 0 15px rgba(244, 67, 54, 0.25);
+    }
+    .modal-icon-badge.success {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.35);
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.25);
+    }
+    .modal-head-title {
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #fff;
+        text-align: center;
+        margin: 0 0 8px 0;
+    }
+    .modal-body-desc {
+        font-size: 0.9em;
+        color: #bbb;
+        text-align: center;
+        line-height: 1.5;
+        margin-bottom: 18px;
+    }
+    .modal-details-box {
+        background: #111116;
+        border: 1px solid #2a2a35;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 0.85em;
+        color: #ccc;
+        margin-bottom: 20px;
+        word-break: break-all;
+        line-height: 1.5;
+    }
 </style>
 
 <div class="owner-header">
@@ -346,6 +431,37 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal: Delete / Danger Confirmation -->
+<div id="ownerDeleteModal" class="owner-modal-overlay">
+    <div class="owner-modal-card danger-modal">
+        <div class="modal-icon-badge danger"><i class="fas fa-trash-alt"></i></div>
+        <h3 class="modal-head-title" id="ownerDeleteTitle">Confirm Deletion</h3>
+        <p class="modal-body-desc" id="ownerDeleteMessage">Are you sure you want to delete this resource? This action cannot be undone.</p>
+        <div id="ownerDeleteDetails" class="modal-details-box" style="display: none;"></div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button type="button" class="btn-action" style="flex: 1;" onclick="closeOwnerDeleteModal()">Cancel</button>
+            <button type="button" class="btn-action danger" style="flex: 1;" id="ownerDeleteConfirmBtn">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Success Popup -->
+<div id="ownerSuccessModal" class="owner-modal-overlay">
+    <div class="owner-modal-card success-modal">
+        <div class="modal-icon-badge success"><i class="fas fa-check-circle"></i></div>
+        <h3 class="modal-head-title" id="ownerSuccessTitle">Action Completed</h3>
+        <p class="modal-body-desc" id="ownerSuccessMessage">The operation finished successfully.</p>
+        <div id="ownerSuccessDetails" class="modal-details-box" style="display: none;"></div>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+            <button type="button" class="btn-action primary" style="min-width: 140px;" onclick="closeOwnerSuccessModal()">
+                <i class="fas fa-check"></i> Done
+            </button>
+        </div>
     </div>
 </div>
 
@@ -633,24 +749,132 @@
         }
     }
 
-    async function deleteAlias(aliasId, aliasName) {
-        if (!confirm(`Delete custom email alias "${aliasName}"?`)) return;
-        try {
-            const res = await fetch(`/api/owner/improvmx/alias/${aliasId}`, { method: 'DELETE' });
-            const data = await res.json();
-            alert(data.message || 'Deleted');
-            await loadImprovmxAliases();
-        } catch (e) {
-            alert('Failed to delete alias: ' + e.message);
+    // ==========================================
+    // OWNER MODAL HELPERS (DELETE & SUCCESS)
+    // ==========================================
+    let pendingOwnerDeleteAction = null;
+
+    function showOwnerDeleteModal({ title, message, details, confirmText = 'Delete', onConfirm }) {
+        document.getElementById('ownerDeleteTitle').textContent = title || 'Confirm Deletion';
+        document.getElementById('ownerDeleteMessage').textContent = message || 'Are you sure you want to proceed?';
+        const detailsEl = document.getElementById('ownerDeleteDetails');
+        if (details) {
+            detailsEl.innerHTML = details;
+            detailsEl.style.display = 'block';
+        } else {
+            detailsEl.style.display = 'none';
         }
+        const confirmBtn = document.getElementById('ownerDeleteConfirmBtn');
+        confirmBtn.innerHTML = `<i class="fas fa-trash"></i> ${confirmText}`;
+        confirmBtn.disabled = false;
+        
+        pendingOwnerDeleteAction = onConfirm;
+        const modal = document.getElementById('ownerDeleteModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeOwnerDeleteModal() {
+        const modal = document.getElementById('ownerDeleteModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+        pendingOwnerDeleteAction = null;
+    }
+
+    document.getElementById('ownerDeleteConfirmBtn')?.addEventListener('click', async () => {
+        if (typeof pendingOwnerDeleteAction === 'function') {
+            const btn = document.getElementById('ownerDeleteConfirmBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            try {
+                await pendingOwnerDeleteAction();
+            } finally {
+                closeOwnerDeleteModal();
+            }
+        }
+    });
+
+    function showOwnerSuccessModal({ title, message, details }) {
+        document.getElementById('ownerSuccessTitle').textContent = title || 'Success';
+        document.getElementById('ownerSuccessMessage').textContent = message || 'Operation completed successfully.';
+        const detailsEl = document.getElementById('ownerSuccessDetails');
+        if (details) {
+            detailsEl.innerHTML = details;
+            detailsEl.style.display = 'block';
+        } else {
+            detailsEl.style.display = 'none';
+        }
+        const modal = document.getElementById('ownerSuccessModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeOwnerSuccessModal() {
+        const modal = document.getElementById('ownerSuccessModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    }
+
+    // Close modals on escape key or backdrop click
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeOwnerDeleteModal();
+            closeOwnerSuccessModal();
+            closeClaimEmailModal();
+        }
+    });
+
+    ['ownerDeleteModal', 'ownerSuccessModal', 'claimEmailModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m) {
+            m.addEventListener('click', (e) => {
+                if (e.target === m) {
+                    if (id === 'ownerDeleteModal') closeOwnerDeleteModal();
+                    else if (id === 'ownerSuccessModal') closeOwnerSuccessModal();
+                    else if (id === 'claimEmailModal') closeClaimEmailModal();
+                }
+            });
+        }
+    });
+
+    function deleteAlias(aliasId, aliasName) {
+        showOwnerDeleteModal({
+            title: 'Delete Email Alias',
+            message: `Are you sure you want to permanently delete alias "${aliasName}"?`,
+            details: `<b>Target Alias:</b> ${aliasName}@<%= improvmxDomain || 'gplmods.webredirect.org' %><br><span style="color:#f44336; font-size:0.9em;">Incoming emails sent to this address will stop forwarding immediately.</span>`,
+            confirmText: 'Delete Alias',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/owner/improvmx/alias/${aliasId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.success) {
+                        showOwnerSuccessModal({
+                            title: 'Email Alias Deleted',
+                            message: data.message || `Custom email alias "${aliasName}" was removed successfully.`
+                        });
+                        await loadImprovmxAliases();
+                    } else {
+                        alert('Failed to delete alias: ' + (data.message || 'Unknown error'));
+                    }
+                } catch (e) {
+                    alert('Failed to delete alias: ' + e.message);
+                }
+            }
+        });
     }
 
     function openClaimEmailModal() {
-        document.getElementById('claimEmailModal').style.display = 'flex';
+        const modal = document.getElementById('claimEmailModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
     }
 
     function closeClaimEmailModal() {
-        document.getElementById('claimEmailModal').style.display = 'none';
+        const modal = document.getElementById('claimEmailModal');
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
     }
 
     async function submitClaimEmail(e) {
@@ -671,8 +895,12 @@
             const data = await res.json();
 
             if (data.success) {
-                alert('✔ ' + data.message);
                 closeClaimEmailModal();
+                showOwnerSuccessModal({
+                    title: 'Email Alias Claimed',
+                    message: data.message || 'Custom email alias created and routing configured.',
+                    details: `<b>Active Address:</b> ${alias}@<%= improvmxDomain || 'gplmods.webredirect.org' %><br><b>Forwarding To:</b> ${forwardEmail}`
+                });
                 checkImprovmxStatus();
             } else {
                 alert('✖ ' + (data.message || 'Failed to create alias'));
@@ -703,7 +931,18 @@
 
             if (data.success) {
                 const creds = data.credentials;
-                alert(`✔ SMTP Credentials Generated!\n\nHost: ${creds.host}\nPort: ${creds.port}\nUsername: ${creds.username}\nPassword: ${creds.password}\n\nPlease save this password securely now!`);
+                showOwnerSuccessModal({
+                    title: 'SMTP Credentials Generated',
+                    message: 'Your dedicated SMTP account is now active. Please save these credentials safely.',
+                    details: `
+                        <div style="display:flex; flex-direction:column; gap:6px; text-align:left;">
+                            <div><span style="color:#aaa;">Host:</span> <b style="color:var(--gold);">${creds.host}</b></div>
+                            <div><span style="color:#aaa;">Port:</span> <b>${creds.port}</b></div>
+                            <div><span style="color:#aaa;">Username:</span> <b>${creds.username}</b></div>
+                            <div><span style="color:#aaa;">Password:</span> <code style="color:#00e676; background:#1e1e24; padding:3px 8px; border-radius:4px; font-size:1.05em;">${creds.password}</code></div>
+                        </div>
+                    `
+                });
             } else {
                 alert('✖ ' + (data.message || 'Failed to generate SMTP'));
             }
@@ -743,6 +982,10 @@
             if (data.success) {
                 feedbackEl.style.color = 'var(--red)';
                 feedbackEl.textContent = '✔ ' + data.message;
+                showOwnerSuccessModal({
+                    title: 'Database Terminated',
+                    message: data.message || 'All collections dropped.'
+                });
             } else {
                 feedbackEl.style.color = 'var(--red)';
                 feedbackEl.textContent = '✖ ' + (data.message || data.error);
@@ -776,6 +1019,10 @@
             if (data.success) {
                 feedbackEl.style.color = 'var(--green)';
                 feedbackEl.textContent = '✔ ' + data.message;
+                showOwnerSuccessModal({
+                    title: 'Operation Successful',
+                    message: data.message || 'Action executed successfully.'
+                });
             } else {
                 feedbackEl.style.color = 'var(--red)';
                 feedbackEl.textContent = '✖ ' + (data.message || data.error);

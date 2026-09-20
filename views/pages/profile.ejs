@@ -892,31 +892,44 @@ GLOBAL|Earth
                                 const [code, name] = line.split('|');
                                 return { code: code.trim(), name: name.trim() };
                             });
-                            function flagEmoji(code) {
-                                if (!code || code.length !== 2) return '';
-                                return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
-                            }
                             const selectedCountry = countries.find(c => c.code === user.country);
-                            const displayCountry = selectedCountry ? `${selectedCountry.name} ${selectedCountry.code === 'GLOBAL' ? '🌍' : flagEmoji(selectedCountry.code)}` : 'Select your country...';
                         %>
                         
                         <!-- Hidden native select for form submission -->
                         <select id="country" name="country" style="display: none;">
                             <option value="" <%= !user.country ? 'selected' : '' %>>Select your country...</option>
                             <% countries.forEach(country => { %>
-                                <option value="<%= country.code %>" <%= user.country === country.code ? 'selected' : '' %>><%= country.name %> <%= country.code === 'GLOBAL' ? '🌍' : flagEmoji(country.code) %></option>
+                                <option value="<%= country.code %>" <%= user.country === country.code ? 'selected' : '' %>><%= country.name %></option>
                             <% }) %>
                         </select>
 
                         <!-- Custom UI Wrapper -->
                         <div class="custom-select-wrapper" id="wrapper-country">
                             <div class="custom-select">
-                                <span class="selected-text"><%= displayCountry %></span>
+                                <span class="selected-text" style="display: flex; align-items: center; gap: 8px;">
+                                    <% if (selectedCountry) { %>
+                                        <% if (selectedCountry.code !== 'GLOBAL') { %>
+                                            <span class="fi fi-<%= selectedCountry.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                        <% } else { %>
+                                            <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                        <% } %>
+                                        <span><%= selectedCountry.name %></span>
+                                    <% } else { %>
+                                        <span>Select your country...</span>
+                                    <% } %>
+                                </span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-options">
                                 <% countries.forEach(country => { %>
-                                    <div class="custom-option <%= user.country === country.code ? 'selected' : '' %>" data-value="<%= country.code %>"><%= country.name %> <%= country.code === 'GLOBAL' ? '🌍' : flagEmoji(country.code) %></div>
+                                    <div class="custom-option <%= user.country === country.code ? 'selected' : '' %>" data-value="<%= country.code %>" style="display: flex; align-items: center; gap: 8px;">
+                                        <% if (country.code !== 'GLOBAL') { %>
+                                            <span class="fi fi-<%= country.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                        <% } else { %>
+                                            <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                        <% } %>
+                                        <span><%= country.name %></span>
+                                    </div>
                                 <% }) %>
                             </div>
                         </div>
@@ -1172,7 +1185,7 @@ GLOBAL|Earth
                 const optionEl = e.target.closest('.custom-option');
                 if (!optionEl) return;
                 
-                selectedText.textContent = optionEl.textContent;
+                selectedText.innerHTML = optionEl.innerHTML;
                 nativeSelect.value = optionEl.getAttribute('data-value');
                 
                 wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));

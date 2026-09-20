@@ -828,72 +828,74 @@
             <%
                 function resolveCountryDisplay(rawCode) {
                     if (!rawCode || rawCode === 'Global' || rawCode === 'GLOBAL') {
-                        return { name: 'Global', flag: '🌍' };
+                        return { name: 'Global', code: null, isGlobal: true };
                     }
                     const map = {
-                        'IN': { name: 'India', flag: '🇮🇳' },
-                        'US': { name: 'United States', flag: '🇺🇸' },
-                        'GB': { name: 'United Kingdom', flag: '🇬🇧' },
-                        'CA': { name: 'Canada', flag: '🇨🇦' },
-                        'AU': { name: 'Australia', flag: '🇦🇺' },
-                        'DE': { name: 'Germany', flag: '🇩🇪' },
-                        'FR': { name: 'France', flag: '🇫🇷' },
-                        'BR': { name: 'Brazil', flag: '🇧🇷' },
-                        'ID': { name: 'Indonesia', flag: '🇮🇩' },
-                        'RU': { name: 'Russia', flag: '🇷🇺' },
-                        'IT': { name: 'Italy', flag: '🇮🇹' },
-                        'ES': { name: 'Spain', flag: '🇪🇸' },
-                        'NL': { name: 'Netherlands', flag: '🇳🇱' },
-                        'JP': { name: 'Japan', flag: '🇯🇵' },
-                        'CN': { name: 'China', flag: '🇨🇳' },
-                        'PK': { name: 'Pakistan', flag: '🇵🇰' },
-                        'BD': { name: 'Bangladesh', flag: '🇧🇩' },
-                        'PH': { name: 'Philippines', flag: '🇵🇭' },
-                        'VN': { name: 'Vietnam', flag: '🇻🇳' },
-                        'TR': { name: 'Turkey', flag: '🇹🇷' },
-                        'SA': { name: 'Saudi Arabia', flag: '🇸🇦' },
-                        'AE': { name: 'United Arab Emirates', flag: '🇦🇪' },
-                        'EG': { name: 'Egypt', flag: '🇪🇬' },
-                        'ZA': { name: 'South Africa', flag: '🇿🇦' },
-                        'NG': { name: 'Nigeria', flag: '🇳🇬' },
-                        'MX': { name: 'Mexico', flag: '🇲🇽' },
-                        'AR': { name: 'Argentina', flag: '🇦🇷' },
-                        'KR': { name: 'South Korea', flag: '🇰🇷' },
-                        'SE': { name: 'Sweden', flag: '🇸🇪' },
-                        'PL': { name: 'Poland', flag: '🇵🇱' },
-                        'UA': { name: 'Ukraine', flag: '🇺🇦' },
-                        'TH': { name: 'Thailand', flag: '🇹🇭' },
-                        'MY': { name: 'Malaysia', flag: '🇲🇾' },
-                        'SG': { name: 'Singapore', flag: '🇸🇬' },
-                        'NZ': { name: 'New Zealand', flag: '🇳🇿' },
-                        'CH': { name: 'Switzerland', flag: '🇨🇭' },
-                        'AT': { name: 'Austria', flag: '🇦🇹' },
-                        'BE': { name: 'Belgium', flag: '🇧🇪' },
-                        'PT': { name: 'Portugal', flag: '🇵🇹' },
-                        'NO': { name: 'Norway', flag: '🇳🇴' },
-                        'DK': { name: 'Denmark', flag: '🇩🇰' },
-                        'FI': { name: 'Finland', flag: '🇫🇮' },
-                        'IE': { name: 'Ireland', flag: '🇮🇪' },
-                        'IL': { name: 'Israel', flag: '🇮🇱' }
+                        'IN': 'India',
+                        'US': 'United States',
+                        'GB': 'United Kingdom',
+                        'CA': 'Canada',
+                        'AU': 'Australia',
+                        'DE': 'Germany',
+                        'FR': 'France',
+                        'BR': 'Brazil',
+                        'ID': 'Indonesia',
+                        'RU': 'Russia',
+                        'IT': 'Italy',
+                        'ES': 'Spain',
+                        'NL': 'Netherlands',
+                        'JP': 'Japan',
+                        'CN': 'China',
+                        'PK': 'Pakistan',
+                        'BD': 'Bangladesh',
+                        'PH': 'Philippines',
+                        'VN': 'Vietnam',
+                        'TR': 'Turkey',
+                        'SA': 'Saudi Arabia',
+                        'AE': 'United Arab Emirates',
+                        'EG': 'Egypt',
+                        'ZA': 'South Africa',
+                        'NG': 'Nigeria',
+                        'MX': 'Mexico',
+                        'AR': 'Argentina',
+                        'KR': 'South Korea',
+                        'SE': 'Sweden',
+                        'PL': 'Poland',
+                        'UA': 'Ukraine',
+                        'TH': 'Thailand',
+                        'MY': 'Malaysia',
+                        'SG': 'Singapore',
+                        'NZ': 'New Zealand',
+                        'CH': 'Switzerland',
+                        'AT': 'Austria',
+                        'BE': 'Belgium',
+                        'PT': 'Portugal',
+                        'NO': 'Norway',
+                        'DK': 'Denmark',
+                        'FI': 'Finland',
+                        'IE': 'Ireland',
+                        'IL': 'Israel'
                     };
                     const codeUpper = String(rawCode).trim().toUpperCase();
-                    if (map[codeUpper]) return map[codeUpper];
+                    if (map[codeUpper]) return { name: map[codeUpper], code: codeUpper, isGlobal: false };
                     let resolvedName = rawCode;
                     try {
                         if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
                             resolvedName = new Intl.DisplayNames(['en'], { type: 'region' }).of(codeUpper) || rawCode;
                         }
                     } catch (e) {}
-                    let flagEmoji = '🌍';
-                    if (codeUpper.length === 2 && /^[A-Z]{2}$/.test(codeUpper)) {
-                        flagEmoji = String.fromCodePoint(...[...codeUpper].map(c => 127397 + c.charCodeAt(0)));
-                    }
-                    return { name: resolvedName, flag: flagEmoji };
+                    const isIso = (codeUpper.length === 2 && /^[A-Z]{2}$/.test(codeUpper));
+                    return { name: resolvedName, code: isIso ? codeUpper : null, isGlobal: false };
                 }
                 const countryInfo = resolveCountryDisplay(cardUser.country);
             %>
-            <div class="card-country">
-                <%= countryInfo.flag %> <%= countryInfo.name %>
+            <div class="card-country" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <% if (countryInfo.code && !countryInfo.isGlobal) { %>
+                    <span class="fi fi-<%= countryInfo.code.toLowerCase() %>" style="border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5);"></span>
+                <% } else { %>
+                    <i class="fas fa-globe" style="color: var(--gold);"></i>
+                <% } %>
+                <span><%= countryInfo.name %></span>
             </div>
 
             <!-- Contact Meta Row (Email, Phone, Age) -->
