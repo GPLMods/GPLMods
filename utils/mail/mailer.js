@@ -342,8 +342,8 @@ exports.processNewsletterCampaign = async (campaignId) => {
                             </a>
                         </td>
                         <td align="center" style="padding: 0 8px;">
-                            <a href="https://gplmods.webredirect.org" target="_blank" title="GPL Mods Official Site" style="text-decoration: none; display: inline-block;">
-                                <img src="https://gplmods.webredirect.org/images/mail-icons/discord.png" alt="Official Discord" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
+                            <a href="https://discord.gg/GfM45GgB" target="_blank" title="GPL Mods Official Discord Server" style="text-decoration: none; display: inline-block;">
+                                <img src="https://gplmods.webredirect.org/images/mail-icons/discord.png" alt="Official Discord Server" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
                             </a>
                         </td>
                         <td align="center" style="padding: 0 8px;">
@@ -371,7 +371,7 @@ exports.processNewsletterCampaign = async (campaignId) => {
                 };
                 await sendSmtpEmail(payload);
                 successCount++;
-                await new Promise(resolve => setTimeout(resolve, 50)); 
+                await new Promise(resolve => setTimeout(resolve, 50));
             } catch (sendErr) {
                 console.error(`Failed to send newsletter to ${email}:`, sendErr);
             }
@@ -387,6 +387,6 @@ exports.processNewsletterCampaign = async (campaignId) => {
         console.error("[NEWSLETTER] Critical error processing campaign:", error);
         try {
             await NewsletterCampaign.findByIdAndUpdate(campaignId, { status: 'failed', adminNotes: error.message });
-        } catch (e) {}
+        } catch (e) { }
     }
 };

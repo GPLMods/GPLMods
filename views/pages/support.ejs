@@ -500,14 +500,15 @@
     /* Emoji Popover */
     .fs-emoji-popover {
         position: absolute;
-        bottom: 75px;
+        bottom: calc(100% + 12px);
         left: 24px;
         width: 320px;
+        max-width: calc(100vw - 30px);
         background: #1c1c1c;
         border: 1px solid #444;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        z-index: 1000;
+        z-index: 100005;
         padding: 12px;
     }
     .fs-emoji-grid {
@@ -759,7 +760,8 @@
             display: flex !important;
             align-items: center !important;
             flex-shrink: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
+            position: relative !important;
         }
         .fullscreen-chat-input-area input {
             flex: 1 1 0% !important;
@@ -796,9 +798,10 @@
             width: calc(100% - 20px) !important;
             left: 10px !important;
             right: 10px !important;
-            max-width: 360px;
-            bottom: 60px;
-            max-height: 220px;
+            max-width: 360px !important;
+            bottom: calc(100% + 10px) !important;
+            max-height: 220px !important;
+            z-index: 100005 !important;
         }
     }
 
@@ -1390,14 +1393,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const fsQuickReplies = document.getElementById('fsChatQuickReplies');
-        const fsChatSfxAudio = new Audio('/sfx/chat-sfx.mp3');
-        fsChatSfxAudio.volume = 0.55;
-        fsChatSfxAudio.preload = 'auto';
+        const fsChatReceiveSfxAudio = new Audio('/sfx/massage-recieve.mp3');
+        fsChatReceiveSfxAudio.volume = 0.55;
+        fsChatReceiveSfxAudio.preload = 'auto';
+
+        const fsChatSendSfxAudio = new Audio('/sfx/massage-sent.mp3');
+        fsChatSendSfxAudio.volume = 0.55;
+        fsChatSendSfxAudio.preload = 'auto';
 
         function playFsIncomingSfx() {
             try {
-                fsChatSfxAudio.currentTime = 0;
-                const p = fsChatSfxAudio.play();
+                fsChatReceiveSfxAudio.currentTime = 0;
+                const p = fsChatReceiveSfxAudio.play();
+                if (p && typeof p.catch === 'function') p.catch(() => {});
+            } catch (e) {}
+        }
+
+        function playFsOutgoingSfx() {
+            try {
+                fsChatSendSfxAudio.currentTime = 0;
+                const p = fsChatSendSfxAudio.play();
                 if (p && typeof p.catch === 'function') p.catch(() => {});
             } catch (e) {}
         }
@@ -1447,6 +1462,8 @@ document.addEventListener('DOMContentLoaded', () => {
             appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls);
             if (msg.sender !== 'user') {
                 playFsIncomingSfx();
+            } else {
+                playFsOutgoingSfx();
             }
             if (fsQuickReplies && msg.sender === 'user') {
                 fsQuickReplies.style.display = 'none';

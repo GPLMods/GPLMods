@@ -960,19 +960,33 @@
                 "Need mod suggestions? 💡"
             ];
 
-            // Message Chime Audio (plays only when incoming message arrives)
-            const chatSfxAudio = new Audio('/sfx/chat-sfx.mp3');
-            chatSfxAudio.volume = 0.55;
-            chatSfxAudio.preload = 'none';
+            // Message SFX Audio: Incoming (/sfx/massage-recieve.mp3) and Outgoing (/sfx/massage-sent.mp3)
+            const chatReceiveSfxAudio = new Audio('/sfx/massage-recieve.mp3');
+            chatReceiveSfxAudio.volume = 0.55;
+            chatReceiveSfxAudio.preload = 'none';
+
+            const chatSendSfxAudio = new Audio('/sfx/massage-sent.mp3');
+            chatSendSfxAudio.volume = 0.55;
+            chatSendSfxAudio.preload = 'none';
 
             function playIncomingMessageSfx() {
                 try {
-                    chatSfxAudio.currentTime = 0;
-                    const p = chatSfxAudio.play();
+                    chatReceiveSfxAudio.currentTime = 0;
+                    const p = chatReceiveSfxAudio.play();
                     if (p && typeof p.catch === 'function') p.catch(() => {});
                 } catch (e) {}
             }
+
+            function playOutgoingMessageSfx() {
+                try {
+                    chatSendSfxAudio.currentTime = 0;
+                    const p = chatSendSfxAudio.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                } catch (e) {}
+            }
+
             window.playIncomingMessageSfx = playIncomingMessageSfx;
+            window.playOutgoingMessageSfx = playOutgoingMessageSfx;
             window.playChatGreetingSfx = playIncomingMessageSfx;
 
             function showTypingIndicator() {
@@ -1241,13 +1255,15 @@
 
                             // Maximum 3 avatars total
                             const maxUserSlots = isAiOnline ? 2 : 3;
-                            const usersToShow = liveUsers.slice(0, maxUserSlots);
+                            // Prioritize staff users first so Support Team header shows actual staff profile image
+                            const staffUsers = liveUsers.filter(u => u.isStaff);
+                            const usersToShow = (staffUsers.length > 0 ? staffUsers : liveUsers).slice(0, maxUserSlots);
 
                             usersToShow.forEach((u) => {
                                 const img = document.createElement('img');
-                                img.src = u.avatarUrl || '/images/default-avatar.png';
-                                img.alt = u.username || 'User';
-                                img.title = `${u.username || 'User'}${u.isStaff ? ' (Staff)' : ''}`;
+                                img.src = (u.avatarUrl && u.avatarUrl !== '/images/default-avatar.png') ? u.avatarUrl : '/images/default-avatar.png';
+                                img.alt = u.username || 'Staff';
+                                img.title = `${u.username || 'Staff'}${u.isStaff ? ' (Staff)' : ''}`;
                                 img.onerror = function() { this.src = '/images/default-avatar.png'; };
                                 chatTeamAvatarsEl.appendChild(img);
                             });
@@ -1383,6 +1399,8 @@
                     appendMsg(msg.text, msg.sender, msg.senderName);
                     if (msg.sender !== 'user') {
                         playIncomingMessageSfx();
+                    } else {
+                        playOutgoingMessageSfx();
                     }
                     if (msg.text && (msg.text.includes('human support team') || msg.text.includes('Transferring you'))) {
                         currentChatStatus = 'waiting-for-agent';

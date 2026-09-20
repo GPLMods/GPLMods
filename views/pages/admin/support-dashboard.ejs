@@ -818,7 +818,7 @@
         const pingBtnText = document.getElementById('pingBtnText');
 
         // 1. Connect as Agent
-        socket.emit('agent_join', { agentId });
+        socket.emit('agent_join', { agentId, avatarUrl: '<%= (typeof user !== "undefined" && user && user.signedAvatarUrl) ? user.signedAvatarUrl : "" %>' });
 
         // 2. Load Initial Chats
         socket.on('load_active_chats', (chats) => {

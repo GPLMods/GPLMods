@@ -1284,10 +1284,7 @@ app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user) {
         if (req.user.profileImageKey) {
             try {
-                const avatarUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-                    Bucket: process.env.B2_BUCKET_NAME,
-                    Key: req.user.profileImageKey
-                }), { expiresIn: 3600 });
+                const avatarUrl = await getSmartImageUrl(req.user.profileImageKey);
                 req.user.signedAvatarUrl = avatarUrl;
             } catch (error) {
                 console.error(`Error getting signed URL for key: ${req.user.profileImageKey}`, error);
@@ -12201,14 +12198,15 @@ const startServer = async () => {
 
         async function resolveUserAvatar(u) {
             if (!u) return '/images/default-avatar.png';
+            if (u.signedAvatarUrl && u.signedAvatarUrl !== '/images/default-avatar.png') {
+                return u.signedAvatarUrl;
+            }
             if (u.profileImageKey) {
                 try {
-                    return await getSmartImageUrl(u.profileImageKey);
-                } catch (e) {
-                    return '/images/default-avatar.png';
-                }
+                    const resolved = await getSmartImageUrl(u.profileImageKey);
+                    if (resolved && resolved !== '/images/default-avatar.png') return resolved;
+                } catch (e) {}
             }
-            if (u.signedAvatarUrl) return u.signedAvatarUrl;
             return '/images/default-avatar.png';
         }
 
@@ -12330,7 +12328,7 @@ const startServer = async () => {
                 socket.join('support_agents');
                 connectedAgentSockets.add(socket.id);
                 try {
-                    const avatar = await resolveUserAvatar(agent);
+                    const avatar = (data && data.avatarUrl && data.avatarUrl !== '/images/default-avatar.png') ? data.avatarUrl : await resolveUserAvatar(agent);
                     connectedUsers.set(socket.id, {
                         userId: String(agent._id || agent.id),
                         username: agent.username || 'Staff Agent',
