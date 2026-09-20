@@ -128,7 +128,16 @@ const UserSchema = new Schema({
         telegram: { type: String, trim: true },
         discord: { type: String, trim: true },
         website: { type: String, trim: true },
-        youtube: { type: String, trim: true }
+        youtube: { type: String, trim: true },
+        github: { type: String, trim: true },
+        twitter: { type: String, trim: true },
+        linkedin: { type: String, trim: true },
+        reddit: { type: String, trim: true },
+        instagram: { type: String, trim: true },
+        facebook: { type: String, trim: true },
+        threads: { type: String, trim: true },
+        gravatar: { type: String, trim: true },
+        whatsapp: { type: String, trim: true }
     },
     // Custom Work Email Fields (ImprovMX)
     customEmailAlias: { 

@@ -325,21 +325,73 @@
                 </div>
             <% } %>
             
-            <!-- ✅ NEW: SOCIAL LINKS MOVED TO HEADER -->
-            <% if (profileUser.role === 'admin' || profileUser.role === 'distributor') { %>
-                <div class="profile-social-links" style="display: flex; justify-content: center; gap: 20px; font-size: 1.8em; margin-bottom: 25px;">
-                    <% if (profileUser.socialLinks?.telegram) { %>
-                        <a href="<%= profileUser.socialLinks.telegram %>" target="_blank" style="color: #0088cc;"><i class="fab fa-telegram-plane"></i></a>
-                    <% } %>
-                    <% if (profileUser.socialLinks?.discord) { %>
-                        <a href="<%= profileUser.socialLinks.discord %>" target="_blank" style="color: #5865F2;"><i class="fab fa-discord"></i></a>
-                    <% } %>
-                    <% if (profileUser.socialLinks?.website) { %>
-                        <a href="<%= profileUser.socialLinks.website %>" target="_blank" style="color: var(--silver);"><i class="fas fa-globe"></i></a>
-                    <% } %>
-                    <% if (profileUser.socialLinks?.youtube) { %>
-                        <a href="<%= profileUser.socialLinks.youtube %>" target="_blank" style="color: #FF0000;"><i class="fab fa-youtube"></i></a>
-                    <% } %>
+            <!-- ✅ OFFICIAL SOCIAL LINKS FOR STAFF & DISTRIBUTORS -->
+            <% 
+                const isStaffOrDistributor = ['owner', 'admin', 'support', 'distributor'].includes(profileUser.role);
+                const resolvedSocials = {};
+                const platformsList = ['youtube', 'discord', 'github', 'twitter', 'linkedin', 'reddit', 'instagram', 'facebook', 'threads', 'gravatar', 'telegram', 'website', 'whatsapp'];
+                
+                if (profileUser.socialLinks) {
+                    platformsList.forEach(p => {
+                        if (profileUser.socialLinks[p]) resolvedSocials[p] = profileUser.socialLinks[p];
+                    });
+                }
+                if (profileUser.cardCustomization && Array.isArray(profileUser.cardCustomization.socials)) {
+                    profileUser.cardCustomization.socials.forEach(s => {
+                        if (s.platform && s.handleOrUrl && !resolvedSocials[s.platform.toLowerCase()]) {
+                            resolvedSocials[s.platform.toLowerCase()] = s.handleOrUrl;
+                        }
+                    });
+                }
+
+                function buildPublicSocialHref(plat, val) {
+                    if (!val) return '#';
+                    let v = String(val).trim();
+                    if (v.startsWith('http://') || v.startsWith('https://')) return v;
+                    const clean = v.replace(/^@/, '');
+                    if (plat === 'telegram') return `https://t.me/${clean}`;
+                    if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : (clean.includes('/') ? `https://discord.gg/${clean}` : `https://discord.com`);
+                    if (plat === 'youtube') return clean.startsWith('channel/') || clean.startsWith('@') ? `https://youtube.com/${clean}` : `https://youtube.com/@${clean}`;
+                    if (plat === 'github') return `https://github.com/${clean}`;
+                    if (plat === 'twitter') return `https://x.com/${clean}`;
+                    if (plat === 'linkedin') return clean.includes('linkedin.com') ? `https://${clean}` : `https://linkedin.com/in/${clean}`;
+                    if (plat === 'reddit') return clean.startsWith('u/') || clean.startsWith('user/') ? `https://reddit.com/${clean}` : `https://reddit.com/user/${clean}`;
+                    if (plat === 'instagram') return `https://instagram.com/${clean}`;
+                    if (plat === 'facebook') return clean.includes('facebook.com') ? `https://${clean}` : `https://facebook.com/${clean}`;
+                    if (plat === 'threads') return clean.startsWith('@') ? `https://threads.net/${clean}` : `https://threads.net/@${clean}`;
+                    if (plat === 'gravatar') return clean.includes('gravatar.com') ? `https://${clean}` : `https://gravatar.com/${clean}`;
+                    if (plat === 'whatsapp') return `https://wa.me/${clean.replace(/[^\d]/g, '')}`;
+                    if (plat === 'website') return `https://${clean}`;
+                    return `https://${clean}`;
+                }
+
+                const socialMeta = {
+                    youtube: { icon: 'fab fa-youtube', color: '#FF0000', title: 'YouTube' },
+                    discord: { icon: 'fab fa-discord', color: '#5865F2', title: 'Discord' },
+                    github: { icon: 'fab fa-github', color: '#ffffff', title: 'GitHub' },
+                    twitter: { icon: 'fab fa-x-twitter', color: '#1DA1F2', title: 'X / Twitter' },
+                    linkedin: { icon: 'fab fa-linkedin', color: '#0A66C2', title: 'LinkedIn' },
+                    reddit: { icon: 'fab fa-reddit', color: '#FF4500', title: 'Reddit' },
+                    instagram: { icon: 'fab fa-instagram', color: '#E1306C', title: 'Instagram' },
+                    facebook: { icon: 'fab fa-facebook-f', color: '#1877F2', title: 'Facebook' },
+                    threads: { icon: 'fab fa-threads', color: '#ffffff', title: 'Threads' },
+                    gravatar: { icon: 'fab fa-grav', color: '#1e8cbe', title: 'Gravatar' },
+                    telegram: { icon: 'fab fa-telegram-plane', color: '#0088cc', title: 'Telegram' },
+                    website: { icon: 'fas fa-globe', color: 'var(--silver)', title: 'Website' },
+                    whatsapp: { icon: 'fab fa-whatsapp', color: '#25D366', title: 'WhatsApp' }
+                };
+
+                const hasAnySocials = Object.keys(resolvedSocials).length > 0;
+            %>
+            <% if ((isStaffOrDistributor || hasAnySocials) && hasAnySocials) { %>
+                <div class="profile-social-links" style="display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 1.8em; margin-bottom: 25px; flex-wrap: wrap;">
+                    <% platformsList.forEach(plat => { %>
+                        <% if (resolvedSocials[plat]) { %>
+                            <a href="<%= buildPublicSocialHref(plat, resolvedSocials[plat]) %>" target="_blank" rel="noopener noreferrer" title="<%= socialMeta[plat].title %>" style="color: <%= socialMeta[plat].color %>;">
+                                <i class="<%= socialMeta[plat].icon %>"></i>
+                            </a>
+                        <% } %>
+                    <% }); %>
                 </div>
             <% } %>
 

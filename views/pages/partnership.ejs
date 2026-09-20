@@ -35,6 +35,10 @@
     .status-box { text-align: center; padding: 40px; background: var(--black); border-radius: 10px; border: 1px solid #333; }
     .status-box h2 { color: var(--gold); margin-bottom: 15px; }
 
+    /* High z-index for dropdown */
+    .custom-select-wrapper.open { z-index: 1000 !important; position: relative; }
+    .custom-options { z-index: 1050 !important; }
+
     /* ✅ FIX: Make the grid 1 column on mobile screens */
     @media (max-width: 768px) { 
         .benefits-grid { grid-template-columns: 1fr; } 
@@ -180,6 +184,42 @@
                     <div class="form-group">
                         <label><i class="fab fa-youtube" style="color: #FF0000;"></i> YouTube</label>
                         <input type="url" name="socialYoutube" placeholder="https://youtube.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-github" style="color: #ffffff;"></i> GitHub</label>
+                        <input type="url" name="socialGithub" placeholder="https://github.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-x-twitter" style="color: #1DA1F2;"></i> X / Twitter</label>
+                        <input type="url" name="socialTwitter" placeholder="https://x.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-linkedin" style="color: #0A66C2;"></i> LinkedIn</label>
+                        <input type="url" name="socialLinkedin" placeholder="https://linkedin.com/in/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-reddit" style="color: #FF4500;"></i> Reddit</label>
+                        <input type="url" name="socialReddit" placeholder="https://reddit.com/user/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-instagram" style="color: #E1306C;"></i> Instagram</label>
+                        <input type="url" name="socialInstagram" placeholder="https://instagram.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-facebook-f" style="color: #1877F2;"></i> Facebook</label>
+                        <input type="url" name="socialFacebook" placeholder="https://facebook.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-threads" style="color: #ffffff;"></i> Threads</label>
+                        <input type="url" name="socialThreads" placeholder="https://threads.net/@...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-grav" style="color: #1e8cbe;"></i> Gravatar</label>
+                        <input type="url" name="socialGravatar" placeholder="https://gravatar.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fab fa-whatsapp" style="color: #25D366;"></i> WhatsApp</label>
+                        <input type="url" name="socialWhatsapp" placeholder="https://wa.me/...">
                     </div>
                 </div>
 

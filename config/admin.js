@@ -266,8 +266,8 @@ async function createAdminRouter() {
                 options: {
                     navigation: usersNav,
                     listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
-                    showProperties: ['_id', 'username', 'email', 'cardId', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
-                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube'],
+                    showProperties: ['_id', 'username', 'email', 'cardId', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube', 'socialLinks.github', 'socialLinks.twitter', 'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook', 'socialLinks.threads', 'socialLinks.gravatar', 'socialLinks.whatsapp'],
+                    editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube', 'socialLinks.github', 'socialLinks.twitter', 'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook', 'socialLinks.threads', 'socialLinks.gravatar', 'socialLinks.whatsapp'],
                     properties: {
                         password: { isVisible: false },
                         newPassword: { type: 'password', label: 'New Password (leave blank to keep unchanged)' },
@@ -361,10 +361,19 @@ async function createAdminRouter() {
                                 new: (context) => context?.currentAdmin?.role === 'owner'
                             }
                         },
-                        'socialLinks.telegram': { description: 'e.g., https://t.me/yourname' },
-                        'socialLinks.discord': { description: 'e.g., https://discord.gg/...' },
-                        'socialLinks.website': { description: 'e.g., https://yourwebsite.com' },
-                        'socialLinks.youtube': { description: 'e.g., https://youtube.com/...' },
+                        'socialLinks.telegram': { label: 'Telegram', description: 'e.g., https://t.me/yourname' },
+                        'socialLinks.discord': { label: 'Discord', description: 'e.g., https://discord.gg/...' },
+                        'socialLinks.website': { label: 'Website', description: 'e.g., https://yourwebsite.com' },
+                        'socialLinks.youtube': { label: 'YouTube', description: 'e.g., https://youtube.com/@yourchannel' },
+                        'socialLinks.github': { label: 'GitHub', description: 'e.g., https://github.com/yourusername' },
+                        'socialLinks.twitter': { label: 'X / Twitter', description: 'e.g., https://x.com/yourhandle' },
+                        'socialLinks.linkedin': { label: 'LinkedIn', description: 'e.g., https://linkedin.com/in/yourprofile' },
+                        'socialLinks.reddit': { label: 'Reddit', description: 'e.g., https://reddit.com/user/yourhandle' },
+                        'socialLinks.instagram': { label: 'Instagram', description: 'e.g., https://instagram.com/yourhandle' },
+                        'socialLinks.facebook': { label: 'Facebook', description: 'e.g., https://facebook.com/yourprofile' },
+                        'socialLinks.threads': { label: 'Threads', description: 'e.g., https://threads.net/@yourhandle' },
+                        'socialLinks.gravatar': { label: 'Gravatar', description: 'e.g., https://gravatar.com/yourprofile' },
+                        'socialLinks.whatsapp': { label: 'WhatsApp', description: 'e.g., https://wa.me/1234567890' },
                         profileImageKey: {
                             components: { list: Components.AvatarCell, show: Components.AvatarCell },
                             isVisible: { edit: false, filter: false, list: true, show: true } 
@@ -851,9 +860,60 @@ async function createAdminRouter() {
                         'primaryDistributionPlatform', 'platformUrl', 'monetizationMethod',
                         'adminContactName', 'adminSocialLink', 
                         'socialTelegram', 'socialDiscord', 'socialWebsite', 'socialYoutube',
+                        'socialGithub', 'socialTwitter', 'socialLinkedin', 'socialReddit',
+                        'socialInstagram', 'socialFacebook', 'socialThreads', 'socialGravatar', 'socialWhatsapp',
                         'adminNotes', 'createdAt'
                     ],
-                    editProperties: ['status', 'adminNotes'],
+                    editProperties: [
+                        'status', 'adminNotes',
+                        'socialTelegram', 'socialDiscord', 'socialWebsite', 'socialYoutube',
+                        'socialGithub', 'socialTwitter', 'socialLinkedin', 'socialReddit',
+                        'socialInstagram', 'socialFacebook', 'socialThreads', 'socialGravatar', 'socialWhatsapp'
+                    ],
+                    actions: {
+                        edit: {
+                            after: async (response, request, context) => {
+                                const record = response.record;
+                                if (record && record.params && record.params.status === 'approved') {
+                                    try {
+                                        const applicantUser = (record.params.user ? await User.findById(record.params.user) : null) || await User.findOne({ username: record.params.username });
+                                        if (applicantUser) {
+                                            applicantUser.role = 'distributor';
+                                            if (record.params.organizationName) {
+                                                applicantUser.organizationName = record.params.organizationName;
+                                            }
+                                            applicantUser.isVerified = true;
+                                            applicantUser.socialLinks = applicantUser.socialLinks || {};
+                                            const socialKeys = [
+                                                ['socialTelegram', 'telegram'],
+                                                ['socialDiscord', 'discord'],
+                                                ['socialWebsite', 'website'],
+                                                ['socialYoutube', 'youtube'],
+                                                ['socialGithub', 'github'],
+                                                ['socialTwitter', 'twitter'],
+                                                ['socialLinkedin', 'linkedin'],
+                                                ['socialReddit', 'reddit'],
+                                                ['socialInstagram', 'instagram'],
+                                                ['socialFacebook', 'facebook'],
+                                                ['socialThreads', 'threads'],
+                                                ['socialGravatar', 'gravatar'],
+                                                ['socialWhatsapp', 'whatsapp']
+                                            ];
+                                            socialKeys.forEach(([appKey, userKey]) => {
+                                                if (record.params[appKey]) {
+                                                    applicantUser.socialLinks[userKey] = record.params[appKey];
+                                                }
+                                            });
+                                            await applicantUser.save();
+                                        }
+                                    } catch (syncErr) {
+                                        console.error('Error syncing approved distributor user details:', syncErr);
+                                    }
+                                }
+                                return response;
+                            }
+                        }
+                    },
                     properties: { adminNotes: { type: 'textarea' } }
                 }
             },

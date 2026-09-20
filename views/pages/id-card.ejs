@@ -919,7 +919,12 @@
                     youtube: 'fab fa-youtube',
                     github: 'fab fa-github',
                     twitter: 'fab fa-x-twitter',
+                    linkedin: 'fab fa-linkedin',
+                    reddit: 'fab fa-reddit',
                     instagram: 'fab fa-instagram',
+                    facebook: 'fab fa-facebook-f',
+                    threads: 'fab fa-threads',
+                    gravatar: 'fab fa-grav',
                     website: 'fas fa-globe',
                     whatsapp: 'fab fa-whatsapp'
                 };
@@ -930,11 +935,16 @@
                     if (h.startsWith('http://') || h.startsWith('https://')) return h;
                     const clean = h.replace(/^@/, '');
                     if (plat === 'telegram') return `https://t.me/${clean}`;
-                    if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : `https://discord.com`;
-                    if (plat === 'youtube') return `https://youtube.com/@${clean}`;
+                    if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : (clean.includes('/') ? `https://discord.gg/${clean}` : `https://discord.com`);
+                    if (plat === 'youtube') return clean.startsWith('channel/') || clean.startsWith('@') ? `https://youtube.com/${clean}` : `https://youtube.com/@${clean}`;
                     if (plat === 'github') return `https://github.com/${clean}`;
                     if (plat === 'twitter') return `https://x.com/${clean}`;
+                    if (plat === 'linkedin') return clean.includes('linkedin.com') ? `https://${clean}` : `https://linkedin.com/in/${clean}`;
+                    if (plat === 'reddit') return clean.startsWith('u/') || clean.startsWith('user/') ? `https://reddit.com/${clean}` : `https://reddit.com/user/${clean}`;
                     if (plat === 'instagram') return `https://instagram.com/${clean}`;
+                    if (plat === 'facebook') return clean.includes('facebook.com') ? `https://${clean}` : `https://facebook.com/${clean}`;
+                    if (plat === 'threads') return clean.startsWith('@') ? `https://threads.net/${clean}` : `https://threads.net/@${clean}`;
+                    if (plat === 'gravatar') return clean.includes('gravatar.com') ? `https://${clean}` : `https://gravatar.com/${clean}`;
                     if (plat === 'whatsapp') return `https://wa.me/${clean.replace(/[^\d]/g, '')}`;
                     return `https://${clean}`;
                 }
@@ -1225,7 +1235,12 @@
                             { val: 'youtube', label: 'YouTube (fab fa-youtube)', cleanLabel: 'YouTube' },
                             { val: 'github', label: 'GitHub (fab fa-github)', cleanLabel: 'GitHub' },
                             { val: 'twitter', label: 'X / Twitter (fab fa-x-twitter)', cleanLabel: 'X / Twitter' },
+                            { val: 'linkedin', label: 'LinkedIn (fab fa-linkedin)', cleanLabel: 'LinkedIn' },
+                            { val: 'reddit', label: 'Reddit (fab fa-reddit)', cleanLabel: 'Reddit' },
                             { val: 'instagram', label: 'Instagram (fab fa-instagram)', cleanLabel: 'Instagram' },
+                            { val: 'facebook', label: 'Facebook (fab fa-facebook-f)', cleanLabel: 'Facebook' },
+                            { val: 'threads', label: 'Threads (fab fa-threads)', cleanLabel: 'Threads' },
+                            { val: 'gravatar', label: 'Gravatar (fab fa-grav)', cleanLabel: 'Gravatar' },
                             { val: 'website', label: 'Website / Globe (fas fa-globe)', cleanLabel: 'Website' },
                             { val: 'whatsapp', label: 'WhatsApp (fab fa-whatsapp)', cleanLabel: 'WhatsApp' }
                         ];
@@ -1733,7 +1748,12 @@
         youtube: 'fab fa-youtube',
         github: 'fab fa-github',
         twitter: 'fab fa-x-twitter',
+        linkedin: 'fab fa-linkedin',
+        reddit: 'fab fa-reddit',
         instagram: 'fab fa-instagram',
+        facebook: 'fab fa-facebook-f',
+        threads: 'fab fa-threads',
+        gravatar: 'fab fa-grav',
         website: 'fas fa-globe',
         whatsapp: 'fab fa-whatsapp'
     };
@@ -1760,11 +1780,16 @@
         if (h.startsWith('http://') || h.startsWith('https://')) return h;
         const clean = h.replace(/^@/, '');
         if (plat === 'telegram') return `https://t.me/${clean}`;
-        if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : `https://discord.com`;
+        if (plat === 'discord') return clean.startsWith('discord.gg') ? `https://${clean}` : (clean.includes('/') ? `https://discord.gg/${clean}` : `https://discord.com`);
         if (plat === 'youtube') return `https://youtube.com/@${clean}`;
         if (plat === 'github') return `https://github.com/${clean}`;
         if (plat === 'twitter') return `https://x.com/${clean}`;
+        if (plat === 'linkedin') return clean.includes('linkedin.com') ? `https://${clean}` : `https://linkedin.com/in/${clean}`;
+        if (plat === 'reddit') return clean.startsWith('u/') || clean.startsWith('user/') ? `https://reddit.com/${clean}` : `https://reddit.com/user/${clean}`;
         if (plat === 'instagram') return `https://instagram.com/${clean}`;
+        if (plat === 'facebook') return clean.includes('facebook.com') ? `https://${clean}` : `https://facebook.com/${clean}`;
+        if (plat === 'threads') return clean.startsWith('@') ? `https://threads.net/${clean}` : `https://threads.net/@${clean}`;
+        if (plat === 'gravatar') return clean.includes('gravatar.com') ? `https://${clean}` : `https://gravatar.com/${clean}`;
         if (plat === 'whatsapp') return `https://wa.me/${clean.replace(/[^\d]/g, '')}`;
         return `https://${clean}`;
     }

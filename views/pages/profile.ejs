@@ -3,11 +3,12 @@
 <style>
     /* Custom Dropdown Styles (Reused from forum-ask) */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
+    .custom-select-wrapper.open { z-index: 1000 !important; position: relative; }
     .custom-select { position: relative; display: flex; flex-direction: column; background: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; padding: 12px 15px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: border-color 0.3s; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
     .custom-select-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); transition: transform 0.3s; color: var(--silver); }
     .custom-select-wrapper.open .custom-select-arrow { transform: translateY(-50%) rotate(180deg); color: var(--gold); }
-    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 20; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 1050 !important; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     .custom-select-wrapper.open .custom-options { display: block; }
     .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; }
     .custom-option:hover { background-color: rgba(255, 215, 0, 0.1); color: var(--white); }
@@ -501,6 +502,16 @@
         .custom-option {
             padding: 10px 12px;
         }
+        .profile-social-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+        }
+    }
+
+    .profile-social-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
     }
 </style>
 
@@ -935,6 +946,73 @@ GLOBAL|Earth
                         </div>
                     </div>
                     <!-- ======================================= -->
+
+                    <!-- ======== PUBLIC SOCIAL CHANNELS ======== -->
+                    <% if (['owner', 'admin', 'support', 'distributor'].includes(user.role)) { %>
+                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255, 215, 0, 0.2);">
+                            <h3 style="color: var(--gold); font-size: 1.15em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-share-alt"></i> Public Social Channels
+                            </h3>
+                            <p style="color: var(--silver); font-size: 0.85em; margin-bottom: 18px; line-height: 1.5;">
+                                Connect your official channels to feature verified social links on your public profile and distributor card.
+                            </p>
+                            
+                            <div class="profile-social-grid">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-youtube" style="color: #FF0000; margin-right: 4px;"></i> YouTube</label>
+                                    <input type="text" name="socialYoutube" value="<%= user.socialLinks?.youtube || '' %>" placeholder="Channel URL or @handle">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-discord" style="color: #5865F2; margin-right: 4px;"></i> Discord</label>
+                                    <input type="text" name="socialDiscord" value="<%= user.socialLinks?.discord || '' %>" placeholder="Invite link or server">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-github" style="color: #ffffff; margin-right: 4px;"></i> GitHub</label>
+                                    <input type="text" name="socialGithub" value="<%= user.socialLinks?.github || '' %>" placeholder="Profile or org URL">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-x-twitter" style="color: #1DA1F2; margin-right: 4px;"></i> X / Twitter</label>
+                                    <input type="text" name="socialTwitter" value="<%= user.socialLinks?.twitter || '' %>" placeholder="Profile URL or @handle">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-linkedin" style="color: #0A66C2; margin-right: 4px;"></i> LinkedIn</label>
+                                    <input type="text" name="socialLinkedin" value="<%= user.socialLinks?.linkedin || '' %>" placeholder="Profile URL">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-reddit" style="color: #FF4500; margin-right: 4px;"></i> Reddit</label>
+                                    <input type="text" name="socialReddit" value="<%= user.socialLinks?.reddit || '' %>" placeholder="Profile URL or u/handle">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-instagram" style="color: #E1306C; margin-right: 4px;"></i> Instagram</label>
+                                    <input type="text" name="socialInstagram" value="<%= user.socialLinks?.instagram || '' %>" placeholder="Profile URL or @handle">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-facebook-f" style="color: #1877F2; margin-right: 4px;"></i> Facebook</label>
+                                    <input type="text" name="socialFacebook" value="<%= user.socialLinks?.facebook || '' %>" placeholder="Profile or page URL">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-threads" style="color: #ffffff; margin-right: 4px;"></i> Threads</label>
+                                    <input type="text" name="socialThreads" value="<%= user.socialLinks?.threads || '' %>" placeholder="Profile URL or @handle">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-grav" style="color: #1e8cbe; margin-right: 4px;"></i> Gravatar</label>
+                                    <input type="text" name="socialGravatar" value="<%= user.socialLinks?.gravatar || '' %>" placeholder="Gravatar profile or email">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fab fa-telegram-plane" style="color: #0088cc; margin-right: 4px;"></i> Telegram</label>
+                                    <input type="text" name="socialTelegram" value="<%= user.socialLinks?.telegram || '' %>" placeholder="Channel / Profile URL">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label><i class="fas fa-globe" style="color: var(--silver); margin-right: 4px;"></i> Website</label>
+                                    <input type="text" name="socialWebsite" value="<%= user.socialLinks?.website || '' %>" placeholder="https://yourwebsite.com">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                                    <label><i class="fab fa-whatsapp" style="color: #25D366; margin-right: 4px;"></i> WhatsApp</label>
+                                    <input type="text" name="socialWhatsapp" value="<%= user.socialLinks?.whatsapp || '' %>" placeholder="WhatsApp link or phone number">
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
 
                     <button type="submit" class="submit-button" style="margin-top: 30px;">
                         <i class="fas fa-save" style="margin-right: 8px;"></i> Save Profile Changes

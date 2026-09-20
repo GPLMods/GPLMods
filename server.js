@@ -5839,6 +5839,18 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
             user.dateOfBirth = new Date(dateOfBirth);
         }
 
+        // 3. Save Social Links for staff & distributors
+        if (['owner', 'admin', 'support', 'distributor'].includes(user.role)) {
+            user.socialLinks = user.socialLinks || {};
+            const socialPlatforms = ['telegram', 'discord', 'website', 'youtube', 'github', 'twitter', 'linkedin', 'reddit', 'instagram', 'facebook', 'threads', 'gravatar', 'whatsapp'];
+            socialPlatforms.forEach(plat => {
+                const key = `social${plat.charAt(0).toUpperCase() + plat.slice(1)}`;
+                if (req.body[key] !== undefined) {
+                    user.socialLinks[plat] = req.body[key] ? String(req.body[key]).trim() : '';
+                }
+            });
+        }
+
         // --- Handle Username Change ---
         if (username && username !== user.username) {
             // ======== VALIDATION CHECK ========
@@ -11458,6 +11470,8 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
             organizationName, primaryDistributionPlatform, platformUrl, 
             monetizationMethod, adminContactName, adminSocialLink,
             socialTelegram, socialDiscord, socialWebsite, socialYoutube,
+            socialGithub, socialTwitter, socialLinkedin, socialReddit,
+            socialInstagram, socialFacebook, socialThreads, socialGravatar, socialWhatsapp,
             agreedToTerms
         } = req.body;
 
@@ -11479,6 +11493,15 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
             socialDiscord,
             socialWebsite,
             socialYoutube,
+            socialGithub,
+            socialTwitter,
+            socialLinkedin,
+            socialReddit,
+            socialInstagram,
+            socialFacebook,
+            socialThreads,
+            socialGravatar,
+            socialWhatsapp,
             agreedToTerms: true
         });
 
@@ -11899,10 +11922,15 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
         const socialsArr = [];
         const pushSocial = (plat, handle) => {
             if (plat && handle && String(handle).trim() && socialsArr.length < 3) {
+                const cleanPlat = String(plat).toLowerCase().trim();
+                const cleanHandle = String(handle).trim().slice(0, 150);
                 socialsArr.push({
-                    platform: String(plat).toLowerCase().trim(),
-                    handleOrUrl: String(handle).trim().slice(0, 150)
+                    platform: cleanPlat,
+                    handleOrUrl: cleanHandle
                 });
+                // Sync to user.socialLinks so it is displayed on public profile
+                user.socialLinks = user.socialLinks || {};
+                user.socialLinks[cleanPlat] = cleanHandle;
             }
         };
         pushSocial(social1_platform, social1_handle);

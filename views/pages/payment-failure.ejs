@@ -1,319 +1,330 @@
 <%- include('../partials/header') %>
 
-<style>
-    .payment-result-container {
-        min-height: 75vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 60px 20px;
-    }
-
-    .payment-card-failure {
-        background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(18, 18, 18, 0.98));
-        border: 1px solid rgba(231, 76, 60, 0.35);
-        border-radius: 20px;
-        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), 0 0 35px rgba(231, 76, 60, 0.15);
-        max-width: 650px;
-        width: 100%;
-        padding: 45px 35px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        animation: fadeInScale 0.4s ease-out;
-    }
-
-    .payment-card-failure::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        background: linear-gradient(90deg, #e74c3c, #c0392b, #f39c12);
-    }
-
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.96) translateY(15px);
+    <style>
+        .payment-result-container {
+            min-height: 75vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
         }
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
+
+        .payment-card-failure {
+            background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(18, 18, 18, 0.98));
+            border: 1px solid rgba(231, 76, 60, 0.35);
+            border-radius: 20px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), 0 0 35px rgba(231, 76, 60, 0.15);
+            max-width: 650px;
+            width: 100%;
+            padding: 45px 35px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInScale 0.4s ease-out;
         }
-    }
 
-    .status-badge-wrapper {
-        position: relative;
-        width: 95px;
-        height: 95px;
-        margin: 0 auto 25px auto;
-    }
+        .payment-card-failure::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #e74c3c, #c0392b, #f39c12);
+        }
 
-    .status-badge-error {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: rgba(231, 76, 60, 0.12);
-        border: 2.5px solid #e74c3c;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.8rem;
-        color: #e74c3c;
-        box-shadow: 0 0 25px rgba(231, 76, 60, 0.35);
-    }
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(15px);
+            }
 
-    .payment-card-failure h1 {
-        font-size: 2.1rem;
-        color: var(--white);
-        font-weight: 700;
-        margin-bottom: 12px;
-        letter-spacing: -0.5px;
-    }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
 
-    .payment-card-failure .sub-message {
-        color: var(--silver);
-        font-size: 1.05rem;
-        line-height: 1.6;
-        margin-bottom: 25px;
-        max-width: 520px;
-        margin-left: auto;
-        margin-right: auto;
-    }
+        .status-badge-wrapper {
+            position: relative;
+            width: 95px;
+            height: 95px;
+            margin: 0 auto 25px auto;
+        }
 
-    .refund-guarantee-note {
-        background: rgba(241, 196, 15, 0.1);
-        border: 1px solid rgba(241, 196, 15, 0.3);
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 25px;
-        text-align: left;
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        font-size: 0.92rem;
-        color: #f1c40f;
-        line-height: 1.5;
-    }
+        .status-badge-error {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.12);
+            border: 2.5px solid #e74c3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            color: #e74c3c;
+            box-shadow: 0 0 25px rgba(231, 76, 60, 0.35);
+        }
 
-    .refund-guarantee-note i {
-        font-size: 1.2rem;
-        margin-top: 2px;
-        flex-shrink: 0;
-    }
+        .payment-card-failure h1 {
+            font-size: 2.1rem;
+            color: var(--white);
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
 
-    .receipt-box {
-        background: rgba(0, 0, 0, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 22px 25px;
-        margin-bottom: 30px;
-        text-align: left;
-    }
+        .payment-card-failure .sub-message {
+            color: var(--silver);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-    .receipt-title {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: var(--silver);
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        padding-bottom: 8px;
-    }
+        .refund-guarantee-note {
+            background: rgba(241, 196, 15, 0.1);
+            border: 1px solid rgba(241, 196, 15, 0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 25px;
+            text-align: left;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 0.92rem;
+            color: #f1c40f;
+            line-height: 1.5;
+        }
 
-    .receipt-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 9px 0;
-        font-size: 0.95rem;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-    }
+        .refund-guarantee-note i {
+            font-size: 1.2rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
 
-    .receipt-row:last-child {
-        border-bottom: none;
-    }
+        .receipt-box {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 22px 25px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
 
-    .receipt-label {
-        color: #999;
-    }
+        .receipt-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--silver);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 8px;
+        }
 
-    .receipt-value {
-        color: var(--white);
-        font-weight: 600;
-        word-break: break-all;
-        text-align: right;
-    }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 0;
+            font-size: 0.95rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+        }
 
-    .status-pill-failed {
-        background: rgba(231, 76, 60, 0.2);
-        color: #e74c3c;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        border: 1px solid rgba(231, 76, 60, 0.4);
-        display: inline-block;
-    }
+        .receipt-row:last-child {
+            border-bottom: none;
+        }
 
-    .tips-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
-        padding: 16px 20px;
-        margin-bottom: 30px;
-        text-align: left;
-        font-size: 0.9rem;
-        color: #aaa;
-    }
+        .receipt-label {
+            color: #999;
+        }
 
-    .tips-box h4 {
-        color: var(--white);
-        margin-bottom: 8px;
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+        .receipt-value {
+            color: var(--white);
+            font-weight: 600;
+            word-break: break-all;
+            text-align: right;
+        }
 
-    .tips-box ul {
-        margin: 0;
-        padding-left: 20px;
-        line-height: 1.6;
-    }
+        .status-pill-failed {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            display: inline-block;
+        }
 
-    .btn-group-actions {
-        display: flex;
-        justify-content: center;
-        gap: 14px;
-        flex-wrap: wrap;
-    }
+        .tips-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
 
-    .btn-result {
-        padding: 13px 26px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.98rem;
-        text-decoration: none;
-        transition: all 0.25s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 9px;
-        cursor: pointer;
-        border: none;
-    }
+        .tips-box h4 {
+            color: var(--white);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .btn-result-primary {
-        background: #e74c3c;
-        color: var(--white);
-        box-shadow: 0 0 18px rgba(231, 76, 60, 0.4);
-    }
+        .tips-box ul {
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+        }
 
-    .btn-result-primary:hover {
-        background: #c0392b;
-        transform: translateY(-2px);
-        box-shadow: 0 0 25px rgba(231, 76, 60, 0.6);
-    }
+        .btn-group-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
 
-    .btn-result-secondary {
-        background: rgba(255, 255, 255, 0.07);
-        color: var(--white);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-    }
+        .btn-result {
+            padding: 13px 26px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.98rem;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            border: none;
+        }
 
-    .btn-result-secondary:hover {
-        background: rgba(255, 255, 255, 0.14);
-        border-color: var(--gold);
-        color: var(--gold);
-        transform: translateY(-2px);
-    }
-</style>
+        .btn-result-primary {
+            background: #e74c3c;
+            color: var(--white);
+            box-shadow: 0 0 18px rgba(231, 76, 60, 0.4);
+        }
 
-<main class="payment-result-container">
-    <div class="payment-card-failure">
-        <div class="status-badge-wrapper">
-            <div class="status-badge-error">
-                <i class="fas fa-times"></i>
-            </div>
-        </div>
+        .btn-result-primary:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(231, 76, 60, 0.6);
+        }
 
-        <h1>Payment Incomplete</h1>
-        <p class="sub-message">
-            Your transaction could not be completed or was cancelled. Please don't worry — your account has not been charged for this attempt.
-        </p>
+        .btn-result-secondary {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
 
-        <div class="refund-guarantee-note">
-            <i class="fas fa-shield-alt"></i>
-            <div>
-                <strong>Auto-Reversal Guarantee:</strong> If money was debited from your bank or card, your bank's clearing system will automatically reverse and refund the full amount within 3 to 5 business days.
-            </div>
-        </div>
+        .btn-result-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--gold);
+            color: var(--gold);
+            transform: translateY(-2px);
+        }
+    </style>
 
-        <div class="receipt-box">
-            <div class="receipt-title">
-                <span>Transaction Details</span>
-                <span class="status-pill-failed"><i class="fas fa-times-circle"></i> <%= status ? status.toUpperCase() : 'FAILED' %></span>
-            </div>
-
-            <% if (orderId) { %>
-                <div class="receipt-row">
-                    <span class="receipt-label">Order Reference ID:</span>
-                    <span class="receipt-value"><%= orderId %></span>
+    <main class="payment-result-container">
+        <div class="payment-card-failure">
+            <div class="status-badge-wrapper">
+                <div class="status-badge-error">
+                    <i class="fas fa-times"></i>
                 </div>
-            <% } %>
-
-            <div class="receipt-row">
-                <span class="receipt-label">Reason / Feedback:</span>
-                <span class="receipt-value" style="color: #e74c3c;">
-                    <%= reason || 'Payment cancelled, declined, or timed out' %>
-                </span>
             </div>
 
-            <% if (amount) { %>
-                <div class="receipt-row">
-                    <span class="receipt-label">Attempted Amount:</span>
-                    <span class="receipt-value"><%= currency || 'INR' %> <%= amount %></span>
+            <h1>Payment Incomplete</h1>
+            <p class="sub-message">
+                Your transaction could not be completed or was cancelled. Please don't worry — your account has not been
+                charged for this attempt.
+            </p>
+
+            <div class="refund-guarantee-note">
+                <i class="fas fa-shield-alt"></i>
+                <div>
+                    <strong>Auto-Reversal Guarantee:</strong> If money was debited from your bank or card, your bank's
+                    clearing system will automatically reverse and refund the full amount within 3 to 5 business days.
                 </div>
-            <% } %>
+            </div>
 
-            <div class="receipt-row">
-                <span class="receipt-label">Payment Gateway:</span>
-                <span class="receipt-value">Cashfree Payments</span>
+            <div class="receipt-box">
+                <div class="receipt-title">
+                    <span>Transaction Details</span>
+                    <span class="status-pill-failed"><i class="fas fa-times-circle"></i>
+                        <%= status ? status.toUpperCase() : 'FAILED' %>
+                    </span>
+                </div>
+
+                <% if (orderId) { %>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Order Reference ID:</span>
+                        <span class="receipt-value">
+                            <%= orderId %>
+                        </span>
+                    </div>
+                    <% } %>
+
+                        <div class="receipt-row">
+                            <span class="receipt-label">Reason / Feedback:</span>
+                            <span class="receipt-value" style="color: #e74c3c;">
+                                <%= reason || 'Payment cancelled, declined, or timed out' %>
+                            </span>
+                        </div>
+
+                        <% if (amount) { %>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Attempted Amount:</span>
+                                <span class="receipt-value">
+                                    <%= currency || 'INR' %>
+                                        <%= amount %>
+                                </span>
+                            </div>
+                            <% } %>
+
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Payment Gateway:</span>
+                                    <span class="receipt-value">Cashfree Payments</span>
+                                </div>
+            </div>
+
+            <div class="tips-box">
+                <h4><i class="fas fa-lightbulb" style="color: var(--gold);"></i> Common Fixes:</h4>
+                <ul>
+                    <li>Verify your card has online and e-commerce transactions enabled.</li>
+                    <li>Try completing the transaction using <strong>UPI (Google Pay, PhonePe, Paytm)</strong> or
+                        Netbanking.</li>
+                    <li>Ensure you have adequate balance and your bank's OTP server is responding.</li>
+                </ul>
+            </div>
+
+            <div class="btn-group-actions">
+                <% if (type==='membership' ) { %>
+                    <a href="/membership" class="btn-result btn-result-primary">
+                        <i class="fas fa-redo"></i> Retry Membership Purchase
+                    </a>
+                    <% } else { %>
+                        <a href="/donate" class="btn-result btn-result-primary">
+                            <i class="fas fa-redo"></i> Retry Donation
+                        </a>
+                        <% } %>
+                            <a href="/support" class="btn-result btn-result-secondary">
+                                <i class="fas fa-headset"></i> Contact Support
+                            </a>
+                            <a href="/" class="btn-result btn-result-secondary">
+                                <i class="fas fa-home"></i> Return Home
+                            </a>
             </div>
         </div>
+    </main>
 
-        <div class="tips-box">
-            <h4><i class="fas fa-lightbulb" style="color: var(--gold);"></i> Common Fixes:</h4>
-            <ul>
-                <li>Verify your card has online and e-commerce transactions enabled.</li>
-                <li>Try completing the transaction using <strong>UPI (Google Pay, PhonePe, Paytm)</strong> or Netbanking.</li>
-                <li>Ensure you have adequate balance and your bank's OTP server is responding.</li>
-            </ul>
-        </div>
-
-        <div class="btn-group-actions">
-            <% if (type === 'membership') { %>
-                <a href="/membership" class="btn-result btn-result-primary">
-                    <i class="fas fa-redo"></i> Retry Membership Purchase
-                </a>
-            <% } else { %>
-                <a href="/donate" class="btn-result btn-result-primary">
-                    <i class="fas fa-redo"></i> Retry Donation
-                </a>
-            <% } %>
-            <a href="/contact" class="btn-result btn-result-secondary">
-                <i class="fas fa-headset"></i> Contact Support
-            </a>
-            <a href="/" class="btn-result btn-result-secondary">
-                <i class="fas fa-home"></i> Return Home
-            </a>
-        </div>
-    </div>
-</main>
-
-<%- include('../partials/footer') %>
+    <%- include('../partials/footer') %>

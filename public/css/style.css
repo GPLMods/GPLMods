@@ -68,6 +68,7 @@
         transition: all 0.3s ease;
     }
     .custom-select:hover { border-color: var(--gold); }
+    .custom-select-wrapper.open { z-index: 1000; position: relative; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
     .selected-text { color: var(--white); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
@@ -89,7 +90,7 @@
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s ease;
-        z-index: 100;
+        z-index: 1050;
         max-height: 250px;
         overflow-y: auto;
     }
