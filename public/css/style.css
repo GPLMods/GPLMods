@@ -1225,20 +1225,20 @@ a.overlay-btn-primary:hover {
         .logo .logo-gold-glow,
         .logo-gold-glow {
             color: var(--gold);
-            text-shadow: 0 0 4px rgba(255, 215, 0, 0.32);
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 16px rgba(255, 215, 0, 0.18);
             transition: text-shadow 0.3s ease;
         }
         .logo .logo-silver-glow,
         .logo-silver-glow {
             color: var(--silver, #e0e6ed);
-            text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.25), 0 0 12px rgba(255, 255, 255, 0.08);
             transition: text-shadow 0.3s ease;
         }
         .logo:hover .logo-gold-glow {
-            text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.55), 0 0 22px rgba(255, 215, 0, 0.25);
         }
         .logo:hover .logo-silver-glow {
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.25);
+            text-shadow: 0 0 7px rgba(255, 255, 255, 0.35), 0 0 18px rgba(255, 255, 255, 0.12);
         }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }

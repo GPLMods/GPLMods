@@ -26,37 +26,64 @@
             <h1 style="color: var(--white); font-size: 2.8em; margin-bottom: 10px;">Account <span style="color: var(--gold); text-shadow: 0 0 4px var(--glow-gold);">Settings</span></h1>
         </div>
 
-        <!-- 2FA Settings (RESTORED & MULTI-OPTION SUPPORT) -->
-        <div class="settings-section">
-            <div class="settings-info">
+        <!-- 2FA Settings (INDIVIDUAL METHOD TOGGLES) -->
+        <div class="settings-section" style="flex-direction: column; align-items: stretch;">
+            <div class="settings-info" style="width: 100%;">
                 <h3><i class="fas fa-shield-alt" style="color: var(--gold);"></i> Two-Factor Auth (2FA)</h3>
-                <p>Protect your account with up to 2-3 verification options (Email OTP, Authenticator, Passkey).</p>
-                <% if (user.twoFactorEnabled) { %>
-                    <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                        <% 
-                            const activeMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0) 
-                                ? user.twoFactorMethods 
-                                : [user.twoFactorMethod || 'email'];
-                            activeMethods.forEach((m, idx) => { 
-                        %>
-                            <span style="font-size: 0.78em; background: rgba(255,215,0,0.12); color: var(--gold); border: 1px solid rgba(255,215,0,0.35); padding: 3px 10px; border-radius: 12px; font-weight: 600;">
-                                <%= idx === 0 ? 'Primary: ' : '' %><%= m === 'totp' ? 'Authenticator' : (m === 'passkey' ? 'Passkey' : (m === 'social' ? 'Social 2FA' : 'Email OTP')) %>
-                            </span>
-                        <% }); %>
-                        <% if (activeMethods.length < 3) { %>
-                            <a href="/account/2fa/setup" style="font-size: 0.78em; background: rgba(255,255,255,0.08); color: var(--silver); border: 1px solid #444; padding: 3px 10px; border-radius: 12px; text-decoration: none; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='#444'">
-                                <i class="fas fa-plus"></i> Add Method (<%= activeMethods.length %>/3)
-                            </a>
-                        <% } %>
-                    </div>
-                <% } %>
+                <p>Protect your account with up to 2-3 verification options. Toggle each method individually.</p>
             </div>
-            <form action="<%= user.twoFactorEnabled ? '/account/2fa/disable' : '/account/2fa/setup' %>" method="<%= user.twoFactorEnabled ? 'POST' : 'GET' %>" style="margin: 0;">
-                <label class="switch">
-                    <input type="checkbox" onChange="this.form.submit()" <%= user.twoFactorEnabled ? 'checked' : '' %>>
-                    <span class="slider round"></span>
-                </label>
-            </form>
+
+            <% if (user.twoFactorEnabled) { %>
+                <%
+                    const activeMethods = (Array.isArray(user.twoFactorMethods) && user.twoFactorMethods.length > 0) 
+                        ? user.twoFactorMethods 
+                        : [user.twoFactorMethod || 'email'];
+                    const methodLabels = { email: 'Email OTP', totp: 'Authenticator App', passkey: 'Passkey', social: 'Social 2FA' };
+                    const methodIcons = { email: 'fa-envelope', totp: 'fa-key', passkey: 'fa-fingerprint', social: 'fa-sign-in-alt' };
+                    const methodColors = { email: '#4fc3f7', totp: '#ab47bc', passkey: '#66bb6a', social: '#ff7043' };
+                %>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px; width: 100%;">
+                    <% activeMethods.forEach((m, idx) => { %>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%); border: 1px solid rgba(255,215,0,0.18); border-radius: 10px; transition: border-color 0.2s;">
+                            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                                <div style="width: 38px; height: 38px; border-radius: 10px; background: <%= methodColors[m] || '#666' %>22; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="fas <%= methodIcons[m] || 'fa-shield-alt' %>" style="color: <%= methodColors[m] || '#aaa' %>; font-size: 1em;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #fff; font-size: 0.95em;"><%= methodLabels[m] || m %></div>
+                                    <div style="font-size: 0.75em; color: var(--silver); margin-top: 2px;">
+                                        <% if (idx === 0) { %>
+                                            <span style="color: var(--gold); font-weight: 600;">Primary</span> · Active
+                                        <% } else { %>
+                                            Active
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            <form action="/account/2fa/disable-method" method="POST" style="margin: 0;" onsubmit="<%= activeMethods.length <= 1 ? 'return confirm(\'This is your last 2FA method. Disabling it will turn off 2FA completely and suspend your ID Card. Continue?\')' : '' %>">
+                                <input type="hidden" name="method" value="<%= m %>">
+                                <label class="switch" title="Disable <%= methodLabels[m] || m %>">
+                                    <input type="checkbox" checked onChange="this.form.submit()">
+                                    <span class="slider round"></span>
+                                </label>
+                            </form>
+                        </div>
+                    <% }); %>
+
+                    <% if (activeMethods.length < 3) { %>
+                        <a href="/account/2fa/setup" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 18px; background: rgba(255,255,255,0.03); border: 1.5px dashed rgba(255,215,0,0.3); border-radius: 10px; color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.9em; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.3)';this.style.background='rgba(255,255,255,0.03)'">
+                            <i class="fas fa-plus-circle"></i> Add Another Method (<%= activeMethods.length %>/3)
+                        </a>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div style="margin-top: 12px; width: 100%;">
+                    <a href="/account/2fa/setup" style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 20px; background: rgba(255,215,0,0.1); border: 1.5px solid rgba(255,215,0,0.4); border-radius: 10px; color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.95em; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,215,0,0.18)';this.style.boxShadow='0 0 15px rgba(255,215,0,0.2)'" onmouseout="this.style.background='rgba(255,215,0,0.1)';this.style.boxShadow='none'">
+                        <i class="fas fa-shield-alt"></i> Enable Two-Factor Authentication
+                    </a>
+                    <p style="text-align: center; color: var(--silver); font-size: 0.82em; margin-top: 8px; opacity: 0.8;">Your account is currently not protected by 2FA.</p>
+                </div>
+            <% } %>
         </div>
 
         <div class="settings-section">

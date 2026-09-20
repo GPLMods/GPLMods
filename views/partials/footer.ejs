@@ -396,6 +396,23 @@
             }
             .gpl-chat-greeting.show { opacity: 1; transform: translateX(0); }
 
+            /* Mobile: raise chat button above bottom tab bar */
+            @media (max-width: 768px) {
+                .gpl-chat-btn {
+                    bottom: 80px;
+                }
+                .gpl-chat-greeting {
+                    right: auto;
+                    bottom: 70px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(10px);
+                    font-size: 0.75em;
+                }
+                .gpl-chat-greeting.show {
+                    transform: translateX(-50%) translateY(0);
+                }
+            }
+
             /* The Main Chat Window - Smooth Shrink & Expand */
             .gpl-chat-window {
                 position: fixed;
@@ -990,6 +1007,11 @@
                 if (chatWindow && !chatWindow.classList.contains('open') && greeting) {
                     greeting.textContent = greetings[Math.floor(Math.random() * greetings.length)];
                     greeting.classList.add('show');
+                    // Play SFX only on the very first greeting per session
+                    if (!sessionStorage.getItem('gplGreetingSfxPlayed')) {
+                        playIncomingMessageSfx();
+                        sessionStorage.setItem('gplGreetingSfxPlayed', '1');
+                    }
                     setTimeout(() => greeting.classList.remove('show'), 6000);
                 }
             }

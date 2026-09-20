@@ -82,11 +82,11 @@
     }
     .card-logo .logo-gold-glow {
         color: var(--gold);
-        text-shadow: 0 0 4px rgba(255, 215, 0, 0.32);
+        text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 16px rgba(255, 215, 0, 0.18);
     }
     .card-logo .logo-silver-glow {
         color: #f0f4f8;
-        text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.25), 0 0 12px rgba(255, 255, 255, 0.08);
     }
     .card-role-badge { 
         padding: 4px 12px; 
@@ -459,22 +459,39 @@
         gap: 8px;
     }
 
-    /* Switch styling for individual toggles */
+    /* Switch styling for individual toggles — Machine Textured */
     .toggle-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 0;
+        padding: 12px 14px;
         border-bottom: 1px solid rgba(255,255,255,0.06);
+        background: linear-gradient(145deg, rgba(28, 31, 38, 0.6) 0%, rgba(17, 19, 23, 0.6) 50%, rgba(10, 11, 14, 0.6) 100%);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        box-shadow: 
+            inset 0 1px 2px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04),
+            0 1px 3px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(61, 66, 80, 0.5);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
     }
-    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row:hover {
+        border-color: rgba(255, 215, 0, 0.3);
+        box-shadow: 
+            inset 0 1px 2px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04),
+            0 0 8px rgba(255, 215, 0, 0.1);
+    }
+    .toggle-row:last-child { border-bottom: none; margin-bottom: 0; }
     .toggle-label {
         font-weight: 600;
         font-size: 0.9em;
-        color: #dcdcdc;
+        color: #e0e0e0;
         display: flex;
         align-items: center;
         gap: 8px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .custom-switch {
