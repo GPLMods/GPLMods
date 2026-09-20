@@ -343,7 +343,7 @@ exports.processNewsletterCampaign = async (campaignId) => {
                         </td>
                         <td align="center" style="padding: 0 8px;">
                             <a href="https://gplmods.webredirect.org" target="_blank" title="GPL Mods Official Site" style="text-decoration: none; display: inline-block;">
-                                <img src="https://gplmods.webredirect.org/images/mail-icons/globe.png" alt="Official Website" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
+                                <img src="https://gplmods.webredirect.org/images/mail-icons/discord.png" alt="Official Discord" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0; opacity: 0.85;" />
                             </a>
                         </td>
                         <td align="center" style="padding: 0 8px;">
