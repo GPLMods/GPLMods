@@ -516,21 +516,44 @@
             </div>
 
             <div class="gpl-card-modal-body">
-                <!-- Mode Tabs: Camera Scan vs Upload File -->
+                <!-- Mode Tabs: Upload File vs Camera Scan -->
                 <div class="gpl-card-tabs">
-                    <button type="button" class="gpl-card-tab-btn active" id="tabBtnCamera">
-                        <i class="fas fa-camera"></i> Scan with Camera
-                    </button>
-                    <button type="button" class="gpl-card-tab-btn" id="tabBtnUpload">
+                    <button type="button" class="gpl-card-tab-btn active" id="tabBtnUpload">
                         <i class="fas fa-file-upload"></i> Upload Card File
+                    </button>
+                    <button type="button" class="gpl-card-tab-btn" id="tabBtnCamera">
+                        <i class="fas fa-camera"></i> Scan with Camera
                     </button>
                 </div>
 
                 <!-- Status / Alert Message -->
                 <div id="card-scan-alert" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.88em; margin-bottom: 15px; text-align: center; font-weight: 600;"></div>
 
-                <!-- VIEW 1: Live Camera Scanner -->
-                <div id="camera-scanner-view" style="display: block;">
+                <!-- VIEW 1: Dropzone for Card Upload -->
+                <div id="upload-file-view" style="display: block;">
+                    <div id="gpl-card-dropzone" class="gpl-card-dropzone">
+                        <input type="file" id="gplCardFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                        <div class="dropzone-content" id="dropzone-default-view">
+                            <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                            <p class="dropzone-title">Drag &amp; drop your GPL ID Card here, or <span style="color: var(--gold); text-decoration: underline;">Browse</span></p>
+                            <p class="dropzone-sub">Supports PNG, JPG or WebP exported in <strong>Private Mode (Quick Login)</strong></p>
+                        </div>
+                        <!-- Live Scanning State -->
+                        <div class="dropzone-scanning" id="dropzone-scanning-view" style="display: none;">
+                            <i class="fas fa-spinner fa-spin scanning-spinner"></i>
+                            <p style="color: var(--white); font-weight: 600; margin-top: 10px;">Scanning card credentials &amp; QR code...</p>
+                            <p style="color: var(--silver); font-size: 0.82em;">Verifying digital credential</p>
+                        </div>
+                    </div>
+
+                    <!-- Preview thumbnail if loaded -->
+                    <div id="card-preview-wrapper" style="display: none; margin-top: 15px; text-align: center;">
+                        <img id="card-preview-thumb" src="" alt="Card Preview" style="max-width: 130px; max-height: 180px; border-radius: 8px; border: 1px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                    </div>
+                </div>
+
+                <!-- VIEW 2: Live Camera Scanner -->
+                <div id="camera-scanner-view" style="display: none;">
                     <div class="gpl-camera-container" id="gplCameraContainer">
                         <video id="gplCameraVideo" playsinline autoplay muted></video>
                         <canvas id="gplCameraCanvas" style="display: none;"></canvas>
@@ -553,33 +576,14 @@
                     </div>
                 </div>
 
-                <!-- VIEW 2: Dropzone for Card Upload -->
-                <div id="upload-file-view" style="display: none;">
-                    <div id="gpl-card-dropzone" class="gpl-card-dropzone">
-                        <input type="file" id="gplCardFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
-                        <div class="dropzone-content" id="dropzone-default-view">
-                            <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
-                            <p class="dropzone-title">Drag &amp; drop your GPL ID Card here, or <span style="color: var(--gold); text-decoration: underline;">Browse</span></p>
-                            <p class="dropzone-sub">Supports PNG, JPG or WebP exported in <strong>Private Mode (Quick Login)</strong></p>
-                        </div>
-                        <!-- Live Scanning State -->
-                        <div class="dropzone-scanning" id="dropzone-scanning-view" style="display: none;">
-                            <i class="fas fa-spinner fa-spin scanning-spinner"></i>
-                            <p style="color: var(--white); font-weight: 600; margin-top: 10px;">Scanning card credentials &amp; QR code...</p>
-                            <p style="color: var(--silver); font-size: 0.82em;">Verifying digital credential</p>
-                        </div>
-                    </div>
-
-                    <!-- Preview thumbnail if loaded -->
-                    <div id="card-preview-wrapper" style="display: none; margin-top: 15px; text-align: center;">
-                        <img id="card-preview-thumb" src="" alt="Card Preview" style="max-width: 130px; max-height: 180px; border-radius: 8px; border: 1px solid var(--gold); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                    </div>
-                </div>
-
                 <div style="margin-top: 18px; text-align: center;">
                     <p style="font-size: 0.8em; color: var(--silver); margin: 0; line-height: 1.5;">
-                        <i class="fas fa-shield-alt" style="color: var(--gold);"></i> 
-                        Cards skip entering login email &amp; password. If 2FA is active, you will proceed to 2-Factor Authentication.
+                        <i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 4px;"></i> 
+                        GPL ID Cards skip the process of entering login email &amp; password. You will proceed direct to 2-Factor Authentication.
+                    </p>
+                    <p style="font-size: 0.76em; color: rgba(255, 120, 120, 0.85); margin: 5px 0 0 0; line-height: 1.4;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i>
+                        <strong>Note:</strong> Don't Record this process and post it to social media.
                     </p>
                 </div>
             </div>
@@ -654,7 +658,7 @@
             let isPaused = false;
             let currentFacingMode = 'environment'; // 'environment' (back) or 'user' (selfie/webcam)
             let scanAnimFrame = null;
-            let activeTab = 'camera'; // 'camera' or 'upload'
+            let activeTab = 'upload'; // 'upload' or 'camera'
 
             if (!openBtn || !modal) return;
 
@@ -856,8 +860,8 @@
             function openModal() {
                 resetModal();
                 modal.style.display = 'flex';
-                // Start with Camera view by default
-                switchTab('camera');
+                // Start with Upload view by default
+                switchTab('upload');
             }
 
             function closeModal() {

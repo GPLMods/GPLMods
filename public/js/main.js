@@ -1026,16 +1026,30 @@ function startEngagementSequence() {
     // --- NEWSLETTER TRIGGER ---
     function triggerNewsletter() {
         const popup = document.getElementById('newsletter-popup');
-        const isSubscribed = localStorage.getItem('gplmods_subscribed') === 'true';
+        if (!popup) return;
+
+        const serverSubscribed = popup.getAttribute('data-user-subscribed');
+        if (serverSubscribed === 'true') {
+            localStorage.setItem('gplmods_subscribed', 'true');
+        } else if (serverSubscribed === 'false') {
+            // If logged-in user is explicitly not subscribed on server, sync storage
+            localStorage.removeItem('gplmods_subscribed');
+        }
+
+        const isSubscribed = localStorage.getItem('gplmods_subscribed') === 'true' || serverSubscribed === 'true';
+        if (isSubscribed) {
+            return; // Never show if already subscribed
+        }
+
         const dismissedTime = localStorage.getItem('gplmods_newsletter_dismissed');
         const now = new Date().getTime();
         
-        let shouldShow = !isSubscribed;
+        let shouldShow = true;
         if (dismissedTime && (now - parseInt(dismissedTime)) < (3 * 24 * 60 * 60 * 1000)) {
             shouldShow = false; // Dismissed less than 3 days ago
         }
 
-        if (shouldShow && popup) {
+        if (shouldShow) {
             popup.classList.add('show');
         }
     }

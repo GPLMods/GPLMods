@@ -369,6 +369,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => modal.style.display = 'none', 200);
     }
 
+    // Newsletter Status Sync
+    <% if (user && user.isSubscribedToNewsletter) { %>
+        localStorage.setItem('gplmods_subscribed', 'true');
+    <% } else { %>
+        localStorage.removeItem('gplmods_subscribed');
+    <% } %>
+
     // Newsletter Modal
     const newsModal = document.getElementById('newsletter-modal');
     const openNewsBtn = document.getElementById('open-newsletter-modal');

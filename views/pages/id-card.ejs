@@ -1112,15 +1112,29 @@
                     </label>
                 </div>
                 <div id="emailOptionsBox" style="display: <%= showEmail ? 'block' : 'none' %>; padding: 12px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin: 10px 0 16px 0; border: 1px dashed rgba(255,215,0,0.25);">
-                    <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88em; color: #fff; cursor: pointer;">
-                            <input type="radio" name="emailType" value="account" <%= emailType === 'account' ? 'checked' : '' %> id="emailTypeAccount"> Account Email (<%= cardUser.email %>)
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88em; color: #fff; cursor: pointer;">
-                            <input type="radio" name="emailType" value="custom" <%= emailType === 'custom' ? 'checked' : '' %> id="emailTypeCustom"> Custom Business/Contact Email
-                        </label>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">Email Display Source</label>
+                        <select name="emailType" id="emailTypeSelect" style="display: none;">
+                            <option value="account" <%= emailType === 'account' ? 'selected' : '' %>>Account Email (<%= cardUser.email %>)</option>
+                            <option value="custom" <%= emailType === 'custom' ? 'selected' : '' %>>Custom Business/Contact Email</option>
+                        </select>
+                        <div class="custom-select-wrapper" id="emailTypeSelectWrapper">
+                            <div class="custom-select">
+                                <span class="selected-text"><%= emailType === 'custom' ? 'Custom Business/Contact Email' : ('Account Email (' + cardUser.email + ')') %></span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-options">
+                                <div class="custom-option <%= emailType !== 'custom' ? 'selected' : '' %>" data-value="account">
+                                    <i class="fas fa-envelope" style="color: var(--gold); margin-right: 6px;"></i> Account Email (<%= cardUser.email %>)
+                                </div>
+                                <div class="custom-option <%= emailType === 'custom' ? 'selected' : '' %>" data-value="custom">
+                                    <i class="fas fa-briefcase" style="color: #00e676; margin-right: 6px;"></i> Custom Business/Contact Email
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div id="customEmailInputWrap" style="display: <%= emailType === 'custom' ? 'block' : 'none' %>;">
+                        <label style="display: block; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">Enter Custom Contact Email</label>
                         <input type="email" id="customEmailInput" name="customEmail" value="<%= custom.customEmail || '' %>" placeholder="e.g., contact@arunmods.com" maxlength="80">
                     </div>
                 </div>
@@ -1551,6 +1565,9 @@
     setupCustomSelect('social1PlatWrapper', 'social1Plat', () => updateSocialsPreview());
     setupCustomSelect('social2PlatWrapper', 'social2Plat', () => updateSocialsPreview());
     setupCustomSelect('social3PlatWrapper', 'social3Plat', () => updateSocialsPreview());
+    setupCustomSelect('emailTypeSelectWrapper', 'emailTypeSelect', (val) => {
+        updateEmailTypeDisplay(val);
+    });
 
     // Actions dropdown menu toggle & close on outside click
     const cardActionsTrigger = document.getElementById('cardActionsDropdownTrigger');
@@ -1600,9 +1617,7 @@
     const collabBrandSupport = document.getElementById('collabBrandSupport');
 
     const showEmailToggle = document.getElementById('showEmailToggle');
-    const emailOptionsBox = document.getElementById('emailOptionsBox');
-    const emailTypeAccount = document.getElementById('emailTypeAccount');
-    const emailTypeCustom = document.getElementById('emailTypeCustom');
+    const emailTypeSelect = document.getElementById('emailTypeSelect');
     const customEmailInputWrap = document.getElementById('customEmailInputWrap');
     const customEmailInput = document.getElementById('customEmailInput');
     const cardMetaRow = document.getElementById('cardMetaRow');
@@ -1754,25 +1769,28 @@
             refreshMetaRowVisibility();
         });
     }
-    if (emailTypeAccount && emailTypeCustom) {
-        const updateEmailText = () => {
-            if (emailTypeCustom.checked) {
-                customEmailInputWrap.style.display = 'block';
-                cardMetaEmailText.textContent = customEmailInput.value.trim() || "<%= cardUser.email %>";
-            } else {
-                customEmailInputWrap.style.display = 'none';
-                cardMetaEmailText.textContent = "<%= cardUser.email %>";
-            }
-        };
-        emailTypeAccount.addEventListener('change', updateEmailText);
-        emailTypeCustom.addEventListener('change', updateEmailText);
-        if (customEmailInput) {
-            customEmailInput.addEventListener('input', function() {
-                if (emailTypeCustom.checked) {
-                    cardMetaEmailText.textContent = this.value.trim() || "<%= cardUser.email %>";
-                }
-            });
+    function updateEmailTypeDisplay(val) {
+        const type = val || (emailTypeSelect ? emailTypeSelect.value : 'account');
+        if (type === 'custom') {
+            if (customEmailInputWrap) customEmailInputWrap.style.display = 'block';
+            if (cardMetaEmailText) cardMetaEmailText.textContent = (customEmailInput && customEmailInput.value.trim()) || "<%= cardUser.email %>";
+        } else {
+            if (customEmailInputWrap) customEmailInputWrap.style.display = 'none';
+            if (cardMetaEmailText) cardMetaEmailText.textContent = "<%= cardUser.email %>";
         }
+    }
+    if (emailTypeSelect) {
+        emailTypeSelect.addEventListener('change', function() {
+            updateEmailTypeDisplay(this.value);
+        });
+    }
+    if (customEmailInput) {
+        customEmailInput.addEventListener('input', function() {
+            const type = emailTypeSelect ? emailTypeSelect.value : 'account';
+            if (type === 'custom' && cardMetaEmailText) {
+                cardMetaEmailText.textContent = this.value.trim() || "<%= cardUser.email %>";
+            }
+        });
     }
 
     // Phone Live Update
@@ -1942,7 +1960,8 @@
             const bName = brandNameInput ? (brandNameInput.value.trim() || '<%= cardUser.username %> (Default)') : 'N/A';
             const plat = platformSelect ? platformSelect.value : 'Multiplatform';
             const hasEmail = showEmailToggle && showEmailToggle.checked;
-            const chosenEmail = (emailTypeCustom && emailTypeCustom.checked && customEmailInput.value.trim()) ? customEmailInput.value.trim() : '<%= cardUser.email %>';
+            const isCustomEmail = emailTypeSelect ? (emailTypeSelect.value === 'custom') : false;
+            const chosenEmail = (isCustomEmail && customEmailInput && customEmailInput.value.trim()) ? customEmailInput.value.trim() : '<%= cardUser.email %>';
             const hasPhone = showPhoneToggle && showPhoneToggle.checked;
             const phoneVal = (phoneInput && phoneInput.value.trim()) || 'Not set';
             const hasAge = showAgeToggle && showAgeToggle.checked;

@@ -653,8 +653,12 @@
             height: 100% !important;
         }
         
-        /* True Full-Screen Native App Experience on Mobile */
-        .fullscreen-chat-container {
+        body:not(.live-chat-active) .fullscreen-chat-container {
+            display: none !important;
+        }
+
+        /* True Full-Screen Native App Experience on Mobile when chat is active */
+        body.live-chat-active .fullscreen-chat-container {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;

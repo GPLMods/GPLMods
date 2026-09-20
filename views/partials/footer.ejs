@@ -234,7 +234,7 @@
             </script>
         <% } %>
 
-        <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
+        <div id="policy-modal-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100000; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.8);">
             <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; text-align: center; border-radius: 15px; max-width: 450px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h2 style="color: var(--gold); margin-bottom: 15px;">Welcome to GPL Mods</h2>
                 <p style="margin-bottom: 20px; color: var(--silver); line-height: 1.6;">To continue using GPL Mods, you must accept our <a href="/tos" target="_blank" style="color: var(--gold);">Terms of Service</a>. We use cookies to ensure you get the best experience on our website.</p>
@@ -272,7 +272,7 @@
 
 
         <!-- ======== NEWSLETTER POPUP ======== -->
-        <div id="newsletter-popup" class="newsletter-popup">
+        <div id="newsletter-popup" class="newsletter-popup" data-user-subscribed="<%= (typeof user !== 'undefined' && user && user.isSubscribedToNewsletter) ? 'true' : 'false' %>">
             <span class="newsletter-close" id="newsletter-close-btn">&times;</span>
             <h3><i class="fas fa-envelope-open-text" style="margin-right: 8px;"></i> Get Updates</h3>
             <p>Subscribe to our newsletter to get the latest mods, exclusive updates, and site news delivered straight to your inbox.</p>
@@ -362,7 +362,7 @@
                 border-radius: 50%;
                 box-shadow: 0 0 20px var(--glow-gold);
                 cursor: pointer;
-                z-index: 9999;
+                z-index: 9990;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -396,20 +396,39 @@
             }
             .gpl-chat-greeting.show { opacity: 1; transform: translateX(0); }
 
-            /* Mobile: raise chat button above bottom tab bar */
+            /* Mobile: position chat button and greeting cleanly */
             @media (max-width: 768px) {
                 .gpl-chat-btn {
-                    bottom: 80px;
+                    bottom: 20px;
+                    right: 18px;
+                    width: 52px;
+                    height: 52px;
+                }
+                .gpl-chat-btn img {
+                    width: 32px;
+                    height: 32px;
                 }
                 .gpl-chat-greeting {
-                    right: auto;
-                    bottom: 70px;
-                    left: 50%;
-                    transform: translateX(-50%) translateY(10px);
-                    font-size: 0.75em;
+                    right: 0;
+                    bottom: calc(100% + 12px);
+                    left: auto;
+                    transform: translateY(8px);
+                    font-size: 0.78em;
+                    max-width: calc(100vw - 40px);
+                    border-radius: 16px 16px 4px 16px;
                 }
                 .gpl-chat-greeting.show {
-                    transform: translateX(-50%) translateY(0);
+                    transform: translateY(0);
+                }
+                .gpl-chat-window {
+                    width: calc(100% - 24px);
+                    right: 12px;
+                    left: 12px;
+                    bottom: 78px;
+                    height: calc(100dvh - 90px);
+                    max-height: 580px;
+                    border-radius: 14px;
+                    z-index: 10002;
                 }
             }
 
@@ -443,9 +462,7 @@
                 pointer-events: auto;
             }
 
-            @media (max-width: 480px) {
-                .gpl-chat-window { width: calc(100% - 40px); right: 20px; bottom: 90px; }
-            }
+
 
             /* Header */
             .gpl-chat-header {
@@ -1003,7 +1020,14 @@
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
 
+            function isPolicyAccepted() {
+                const isExempt = ['/tos', '/privacy-policy'].includes(window.location.pathname);
+                if (isExempt) return true;
+                return localStorage.getItem('gplmods_policy_accepted') === 'true';
+            }
+
             function triggerGreetingMessage() {
+                if (!isPolicyAccepted()) return;
                 if (chatWindow && !chatWindow.classList.contains('open') && greeting) {
                     greeting.textContent = greetings[Math.floor(Math.random() * greetings.length)];
                     greeting.classList.add('show');
@@ -1016,11 +1040,26 @@
                 }
             }
 
-            // Initial 1st greeting display 5 seconds after page load if chat is closed
-            setTimeout(triggerGreetingMessage, 5000);
-            
-            // Subsequent randomized greetings every 120s
-            setInterval(triggerGreetingMessage, 120000);
+            let greetingTimer = null;
+            let greetingInterval = null;
+
+            function startGreetingSchedule() {
+                if (!isPolicyAccepted()) return;
+                if (!greetingTimer) {
+                    greetingTimer = setTimeout(triggerGreetingMessage, 5000);
+                }
+                if (!greetingInterval) {
+                    greetingInterval = setInterval(triggerGreetingMessage, 120000);
+                }
+            }
+
+            if (isPolicyAccepted()) {
+                startGreetingSchedule();
+            } else {
+                window.addEventListener('gplmods:policy-accepted', () => {
+                    startGreetingSchedule();
+                }, { once: true });
+            }
 
             // 2. Toggle Window & Shrink Handlers
             function closeChatWindow() {
@@ -1033,6 +1072,14 @@
             }
 
             function openChatWindow() {
+                if (!isPolicyAccepted()) {
+                    const polModal = document.getElementById('policy-modal-container');
+                    if (polModal) {
+                        polModal.style.display = 'flex';
+                        polModal.classList.add('show');
+                    }
+                    return;
+                }
                 if (!chatWindow) return;
                 chatWindow.classList.add('open');
                 if (chatBtn) chatBtn.classList.add('active');
@@ -1048,6 +1095,14 @@
 
             function toggleChatWindow() {
                 if (!chatWindow) return;
+                if (!isPolicyAccepted()) {
+                    const polModal = document.getElementById('policy-modal-container');
+                    if (polModal) {
+                        polModal.style.display = 'flex';
+                        polModal.classList.add('show');
+                    }
+                    return;
+                }
                 if (chatWindow.classList.contains('open')) {
                     closeChatWindow();
                 } else {
@@ -1055,8 +1110,8 @@
                 }
             }
 
-            // Auto-reopen chat only if user previously kept it open in this tab
-            if (sessionStorage.getItem('gplChatOpen') === 'true' && window.location.pathname !== '/support') {
+            // Auto-reopen chat only if user previously kept it open in this tab and policy accepted
+            if (isPolicyAccepted() && sessionStorage.getItem('gplChatOpen') === 'true' && window.location.pathname !== '/support') {
                 openChatWindow();
             }
 
