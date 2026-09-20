@@ -1535,21 +1535,23 @@
         if (actionsDrop) actionsDrop.classList.remove('open');
     }
 
-    // Copy Public Profile URL
+    // Copy Public Profile URL via Gateway
     function copyPublicProfileLink() {
-        const link = window.location.origin + '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
-        navigator.clipboard.writeText(link).then(() => {
-            alert('Public ID Card link copied to clipboard:\n' + link);
+        const currentPath = '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
+        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${encodeURIComponent(currentPath)}`;
+        navigator.clipboard.writeText(gatewayShareUrl).then(() => {
+            alert('Public ID Card link copied to clipboard:\n' + gatewayShareUrl);
         }).catch(() => {
-            prompt('Copy public card link:', link);
+            prompt('Copy public card link:', gatewayShareUrl);
         });
         const actionsDrop = document.getElementById('cardActionsDropdownWrap');
         if (actionsDrop) actionsDrop.classList.remove('open');
     }
 
-    // Share Card using Web Share API if supported
+    // Share Card using Web Share API if supported via Gateway
     async function shareCardNative() {
-        const link = window.location.origin + '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
+        const currentPath = '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
+        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${encodeURIComponent(currentPath)}`;
         const actionsDrop = document.getElementById('cardActionsDropdownWrap');
         if (actionsDrop) actionsDrop.classList.remove('open');
 
@@ -1558,7 +1560,7 @@
                 await navigator.share({
                     title: '<%= cardUser.username %> - GPLMods ID Card',
                     text: 'Check out my verified GPLMods digital credential!',
-                    url: link
+                    url: gatewayShareUrl
                 });
             } catch (err) {
                 if (err.name !== 'AbortError') copyPublicProfileLink();

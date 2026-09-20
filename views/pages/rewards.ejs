@@ -139,8 +139,13 @@
                         <input type="text" id="refLinkInput" readonly value="https://gplmods.mytunnel.org/?dest=/register?ref=<%= user.referralCode %>" style="width: 100%; padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: var(--gold); font-family: monospace; font-size: 1em; outline: none;">
                         
                         <!-- Clipboard Icon Button -->
-                        <button onclick="copyRefLink()" class="btn btn-primary" style="padding: 0 20px; font-size: 1.2em; border-radius: 6px; display: flex; align-items: center; justify-content: center;" title="Copy to Clipboard">
+                        <button type="button" onclick="copyRefLink()" class="btn btn-primary" style="padding: 0 18px; font-size: 1.1em; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Copy to Clipboard">
                             <i class="fas fa-clipboard"></i>
+                        </button>
+                        
+                        <!-- Native Share Button -->
+                        <button type="button" onclick="shareRefLink()" class="btn btn-secondary" style="padding: 0 18px; font-size: 1.1em; border-radius: 6px; display: flex; align-items: center; justify-content: center; border-color: var(--silver); color: var(--silver);" title="Share Referral Link">
+                            <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -198,22 +203,33 @@
 
 <script>
     function copyRefLink() {
-        // 1. Copy the text to clipboard
         const copyText = document.getElementById("refLinkInput");
         copyText.select();
         copyText.setSelectionRange(0, 99999); // For mobile devices
         navigator.clipboard.writeText(copyText.value);
         
-        // 2. Trigger the beautiful Toast Notification
         const toast = document.getElementById("copy-toast");
-        
-        // Add the 'show' class to slide it up and fade it in
         toast.classList.add("show");
-        
-        // Remove the 'show' class after 3 seconds to slide it back down
         setTimeout(() => {
             toast.classList.remove("show");
         }, 3000);
+    }
+
+    function shareRefLink() {
+        const currentPath = '/register?ref=<%= user.referralCode %>';
+        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${encodeURIComponent(currentPath)}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: 'Join GPL Mods with my referral code!',
+                text: 'Sign up on GPL Mods and get bonus points with my referral link:',
+                url: gatewayShareUrl
+            }).catch(err => {
+                if (err.name !== 'AbortError') copyRefLink();
+            });
+        } else {
+            copyRefLink();
+        }
     }
 </script>
 
