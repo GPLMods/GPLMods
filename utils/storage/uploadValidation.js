@@ -28,7 +28,7 @@ function getSubmissionValidationErrors({
     if (!modName) {
         errors.push('Mod name is required to submit the mod.');
     } else if (isValidNameFn && !isValidNameFn(modName)) {
-        errors.push('Mod name can only contain letters, numbers, and spaces.');
+        errors.push("Mod name can only contain letters, numbers, spaces, ':', and '-'. Emojis and other symbols are not allowed.");
     }
 
     if (!formData.modPlatform) {
@@ -67,8 +67,10 @@ function getSubmissionValidationErrors({
         errors.push('An icon is required to submit the mod.');
     }
 
-    const hasScreenshots = (screenshotKeys && screenshotKeys.length > 0) || (screenshots && screenshots.length > 0);
-    if (!hasScreenshots) {
+    const currentScreenshotsCount = (screenshotKeys && screenshotKeys.length) ? screenshotKeys.length : (screenshots ? screenshots.length : 0);
+    if (currentScreenshotsCount > 4) {
+        errors.push(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${currentScreenshotsCount - 4} of Screenshot`);
+    } else if (currentScreenshotsCount === 0) {
         errors.push('At least one screenshot is required to submit the mod.');
     }
 

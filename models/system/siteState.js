@@ -65,6 +65,22 @@ const SiteStateSchema = new Schema({
         type: String,
         trim: true
     }],
+    debuggerHourlyKey: {
+        type: String,
+        default: null
+    },
+    debuggerHourlyKeyExpiresAt: {
+        type: Date,
+        default: null
+    },
+    debuggerMasterKey: {
+        type: String,
+        default: 'OPAdmin@2026'
+    },
+    enableDevtoolProtection: {
+        type: Boolean,
+        default: true
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);

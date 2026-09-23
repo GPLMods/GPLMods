@@ -19,6 +19,7 @@
     .owner-card.failback::before { background: #00bcd4; }
     .owner-card.dns::before { background: #9c27b0; }
     .owner-card.improvmx::before { background: #ff9800; }
+    .owner-card.devtool::before { background: #e53935; }
 
     .owner-card:hover { border-color: #555; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
     
@@ -35,6 +36,7 @@
     .owner-card.failback .card-title i { color: #00bcd4; }
     .owner-card.dns .card-title i { color: #9c27b0; }
     .owner-card.improvmx .card-title i { color: #ff9800; }
+    .owner-card.devtool .card-title i { color: #e53935; }
     
     .card-desc { color: #aaa; font-size: 0.88em; margin: 0; line-height: 1.4; flex-grow: 1; }
     
@@ -402,6 +404,57 @@
             <button class="btn-action danger" style="background: #b71c1c; margin-top: 6px;" onclick="handleDataTermination(this)">
                 <i class="fas fa-skull-crossbones"></i> TERMINATE DATA
             </button>
+            <div class="status-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 10. DevTools & Debugger Protection -->
+    <div class="owner-card devtool">
+        <div class="card-title">
+            <div class="card-title-left"><i class="fas fa-shield-alt"></i> <span>DevTools & Debugger Protection</span></div>
+            <div class="owner-badge active"><i class="fas fa-lock"></i> Protected</div>
+        </div>
+        <p class="card-desc">Console inspection defense & tamper protection. Generates single-use 10–12 digit access keys rotated hourly.</p>
+        
+        <div style="background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.75em; color: #888; text-transform: uppercase; font-weight: 600;">Hourly Single-Use Key</span>
+                    <span style="font-size: 0.7em; color: var(--gold); background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 1px 6px; border-radius: 10px;">Auto-Rotates</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div id="ownerDebuggerKey" style="font-family: monospace; font-size: 1.3em; font-weight: 700; color: var(--gold); letter-spacing: 2px;">
+                        <%= typeof debuggerKey !== 'undefined' ? debuggerKey : 'N/A' %>
+                    </div>
+                    <button type="button" class="btn-action" onclick="copyOwnerKey('ownerDebuggerKey', this)" style="padding: 4px 10px; font-size: 0.8em; flex: none;">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid #222; padding-top: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.75em; color: #888; text-transform: uppercase; font-weight: 600;">Permanent Master Key</span>
+                    <span style="font-size: 0.7em; color: #ff5252; background: rgba(244,67,54,0.1); border: 1px solid rgba(244,67,54,0.3); padding: 1px 6px; border-radius: 10px;">Permanent</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div id="ownerMasterKey" style="font-family: monospace; font-size: 1.1em; font-weight: 700; color: #ff5252;">
+                        <%= typeof debuggerMasterKey !== 'undefined' ? debuggerMasterKey : 'OPAdmin@2026' %>
+                    </div>
+                    <button type="button" class="btn-action" onclick="copyOwnerKey('ownerMasterKey', this)" style="padding: 4px 10px; font-size: 0.8em; flex: none;">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-group">
+            <button type="button" class="btn-action primary" onclick="generateOwnerDebuggerKey(this)">
+                <i class="fas fa-sync-alt"></i> Rotate Hourly Key Now
+            </button>
+            <a href="/status" class="btn-action btn-link">
+                <i class="fas fa-history"></i> Audit Logs (<%= typeof recentDevtoolLogs !== 'undefined' && recentDevtoolLogs ? recentDevtoolLogs.length : 0 %>)
+            </a>
             <div class="status-feedback"></div>
         </div>
     </div>
@@ -1037,6 +1090,55 @@
             setTimeout(() => {
                 feedbackEl.style.display = 'none';
             }, 6000);
+        }
+    }
+
+    function copyOwnerKey(elemId, btn) {
+        const text = document.getElementById(elemId).innerText.trim();
+        navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check" style="color:#4caf50;"></i>';
+            setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }).catch(() => {
+            alert('Failed to copy key: ' + text);
+        });
+    }
+
+    async function generateOwnerDebuggerKey(btn) {
+        const orig = btn.innerHTML;
+        const feedbackEl = btn.closest('.action-group').querySelector('.status-feedback');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        feedbackEl.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/owner/debugger/generate-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            feedbackEl.style.display = 'block';
+
+            if (data.success && data.key) {
+                document.getElementById('ownerDebuggerKey').innerText = data.key;
+                feedbackEl.style.color = 'var(--green)';
+                feedbackEl.textContent = '✔ New 11-digit key active: ' + data.key;
+                showOwnerSuccessModal({
+                    title: 'New Debugger Key Generated',
+                    message: 'Fresh single-use access code: ' + data.key + ' (Expires in 1 hour or upon use).'
+                });
+            } else {
+                feedbackEl.style.color = 'var(--red)';
+                feedbackEl.textContent = '✖ ' + (data.message || data.error || 'Failed to generate key');
+            }
+        } catch (err) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = 'var(--red)';
+            feedbackEl.textContent = '✖ Error: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            setTimeout(() => { feedbackEl.style.display = 'none'; }, 6000);
         }
     }
 

@@ -51,12 +51,14 @@
     .msg-item[data-type="error"] { border-left-color: var(--red); }
     .msg-item[data-type="success"] { border-left-color: var(--green); }
     .msg-item[data-type="mod-update-request"] { border-left-color: var(--blue); }
+    .msg-item[data-type="dmca-notice"] { border-left-color: #ff3366; }
 
     .msg-type-icon { font-size: 0.9em; color: var(--silver); }
     .msg-item[data-type="warning"] .msg-type-icon { color: var(--gold); }
     .msg-item[data-type="error"] .msg-type-icon { color: var(--red); }
     .msg-item[data-type="success"] .msg-type-icon { color: var(--green); }
     .msg-item[data-type="mod-update-request"] .msg-type-icon { color: var(--blue); }
+    .msg-item[data-type="dmca-notice"] .msg-type-icon { color: #ff3366; }
 
     .msg-header {
         display: flex;
@@ -141,6 +143,7 @@
                         if (notification.type === 'error') { iconClass = 'fa-times-circle'; }
                         if (notification.type === 'success') { iconClass = 'fa-check-circle'; }
                         if (notification.type === 'mod-update-request') { iconClass = 'fa-sync-alt'; }
+                        if (notification.type === 'dmca-notice') { iconClass = 'fa-shield-alt'; }
                     %>
 
                     <div class="msg-item <%= notification.isRead ? 'read' : 'unread' %>" data-id="<%= notification._id %>" data-type="<%= notification.type %>">
@@ -159,6 +162,17 @@
 
                         <div class="msg-body">
                             <%- notification.message.replace(/\n/g, '<br>') %>
+
+                            <% if (notification.type === 'dmca-notice') { %>
+                                <div style="margin-top: 15px; padding: 12px 16px; background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.4); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                                    <span style="color: #ff6688; font-weight: 600; font-size: 0.95em;">
+                                        <i class="fas fa-balance-scale" style="margin-right: 6px;"></i> DMCA Copyright Action Required
+                                    </span>
+                                    <a href="/admin/dmca" style="background: #ff3366; color: #fff; padding: 7px 15px; border-radius: 6px; text-decoration: none; font-size: 0.9em; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">
+                                        Open DMCA Console <i class="fas fa-external-link-alt" style="font-size: 0.8em;"></i>
+                                    </a>
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 <% }) %>

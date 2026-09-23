@@ -54,6 +54,50 @@
     .btn-draft { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
     .btn-draft:hover { transform: scale(1.05); }
 
+    /* DMCA Restricted Content Section */
+    .dmca-restricted-section {
+        background: rgba(255, 51, 102, 0.05);
+        border: 1px solid rgba(255, 51, 102, 0.3);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 35px;
+    }
+    .dmca-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 51, 102, 0.2);
+        padding-bottom: 15px;
+    }
+    .dmca-section-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .dmca-header-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(255, 51, 102, 0.15);
+        color: #ff3366;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3em;
+    }
+    .dmca-card-item {
+        background-color: var(--dark-gray);
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(255, 51, 102, 0.4);
+        position: relative;
+    }
+
     @media (max-width: 768px) {
         .page-actions { flex-direction: column; align-items: flex-start; }
         .filter-tabs { width: 100%; }
@@ -87,6 +131,75 @@
                 <button class="filter-btn" data-category="wordpress">WordPress</button>
             </div>
         </div>
+
+        <!-- DMCA Inquiries & Restricted Files Section -->
+        <% if (typeof dmcaUploads !== 'undefined' && dmcaUploads && dmcaUploads.length > 0) { %>
+            <div class="dmca-restricted-section">
+                <div class="dmca-section-header">
+                    <div class="dmca-section-header-left">
+                        <div class="dmca-header-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div>
+                            <h2 style="margin: 0; color: var(--white); font-size: 1.4em;">
+                                DMCA Inquiries & <span style="color: #ff3366;">Restricted Files</span>
+                            </h2>
+                            <p style="margin: 3px 0 0 0; color: var(--silver); font-size: 0.9em;">
+                                Files temporarily restricted from public download pending administrative verification.
+                            </p>
+                        </div>
+                    </div>
+                    <span style="background: rgba(255, 51, 102, 0.2); color: #ff6688; border: 1px solid #ff3366; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85em; text-transform: uppercase;">
+                        <%= dmcaUploads.length %> <%= dmcaUploads.length === 1 ? 'File Under Review' : 'Files Under Review' %>
+                    </span>
+                </div>
+
+                <div class="uploads-list" style="margin-bottom: 10px;">
+                    <% dmcaUploads.forEach(file => { %>
+                        <div class="dmca-card-item">
+                            <div class="mod-card-image" style="background-color: #120a0d;">
+                                <span class="status-badge-top" style="background: #ff3366; color: #fff; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);">
+                                    <i class="fas fa-lock"></i> Restricted (DMCA)
+                                </span>
+                                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                                </span>
+                                <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon">
+                            </div>
+
+                            <div class="mod-card-content">
+                                <h3><%= file.name %></h3>
+                                <div class="item-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-label">Version</span>
+                                        <span class="stat-value"><%= file.version %></span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">Status</span>
+                                        <span class="stat-value" style="color: #ff6688; font-weight: 700;">Under Review</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">Restricted Since</span>
+                                        <span class="stat-value"><%= timeAgo(file.dmcaHiddenAt || file.updatedAt) %></span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">Category</span>
+                                        <span class="stat-value"><%= file.category %></span>
+                                    </div>
+                                </div>
+
+                                <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 0.85em; color: var(--silver); line-height: 1.5;">
+                                    <strong style="color: #ff88a3; display: block; margin-bottom: 4px;">
+                                        <i class="fas fa-info-circle"></i> Verification In Progress
+                                    </strong>
+                                    A DMCA copyright claim has been filed regarding this file. Public download links have been temporarily restricted while administrators review the claim. If dismissed as a False Claim, the file will be automatically restored.
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
 
         <div class="uploads-list">
             <% if(uploads && uploads.length > 0) { %>
@@ -167,7 +280,7 @@
                                     <% } %>
                                     
                                     <a href="/mods/<%= file._id %>/edit" class="action-btn btn-edit">
-                                        <i class="fas fa-pen"></i> <%= file.status === 'rejected' ? 'Fix' : 'Edit Info' %>
+                                        <i class="fas fa-pen"></i> <%= file.status === 'rejected' ? 'Fix' : (file.status === 'draft' ? 'Resume Draft' : 'Edit Info') %>
                                     </a>
 
                                     <% if (file.olderVersions && file.olderVersions.length > 0) { %>
@@ -176,7 +289,7 @@
                                         </button>
                                     <% } %>
                                     
-                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="Delete Mod">
+                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="<%= file.status === 'draft' ? 'Discard Draft' : 'Delete Mod' %>">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 <% } %>

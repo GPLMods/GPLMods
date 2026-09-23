@@ -1,0 +1,826 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .dmca-admin-container {
+        max-width: 1200px;
+        margin: 0 auto 60px auto;
+        padding: 0 15px;
+    }
+    .dmca-admin-header {
+        text-align: center;
+        padding: 40px 20px 25px;
+        border-bottom: 1px solid #333;
+        margin-bottom: 30px;
+    }
+    .dmca-admin-header h1 {
+        font-size: 2.6em;
+        color: var(--white);
+        margin: 0 0 10px 0;
+    }
+    .dmca-admin-header h1 span {
+        color: #ff3366;
+        text-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
+    }
+    .dmca-admin-header p {
+        color: var(--silver);
+        margin: 0;
+        font-size: 1.05em;
+    }
+
+    /* Admin Navigation Tabs */
+    .admin-nav-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        border-bottom: 1px solid #222;
+        padding-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .admin-nav-tab {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--silver);
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .admin-nav-tab:hover {
+        color: var(--white);
+        border-color: #555;
+    }
+    .admin-nav-tab.active {
+        background: rgba(255, 51, 102, 0.15);
+        color: #ff3366;
+        border-color: #ff3366;
+        box-shadow: 0 0 12px rgba(255, 51, 102, 0.2);
+    }
+
+    /* Summary Stats Cards */
+    .dmca-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: transform 0.2s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4em;
+    }
+    .stat-icon.total { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
+    .stat-icon.open { background: rgba(33, 150, 243, 0.1); color: var(--blue); }
+    .stat-icon.hidden { background: rgba(255, 51, 102, 0.1); color: #ff3366; }
+    .stat-icon.false-claim { background: rgba(46, 204, 113, 0.1); color: var(--green); }
+    .stat-icon.action { background: rgba(229, 57, 53, 0.1); color: var(--red); }
+    .stat-info h3 { margin: 0; font-size: 1.8em; color: var(--white); line-height: 1; }
+    .stat-info p { margin: 4px 0 0 0; color: var(--silver); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Alert Banner */
+    .dmca-alert-banner {
+        padding: 14px 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .dmca-alert-banner.success { background: rgba(46, 204, 113, 0.12); border: 1px solid #2ecc71; color: #2ecc71; }
+    .dmca-alert-banner.error { background: rgba(255, 77, 77, 0.12); border: 1px solid #ff4d4d; color: #ff4d4d; }
+
+    /* Filter Bar */
+    .filter-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+    .filter-pill {
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: var(--silver);
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .filter-pill:hover, .filter-pill.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Claim Cards */
+    .dmca-claim-card {
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 14px;
+        margin-bottom: 25px;
+        overflow: hidden;
+        border-left: 5px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .dmca-claim-card:hover { border-color: #555; }
+    .dmca-claim-card[data-status="open"] { border-left-color: var(--blue); }
+    .dmca-claim-card[data-status="auto-hidden"] { border-left-color: #ff3366; }
+    .dmca-claim-card[data-status="false-claim"] { border-left-color: var(--green); }
+    .dmca-claim-card[data-status="action-taken"] { border-left-color: var(--red); }
+    .dmca-claim-card[data-status="rejected"] { border-left-color: #777; }
+
+    .claim-header {
+        padding: 18px 24px;
+        background: rgba(0, 0, 0, 0.25);
+        border-bottom: 1px solid #222;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .claim-id-badge {
+        font-size: 1.1em;
+        font-weight: 700;
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .claim-status-pill {
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-open-pill { background: rgba(33, 150, 243, 0.15); color: #64b5f6; border: 1px solid #2196f3; }
+    .status-hidden-pill { background: rgba(255, 51, 102, 0.15); color: #ff6688; border: 1px solid #ff3366; }
+    .status-false-pill { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; }
+    .status-action-pill { background: rgba(229, 57, 53, 0.15); color: #ff5252; border: 1px solid #e53935; }
+    .status-rejected-pill { background: rgba(150, 150, 150, 0.15); color: #aaa; border: 1px solid #666; }
+
+    .claim-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .complainant-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        background: #111;
+        padding: 18px;
+        border-radius: 10px;
+        border: 1px solid #222;
+    }
+    .comp-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .comp-label {
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #888;
+    }
+    .comp-val {
+        color: var(--white);
+        font-size: 0.95em;
+        font-weight: 500;
+        word-break: break-all;
+    }
+    .comp-val a {
+        color: var(--gold);
+        text-decoration: none;
+    }
+    .comp-val a:hover {
+        text-decoration: underline;
+    }
+
+    /* Timer Callout */
+    .timer-callout {
+        padding: 14px 18px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .timer-callout.pending {
+        background: rgba(33, 150, 243, 0.08);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+    }
+    .timer-callout.hidden {
+        background: rgba(255, 51, 102, 0.08);
+        border: 1px solid rgba(255, 51, 102, 0.3);
+    }
+    .timer-callout.resolved {
+        background: rgba(46, 204, 113, 0.08);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+
+    /* Reported Files Cards */
+    .reported-files-section h4 {
+        color: var(--white);
+        margin: 0 0 12px 0;
+        font-size: 1.05em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .reported-files-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .reported-file-item {
+        background: #111;
+        border: 1px solid #222;
+        border-radius: 10px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .reported-file-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-width: 250px;
+    }
+    .reported-file-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+        background: #000;
+        object-fit: cover;
+        border: 1px solid #333;
+    }
+    .file-details h5 {
+        margin: 0 0 4px 0;
+        color: var(--white);
+        font-size: 1.05em;
+    }
+    .file-meta-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 0.85em;
+        color: var(--silver);
+    }
+    .file-tag {
+        font-size: 0.75em;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .tag-main { background: #332200; color: var(--gold); border: 1px solid #664400; }
+    .tag-variant { background: #002233; color: var(--blue); border: 1px solid #004466; }
+    .tag-hidden { background: #330011; color: #ff4d79; border: 1px solid #660022; }
+    .tag-live { background: #003311; color: #2ecc71; border: 1px solid #006622; }
+
+    /* Action Buttons in Claim Card */
+    .claim-actions {
+        padding: 18px 24px;
+        background: rgba(0,0,0,0.2);
+        border-top: 1px solid #222;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .claim-btn {
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.9em;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+    .btn-hide-now {
+        background: #ff3366;
+        color: #fff;
+    }
+    .btn-hide-now:hover {
+        background: #e02253;
+        box-shadow: 0 0 12px rgba(255, 51, 102, 0.4);
+    }
+    .btn-false-claim {
+        background: rgba(46, 204, 113, 0.12);
+        border-color: #2ecc71;
+        color: #2ecc71;
+    }
+    .btn-false-claim:hover {
+        background: #2ecc71;
+        color: #000;
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+    }
+    .btn-delete-file {
+        background: rgba(229, 57, 53, 0.12);
+        border-color: #e53935;
+        color: #ff5252;
+    }
+    .btn-delete-file:hover {
+        background: #e53935;
+        color: #fff;
+        box-shadow: 0 0 12px rgba(229, 57, 53, 0.4);
+    }
+    .btn-reject {
+        background: transparent;
+        border-color: #555;
+        color: var(--silver);
+    }
+    .btn-reject:hover {
+        border-color: #888;
+        color: var(--white);
+    }
+
+    /* Modal Styling */
+    .dmca-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.82);
+        backdrop-filter: blur(6px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .dmca-modal.show { display: flex; }
+    .dmca-modal-content {
+        background: var(--dark-gray);
+        border: 1px solid #444;
+        border-radius: 14px;
+        padding: 30px;
+        max-width: 520px;
+        width: 100%;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        text-align: left;
+    }
+    .dmca-modal-content h3 {
+        margin: 0 0 10px 0;
+        color: var(--white);
+        font-size: 1.4em;
+    }
+    .dmca-modal-content p {
+        color: var(--silver);
+        margin: 0 0 18px 0;
+        font-size: 0.95em;
+        line-height: 1.5;
+    }
+    .dmca-modal-content textarea {
+        width: 100%;
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--white);
+        font-family: inherit;
+        font-size: 0.95em;
+        resize: vertical;
+        outline: none;
+        margin-bottom: 20px;
+    }
+    .dmca-modal-content textarea:focus {
+        border-color: var(--gold);
+    }
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+</style>
+
+<main>
+    <div class="container" style="padding-top: 1.5rem;">
+        <div class="back-btn-wrapper">
+            <a href="/admin/reports" class="dynamic-back-btn">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
+    </div>
+
+    <div class="dmca-admin-header">
+        <div class="container">
+            <h1>DMCA <span>Compliance & Legal Console</span></h1>
+            <p>Automated link protection, variant promotions, false claim restorations, and permanent removals.</p>
+        </div>
+    </div>
+
+    <div class="dmca-admin-container">
+        <!-- Navigation Tabs -->
+        <div class="admin-nav-tabs">
+            <a href="/admin/reports" class="admin-nav-tab">
+                <i class="fas fa-flag"></i> Community Reports
+            </a>
+            <a href="/admin/dmca" class="admin-nav-tab active">
+                <i class="fas fa-balance-scale"></i> DMCA Notices & Takedowns
+            </a>
+        </div>
+
+        <!-- Success/Error Query Feedback -->
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="dmca-alert-banner success">
+                <i class="fas fa-check-circle" style="font-size: 1.3em;"></i>
+                <%= success %>
+            </div>
+        <% } %>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="dmca-alert-banner error">
+                <i class="fas fa-exclamation-triangle" style="font-size: 1.3em;"></i>
+                <%= error %>
+            </div>
+        <% } %>
+
+        <!-- Statistics Grid -->
+        <div class="dmca-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon total"><i class="fas fa-folder-open"></i></div>
+                <div class="stat-info">
+                    <h3><%= stats.total %></h3>
+                    <p>Total Notices</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon open"><i class="fas fa-hourglass-half"></i></div>
+                <div class="stat-info">
+                    <h3><%= stats.open %></h3>
+                    <p>In 24h Window</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon hidden"><i class="fas fa-eye-slash"></i></div>
+                <div class="stat-info">
+                    <h3><%= stats.autoHidden %></h3>
+                    <p>Links Hidden</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon false-claim"><i class="fas fa-undo-alt"></i></div>
+                <div class="stat-info">
+                    <h3><%= stats.falseClaims %></h3>
+                    <p>False Claims</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon action"><i class="fas fa-trash-alt"></i></div>
+                <div class="stat-info">
+                    <h3><%= stats.actionTaken %></h3>
+                    <p>Action Taken</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <button class="filter-pill active" onclick="filterClaims('all', this)">All Notices (<%= claims.length %>)</button>
+            <button class="filter-pill" onclick="filterClaims('open', this)">In 24h Window (<%= stats.open %>)</button>
+            <button class="filter-pill" onclick="filterClaims('auto-hidden', this)">Links Hidden (<%= stats.autoHidden %>)</button>
+            <button class="filter-pill" onclick="filterClaims('false-claim', this)">False Claims (<%= stats.falseClaims %>)</button>
+            <button class="filter-pill" onclick="filterClaims('action-taken', this)">Action Taken (<%= stats.actionTaken %>)</button>
+        </div>
+
+        <!-- Claims List -->
+        <div id="claims-container">
+            <% if (claims && claims.length > 0) { %>
+                <% claims.forEach(claim => { %>
+                    <div class="dmca-claim-card" data-status="<%= claim.status %>">
+                        <!-- Header -->
+                        <div class="claim-header">
+                            <div class="claim-id-badge">
+                                <i class="fas fa-shield-alt" style="color: #ff3366;"></i>
+                                Notice #<%= claim._id.toString().slice(-6).toUpperCase() %>
+                                <span style="font-size: 0.8em; font-weight: normal; color: var(--silver); margin-left: 8px;">
+                                    Filed <%= timeAgo(claim.createdAt) %> (<%= new Date(claim.createdAt).toLocaleDateString() %>)
+                                </span>
+                            </div>
+                            <div>
+                                <% if (claim.status === 'open') { %>
+                                    <span class="claim-status-pill status-open-pill">
+                                        <i class="fas fa-clock"></i> 24h Countdown Active
+                                    </span>
+                                <% } else if (claim.status === 'auto-hidden') { %>
+                                    <span class="claim-status-pill status-hidden-pill">
+                                        <i class="fas fa-eye-slash"></i> Links Auto-Hidden
+                                    </span>
+                                <% } else if (claim.status === 'false-claim') { %>
+                                    <span class="claim-status-pill status-false-pill">
+                                        <i class="fas fa-check"></i> False Claim (Restored)
+                                    </span>
+                                <% } else if (claim.status === 'action-taken') { %>
+                                    <span class="claim-status-pill status-action-pill">
+                                        <i class="fas fa-trash-alt"></i> Action Taken (Deleted)
+                                    </span>
+                                <% } else { %>
+                                    <span class="claim-status-pill status-rejected-pill">
+                                        <%= claim.status %>
+                                    </span>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="claim-body">
+                            <!-- Complainant Information -->
+                            <div class="complainant-grid">
+                                <div class="comp-field">
+                                    <span class="comp-label">Complainant</span>
+                                    <span class="comp-val"><%= claim.fullName %></span>
+                                </div>
+                                <div class="comp-field">
+                                    <span class="comp-label">Company Email</span>
+                                    <span class="comp-val">
+                                        <a href="mailto:<%= claim.email %>"><%= claim.email %></a>
+                                    </span>
+                                </div>
+                                <div class="comp-field">
+                                    <span class="comp-label">Copyright Holder</span>
+                                    <span class="comp-val"><%= claim.copyrightHolder %></span>
+                                </div>
+                                <div class="comp-field">
+                                    <span class="comp-label">Original Work</span>
+                                    <span class="comp-val">
+                                        <a href="<%= claim.originalWorkUrl %>" target="_blank" rel="noopener noreferrer">
+                                            <%= claim.originalWorkUrl.length > 35 ? claim.originalWorkUrl.substring(0, 32) + '...' : claim.originalWorkUrl %>
+                                            <i class="fas fa-external-link-alt" style="font-size: 0.8em; margin-left: 4px;"></i>
+                                        </a>
+                                    </span>
+                                </div>
+                                <div class="comp-field">
+                                    <span class="comp-label">Signature</span>
+                                    <span class="comp-val" style="font-style: italic;"><%= claim.signature %></span>
+                                </div>
+                            </div>
+
+                            <!-- Schedule & Status Timer Callout -->
+                            <% if (claim.status === 'open') { %>
+                                <% 
+                                    const deadline = new Date(claim.scheduledHideAt);
+                                    const diffMs = deadline - now;
+                                    const hoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+                                    const minutesLeft = Math.max(0, Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)));
+                                %>
+                                <div class="timer-callout pending">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <i class="fas fa-hourglass-start" style="color: var(--blue); font-size: 1.5em;"></i>
+                                        <div>
+                                            <strong style="color: var(--white); font-size: 1em;">
+                                                Automated Takedown Scheduled:
+                                                <%= hoursLeft %>h <%= minutesLeft %>m remaining
+                                            </strong>
+                                            <p style="margin: 3px 0 0 0; color: var(--silver); font-size: 0.85em;">
+                                                Target: <%= deadline.toLocaleString() %>. Links remain publicly accessible until deadline or manual hide.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <form action="/admin/dmca/<%= claim._id %>/hide-now" method="POST" style="margin: 0;">
+                                        <button type="submit" class="claim-btn btn-hide-now" onclick="return confirm('Immediately hide links for this claim now?');">
+                                            <i class="fas fa-bolt"></i> Hide Links Now
+                                        </button>
+                                    </form>
+                                </div>
+                            <% } else if (claim.status === 'auto-hidden') { %>
+                                <div class="timer-callout hidden">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <i class="fas fa-shield-virus" style="color: #ff3366; font-size: 1.5em;"></i>
+                                        <div>
+                                            <strong style="color: #ff6688; font-size: 1em;">
+                                                Public Link Access Restricted
+                                            </strong>
+                                            <p style="margin: 3px 0 0 0; color: var(--silver); font-size: 0.85em;">
+                                                Files are hidden from public download and isolated from regular dashboards. Please verify and resolve below.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } else if (claim.adminResolution) { %>
+                                <div class="timer-callout resolved">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <i class="fas fa-check-double" style="color: var(--green); font-size: 1.5em;"></i>
+                                        <div>
+                                            <strong style="color: var(--white); font-size: 1em;">
+                                                Resolution: <%= claim.adminResolution.resolutionType %>
+                                            </strong>
+                                            <p style="margin: 3px 0 0 0; color: var(--silver); font-size: 0.85em;">
+                                                Resolved by <%= claim.adminResolution.resolvedBy %> on <%= new Date(claim.adminResolution.resolvedAt).toLocaleDateString() %>. Note: "<%= claim.adminResolution.notes %>"
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } %>
+
+                            <!-- Reported Files Section -->
+                            <div class="reported-files-section">
+                                <h4><i class="fas fa-link" style="color: var(--gold);"></i> Reported URL(s) & Files (<%= claim.reportedFiles.length %>)</h4>
+                                <div class="reported-files-list">
+                                    <% claim.reportedFiles.forEach(item => { %>
+                                        <div class="reported-file-item">
+                                            <div class="reported-file-info">
+                                                <% if (item.file) { %>
+                                                    <img src="<%= item.file.signedIconUrl || '/images/default-app-icon.png' %>" class="reported-file-icon" alt="icon">
+                                                    <div class="file-details">
+                                                        <h5>
+                                                            <a href="/mods/<%= item.file.category %>/<%= item.file.slug || item.file._id %>" target="_blank" style="color: var(--white); text-decoration: none;">
+                                                                <%= item.file.name %>
+                                                                <i class="fas fa-external-link-alt" style="font-size: 0.75em; color: var(--silver); margin-left: 4px;"></i>
+                                                            </a>
+                                                        </h5>
+                                                        <div class="file-meta-row">
+                                                            <span>v<%= item.file.version || '1.0' %></span>
+                                                            <span>&bull;</span>
+                                                            <span>Uploader: <strong><%= item.file.uploader %></strong></span>
+                                                            <span>&bull;</span>
+                                                            <span><%= item.file.category %></span>
+                                                        </div>
+                                                    </div>
+                                                <% } else { %>
+                                                    <div class="reported-file-icon" style="display: flex; align-items: center; justify-content: center; color: #555;">
+                                                        <i class="fas fa-globe"></i>
+                                                    </div>
+                                                    <div class="file-details">
+                                                        <h5 style="word-break: break-all; color: var(--silver); font-family: monospace; font-size: 0.9em;">
+                                                            <%= item.originalUrl %>
+                                                        </h5>
+                                                        <span style="font-size: 0.8em; color: #777;">(External or unindexed link)</span>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+
+                                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                <span class="file-tag <%= item.targetType === 'variant' ? 'tag-variant' : 'tag-main' %>">
+                                                    <%= item.targetType === 'variant' ? 'Variant' : 'Main Mod' %>
+                                                </span>
+
+                                                <% if (item.isHidden || (item.file && item.file.isDmcaHidden)) { %>
+                                                    <span class="file-tag tag-hidden"><i class="fas fa-lock"></i> Hidden</span>
+                                                <% } else { %>
+                                                    <span class="file-tag tag-live"><i class="fas fa-check"></i> Live</span>
+                                                <% } %>
+
+                                                <% if (item.promotedVariant) { %>
+                                                    <span class="file-tag" style="background: rgba(33, 150, 243, 0.2); color: #64b5f6; border: 1px solid #2196f3;">
+                                                        <i class="fas fa-exchange-alt"></i> Variant Promoted: <%= item.promotedVariant.name || 'Active' %>
+                                                    </span>
+                                                <% } %>
+
+                                                <% if (item.file && claim.status !== 'action-taken') { %>
+                                                    <button type="button" class="claim-btn btn-delete-file" style="padding: 5px 12px; font-size: 0.8em;" onclick="openDeleteFileModal('<%= claim._id %>', '<%= item.file._id %>', '<%= item.file.name.replace(/'/g, '') %>')">
+                                                        <i class="fas fa-trash"></i> Delete File
+                                                    </button>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Footer -->
+                        <div class="claim-actions">
+                            <% if (claim.status === 'open' || claim.status === 'auto-hidden') { %>
+                                <button type="button" class="claim-btn btn-false-claim" onclick="openFalseClaimModal('<%= claim._id %>')">
+                                    <i class="fas fa-undo"></i> Mark as False Claim & Restore
+                                </button>
+                                <form action="/admin/dmca/<%= claim._id %>/reject" method="POST" style="margin: 0;">
+                                    <button type="submit" class="claim-btn btn-reject" onclick="return confirm('Reject this DMCA notice without taking further action?');">
+                                        <i class="fas fa-times"></i> Reject Notice
+                                    </button>
+                                </form>
+                            <% } else if (claim.status === 'false-claim') { %>
+                                <span style="color: var(--green); font-size: 0.9em; font-weight: 600;">
+                                    <i class="fas fa-check-circle"></i> Restored to public download & uploader dashboard
+                                </span>
+                            <% } else if (claim.status === 'action-taken') { %>
+                                <span style="color: var(--red); font-size: 0.9em; font-weight: 600;">
+                                    <i class="fas fa-trash-alt"></i> Infringing material permanently deleted
+                                </span>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 14px; border: 1px dashed #444;">
+                    <i class="fas fa-balance-scale" style="font-size: 3.5em; color: #444; margin-bottom: 15px;"></i>
+                    <h2 style="color: var(--white); margin: 0 0 8px 0;">No DMCA Notices</h2>
+                    <p style="color: var(--silver); margin: 0;">No copyright takedown requests have been filed.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</main>
+
+<!-- False Claim Resolution Modal -->
+<div id="false-claim-modal" class="dmca-modal">
+    <div class="dmca-modal-content">
+        <h3 style="color: var(--green);"><i class="fas fa-undo-alt" style="margin-right: 8px;"></i> Mark as False Claim</h3>
+        <p>This will immediately restore all affected files, un-hide public download links, revert any temporary variant promotions, and restore the mod to the uploader's dashboard.</p>
+        <form id="false-claim-form" method="POST" action="">
+            <label style="display: block; color: var(--silver); font-size: 0.85em; margin-bottom: 6px;">Administrative Resolution Notes:</label>
+            <textarea name="notes" rows="3" required placeholder="e.g., Complainant failed to prove ownership / Free GPL open source software / Inconclusive evidence..."></textarea>
+            <div class="modal-actions">
+                <button type="button" class="claim-btn btn-reject" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="claim-btn btn-false-claim">Confirm & Restore Files</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirm Infringement Delete Modal -->
+<div id="delete-file-modal" class="dmca-modal">
+    <div class="dmca-modal-content">
+        <h3 style="color: var(--red);"><i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Confirm Infringement & Delete</h3>
+        <p>Are you sure you want to permanently delete <strong id="delete-file-name" style="color: var(--white);"></strong>? This will purge the file from cloud storage, reviews, and records, and mark this DMCA complaint as Action Taken.</p>
+        <form id="delete-file-form" method="POST" action="">
+            <label style="display: block; color: var(--silver); font-size: 0.85em; margin-bottom: 6px;">Resolution Notes (optional):</label>
+            <textarea name="notes" rows="2" placeholder="e.g., Copyright violation confirmed with copyright holder. File removed."></textarea>
+            <div class="modal-actions">
+                <button type="button" class="claim-btn btn-reject" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="claim-btn btn-delete-file">Permanently Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function filterClaims(status, btnElement) {
+        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        const cards = document.querySelectorAll('.dmca-claim-card');
+        cards.forEach(card => {
+            if (status === 'all' || card.dataset.status === status) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function openFalseClaimModal(claimId) {
+        const modal = document.getElementById('false-claim-modal');
+        const form = document.getElementById('false-claim-form');
+        form.action = `/admin/dmca/${claimId}/false-claim`;
+        modal.classList.add('show');
+    }
+
+    function openDeleteFileModal(claimId, fileId, fileName) {
+        const modal = document.getElementById('delete-file-modal');
+        const form = document.getElementById('delete-file-form');
+        const nameSpan = document.getElementById('delete-file-name');
+        nameSpan.textContent = `"${fileName}"`;
+        form.action = `/admin/dmca/${claimId}/delete-file/${fileId}`;
+        modal.classList.add('show');
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.dmca-modal').forEach(m => m.classList.remove('show'));
+    }
+
+    // Close on background click
+    document.querySelectorAll('.dmca-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModals();
+        });
+    });
+</script>
+
+<%- include('../../partials/footer') %>

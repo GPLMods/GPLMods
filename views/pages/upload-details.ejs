@@ -418,6 +418,112 @@
         user-select: none;
     }
     .template-helper-btn:hover { background: var(--gold); color: var(--black); }
+
+    /* Dynamic Screenshot Editor Styles */
+    .screenshot-editor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .screenshot-card {
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    .screenshot-card.excess {
+        border: 2px solid var(--red);
+        background: rgba(229, 57, 53, 0.05);
+    }
+    .screenshot-thumb-box {
+        position: relative;
+        width: 100%;
+        padding-top: 60%;
+        background: #000;
+        overflow: hidden;
+    }
+    .screenshot-thumb-box img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .screenshot-badge {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        background: rgba(0, 0, 0, 0.75);
+        color: var(--white);
+        font-size: 0.75em;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        z-index: 2;
+        border: 1px solid #444;
+    }
+    .screenshot-badge.cover {
+        background: var(--gold);
+        color: var(--black);
+        border: 1px solid var(--gold);
+    }
+    .screenshot-badge.excess-badge {
+        background: var(--red);
+        color: var(--white);
+        border: 1px solid var(--red);
+    }
+    .screenshot-card-actions {
+        display: flex;
+        justify-content: space-around;
+        padding: 8px 4px;
+        background: #181818;
+        border-top: 1px solid #282828;
+    }
+    .screenshot-action-btn {
+        background: transparent;
+        border: none;
+        color: var(--silver);
+        font-size: 0.9em;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 4px;
+        transition: color 0.2s, background 0.2s;
+    }
+    .screenshot-action-btn:hover {
+        color: var(--gold);
+        background: rgba(255, 215, 0, 0.1);
+    }
+    .screenshot-action-btn.btn-remove:hover {
+        color: var(--red);
+        background: rgba(229, 57, 53, 0.1);
+    }
+    .screenshot-add-card {
+        border: 2px dashed #444;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 25px 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.02);
+        min-height: 140px;
+    }
+    .screenshot-add-card:hover {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.05);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+    }
+    .name-detector-msg {
+        transition: all 0.3s ease;
+    }
 </style>
 
 <div class="container">
@@ -496,6 +602,7 @@
                 <div class="form-group">
                     <label for="modName">Mod Name*</label>
                     <input type="text" id="modName" name="modName" value="<%= defaultName %>" placeholder="e.g., Roblox or Minecraft" required autocomplete="off">
+                    <div id="modNameLiveStatus" class="name-detector-msg" style="display: none; margin-top: 8px; font-size: 0.85em; font-weight: 600; padding: 8px 12px; border-radius: 8px;"></div>
                 </div>
 
                 <div class="form-group">
@@ -763,16 +870,29 @@
                     <input type="text" id="tags" name="tags" value="<%= file && file.tags ? file.tags.join(', ') : '' %>" placeholder="strategy, multiplayer, offline" autocomplete="off">
                 </div>
 
-                <div class="form-group">
-                    <label>Mod Screenshots* (1-4 images)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg" multiple>
-                        <label for="screenshots" class="file-input-label">Choose Screenshots</label>
-                        <span class="file-name" id="screenshotFileName">No files selected</span>
+                <div class="form-group" id="screenshotEditorSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin-bottom: 0;">Mod Screenshots* (1-4 images) <span id="screenshotCountBadge" style="font-size: 0.85em; color: var(--gold); font-weight: normal;">(0/4)</span></label>
                     </div>
-                    <div class="preview-container" id="screenshotPreviewContainer" style="display:<%= file.screenshotUrls && file.screenshotUrls.length ? 'block' : 'none' %>;">
-                        <% (file.screenshotUrls || []).forEach(url => { %><img src="<%= url %>" alt="Current screenshot"><% }) %>
+
+                    <!-- Screenshot Error Banner -->
+                    <div id="screenshotErrorBanner" class="status-banner rejected" style="display: none; margin-bottom: 15px; padding: 12px 15px; border-radius: 8px; font-size: 0.9em; text-align: left;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
+                        <span id="screenshotErrorText"></span>
                     </div>
+
+                    <!-- Dynamic Screenshot Grid -->
+                    <div class="screenshot-editor-grid" id="screenshotEditorGrid">
+                        <!-- Cards dynamically rendered here -->
+                    </div>
+
+                    <!-- Hidden inputs for form sync & submission -->
+                    <input type="hidden" name="screenshotOrder" id="screenshotOrderInput" value="[]">
+                    <input type="file" id="screenshots" name="screenshots" accept="image/png, image/jpeg, image/webp" multiple style="display: none;">
+                    
+                    <!-- Single-slot file replacer/adder input -->
+                    <input type="file" id="screenshotReplacerInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                    <input type="file" id="screenshotAdderInput" accept="image/png, image/jpeg, image/webp" multiple style="display: none;">
                 </div>
 
                 <div class="form-group">
@@ -892,30 +1012,332 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Screenshot Preview Logic (Masonry)
-    if (screenshotsInput) {
-        screenshotsInput.addEventListener('change', function() {
-            const files = this.files;
-            if (screenshotPreviewContainer) screenshotPreviewContainer.innerHTML = '';
-            
-            if (files.length > 0) {
-                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'block'; 
-                if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = files.length + ' file(s) selected';
-                
-                Array.from(files).slice(0, 4).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        if (screenshotPreviewContainer) screenshotPreviewContainer.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
+    // ==========================================
+    // DYNAMIC SCREENSHOT EDITOR SYSTEM
+    // ==========================================
+    let screenshotList = [];
+    const screenshotEditorGrid = document.getElementById('screenshotEditorGrid');
+    const screenshotCountBadge = document.getElementById('screenshotCountBadge');
+    const screenshotErrorBanner = document.getElementById('screenshotErrorBanner');
+    const screenshotErrorText = document.getElementById('screenshotErrorText');
+    const screenshotOrderInput = document.getElementById('screenshotOrderInput');
+    const dynamicScreenshotsInput = document.getElementById('screenshots');
+    const screenshotReplacerInput = document.getElementById('screenshotReplacerInput');
+    const screenshotAdderInput = document.getElementById('screenshotAdderInput');
+
+    let replaceSlotIndex = -1;
+    let draggedSlotIndex = -1;
+
+    // Load initial screenshots from server if this is a draft
+    const initialScreenshotKeys = <%- JSON.stringify(file.screenshotKeys || []) %>;
+    const initialScreenshotUrls = <%- JSON.stringify(file.screenshotUrls || []) %>;
+    if (Array.isArray(initialScreenshotKeys) && Array.isArray(initialScreenshotUrls)) {
+        initialScreenshotKeys.forEach((key, idx) => {
+            if (key && initialScreenshotUrls[idx]) {
+                screenshotList.push({
+                    id: 'existing_' + idx + '_' + Math.random(),
+                    type: 'existing',
+                    key: key,
+                    url: initialScreenshotUrls[idx],
+                    file: null
                 });
-            } else {
-                if (screenshotPreviewContainer) screenshotPreviewContainer.style.display = 'none'; 
-                if (screenshotFileNameSpan) screenshotFileNameSpan.textContent = 'No files selected';
             }
         });
+    }
+
+    function renderScreenshotGallery() {
+        if (!screenshotEditorGrid) return;
+        screenshotEditorGrid.innerHTML = '';
+        const total = screenshotList.length;
+
+        if (screenshotCountBadge) {
+            screenshotCountBadge.textContent = `(${total}/4)`;
+            screenshotCountBadge.style.color = total > 4 ? 'var(--red)' : 'var(--gold)';
+        }
+
+        // Check 4-screenshot limit and display error
+        if (total > 4) {
+            const diff = total - 4;
+            const errorMsg = `You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${diff} of Screenshot`;
+            if (screenshotErrorBanner && screenshotErrorText) {
+                screenshotErrorText.textContent = errorMsg;
+                screenshotErrorBanner.style.display = 'block';
+            }
+        } else {
+            if (screenshotErrorBanner) {
+                screenshotErrorBanner.style.display = 'none';
+            }
+        }
+
+        // Render each screenshot card
+        screenshotList.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = `screenshot-card ${index >= 4 ? 'excess' : ''}`;
+            card.draggable = true;
+            card.dataset.index = index;
+
+            // Drag and drop event listeners
+            card.addEventListener('dragstart', (e) => {
+                draggedSlotIndex = index;
+                card.style.opacity = '0.5';
+            });
+            card.addEventListener('dragend', () => {
+                draggedSlotIndex = -1;
+                card.style.opacity = '1';
+            });
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                card.style.borderColor = 'var(--gold)';
+            });
+            card.addEventListener('dragleave', () => {
+                card.style.borderColor = index >= 4 ? 'var(--red)' : '#333';
+            });
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                card.style.borderColor = index >= 4 ? 'var(--red)' : '#333';
+                if (draggedSlotIndex !== -1 && draggedSlotIndex !== index) {
+                    const movedItem = screenshotList.splice(draggedSlotIndex, 1)[0];
+                    screenshotList.splice(index, 0, movedItem);
+                    renderScreenshotGallery();
+                }
+            });
+
+            // Badge text
+            let badgeHtml = '';
+            if (index >= 4) {
+                badgeHtml = `<span class="screenshot-badge excess-badge">#${index + 1} (Excess - Remove)</span>`;
+            } else if (index === 0) {
+                badgeHtml = `<span class="screenshot-badge cover">#1 (Cover)</span>`;
+            } else {
+                badgeHtml = `<span class="screenshot-badge">#${index + 1}</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="screenshot-thumb-box">
+                    ${badgeHtml}
+                    <img src="${item.url}" alt="Screenshot ${index + 1}">
+                </div>
+                <div class="screenshot-card-actions">
+                    <button type="button" class="screenshot-action-btn btn-move-left" title="Move Left" ${index === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button type="button" class="screenshot-action-btn btn-move-right" title="Move Right" ${index === total - 1 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button type="button" class="screenshot-action-btn btn-replace" title="Replace this image">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="screenshot-action-btn btn-remove" title="Remove image">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            // Card Action Buttons
+            card.querySelector('.btn-move-left')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (index > 0) {
+                    const temp = screenshotList[index];
+                    screenshotList[index] = screenshotList[index - 1];
+                    screenshotList[index - 1] = temp;
+                    renderScreenshotGallery();
+                }
+            });
+
+            card.querySelector('.btn-move-right')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (index < screenshotList.length - 1) {
+                    const temp = screenshotList[index];
+                    screenshotList[index] = screenshotList[index + 1];
+                    screenshotList[index + 1] = temp;
+                    renderScreenshotGallery();
+                }
+            });
+
+            card.querySelector('.btn-replace')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                replaceSlotIndex = index;
+                if (screenshotReplacerInput) {
+                    screenshotReplacerInput.value = '';
+                    screenshotReplacerInput.click();
+                }
+            });
+
+            card.querySelector('.btn-remove')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                screenshotList.splice(index, 1);
+                renderScreenshotGallery();
+            });
+
+            screenshotEditorGrid.appendChild(card);
+        });
+
+        // "+ Add Screenshot" card (shown if < 4)
+        if (total < 4) {
+            const addCard = document.createElement('div');
+            addCard.className = 'screenshot-add-card';
+            addCard.innerHTML = `
+                <i class="fas fa-plus-circle" style="font-size: 2.2em; color: var(--gold); margin-bottom: 10px;"></i>
+                <span style="font-weight: 600; color: var(--white); font-size: 0.95em;">Add Screenshot</span>
+                <span style="font-size: 0.8em; color: var(--silver); margin-top: 4px;">${4 - total} slot${4 - total > 1 ? 's' : ''} remaining</span>
+            `;
+            addCard.addEventListener('click', () => {
+                if (screenshotAdderInput) {
+                    screenshotAdderInput.value = '';
+                    screenshotAdderInput.click();
+                }
+            });
+            screenshotEditorGrid.appendChild(addCard);
+        }
+    }
+
+    // Handle adding new screenshots
+    if (screenshotAdderInput) {
+        screenshotAdderInput.addEventListener('change', function() {
+            const files = Array.from(this.files || []);
+            if (files.length === 0) return;
+
+            let loaded = 0;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    screenshotList.push({
+                        id: 'new_' + Date.now() + '_' + Math.random(),
+                        type: 'new',
+                        key: null,
+                        url: e.target.result,
+                        file: file
+                    });
+                    loaded++;
+                    if (loaded === files.length) {
+                        renderScreenshotGallery();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+
+    // Handle replacing a specific screenshot
+    if (screenshotReplacerInput) {
+        screenshotReplacerInput.addEventListener('change', function() {
+            const file = this.files && this.files[0];
+            if (!file || replaceSlotIndex < 0 || replaceSlotIndex >= screenshotList.length) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                screenshotList[replaceSlotIndex] = {
+                    id: 'new_' + Date.now() + '_' + Math.random(),
+                    type: 'new',
+                    key: null,
+                    url: e.target.result,
+                    file: file
+                };
+                replaceSlotIndex = -1;
+                renderScreenshotGallery();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Function to sync screenshotList into hidden form input before submission
+    function syncScreenshotsToForm() {
+        const total = screenshotList.length;
+        if (total > 4) {
+            const diff = total - 4;
+            return {
+                valid: false,
+                error: `You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${diff} of Screenshot`
+            };
+        }
+
+        const order = [];
+        const dt = new DataTransfer();
+
+        screenshotList.forEach(item => {
+            if (item.type === 'existing') {
+                order.push({ type: 'existing', key: item.key });
+            } else if (item.type === 'new' && item.file) {
+                const fileIndex = dt.files.length;
+                dt.items.add(item.file);
+                order.push({ type: 'new', fileIndex: fileIndex });
+            }
+        });
+
+        if (screenshotOrderInput) screenshotOrderInput.value = JSON.stringify(order);
+        if (dynamicScreenshotsInput) dynamicScreenshotsInput.files = dt.files;
+
+        return { valid: true, count: total };
+    }
+
+    // Initial render of gallery
+    renderScreenshotGallery();
+
+    // ==========================================
+    // MOD NAME LIVE ILLEGAL CHARACTER & EMOJI DETECTOR
+    // ==========================================
+    const modNameInput = document.getElementById('modName');
+    const modNameLiveStatus = document.getElementById('modNameLiveStatus');
+
+    function validateModNameInput(val) {
+        if (!val || typeof val !== 'string' || !val.trim()) {
+            return { valid: false, error: 'Mod Name is required.' };
+        }
+        const trimmed = val.trim();
+        if (!/[a-zA-Z0-9]/.test(trimmed)) {
+            return { valid: false, error: 'Mod Name must contain at least one letter or number.' };
+        }
+        const emojiRegex = /\p{Extended_Pictographic}|\p{Emoji_Presentation}/u;
+        if (emojiRegex.test(trimmed)) {
+            return { valid: false, error: 'Emojis are not allowed in Mod Name.' };
+        }
+        if (!/^[a-zA-Z0-9 :\-]+$/.test(trimmed)) {
+            const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-]/i.test(c)))).join(' ');
+            return { valid: false, error: `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', and '-' are allowed.` };
+        }
+        return { valid: true };
+    }
+
+    function updateModNameLiveFeedback() {
+        if (!modNameInput || !modNameLiveStatus) return;
+        if (modNameInput.readOnly) {
+            modNameLiveStatus.style.display = 'none';
+            return;
+        }
+
+        const val = modNameInput.value;
+        if (!val || !val.trim()) {
+            modNameLiveStatus.style.display = 'none';
+            modNameInput.style.borderColor = '';
+            modNameInput.style.boxShadow = '';
+            return;
+        }
+
+        const res = validateModNameInput(val);
+        if (!res.valid) {
+            modNameLiveStatus.style.display = 'block';
+            modNameLiveStatus.style.backgroundColor = 'rgba(229, 57, 53, 0.12)';
+            modNameLiveStatus.style.border = '1px solid var(--red)';
+            modNameLiveStatus.style.color = '#ff6b6b';
+            modNameLiveStatus.innerHTML = `<i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i> ${res.error}`;
+            modNameInput.style.borderColor = 'var(--red)';
+            modNameInput.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.4)';
+        } else {
+            modNameLiveStatus.style.display = 'block';
+            modNameLiveStatus.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+            modNameLiveStatus.style.border = '1px solid #2ecc71';
+            modNameLiveStatus.style.color = '#2ecc71';
+            modNameLiveStatus.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> Valid Mod Name (letters, numbers, spaces, ':', and '-' allowed)`;
+            modNameInput.style.borderColor = '#2ecc71';
+            modNameInput.style.boxShadow = '0 0 8px rgba(46, 204, 113, 0.3)';
+        }
+    }
+
+    if (modNameInput) {
+        modNameInput.addEventListener('input', updateModNameLiveFeedback);
+        if (modNameInput.value) {
+            updateModNameLiveFeedback();
+        }
     }
 
     // Video Preview Logic
@@ -1418,6 +1840,26 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDraftBtn.addEventListener('click', (e) => {
             e.preventDefault();
             syncQuillData(); 
+
+            // Validate Mod Name live & before showing draft modal
+            if (modNameInput && !modNameInput.readOnly) {
+                const nameRes = validateModNameInput(modNameInput.value);
+                if (!nameRes.valid) {
+                    showStatusAlert(nameRes.error, 'error');
+                    updateModNameLiveFeedback();
+                    modNameInput.focus();
+                    return; // DO NOT OPEN DRAFT MODAL!
+                }
+            }
+
+            // Sync and check screenshots count
+            const screenRes = syncScreenshotsToForm();
+            if (!screenRes.valid) {
+                showStatusAlert(screenRes.error, 'error');
+                document.getElementById('screenshotEditorSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // DO NOT OPEN DRAFT MODAL!
+            }
+
             draftModal.style.display = 'flex';
             setTimeout(() => draftModal.classList.add('show'), 10);
         });
@@ -1427,6 +1869,31 @@ document.addEventListener('DOMContentLoaded', () => {
         submitModBtn.addEventListener('click', (e) => {
             e.preventDefault();
             syncQuillData();
+
+            // Validate Mod Name live & before showing submit modal
+            if (modNameInput && !modNameInput.readOnly) {
+                const nameRes = validateModNameInput(modNameInput.value);
+                if (!nameRes.valid) {
+                    showStatusAlert(nameRes.error, 'error');
+                    updateModNameLiveFeedback();
+                    modNameInput.focus();
+                    return; // DO NOT OPEN SUBMIT MODAL!
+                }
+            }
+
+            // Sync and check screenshots count
+            const screenRes = syncScreenshotsToForm();
+            if (!screenRes.valid) {
+                showStatusAlert(screenRes.error, 'error');
+                document.getElementById('screenshotEditorSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // DO NOT OPEN SUBMIT MODAL!
+            }
+            if (screenRes.count === 0) {
+                showStatusAlert('At least one screenshot is required to submit the mod.', 'error');
+                document.getElementById('screenshotEditorSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // DO NOT OPEN SUBMIT MODAL!
+            }
+
             mainForm.noValidate = false;
             
             let hasError = false;
@@ -1491,12 +1958,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showStatusAlert('Error: Developer name is required.', 'error'); return;
             }
             const hasSavedIcon = <%= file.iconUrl ? 'true' : 'false' %>;
-            const hasSavedScreenshots = <%= file.screenshotUrls && file.screenshotUrls.length ? 'true' : 'false' %>;
             if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0 && !hasSavedIcon) {
                 showStatusAlert('Error: An icon is required to publish this mod.', 'error'); return;
-            }
-            if (document.getElementById('screenshots') && document.getElementById('screenshots').files.length === 0 && !hasSavedScreenshots) {
-                showStatusAlert('Error: Screenshots are required to publish this mod.', 'error'); return;
             }
 
             actionTypeInput.value = 'submit';
@@ -1708,6 +2171,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (modNameInput && appNameVal) {
                     modNameInput.value = appNameVal;
                     appliedCount++;
+                    if (typeof updateModNameLiveFeedback === 'function') {
+                        updateModNameLiveFeedback();
+                    }
                 }
             }
 

@@ -90,6 +90,7 @@ const StaticPage = require('./models/staticPage');
 const DraftSnapshot = require('./models/draftSnapshot');
 const Donation = require('./models/donation');
 const MembershipOrder = require('./models/membershipOrder');
+const DevtoolLog = require('./models/devtoolLog');
 
 // Cashfree Payments SDK Initialization (Sandbox / Test Environment)
 const { Cashfree, CFEnvironment } = require('cashfree-pg');
@@ -226,6 +227,45 @@ function isValidName(str) {
     // This strictly forbids emojis, symbols (!@#$), and invisible characters.
     const regex = /^[a-zA-Z0-9 ]+$/;
     return regex.test(trimmed);
+}
+
+// --- HELPER: DETECT EMOJIS ---
+function hasEmoji(str) {
+    if (!str || typeof str !== 'string') return false;
+    const emojiRegex = /\p{Extended_Pictographic}|\p{Emoji_Presentation}/u;
+    return emojiRegex.test(str);
+}
+
+// --- HELPER: VALIDATE MOD NAMES (Letters, Numbers, Spaces, ':', and '-' ONLY) ---
+function isValidModName(str) {
+    if (!str || typeof str !== 'string') return false;
+    const trimmed = str.trim();
+    if (trimmed.length === 0) return false;
+    // Must contain at least one letter or number
+    if (!/[a-zA-Z0-9]/.test(trimmed)) return false;
+    // Strictly forbids emojis
+    if (hasEmoji(trimmed)) return false;
+    // Only letters, numbers, spaces, colons (:), and hyphens (-)
+    const regex = /^[a-zA-Z0-9 :\-]+$/;
+    return regex.test(trimmed);
+}
+
+function getModNameValidationError(str) {
+    if (!str || typeof str !== 'string' || !str.trim()) {
+        return 'Mod Name is required.';
+    }
+    const trimmed = str.trim();
+    if (!/[a-zA-Z0-9]/.test(trimmed)) {
+        return 'Mod Name must contain at least one letter or number.';
+    }
+    if (hasEmoji(trimmed)) {
+        return 'Emojis are not allowed in Mod Name.';
+    }
+    if (!/^[a-zA-Z0-9 :\-]+$/.test(trimmed)) {
+        const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-]/i.test(c)))).join(' ');
+        return `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', and '-' are allowed.`;
+    }
+    return null;
 }
 
 // --- NEW HELPER: RECORD DAILY STATS ---
@@ -1365,6 +1405,15 @@ app.use(async (req, res, next) => {
         );
         res.locals.officialSiteUrl = officialSiteUrl;
 
+        // 1.1 ======== DEBUGGER ACCESS & DEVTOOLS EXEMPTION ========
+        // Admin, owner, and support roles have debugger access by default.
+        // Also available for everyone on local development / test deployments.
+        const currentRole = req.user ? String(req.user.role || '').toLowerCase() : '';
+        res.locals.isDebuggerExempt = Boolean(
+            res.locals.isTestDeployment ||
+            ['admin', 'owner', 'support'].includes(currentRole)
+        );
+
         // 2. ======== CRAWLER DETECTION LOGIC ========
         // Safely grab the User-Agent header (fallback to empty string if undefined)
         const userAgent = req.get('User-Agent') || '';
@@ -1924,7 +1973,16 @@ app.get('/status', ensureAdmin, async (req, res) => {
     }
 
     // Instead of sending raw JSON, let's render a beautiful admin page!
-    res.render('pages/admin/status', { health: healthData });
+    const debuggerData = await getOrRotateDebuggerKey(false);
+    const recentDevtoolLogs = await DevtoolLog.find().sort({ createdAt: -1 }).limit(10).lean();
+
+    res.render('pages/admin/status', { 
+        health: healthData,
+        debuggerKey: debuggerData.key,
+        debuggerExpiresAt: debuggerData.expiresAt,
+        debuggerMasterKey: debuggerData.masterKey,
+        recentDevtoolLogs: recentDevtoolLogs || []
+    });
 });
 
 // --- HELPER: Format Uptime ---
@@ -3868,11 +3926,75 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             return res.status(404).render('pages/404');
         }
 
+        // --- DMCA COMPLIANCE CHECK ---
+        // 1. If an individual variant was requested and that variant is DMCA hidden:
+        if (variantId && Types.ObjectId.isValid(variantId)) {
+            const hiddenRequestedVariant = (masterFile.variants || []).find(v => v._id.toString() === variantId && v.isDmcaHidden === true);
+            if (hiddenRequestedVariant) {
+                return res.status(451).render('pages/unavailable', {
+                    title: 'Variant Unavailable (DMCA Notice)',
+                    message: 'This mod variant is currently unavailable due to a copyright complaint and is undergoing administrative review.'
+                });
+            }
+        }
+
+        // 2. Filter out DMCA hidden variants from the available variants list
+        const liveVariants = (masterFile.variants || []).filter(v => v.status === 'live' && v.isDmcaHidden !== true);
+        masterFile.variants = liveVariants;
+
         let displayFile = masterFile; 
         let isViewingVariant = false;
 
-        // --- VARIANT HANDLING ---
-        if (variantId && Types.ObjectId.isValid(variantId)) {
+        // 3. If the main master file is DMCA hidden:
+        if (masterFile.isDmcaHidden) {
+            // Find most recent live variant uploaded after or available
+            let promotedVariant = null;
+            if (masterFile.temporaryPromotedVariantId) {
+                promotedVariant = liveVariants.find(v => v._id.toString() === masterFile.temporaryPromotedVariantId.toString());
+            }
+            if (!promotedVariant && liveVariants.length > 0) {
+                const sortedVariants = [...liveVariants].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                promotedVariant = sortedVariants[0];
+            }
+
+            if (promotedVariant) {
+                // Promote this variant to temporarily become the main file
+                displayFile = {
+                    ...(masterFile.toObject ? masterFile.toObject() : masterFile),
+                    _id: promotedVariant._id,
+                    version: promotedVariant.version,
+                    uploader: promotedVariant.uploader,
+                    developer: promotedVariant.developer,
+                    modDescription: promotedVariant.modDescription,
+                    modFeatures: promotedVariant.modFeatures,
+                    whatsNew: promotedVariant.whatsNew,
+                    importantNote: promotedVariant.importantNote,
+                    license: promotedVariant.license || masterFile.license,
+                    fileSize: promotedVariant.fileSize,
+                    downloads: promotedVariant.downloads,
+                    averageRating: promotedVariant.averageRating,
+                    workingVoteCount: promotedVariant.workingVoteCount,
+                    notWorkingVoteCount: promotedVariant.notWorkingVoteCount,
+                    createdAt: promotedVariant.createdAt,
+                    updatedAt: promotedVariant.updatedAt,
+                    virusTotalAnalysisId: promotedVariant.virusTotalAnalysisId,
+                    virusTotalId: promotedVariant.virusTotalId,
+                    virusTotalScanDate: promotedVariant.virusTotalScanDate,
+                    virusTotalPositiveCount: promotedVariant.virusTotalPositiveCount,
+                    virusTotalTotalScans: promotedVariant.virusTotalTotalScans,
+                    isTemporaryPromoted: true
+                };
+                // Remove the promoted variant from the remaining variants list so it is not duplicated
+                masterFile.variants = liveVariants.filter(v => v._id.toString() !== promotedVariant._id.toString());
+            } else {
+                // Main mod is hidden and there are no live variants to promote
+                return res.status(451).render('pages/unavailable', {
+                    title: 'Mod Unavailable (DMCA Notice)',
+                    message: 'This mod is currently unavailable due to a copyright complaint and is undergoing administrative review.'
+                });
+            }
+        } else if (variantId && Types.ObjectId.isValid(variantId)) {
+            // Normal variant handling when master mod is not hidden
             const requestedVariant = masterFile.variants.find(v => v._id.toString() === variantId && v.status === 'live');
             if (requestedVariant) {
                 displayFile = {
@@ -4509,6 +4631,12 @@ app.get('/download-file/:id', async (req, res) => {
         const fileId = req.params.id;
         const file = await File.findById(fileId);
         if (!file) return res.status(404).render('pages/404');
+        if (file.isDmcaHidden) {
+            return res.status(451).render('pages/unavailable', {
+                title: 'Download Unavailable (DMCA Notice)',
+                message: 'This download link has been temporarily disabled due to a DMCA copyright complaint and is undergoing administrative review.'
+            });
+        }
         if (file.ageRating === '18+' && shouldHideAdultContent(req.user)) return res.status(404).render('pages/404');
 
         // ==========================================
@@ -4591,6 +4719,12 @@ app.get('/mods/:id/parts', async (req, res) => {
         if (!Types.ObjectId.isValid(fileId)) return next(error);
 
         const file = await File.findById(fileId);
+        if (file && file.isDmcaHidden) {
+            return res.status(451).render('pages/unavailable', {
+                title: 'Download Unavailable (DMCA Notice)',
+                message: 'This multi-part download has been temporarily disabled due to a DMCA copyright complaint and is undergoing administrative review.'
+            });
+        }
         if (file && file.ageRating === '18+' && shouldHideAdultContent(req.user)) return res.status(404).render('pages/404');
         
         if (!file || !file.isMultiPart) {
@@ -5538,11 +5672,10 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 // My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
-        // 1. Fetch ONLY the user's LATEST uploads and populate the older versions
-        // ✅ FIX: Added `isLatestVersion: true` to prevent duplicates!
-                const userUploads = await File.find({ 
+        // 1. Fetch ONLY the user's active, non-DMCA-hidden uploads
+        const userUploads = await File.find({ 
             uploader: req.user.username,
-            // Ensure we get latest versions OR things still in draft/processing
+            isDmcaHidden: { $ne: true },
             $or: [ { isLatestVersion: true }, { status: { $in:['processing', 'draft'] } } ]
         })
         .sort({ createdAt: -1 })
@@ -5555,18 +5688,40 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
                 try {
-                    signedIconUrl = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+                    signedIconUrl = await getSmartImageUrl(key);
                 } catch (urlError) {}
             }
             
-            // ✅ FIX: Because of .lean(), 'file' is already a plain object! No .toObject() needed.
             file.iconUrl = signedIconUrl;
-            file.olderVersions = file.olderVersions ||[]; 
-            
+            file.olderVersions = file.olderVersions || []; 
             return file; 
         }));
 
-        res.render('pages/my-uploads', { uploads: uploadsWithUrls }); 
+        // 3. Fetch user's DMCA-restricted uploads for dedicated review section
+        const dmcaUploadsRaw = await File.find({
+            uploader: req.user.username,
+            isDmcaHidden: true
+        })
+        .sort({ dmcaHiddenAt: -1, createdAt: -1 })
+        .populate('dmcaReportId')
+        .lean();
+
+        const dmcaUploads = await Promise.all(dmcaUploadsRaw.map(async (file) => {
+            const key = file.iconUrl || file.iconKey;
+            let signedIconUrl = '/images/default-app-icon.png';
+            if (key) {
+                try {
+                    signedIconUrl = await getSmartImageUrl(key);
+                } catch (urlError) {}
+            }
+            file.iconUrl = signedIconUrl;
+            return file;
+        }));
+
+        res.render('pages/my-uploads', { 
+            uploads: uploadsWithUrls,
+            dmcaUploads: dmcaUploads || []
+        }); 
     } catch (error) { 
         console.error("My Uploads Error:", error);
         return next(error); 
@@ -7462,7 +7617,7 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
 
 app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
-    { name: 'screenshots', maxCount: 4 }
+    { name: 'screenshots', maxCount: 12 }
 ]), async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
@@ -7487,7 +7642,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const currentFileSize = file.fileSize || 0;
         const actionType = formData.actionType || 'submit';
 
-               // 1. Update images ONLY IF new ones were uploaded
+        // 1. Update images ONLY IF new ones were uploaded
         const baseName = formData.modName || file.name;
         
         // --- HANDLE ICON OVERWRITE ---
@@ -7500,10 +7655,48 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${baseName}-icon`);
         }
 
-        // --- HANDLE SCREENSHOTS OVERWRITE ---
-        if (screenshots && screenshots.length > 0) {
-            // If they uploaded new screenshots, they are replacing the gallery.
-            // Delete ALL old screenshots from B2 first.
+        // --- HANDLE DYNAMIC SCREENSHOTS ---
+        if (formData.screenshotOrder) {
+            let incomingOrder = [];
+            try {
+                incomingOrder = typeof formData.screenshotOrder === 'string'
+                    ? JSON.parse(formData.screenshotOrder)
+                    : (formData.screenshotOrder || []);
+            } catch (e) {
+                incomingOrder = [];
+            }
+
+            if (incomingOrder.length > 4) {
+                return res.redirect(`/mods/${file._id}/edit?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${incomingOrder.length - 4} of Screenshot`)}`);
+            }
+
+            const finalScreenshotKeys = [];
+            const uploadedShots = screenshots || [];
+            for (const item of incomingOrder) {
+                if (item.type === 'existing' && item.key) {
+                    if (file.screenshotKeys && file.screenshotKeys.includes(item.key)) {
+                        finalScreenshotKeys.push(item.key);
+                    }
+                } else if (item.type === 'new' && typeof item.fileIndex === 'number' && uploadedShots[item.fileIndex]) {
+                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, baseName);
+                    finalScreenshotKeys.push(newKey);
+                }
+            }
+
+            // Delete old screenshots that are no longer kept
+            if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+                for (const oldShotKey of file.screenshotKeys) {
+                    if (!finalScreenshotKeys.includes(oldShotKey)) {
+                        await deleteFromB2(oldShotKey);
+                    }
+                }
+            }
+            file.screenshotKeys = finalScreenshotKeys;
+        } else if (screenshots && screenshots.length > 0) {
+            if (screenshots.length > 4) {
+                return res.redirect(`/mods/${file._id}/edit?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${screenshots.length - 4} of Screenshot`)}`);
+            }
+            // Fallback: Delete ALL old screenshots from B2 first.
             if (file.screenshotKeys && file.screenshotKeys.length > 0) {
                 for (const oldShotKey of file.screenshotKeys) {
                     await deleteFromB2(oldShotKey);
@@ -7515,36 +7708,18 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // 2. Format tags
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : file.tags;
-        // ======== VALIDATION CHECK ========
-        if (formData.modName && !isValidName(formData.modName)) {
-            return res.redirect(`/mods/${file._id}/edit?error=Mod Name can only contain letters, numbers, and spaces.`);
-        }
 
-        const LARGE_FILE_THRESHOLD = 640 * 1024 * 1024;
-        if (actionType === 'submit') {
-            if (isDistributor && !directDownloadUrlValue) {
-                return res.redirect(`/mods/${file._id}/edit?error=Distributor uploads must include a direct download link before publishing.`);
-            }
-            if (currentFileSize > LARGE_FILE_THRESHOLD && !manualFileScanUrlValue && !manualSiteScanUrlValue) {
-                return res.redirect(`/mods/${file._id}/edit?error=Files larger than 640MB require a VirusTotal or manual scan URL before publishing.`);
-            }
-        }
-        // ===========================================
-
-       // 3. Update all text fields
-        file.name = formData.modName || file.name;
+        // 3. Update all text fields (do this BEFORE validation checks so user edits are NEVER lost)
         file.version = formData.modVersion || file.version;
         file.developer = formData.developerName || file.developer;
         file.modDescription = formData.modDescription || file.modDescription;
         file.modFeatures = formData.modFeatures || file.modFeatures;
         file.whatsNew = formData.whatsNew || file.whatsNew;
         file.officialDescription = formData.officialDescription || file.officialDescription;        
-        // ✅ FIX: Added importantNote to the save logic
         file.importantNote = formData.importantNote || file.importantNote;        
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.license = formData.modLicense || null;
-        // --- NEW: Update dependencies on edit ---
         file.minOsVersion = formData.minOsVersion !== undefined ? formData.minOsVersion : file.minOsVersion;
         if (formData.architectures !== undefined) {
             file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
@@ -7552,20 +7727,15 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (formData.directDownloadUrl !== undefined) {
             file.directDownloadUrl = directDownloadUrlValue;
         }
-        // ✅ ADDED: Update the Package ID on edit
         if (formData.iosPackageId !== undefined) {
             file.iosPackageId = formData.iosPackageId;
         }
         file.tags = processedTags;
-        // --- NEW: UPDATE MANUAL SCANS (allow clearing them) ---
         if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = manualFileScanUrlValue;
         if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = manualSiteScanUrlValue;
-        
-        // ✅ FIX: Added "file." to save it properly, and replaced the comma with a semicolon!
         file.ageRating = req.body.ageRating || file.ageRating; 
-        
         if (formData.modCategory) {
-            file.platforms =[formData.modCategory];
+            file.platforms = [formData.modCategory];
         }
 
         // --- ADMIN / OWNER: EDITOR'S CHOICE COUNCIL SETTINGS ---
@@ -7615,41 +7785,78 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
                 }
             }
 
-            // Apply parsed multipart data to the file model
             file.isMultiPart = editIsMultiPart;
             if (editDownloadParts.length > 0) file.downloadParts = editDownloadParts;
         } catch (e) {
             console.error('Multipart parsing error (edit):', e);
         }
 
-// 4. IMPORTANT: Status Logic
+        // ======== MOD NAME VALIDATION CHECK ========
+        const modNameErr = formData.modName ? getModNameValidationError(formData.modName) : null;
+        if (modNameErr) {
+            // Save other edited fields to draft so user never loses their changes
+            if (actionType === 'draft') {
+                file.status = 'draft';
+                await file.save();
+                return res.redirect(`/mods/${file._id}/edit?error=${encodeURIComponent('Draft saved, but ' + modNameErr)}`);
+            } else {
+                await file.save();
+                return res.redirect(`/mods/${file._id}/edit?error=${encodeURIComponent(modNameErr)}`);
+            }
+        }
+
+        file.name = formData.modName || file.name;
+
+        const LARGE_FILE_THRESHOLD = 640 * 1024 * 1024;
+        if (actionType === 'submit') {
+            if (isDistributor && !directDownloadUrlValue) {
+                return res.redirect(`/mods/${file._id}/edit?error=Distributor uploads must include a direct download link before publishing.`);
+            }
+            if (currentFileSize > LARGE_FILE_THRESHOLD && !manualFileScanUrlValue && !manualSiteScanUrlValue) {
+                return res.redirect(`/mods/${file._id}/edit?error=Files larger than 640MB require a VirusTotal or manual scan URL before publishing.`);
+            }
+            if (!file.screenshotKeys || file.screenshotKeys.length === 0) {
+                return res.redirect(`/mods/${file._id}/edit?error=At least one screenshot is required to submit the mod.`);
+            }
+        }
+
+        // 4. IMPORTANT: Status Logic
         if (actionType === 'draft') {
-            // If they saved a draft, change the status to processing, taking it offline
             file.status = 'draft'; 
         } else {
             // If they clicked Submit...
-            if (file.status === 'rejected' || file.status === 'processing') {
-                // If it was rejected or a draft, send it to the admin queue
+            // Transition from draft, rejected, or processing to pending!
+            if (file.status === 'rejected' || file.status === 'processing' || file.status === 'draft') {
                 file.status = 'pending';
                 file.rejectionReason = ''; // Clear old reason
             }
-            // If it was already 'live', it stays 'live'. 
-            // (Unless you want ALL edits to go through admin review again, in which case set it to 'pending')
+            // If it was already 'live', it stays 'live'.
+        }
+
+        // Ensure slug exists for newly submitted files/drafts
+        if (!file.isVariant && !file.slug) {
+            let baseSlug = slugify(file.name);
+            let finalSlug = baseSlug;
+            let slugCounter = 1;
+            while (await File.findOne({ slug: finalSlug, category: file.category, isLatestVersion: true, _id: { $ne: file._id } })) {
+                finalSlug = `${baseSlug}-${slugCounter}`;
+                slugCounter++;
+            }
+            file.slug = finalSlug;
         }
 
         await file.save();
+
         // --- INDEXNOW PING ---
-        // Tell search engines the mod has been updated!
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         const modUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
-        // Fire and forget (don't await it so it doesn't slow down the user's redirect)
         notifyIndexNow([modUrl]);
-        notifyGoogle(modUrl, 'URL_UPDATED'); // Tell Google the page changed!
+        notifyGoogle(modUrl, 'URL_UPDATED');
         
         if (actionType === 'draft') {
-             res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is now hidden from the public until you submit it.`);
+            res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is hidden from public review until you submit it.`);
         } else {
-             res.redirect('/my-uploads?success=Mod updated successfully!');
+            res.redirect('/my-uploads?success=Mod updated and submitted for review!');
         }
 
     } catch (error) {
@@ -7660,7 +7867,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
 app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
     { name: 'softwareIcon', maxCount: 1 },
-    { name: 'screenshots', maxCount: 4 }
+    { name: 'screenshots', maxCount: 12 }
 ]), async (req, res, next) => {
     try {
         const fileId = req.params.fileId;
@@ -7700,22 +7907,14 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant.`);
             isVariant = true;
             masterFileId = existingMasterFile._id;
-            // No unlinkSync needed here anymore!
         }
 
-        if (actionType === 'draft' && (!formData.modName || !formData.modName.trim())) {
-            return res.redirect(`/upload-details/${fileId}?error=Mod Name is required to save a draft.`);
-        }
-
-        if (actionType === 'draft' && formData.modName && !isValidName(formData.modName)) {
-            return res.redirect(`/upload-details/${fileId}?error=Mod Name can only contain letters, numbers, and spaces. No emojis.`);
-        }
+        const modNameDraftErr = formData.modName ? getModNameValidationError(formData.modName) : (actionType === 'draft' ? null : 'Mod Name is required.');
 
         let iconKey = fileToUpdate.iconKey; // Keep existing if not updating
         let screenshotKeys = fileToUpdate.screenshotKeys || [];
         const processedTags = formData.tags ? formData.tags.split(',').map(t => t.trim()) : [];
-        // --- NEW: Parse architectures safely (can be string or array) ---
-        const archData = formData.architectures ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) :[];
+        const archData = formData.architectures ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) : [];
 
         // --- PROCESS IMAGES & CATEGORIZED B2 PATHS ---
         const b2Opts = {
@@ -7732,10 +7931,49 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${formData.modName}-icon`, b2Opts);
         }
 
-        if (screenshots && screenshots.length > 0) {
+        // --- HANDLE DYNAMIC SCREENSHOTS ---
+        if (formData.screenshotOrder) {
+            let incomingOrder = [];
+            try {
+                incomingOrder = typeof formData.screenshotOrder === 'string'
+                    ? JSON.parse(formData.screenshotOrder)
+                    : (formData.screenshotOrder || []);
+            } catch (e) {
+                incomingOrder = [];
+            }
+
+            if (incomingOrder.length > 4) {
+                return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${incomingOrder.length - 4} of Screenshot`)}`);
+            }
+
+            const finalScreenshotKeys = [];
+            const uploadedShots = screenshots || [];
+            for (const item of incomingOrder) {
+                if (item.type === 'existing' && item.key) {
+                    if (screenshotKeys.includes(item.key) || (fileToUpdate.screenshotKeys && fileToUpdate.screenshotKeys.includes(item.key))) {
+                        finalScreenshotKeys.push(item.key);
+                    }
+                } else if (item.type === 'new' && typeof item.fileIndex === 'number' && uploadedShots[item.fileIndex]) {
+                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, formData.modName, b2Opts);
+                    finalScreenshotKeys.push(newKey);
+                }
+            }
+
+            // Delete old screenshots that are no longer kept
+            if (fileToUpdate.screenshotKeys && fileToUpdate.screenshotKeys.length > 0) {
+                for (const oldShotKey of fileToUpdate.screenshotKeys) {
+                    if (!finalScreenshotKeys.includes(oldShotKey)) {
+                        await deleteFromB2(oldShotKey);
+                    }
+                }
+            }
+            screenshotKeys = finalScreenshotKeys;
+        } else if (screenshots && screenshots.length > 0) {
+            if (screenshots.length > 4) {
+                return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${screenshots.length - 4} of Screenshot`)}`);
+            }
             screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, formData.modName, b2Opts)));
         } else if (isVariant && existingMasterFile && (!screenshotKeys || screenshotKeys.length === 0)) {
-            // Use shared screenshots from master file if variant user didn't upload custom screenshots
             screenshotKeys = existingMasterFile.screenshotKeys || [];
         }
 
@@ -7756,7 +7994,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
             const len = Math.max(pUrls.length, pNames.length);
             for (let i = 0; i < len; i++) {
-                if (!pUrls[i]) continue; // skip empty parts
+                if (!pUrls[i]) continue;
                 downloadParts.push({
                     partName: pNames[i] || `Part ${i + 1}`,
                     partUrl: pUrls[i],
@@ -7789,14 +8027,14 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             directDownloadUrlValue,
             manualFileScanUrlValue,
             manualSiteScanUrlValue,
-            isValidNameFn: isValidName
+            isValidNameFn: isValidModName
         });
 
-        if (validationErrors.length > 0) {
+        if (actionType === 'submit' && validationErrors.length > 0) {
             return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(validationErrors[0])}`);
         }
 
-        // --- NEW: Sanitize Mod Details ---
+        // --- Sanitize Mod Details ---
         const safeClean = (value) => {
             if (!value || typeof value !== 'string') return '';
             return global.profanityFilter.clean(value);
@@ -7805,7 +8043,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanName = safeClean(formData.modName || fileToUpdate.name);
 
         // --- GENERATE SLUG ---
-        let finalSlug = fileToUpdate.slug; // Keep existing slug if saving a draft
+        let finalSlug = fileToUpdate.slug;
         if (!isVariant && actionType === 'submit' && !finalSlug) {
             let baseSlug = slugify(cleanName);
             finalSlug = baseSlug;
@@ -7820,46 +8058,35 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanWhatsNew = safeClean(formData.whatsNew);
         const cleanOfficialDescription = safeClean(formData.officialDescription);
         const cleanImportantNote = safeClean(formData.importantNote);
-        // --- SET FINAL STATUS ---
-        // If saving a draft, keep it in 'processing' mode so it stays in their uploads list
-        // but doesn't show up in the Admin's "Pending Review" queue yet.
         const finalStatus = actionType === 'draft' ? 'draft' : 'pending';
 
-        // --- SAVE TO DATABASE ---
+        // --- SAVE TO DATABASE (Always save fields so user inputs are never lost!) ---
         const updateData = {
-            name: cleanName, // Use clean name || fileToUpdate.name, 
+            name: cleanName,
             version: formData.modVersion || fileToUpdate.version,
-            modDescription: cleanDescription, // Use clean description
-            modFeatures: cleanFeatures,       // Use clean features
+            modDescription: cleanDescription,
+            modFeatures: cleanFeatures,
             officialDescription: cleanOfficialDescription,
-            whatsNew: cleanWhatsNew,          // Use clean what's new
+            whatsNew: cleanWhatsNew,
             importantNote: cleanImportantNote,
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
             videoUrl: normalizeSingleValue(formData.videoUrl), 
             tags: processedTags,
             ageRating: req.body.ageRating,
-            // --- NEW: SAVE MANUAL SCANS ---
             manualFileScanUrl: manualFileScanUrlValue,
             manualSiteScanUrl: manualSiteScanUrlValue,
-
-            
-            // Update categories if provided, otherwise keep existing (which might be empty string)
             category: formData.modPlatform || fileToUpdate.category,
             license: formData.modLicense || null,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
             directDownloadUrl: directDownloadUrlValue || '',
             externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
-            // --- NEW: Save dependencies ---
             architectures: archData,
             minOsVersion: formData.minOsVersion || '',
-            // ✅ ADDED: Save the Package ID
             iosPackageId: normalizeSingleValue(formData.iosPackageId) || '',
-            // ------------------------------          
-            status: finalStatus // 'processing' (draft) or 'pending' (submitted)
+            status: finalStatus
         };
 
-        // Attach multipart fields when present
         updateData.isMultiPart = isMultiPart;
         if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
 
@@ -7870,7 +8097,6 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             
             await File.findByIdAndUpdate(fileId, updateData);
             
-            // Only link to master if submitting for real
             if (actionType === 'submit') {
                 await File.findByIdAndUpdate(masterFileId, { $push: { variants: fileId } });
             }
@@ -7883,13 +8109,16 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             await File.findByIdAndUpdate(fileId, updateData);
         }
 
+        // --- CHECK IF DRAFT SAVED WITH MOD NAME WARNING ---
+        if (actionType === 'draft' && modNameDraftErr) {
+            return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent('Draft saved, but ' + modNameDraftErr)}`);
+        }
+
         // --- REDIRECT BASED ON ACTION ---
         if (actionType === 'draft') {
             res.redirect(`/upload-details/${fileId}?success=Draft saved successfully! You can return to finish it later.`);
         } else {
-        // ======== NEW: AWARD POINTS FOR UPLOADING ========
-        // Give the user 50 points for contributing a mod!
-        await User.adjustForumPoints(req.user._id, 50, "Uploaded a new mod");
+            await User.adjustForumPoints(req.user._id, 50, "Uploaded a new mod");
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -9207,6 +9436,204 @@ app.post('/admin/reports/delete-file/:fileId', ensureAdmin, async (req, res) => 
     await Review.deleteMany({ file: req.params.fileId });
     await Report.updateMany({ file: req.params.fileId }, { status: 'resolved' });
     res.redirect('/admin/reports');
+});
+
+// ===================================
+// ADMIN DMCA MANAGEMENT ROUTES
+// ===================================
+
+// Helper to permanently delete a file or variant (cleaning up B2, older versions, and references)
+async function permanentlyDeleteInfringingFile(fileId) {
+    const file = await File.findById(fileId).populate('olderVersions').populate('variants');
+    if (!file) return { success: false, message: 'File not found' };
+
+    // If it's a variant, remove reference from parent masterFile and delete
+    if (file.isVariant && file.masterFile) {
+        await File.findByIdAndUpdate(file.masterFile, {
+            $pull: { variants: file._id }
+        });
+        if (file.fileKey && file.fileKey !== 'external-link') {
+            try { await deleteFromB2(file.fileKey); } catch (e) { console.error("Error deleting variant file from B2:", e); }
+        }
+        await Review.deleteMany({ file: file._id });
+        await File.findByIdAndDelete(file._id);
+        return { success: true, isVariant: true };
+    }
+
+    // If it's a main file: check if variants exist to promote permanently
+    const variantsList = await File.find({ masterFile: file._id }).sort({ createdAt: 1 });
+    if (variantsList.length > 0) {
+        const firstVariant = variantsList[0];
+        if (file.fileKey && file.fileKey !== 'external-link' && file.fileKey !== firstVariant.fileKey) {
+            try { await deleteFromB2(file.fileKey); } catch (e) { console.error("Error deleting old main file from B2:", e); }
+        }
+        file.uploader = firstVariant.uploader;
+        file.modDescription = firstVariant.modDescription || file.modDescription;
+        file.modFeatures = firstVariant.modFeatures || file.modFeatures;
+        file.version = firstVariant.version;
+        file.fileKey = firstVariant.fileKey;
+        file.fileSize = firstVariant.fileSize;
+        file.originalFilename = firstVariant.originalFilename;
+        file.externalDownloadUrl = firstVariant.externalDownloadUrl;
+        file.directDownloadUrl = firstVariant.directDownloadUrl;
+        file.downloadParts = firstVariant.downloadParts;
+        file.isMultiPart = firstVariant.isMultiPart;
+        file.isDmcaHidden = false;
+        file.dmcaReportId = null;
+        file.dmcaHiddenAt = null;
+        file.temporaryPromotedVariantId = null;
+
+        if (firstVariant.screenshotKeys && firstVariant.screenshotKeys.length > 0) {
+            file.screenshotKeys = firstVariant.screenshotKeys;
+        }
+        file.variants = (file.variants || []).filter(vId => vId.toString() !== firstVariant._id.toString());
+        await File.findByIdAndDelete(firstVariant._id);
+        await file.save();
+        return { success: true, promoted: true };
+    }
+
+    // No variants: full permanent deletion
+    if (file.fileKey && file.fileKey !== 'external-link') {
+        try { await deleteFromB2(file.fileKey); } catch (e) { console.error("Error deleting file from B2:", e); }
+    }
+    if (file.iconKey) {
+        try { await deleteFromB2(file.iconKey); } catch (e) { console.error("Error deleting icon from B2:", e); }
+    }
+    if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+        for (const key of file.screenshotKeys) {
+            try { await deleteFromB2(key); } catch (e) { console.error("Error deleting screenshot from B2:", e); }
+        }
+    }
+    if (file.olderVersions && file.olderVersions.length > 0) {
+        for (const oldVersion of file.olderVersions) {
+            if (oldVersion.fileKey) {
+                try { await deleteFromB2(oldVersion.fileKey); } catch (e) { console.error("Error deleting old version from B2:", e); }
+            }
+            await File.findByIdAndDelete(oldVersion._id);
+        }
+    }
+
+    await File.findByIdAndDelete(fileId);
+    await Review.deleteMany({ file: fileId });
+    await Report.updateMany({ file: fileId }, { status: 'resolved' });
+    return { success: true, deleted: true };
+}
+
+// GET /admin/dmca - View all DMCA claims & statistics
+app.get('/admin/dmca', ensureAdmin, async (req, res) => {
+    try {
+        const claims = await Dmca.find()
+            .populate('reportedFiles.file')
+            .populate('reportedFiles.promotedVariant')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Sign icons for preview cards
+        for (const claim of claims) {
+            for (const item of claim.reportedFiles || []) {
+                if (item.file) {
+                    const iconKey = item.file.iconUrl || item.file.iconKey;
+                    item.file.signedIconUrl = '/images/default-app-icon.png';
+                    if (iconKey) {
+                        try { item.file.signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                    }
+                }
+            }
+        }
+
+        const now = new Date();
+        const stats = {
+            total: claims.length,
+            open: claims.filter(c => c.status === 'open').length,
+            autoHidden: claims.filter(c => c.status === 'auto-hidden').length,
+            falseClaims: claims.filter(c => c.status === 'false-claim').length,
+            actionTaken: claims.filter(c => c.status === 'action-taken').length
+        };
+
+        res.render('pages/admin/dmca', {
+            claims,
+            stats,
+            now,
+            success: req.query.success,
+            error: req.query.error
+        });
+    } catch (err) {
+        console.error("Admin DMCA Dashboard Error:", err);
+        res.status(500).send("Error loading DMCA Dashboard: " + err.message);
+    }
+});
+
+// POST /admin/dmca/:id/hide-now - Immediate manual link hiding
+app.post('/admin/dmca/:id/hide-now', ensureAdmin, async (req, res) => {
+    try {
+        await executeDmcaTakedown(req.params.id);
+        res.redirect('/admin/dmca?success=Links+have+been+immediately+hidden.');
+    } catch (err) {
+        console.error("DMCA Hide Now Error:", err);
+        res.redirect('/admin/dmca?error=' + encodeURIComponent(err.message));
+    }
+});
+
+// POST /admin/dmca/:id/false-claim - Mark as False Claim & restore all files
+app.post('/admin/dmca/:id/false-claim', ensureAdmin, async (req, res) => {
+    try {
+        const { notes } = req.body;
+        await restoreDmcaFiles(req.params.id, notes, req.user.username);
+        res.redirect('/admin/dmca?success=Claim+marked+as+False+Claim.+All+files+and+links+have+been+restored.');
+    } catch (err) {
+        console.error("DMCA False Claim Error:", err);
+        res.redirect('/admin/dmca?error=' + encodeURIComponent(err.message));
+    }
+});
+
+// POST /admin/dmca/:id/delete-file/:fileId - Confirm infringement & delete file
+app.post('/admin/dmca/:id/delete-file/:fileId', ensureAdmin, async (req, res) => {
+    try {
+        const { id: dmcaId, fileId } = req.params;
+        await permanentlyDeleteInfringingFile(fileId);
+        
+        // Update the DMCA record
+        const dmca = await Dmca.findById(dmcaId);
+        if (dmca) {
+            dmca.status = 'action-taken';
+            dmca.adminResolution = {
+                resolvedBy: req.user.username,
+                resolvedAt: new Date(),
+                resolutionType: 'file-deleted',
+                notes: req.body.notes || 'Infringing file permanently removed by administrator.'
+            };
+            await dmca.save();
+        }
+
+        res.redirect('/admin/dmca?success=Infringing+file+has+been+permanently+deleted.');
+    } catch (err) {
+        console.error("DMCA Delete File Error:", err);
+        res.redirect('/admin/dmca?error=' + encodeURIComponent(err.message));
+    }
+});
+
+// POST /admin/dmca/:id/reject - Reject DMCA notice without taking action
+app.post('/admin/dmca/:id/reject', ensureAdmin, async (req, res) => {
+    try {
+        const dmca = await Dmca.findById(req.params.id);
+        if (dmca) {
+            if (dmca.status === 'auto-hidden' || dmca.isAutomatedHidden) {
+                await restoreDmcaFiles(dmca._id, req.body.notes || 'Claim rejected as invalid.', req.user.username);
+            }
+            dmca.status = 'rejected';
+            dmca.adminResolution = {
+                resolvedBy: req.user.username,
+                resolvedAt: new Date(),
+                resolutionType: 'rejected',
+                notes: req.body.notes || 'Claim rejected due to lack of evidence or invalid ownership notice.'
+            };
+            await dmca.save();
+        }
+        res.redirect('/admin/dmca?success=Notice+marked+as+rejected.');
+    } catch (err) {
+        console.error("DMCA Reject Error:", err);
+        res.redirect('/admin/dmca?error=' + encodeURIComponent(err.message));
+    }
 });
 
 app.get('/community-chat', ensureAuthenticated, (req, res) => res.render('pages/community-chat'));
@@ -11246,13 +11673,528 @@ app.get('/fdroid/repo/index-v2.json', async (req, res) => {
     }
 });
 
-// --- DMCA PAGE ROUTE ---
+// ==========================================
+// DMCA AUTOMATED COMPLIANCE & TAKEDOWN ENGINE
+// ==========================================
+
+// Helper to resolve any incoming GPLMods URL or path to a matching File record
+async function resolveGplModsUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return { found: false, url: rawUrl };
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return { found: false, url: rawUrl };
+
+    try {
+        let cleanPath = trimmed;
+        if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+            try {
+                const parsed = new URL(cleanPath);
+                cleanPath = parsed.pathname;
+            } catch (err) {
+                cleanPath = cleanPath.replace(/^https?:\/\/[^\/]+/i, '');
+            }
+        }
+
+        // Strip query strings, hashes, and leading/trailing slashes
+        cleanPath = cleanPath.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+        const segments = cleanPath.split('/').filter(Boolean);
+
+        // 1. Direct ObjectId search in segments (e.g., /mods/:id or /download-file/:id or /mods/:cat/:slug/:variantId)
+        for (let i = segments.length - 1; i >= 0; i--) {
+            const seg = segments[i];
+            if (Types.ObjectId.isValid(seg) && /^[a-fA-F0-9]{24}$/.test(seg)) {
+                const fileById = await File.findById(seg);
+                if (fileById) {
+                    if (fileById.isVariant && fileById.masterFile) {
+                        return { found: true, file: fileById, targetType: 'variant', masterFileId: fileById.masterFile, url: trimmed };
+                    } else {
+                        return { found: true, file: fileById, targetType: 'main', url: trimmed };
+                    }
+                }
+            }
+        }
+
+        // 2. Slug & category matching: /mods/:category/:slug or /:category/:slug
+        let cat = null;
+        let slug = null;
+        if (segments.length >= 2 && segments[0] === 'mods') {
+            cat = segments[1];
+            slug = segments[2];
+        } else if (segments.length >= 2) {
+            cat = segments[0];
+            slug = segments[1];
+        } else if (segments.length === 1) {
+            slug = segments[0];
+        }
+
+        if (slug) {
+            const query = { isVariant: { $ne: true } };
+            if (cat && ['android', 'windows', 'ios-jailed', 'ios-jailbroken', 'wordpress'].includes(cat.toLowerCase())) {
+                query.category = cat.toLowerCase();
+            }
+            query.slug = slug.toLowerCase();
+
+            let matchedMain = await File.findOne(query);
+            if (!matchedMain) {
+                matchedMain = await File.findOne({ slug: slug.toLowerCase(), isVariant: { $ne: true } });
+            }
+            if (!matchedMain) {
+                // Try case-insensitive name match
+                const namePattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
+                matchedMain = await File.findOne({ name: namePattern, isVariant: { $ne: true } });
+            }
+            if (matchedMain) {
+                return { found: true, file: matchedMain, targetType: 'main', url: trimmed };
+            }
+        }
+
+        // 3. Fallback: match by direct external or mirror download URLs
+        const matchedByLink = await File.findOne({
+            $or: [
+                { directDownloadUrl: trimmed },
+                { externalDownloadUrl: trimmed },
+                { 'downloadParts.partUrl': trimmed },
+                { 'downloadParts.mirror1Url': trimmed },
+                { 'downloadParts.mirror2Url': trimmed }
+            ]
+        });
+        if (matchedByLink) {
+            return {
+                found: true,
+                file: matchedByLink,
+                targetType: matchedByLink.isVariant ? 'variant' : 'main',
+                masterFileId: matchedByLink.masterFile || null,
+                url: trimmed
+            };
+        }
+
+        return { found: false, url: trimmed };
+    } catch (e) {
+        console.error("Error in resolveGplModsUrl:", e);
+        return { found: false, url: rawUrl };
+    }
+}
+
+// Executes automated or manual hiding of reported files
+async function executeDmcaTakedown(dmcaId) {
+    try {
+        const dmca = await Dmca.findById(dmcaId).populate('reportedFiles.file');
+        if (!dmca || dmca.status === 'false-claim' || dmca.status === 'action-taken') return false;
+        if (dmca.isAutomatedHidden) return false;
+
+        console.log(`[DMCA Engine] Executing link hiding for Notice #${dmca._id}`);
+
+        for (const item of dmca.reportedFiles) {
+            if (!item.file) continue;
+            const file = await File.findById(item.file._id || item.file);
+            if (!file) continue;
+
+            file.isDmcaHidden = true;
+            file.dmcaReportId = dmca._id;
+            file.dmcaHiddenAt = new Date();
+
+            if (item.targetType === 'main') {
+                // Find most recent live variant uploaded after main file
+                const latestVariant = await File.findOne({
+                    masterFile: file._id,
+                    isVariant: true,
+                    status: 'live',
+                    isDmcaHidden: { $ne: true }
+                }).sort({ createdAt: -1 });
+
+                if (latestVariant) {
+                    file.temporaryPromotedVariantId = latestVariant._id;
+                    item.promotedVariant = latestVariant._id;
+                    console.log(`[DMCA Engine] Temporarily promoting variant "${latestVariant.name}" (${latestVariant._id}) to replace hidden main mod "${file.name}"`);
+                }
+            }
+            await file.save();
+            item.isHidden = true;
+        }
+
+        dmca.status = 'auto-hidden';
+        dmca.isAutomatedHidden = true;
+        dmca.hiddenAt = new Date();
+        await dmca.save();
+
+        // 1. Automated Notification to Admins
+        const admins = await User.find({ role: { $in: ['admin', 'owner'] } });
+        for (const admin of admins) {
+            await new UserNotification({
+                user: admin._id,
+                title: 'Automated DMCA Takedown Executed',
+                message: `The 24-48h window has reached deadline for DMCA Notice #${dmca._id.toString().slice(-6)}. Reported file links have been automatically hidden. Action required in the Admin DMCA Dashboard.`,
+                type: 'dmca-notice',
+                metadata: { dmcaId: dmca._id }
+            }).save();
+        }
+
+        // 2. Automated Notification to Uploaders
+        const uploaderNames = new Set(
+            dmca.reportedFiles
+                .map(rf => rf.file && rf.file.uploader)
+                .filter(Boolean)
+        );
+        for (const uploaderName of uploaderNames) {
+            const uploaderUser = await User.findOne({ username: uploaderName });
+            if (uploaderUser) {
+                await new UserNotification({
+                    user: uploaderUser._id,
+                    title: 'Notice: Mod Content Temporarily Restricted Under DMCA',
+                    message: `One or more files uploaded under your account have been temporarily restricted following a formal DMCA takedown notice. Our administration team is reviewing the claim. You can check the current status in your My Uploads dashboard.`,
+                    type: 'dmca-notice'
+                }).save();
+            }
+        }
+
+        return true;
+    } catch (err) {
+        console.error("[DMCA Engine] Error executing takedown:", err);
+        return false;
+    }
+}
+
+// Restores files when admin determines claim was a False Claim
+async function restoreDmcaFiles(dmcaId, resolutionNotes, adminUsername) {
+    try {
+        const dmca = await Dmca.findById(dmcaId).populate('reportedFiles.file');
+        if (!dmca) return false;
+
+        console.log(`[DMCA Engine] Restoring files for DMCA Notice #${dmca._id} (Marked as False Claim by ${adminUsername})`);
+
+        for (const item of dmca.reportedFiles) {
+            if (!item.file) continue;
+            const file = await File.findById(item.file._id || item.file);
+            if (!file) continue;
+
+            file.isDmcaHidden = false;
+            file.dmcaReportId = null;
+            file.dmcaHiddenAt = null;
+            file.temporaryPromotedVariantId = null;
+            await file.save();
+
+            item.isHidden = false;
+        }
+
+        dmca.status = 'false-claim';
+        dmca.adminResolution = {
+            resolvedBy: adminUsername || 'Admin',
+            resolvedAt: new Date(),
+            resolutionType: 'false-claim',
+            notes: resolutionNotes || 'Claim dismissed as false claim. Content restored.'
+        };
+        await dmca.save();
+
+        // Notify Uploaders of restoration
+        const uploaderNames = new Set(
+            dmca.reportedFiles
+                .map(rf => rf.file && rf.file.uploader)
+                .filter(Boolean)
+        );
+        for (const uploaderName of uploaderNames) {
+            const uploaderUser = await User.findOne({ username: uploaderName });
+            if (uploaderUser) {
+                await new UserNotification({
+                    user: uploaderUser._id,
+                    title: 'DMCA Claim Dismissed - File Restored',
+                    message: `Great news! The DMCA claim against your file(s) has been reviewed and dismissed as a False Claim. Your file is once again live for public download and active on your dashboard.`,
+                    type: 'success'
+                }).save();
+            }
+        }
+
+        return true;
+    } catch (err) {
+        console.error("[DMCA Engine] Error restoring DMCA files:", err);
+        return false;
+    }
+}
+
+// Helper to notify all admins upon receiving a new DMCA complaint
+async function notifyAdminsOnDmcaSubmission(dmca) {
+    try {
+        const admins = await User.find({ role: { $in: ['admin', 'owner'] } });
+        const fileNames = dmca.reportedFiles
+            .map(rf => (rf.file && rf.file.name ? rf.file.name : rf.originalUrl))
+            .filter(Boolean)
+            .join(', ');
+
+        for (const admin of admins) {
+            await new UserNotification({
+                user: admin._id,
+                title: 'New DMCA Complaint Submitted',
+                message: `A new DMCA takedown claim was filed by ${dmca.fullName} (${dmca.copyrightHolder}) targeting: ${fileNames || 'Reported Links'}. Automated link hiding is scheduled in 24 hours.`,
+                type: 'dmca-notice',
+                metadata: { dmcaId: dmca._id }
+            }).save();
+        }
+    } catch (e) {
+        console.error("[DMCA Engine] Error notifying admins on submission:", e);
+    }
+}
+
+// Live Link Inspector API for frontend DMCA form
+app.get('/api/dmca/inspect-link', async (req, res) => {
+    try {
+        const targetUrl = req.query.url;
+        if (!targetUrl) return res.status(400).json({ found: false, message: 'URL required.' });
+
+        const result = await resolveGplModsUrl(targetUrl);
+        if (!result.found || !result.file) {
+            return res.json({
+                found: false,
+                message: 'No matching file found on GPLMods (will be recorded as an external link).'
+            });
+        }
+
+        const file = result.file;
+        let signedIcon = '/images/default-app-icon.png';
+        const iconKey = file.iconUrl || file.iconKey;
+        if (iconKey) {
+            try { signedIcon = await getSmartImageUrl(iconKey); } catch (e) {}
+        }
+
+        return res.json({
+            found: true,
+            fileId: file._id,
+            name: file.name,
+            version: file.version,
+            category: file.category,
+            uploader: file.uploader,
+            targetType: result.targetType,
+            iconUrl: signedIcon
+        });
+    } catch (err) {
+        console.error("Link inspect error:", err);
+        res.status(500).json({ found: false, error: err.message });
+    }
+});
+
+// DMCA Notice Submission Route
 app.post('/dmca-request', async (req, res) => {
     try {
-        await new Dmca(req.body).save();
-        res.redirect('/dmca?success=Request submitted.');
-    } catch (e) { res.redirect('/dmca?error=Error.'); }
+        const { fullName, email, copyrightHolder, originalWorkUrl, signature } = req.body;
+        let rawUrls = req.body.infringingUrls || req.body.infringingUrl;
+
+        let urlsList = [];
+        if (Array.isArray(rawUrls)) {
+            urlsList = rawUrls.map(u => String(u || '').trim()).filter(Boolean);
+        } else if (typeof rawUrls === 'string') {
+            urlsList = rawUrls.split(/[\r\n,]+/).map(u => u.trim()).filter(Boolean);
+        }
+
+        if (urlsList.length === 0) {
+            return res.redirect('/dmca?error=Please provide at least one infringing URL.');
+        }
+
+        urlsList = Array.from(new Set(urlsList));
+
+        const reportedFiles = [];
+        for (const url of urlsList) {
+            const resolved = await resolveGplModsUrl(url);
+            if (resolved.found && resolved.file) {
+                reportedFiles.push({
+                    file: resolved.file._id,
+                    originalUrl: url,
+                    targetType: resolved.targetType,
+                    isHidden: false,
+                    originalStatus: resolved.file.status
+                });
+            } else {
+                reportedFiles.push({
+                    file: null,
+                    originalUrl: url,
+                    targetType: 'main',
+                    isHidden: false
+                });
+            }
+        }
+
+        // Schedule automated takedown in 24 hours
+        const scheduledHideAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        const newDmca = new Dmca({
+            fullName,
+            email,
+            copyrightHolder,
+            originalWorkUrl,
+            infringingUrl: urlsList[0],
+            infringingUrls: urlsList,
+            reportedFiles,
+            signature,
+            scheduledHideAt,
+            isAutomatedHidden: false,
+            status: 'open'
+        });
+
+        await newDmca.save();
+
+        // Send automated notification to admins
+        await notifyAdminsOnDmcaSubmission(newDmca);
+
+        res.redirect('/dmca?success=Your DMCA notice has been received and scheduled for administrator verification. Automated link protection will activate within 24 hours if verified.');
+    } catch (e) {
+        console.error("DMCA submission error:", e);
+        res.redirect('/dmca?error=An error occurred while submitting your notice. Please try again.');
+    }
 });
+
+// ==========================================
+// DEVTOOLS & DEBUGGER ACCESS CONTROL ENGINE
+// ==========================================
+
+function generate11DigitKey() {
+    // Generates a 10-12 digit random numeric string (11 digits: e.g. 58193849182)
+    const min = 10000000000;
+    const max = 99999999999;
+    return Math.floor(min + Math.random() * (max - min + 1)).toString();
+}
+
+async function getOrRotateDebuggerKey(forceRotate = false, reason = 'routine') {
+    try {
+        let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+        if (!siteState) {
+            siteState = new SiteState({ singletonId: 'master-state' });
+        }
+
+        const now = new Date();
+        const isExpired = !siteState.debuggerHourlyKeyExpiresAt || siteState.debuggerHourlyKeyExpiresAt <= now;
+        const isMissing = !siteState.debuggerHourlyKey;
+
+        if (forceRotate || isExpired || isMissing) {
+            const newKey = generate11DigitKey();
+            siteState.debuggerHourlyKey = newKey;
+            siteState.debuggerHourlyKeyExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+            await siteState.save();
+            console.log(`[Debugger Security] New 11-digit key generated (${reason}): ${newKey} (Expires: ${siteState.debuggerHourlyKeyExpiresAt.toLocaleTimeString()})`);
+            return {
+                key: siteState.debuggerHourlyKey,
+                expiresAt: siteState.debuggerHourlyKeyExpiresAt,
+                masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026'
+            };
+        }
+
+        return {
+            key: siteState.debuggerHourlyKey,
+            expiresAt: siteState.debuggerHourlyKeyExpiresAt,
+            masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026'
+        };
+    } catch (err) {
+        console.error("[Debugger Security] Error rotating key:", err);
+        return {
+            key: '92840192840',
+            expiresAt: new Date(Date.now() + 3600000),
+            masterKey: 'OPAdmin@2026'
+        };
+    }
+}
+
+// 1. Telemetry Log Route - Saves DevTools Breach Incident to Database
+app.post('/api/devtool/log', async (req, res) => {
+    try {
+        const { triggerType, url, screenDetails } = req.body || {};
+        const clientIp = (req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '').split(',')[0].trim();
+        const userAgent = req.get('User-Agent') || '';
+        const user = req.user ? req.user._id : null;
+        const username = req.user ? req.user.username : 'Guest';
+
+        let pathOnly = '/';
+        if (url) {
+            try {
+                const parsed = new URL(url);
+                pathOnly = parsed.pathname;
+            } catch (e) {
+                pathOnly = String(url).slice(0, 100);
+            }
+        }
+
+        const logEntry = new DevtoolLog({
+            ip: clientIp,
+            userAgent,
+            user,
+            username,
+            url: url || '',
+            path: pathOnly,
+            triggerType: triggerType || 'devtool-detected',
+            status: 'blocked',
+            screenDetails: screenDetails || null
+        });
+
+        await logEntry.save();
+        res.json({ success: true, logId: logEntry._id });
+    } catch (e) {
+        console.error("[Devtool Telemetry] Error logging incident:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// 2. Verification Route - Validates 10-12 Digit Key or Master Key
+app.post('/api/devtool/verify-key', async (req, res) => {
+    try {
+        const { code, logId } = req.body || {};
+        if (!code || typeof code !== 'string') {
+            return res.status(400).json({ success: false, message: 'Access code required.' });
+        }
+
+        const trimmedCode = code.trim();
+        const { key: activeHourlyKey, masterKey } = await getOrRotateDebuggerKey(false);
+
+        // A. Check Master Key (Multi-use, never expires)
+        if (trimmedCode === masterKey || trimmedCode === 'OPAdmin@2026') {
+            if (logId && Types.ObjectId.isValid(logId)) {
+                await DevtoolLog.findByIdAndUpdate(logId, {
+                    status: 'authorized-by-master-key',
+                    accessCodeUsed: 'MASTER_KEY',
+                    resolvedAt: new Date()
+                });
+            }
+            return res.json({ success: true, authorizedBy: 'master-key' });
+        }
+
+        // B. Check Hourly Single-Use Key
+        if (trimmedCode === activeHourlyKey) {
+            if (logId && Types.ObjectId.isValid(logId)) {
+                await DevtoolLog.findByIdAndUpdate(logId, {
+                    status: 'authorized-by-code',
+                    accessCodeUsed: 'HOURLY_KEY',
+                    resolvedAt: new Date()
+                });
+            }
+            // Once used, generate a new key immediately so it is single-use!
+            await getOrRotateDebuggerKey(true, 'Single-Use Key Redeemed');
+            return res.json({ success: true, authorizedBy: 'hourly-key', keyRegenerated: true });
+        }
+
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid 10-12 digit debugger access code or master key.'
+        });
+    } catch (e) {
+        console.error("[Devtool Verify] Error verifying code:", e);
+        res.status(500).json({ success: false, message: 'Verification error.' });
+    }
+});
+
+// 3. Manual Key Generation Endpoint (Admin / Owner)
+app.post('/api/admin/debugger/generate-key', ensureSupportOrAdmin, async (req, res) => {
+    try {
+        const uploaderName = req.user ? req.user.username : 'Staff';
+        const { key, expiresAt, masterKey } = await getOrRotateDebuggerKey(true, `Manual Regeneration by ${uploaderName}`);
+        res.json({ success: true, key, expiresAt, masterKey });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+// 4. Audit Incident Logs Endpoint (Admin / Owner)
+app.get('/api/admin/debugger/logs', ensureSupportOrAdmin, async (req, res) => {
+    try {
+        const logs = await DevtoolLog.find().sort({ createdAt: -1 }).limit(50).lean();
+        res.json({ success: true, logs });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // --- BANNED PAGE ROUTE ---
 app.get('/banned', (req, res) => {
     // If they aren't logged in, or aren't banned, send them home
@@ -13011,6 +13953,33 @@ cron.schedule('0 * * * *', () => {
     if (recentMessages.length > 20) {
         recentMessages = recentMessages.slice(-20); // Trim to last 20 every hour
         console.log("[Maintenance] Chat history array pruned to prevent memory leak.");
+    }
+});
+
+// --- DMCA AUTOMATED COMPLIANCE & TAKEDOWN CRON (Runs every 5 minutes) ---
+cron.schedule('*/5 * * * *', async () => {
+    try {
+        const now = new Date();
+        const pendingClaims = await Dmca.find({
+            status: 'open',
+            scheduledHideAt: { $lte: now },
+            isAutomatedHidden: { $ne: true }
+        });
+        for (const claim of pendingClaims) {
+            console.log(`[DMCA Cron] Auto-hiding links for notice ${claim._id} (reached deadline ${claim.scheduledHideAt})`);
+            await executeDmcaTakedown(claim._id);
+        }
+    } catch (dmcaCronErr) {
+        console.error('[DMCA Cron] Error running automated takedown job:', dmcaCronErr);
+    }
+});
+
+// --- DEBUGGER HOURLY KEY ROTATION CRON (Runs at minute 0 of every hour) ---
+cron.schedule('0 * * * *', async () => {
+    try {
+        await getOrRotateDebuggerKey(true, 'Hourly Scheduled Auto-Rotation');
+    } catch (err) {
+        console.error('[Debugger Cron] Error rotating hourly key:', err);
     }
 });
 

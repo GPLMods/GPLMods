@@ -607,14 +607,46 @@ router.post('/api/owner/core/terminate-data', catchAsync(async (req, res) => {
 }));
 
 // ==========================================
-// OWNER DASHBOARD VIEW
+// OWNER DASHBOARD VIEW & DEBUGGER CONTROLS
 // ==========================================
-router.get('/owner', (req, res) => {
+const SiteState = require('../models/siteState');
+const DevtoolLog = require('../models/devtoolLog');
+
+router.post('/api/owner/debugger/generate-key', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        siteState = new SiteState({ singletonId: 'master-state' });
+    }
+    const min = 10000000000;
+    const max = 99999999999;
+    const newKey = Math.floor(min + Math.random() * (max - min + 1)).toString();
+    siteState.debuggerHourlyKey = newKey;
+    siteState.debuggerHourlyKeyExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await siteState.save();
+    res.json({ 
+        success: true, 
+        key: newKey, 
+        expiresAt: siteState.debuggerHourlyKeyExpiresAt, 
+        masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026' 
+    });
+}));
+
+router.get('/owner', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        siteState = new SiteState({ singletonId: 'master-state' });
+    }
+    const recentDevtoolLogs = await DevtoolLog.find().sort({ createdAt: -1 }).limit(10).lean();
+
     res.render('pages/owner/dashboard', {
         user: req.user,
         pageTitle: 'Owner Infrastructure Dashboard',
-        improvmxDomain: process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org'
+        improvmxDomain: process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org',
+        debuggerKey: siteState.debuggerHourlyKey || 'N/A',
+        debuggerExpiresAt: siteState.debuggerHourlyKeyExpiresAt,
+        debuggerMasterKey: siteState.debuggerMasterKey || 'OPAdmin@2026',
+        recentDevtoolLogs: recentDevtoolLogs || []
     });
-});
+}));
 
 module.exports = router;

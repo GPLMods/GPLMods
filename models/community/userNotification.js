@@ -17,7 +17,7 @@ const UserNotificationSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['info', 'warning', 'success', 'error', 'mod-update-request'],
+        enum: ['info', 'warning', 'success', 'error', 'mod-update-request', 'dmca-notice'],
         default: 'info'
     },
     isRead: {

@@ -2,7 +2,7 @@
 
 <style>
     /* Specific styles for the DMCA Page to prevent conflicts */
-    .dmca-page-header { text-align: center; padding: 60px 20px; }
+    .dmca-page-header { text-align: center; padding: 60px 20px 40px; }
     .dmca-page-header h1 { font-size: 3em; color: var(--white); }
     .dmca-page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
 
@@ -37,6 +37,154 @@
         border-color: var(--gold); 
         box-shadow: 0 0 8px var(--glow-gold); 
     }
+
+    /* Multi-Link Reporting Suite Styles */
+    .link-mode-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .link-mode-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        background: #111;
+        border: 1px solid #333;
+        color: var(--silver);
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+    .link-mode-btn.active {
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+        border-color: var(--gold);
+    }
+
+    .link-rows-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .link-input-row {
+        background: #111;
+        border: 1px solid #282828;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: border-color 0.2s;
+    }
+    .link-input-row:hover {
+        border-color: #444;
+    }
+    .link-input-field-wrap {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .link-input-field-wrap input {
+        flex: 1;
+        padding: 10px 14px;
+        font-size: 0.95em;
+    }
+    .remove-link-btn {
+        background: rgba(255, 77, 77, 0.1);
+        border: 1px solid rgba(255, 77, 77, 0.3);
+        color: #ff4d4d;
+        width: 38px;
+        height: 38px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .remove-link-btn:hover {
+        background: #ff4d4d;
+        color: #fff;
+    }
+    .add-link-btn {
+        background: transparent;
+        border: 1px dashed var(--gold);
+        color: var(--gold);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95em;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        align-self: flex-start;
+        transition: all 0.2s;
+        font-family: inherit;
+        margin-top: 4px;
+    }
+    .add-link-btn:hover {
+        background: rgba(255, 215, 0, 0.1);
+    }
+
+    /* Live Link Inspection Card */
+    .link-inspect-preview {
+        display: none;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #181818;
+        border-radius: 6px;
+        border: 1px solid #333;
+    }
+    .link-inspect-preview.show {
+        display: flex;
+    }
+    .link-preview-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 6px;
+        object-fit: cover;
+        background: #000;
+    }
+    .link-preview-text {
+        flex: 1;
+        min-width: 0;
+    }
+    .link-preview-title {
+        color: var(--white);
+        font-weight: 600;
+        font-size: 0.95em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .link-preview-meta {
+        font-size: 0.8em;
+        color: var(--silver);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .link-preview-badge {
+        font-size: 0.75em;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    .badge-main { background: #332200; color: var(--gold); border: 1px solid #664400; }
+    .badge-variant { background: #002233; color: var(--blue); border: 1px solid #004466; }
+    .badge-external { background: #222; color: #888; border: 1px solid #444; }
+    .link-checking-spinner {
+        font-size: 0.85em;
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
     
     .dmca-submit-btn { 
         background-color: var(--gold); 
@@ -70,7 +218,7 @@
     .dmca-alert.success { background-color: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
     .dmca-alert.error { background-color: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; }
 
-    /* Highlight box for the new policy */
+    /* Highlight box for policy */
     .policy-highlight {
         background-color: rgba(255, 215, 0, 0.05);
         border-left: 4px solid var(--gold);
@@ -79,16 +227,43 @@
         margin-bottom: 25px;
     }
 
+    /* Automated Protection Notice */
+    .automated-protection-box {
+        background: rgba(255, 51, 102, 0.08);
+        border: 1px solid rgba(255, 51, 102, 0.3);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .protection-icon {
+        font-size: 2em;
+        color: #ff3366;
+        flex-shrink: 0;
+    }
+    .protection-text h4 {
+        margin: 0 0 4px 0;
+        color: var(--white);
+        font-size: 1.1em;
+    }
+    .protection-text p {
+        margin: 0;
+        font-size: 0.9em;
+        color: var(--silver);
+        line-height: 1.5;
+    }
+
     /* Contact Box Styles */
     .contact-box { background: var(--black); border: 1px solid #333; padding: 20px; border-radius: 10px; margin-top: 30px; text-align: center; }
     .contact-box p { margin-bottom: 5px; font-size: 1em; }
-/* ✅ FIX: Force long emails to wrap on small screens */
     .contact-box a {
         word-wrap: break-word;
         overflow-wrap: break-word;
         word-break: break-all;
-        display: inline-block; /* Helps with layout consistency when wrapped */
-        max-width: 100%; /* Ensures it never exceeds the container */
+        display: inline-block;
+        max-width: 100%;
     }
 
     @media (max-width: 768px) {
@@ -99,13 +274,11 @@
 
 <main>
     <div class="dmca-page-header">
-<!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;">
-        <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
+        <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;" class="container">
+            <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </a>
+        </div>
         <div class="container">
             <h1>DMCA & <span>Copyright Policy</span></h1>
         </div>
@@ -116,6 +289,16 @@
             
             <!-- Dynamic Success/Error Message Container -->
             <div id="dmca-alert-box" class="dmca-alert"></div>
+
+            <div class="automated-protection-box">
+                <div class="protection-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="protection-text">
+                    <h4>Automated Safe Harbor Protection System</h4>
+                    <p>Upon submitting a takedown notice, our automated compliance engine logs the claim and schedules file link restrictions within <strong>24 to 48 hours</strong>. The files are isolated for administrative verification to ensure prompt resolution while protecting intellectual property rights.</p>
+                </div>
+            </div>
 
             <div class="policy-highlight">
                 <p style="color: var(--white); font-weight: bold; margin-bottom: 10px;">Our Platform's Purpose & Safe Harbor</p>
@@ -134,8 +317,8 @@
             </ul>
 
             <h2>How to Submit a Notice & Contact Us</h2>
-            <p>Upon receipt of a valid and verified infringement notification, we will take appropriate action, including the prompt removal of the challenged material from our platform.</p>
-            <p>You may submit your verified takedown request using the form at the bottom of this page, or by contacting our Designated Copyright Agent directly via email.</p>
+            <p>Upon receipt of a valid and verified infringement notification, we take immediate action, including the prompt restriction or removal of the challenged material from our platform.</p>
+            <p>You may submit your verified takedown request using the interactive form below, or by contacting our Designated Copyright Agent directly via email.</p>
 
             <div class="contact-box">
                 <p>
@@ -162,9 +345,9 @@
 
             <div class="dmca-form-container">
                 <h2>Submit a DMCA Notice</h2>
-                <p style="margin-bottom: 20px;">Use the form below to submit your initial takedown request directly to our administration queue. Please ensure all contact information is accurate so our team can follow up for verification.</p>
+                <p style="margin-bottom: 20px;">Use the form below to submit your takedown request directly to our automated compliance queue. You can report single or multiple GPLMods links with live file verification.</p>
                 
-                <form class="dmca-form" action="/dmca-request" method="POST">
+                <form class="dmca-form" id="dmca-main-form" action="/dmca-request" method="POST" onsubmit="return handleDmcaSubmit(event)">
                     <div class="dmca-form-group">
                         <label for="fullName">Your Full Name*</label>
                         <input type="text" id="fullName" name="fullName" required>
@@ -179,27 +362,262 @@
                     </div>
                     <div class="dmca-form-group">
                         <label for="originalWorkUrl">URL to the original copyrighted work*</label>
-                        <input type="url" id="originalWorkUrl" name="originalWorkUrl" required>
+                        <input type="url" id="originalWorkUrl" name="originalWorkUrl" required placeholder="https://yourcompany.com/official-software">
                     </div>
+
+                    <!-- Multi-Link Reporting Suite -->
                     <div class="dmca-form-group">
-                        <label for="infringingUrl">URL(s) on GPL Mods you claim are infringing*</label>
-                        <textarea id="infringingUrl" name="infringingUrl" rows="4" required placeholder="Provide one URL per line"></textarea>
+                        <label>URL(s) on GPL Mods you claim are infringing*</label>
+                        
+                        <div class="link-mode-tabs">
+                            <button type="button" class="link-mode-btn active" id="tab-interactive" onclick="switchLinkMode('interactive')">
+                                <i class="fas fa-list-ul"></i> Interactive Link Builder
+                            </button>
+                            <button type="button" class="link-mode-btn" id="tab-bulk" onclick="switchLinkMode('bulk')">
+                                <i class="fas fa-align-left"></i> Bulk Paste
+                            </button>
+                        </div>
+
+                        <!-- Interactive Mode Container -->
+                        <div id="interactive-links-container">
+                            <div class="link-rows-wrapper" id="link-rows-list">
+                                <!-- Dynamic Link Input Row 1 -->
+                                <div class="link-input-row" data-row-id="1">
+                                    <div class="link-input-field-wrap">
+                                        <input type="url" class="interactive-link-input" placeholder="Paste GPLMods URL (e.g. https://gplmods.webredirect.org/mods/...)" oninput="handleUrlInput(this)" required>
+                                        <button type="button" class="remove-link-btn" onclick="removeLinkRow(this)" title="Remove URL" style="display: none;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="link-inspect-preview"></div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="add-link-btn" onclick="addLinkRow()">
+                                <i class="fas fa-plus-circle"></i> Add Another Infringing URL
+                            </button>
+                        </div>
+
+                        <!-- Bulk Mode Container -->
+                        <div id="bulk-links-container" style="display: none;">
+                            <textarea id="infringingUrlBulk" rows="5" placeholder="Enter one URL per line:&#10;https://gplmods.webredirect.org/mods/android/example-app&#10;https://gplmods.webredirect.org/mods/windows/another-app" oninput="updateBulkCount()"></textarea>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span style="font-size: 0.85em; color: var(--silver);" id="bulk-links-counter">0 URLs detected</span>
+                                <button type="button" class="link-mode-btn" style="padding: 4px 10px; font-size: 0.8em;" onclick="convertBulkToInteractive()">
+                                    <i class="fas fa-magic"></i> Convert to Interactive Preview
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Payload Inputs (submitted to server) -->
+                        <div id="hidden-urls-payload"></div>
                     </div>
+
                     <div class="dmca-form-group">
-                        <label for="signature">Electronic Signature (type your full name again)*</label>
+                        <label for="signature">Electronic Signature (type your full legal name again)*</label>
                         <input type="text" id="signature" name="signature" required>
                     </div>
-                    <button type="submit" class="dmca-submit-btn">Submit Request for Verification</button>
+
+                    <button type="submit" class="dmca-submit-btn">
+                        <i class="fas fa-paper-plane" style="margin-right: 8px;"></i> Submit Request for Verification
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </main>
 
-
 <script>
-    // This script catches URL parameters (like ?success=...) from the backend 
-    // and displays them beautifully in the UI box instead of an ugly pop-up alert.
+    let currentMode = 'interactive';
+    let nextRowId = 2;
+    const inspectCache = {};
+
+    function switchLinkMode(mode) {
+        currentMode = mode;
+        const interactiveTab = document.getElementById('tab-interactive');
+        const bulkTab = document.getElementById('tab-bulk');
+        const interactiveContainer = document.getElementById('interactive-links-container');
+        const bulkContainer = document.getElementById('bulk-links-container');
+
+        if (mode === 'interactive') {
+            interactiveTab.classList.add('active');
+            bulkTab.classList.remove('active');
+            interactiveContainer.style.display = 'block';
+            bulkContainer.style.display = 'none';
+        } else {
+            bulkTab.classList.add('active');
+            interactiveTab.classList.remove('active');
+            bulkContainer.style.display = 'block';
+            interactiveContainer.style.display = 'none';
+            syncInteractiveToBulk();
+        }
+    }
+
+    function addLinkRow(initialVal = '') {
+        const rowsList = document.getElementById('link-rows-list');
+        const newRow = document.createElement('div');
+        newRow.className = 'link-input-row';
+        newRow.dataset.rowId = nextRowId++;
+        newRow.innerHTML = `
+            <div class="link-input-field-wrap">
+                <input type="url" class="interactive-link-input" placeholder="Paste GPLMods URL..." value="${initialVal}" oninput="handleUrlInput(this)" required>
+                <button type="button" class="remove-link-btn" onclick="removeLinkRow(this)" title="Remove URL">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="link-inspect-preview"></div>
+        `;
+        rowsList.appendChild(newRow);
+        updateRemoveButtons();
+        if (initialVal) {
+            const input = newRow.querySelector('.interactive-link-input');
+            handleUrlInput(input);
+        }
+    }
+
+    function removeLinkRow(btn) {
+        const row = btn.closest('.link-input-row');
+        row.remove();
+        updateRemoveButtons();
+    }
+
+    function updateRemoveButtons() {
+        const rows = document.querySelectorAll('.link-input-row');
+        rows.forEach(r => {
+            const btn = r.querySelector('.remove-link-btn');
+            if (rows.length > 1) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+    }
+
+    // Debounced URL inspector
+    const debounceTimers = {};
+    function handleUrlInput(inputElement) {
+        const row = inputElement.closest('.link-input-row');
+        const previewBox = row.querySelector('.link-inspect-preview');
+        const url = (inputElement.value || '').trim();
+
+        const rowId = row.dataset.rowId;
+        if (debounceTimers[rowId]) clearTimeout(debounceTimers[rowId]);
+
+        if (!url || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/'))) {
+            previewBox.className = 'link-inspect-preview';
+            previewBox.innerHTML = '';
+            return;
+        }
+
+        previewBox.className = 'link-inspect-preview show';
+        previewBox.innerHTML = '<span class="link-checking-spinner"><i class="fas fa-spinner fa-spin"></i> Checking link on GPLMods...</span>';
+
+        debounceTimers[rowId] = setTimeout(async () => {
+            try {
+                if (inspectCache[url]) {
+                    renderInspectResult(previewBox, inspectCache[url]);
+                    return;
+                }
+
+                const res = await fetch(`/api/dmca/inspect-link?url=${encodeURIComponent(url)}`);
+                const data = await res.json();
+                inspectCache[url] = data;
+                renderInspectResult(previewBox, data);
+            } catch (err) {
+                previewBox.innerHTML = '<span style="font-size: 0.8em; color: #888;">(Link saved - will be verified by staff)</span>';
+            }
+        }, 500);
+    }
+
+    function renderInspectResult(previewBox, data) {
+        if (!data || !data.found) {
+            previewBox.innerHTML = `
+                <i class="fas fa-globe" style="color: #666; font-size: 1.2em;"></i>
+                <div class="link-preview-text">
+                    <span style="font-size: 0.85em; color: var(--silver);">Unindexed or External Link</span>
+                    <div style="font-size: 0.75em; color: #777;">Will be investigated manually by staff upon submission.</div>
+                </div>
+                <span class="link-preview-badge badge-external">External</span>
+            `;
+            return;
+        }
+
+        const isVariant = data.targetType === 'variant';
+        previewBox.innerHTML = `
+            <img src="${data.iconUrl || '/images/default-app-icon.png'}" class="link-preview-icon" alt="icon">
+            <div class="link-preview-text">
+                <div class="link-preview-title">${data.name}</div>
+                <div class="link-preview-meta">
+                    <span>v${data.version || '1.0'}</span>
+                    <span>&bull;</span>
+                    <span>Uploader: <strong>${data.uploader}</strong></span>
+                    <span>&bull;</span>
+                    <span>${data.category}</span>
+                </div>
+            </div>
+            <span class="link-preview-badge ${isVariant ? 'badge-variant' : 'badge-main'}">
+                ${isVariant ? 'Variant' : 'Main Mod'}
+            </span>
+        `;
+    }
+
+    function syncInteractiveToBulk() {
+        const inputs = document.querySelectorAll('.interactive-link-input');
+        const urls = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+        document.getElementById('infringingUrlBulk').value = urls.join('\n');
+        updateBulkCount();
+    }
+
+    function convertBulkToInteractive() {
+        const bulkText = document.getElementById('infringingUrlBulk').value || '';
+        const urls = bulkText.split(/[\r\n,]+/).map(u => u.trim()).filter(Boolean);
+        if (urls.length === 0) return switchLinkMode('interactive');
+
+        const rowsList = document.getElementById('link-rows-list');
+        rowsList.innerHTML = '';
+        nextRowId = 1;
+
+        urls.forEach(u => addLinkRow(u));
+        switchLinkMode('interactive');
+    }
+
+    function updateBulkCount() {
+        const bulkText = document.getElementById('infringingUrlBulk').value || '';
+        const urls = bulkText.split(/[\r\n,]+/).map(u => u.trim()).filter(Boolean);
+        document.getElementById('bulk-links-counter').textContent = `${urls.length} URL${urls.length === 1 ? '' : 's'} detected`;
+    }
+
+    function handleDmcaSubmit(event) {
+        const payloadContainer = document.getElementById('hidden-urls-payload');
+        payloadContainer.innerHTML = '';
+
+        let urlsToSubmit = [];
+        if (currentMode === 'interactive') {
+            const inputs = document.querySelectorAll('.interactive-link-input');
+            urlsToSubmit = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+        } else {
+            const bulkText = document.getElementById('infringingUrlBulk').value || '';
+            urlsToSubmit = bulkText.split(/[\r\n,]+/).map(u => u.trim()).filter(Boolean);
+        }
+
+        if (urlsToSubmit.length === 0) {
+            alert('Please provide at least one infringing GPLMods URL.');
+            event.preventDefault();
+            return false;
+        }
+
+        urlsToSubmit.forEach(url => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'infringingUrls[]';
+            hiddenInput.value = url;
+            payloadContainer.appendChild(hiddenInput);
+        });
+
+        return true;
+    }
+
+    // URL parameter alert handling
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const alertBox = document.getElementById('dmca-alert-box');

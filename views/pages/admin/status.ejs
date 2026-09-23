@@ -139,6 +139,110 @@
 
         </div>
 
+        <!-- ============================================== -->
+        <!-- DEBUGGER & DEVTOOLS ACCESS CONTROL SECTION -->
+        <!-- ============================================== -->
+        <h2 style="color: var(--white); margin: 35px 0 15px 0; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-shield-alt" style="color: #ff3366;"></i> Debugger & DevTools Access Control
+        </h2>
+
+        <div class="system-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 25px;">
+            <!-- Hourly Key Card -->
+            <div class="info-card" style="border-left: 3px solid var(--gold);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3>Hourly Single-Use Key</h3>
+                    <span style="font-size: 0.75em; background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold); padding: 2px 8px; border-radius: 12px; font-weight: bold;">
+                        Auto-Rotates
+                    </span>
+                </div>
+                <div class="value" id="statusDebuggerKey" style="color: var(--gold); font-size: 1.5em; letter-spacing: 2px; margin-bottom: 12px;">
+                    <%= typeof debuggerKey !== 'undefined' ? debuggerKey : 'N/A' %>
+                </div>
+                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0;">
+                    10–12 digit single-use code. Auto-regenerates upon use or every 60 minutes.
+                </p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="copyKeyText('statusDebuggerKey', this)" style="padding: 6px 12px; font-size: 0.85em; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-copy"></i> Copy Key
+                    </button>
+                    <button type="button" id="btnAdminGenKey" onclick="adminGenerateNewKey(this)" style="padding: 6px 12px; font-size: 0.85em; background: var(--gold); border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i> Generate New Key
+                    </button>
+                </div>
+            </div>
+
+            <!-- Master Key Card -->
+            <div class="info-card" style="border-left: 3px solid #ff3366;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3>Master Access Key</h3>
+                    <span style="font-size: 0.75em; background: rgba(255,51,102,0.15); color: #ff6688; border: 1px solid #ff3366; padding: 2px 8px; border-radius: 12px; font-weight: bold;">
+                        Permanent
+                    </span>
+                </div>
+                <div class="value" id="statusMasterKey" style="color: #ff3366; font-size: 1.3em; letter-spacing: 1px; margin-bottom: 12px;">
+                    <%= typeof debuggerMasterKey !== 'undefined' ? debuggerMasterKey : 'OPAdmin@2026' %>
+                </div>
+                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0;">
+                    Permanent master key for administrators. Multi-use, never expires.
+                </p>
+                <button type="button" class="btn btn-secondary" onclick="copyKeyText('statusMasterKey', this)" style="padding: 6px 12px; font-size: 0.85em; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-copy"></i> Copy Master Key
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent DevTools Incidents Table -->
+        <div style="background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; margin-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: var(--white); margin: 0; font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-history" style="color: var(--gold);"></i> Recent DevTools Inspection Audit Logs
+                </h3>
+                <span style="font-size: 0.8em; color: var(--silver);">Last 10 Events</span>
+            </div>
+
+            <% if (typeof recentDevtoolLogs !== 'undefined' && recentDevtoolLogs && recentDevtoolLogs.length > 0) { %>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #333; color: var(--silver);">
+                                <th style="padding: 8px;">Time</th>
+                                <th style="padding: 8px;">User / IP</th>
+                                <th style="padding: 8px;">Page Path</th>
+                                <th style="padding: 8px;">Trigger</th>
+                                <th style="padding: 8px; text-align: right;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recentDevtoolLogs.forEach(log => { %>
+                                <tr style="border-bottom: 1px solid #1a1a1a;">
+                                    <td style="padding: 8px; color: var(--silver);"><%= timeAgo(log.createdAt) %></td>
+                                    <td style="padding: 8px; color: var(--white);">
+                                        <strong><%= log.username || 'Guest' %></strong>
+                                        <div style="font-size: 0.8em; color: #777;"><%= log.ip || 'Unknown IP' %></div>
+                                    </td>
+                                    <td style="padding: 8px; color: var(--gold); font-family: monospace;"><%= log.path || '/' %></td>
+                                    <td style="padding: 8px; color: var(--silver);"><%= log.triggerType %></td>
+                                    <td style="padding: 8px; text-align: right;">
+                                        <% if (log.status === 'blocked') { %>
+                                            <span style="color: #ff4d4d; background: rgba(255,77,77,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Blocked</span>
+                                        <% } else if (log.status === 'authorized-by-code') { %>
+                                            <span style="color: #2ecc71; background: rgba(46,204,113,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Code)</span>
+                                        <% } else if (log.status === 'authorized-by-master-key') { %>
+                                            <span style="color: #64b5f6; background: rgba(33,150,243,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Master)</span>
+                                        <% } else { %>
+                                            <span style="color: #aaa;"><%= log.status %></span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p style="color: #666; font-size: 0.9em; margin: 0; text-align: center; padding: 20px;">No developer tools inspection incidents recorded yet.</p>
+            <% } %>
+        </div>
+
         <!-- Render Warnings if they exist -->
         <% if (health.warnings.length > 0) { %>
             <div class="warnings-box">
@@ -160,5 +264,44 @@
 
     </div>
 </main>
+
+<script>
+    function copyKeyText(elementId, btn) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.innerText.trim();
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => { btn.innerHTML = originalHtml; }, 1800);
+        }).catch(() => {
+            alert('Key: ' + text);
+        });
+    }
+
+    async function adminGenerateNewKey(btn) {
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+        try {
+            const res = await fetch('/api/admin/debugger/generate-key', { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.key) {
+                document.getElementById('statusDebuggerKey').innerText = data.key;
+                btn.innerHTML = '<i class="fas fa-check"></i> Key Rotated!';
+                setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 2000);
+            } else {
+                alert('Failed to generate key.');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        } catch (e) {
+            alert('Error generating key.');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    }
+</script>
 
 <%- include('../../partials/footer') %>

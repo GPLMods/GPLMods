@@ -203,6 +203,26 @@ const FileSchema = new Schema({
     virusTotalAnalysisId: { type: String },
     virusTotalId: { type: String },
     themeMusic: { type: String, default: null },
+
+    // DMCA Takedown & Temporary Promotion fields
+    isDmcaHidden: {
+        type: Boolean,
+        default: false
+    },
+    dmcaReportId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Dmca',
+        default: null
+    },
+    dmcaHiddenAt: {
+        type: Date,
+        default: null
+    },
+    temporaryPromotedVariantId: {
+        type: Schema.Types.ObjectId,
+        ref: 'File',
+        default: null
+    },
 }, {
     timestamps: true
 }); 

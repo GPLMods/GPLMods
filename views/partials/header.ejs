@@ -797,13 +797,14 @@
             <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
                 Clear cached scripts, stylesheets, and local device assets? This refreshes your browser state without affecting your saved session or account data.
             </p>
+            <div id="globalCcStatus" style="display: none; margin-bottom: 15px; font-size: 0.88rem; font-weight: 600; color: #f6ad55;"></div>
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button type="button" class="btn-cancel-cc" style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
                     Cancel
                 </button>
-                <a href="/cc" id="confirmCcBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4); cursor: pointer;">
+                <button type="button" id="confirmCcBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4); cursor: pointer;">
                     <i class="fas fa-broom"></i> Purge Now
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -834,6 +835,69 @@
                     }, 250);
                 }
 
+                async function executeGlobalCacheClear() {
+                    var btn = document.getElementById('confirmCcBtn');
+                    var cancelBtn = ccModal ? ccModal.querySelector('.btn-cancel-cc') : null;
+                    var statusEl = document.getElementById('globalCcStatus');
+
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning Cache...';
+                    }
+                    if (cancelBtn) cancelBtn.disabled = true;
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#f6ad55';
+                        statusEl.textContent = 'Clearing Service Workers & Browser Cache...';
+                    }
+
+                    try {
+                        // 1. Unregister Service Workers
+                        if ('serviceWorker' in navigator) {
+                            var registrations = await navigator.serviceWorker.getRegistrations();
+                            for (var i = 0; i < registrations.length; i++) {
+                                await registrations[i].unregister();
+                            }
+                        }
+
+                        // 2. Clear Cache Storage
+                        if ('caches' in window) {
+                            var keys = await caches.keys();
+                            await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                        }
+
+                        // 3. Clear temporary storage
+                        try { localStorage.clear(); } catch(e){}
+                        try { sessionStorage.clear(); } catch(e){}
+
+                        // 4. Trigger server-side header clear
+                        try {
+                            await fetch('/cc', { cache: 'reload' });
+                        } catch(e) {}
+
+                        if (statusEl) {
+                            statusEl.style.color = '#4caf50';
+                            statusEl.textContent = '✔ All caches cleared! Reloading fresh...';
+                        }
+                        if (btn) {
+                            btn.innerHTML = '<i class="fas fa-check"></i> Reloading...';
+                        }
+                    } catch(err) {
+                        console.error('Cache clear error:', err);
+                        if (statusEl) {
+                            statusEl.style.color = '#ff5252';
+                            statusEl.textContent = 'Reloading fresh...';
+                        }
+                    } finally {
+                        setTimeout(function() {
+                            var currentPath = window.location.pathname;
+                            var currentSearch = window.location.search || '';
+                            var sep = currentSearch.indexOf('?') !== -1 ? '&' : '?';
+                            window.location.replace(currentPath + currentSearch + sep + '_cc=' + Date.now() + '&cache_cleared=1');
+                        }, 500);
+                    }
+                }
+
                 document.addEventListener('click', function(e) {
                     var logoutTarget = e.target.closest('a[href="/logout"]');
                     if (logoutTarget && logoutTarget.id !== 'confirmLogoutBtn') {
@@ -848,6 +912,14 @@
                         e.preventDefault();
                         e.stopPropagation();
                         openModal(ccModal);
+                        return;
+                    }
+
+                    var confirmCcTarget = e.target.closest('#confirmCcBtn');
+                    if (confirmCcTarget) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        executeGlobalCacheClear();
                         return;
                     }
 
@@ -880,4 +952,345 @@
             }
         })();
     </script>
+
+<% if (typeof isDebuggerExempt === 'undefined' || !isDebuggerExempt) { %>
+    <!-- ============================================== -->
+    <!-- GPLMODS DEVTOOLS & DEBUGGER ACCESS MODAL -->
+    <!-- ============================================== -->
+    <style>
+        .gpl-debugger-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            background: rgba(0, 0, 0, 0.94);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .gpl-debugger-modal.show {
+            display: flex;
+        }
+        .gpl-debugger-card {
+            background: #141414;
+            border: 1px solid #ff3366;
+            border-top: 4px solid #ff3366;
+            border-radius: 16px;
+            padding: 35px 30px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.35);
+            animation: gplModalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes gplModalPop {
+            0% { transform: scale(0.92); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .gpl-debugger-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(255, 51, 102, 0.15);
+            color: #ff3366;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            margin: 0 auto 16px auto;
+            border: 1px solid rgba(255, 51, 102, 0.4);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.3);
+        }
+        .gpl-debugger-card h2 {
+            color: #fff;
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+        .gpl-debugger-card p {
+            color: var(--silver);
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin: 0 0 22px 0;
+        }
+        .gpl-debugger-input-wrap {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .gpl-debugger-input {
+            width: 100%;
+            background: #0a0a0a;
+            border: 1.5px solid #333;
+            border-radius: 10px;
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+            text-align: center;
+            font-family: monospace;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        .gpl-debugger-input:focus {
+            border-color: #ff3366;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.35);
+        }
+        .gpl-debugger-error {
+            color: #ff4d4d;
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.88em;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .gpl-debugger-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn-debugger-verify {
+            flex: 1.2;
+            padding: 12px 20px;
+            background: #ff3366;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn-debugger-verify:hover {
+            background: #e02253;
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
+        }
+        .btn-debugger-back {
+            flex: 1;
+            padding: 12px 18px;
+            background: transparent;
+            border: 1px solid #444;
+            color: var(--silver);
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn-debugger-back:hover {
+            border-color: #777;
+            color: #fff;
+        }
+    </style>
+
+    <div id="debuggerAccessModal" class="gpl-debugger-modal" role="dialog" aria-modal="true">
+        <div class="gpl-debugger-card">
+            <div class="gpl-debugger-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h2>Debugger Access Restricted</h2>
+            <p>
+                Developer tools inspection has been detected. Enter your <strong>10–12 digit access code</strong> or <strong>Master Key</strong> to unlock developer mode.
+            </p>
+            <div class="gpl-debugger-input-wrap">
+                <input type="text" id="debuggerAccessCodeInput" class="gpl-debugger-input" placeholder="Enter Access Code / Master Key" autocomplete="off" maxlength="25">
+            </div>
+            <div id="debuggerModalError" class="gpl-debugger-error"></div>
+            <div class="gpl-debugger-actions">
+                <button type="button" class="btn-debugger-back" onclick="handleDebuggerExit()">
+                    <i class="fas fa-arrow-left"></i> Leave Page
+                </button>
+                <button type="button" class="btn-debugger-verify" id="btnSubmitDebuggerCode" onclick="submitDebuggerCode()">
+                    <i class="fas fa-key"></i> Unlock Debugger
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CDN for DisableDevtool -->
+    <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+    <script>
+        (function() {
+            if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                return;
+            }
+
+            var currentLogId = null;
+            var isModalOpen = false;
+
+            function clearBrowserConsole() {
+                try {
+                    console.clear();
+                } catch(e) {}
+            }
+
+            function triggerDevtoolBlock(triggerType) {
+                if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                    return;
+                }
+
+                clearBrowserConsole();
+
+                var modal = document.getElementById('debuggerAccessModal');
+                if (modal && !isModalOpen) {
+                    isModalOpen = true;
+                    modal.classList.add('show');
+                    var input = document.getElementById('debuggerAccessCodeInput');
+                    if (input) {
+                        input.value = '';
+                        setTimeout(function() { input.focus(); }, 100);
+                    }
+                }
+
+                if (!currentLogId) {
+                    fetch('/api/devtool/log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            triggerType: triggerType || 'devtools-opened',
+                            url: window.location.href,
+                            screenDetails: {
+                                width: window.screen ? window.screen.width : null,
+                                height: window.screen ? window.screen.height : null,
+                                innerWidth: window.innerWidth,
+                                innerHeight: window.innerHeight
+                            }
+                        })
+                    }).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data && data.logId) {
+                            currentLogId = data.logId;
+                        }
+                    }).catch(function() {});
+                }
+            }
+
+            window.handleDebuggerExit = function() {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/';
+                }
+            };
+
+            window.submitDebuggerCode = async function() {
+                var input = document.getElementById('debuggerAccessCodeInput');
+                var errEl = document.getElementById('debuggerModalError');
+                var btn = document.getElementById('btnSubmitDebuggerCode');
+                var code = (input.value || '').trim();
+
+                if (!code) {
+                    errEl.textContent = 'Please enter an access code or master key.';
+                    errEl.style.display = 'block';
+                    input.focus();
+                    return;
+                }
+
+                errEl.style.display = 'none';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+                try {
+                    var res = await fetch('/api/devtool/verify-key', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code, logId: currentLogId })
+                    });
+                    var data = await res.json();
+
+                    if (data && data.success) {
+                        sessionStorage.setItem('gpl_devtool_authorized', 'true');
+                        clearBrowserConsole();
+
+                        var modal = document.getElementById('debuggerAccessModal');
+                        if (modal) {
+                            modal.classList.remove('show');
+                        }
+                        isModalOpen = false;
+
+                        if (window.DisableDevtool && typeof window.DisableDevtool.stop === 'function') {
+                            window.DisableDevtool.stop();
+                        }
+                    } else {
+                        clearBrowserConsole();
+                        errEl.textContent = (data && data.message) ? data.message : 'Invalid 10–12 digit code or master key. Attempt logged.';
+                        errEl.style.display = 'block';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
+                        input.value = '';
+                        input.focus();
+                    }
+                } catch (e) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
+                    errEl.textContent = 'Connection error. Please retry.';
+                    errEl.style.display = 'block';
+                }
+            };
+
+            document.addEventListener('keydown', function(e) {
+                if (isModalOpen && e.key === 'Enter') {
+                    submitDebuggerCode();
+                }
+            });
+
+            function initProtection() {
+                if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                    return;
+                }
+
+                if (window.DisableDevtool) {
+                    try {
+                        window.DisableDevtool({
+                            ondevtoolopen: function(type) {
+                                triggerDevtoolBlock(type);
+                            },
+                            disableMenu: false,
+                            disableCopy: false,
+                            disableSelect: false,
+                            interval: 350
+                        });
+                    } catch (e) {
+                        console.error("Devtool security init:", e);
+                    }
+                }
+
+                window.addEventListener('keydown', function(e) {
+                    if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') return;
+                    if (
+                        e.key === 'F12' ||
+                        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+                        (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+                        (e.ctrlKey && (e.key === 'U' || e.key === 'u'))
+                    ) {
+                        e.preventDefault();
+                        triggerDevtoolBlock('keyboard-shortcut');
+                    }
+                }, true);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initProtection);
+            } else {
+                initProtection();
+            }
+        })();
+    </script>
+<% } %>
+
     <main>

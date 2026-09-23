@@ -222,7 +222,7 @@
                         <i class="fas fa-user-minus" style="margin-right: 8px;"></i> Leave Program
                     </button>
                 <% } %>
-                <button type="button" id="logout-btn" class="btn-danger-outline"><i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Log Out</button>
+                <a href="/logout" id="logout-btn" class="btn-danger-outline" style="text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i> Log Out</a>
                 <button type="button" class="btn btn-primary" style="background: var(--red); color: var(--white); border: none; box-shadow: 0 0 15px var(--glow-red); font-size: 1em; padding: 12px 25px;" id="open-delete-modal-btn">Delete Account</button>
             </div>
         </div>
@@ -276,22 +276,6 @@
                 <i class="fas fa-trash-alt" style="margin-right: 6px;"></i> Yes, Clear Cache
             </button>
             <button type="button" class="btn btn-secondary" id="cancelClearCacheBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer;">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<!-- ======== CUSTOM LOGOUT MODAL ======== -->
-
-<div id="logout-modal-container" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 40px 30px; text-align: center; border-radius: 15px; max-width: 400px; width: 90%; border-top: 4px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
-        <i class="fas fa-sign-out-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 20px;"></i>
-        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.8em;">Ready to leave?</h2>
-        <p style="margin-bottom: 30px; color: var(--silver); line-height: 1.6;">
-            Are you sure you want to log out of your account? You will need to enter your credentials next time you visit.
-        </p>
-        <div style="display: flex; gap: 15px; justify-content: center;">
-            <a href="/logout" class="btn btn-primary" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold);">Yes, Log Out</a>
-            <button type="button" class="btn btn-secondary" id="cancelLogoutBtn" style="background-color: transparent; color: var(--silver); border: 2px solid var(--silver); padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Cancel</button>
         </div>
     </div>
 </div>
@@ -381,12 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const openNewsBtn = document.getElementById('open-newsletter-modal');
     if (openNewsBtn) openNewsBtn.addEventListener('click', () => openModal(newsModal));
     document.getElementById('cancel-newsletter-btn')?.addEventListener('click', () => closeModal(newsModal));
-
-    // Logout Modal
-    const logoutModal = document.getElementById('logout-modal-container');
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.addEventListener('click', () => openModal(logoutModal));
-    document.getElementById('cancelLogoutBtn')?.addEventListener('click', () => closeModal(logoutModal));
 
     // Leave Partnership Modal
     const leavePartnershipModal = document.getElementById('leave-partnership-modal-container');
@@ -566,7 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close Modals on outside click
     window.addEventListener('click', (e) => {
         if (e.target === newsModal) closeModal(newsModal);
-        if (e.target === logoutModal) closeModal(logoutModal);
         if (e.target === clearCacheModal) closeModal(clearCacheModal);
         if (e.target === deleteModal) {
             closeModal(deleteModal);

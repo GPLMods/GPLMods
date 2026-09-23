@@ -42,6 +42,15 @@
         <p>File Report Management</p>
     </div>
 
+    <div style="display: flex; gap: 12px; margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 15px; flex-wrap: wrap;">
+        <a href="/admin/reports" style="padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; color: var(--gold); background: rgba(255, 215, 0, 0.15); border: 1px solid var(--gold); box-shadow: 0 0 12px rgba(255, 215, 0, 0.2); display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-flag"></i> Community Reports
+        </a>
+        <a href="/admin/dmca" style="padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; color: var(--silver); background: var(--dark-gray); border: 1px solid #333; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-balance-scale"></i> DMCA Notices & Takedowns
+        </a>
+    </div>
+
     <section class="reports-list">
         <h2>Submitted Reports</h2>
         <% if(reports && reports.length > 0) { %>
