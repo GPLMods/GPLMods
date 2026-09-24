@@ -1315,12 +1315,11 @@
                                                                                                     %>
                                                                                         </span>
                                                                                     </div>
-                                                                                    <% } else if
-                                                                                        (file.virusTotalAnalysisId) { %>
+                                                                                    <% } else if (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) { %>
                                                                                         <!-- If Automated Scan is Pending -->
-                                                                                        <div
+                                                                                        <div id="vt-scan-pending-box"
                                                                                             style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
-                                                                                            <i class="fas fa-hourglass-half"
+                                                                                            <i class="fas fa-hourglass-half fa-spin"
                                                                                                 style="color: var(--gold); font-size: 1.2em;"></i>
                                                                                             <span
                                                                                                 style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan
@@ -1328,7 +1327,8 @@
                                                                                             <button
                                                                                                 onclick="refreshVTScan('<%= file._id %>')"
                                                                                                 class="btn btn-secondary"
-                                                                                                style="padding: 4px 8px; font-size: 0.8em;"><i
+                                                                                                style="padding: 4px 8px; font-size: 0.8em;"
+                                                                                                title="Check VirusTotal Status"><i
                                                                                                     class="fas fa-sync-alt"></i></button>
                                                                                         </div>
                                                                                         <% } %>
@@ -1370,30 +1370,25 @@
                                                                                                             <% } %>
 
                                                                                                                 <!-- 3. Automated VT Scan Link -->
-                                                                                                                <% if
-                                                                                                                    (file.virusTotalId
-                                                                                                                    ||
-                                                                                                                    file.virusTotalAnalysisId)
-                                                                                                                    {
-                                                                                                                    const
-                                                                                                                    vtUrl=file.virusTotalId
-                                                                                                                    ?
-                                                                                                                    `https://www.virustotal.com/gui/file/${file.virusTotalId}`
-                                                                                                                    :
-                                                                                                                    `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
-                                                                                                                    %>
-                                                                                                                    <a href="<%= vtUrl %>"
-                                                                                                                        target="_blank"
-                                                                                                                        class="full-width-btn btn btn-secondary"
-                                                                                                                        style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
-                                                                                                                        <i class="fas fa-robot"
-                                                                                                                            style="color: var(--silver); margin-right: 8px;"></i>
-                                                                                                                        View
-                                                                                                                        Automated
-                                                                                                                        Scan
-                                                                                                                    </a>
-                                                                                                                    <% }
-                                                                                                                        %>
+                                                                                  <% if (file.virusTotalId || file.virusTotalAnalysisId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) {
+                                                                                      let vtUrl = file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com') ? file.manualFileScanUrl : '';
+                                                                                      if (!vtUrl) {
+                                                                                          vtUrl = file.virusTotalId
+                                                                                              ? (file.virusTotalId.length === 64 ? 'https://www.virustotal.com/gui/file/' + file.virusTotalId : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalId)
+                                                                                              : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalAnalysisId;
+                                                                                      }
+                                                                                  %>
+                                                                                      <a href="<%= vtUrl %>"
+                                                                                          target="_blank"
+                                                                                          class="full-width-btn btn btn-secondary"
+                                                                                          style="text-align: left; padding: 8px 12px; font-size: 0.9em; border-color: #333; background: transparent !important;">
+                                                                                          <i class="fas fa-robot"
+                                                                                              style="color: var(--silver); margin-right: 8px;"></i>
+                                                                                          View
+                                                                                          Automated
+                                                                                          Scan
+                                                                                      </a>
+                                                                                      <% } %>
 
                                                                                                                         <!-- Show False Positive Guide when any scan reports positives -->
                                                                                                                         <% if
@@ -2385,12 +2380,14 @@
 
                 // The main refresh function
                 async function refreshVTScan(fileId) {
-                    const btn = event.currentTarget;
-                    const originalText = btn.innerHTML; // Save the original icon and text
+                    const btn = (typeof event !== 'undefined' && event && event.currentTarget) ? event.currentTarget : document.querySelector('#vt-scan-pending-box button');
+                    const originalText = btn ? btn.innerHTML : '';
 
                     try {
-                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-                        btn.disabled = true;
+                        if (btn) {
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                            btn.disabled = true;
+                        }
 
                         const response = await fetch(`/api/refresh-vt-scan/${fileId}`, { method: 'POST' });
                         const data = await response.json();
@@ -2401,21 +2398,55 @@
                         } else if (response.ok) {
                             // Still queued or processing
                             showVtModal('Scan in Progress', `The scan is currently: ${data.status.toUpperCase()}. VirusTotal is analyzing the file. Please check back in a minute or two.`);
-                            btn.innerHTML = originalText;
-                            btn.disabled = false;
+                            if (btn) {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            }
                         } else {
                             // The server returned a 404 or 500 error (e.g., bad ID)
                             showVtModal('Error', data.error || 'An unknown error occurred.', true);
-                            btn.innerHTML = originalText;
-                            btn.disabled = false;
+                            if (btn) {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            }
                         }
                     } catch (error) {
                         // Network error
                         showVtModal('Network Error', 'Failed to connect to the server. Please check your connection and try again.', true);
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
+                        if (btn) {
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        }
                     }
                 }
+
+                // Automatic background poller on Download Page
+                (function initVTAutoPoll() {
+                    const isScanPending = <%= Boolean(!file.virusTotalScanDate && (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com')))) %>;
+                    if (!isScanPending) return;
+
+                    let pollAttempts = 0;
+                    const maxPollAttempts = 8;
+                    const pollTimer = setInterval(async () => {
+                        pollAttempts++;
+                        try {
+                            const resp = await fetch(`/api/refresh-vt-scan/<%= file._id %>`, { method: 'POST' });
+                            if (resp.ok) {
+                                const result = await resp.json();
+                                if (result && result.status === 'completed') {
+                                    clearInterval(pollTimer);
+                                    window.location.reload();
+                                    return;
+                                }
+                            }
+                        } catch (err) {
+                            console.log("Auto VT check error:", err);
+                        }
+                        if (pollAttempts >= maxPollAttempts) {
+                            clearInterval(pollTimer);
+                        }
+                    }, 8000);
+                })();
             </script>
             <!-- Custom Comment Delete Modal -->
             <div id="delete-comment-modal" class="policy-modal">

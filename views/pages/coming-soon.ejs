@@ -3,32 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coming Soon - GPL Mods</title>
-    <!-- Link to Google Fonts -->
+    <title><%= typeof title !== 'undefined' && title ? title : 'Coming Soon' %> - GPL Mods</title>
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
             --black: #0a0a0a;
-            --dark-gray: #1a1a1a;
+            --dark-gray: #14171f;
+            --card-bg: #1a1e29;
             --white: #ffffff;
             --gold: #FFD700;
             --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.5);
-            --glow-silver: rgba(192, 192, 192, 0.5);
+            --blue: #007AFF;
+            --green: #2ecc71;
+            --glow-gold: rgba(255, 215, 0, 0.4);
+            --glow-blue: rgba(0, 122, 255, 0.3);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--black); color: var(--white); display: flex; flex-direction: column; text-align: center; }
-        .container { width: 90%; max-width: 1200px; margin: auto; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: radial-gradient(circle at 50% 20%, #171c28 0%, #0a0d14 70%, #050608 100%);
+            color: var(--white); 
+            display: flex; 
+            flex-direction: column; 
+            text-align: center; 
+            min-height: 100vh;
+        }
+        .container { width: 90%; max-width: 1100px; margin: auto; }
         
         /* Minimal Header */
-        .main-header { padding: 15px 0; background-color: var(--black); flex-shrink: 0; }
-        .header-content { display: flex; justify-content: center; align-items: center; }
-        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); text-decoration: none; }
-        .logo span { color: var(--silver); text-shadow: 0 0 3px var(--glow-silver); }
+        .main-header { padding: 20px 0; background: rgba(10, 13, 20, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+        .logo span { color: var(--silver); text-shadow: none; }
+        .user-access-badge { font-size: 0.8em; padding: 4px 12px; border-radius: 20px; background: rgba(255,215,0,0.1); border: 1px solid var(--gold); color: var(--gold); display: flex; align-items: center; gap: 6px; }
 
         /* Main Content */
         .main-content {
@@ -37,58 +50,146 @@
             justify-content: center;
             align-items: center;
             flex-grow: 1;
-            padding: 40px 20px;
+            padding: 50px 20px;
         }
+        
+        .pulse-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            padding: 6px 18px;
+            border-radius: 30px;
+            color: var(--gold);
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            box-shadow: 0 0 20px var(--glow-gold);
+            animation: pulse-glow 2.5s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px var(--glow-gold); }
+            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.7); }
+        }
+
         .main-content h1 {
-            font-size: 3em;
+            font-size: 3.2em;
             font-weight: 700;
-            margin-bottom: 20px;
+            line-height: 1.2;
+            margin-bottom: 18px;
+            max-width: 850px;
         }
         .main-content h1 span {
             color: var(--gold);
-            text-shadow: 0 0 4px var(--glow-gold);
+            text-shadow: 0 0 15px var(--glow-gold);
         }
-        .main-content p {
+        .main-content .hero-desc {
             color: var(--silver);
             font-size: 1.2em;
-            max-width: 600px;
-            margin-bottom: 40px;
+            max-width: 650px;
+            margin-bottom: 35px;
+            line-height: 1.6;
         }
 
         /* Countdown Timer */
         #countdown {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 30px;
         }
         .time-block {
-            background-color: var(--dark-gray);
-            padding: 15px 25px;
-            border-radius: 10px;
-            min-width: 100px;
+            background: rgba(26, 30, 41, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 18px 24px;
+            border-radius: 14px;
+            min-width: 110px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .time-block:hover {
+            transform: translateY(-3px);
+            border-color: var(--gold);
         }
         .time-block .number {
             font-size: 3em;
-            font-weight: 600;
-            line-height: 1.1;
+            font-weight: 700;
+            line-height: 1;
             color: var(--gold);
+            text-shadow: 0 0 12px var(--glow-gold);
+            font-variant-numeric: tabular-nums;
         }
         .time-block .label {
-            font-size: 0.9em;
+            font-size: 0.8em;
             color: var(--silver);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .target-date-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--silver);
+            font-size: 0.95em;
+            margin-bottom: 35px;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* Static Mode (When timer is disabled) */
+        .static-coming-soon-card {
+            background: rgba(26, 30, 41, 0.9);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 30px 40px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            max-width: 550px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+        .static-coming-soon-card i {
+            font-size: 3em;
+            color: var(--gold);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Custom Text Box Below Page */
+        .coming-soon-custom-card {
+            background: rgba(0, 122, 255, 0.08);
+            border: 1px solid rgba(0, 122, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px 24px;
+            max-width: 650px;
+            width: 100%;
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #d1e5ff;
+            font-size: 0.95em;
+            line-height: 1.5;
+            text-align: left;
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.1);
         }
 
         /* Subscription Form */
         .subscription-form {
             max-width: 500px;
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         .subscription-form h3 {
-            font-size: 1.3em;
-            margin-bottom: 15px;
+            font-size: 1.15em;
+            margin-bottom: 12px;
             color: var(--white);
+            font-weight: 600;
         }
         .form-group {
             display: flex;
@@ -96,56 +197,86 @@
         }
         .form-group input {
             flex-grow: 1;
-            padding: 12px 15px;
-            border-radius: 25px;
-            border: 1px solid var(--dark-gray);
+            padding: 14px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.15);
             background-color: var(--dark-gray);
             color: var(--white);
             font-size: 1em;
+            font-family: inherit;
             outline: none;
             transition: all 0.3s ease;
         }
         .form-group input:focus {
             border-color: var(--gold);
-            box-shadow: 0 0 10px var(--glow-gold);
+            box-shadow: 0 0 12px var(--glow-gold);
         }
         .form-group button {
             background: var(--gold);
             color: var(--black);
-            padding: 12px 25px;
-            border-radius: 25px;
+            padding: 14px 28px;
+            border-radius: 30px;
             border: none;
             font-size: 1em;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: inherit;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 0 15px var(--glow-gold);
+            white-space: nowrap;
         }
         .form-group button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px var(--glow-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px var(--glow-gold);
+            background: #ffe033;
         }
         
-        /* Back to Home Link */
-        .home-link {
+        .subscription-status {
+            font-size: 0.9em;
+            margin-top: 10px;
+            min-height: 22px;
+        }
+
+        /* Back to Home Button */
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
             color: var(--silver);
+            padding: 10px 24px;
+            border-radius: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
             text-decoration: none;
-            transition: color 0.3s ease;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
-        .home-link:hover {
-            color: var(--gold);
+        .btn-home:hover {
+            color: var(--white);
+            border-color: var(--gold);
+            background: rgba(255,215,0,0.05);
+            transform: translateY(-2px);
         }
-        
+
         /* Minimal Footer */
-        .main-footer { padding: 40px 20px; color: var(--silver); flex-shrink: 0; font-size: 0.9em; }
-        
-        /* Responsive */
+        .main-footer { 
+            padding: 30px 20px; 
+            color: var(--silver); 
+            flex-shrink: 0; 
+            font-size: 0.85em; 
+            border-top: 1px solid rgba(255,255,255,0.05); 
+        }
+
         @media (max-width: 768px) {
             .main-content h1 { font-size: 2.2em; }
-            .main-content p { font-size: 1em; }
+            .main-content .hero-desc { font-size: 1.05em; }
             #countdown { gap: 10px; }
-            .time-block { min-width: 70px; padding: 10px; }
-            .time-block .number { font-size: 2em; }
+            .time-block { min-width: 72px; padding: 12px 14px; }
+            .time-block .number { font-size: 2.2em; }
             .form-group { flex-direction: column; }
+            .form-group button { width: 100%; }
+            .coming-soon-custom-card { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -153,113 +284,220 @@
 
     <header class="main-header">
         <div class="container header-content">
-            <!-- Updated link to point to the site's root -->
-            <a href="/" class="logo">GPL <span>Mods</span></a>
+            <a href="/" class="logo">
+                <i class="fas fa-cube" style="color: var(--gold); font-size: 0.9em;"></i>
+                GPL <span>Mods</span>
+            </a>
+
+            <% if (typeof user !== 'undefined' && user) { %>
+                <div class="user-access-badge">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Previewing as <strong><%= user.username %></strong> (<%= user.role || 'Member' %>)</span>
+                </div>
+            <% } %>
         </div>
     </header>
 
     <main class="main-content container">
-        <h1><span>Something Awesome</span> is Coming Soon</h1>
-        <p>We're working hard to bring you a new and exciting feature. Stay tuned for the big reveal!</p>
-
-        <div id="countdown">
-            <div class="time-block">
-                <div id="days" class="number">00</div>
-                <div class="label">Days</div>
-            </div>
-            <div class="time-block">
-                <div id="hours" class="number">00</div>
-                <div class="label">Hours</div>
-            </div>
-            <div class="time-block">
-                <div id="minutes" class="number">00</div>
-                <div class="label">Minutes</div>
-            </div>
-            <div class="time-block">
-                <div id="seconds" class="number">00</div>
-                <div class="label">Seconds</div>
-            </div>
+        
+        <div class="pulse-badge">
+            <i class="fas fa-rocket"></i>
+            <span>Exciting Update in Progress</span>
         </div>
 
-        <!-- We'll make this form functional -->
-        <form class="subscription-form" id="notify-form" action="/notify-launch" method="POST">
-            <h3>Get Notified When We Launch</h3>
-            <div class="form-group">
-                <input type="email" name="email" placeholder="Enter your email address" required>
-                <button type="submit">Notify Me</button>
+        <h1>
+            <%- (typeof title !== 'undefined' && title) ? title.replace(/Coming Soon/i, '<span>Coming Soon</span>') : '<span>Something Awesome</span> is Coming Soon' %>
+        </h1>
+        
+        <p class="hero-desc">
+            <%= (typeof message !== 'undefined' && message) ? message : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!" %>
+        </p>
+
+        <% const showTimer = (typeof enableTimer === 'undefined' || enableTimer === true || enableTimer === 'true'); %>
+        <% const targetLaunchStr = (typeof launchDate !== 'undefined' && launchDate) ? launchDate : ''; %>
+
+        <% if (showTimer && targetLaunchStr) { %>
+            <!-- DYNAMIC COUNTDOWN TIMER (Days, Hours, Minutes, Seconds) -->
+            <div id="countdown" data-launch="<%= targetLaunchStr %>">
+                <div class="time-block">
+                    <div id="days" class="number">--</div>
+                    <div class="label">Days</div>
+                </div>
+                <div class="time-block">
+                    <div id="hours" class="number">--</div>
+                    <div class="label">Hours</div>
+                </div>
+                <div class="time-block">
+                    <div id="minutes" class="number">--</div>
+                    <div class="label">Minutes</div>
+                </div>
+                <div class="time-block">
+                    <div id="seconds" class="number">--</div>
+                    <div class="label">Seconds</div>
+                </div>
             </div>
+
+            <div class="target-date-display" id="targetDateDisplay">
+                <i class="far fa-calendar-alt" style="color: var(--gold);"></i>
+                <span id="targetDateText">Scheduled Launch: <%= new Date(targetLaunchStr).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+            </div>
+        <% } else { %>
+            <!-- STATIC COMING SOON CARD (When Timer is Disabled) -->
+            <div class="static-coming-soon-card">
+                <i class="fas fa-tools"></i>
+                <h3 style="color: #fff; font-size: 1.3em; margin-bottom: 8px;">Development in Progress</h3>
+                <p style="color: var(--silver); font-size: 0.95em; margin: 0;">This section is currently being polished by our team. Check back shortly for public access!</p>
+            </div>
+        <% } %>
+
+        <!-- DYNAMIC CUSTOM TEXT AREA (Configured by Admin) -->
+        <% if (typeof customText !== 'undefined' && customText && customText.trim()) { %>
+            <div class="coming-soon-custom-card">
+                <i class="fas fa-info-circle" style="font-size: 1.4em; color: var(--blue); flex-shrink: 0;"></i>
+                <div>
+                    <strong style="display: block; color: #fff; margin-bottom: 3px;">Important Note:</strong>
+                    <span><%= customText %></span>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- SUBSCRIPTION & NOTIFICATION FORM -->
+        <form class="subscription-form" id="notify-form" action="/notify-launch" method="POST">
+            <h3><i class="fas fa-bell" style="color: var(--gold); margin-right: 6px;"></i> Be the First to Know</h3>
+            <div class="form-group">
+                <input type="email" name="email" id="notifyEmailInput" placeholder="Enter your email address" required autocomplete="email">
+                <button type="submit" id="notifySubmitBtn">Notify Me</button>
+            </div>
+            <div class="subscription-status" id="notifyStatus"></div>
         </form>
 
-        <!-- ✅ FIX: Updated button classes and styles to match the golden theme -->
-<a href="<%= user ? '/home' : '/' %>" class="btn" style="margin-top: 2rem; display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Go to Homepage</a>
+        <a href="<%= (typeof user !== 'undefined' && user) ? '/home' : '/' %>" class="btn-home">
+            <i class="fas fa-arrow-left"></i> Return to Homepage
+        </a>
     </main>
     
     <footer class="main-footer">
         <div class="container">
-            <p>&copy; 2025 GPL Mods. All Rights Reserved.</p>
+            <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
         </div>
     </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- Countdown Timer Logic ---
-            // You can dynamically pass this date from your route if you want
-            const countDownDate = new Date();
-            countDownDate.setDate(countDownDate.getDate() + 30); // Example: 30 days from now
+            // --- 1. DYNAMIC COUNTDOWN TIMER LOGIC ---
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl) {
+                const launchAttr = countdownEl.getAttribute('data-launch');
+                let targetTime = null;
 
-            const daysEl = document.getElementById('days');
-            const hoursEl = document.getElementById('hours');
-            const minutesEl = document.getElementById('minutes');
-            const secondsEl = document.getElementById('seconds');
-
-            const timer = setInterval(function() {
-                const now = new Date().getTime();
-                const distance = countDownDate - now;
-
-                if (distance < 0) {
-                    clearInterval(timer);
-                    document.getElementById('countdown').innerHTML = "<h2 style='color: var(--gold);'>Feature is Live!</h2>";
-                    return;
+                if (launchAttr) {
+                    targetTime = new Date(launchAttr).getTime();
                 }
 
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                // Fallback: 30 days if not set or invalid
+                if (!targetTime || isNaN(targetTime)) {
+                    targetTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+                }
 
-                daysEl.textContent = String(days).padStart(2, '0');
-                hoursEl.textContent = String(hours).padStart(2, '0');
-                minutesEl.textContent = String(minutes).padStart(2, '0');
-                secondsEl.textContent = String(seconds).padStart(2, '0');
-            }, 1000);
+                const daysEl = document.getElementById('days');
+                const hoursEl = document.getElementById('hours');
+                const minutesEl = document.getElementById('minutes');
+                const secondsEl = document.getElementById('seconds');
+
+                function updateCountdown() {
+                    const now = Date.now();
+                    const distance = targetTime - now;
+
+                    if (distance <= 0) {
+                        clearInterval(timerInterval);
+                        countdownEl.innerHTML = `
+                            <div style="background: rgba(46, 204, 113, 0.15); border: 1px solid var(--green); padding: 25px 40px; border-radius: 14px; text-align: center; box-shadow: 0 0 30px rgba(46, 204, 113, 0.3);">
+                                <h2 style="color: var(--green); font-size: 1.8em; margin-bottom: 8px;"><i class="fas fa-check-circle"></i> We are Live!</h2>
+                                <p style="color: var(--white); margin: 0;">Unlocking feature now, please wait...</p>
+                            </div>
+                        `;
+                        const targetDisplay = document.getElementById('targetDateDisplay');
+                        if (targetDisplay) targetDisplay.style.display = 'none';
+
+                        // Auto-refresh/redirect to live experience
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2500);
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+                    if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+                    if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+                    if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+                }
+
+                updateCountdown();
+                const timerInterval = setInterval(updateCountdown, 1000);
+            }
             
-            // --- Form Submission Handler ---
+            // --- 2. AJAX NOTIFY FORM HANDLER ---
             const notifyForm = document.getElementById('notify-form');
-            notifyForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const emailInput = this.querySelector('input[type="email"]');
-                const button = this.querySelector('button');
+            const notifyEmailInput = document.getElementById('notifyEmailInput');
+            const notifySubmitBtn = document.getElementById('notifySubmitBtn');
+            const notifyStatus = document.getElementById('notifyStatus');
 
-                // In a real app, you would send this to the backend
-                // For now, we'll just provide user feedback
-                console.log(`Email submitted for notification: ${emailInput.value}`);
-                
-                button.textContent = 'Submitted!';
-                button.disabled = true;
-                emailInput.disabled = true;
+            if (notifyForm) {
+                // If user previously subscribed in this browser
+                if (localStorage.getItem('gpl_launch_subscribed') === 'true') {
+                    if (notifySubmitBtn) {
+                        notifySubmitBtn.textContent = 'Subscribed ✓';
+                        notifySubmitBtn.disabled = true;
+                        notifySubmitBtn.style.opacity = '0.7';
+                    }
+                    if (notifyEmailInput) {
+                        notifyEmailInput.disabled = true;
+                        notifyEmailInput.placeholder = 'You are registered for launch updates!';
+                    }
+                }
 
-                // Optionally, save to localStorage to remember submission
-                localStorage.setItem('notified_launch', 'true');
-            });
-            
-            // Check if user has already submitted
-            if (localStorage.getItem('notified_launch') === 'true') {
-                 const button = notifyForm.querySelector('button');
-                 const emailInput = notifyForm.querySelector('input[type="email"]');
-                 button.textContent = 'Submitted!';
-                 button.disabled = true;
-                 emailInput.placeholder = 'We will notify you!';
-                 emailInput.disabled = true;
+                notifyForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const email = notifyEmailInput ? notifyEmailInput.value.trim() : '';
+                    if (!email) return;
+
+                    notifySubmitBtn.disabled = true;
+                    notifySubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+                    notifyStatus.textContent = '';
+
+                    try {
+                        const response = await fetch('/notify-launch', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            localStorage.setItem('gpl_launch_subscribed', 'true');
+                            notifySubmitBtn.textContent = 'Subscribed ✓';
+                            notifySubmitBtn.style.background = 'var(--green)';
+                            notifyEmailInput.disabled = true;
+                            notifyStatus.style.color = 'var(--green)';
+                            notifyStatus.textContent = data.message || 'Success! You will be notified the instant we launch.';
+                        } else {
+                            notifySubmitBtn.disabled = false;
+                            notifySubmitBtn.textContent = 'Notify Me';
+                            notifyStatus.style.color = 'var(--red, #e74c3c)';
+                            notifyStatus.textContent = data.error || 'Failed to submit email. Please try again.';
+                        }
+                    } catch (err) {
+                        notifySubmitBtn.disabled = false;
+                        notifySubmitBtn.textContent = 'Notify Me';
+                        notifyStatus.style.color = 'var(--red, #e74c3c)';
+                        notifyStatus.textContent = 'A network error occurred. Please try again.';
+                    }
+                });
             }
         });
     </script>

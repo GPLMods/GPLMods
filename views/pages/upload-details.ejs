@@ -573,7 +573,8 @@
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <div style="width: 160px; z-index: 10;">
                             <select id="fetchPlatform" style="display: none;">
-                                <option value="playstore" selected>Play Store</option>
+                                <option value="auto" selected>Auto Detect</option>
+                                <option value="playstore">Play Store</option>
                                 <option value="appstore">App Store</option>
                                 <option value="steam">Steam</option>
                                 <option value="epic">Epic Games</option>
@@ -581,11 +582,12 @@
                             </select>
                             <div class="custom-select-wrapper" id="fetchPlatformWrapper">
                                 <div class="custom-select" style="padding: 10px; height: 45px;">
-                                    <span class="selected-text" style="color: var(--white);">Play Store</span>
+                                    <span class="selected-text" style="color: var(--white);">Auto Detect</span>
                                     <i class="fas fa-chevron-down custom-select-arrow" style="font-size: 0.8em;"></i>
                                 </div>
                                 <div class="custom-options">
-                                    <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                    <div class="custom-option selected" data-value="auto">Auto Detect</div>
+                                    <div class="custom-option" data-value="playstore">Play Store</div>
                                     <div class="custom-option" data-value="appstore">App Store</div>
                                     <div class="custom-option" data-value="steam">Steam</div>
                                     <div class="custom-option" data-value="epic">Epic Games</div>
@@ -593,7 +595,7 @@
                                 </div>
                             </div>
                         </div>
-                        <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
+                        <input type="url" id="fetchUrl" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
                         <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; height: 45px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch Data</button>
                     </div>
                     <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
@@ -735,7 +737,8 @@
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <div style="width: 160px; z-index: 10;">
                             <select id="fetchPlatform" style="display: none;">
-                                <option value="playstore" selected>Play Store</option>
+                                <option value="auto" selected>Auto Detect</option>
+                                <option value="playstore">Play Store</option>
                                 <option value="appstore">App Store</option>
                                 <option value="steam">Steam</option>
                                 <option value="epic">Epic Games</option>
@@ -743,11 +746,12 @@
                             </select>
                             <div class="custom-select-wrapper" id="fetchPlatformWrapper">
                                 <div class="custom-select" style="padding: 10px; height: 45px;">
-                                    <span class="selected-text" style="color: var(--white);">Play Store</span>
+                                    <span class="selected-text" style="color: var(--white);">Auto Detect</span>
                                     <i class="fas fa-chevron-down custom-select-arrow" style="font-size: 0.8em;"></i>
                                 </div>
                                 <div class="custom-options">
-                                    <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                    <div class="custom-option selected" data-value="auto">Auto Detect</div>
+                                    <div class="custom-option" data-value="playstore">Play Store</div>
                                     <div class="custom-option" data-value="appstore">App Store</div>
                                     <div class="custom-option" data-value="steam">Steam</div>
                                     <div class="custom-option" data-value="epic">Epic Games</div>
@@ -756,7 +760,7 @@
                             </div>
                         </div>
 
-                        <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
+                        <input type="url" id="fetchUrl" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)..." style="flex-grow: 1; padding: 10px; height: 45px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none;">
                         <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; height: 45px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch Data</button>
                     </div>
                     <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
@@ -799,10 +803,14 @@
                     <div id="dropdown-importantNote" class="template-dropdown"></div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="whatsNew">What's New (Optional)</label>
+                <div class="form-group" style="position: relative;">
+                    <label for="whatsNew">
+                        What's New (Optional)
+                        <span class="template-helper-btn" data-target="whatsNew">💡 Use Template</span>
+                    </label>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file && file.whatsNew ? file.whatsNew : '' %></textarea>
                     <div id="editor-whatsNew"><%- file && file.whatsNew ? file.whatsNew : '' %></div>
+                    <div id="dropdown-whatsNew" class="template-dropdown"></div>
                 </div>
             </fieldset>
 
@@ -1678,13 +1686,29 @@ document.addEventListener('DOMContentLoaded', () => {
         importantNote: [
             { title: "Standard Install Guide", text: "1. Uninstall any previous or official versions of this app.\n2. Download the APK file from the link below.\n3. Allow installation from 'Unknown Sources' in your device settings.\n4. Install the app and enjoy!" },
             { title: "Login Fix Guide", text: "⚠️ IMPORTANT: If you are unable to login using Google or Facebook, please use a Guest Account or register using a generic email/password inside the app." }
+        ],
+        whatsNew: [
+            { title: "Standard Release Notes", text: "• Bug fixes and performance improvements.\n• Unlocked latest premium features.\n• Enhanced stability and compatibility." },
+            { title: "Major Update Changelog", text: "• Added full support for newest operating systems.\n• Fixed license verification and crashes.\n• Optimized memory usage and loading times." }
         ]
     };
+
+    // Merge custom admin templates directly from admin panel
+    const serverTemplates = <%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []) %>;
+    if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
+        serverTemplates.forEach(t => {
+            if (t.targetField && t.content) {
+                if (!smartTemplates[t.targetField]) smartTemplates[t.targetField] = [];
+                smartTemplates[t.targetField].push({ title: t.title, text: t.content });
+            }
+        });
+    }
 
     function getQuillForField(fieldId) {
         if (fieldId === 'modDescription') return quillDesc;
         if (fieldId === 'modFeatures') return quillFeat;
         if (fieldId === 'importantNote') return quillNote;
+        if (fieldId === 'whatsNew') return quillNew;
         return null;
     }
 
@@ -1782,10 +1806,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initialize for the 3 fields
+    // Initialize for the 4 fields
     setupTemplateSystem('modDescription');
     setupTemplateSystem('modFeatures');
     setupTemplateSystem('importantNote');
+    setupTemplateSystem('whatsNew');
 
     // Handle the "💡 Use Template" buttons
     document.querySelectorAll('.template-helper-btn').forEach(btn => {
@@ -2007,6 +2032,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchModalSourceBadge = document.getElementById('fetchModalSourceBadge');
 
     const storePlaceholders = {
+        auto: 'Paste store link (Google Play, App Store, Steam, Epic, WordPress)...',
         playstore: 'https://play.google.com/store/apps/details?id=...',
         appstore: 'https://apps.apple.com/app/.../id...',
         steam: 'https://store.steampowered.com/app/...',
@@ -2015,6 +2041,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const storeNames = {
+        auto: 'Auto-Detected Store',
         playstore: 'Google Play Store',
         appstore: 'Apple App Store',
         steam: 'Steam Store',
@@ -2026,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateFetchPlaceholder = () => {
         if (!fetchPlatformSelect || !fetchUrlInput) return;
-        const currentPlatform = fetchPlatformSelect.value || 'playstore';
+        const currentPlatform = fetchPlatformSelect.value || 'auto';
         if (storePlaceholders[currentPlatform]) {
             fetchUrlInput.placeholder = storePlaceholders[currentPlatform];
         }
@@ -2056,7 +2083,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (selectAllFetchFieldsBtn) {
         selectAllFetchFieldsBtn.addEventListener('click', () => {
-            ['appName', 'developer', 'officialDescription', 'tags', 'whatsNew'].forEach(key => {
+            ['appName', 'developer', 'officialDescription', 'tags', 'whatsNew', 'ageRating', 'softwareVersion'].forEach(key => {
                 const chk = document.getElementById(`fetch_opt_${key}`);
                 if (chk && !chk.disabled) chk.checked = true;
             });
@@ -2065,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (deselectAllFetchFieldsBtn) {
         deselectAllFetchFieldsBtn.addEventListener('click', () => {
-            ['appName', 'developer', 'officialDescription', 'tags', 'whatsNew'].forEach(key => {
+            ['appName', 'developer', 'officialDescription', 'tags', 'whatsNew', 'ageRating', 'softwareVersion'].forEach(key => {
                 const chk = document.getElementById(`fetch_opt_${key}`);
                 if (chk) chk.checked = false;
             });
@@ -2074,7 +2101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (fetchBtn) {
         fetchBtn.addEventListener('click', async function() {
-            const platform = fetchPlatformSelect ? fetchPlatformSelect.value : 'playstore';
+            const platform = fetchPlatformSelect ? fetchPlatformSelect.value : 'auto';
             const url = fetchUrlInput ? fetchUrlInput.value.trim() : '';
 
             if (!url) {
@@ -2105,8 +2132,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         statusSpan.style.color = 'var(--green, #2ecc71)';
                     }
 
+                    const detectedSource = result.data.detectedPlatform || platform;
                     if (fetchModalSourceBadge) {
-                        fetchModalSourceBadge.textContent = `${storeNames[platform] || platform} Data`;
+                        fetchModalSourceBadge.textContent = `${storeNames[detectedSource] || detectedSource} Data`;
                     }
 
                     const fieldMappings = [
@@ -2114,7 +2142,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         { key: 'developer', val: result.data.developer || '' },
                         { key: 'officialDescription', val: result.data.officialDescription || result.data.description || '' },
                         { key: 'tags', val: result.data.tags || '' },
-                        { key: 'whatsNew', val: result.data.whatsNew || '' }
+                        { key: 'whatsNew', val: result.data.whatsNew || '' },
+                        { key: 'ageRating', val: result.data.ageRating || result.data.minAge || '' },
+                        { key: 'softwareVersion', val: result.data.softwareVersion || result.data.version || '' }
                     ];
 
                     fieldMappings.forEach(item => {
@@ -2125,7 +2155,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         if (chkEl) {
                             if (item.val) {
-                                chkEl.checked = true;
+                                // CRITICAL: File Version is unchecked by default
+                                if (item.key === 'softwareVersion') {
+                                    chkEl.checked = false;
+                                } else {
+                                    chkEl.checked = true;
+                                }
                                 chkEl.disabled = false;
                             } else {
                                 chkEl.checked = false;
@@ -2226,19 +2261,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 appliedCount++;
             }
 
-            // Auto-populate min OS & age rating if present
-            if (lastFetchedMetadata.minOsVersion) {
-                const minOsInput = document.getElementById('minOsVersion');
-                if (minOsInput) minOsInput.value = lastFetchedMetadata.minOsVersion;
-            }
-            if (lastFetchedMetadata.ageRating) {
+            // 6. Minimum Age Requirement (Applied if checked)
+            if (document.getElementById('fetch_opt_ageRating')?.checked && lastFetchedMetadata.ageRating) {
                 const ageInput = document.getElementById('ageRating');
                 const ageWrapper = document.getElementById('ageRatingWrapper');
                 if (ageInput && ageWrapper) {
                     ageInput.value = lastFetchedMetadata.ageRating;
                     const optionToSelect = ageWrapper.querySelector(`.custom-option[data-value="${lastFetchedMetadata.ageRating}"]`);
                     if (optionToSelect) optionToSelect.click();
+                    appliedCount++;
                 }
+            }
+
+            // 7. File Version (Applied if checked - unchecked by default)
+            if (document.getElementById('fetch_opt_softwareVersion')?.checked) {
+                const verVal = lastFetchedMetadata.softwareVersion || lastFetchedMetadata.version;
+                const verInput = document.getElementById('modVersion') || document.getElementById('version');
+                if (verInput && verVal) {
+                    verInput.value = verVal;
+                    appliedCount++;
+                }
+            }
+
+            // Auto-populate min OS if present
+            if (lastFetchedMetadata.minOsVersion) {
+                const minOsInput = document.getElementById('minOsVersion');
+                if (minOsInput) minOsInput.value = lastFetchedMetadata.minOsVersion;
             }
 
             closeMetadataModal();
@@ -2472,6 +2520,34 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span style="font-size: 0.75em; background: rgba(0,122,255,0.15); color: var(--blue, #007AFF); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Changelog</span>
                             </div>
                             <div id="fetch_val_whatsNew" style="color: var(--silver, #aaa); font-size: 0.82em; margin-top: 5px; max-height: 70px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 6px; border: 1px solid #222;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 6. Minimum Age Requirement -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_ageRating" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-user-check" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 6. Minimum Age Requirement</strong>
+                                <span style="font-size: 0.75em; background: rgba(0,122,255,0.15); color: var(--blue, #007AFF); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Age Rating</span>
+                            </div>
+                            <div id="fetch_val_ageRating" style="color: var(--gold, #FFD700); font-size: 0.85em; margin-top: 5px; font-weight: 600; word-break: break-word;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 7. File Version (Unchecked by default) -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_softwareVersion" style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-code-branch" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 7. File Version <span style="font-size: 0.8em; color: var(--silver); font-weight: normal;">(Optional - Unchecked by default)</span></strong>
+                                <span style="font-size: 0.75em; background: rgba(255,215,0,0.15); color: var(--gold, #FFD700); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Version</span>
+                            </div>
+                            <div id="fetch_val_softwareVersion" style="color: var(--gold, #FFD700); font-size: 0.85em; margin-top: 5px; font-weight: 600; word-break: break-word;">-</div>
                         </div>
                     </label>
                 </div>

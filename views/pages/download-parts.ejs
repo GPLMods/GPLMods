@@ -221,13 +221,24 @@
                                 %>
 
                                 <div class="part-item">
-                                    <div class="part-name">
-                                        <i class="fas fa-file-archive"></i>
-                                        <%= part.partName %>
-                                            <% if (isPartAdSupported) { %>
-                                                <span
-                                                    style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; margin-left: 10px; color: var(--silver);">Ad-Supported</span>
-                                                <% } %>
+                                    <div class="part-name" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <span><i class="fas fa-file-archive"></i> <%= part.partName %></span>
+                                        <% if (isPartAdSupported) { %>
+                                            <span style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; color: var(--silver);">Ad-Supported</span>
+                                        <% } %>
+                                        <% if (part.partVirusTotalScanDate) { %>
+                                            <span style="font-size: 0.72em; padding: 2px 8px; border-radius: 12px; font-weight: bold; background: <%= part.partVirusTotalPositiveCount > 0 ? 'rgba(255,50,50,0.15)' : 'rgba(0,255,100,0.15)' %>; color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; border: 1px solid <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;" title="Automated VirusTotal Part Scan">
+                                                <i class="fas fa-shield-virus"></i> <%= part.partVirusTotalPositiveCount %> / <%= part.partVirusTotalTotalScans %>
+                                            </span>
+                                        <% } else if (part.partVirusTotalId || (part.manualFileScanUrl && part.manualFileScanUrl.includes('virustotal.com'))) { %>
+                                            <button type="button" onclick="refreshPartVTScan('<%= file._id %>', '<%= part._id %>')" class="btn btn-secondary" style="font-size: 0.72em; padding: 2px 8px; border-radius: 12px; color: var(--gold); border-color: var(--gold); cursor: pointer;" title="Scan Pending - Click to check">
+                                                <i class="fas fa-hourglass-half fa-spin"></i> Part Scan Pending
+                                            </button>
+                                        <% } else if (part.manualFileScanUrl) { %>
+                                            <a href="<%= part.manualFileScanUrl %>" target="_blank" class="btn btn-secondary" style="font-size: 0.72em; padding: 2px 8px; border-radius: 12px;" title="View Manual Scan">
+                                                <i class="fas fa-file-shield"></i> Part Scan
+                                            </a>
+                                        <% } %>
                                     </div>
 
                                     <!-- Actions Container: Mirrors + Main Download -->
@@ -300,15 +311,15 @@
                                     <%= file.virusTotalPositiveCount %> / <%= file.virusTotalTotalScans %>
                                 </span>
                             </div>
-                            <% } else if (file.virusTotalAnalysisId) { %>
+                            <% } else if (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) { %>
                                 <!-- If Automated Scan is Pending -->
-                                <div
+                                <div id="vt-scan-pending-box"
                                     style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
-                                    <i class="fas fa-hourglass-half" style="color: var(--gold); font-size: 1.2em;"></i>
+                                    <i class="fas fa-hourglass-half fa-spin" style="color: var(--gold); font-size: 1.2em;"></i>
                                     <span style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan
                                         Pending...</span>
                                     <button onclick="refreshVTScan('<%= file._id %>')" class="btn btn-secondary"
-                                        style="padding: 4px 8px; font-size: 0.8em;"><i
+                                        style="padding: 4px 8px; font-size: 0.8em;" title="Check VirusTotal Status"><i
                                             class="fas fa-sync-alt"></i></button>
                                 </div>
                                 <% } %>
@@ -340,10 +351,13 @@
                                                     <% } %>
 
                                                         <!-- 3. Automated VT Scan Link -->
-                                                        <% if (file.virusTotalId || file.virusTotalAnalysisId) { const
-                                                            vtUrl=file.virusTotalId ?
-                                                            `https://www.virustotal.com/gui/file/${file.virusTotalId}` :
-                                                            `https://www.virustotal.com/gui/file-analysis/${file.virusTotalAnalysisId}`;
+                                                        <% if (file.virusTotalId || file.virusTotalAnalysisId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) {
+                                                            let vtUrl = file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com') ? file.manualFileScanUrl : '';
+                                                            if (!vtUrl) {
+                                                                vtUrl = file.virusTotalId
+                                                                    ? (file.virusTotalId.length === 64 ? 'https://www.virustotal.com/gui/file/' + file.virusTotalId : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalId)
+                                                                    : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalAnalysisId;
+                                                            }
                                                             %>
                                                             <a href="<%= vtUrl %>" target="_blank"
                                                                 class="full-width-btn btn btn-secondary"
@@ -393,26 +407,104 @@
             </div>
     </main>
     <script>
-        async function refreshPartVTScan(fileId, partId) {
+        async function refreshVTScan(fileId) {
             try {
-                const btn = event.currentTarget;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-                btn.disabled = true;
+                const btn = (typeof event !== 'undefined' && event && event.currentTarget) ? event.currentTarget : document.querySelector('.safety-badge button');
+                const originalText = btn ? btn.innerHTML : '';
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                    btn.disabled = true;
+                }
 
-                const response = await fetch(`/api/refresh-vt-scan/${fileId}/part/${partId}`, { method: 'POST' });
+                const response = await fetch('/api/refresh-vt-scan/' + fileId, { method: 'POST' });
                 const data = await response.json();
 
                 if (data.status === 'completed') {
                     window.location.reload();
                 } else {
-                    alert('Scan is still ' + data.status + '. Please check back later.');
-                    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Check Status';
-                    btn.disabled = false;
+                    alert('Scan is still ' + (data.status || 'pending').toUpperCase() + '. VirusTotal is analyzing the file. Please check back in a minute.');
+                    if (btn) {
+                        btn.innerHTML = originalText || '<i class="fas fa-sync-alt"></i>';
+                        btn.disabled = false;
+                    }
                 }
             } catch (error) {
-                alert('Failed to check status.');
+                alert('Failed to check VirusTotal status.');
             }
         }
+
+        async function refreshPartVTScan(fileId, partId) {
+            try {
+                const btn = (typeof event !== 'undefined' && event && event.currentTarget) ? event.currentTarget : null;
+                const originalText = btn ? btn.innerHTML : '';
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                    btn.disabled = true;
+                }
+
+                const response = await fetch('/api/refresh-vt-scan/' + fileId + '/part/' + partId, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.status === 'completed') {
+                    window.location.reload();
+                } else {
+                    alert('Part scan is still ' + (data.status || 'pending').toUpperCase() + '. Please check back later.');
+                    if (btn) {
+                        btn.innerHTML = originalText || '<i class="fas fa-sync-alt"></i>';
+                        btn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                alert('Failed to check part status.');
+            }
+        }
+
+        // Automated background polling on Download Parts page
+        (function initPartsAutoPoll() {
+            const filePending = <%= Boolean(!file.virusTotalScanDate && (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com')))) %>;
+            const pendingParts = <%- JSON.stringify((file.downloadParts || []).filter(p => !p.partVirusTotalScanDate && (p.partVirusTotalId || (p.manualFileScanUrl && p.manualFileScanUrl.includes('virustotal.com')))).map(p => p._id)) %>;
+
+            if (!filePending && (!pendingParts || pendingParts.length === 0)) return;
+
+            let attempts = 0;
+            const maxAttempts = 8;
+            const interval = setInterval(async () => {
+                attempts++;
+                let shouldReload = false;
+
+                if (filePending) {
+                    try {
+                        const r = await fetch('/api/refresh-vt-scan/<%= file._id %>', { method: 'POST' });
+                        if (r.ok) {
+                            const d = await r.json();
+                            if (d && d.status === 'completed') shouldReload = true;
+                        }
+                    } catch (e) {}
+                }
+
+                if (pendingParts && pendingParts.length > 0) {
+                    for (const partId of pendingParts) {
+                        try {
+                            const r = await fetch('/api/refresh-vt-scan/<%= file._id %>/part/' + partId, { method: 'POST' });
+                            if (r.ok) {
+                                const d = await r.json();
+                                if (d && d.status === 'completed') shouldReload = true;
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (shouldReload) {
+                    clearInterval(interval);
+                    window.location.reload();
+                    return;
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                }
+            }, 8000);
+        })();
     </script>
     <%- include('../partials/video-ad-modal') %>
         <%- include('../partials/popunder-ads') %>

@@ -9,7 +9,7 @@ const SiteStateSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['online', 'maintenance', 'unavailable'],
+        enum: ['online', 'maintenance', 'unavailable', 'coming-soon'],
         default: 'online'
     },
     targetAudience: {
@@ -25,6 +25,15 @@ const SiteStateSchema = new Schema({
     maintenanceMessage: { type: String, default: 'GPL Mods is currently down for scheduled maintenance. We will be back online shortly. Thank you for your patience!' },
     unavailableTitle: { type: String, default: 'Service Temporarily Unavailable' },
     unavailableMessage: { type: String, default: 'This specific service or page is currently unavailable. Please check back later.' },
+    // --- DYNAMIC COMING SOON CONFIGURATION ---
+    comingSoonTitle: { type: String, default: 'Something Awesome is Coming Soon' },
+    comingSoonMessage: { type: String, default: "We're working hard to bring you a new and exciting feature. Stay tuned for the big reveal!" },
+    comingSoonCustomText: { type: String, default: 'Feature is currently under development. Stay tuned for official announcements!' },
+    comingSoonEnableTimer: { type: Boolean, default: true },
+    comingSoonLaunchDate: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+    comingSoonAllowedRoles: [{ type: String, trim: true }],
+    comingSoonAllowedUsers: [{ type: String, trim: true }],
+    comingSoonAutoPublishOnTimerEnd: { type: Boolean, default: true },
     enableAutomationEngine: {
         type: Boolean,
         default: false

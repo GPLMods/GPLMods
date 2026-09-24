@@ -49,6 +49,46 @@
     .btn-action-secondary:hover { background: #3a3a3a; color: var(--white); border-color: #666; }
     .btn-action-danger { background: #d32f2f; color: #fff; }
     .btn-action-danger:hover { background: #b71c1c; }
+
+    /* Template Helper & Dropdown Styles */
+    .template-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #111;
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+    .template-option {
+        padding: 12px 15px;
+        border-bottom: 1px solid #222;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    .template-option:last-child { border-bottom: none; }
+    .template-option:hover { background: #222; }
+    .template-option-title { color: var(--gold); font-weight: bold; display: block; margin-bottom: 4px; }
+    .template-option-preview { color: var(--silver); font-size: 0.85em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .template-helper-btn {
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8em;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: all 0.2s ease;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .template-helper-btn:hover { background: var(--gold); color: var(--black); }
 </style>
 
 <div class="container">
@@ -82,16 +122,18 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <div class="filter-group">
                         <select id="fetchPlatform" style="display: none;">
-                            <option value="playstore" selected>Play Store</option>
+                            <option value="auto" selected>Auto Detect</option>
+                            <option value="playstore">Play Store</option>
                             <option value="appstore">App Store</option>
                             <option value="steam">Steam</option>
                             <option value="epic">Epic Games</option>
                             <option value="wordpress">WordPress</option>
                         </select>
                         <div class="custom-select-wrapper" id="wrapper-fetchPlatform">
-                            <div class="custom-select"><span class="selected-text">Play Store</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
+                            <div class="custom-select"><span class="selected-text">Auto Detect</span><i class="fas fa-chevron-down custom-select-arrow"></i></div>
                             <div class="custom-options">
-                                <div class="custom-option selected" data-value="playstore">Play Store</div>
+                                <div class="custom-option selected" data-value="auto">Auto Detect</div>
+                                <div class="custom-option" data-value="playstore">Play Store</div>
                                 <div class="custom-option" data-value="appstore">App Store</div>
                                 <div class="custom-option" data-value="steam">Steam</div>
                                 <div class="custom-option" data-value="epic">Epic Games</div>
@@ -99,7 +141,7 @@
                             </div>
                         </div>
                     </div>
-                    <input type="url" id="fetchUrl" placeholder="https://play.google.com/store/apps/details?id=..." style="flex-grow: 1;">
+                    <input type="url" id="fetchUrl" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)..." style="flex-grow: 1;">
                     <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 20px; font-weight: bold; cursor: pointer;">Fetch</button>
                 </div>
                 <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
@@ -142,17 +184,25 @@
             </div>
 
             <!-- e. WHAT'S NEW IN THIS VERSION -->
-            <div class="form-group">
-                <label>What's New in this Version? (Optional)</label>
+            <div class="form-group" style="position: relative;">
+                <label>
+                    What's New in this Version? (Optional)
+                    <span class="template-helper-btn" data-target="whatsNew">💡 Use Template</span>
+                </label>
                 <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
+                <div id="dropdown-whatsNew" class="template-dropdown"></div>
                 <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
                 <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
             </div>
 
             <!-- f. IMPORTANT NOTE / INSTRUCTIONS -->
-            <div class="form-group">
-                <label for="importantNote">Important Note / Installation Instructions (Optional)</label>
+            <div class="form-group" style="position: relative;">
+                <label for="importantNote">
+                    Important Note / Installation Instructions (Optional)
+                    <span class="template-helper-btn" data-target="importantNote">💡 Use Template</span>
+                </label>
                 <textarea id="importantNote" name="importantNote" rows="4" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; outline: none; resize: vertical;"><%= parentFile.importantNote || '' %></textarea>
+                <div id="dropdown-importantNote" class="template-dropdown"></div>
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
 
@@ -421,10 +471,87 @@
             }
         });
 
-        // --- 3. Auto Fetch Logic ---
+        // --- 3. Auto Fetch & Metadata Modal Logic ---
         const toggleAutoFetch = document.getElementById('toggleAutoFetch');
         const autoFetchContainer = document.getElementById('autoFetchContainer');
         const fetchBtn = document.getElementById('fetchBtn');
+        const fetchPlatformSelect = document.getElementById('fetchPlatform');
+        const fetchUrlInput = document.getElementById('fetchUrl');
+
+        const storePlaceholders = {
+            auto: 'Paste store link (Google Play, App Store, Steam, Epic, WordPress)...',
+            playstore: 'https://play.google.com/store/apps/details?id=...',
+            appstore: 'https://apps.apple.com/app/.../id...',
+            steam: 'https://store.steampowered.com/app/...',
+            epic: 'https://store.epicgames.com/p/...',
+            wordpress: 'https://wordpress.org/plugins/...'
+        };
+
+        const storeNames = {
+            auto: 'Auto-Detected Store',
+            playstore: 'Google Play Store',
+            appstore: 'Apple App Store',
+            steam: 'Steam Store',
+            epic: 'Epic Games Store',
+            wordpress: 'WordPress.org'
+        };
+
+        const updateFetchPlaceholder = () => {
+            if (!fetchPlatformSelect || !fetchUrlInput) return;
+            const currentPlatform = fetchPlatformSelect.value || 'auto';
+            if (storePlaceholders[currentPlatform]) {
+                fetchUrlInput.placeholder = storePlaceholders[currentPlatform];
+            }
+        };
+
+        if (fetchPlatformSelect) {
+            fetchPlatformSelect.addEventListener('change', updateFetchPlaceholder);
+            updateFetchPlaceholder();
+        }
+
+        document.querySelectorAll('#wrapper-fetchPlatform .custom-option').forEach(option => {
+            option.addEventListener('click', () => {
+                setTimeout(updateFetchPlaceholder, 50);
+            });
+        });
+
+        const fetchMetadataModal = document.getElementById('fetchMetadataModal');
+        const closeFetchModalBtn = document.getElementById('closeFetchModalBtn');
+        const cancelFetchModalBtn = document.getElementById('cancelFetchModalBtn');
+        const applyFetchModalBtn = document.getElementById('applyFetchModalBtn');
+        const selectAllFetchFieldsBtn = document.getElementById('selectAllFetchFieldsBtn');
+        const deselectAllFetchFieldsBtn = document.getElementById('deselectAllFetchFieldsBtn');
+        const fetchModalSourceBadge = document.getElementById('fetchModalSourceBadge');
+
+        let lastFetchedMetadata = null;
+
+        const closeMetadataModal = () => {
+            if (fetchMetadataModal) {
+                fetchMetadataModal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        };
+
+        if (closeFetchModalBtn) closeFetchModalBtn.addEventListener('click', closeMetadataModal);
+        if (cancelFetchModalBtn) cancelFetchModalBtn.addEventListener('click', closeMetadataModal);
+
+        if (selectAllFetchFieldsBtn) {
+            selectAllFetchFieldsBtn.addEventListener('click', () => {
+                ['whatsNew', 'ageRating', 'minOsVersion', 'softwareVersion'].forEach(key => {
+                    const chk = document.getElementById(`fetch_opt_${key}`);
+                    if (chk && !chk.disabled) chk.checked = true;
+                });
+            });
+        }
+
+        if (deselectAllFetchFieldsBtn) {
+            deselectAllFetchFieldsBtn.addEventListener('click', () => {
+                ['whatsNew', 'ageRating', 'minOsVersion', 'softwareVersion'].forEach(key => {
+                    const chk = document.getElementById(`fetch_opt_${key}`);
+                    if (chk) chk.checked = false;
+                });
+            });
+        }
 
         if (toggleAutoFetch && autoFetchContainer) {
             toggleAutoFetch.addEventListener('change', function() {
@@ -434,48 +561,220 @@
 
         if (fetchBtn) {
             fetchBtn.addEventListener('click', async function() {
-                const platform = document.getElementById('fetchPlatform').value;
-                const url = document.getElementById('fetchUrl').value;
+                const platform = fetchPlatformSelect ? fetchPlatformSelect.value : 'auto';
+                const url = fetchUrlInput ? fetchUrlInput.value.trim() : '';
                 const statusSpan = document.getElementById('fetchStatus');
 
-                if (!url) { statusSpan.textContent = 'Please enter a URL first.'; statusSpan.style.color = 'var(--red)'; return; }
+                if (!url) { 
+                    if (statusSpan) {
+                        statusSpan.textContent = 'Please enter a URL first.'; 
+                        statusSpan.style.color = 'var(--red)'; 
+                    }
+                    return; 
+                }
 
-                fetchBtn.disabled = true; fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...'; statusSpan.textContent = '';
+                fetchBtn.disabled = true; 
+                fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...'; 
+                if (statusSpan) statusSpan.textContent = '';
 
                 try {
                     const response = await fetch('/api/fetch-metadata', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ url, platform })
                     });
                     const result = await response.json();
-                    if (result.success) {
-                        statusSpan.textContent = 'Data fetched successfully!';
-                        statusSpan.style.color = 'var(--green)';
-
-                        if (result.data.whatsNew) quill.root.innerHTML = result.data.whatsNew;
-                        if (result.data.minOsVersion || result.data.minOs) {
-                            const mo = document.getElementById('minOsVersion');
-                            if (mo) mo.value = result.data.minOsVersion || result.data.minOs;
+                    if (result.success && result.data) {
+                        lastFetchedMetadata = result.data;
+                        if (statusSpan) {
+                            statusSpan.textContent = 'Store data fetched! Select fields in modal to apply.'; 
+                            statusSpan.style.color = 'var(--green)';
                         }
-                        if (result.data.ageRating || result.data.minAge) {
-                            const ma = document.getElementById('ageRating');
-                            const val = result.data.ageRating || result.data.minAge;
-                            if (ma) {
-                                ma.value = val;
-                                const opt = ma.querySelector(`option[value="${val}"]`);
-                                if (opt && ageRatingText) ageRatingText.textContent = opt.textContent;
-                                document.querySelectorAll('#ageRatingWrapper .custom-option').forEach(o => {
-                                    o.classList.toggle('selected', o.getAttribute('data-value') === val);
-                                });
+
+                        const detectedSource = result.data.detectedPlatform || platform;
+                        if (fetchModalSourceBadge) {
+                            fetchModalSourceBadge.textContent = `${storeNames[detectedSource] || detectedSource} Data`;
+                        }
+
+                        const fieldMappings = [
+                            { key: 'whatsNew', val: result.data.whatsNew || '' },
+                            { key: 'ageRating', val: result.data.ageRating || result.data.minAge || '' },
+                            { key: 'minOsVersion', val: result.data.minOsVersion || result.data.minOs || '' },
+                            { key: 'softwareVersion', val: result.data.softwareVersion || result.data.version || '' }
+                        ];
+
+                        fieldMappings.forEach(item => {
+                            const valEl = document.getElementById(`fetch_val_${item.key}`);
+                            const chkEl = document.getElementById(`fetch_opt_${item.key}`);
+                            if (valEl) {
+                                valEl.innerHTML = item.val ? (item.val.length > 250 ? item.val.substring(0, 250) + '...' : item.val) : '<em style="color:#777;">Not found in store page</em>';
                             }
+                            if (chkEl) {
+                                if (item.val) {
+                                    // CRITICAL: File Version is unchecked by default
+                                    if (item.key === 'softwareVersion') {
+                                        chkEl.checked = false;
+                                    } else {
+                                        chkEl.checked = true;
+                                    }
+                                    chkEl.disabled = false;
+                                } else {
+                                    chkEl.checked = false;
+                                    chkEl.disabled = true;
+                                }
+                            }
+                        });
+
+                        if (fetchMetadataModal) {
+                            fetchMetadataModal.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
                         }
                     } else {
-                        statusSpan.textContent = result.error || 'Failed to fetch data.'; statusSpan.style.color = 'var(--red)';
+                        if (statusSpan) {
+                            statusSpan.textContent = result.error || 'Failed to fetch data.'; 
+                            statusSpan.style.color = 'var(--red)'; 
+                        }
                     }
-                } catch (err) { statusSpan.textContent = 'Server error.'; statusSpan.style.color = 'var(--red)';
-                } finally { fetchBtn.disabled = false; fetchBtn.textContent = 'Fetch'; }
+                } catch (err) { 
+                    if (statusSpan) {
+                        statusSpan.textContent = 'Server error.'; 
+                        statusSpan.style.color = 'var(--red)'; 
+                    }
+                } finally { 
+                    fetchBtn.disabled = false; 
+                    fetchBtn.textContent = 'Fetch'; 
+                }
             });
         }
+
+        if (applyFetchModalBtn) {
+            applyFetchModalBtn.addEventListener('click', () => {
+                if (!lastFetchedMetadata) return;
+
+                // 1. What's New
+                if (document.getElementById('fetch_opt_whatsNew')?.checked && lastFetchedMetadata.whatsNew) {
+                    if (quill) {
+                        quill.root.innerHTML = lastFetchedMetadata.whatsNew;
+                    }
+                    const hiddenWhatsNew = document.getElementById('hiddenWhatsNew');
+                    if (hiddenWhatsNew) hiddenWhatsNew.value = lastFetchedMetadata.whatsNew;
+                }
+
+                // 2. Minimum Age Requirement
+                if (document.getElementById('fetch_opt_ageRating')?.checked && lastFetchedMetadata.ageRating) {
+                    const ma = document.getElementById('ageRating');
+                    const val = lastFetchedMetadata.ageRating;
+                    if (ma) {
+                        ma.value = val;
+                        const opt = ma.querySelector(`option[value="${val}"]`);
+                        if (opt && ageRatingText) ageRatingText.textContent = opt.textContent;
+                        document.querySelectorAll('#ageRatingWrapper .custom-option').forEach(o => {
+                            o.classList.toggle('selected', o.getAttribute('data-value') === val);
+                        });
+                    }
+                }
+
+                // 3. Minimum OS Required
+                if (document.getElementById('fetch_opt_minOsVersion')?.checked) {
+                    const moVal = lastFetchedMetadata.minOsVersion || lastFetchedMetadata.minOs;
+                    const mo = document.getElementById('minOsVersion');
+                    if (mo && moVal) mo.value = moVal;
+                }
+
+                // 4. File Version (Applied if checked - unchecked by default)
+                if (document.getElementById('fetch_opt_softwareVersion')?.checked) {
+                    const verVal = lastFetchedMetadata.softwareVersion || lastFetchedMetadata.version;
+                    const verInput = document.getElementById('softwareVersion');
+                    if (verInput && verVal) verInput.value = verVal;
+                }
+
+                closeMetadataModal();
+            });
+        }
+
+        // --- SMART TEMPLATES LOGIC FOR ADD-VERSION ---
+        const smartTemplates = {
+            whatsNew: [
+                { title: "Standard Release Notes", text: "• Bug fixes and performance improvements.\n• Unlocked latest premium features.\n• Enhanced stability and compatibility." },
+                { title: "Major Update Changelog", text: "• Added full support for newest operating systems.\n• Fixed license verification and crashes.\n• Optimized memory usage and loading times." }
+            ],
+            importantNote: [
+                { title: "Standard Install Guide", text: "1. Uninstall any previous or official versions of this app.\n2. Download the APK file from the link below.\n3. Allow installation from 'Unknown Sources' in your device settings.\n4. Install the app and enjoy!" },
+                { title: "Login Fix Guide", text: "⚠️ IMPORTANT: If you are unable to login using Google or Facebook, please use a Guest Account or register using a generic email/password inside the app." }
+            ]
+        };
+
+        const serverTemplates = <%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []) %>;
+        if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
+            serverTemplates.forEach(t => {
+                if (t.targetField && t.content) {
+                    if (!smartTemplates[t.targetField]) smartTemplates[t.targetField] = [];
+                    smartTemplates[t.targetField].push({ title: t.title, text: t.content });
+                }
+            });
+        }
+
+        function setupAddVersionTemplate(targetId) {
+            const dropdown = document.getElementById(`dropdown-${targetId}`);
+            if (!dropdown) return;
+            const templates = smartTemplates[targetId];
+            if (!templates || templates.length === 0) return;
+
+            dropdown.innerHTML = templates.map((tmpl, index) => `
+                <div class="template-option" data-index="${index}">
+                    <span class="template-option-title">${tmpl.title}</span>
+                    <span class="template-option-preview">${tmpl.text.replace(/\n/g, ' ')}</span>
+                </div>
+            `).join('');
+
+            dropdown.querySelectorAll('.template-option').forEach(opt => {
+                opt.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const selectedTemplate = templates[this.getAttribute('data-index')].text;
+                    if (targetId === 'whatsNew' && quill) {
+                        const currentHtml = quill.root.innerHTML;
+                        if (!currentHtml || currentHtml === '<p><br></p>') {
+                            quill.setText(selectedTemplate + '\n');
+                        } else {
+                            quill.insertText(quill.getLength(), '\n' + selectedTemplate);
+                        }
+                    } else if (targetId === 'importantNote') {
+                        const noteEl = document.getElementById('importantNote');
+                        if (noteEl) {
+                            if (!noteEl.value.trim()) {
+                                noteEl.value = selectedTemplate;
+                            } else {
+                                noteEl.value += '\n\n' + selectedTemplate;
+                            }
+                        }
+                    }
+                    dropdown.style.display = 'none';
+                });
+            });
+        }
+
+        setupAddVersionTemplate('whatsNew');
+        setupAddVersionTemplate('importantNote');
+
+        document.querySelectorAll('.template-helper-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetId = btn.getAttribute('data-target');
+                const dropdown = document.getElementById(`dropdown-${targetId}`);
+                if (!dropdown) return;
+                const isCurrentlyOpen = dropdown.style.display === 'block';
+                document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+                dropdown.style.display = isCurrentlyOpen ? 'none' : 'block';
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.template-dropdown') && !e.target.closest('.template-helper-btn')) {
+                document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
 
         // --- 4. Distributor Toggles & Logic ---
         const btnShowLink = document.getElementById('btn-show-link');
@@ -772,5 +1071,107 @@
         });
     });
 </script>
+
+<!-- AUTO-FETCH SELECTIVE FIELD IMPORT MODAL -->
+<div id="fetchMetadataModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background: #14171f; border: 1px solid #2a2f3d; border-radius: 14px; width: 100%; max-width: 600px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+        <!-- Modal Header -->
+        <div style="background: rgba(0,0,0,0.4); padding: 18px 25px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-magic" style="color: var(--blue, #007AFF); font-size: 1.2em;"></i>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.15em; color: #fff; font-weight: 700;">Select Metadata to Import</h3>
+                    <span id="fetchModalSourceBadge" style="font-size: 0.8em; color: var(--gold, #FFD700); font-weight: 600;">Store Data</span>
+                </div>
+            </div>
+            <button type="button" id="closeFetchModalBtn" style="background: none; border: none; color: var(--silver, #aaa); font-size: 1.6em; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div style="padding: 20px 25px; overflow-y: auto; flex-grow: 1;">
+            <p style="color: var(--silver, #ccc); margin-top: 0; margin-bottom: 15px; font-size: 0.9em;">
+                Select which store fields you want to import into this version update:
+            </p>
+
+            <!-- Quick Action Toggles -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(255,255,255,0.04); padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 0.85em; color: var(--silver, #bbb); font-weight: 500;">Batch Selection:</span>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="selectAllFetchFieldsBtn" style="background: rgba(0,122,255,0.2); border: 1px solid var(--blue, #007AFF); color: #fff; border-radius: 6px; padding: 4px 12px; font-size: 0.8em; cursor: pointer; font-weight: 600;">Select All</button>
+                    <button type="button" id="deselectAllFetchFieldsBtn" style="background: rgba(255,255,255,0.05); border: 1px solid #444; color: #aaa; border-radius: 6px; padding: 4px 12px; font-size: 0.8em; cursor: pointer;">Deselect All</button>
+                </div>
+            </div>
+
+            <!-- Field Checkbox List -->
+            <div id="fetchFieldsList" style="display: flex; flex-direction: column; gap: 12px;">
+                
+                <!-- 1. What's New -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_whatsNew" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-bullhorn" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 1. What's New</strong>
+                                <span style="font-size: 0.75em; background: rgba(0,122,255,0.15); color: var(--blue, #007AFF); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Changelog</span>
+                            </div>
+                            <div id="fetch_val_whatsNew" style="color: var(--silver, #aaa); font-size: 0.82em; margin-top: 5px; max-height: 70px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 6px; border: 1px solid #222;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 2. Minimum Age Requirement -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_ageRating" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-user-check" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 2. Minimum Age Requirement</strong>
+                                <span style="font-size: 0.75em; background: rgba(0,122,255,0.15); color: var(--blue, #007AFF); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Age Rating</span>
+                            </div>
+                            <div id="fetch_val_ageRating" style="color: var(--gold, #FFD700); font-size: 0.85em; margin-top: 5px; font-weight: 600; word-break: break-word;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 3. Minimum OS Required -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_minOsVersion" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-mobile-alt" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 3. Minimum OS Required</strong>
+                                <span style="font-size: 0.75em; background: rgba(0,122,255,0.15); color: var(--blue, #007AFF); padding: 2px 8px; border-radius: 4px; font-weight: 600;">OS Requirement</span>
+                            </div>
+                            <div id="fetch_val_minOsVersion" style="color: var(--gold, #FFD700); font-size: 0.85em; margin-top: 5px; font-weight: 600; word-break: break-word;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 4. File Version (Unchecked by default) -->
+                <div class="fetch-field-card" style="background: rgba(0,0,0,0.3); border: 1px solid #2a2f3d; padding: 14px; border-radius: 10px;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="fetch_opt_softwareVersion" style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--blue, #007AFF); cursor: pointer;">
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #fff; font-size: 0.95em;"><i class="fas fa-code-branch" style="color: var(--blue, #007AFF); margin-right: 6px;"></i> 4. File Version <span style="font-size: 0.8em; color: var(--silver); font-weight: normal;">(Optional - Unchecked by default)</span></strong>
+                                <span style="font-size: 0.75em; background: rgba(255,215,0,0.15); color: var(--gold, #FFD700); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Version</span>
+                            </div>
+                            <div id="fetch_val_softwareVersion" style="color: var(--gold, #FFD700); font-size: 0.85em; margin-top: 5px; font-weight: 600; word-break: break-word;">-</div>
+                        </div>
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="background: rgba(0,0,0,0.5); padding: 15px 25px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" id="cancelFetchModalBtn" class="btn btn-secondary" style="padding: 10px 20px; border-radius: 8px; font-weight: 600; background: transparent; border: 1px solid #555; color: var(--silver, #ccc); cursor: pointer;">Cancel</button>
+            <button type="button" id="applyFetchModalBtn" class="btn btn-primary" style="padding: 10px 25px; border-radius: 8px; font-weight: bold; background: var(--blue, #007AFF); color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle"></i> Apply Selected Fields
+            </button>
+        </div>
+    </div>
+</div>
 
 <%- include('../partials/footer') %>

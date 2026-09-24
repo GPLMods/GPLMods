@@ -36,6 +36,7 @@ const VpnCache = require('../models/vpnCache');
 const SourceCode = require('../models/sourceCode');
 const StaticPage = require('../models/staticPage');
 const AIKnowledge = require('../models/aiKnowledge');
+const ModTemplate = require('../models/modTemplate');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -570,6 +571,14 @@ async function createAdminRouter() {
                                     }
                                 });
                                 return request;
+                            },
+                            after: async (response) => {
+                                if (response.record && response.record.params && response.record.params._id) {
+                                    if (typeof global.pollVirusTotalInBackground === 'function') {
+                                        global.pollVirusTotalInBackground(response.record.params._id);
+                                    }
+                                }
+                                return response;
                             }
                         },
                         edit: { 
@@ -582,6 +591,20 @@ async function createAdminRouter() {
                                     }
                                 });
                                 return request;
+                            },
+                            after: async (response) => {
+                                if (response.record && response.record.params && response.record.params._id) {
+                                    const fileId = response.record.params._id;
+                                    const vtId = response.record.params.virusTotalId;
+                                    const scanUrl = response.record.params.manualFileScanUrl;
+                                    const scanDate = response.record.params.virusTotalScanDate;
+                                    if (!scanDate && (vtId || scanUrl || response.record.params.virusTotalAnalysisId)) {
+                                        if (typeof global.pollVirusTotalInBackground === 'function') {
+                                            global.pollVirusTotalInBackground(fileId);
+                                        }
+                                    }
+                                }
+                                return response;
                             }
                         },
                         delete: { 
@@ -703,6 +726,42 @@ async function createAdminRouter() {
                 options: {
                     navigation: modsNav,
                     listProperties: ['name', 'configUrl', 'isRecommended', 'updatedAt']
+                }
+            },
+            {
+                resource: ModTemplate,
+                options: {
+                    navigation: modsNav,
+                    listProperties: ['title', 'targetField', 'category', 'isActive', 'sortOrder', 'updatedAt'],
+                    filterProperties: ['title', 'targetField', 'category', 'isActive'],
+                    editProperties: ['title', 'targetField', 'category', 'content', 'isActive', 'sortOrder'],
+                    showProperties: ['title', 'targetField', 'category', 'content', 'isActive', 'sortOrder', 'createdAt', 'updatedAt'],
+                    properties: {
+                        content: {
+                            type: 'textarea',
+                            props: {
+                                rows: 8
+                            }
+                        },
+                        targetField: {
+                            availableValues: [
+                                { value: 'modDescription', label: 'Mod Description' },
+                                { value: 'modFeatures', label: 'Mod Features' },
+                                { value: 'importantNote', label: 'Important Note / Instructions' },
+                                { value: 'whatsNew', label: "What's New (Changelog)" }
+                            ]
+                        },
+                        category: {
+                            availableValues: [
+                                { value: 'general', label: 'General' },
+                                { value: 'game', label: 'Game' },
+                                { value: 'app', label: 'Application' },
+                                { value: 'tool', label: 'Tool / Utility' },
+                                { value: 'guide', label: 'Guide / Tutorial' },
+                                { value: 'other', label: 'Other' }
+                            ]
+                        }
+                    }
                 }
             },
 
@@ -953,7 +1012,9 @@ async function createAdminRouter() {
                     showProperties: [
                         'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
                         'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 'unavailableTitle',
-                        'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
+                        'unavailableMessage', 'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
+                        'comingSoonEnableTimer', 'comingSoonLaunchDate', 'comingSoonAllowedRoles', 'comingSoonAllowedUsers',
+                        'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
                         'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
                         'socialLinks.threads', 'socialLinks.gravatar', 'updatedAt'
@@ -961,7 +1022,9 @@ async function createAdminRouter() {
                     editProperties: [
                         'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
                         'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 
-                        'unavailableTitle', 'unavailableMessage', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
+                        'unavailableTitle', 'unavailableMessage', 'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
+                        'comingSoonEnableTimer', 'comingSoonLaunchDate', 'comingSoonAllowedRoles', 'comingSoonAllowedUsers',
+                        'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
                         'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
                         'socialLinks.threads', 'socialLinks.gravatar'
@@ -971,6 +1034,13 @@ async function createAdminRouter() {
                         geminiHiddenPages: { description: 'Pages or URL slug patterns where Gemini Chatbot should be hidden (e.g. /admin, /upload, /mods/:id, /status).' },
                         maintenanceMessage: { type: 'richtext' },
                         unavailableMessage: { type: 'richtext' },
+                        comingSoonMessage: { type: 'textarea', description: 'Main explanatory message shown on the Coming Soon page.' },
+                        comingSoonCustomText: { type: 'textarea', description: 'Custom bottom text banner (e.g. "Feature is under development" or any custom announcement).' },
+                        comingSoonEnableTimer: { description: 'Toggle ON to show the countdown timer (Day/Month/Year). Toggle OFF for a static Coming Soon page without a timer.' },
+                        comingSoonLaunchDate: { description: 'Exact date and time when the countdown timer ends and the feature launches.' },
+                        comingSoonAllowedRoles: { description: 'Roles that are allowed to access/bypass the coming soon page (e.g. admin, owner, distributor, support).' },
+                        comingSoonAllowedUsers: { description: 'Specific usernames allowed to access/bypass the coming soon page.' },
+                        comingSoonAutoPublishOnTimerEnd: { description: 'When enabled, the site automatically becomes publicly available to everyone once the timer reaches zero.' },
                         targetUsername: { description: 'Only required if Target Audience is "specific-user".' },
                         adNetworkBaseUrl: { description: 'Use {{ID}} for your Account ID and {{URL}} for the Base64 encoded target link.' },
                         'socialLinks.youtube': { description: 'Footer and About page YouTube URL.' },

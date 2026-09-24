@@ -115,6 +115,7 @@ const IosDns = require('./models/iosDns');
 const IosCert = require('./models/iosCert');
 const VpnCache = require('./models/vpnCache');
 const License = require('./models/content/license');
+const ModTemplate = require('./models/modTemplate');
 const SourceCode = require('./models/sourceCode');
 const ChatSession = require('./models/chatSession');
 const ChatSettings = require('./models/chatSettings');
@@ -1167,12 +1168,66 @@ app.use(async (req, res, next) => {
         return next();
     }
 
-    // 3. Always allow access to the Admin Panel, regardless of state
-    if (req.path.startsWith('/admin') || (req.user && (req.user.role === 'admin' || req.user.role === 'owner'))) {
+    // 2.1 Check Dynamic Coming Soon Auto-Timer Expiration
+    if (cachedSiteState.status === 'coming-soon') {
+        const now = new Date();
+        const launchDate = cachedSiteState.comingSoonLaunchDate ? new Date(cachedSiteState.comingSoonLaunchDate) : null;
+        if (cachedSiteState.comingSoonEnableTimer && launchDate && now >= launchDate && cachedSiteState.comingSoonAutoPublishOnTimerEnd) {
+            // Timer expired! Automatically transition site to online for everyone!
+            cachedSiteState.status = 'online';
+            SiteState.updateOne({ singletonId: 'master-state' }, { status: 'online' }).catch(err => console.error("Error auto-publishing on timer end:", err));
+            return next();
+        }
+    }
+
+    // 3. Always allow access to the Admin Panel, static assets, and essential endpoints
+    if (
+        req.path.startsWith('/admin') ||
+        req.path === '/notify-launch' ||
+        req.path === '/coming-soon' ||
+        req.path.startsWith('/public') ||
+        req.path.startsWith('/dist') ||
+        req.path.startsWith('/css') ||
+        req.path.startsWith('/images') ||
+        req.path.startsWith('/js') ||
+        req.path.startsWith('/api/devtool') ||
+        (req.user && (req.user.role === 'admin' || req.user.role === 'owner'))
+    ) {
         return next();
     }
 
-    // 4. Determine if the current user matches the Target Audience for the lockdown
+    // 4. Handle "coming-soon" Status with Role & User Access Control
+    if (cachedSiteState.status === 'coming-soon') {
+        const allowedRoles = Array.isArray(cachedSiteState.comingSoonAllowedRoles)
+            ? cachedSiteState.comingSoonAllowedRoles.map(r => String(r || '').toLowerCase().trim()).filter(Boolean)
+            : [];
+        const allowedUsers = Array.isArray(cachedSiteState.comingSoonAllowedUsers)
+            ? cachedSiteState.comingSoonAllowedUsers.map(u => String(u || '').toLowerCase().trim()).filter(Boolean)
+            : [];
+
+        const userRole = req.user ? String(req.user.role || '').toLowerCase().trim() : '';
+        const userName = req.user ? String(req.user.username || '').toLowerCase().trim() : '';
+
+        // Check if role or username is allowed to access
+        const isRoleAllowed = userRole && allowedRoles.includes(userRole);
+        const isUserAllowed = userName && allowedUsers.includes(userName);
+
+        if (isRoleAllowed || isUserAllowed) {
+            return next();
+        }
+
+        // Intercept and render dynamic Coming Soon page
+        return res.status(200).render('pages/coming-soon', {
+            title: cachedSiteState.comingSoonTitle || 'Something Awesome is Coming Soon',
+            message: cachedSiteState.comingSoonMessage || "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!",
+            customText: cachedSiteState.comingSoonCustomText || 'Feature is currently under development. Stay tuned for official announcements!',
+            enableTimer: cachedSiteState.comingSoonEnableTimer !== false,
+            launchDate: cachedSiteState.comingSoonLaunchDate ? new Date(cachedSiteState.comingSoonLaunchDate).toISOString() : '',
+            user: req.user || null
+        });
+    }
+
+    // 5. Determine if the current user matches the Target Audience for maintenance / unavailable lockdown
     const isGuest = !req.isAuthenticated();
     const isMember = req.isAuthenticated();
     let isTargeted = false;
@@ -1189,7 +1244,7 @@ app.use(async (req, res, next) => {
         }
     }
 
-    // 5. If the user is targeted, show them the appropriate intercept page
+    // 6. If the user is targeted, show them the appropriate intercept page
     if (isTargeted) {
         if (cachedSiteState.status === 'maintenance') {
             return res.status(503).render('pages/maintenance', {
@@ -4115,6 +4170,15 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const currentModSlug = masterFile.slug || slugify(masterFile.name) || masterFile._id.toString();
         const canonicalModUrl = `https://gplmods.webredirect.org/mods/${category}/${currentModSlug}${isViewingVariant ? `/${displayFile._id}` : ''}`;
 
+                // Auto-check VirusTotal scan if pending or manual VT URL provided
+        if (displayFile && (displayFile.virusTotalAnalysisId || displayFile.manualFileScanUrl) && !displayFile.virusTotalScanDate) {
+            try {
+                await checkAndUpdateFileVirusTotal(displayFile._id);
+                const updatedDisplay = await File.findById(displayFile._id);
+                if (updatedDisplay) displayFile = updatedDisplay;
+            } catch (vtErr) {}
+        }
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -4449,7 +4513,8 @@ app.get('/mods/:id/add-version', ensureAuthenticated, async (req, res) => {
         if (!parentFile || req.user.username.toLowerCase() !== parentFile.uploader.toLowerCase()) {
             return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
-        res.render('pages/add-version', { parentFile: parentFile });
+        const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        res.render('pages/add-version', { parentFile: parentFile, customTemplates });
     } catch (error) {
         return next(error);
     }
@@ -4587,6 +4652,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
                 try {
                     const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
                     await File.findByIdAndUpdate(newVersion._id, { virusTotalAnalysisId: analysisId });
+                    pollVirusTotalInBackground(newVersion._id);
                 } catch (error) {
                     console.error('VirusTotal submission failed for new version:', error.message || error);
                 }
@@ -4745,6 +4811,25 @@ app.get('/mods/:id/parts', async (req, res) => {
         }
         // =========================================
 
+
+                if (file && (file.virusTotalAnalysisId || file.manualFileScanUrl) && !file.virusTotalScanDate) {
+            try {
+                await checkAndUpdateFileVirusTotal(file._id);
+                const updatedFile = await File.findById(file._id);
+                if (updatedFile) file = updatedFile;
+            } catch (vtErr) {}
+        }
+        if (file && file.downloadParts && file.downloadParts.length > 0) {
+            for (const part of file.downloadParts) {
+                if ((part.partVirusTotalId || part.manualFileScanUrl) && !part.partVirusTotalScanDate) {
+                    try {
+                        await checkAndUpdatePartVirusTotal(file._id, part._id);
+                    } catch (e) {}
+                }
+            }
+            const refreshedFile = await File.findById(file._id);
+            if (refreshedFile) file = refreshedFile;
+        }
 
         res.render('pages/download-parts', { 
             file: { ...file.toObject(), iconUrl },
@@ -7204,6 +7289,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                     console.log(`VT URL Scan submitted. Analysis ID: ${analysisId}`);
                     
                     await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
+                    pollVirusTotalInBackground(newFile._id);
                 } catch (vtError) {
                     console.error("VT URL Scan Error:", vtError.response?.data || vtError.message);
                 }
@@ -7273,6 +7359,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 console.log(`Starting VT Scan for new file ${newFile._id}...`);
                 const analysisId = await submitToVirusTotal(req.file.buffer, req.file.originalname, req.file.size);
                 await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
+                pollVirusTotalInBackground(newFile._id);
                 console.log(`VT Scan submitted successfully. Analysis ID: ${analysisId}`);
             } catch (error) {
                 console.error(`Background VT scan failed for ${newFile._id}.`);
@@ -7333,6 +7420,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             ? pendingFile.category
             : defaultPlatform;
 
+        const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+
         res.render('pages/upload-details', { 
             fileId: pendingFile._id,
             fileKey: pendingFile.fileKey,
@@ -7342,7 +7431,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             defaultVersion: savedVersion || defaultVersion,
             defaultPlatform: savedPlatform,
             file: renderedFile,
-            licenses
+            licenses,
+            customTemplates
         });
 
     } catch (error) {
@@ -7605,9 +7695,12 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
         const screenshotUrls = await Promise.all((file.screenshotKeys ||[]).map(key => getSmartImageUrl(key)));
         const licenses = await License.find().sort({ name: 1 }).lean();
 
+        const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+
         res.render('pages/edit-mod', { 
             file: { ...file.toObject(), iconUrl, screenshotUrls },
-            licenses
+            licenses,
+            customTemplates
         });
     } catch (error) {
         console.error("Error loading edit page:", error);
@@ -7731,7 +7824,16 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.iosPackageId = formData.iosPackageId;
         }
         file.tags = processedTags;
-        if (formData.manualFileScanUrl !== undefined) file.manualFileScanUrl = manualFileScanUrlValue;
+        if (formData.manualFileScanUrl !== undefined) {
+            if (file.manualFileScanUrl !== manualFileScanUrlValue) {
+                file.virusTotalScanDate = null;
+                file.virusTotalPositiveCount = 0;
+                file.virusTotalTotalScans = 0;
+                file.virusTotalId = '';
+                file.virusTotalAnalysisId = '';
+            }
+            file.manualFileScanUrl = manualFileScanUrlValue;
+        }
         if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = manualSiteScanUrlValue;
         file.ageRating = req.body.ageRating || file.ageRating; 
         if (formData.modCategory) {
@@ -7846,6 +7948,18 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
 
         await file.save();
+
+        // --- AUTOMATED VIRUSTOTAL SCAN TRIGGER ON UPDATE ---
+        if ((file.virusTotalAnalysisId || file.manualFileScanUrl || file.virusTotalId) && !file.virusTotalScanDate) {
+            pollVirusTotalInBackground(file._id);
+        }
+        if (file.isMultiPart && file.downloadParts && file.downloadParts.length > 0) {
+            for (const part of file.downloadParts) {
+                if ((part.partVirusTotalId || part.manualFileScanUrl) && !part.partVirusTotalScanDate) {
+                    checkAndUpdatePartVirusTotal(file._id, part._id).catch(() => {});
+                }
+            }
+        }
 
         // --- INDEXNOW PING ---
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
@@ -8269,34 +8383,141 @@ app.post('/api/translate', async (req, res) => {
         res.status(500).json({ error: "Translation failed." });
     }
 });
+// --- AUTO-FETCH HELPER FUNCTIONS ---
+function cleanPlatformUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+    let trimmed = rawUrl.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+        trimmed = 'https://' + trimmed;
+    }
+    try {
+        const parsed = new URL(trimmed);
+        let hostname = parsed.hostname.toLowerCase();
+        
+        // Strip language/country prefix subdomains: e.g. en.wordpress.org, ve.wordpress.org, en.play.google.com, etc.
+        const langSubdomainMatch = hostname.match(/^([a-z]{2}(?:-[a-z]{2,4})?)\.(.+)$/i);
+        if (langSubdomainMatch) {
+            const remainder = langSubdomainMatch[2];
+            if (
+                remainder.includes('wordpress.org') ||
+                remainder.includes('wordpress.com') ||
+                remainder.includes('google.com') ||
+                remainder.includes('apple.com') ||
+                remainder.includes('steampowered.com') ||
+                remainder.includes('epicgames.com')
+            ) {
+                hostname = remainder;
+            }
+        }
+        
+        // Canonicalize known platform hostnames
+        if (hostname.endsWith('.wordpress.org') || hostname === 'wordpress.org') hostname = 'wordpress.org';
+        else if (hostname.endsWith('.wordpress.com') || hostname === 'wordpress.com') hostname = 'wordpress.com';
+        else if (hostname.endsWith('.play.google.com') || hostname === 'play.google.com') hostname = 'play.google.com';
+        else if (hostname.endsWith('.apps.apple.com') || hostname === 'apps.apple.com' || hostname.endsWith('.itunes.apple.com') || hostname === 'itunes.apple.com') hostname = 'apps.apple.com';
+        else if (hostname.endsWith('.steampowered.com') || hostname === 'store.steampowered.com') hostname = 'store.steampowered.com';
+        else if (hostname.endsWith('.epicgames.com') || hostname === 'store.epicgames.com') hostname = 'store.epicgames.com';
+
+        parsed.hostname = hostname;
+        return parsed.toString();
+    } catch (e) {
+        return trimmed;
+    }
+}
+
+function detectPlatform(url) {
+    try {
+        const parsed = new URL(url);
+        const host = parsed.hostname.toLowerCase();
+        if (host.includes('google.com') || host.includes('android.com')) return 'playstore';
+        if (host.includes('apple.com')) return 'appstore';
+        if (host.includes('steampowered.com') || host.includes('steamcommunity.com')) return 'steam';
+        if (host.includes('epicgames.com')) return 'epic';
+        if (host.includes('wordpress.org') || host.includes('wordpress.com')) return 'wordpress';
+    } catch (e) {}
+    return 'generic';
+}
+
+function normalizeAgeRating(ratingStr) {
+    if (!ratingStr) return 'NA';
+    const s = ratingStr.toString().trim();
+    if (/^18\+?$/i.test(s) || /adult|ao|18\+/i.test(s)) return '18+';
+    if (/^16\+?$/i.test(s) || /mature|17\+|16\+/i.test(s)) return '16+';
+    if (/^12\+?$/i.test(s) || /teen|13\+|12\+/i.test(s)) return '12+';
+    if (/^7\+?$/i.test(s) || /everyone 10\+|10\+|7\+/i.test(s)) return '7+';
+    if (/^3\+?$/i.test(s) || /everyone|3\+|4\+/i.test(s)) return '3+';
+    const numMatch = s.match(/\b(18|17|16|13|12|10|9|7|4|3)\b/);
+    if (numMatch) {
+        const n = parseInt(numMatch[1], 10);
+        if (n >= 18) return '18+';
+        if (n >= 16) return '16+';
+        if (n >= 12) return '12+';
+        if (n >= 7) return '7+';
+        return '3+';
+    }
+    return 'NA';
+}
+
 // --- NEW: AUTO-FETCH METADATA SCRAPER API ---
 app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
-    try {
-        const { url, platform } = req.body;
-        
-        if (!url || !platform) {
-            return res.status(400).json({ error: "URL and platform are required." });
+    let { url, platform } = req.body;
+    
+    if (!url) {
+        return res.status(400).json({ error: "URL is required." });
+    }
+
+    url = cleanPlatformUrl(url);
+
+    if (!platform || platform === 'auto') {
+        platform = detectPlatform(url);
+    }
+
+    const axiosConfig = {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+        timeout: 9000
+    };
+
+    const normalizeText = (value) => {
+        if (!value) return '';
+        return value.toString().trim().replace(/\s{2,}/g, ' ');
+    };
+
+    const fetchWordPressData = async (targetWpUrl) => {
+        const cleanedWp = cleanPlatformUrl(targetWpUrl);
+        const wpUrlObj = new URL(cleanedWp);
+        const pathParts = wpUrlObj.pathname.split('/').filter(Boolean);
+        const resourceTypeIndex = pathParts.findIndex(part => part === 'plugins' || part === 'themes' || part === 'theme');
+        let resourceType = resourceTypeIndex >= 0 ? pathParts[resourceTypeIndex] : '';
+        if (resourceType === 'theme') resourceType = 'themes';
+        const slug = resourceType ? pathParts[resourceTypeIndex + 1] : '';
+        if (!resourceType || !slug) {
+            throw new Error('The WordPress URL must point to a plugin or theme slug.');
         }
 
-        // We use a generic browser User-Agent so stores don't block the request
-        const axiosConfig = {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-            timeout: 8000 // 8 second timeout
-        };
+        const apiUrl = resourceType === 'plugins'
+            ? 'https://api.wordpress.org/plugins/info/1.2/'
+            : 'https://api.wordpress.org/themes/info/1.2/';
+        const apiAction = resourceType === 'plugins' ? 'plugin_information' : 'theme_information';
+        const response = await axios.get(apiUrl, {
+            ...axiosConfig,
+            params: { action: apiAction, 'request[slug]': slug }
+        });
+        const wordpressApp = response.data;
+        if (!wordpressApp || wordpressApp.error) {
+            throw new Error(wordpressApp?.error || 'WordPress could not find that plugin or theme.');
+        }
+        return wordpressApp;
+    };
 
+    const executeScrape = async (targetUrl, targetPlatform) => {
         let $;
-        if (platform !== 'playstore' && platform !== 'wordpress' && platform !== 'steam' && platform !== 'epic') {
-            const response = await axios.get(url, axiosConfig);
+        if (targetPlatform !== 'playstore' && targetPlatform !== 'wordpress' && targetPlatform !== 'steam' && targetPlatform !== 'epic' && targetPlatform !== 'appstore') {
+            const response = await axios.get(targetUrl, axiosConfig);
             $ = cheerio.load(response.data);
         }
 
-        const normalizeText = (value) => {
-            if (!value) return '';
-            return value.toString().trim().replace(/\s{2,}/g, ' ');
-        };
-
-        const getText = (selector) => normalizeText($(selector).first().text());
-        const getAttr = (selector, attr) => normalizeText($(selector).attr(attr));
+        const getText = (selector) => $ ? normalizeText($(selector).first().text()) : '';
+        const getAttr = (selector, attr) => $ ? normalizeText($(selector).attr(attr)) : '';
 
         let data = {
             title: '',
@@ -8305,18 +8526,18 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             tags: '',
             minOsVersion: '',
             ageRating: '',
-            developer: ''
+            developer: '',
+            version: ''
         };
 
-        // --- SCRAPING LOGIC BASED ON PLATFORM ---
-        if (platform === 'playstore') {
-            const playStoreUrl = new URL(url);
+        if (targetPlatform === 'playstore') {
+            const playStoreUrl = new URL(targetUrl);
             if (playStoreUrl.hostname !== 'play.google.com') {
-                return res.status(400).json({ error: 'Please provide a valid Google Play Store URL.' });
+                throw new Error('Please provide a valid Google Play Store URL.');
             }
             const appId = playStoreUrl.searchParams.get('id');
             if (!appId) {
-                return res.status(400).json({ error: 'The Google Play URL must include an app id.' });
+                throw new Error('The Google Play URL must include an app id.');
             }
 
             const app = await googlePlayScraper.app({
@@ -8330,24 +8551,25 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.developer = normalizeText(app.developer);
             data.whatsNew = normalizeText(app.recentChanges);
             data.minOsVersion = normalizeText(app.androidVersionText || app.androidVersion);
-            data.ageRating = normalizeText(app.contentRating);
+            data.ageRating = normalizeAgeRating(app.contentRating);
+            data.version = normalizeText(app.version);
             data.tags = (app.categories || [])
                 .map(category => normalizeText(category && category.name))
                 .filter(Boolean)
                 .filter((tag, index, tags) => tags.indexOf(tag) === index)
                 .join(', ');
 
-        } else if (platform === 'appstore') {
-            const appStoreUrl = new URL(url);
+        } else if (targetPlatform === 'appstore') {
+            const appStoreUrl = new URL(targetUrl);
             const validAppStoreHosts = ['apps.apple.com', 'itunes.apple.com'];
             if (!validAppStoreHosts.includes(appStoreUrl.hostname)) {
-                return res.status(400).json({ error: 'Please provide a valid Apple App Store URL.' });
+                throw new Error('Please provide a valid Apple App Store URL.');
             }
 
             const appIdMatch = appStoreUrl.pathname.match(/\/id(\d+)/i);
             const appId = appIdMatch ? appIdMatch[1] : appStoreUrl.searchParams.get('id');
             if (!appId || !/^\d+$/.test(appId)) {
-                return res.status(400).json({ error: 'The Apple App Store URL must include a numeric app id.' });
+                throw new Error('The Apple App Store URL must include a numeric app id.');
             }
 
             const country = appStoreUrl.pathname.split('/').filter(Boolean)[0] || 'us';
@@ -8362,23 +8584,24 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.developer = normalizeText(app.developer);
             data.whatsNew = normalizeText(app.releaseNotes);
             data.minOsVersion = normalizeText(app.requiredOsVersion ? `iOS ${app.requiredOsVersion}` : '');
-            data.ageRating = normalizeText(app.contentRating);
+            data.ageRating = normalizeAgeRating(app.contentRating);
+            data.version = normalizeText(app.version);
             data.tags = (app.genres || [])
                 .map(genre => normalizeText(genre))
                 .filter(Boolean)
                 .filter((tag, index, tags) => tags.indexOf(tag) === index)
                 .join(', ');
 
-        } else if (platform === 'steam') {
-            const steamUrl = new URL(url);
+        } else if (targetPlatform === 'steam') {
+            const steamUrl = new URL(targetUrl);
             if (steamUrl.hostname !== 'store.steampowered.com') {
-                return res.status(400).json({ error: 'Please provide a valid Steam store URL.' });
+                throw new Error('Please provide a valid Steam store URL.');
             }
 
             const appIdMatch = steamUrl.pathname.match(/\/app\/(\d+)/i);
             const appId = appIdMatch ? appIdMatch[1] : steamUrl.searchParams.get('appid');
             if (!appId || !/^\d+$/.test(appId)) {
-                return res.status(400).json({ error: 'The Steam URL must include a numeric app id.' });
+                throw new Error('The Steam URL must include a numeric app id.');
             }
 
             const response = await axios.get('https://store.steampowered.com/api/appdetails', {
@@ -8391,7 +8614,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             });
             const steamApp = response.data && response.data[appId];
             if (!steamApp || !steamApp.success || !steamApp.data) {
-                return res.status(404).json({ error: 'Steam could not find that game.' });
+                throw new Error('Steam could not find that game.');
             }
 
             const game = steamApp.data;
@@ -8399,24 +8622,25 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.description = normalizeText(game.detailed_description || game.about_the_game || game.short_description);
             data.developer = normalizeText((game.developers || [])[0]);
             data.minOsVersion = normalizeText((game.pc_requirements && game.pc_requirements.minimum) || '');
-            data.ageRating = game.required_age ? `${game.required_age}+` : '';
+            data.ageRating = game.required_age ? normalizeAgeRating(`${game.required_age}+`) : '3+';
+            data.version = '';
             data.tags = [...(game.genres || []).map(genre => genre.description), ...(game.categories || []).map(category => category.description)]
                 .map(tag => normalizeText(tag))
                 .filter(Boolean)
                 .filter((tag, index, tags) => tags.indexOf(tag) === index)
                 .join(', ');
 
-        } else if (platform === 'epic') {
-            const epicUrl = new URL(url);
+        } else if (targetPlatform === 'epic') {
+            const epicUrl = new URL(targetUrl);
             if (epicUrl.hostname !== 'store.epicgames.com') {
-                return res.status(400).json({ error: 'Please provide a valid Epic Games Store URL.' });
+                throw new Error('Please provide a valid Epic Games Store URL.');
             }
 
             const pathParts = epicUrl.pathname.split('/').filter(Boolean);
             const productIndex = pathParts.findIndex(part => part === 'p');
             const slug = productIndex >= 0 ? pathParts[productIndex + 1] : '';
             if (!slug) {
-                return res.status(400).json({ error: 'The Epic Games Store URL must include a product slug.' });
+                throw new Error('The Epic Games Store URL must include a product slug.');
             }
 
             const locale = pathParts.find(part => /^[a-z]{2}-[A-Z]{2}$/.test(part)) || 'en-US';
@@ -8425,7 +8649,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             const epicPage = (epicProduct.pages || []).find(page => page.data && page.data.about) || epicProduct.pages?.[0];
             const epicData = epicPage && epicPage.data;
             if (!epicData) {
-                return res.status(404).json({ error: 'Epic Games Store could not find that product.' });
+                throw new Error('Epic Games Store could not find that product.');
             }
 
             const about = epicData.about || {};
@@ -8440,38 +8664,33 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.description = normalizeText(about.description || about.shortDescription || epicData.seo?.description);
             data.developer = normalizeText((meta.developer || [])[0] || about.developerAttribution);
             data.minOsVersion = normalizeText(minimumOs);
+            data.ageRating = '3+';
+            data.version = '';
             data.tags = (meta.tags || [])
                 .map(tag => normalizeText(tag.replace(/[_-]+/g, ' ')))
                 .filter(Boolean)
                 .filter((tag, index, tags) => tags.indexOf(tag) === index)
                 .join(', ');
 
-        } else if (platform === 'wordpress') {
-            const wordpressUrl = new URL(url);
-            const validWordPressHosts = ['wordpress.org', 'www.wordpress.org', 'wordpress.com', 'www.wordpress.com'];
-            if (!validWordPressHosts.includes(wordpressUrl.hostname)) {
-                return res.status(400).json({ error: 'Please provide a valid WordPress.org or WordPress.com plugin or theme URL.' });
-            }
+        } else if (targetPlatform === 'wordpress') {
+            let wordpressApp = null;
+            let wpError = null;
 
-            const pathParts = wordpressUrl.pathname.split('/').filter(Boolean);
-            const resourceTypeIndex = pathParts.findIndex(part => part === 'plugins' || part === 'themes');
-            const resourceType = resourceTypeIndex >= 0 ? pathParts[resourceTypeIndex] : '';
-            const slug = resourceType ? pathParts[resourceTypeIndex + 1] : '';
-            if (!resourceType || !slug) {
-                return res.status(400).json({ error: 'The WordPress URL must point to a plugin or theme.' });
-            }
-
-            const apiUrl = resourceType === 'plugins'
-                ? 'https://api.wordpress.org/plugins/info/1.2/'
-                : 'https://api.wordpress.org/themes/info/1.2/';
-            const apiAction = resourceType === 'plugins' ? 'plugin_information' : 'theme_information';
-            const response = await axios.get(apiUrl, {
-                ...axiosConfig,
-                params: { action: apiAction, 'request[slug]': slug }
-            });
-            const wordpressApp = response.data;
-            if (!wordpressApp || wordpressApp.error) {
-                return res.status(404).json({ error: 'WordPress could not find that plugin or theme.' });
+            try {
+                wordpressApp = await fetchWordPressData(targetUrl);
+            } catch (err) {
+                wpError = err;
+                // If user entered wordpress.com and it failed, auto-replace wordpress.com with wordpress.org and try again!
+                if (targetUrl.includes('wordpress.com')) {
+                    const fallbackOrgUrl = targetUrl.replace(/wordpress\.com/gi, 'wordpress.org');
+                    try {
+                        wordpressApp = await fetchWordPressData(fallbackOrgUrl);
+                    } catch (retryErr) {
+                        throw wpError;
+                    }
+                } else {
+                    throw wpError;
+                }
             }
 
             const author = typeof wordpressApp.author === 'string'
@@ -8482,6 +8701,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.developer = normalizeText(author);
             data.whatsNew = normalizeText(wordpressApp.sections && wordpressApp.sections.changelog);
             data.ageRating = '3+';
+            data.version = normalizeText(wordpressApp.version);
             const wordpressTags = Array.isArray(wordpressApp.tags)
                 ? wordpressApp.tags
                 : Object.keys(wordpressApp.tags || {});
@@ -8492,36 +8712,72 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
                 .join(', ');
 
         } else {
+            // Generic fallback scraper
             try {
                 const ldJson = JSON.parse($('script[type="application/ld+json"]').first().text() || '{}');
                 if (ldJson.name) data.title = data.title || normalizeText(ldJson.name);
                 if (ldJson.description) data.description = data.description || normalizeText(ldJson.description);
                 if (ldJson.author && ldJson.author.name) data.developer = data.developer || normalizeText(ldJson.author.name);
-            } catch (ldErr) {
-                // ignore parse errors for non-JSON-LD pages
-            }
+                if (ldJson.softwareVersion || ldJson.version) data.version = data.version || normalizeText(ldJson.softwareVersion || ldJson.version);
+            } catch (ldErr) {}
             data.title = data.title || getAttr('meta[property="og:title"]', 'content') || getText('title');
             data.description = data.description || getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || '';
             data.developer = data.developer || getAttr('meta[property="og:site_name"]', 'content') || '';
+            data.version = data.version || getAttr('meta[name="version"]', 'content') || getAttr('meta[itemprop="softwareVersion"]', 'content') || '';
+            data.ageRating = normalizeAgeRating(getAttr('meta[name="rating"]', 'content') || getAttr('meta[property="og:rating"]', 'content') || '');
         }
 
-        // Clean up the data
         Object.keys(data).forEach(key => {
             if (data[key]) data[key] = data[key].trim().replace(/\s{2,}/g, ' ');
         });
 
-        // Compatibility aliases for frontend mapping
         data.minOs = data.minOsVersion || '';
-        data.minAge = data.ageRating || '';
+        data.minAge = data.ageRating || 'NA';
         data.officialDescription = data.description || '';
+        data.softwareVersion = data.version || '';
+        data.detectedPlatform = targetPlatform;
 
-        res.json({ success: true, data });
+        return data;
+    };
+
+    try {
+        let resultData = null;
+        try {
+            resultData = await executeScrape(url, platform);
+        } catch (firstErr) {
+            // If failed and URL contained wordpress.com, automatically replace with wordpress.org and try again itself
+            if (url.includes('wordpress.com')) {
+                const autoOrgUrl = cleanPlatformUrl(url.replace(/wordpress\.com/gi, 'wordpress.org'));
+                const autoPlatform = platform === 'wordpress' ? 'wordpress' : detectPlatform(autoOrgUrl);
+                try {
+                    resultData = await executeScrape(autoOrgUrl, autoPlatform);
+                } catch (retryErr) {
+                    throw firstErr;
+                }
+            } else {
+                throw firstErr;
+            }
+        }
+
+        res.json({ success: true, data: resultData });
 
     } catch (error) {
         console.error("Scraping Error:", error.message);
-        res.status(500).json({ error: "Failed to fetch data. Make sure the URL is correct and public." });
+        res.status(500).json({ error: error.message || "Failed to fetch data. Make sure the URL is correct and public." });
     }
 });
+
+// --- API TO GET MOD TEMPLATES ---
+app.get('/api/mod-templates', async (req, res) => {
+    try {
+        const templates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        res.json({ success: true, templates });
+    } catch (err) {
+        console.error("Error fetching mod templates:", err);
+        res.status(500).json({ success: false, error: "Failed to load templates" });
+    }
+});
+
 // ===================================
 // 9.2 ADMIN: BULK INDEXNOW & GOOGLE SYNC
 // ===================================
@@ -8870,154 +9126,168 @@ app.post('/api/subscribe', async (req, res) => {
 });
 
 // ===================================
-// 9.5  VIRUSTOTAL REFRESH ROUTE (SMART FIX)
+// 9.5 DYNAMIC COMING SOON ENGINE & ROUTES
 // ===================================
-app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
+app.get('/coming-soon', async (req, res) => {
     try {
-        const fileId = req.params.fileId;
-        const file = await File.findById(fileId);
-        
-        // Check both ID fields
-        const vtId = file.virusTotalAnalysisId || file.virusTotalId;
-        
-        if (!file || !vtId) {
-            return res.status(404).json({ error: "No VirusTotal ID found for this file." });
+        const state = cachedSiteState || await SiteState.findOne({ singletonId: 'master-state' });
+        res.render('pages/coming-soon', {
+            title: state?.comingSoonTitle || 'Something Awesome is Coming Soon',
+            message: state?.comingSoonMessage || "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!",
+            customText: state?.comingSoonCustomText || 'Feature is currently under development. Stay tuned for official announcements!',
+            enableTimer: state?.comingSoonEnableTimer !== false,
+            launchDate: state?.comingSoonLaunchDate ? new Date(state.comingSoonLaunchDate).toISOString() : '',
+            user: req.user || null
+        });
+    } catch (e) {
+        console.error("Coming Soon render error:", e);
+        res.status(500).render('pages/500');
+    }
+});
+
+app.post('/notify-launch', async (req, res) => {
+    try {
+        const email = (req.body?.email || '').trim().toLowerCase();
+        if (!email || !email.includes('@') || email.length < 5) {
+            return res.status(400).json({ success: false, error: 'A valid email address is required.' });
         }
+        await Subscriber.findOneAndUpdate(
+            { email },
+            {
+                email,
+                user: req.user ? req.user._id : null,
+                source: 'coming-soon',
+                isSubscribed: true,
+                subscribedAt: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        return res.json({ success: true, message: 'Thank you! You are registered to be notified immediately when we launch.' });
+    } catch (e) {
+        console.error("Notify Launch error:", e);
+        return res.status(500).json({ success: false, error: 'Failed to record subscription.' });
+    }
+});
+
+app.post('/api/admin/coming-soon/update', ensureAdmin, async (req, res) => {
+    try {
+        const {
+            status,
+            title,
+            message,
+            customText,
+            enableTimer,
+            launchDate,
+            allowedRoles,
+            allowedUsers,
+            autoPublishOnTimerEnd
+        } = req.body;
+
+        const updatePayload = {};
+        if (status) updatePayload.status = status;
+        if (title !== undefined) updatePayload.comingSoonTitle = title.trim();
+        if (message !== undefined) updatePayload.comingSoonMessage = message.trim();
+        if (customText !== undefined) updatePayload.comingSoonCustomText = customText.trim();
+        if (enableTimer !== undefined) updatePayload.comingSoonEnableTimer = (enableTimer === true || enableTimer === 'true');
+        if (launchDate) updatePayload.comingSoonLaunchDate = new Date(launchDate);
+        if (autoPublishOnTimerEnd !== undefined) updatePayload.comingSoonAutoPublishOnTimerEnd = (autoPublishOnTimerEnd === true || autoPublishOnTimerEnd === 'true');
+
+        if (allowedRoles !== undefined) {
+            updatePayload.comingSoonAllowedRoles = Array.isArray(allowedRoles)
+                ? allowedRoles.map(r => String(r || '').trim().toLowerCase()).filter(Boolean)
+                : String(allowedRoles || '').split(',').map(r => r.trim().toLowerCase()).filter(Boolean);
+        }
+        if (allowedUsers !== undefined) {
+            updatePayload.comingSoonAllowedUsers = Array.isArray(allowedUsers)
+                ? allowedUsers.map(u => String(u || '').trim().toLowerCase()).filter(Boolean)
+                : String(allowedUsers || '').split(',').map(u => u.trim().toLowerCase()).filter(Boolean);
+        }
+
+        const updatedState = await SiteState.findOneAndUpdate(
+            { singletonId: 'master-state' },
+            { $set: updatePayload },
+            { new: true, upsert: true }
+        );
+        cachedSiteState = updatedState;
+
+        res.json({ success: true, state: updatedState });
+    } catch (e) {
+        console.error("Admin Coming Soon Update error:", e);
+        res.status(500).json({ success: false, error: e.message || 'Server error updating Coming Soon state.' });
+    }
+});
+
+// ===================================
+// 9.6  AUTOMATED VIRUSTOTAL SCAN ENGINE & HELPERS
+// ===================================
+async function checkAndUpdateFileVirusTotal(fileId) {
+    try {
+        const file = await File.findById(fileId);
+        if (!file) return null;
+
+        // If manualFileScanUrl contains a VirusTotal URL, extract the ID/hash if not already set
+        if (!file.virusTotalAnalysisId && !file.virusTotalId && file.manualFileScanUrl) {
+            const vtMatch = file.manualFileScanUrl.match(/virustotal\.com\/(?:gui|api\/v3)\/(?:file-analysis|files?|urls?)\/([a-zA-Z0-9_-]+)/i);
+            if (vtMatch) {
+                if (file.manualFileScanUrl.includes('file-analysis')) {
+                    file.virusTotalAnalysisId = vtMatch[1];
+                } else {
+                    file.virusTotalId = vtMatch[1];
+                }
+                await File.findByIdAndUpdate(fileId, { 
+                    virusTotalAnalysisId: file.virusTotalAnalysisId, 
+                    virusTotalId: file.virusTotalId 
+                });
+            }
+        }
+
+        const vtId = file.virusTotalAnalysisId || file.virusTotalId;
+        if (!vtId) return null;
+
+        // If already completed and has full stats, return immediately
+        if (file.virusTotalScanDate && file.virusTotalId && (file.virusTotalTotalScans > 0 || file.virusTotalPositiveCount >= 0)) {
+            return {
+                status: 'completed',
+                stats: {
+                    malicious: file.virusTotalPositiveCount,
+                    total: file.virusTotalTotalScans
+                }
+            };
+        }
+
+        if (!process.env.VIRUSTOTAL_API_KEY) return null;
 
         let vtResponse;
         let isCompleted = false;
         let stats = null;
         let trueHash = null;
 
-        // --- SMART CHECK: Is it a File Hash (64 chars) or an Analysis ID (contains '-')? ---
+        // 64-char hex hash
         if (vtId.length === 64 && !vtId.includes('-')) {
-            // It's a direct FILE HASH or URL HASH. 
-            // We don't know which one yet, but the scan is definitely done.
-            // Since we already have the ID, we don't need to fetch the full report just to get the stats
-            // if we already have them in the DB.
-            if (file.virusTotalScanDate) {
-                return res.json({ status: 'completed', stats: { malicious: file.virusTotalPositiveCount } });
-            }
-            
-            // If we don't have stats but we have a hash, we must try to fetch them.
-            // We will assume it's a file first. If that 404s, we assume it's a URL.
             try {
                 vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, {
-                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+                    headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY },
+                    timeout: 9000
                 });
             } catch (err) {
                 if (err.response && err.response.status === 404) {
-                    // Try URL endpoint instead
                     vtResponse = await axios.get(`https://www.virustotal.com/api/v3/urls/${vtId}`, {
-                        headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+                        headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY },
+                        timeout: 9000
                     });
                 } else {
-                    throw err; // Real error
+                    throw err;
                 }
             }
-            
             isCompleted = true;
-            stats = vtResponse.data.data.attributes.last_analysis_stats;
-            trueHash = vtId; 
-
+            stats = vtResponse.data?.data?.attributes?.last_analysis_stats;
+            trueHash = vtId;
         } else {
-            // It's an ANALYSIS ID (e.g., from a recent upload or external link submission).
-            // We need to check if the background scan is finished.
             vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, {
-                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }
+                headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY },
+                timeout: 9000
             });
-
-            if (vtResponse.data.data.attributes.status === 'completed') {
-                isCompleted = true;
-                stats = vtResponse.data.data.attributes.stats;
-                
-                // ✅ FIX: Determine if this was a FILE analysis or a URL analysis
-                const type = vtResponse.data.meta?.file_info ? 'file' : 'url';
-
-                if (type === 'file') {
-                    // Extract the actual File Hash (SHA-256)
-                    trueHash = vtResponse.data.meta.file_info.sha256;
-                } else {
-                    // For URLs, VT provides a URL Identifier (which is just a hash of the URL)
-                    // We can extract this from the item_id in the analysis report.
-                    // The analysis ID looks like: u-HASH-TIMESTAMP. We want the HASH.
-                    const parts = vtId.split('-');
-                    if (parts.length >= 2) {
-                        trueHash = parts[1]; // The SHA256 of the URL
-                    }
-                }
-            }
-        }
-
-        // --- UPDATE DATABASE IF COMPLETED ---
-        if (isCompleted && stats) {
-            await File.findByIdAndUpdate(fileId, {
-                virusTotalScanDate: new Date(), 
-                virusTotalPositiveCount: stats.malicious + stats.suspicious,
-                virusTotalTotalScans: stats.harmless + stats.malicious + stats.suspicious + stats.undetected,
-                // Save the true hash (file or URL) so we link directly to the report next time
-                virusTotalId: trueHash || vtId 
-            });
-
-            return res.json({ status: 'completed', stats: stats });
-        } else {
-            // It's still an analysis ID, and it's still 'queued' or 'in-progress'
-            return res.json({ status: vtResponse.data.data.attributes.status || 'pending' }); 
-        }
-
-    } catch (error) {
-        console.error("VT Refresh Error:", error.response?.data || error.message);
-        
-        if (error.response && error.response.status === 404) {
-             return res.status(404).json({ error: "VirusTotal could not find a report for this ID." });
-        }
-        
-        res.status(500).json({ error: "Failed to contact VirusTotal API." });
-    }
-});
-// ===================================
-// 9.6 VIRUSTOTAL REFRESH ROUTE (MULTI-PART)
-// ===================================
-app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
-    try {
-        const { fileId, partId } = req.params;
-        const file = await File.findById(fileId);
-        
-        if (!file || !file.downloadParts || file.downloadParts.length === 0) {
-            return res.status(404).json({ error: "File or parts not found." });
-        }
-
-        // Find the specific part within the array
-        const part = file.downloadParts.id(partId);
-        
-        if (!part || !part.partVirusTotalId) {
-             return res.status(404).json({ error: "No VirusTotal ID found for this part." });
-        }
-
-        const vtId = part.partVirusTotalId;
-        let vtResponse;
-        let isCompleted = false;
-        let stats = null;
-        let trueHash = null;
-
-        // --- SMART CHECK (Same logic as main file refresh) ---
-        if (vtId.length === 64 && !vtId.includes('-')) {
-            if (part.partVirusTotalScanDate) {
-                return res.json({ status: 'completed', stats: { malicious: part.partVirusTotalPositiveCount } });
-            }
-            try {
-                vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
-            } catch (err) {
-                if (err.response && err.response.status === 404) {
-                    vtResponse = await axios.get(`https://www.virustotal.com/api/v3/urls/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
-                } else { throw err; }
-            }
-            isCompleted = true;
-            stats = vtResponse.data.data.attributes.last_analysis_stats;
-            trueHash = vtId; 
-        } else {
-            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY } });
-            if (vtResponse.data.data.attributes.status === 'completed') {
+            if (vtResponse.data?.data?.attributes?.status === 'completed') {
                 isCompleted = true;
                 stats = vtResponse.data.data.attributes.stats;
                 const type = vtResponse.data.meta?.file_info ? 'file' : 'url';
@@ -9030,20 +9300,152 @@ app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
             }
         }
 
-        // --- UPDATE DATABASE IF COMPLETED ---
         if (isCompleted && stats) {
-            part.partVirusTotalScanDate = new Date();
-            part.partVirusTotalPositiveCount = stats.malicious + stats.suspicious;
-            part.partVirusTotalTotalScans = stats.harmless + stats.malicious + stats.suspicious + stats.undetected;
-            part.partVirusTotalId = trueHash || vtId;
-            
-            await file.save(); // Save the parent document to save the nested array changes
-
-            return res.json({ status: 'completed', stats: stats });
-        } else {
-            return res.json({ status: vtResponse.data.data.attributes.status || 'pending' }); 
+            const pos = (stats.malicious || 0) + (stats.suspicious || 0);
+            const total = (stats.harmless || 0) + (stats.malicious || 0) + (stats.suspicious || 0) + (stats.undetected || 0);
+            await File.findByIdAndUpdate(fileId, {
+                virusTotalScanDate: new Date(),
+                virusTotalPositiveCount: pos,
+                virusTotalTotalScans: total,
+                virusTotalId: trueHash || vtId
+            });
+            return {
+                status: 'completed',
+                stats: stats,
+                positiveCount: pos,
+                totalScans: total,
+                id: trueHash || vtId
+            };
         }
 
+        return { status: vtResponse?.data?.data?.attributes?.status || 'pending' };
+    } catch (e) {
+        console.error("checkAndUpdateFileVirusTotal error:", e.response?.data || e.message);
+        return null;
+    }
+}
+
+async function checkAndUpdatePartVirusTotal(fileId, partId) {
+    try {
+        const file = await File.findById(fileId);
+        if (!file || !file.downloadParts || file.downloadParts.length === 0) return null;
+        const part = file.downloadParts.id(partId);
+        if (!part) return null;
+
+        if (!part.partVirusTotalId && part.manualFileScanUrl) {
+            const vtMatch = part.manualFileScanUrl.match(/virustotal\.com\/(?:gui|api\/v3)\/(?:file-analysis|files?|urls?)\/([a-zA-Z0-9_-]+)/i);
+            if (vtMatch) {
+                part.partVirusTotalId = vtMatch[1];
+                await file.save();
+            }
+        }
+
+        const vtId = part.partVirusTotalId;
+        if (!vtId) return null;
+
+        if (part.partVirusTotalScanDate && part.partVirusTotalId) {
+            return {
+                status: 'completed',
+                stats: { malicious: part.partVirusTotalPositiveCount }
+            };
+        }
+
+        if (!process.env.VIRUSTOTAL_API_KEY) return null;
+
+        let vtResponse;
+        let isCompleted = false;
+        let stats = null;
+        let trueHash = null;
+
+        if (vtId.length === 64 && !vtId.includes('-')) {
+            try {
+                vtResponse = await axios.get(`https://www.virustotal.com/api/v3/files/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }, timeout: 9000 });
+            } catch (err) {
+                if (err.response && err.response.status === 404) {
+                    vtResponse = await axios.get(`https://www.virustotal.com/api/v3/urls/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }, timeout: 9000 });
+                } else { throw err; }
+            }
+            isCompleted = true;
+            stats = vtResponse.data?.data?.attributes?.last_analysis_stats;
+            trueHash = vtId;
+        } else {
+            vtResponse = await axios.get(`https://www.virustotal.com/api/v3/analyses/${vtId}`, { headers: { 'x-apikey': process.env.VIRUSTOTAL_API_KEY }, timeout: 9000 });
+            if (vtResponse.data?.data?.attributes?.status === 'completed') {
+                isCompleted = true;
+                stats = vtResponse.data.data.attributes.stats;
+                const type = vtResponse.data.meta?.file_info ? 'file' : 'url';
+                if (type === 'file') {
+                    trueHash = vtResponse.data.meta.file_info.sha256;
+                } else {
+                    const parts = vtId.split('-');
+                    if (parts.length >= 2) trueHash = parts[1];
+                }
+            }
+        }
+
+        if (isCompleted && stats) {
+            part.partVirusTotalScanDate = new Date();
+            part.partVirusTotalPositiveCount = (stats.malicious || 0) + (stats.suspicious || 0);
+            part.partVirusTotalTotalScans = (stats.harmless || 0) + (stats.malicious || 0) + (stats.suspicious || 0) + (stats.undetected || 0);
+            part.partVirusTotalId = trueHash || vtId;
+            await file.save();
+            return { status: 'completed', stats: stats };
+        }
+
+        return { status: vtResponse?.data?.data?.attributes?.status || 'pending' };
+    } catch (e) {
+        console.error("checkAndUpdatePartVirusTotal error:", e.response?.data || e.message);
+        return null;
+    }
+}
+
+function pollVirusTotalInBackground(fileId, maxAttempts = 12, intervalMs = 15000) {
+    if (!fileId) return;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+        attempts++;
+        try {
+            const res = await checkAndUpdateFileVirusTotal(fileId);
+            if (res && res.status === 'completed') {
+                clearInterval(interval);
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+            }
+        } catch (e) {
+            clearInterval(interval);
+        }
+    }, intervalMs);
+}
+
+// Expose VT functions globally for AdminJS and background workers
+global.checkAndUpdateFileVirusTotal = checkAndUpdateFileVirusTotal;
+global.checkAndUpdatePartVirusTotal = checkAndUpdatePartVirusTotal;
+global.pollVirusTotalInBackground = pollVirusTotalInBackground;
+
+// VT Refresh Route (Single / Main File)
+app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        const result = await checkAndUpdateFileVirusTotal(fileId);
+        if (!result) {
+            return res.status(404).json({ error: "No VirusTotal ID found or file does not exist." });
+        }
+        return res.json(result);
+    } catch (error) {
+        console.error("VT Refresh Error:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to contact VirusTotal API." });
+    }
+});
+
+// VT Refresh Route (Multi-Part File)
+app.post('/api/refresh-vt-scan/:fileId/part/:partId', async (req, res) => {
+    try {
+        const { fileId, partId } = req.params;
+        const result = await checkAndUpdatePartVirusTotal(fileId, partId);
+        if (!result) {
+            return res.status(404).json({ error: "No VirusTotal ID found for this part." });
+        }
+        return res.json(result);
     } catch (error) {
         console.error("VT Part Refresh Error:", error.response?.data || error.message);
         res.status(500).json({ error: "Failed to contact VirusTotal API." });

@@ -9,9 +9,18 @@
     .upload-cta-button { display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); }
     .upload-cta-button:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
     
-    .filter-tabs { display: flex; flex-wrap: wrap; gap: 10px; }
-    .filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 10px 20px; border: 1px solid var(--dark-gray); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-size: 0.9em; font-family: inherit; }
-    .filter-btn:hover, .filter-btn.active { background-color: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 600; }
+    .filter-section { display: flex; flex-direction: column; gap: 14px; margin-bottom: 30px; width: 100%; }
+    .filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .filter-row-label { font-size: 0.85em; text-transform: uppercase; color: var(--silver); letter-spacing: 0.6px; font-weight: 700; min-width: 90px; display: inline-flex; align-items: center; gap: 6px; }
+    .filter-tabs { display: flex; flex-wrap: wrap; gap: 8px; flex-grow: 1; }
+    .filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 8px 18px; border: 1px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.25s ease; font-size: 0.85em; font-family: inherit; font-weight: 500; }
+    .filter-btn:hover, .filter-btn.active { background-color: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 700; box-shadow: 0 0 10px var(--glow-gold); }
+
+    .status-filter-btn { background-color: var(--dark-gray); color: var(--silver); padding: 8px 16px; border: 1px solid #333; border-radius: 20px; cursor: pointer; transition: all 0.25s ease; font-size: 0.85em; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+    .status-filter-btn:hover { border-color: var(--gold); color: var(--white); }
+    .status-filter-btn.active { background-color: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 700; box-shadow: 0 0 10px var(--glow-gold); }
+    .status-count-badge { font-size: 0.8em; padding: 2px 7px; border-radius: 10px; background: rgba(0,0,0,0.3); font-weight: 700; }
+    .status-filter-btn.active .status-count-badge { background: rgba(0,0,0,0.25); color: var(--black); }
 
     .uploads-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
     .upload-item { background-color: var(--dark-gray); border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #333; transition: transform 0.3s ease, box-shadow 0.3s ease; }
@@ -120,21 +129,56 @@
     </div>
     
     <div class="container">
-        <div class="page-actions">
-            <a href="/upload" class="upload-cta-button">Upload a New Mod</a>
-            <div class="filter-tabs">
-                <button class="filter-btn active" data-category="all">All</button>
-                <button class="filter-btn" data-category="android">Android</button>
-                <button class="filter-btn" data-category="ios-jailed">Jailed (IPA)</button>
-                <button class="filter-btn" data-category="ios-jailbroken">Jailbroken (DEB)</button>
-                <button class="filter-btn" data-category="windows">Windows</button>
-                <button class="filter-btn" data-category="wordpress">WordPress</button>
+        <div class="page-actions" style="margin-bottom: 20px;">
+            <a href="/upload" class="upload-cta-button"><i class="fas fa-plus-circle" style="margin-right: 6px;"></i> Upload a New Mod</a>
+        </div>
+
+        <!-- DUAL-AXIS FILTERS: PLATFORM & STATUS -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <span class="filter-row-label"><i class="fas fa-layer-group" style="color: var(--gold);"></i> Platform:</span>
+                <div class="filter-tabs" id="platformFilterTabs">
+                    <button type="button" class="filter-btn active" data-category="all">All Platforms</button>
+                    <button type="button" class="filter-btn" data-category="android">Android</button>
+                    <button type="button" class="filter-btn" data-category="ios-jailed">Jailed (IPA)</button>
+                    <button type="button" class="filter-btn" data-category="ios-jailbroken">Jailbroken (DEB)</button>
+                    <button type="button" class="filter-btn" data-category="windows">Windows</button>
+                    <button type="button" class="filter-btn" data-category="wordpress">WordPress</button>
+                </div>
+            </div>
+            <div class="filter-row">
+                <span class="filter-row-label"><i class="fas fa-filter" style="color: var(--gold);"></i> Status:</span>
+                <div class="filter-tabs" id="statusFilterTabs">
+                    <button type="button" class="status-filter-btn active" data-status="all">
+                        All Statuses <span class="status-count-badge"><%= (uploads ? uploads.length : 0) + (typeof dmcaUploads !== 'undefined' && dmcaUploads ? dmcaUploads.length : 0) %></span>
+                    </button>
+                    <button type="button" class="status-filter-btn" data-status="live">
+                        <i class="fas fa-check-circle" style="color: var(--green);"></i> Live 
+                        <span class="status-count-badge"><%= uploads ? uploads.filter(u => u.status === 'live').length : 0 %></span>
+                    </button>
+                    <button type="button" class="status-filter-btn" data-status="pending">
+                        <i class="fas fa-hourglass-half" style="color: var(--gold);"></i> Pending / Processing 
+                        <span class="status-count-badge"><%= uploads ? uploads.filter(u => u.status === 'pending' || u.status === 'processing').length : 0 %></span>
+                    </button>
+                    <button type="button" class="status-filter-btn" data-status="draft">
+                        <i class="fas fa-edit" style="color: #aaa;"></i> Drafts 
+                        <span class="status-count-badge"><%= uploads ? uploads.filter(u => u.status === 'draft').length : 0 %></span>
+                    </button>
+                    <button type="button" class="status-filter-btn" data-status="rejected">
+                        <i class="fas fa-times-circle" style="color: var(--red);"></i> Rejected 
+                        <span class="status-count-badge"><%= uploads ? uploads.filter(u => u.status === 'rejected').length : 0 %></span>
+                    </button>
+                    <button type="button" class="status-filter-btn" data-status="dmca">
+                        <i class="fas fa-shield-alt" style="color: #ff3366;"></i> DMCA Restricted 
+                        <span class="status-count-badge"><%= typeof dmcaUploads !== 'undefined' && dmcaUploads ? dmcaUploads.length : 0 %></span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- DMCA Inquiries & Restricted Files Section -->
         <% if (typeof dmcaUploads !== 'undefined' && dmcaUploads && dmcaUploads.length > 0) { %>
-            <div class="dmca-restricted-section">
+            <div class="dmca-restricted-section" id="dmcaRestrictedSection">
                 <div class="dmca-section-header">
                     <div class="dmca-section-header-left">
                         <div class="dmca-header-icon">
@@ -156,7 +200,7 @@
 
                 <div class="uploads-list" style="margin-bottom: 10px;">
                     <% dmcaUploads.forEach(file => { %>
-                        <div class="dmca-card-item">
+                        <div class="dmca-card-item" data-category="<%= file.category %>" data-status="dmca">
                             <div class="mod-card-image" style="background-color: #120a0d;">
                                 <span class="status-badge-top" style="background: #ff3366; color: #fff; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);">
                                     <i class="fas fa-lock"></i> Restricted (DMCA)
@@ -204,7 +248,7 @@
         <div class="uploads-list">
             <% if(uploads && uploads.length > 0) { %>
                 <% uploads.forEach(file => { %>
-                    <div class="upload-item" data-category="<%= file.category %>">
+                    <div class="upload-item" data-category="<%= file.category %>" data-status="<%= file.status %>">
                         
                         <div class="mod-card-image">
                             <!-- Absolute Status Badge -->
@@ -306,6 +350,16 @@
                 </div>
             <% } %>
         </div> 
+
+        <!-- NO UPLOADS FOUND MATCHING FILTER STATE -->
+        <div id="noUploadsFoundBanner" style="display: none; text-align: center; padding: 60px 20px; background: rgba(0,0,0,0.3); border: 1px dashed #444; border-radius: 16px; margin: 30px 0;">
+            <i class="fas fa-search" style="font-size: 2.5em; color: var(--silver); margin-bottom: 15px; display: block;"></i>
+            <h3 style="color: #fff; margin-bottom: 8px;">No Uploads Found</h3>
+            <p style="color: var(--silver); margin-bottom: 20px; font-size: 0.95em;">No uploads match your selected platform and status filter combination.</p>
+            <button type="button" id="resetFiltersBtn" class="btn btn-secondary" style="padding: 8px 22px; border-radius: 20px; border: 1px solid var(--gold); color: var(--gold); background: transparent; cursor: pointer; font-weight: 700;">
+                <i class="fas fa-undo"></i> Reset Filters
+            </button>
+        </div>
     </div> 
 </main>
 
@@ -347,38 +401,106 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
-        // --- 1. FILTER TABS LOGIC ---
-        const filterButtons = document.querySelectorAll('.filter-btn');
+        // --- 1. DUAL-AXIS (PLATFORM + STATUS) FILTER LOGIC ---
+        const platformButtons = document.querySelectorAll('#platformFilterTabs .filter-btn');
+        const statusButtons = document.querySelectorAll('#statusFilterTabs .status-filter-btn');
         const uploadItems = document.querySelectorAll('.upload-item');
+        const dmcaCards = document.querySelectorAll('.dmca-card-item');
+        const dmcaSection = document.getElementById('dmcaRestrictedSection');
+        const noUploadsBanner = document.getElementById('noUploadsFoundBanner');
+        const resetFiltersBtn = document.getElementById('resetFiltersBtn');
 
-        filterButtons.forEach(button => {
+        let selectedPlatform = 'all';
+        let selectedStatus = 'all';
+
+        function applyCombinedFilters() {
+            let visibleRegularCount = 0;
+            let visibleDmcaCount = 0;
+
+            uploadItems.forEach(item => {
+                const itemPlatform = item.dataset.category || '';
+                const itemStatus = item.dataset.status || '';
+
+                const platformMatch = (selectedPlatform === 'all' || itemPlatform === selectedPlatform);
+                
+                let statusMatch = false;
+                if (selectedStatus === 'all') {
+                    statusMatch = true;
+                } else if (selectedStatus === 'live') {
+                    statusMatch = (itemStatus === 'live');
+                } else if (selectedStatus === 'pending') {
+                    statusMatch = (itemStatus === 'pending' || itemStatus === 'processing');
+                } else if (selectedStatus === 'draft') {
+                    statusMatch = (itemStatus === 'draft');
+                } else if (selectedStatus === 'rejected') {
+                    statusMatch = (itemStatus === 'rejected');
+                } else if (selectedStatus === 'dmca') {
+                    statusMatch = false; // DMCA items are in dmcaSection
+                }
+
+                if (platformMatch && statusMatch) {
+                    item.style.display = 'flex';
+                    visibleRegularCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Handle DMCA Section
+            dmcaCards.forEach(card => {
+                const cardPlatform = card.dataset.category || '';
+                const platformMatch = (selectedPlatform === 'all' || cardPlatform === selectedPlatform);
+                const statusMatch = (selectedStatus === 'all' || selectedStatus === 'dmca');
+
+                if (platformMatch && statusMatch) {
+                    card.style.display = 'flex';
+                    visibleDmcaCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (dmcaSection) {
+                if (selectedStatus === 'live' || selectedStatus === 'pending' || selectedStatus === 'draft' || selectedStatus === 'rejected') {
+                    dmcaSection.style.display = 'none';
+                } else {
+                    dmcaSection.style.display = visibleDmcaCount > 0 ? 'block' : 'none';
+                }
+            }
+
+            const totalVisible = visibleRegularCount + (selectedStatus === 'all' || selectedStatus === 'dmca' ? visibleDmcaCount : 0);
+            if (noUploadsBanner) {
+                noUploadsBanner.style.display = totalVisible === 0 ? 'block' : 'none';
+            }
+        }
+
+        platformButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // 1. Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // 2. Add active class to the clicked button
+                platformButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                
-                // 3. Get the category we want to filter by
-                const selectedCategory = this.dataset.category;
-
-                // 4. Show/Hide items based on category
-                uploadItems.forEach(item => {
-                    const itemCategory = item.dataset.category;
-
-                    if (selectedCategory === 'all') {
-                        item.style.display = 'flex'; // Show everything
-                    } 
-                    // EXACT MATCHING to prevent "ios-jailed" from matching "ios-jailbroken"
-                    else if (selectedCategory === itemCategory) {
-                        item.style.display = 'flex'; // Show matching items
-                    } 
-                    else {
-                        item.style.display = 'none'; // Hide everything else
-                    }
-                });
+                selectedPlatform = this.dataset.category;
+                applyCombinedFilters();
             });
         });
+
+        statusButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                statusButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                selectedStatus = this.dataset.status;
+                applyCombinedFilters();
+            });
+        });
+
+        if (resetFiltersBtn) {
+            resetFiltersBtn.addEventListener('click', () => {
+                selectedPlatform = 'all';
+                selectedStatus = 'all';
+                platformButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.category === 'all'));
+                statusButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.status === 'all'));
+                applyCombinedFilters();
+            });
+        }
 
         // --- 2. MODAL ELEMENTS ---
         const deleteModal = document.getElementById('delete-modal-container');
