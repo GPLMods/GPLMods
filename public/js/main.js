@@ -656,9 +656,10 @@ async function fetchAndDisplaySuggestions(query) {
         const mods = (data && data.mods) ? data.mods : [];
         const users = (data && data.users) ? data.users : [];
         const categories = (data && data.categories) ? data.categories : [];
+        const community = (data && data.community) ? data.community : [];
         const legacyNames = Array.isArray(data) ? data : ((data && data.names) ? data.names : []);
 
-        const hasResults = mods.length > 0 || users.length > 0 || categories.length > 0 || legacyNames.length > 0;
+        const hasResults = mods.length > 0 || users.length > 0 || categories.length > 0 || community.length > 0 || legacyNames.length > 0;
 
         if (!hasResults) {
             suggestionsBox.innerHTML = `
@@ -738,7 +739,25 @@ async function fetchAndDisplaySuggestions(query) {
             });
         }
 
-        // 4. Fallback for legacy plain array
+        // 4. Forums & Docs Suggestions
+        if (community.length > 0) {
+            containerHtml += `<div class="suggestion-header" style="padding: 8px 16px 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #a78bfa; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.35);"><i class="fas fa-book-open" style="margin-right: 6px;"></i> Forums &amp; Docs</div>`;
+            community.forEach(c => {
+                containerHtml += `
+                    <a href="${c.url}" class="suggestion-item suggestion-community" style="display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--white); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3); display: flex; align-items: center; justify-content: center; color: #a78bfa; flex-shrink: 0;">
+                            <i class="${c.icon || 'fas fa-file-alt'}" style="font-size: 0.85em;"></i>
+                        </div>
+                        <div style="flex-grow: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 0.88em; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeEscapeHtml(c.title)}</div>
+                        </div>
+                        <span style="font-size: 0.7em; color: var(--silver); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">${c.type}</span>
+                    </a>
+                `;
+            });
+        }
+
+        // 5. Fallback for legacy plain array
         if (mods.length === 0 && users.length === 0 && categories.length === 0 && legacyNames.length > 0) {
             const list = document.createElement('ul');
             legacyNames.forEach(name => {

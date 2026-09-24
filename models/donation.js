@@ -8,6 +8,10 @@ const DonationSchema = new Schema({
     
     amount: { type: Number, required: true }, // Store in base currency (e.g., USD or INR)
     currency: { type: String, default: 'INR' },
+    sponsorItem: { type: String, default: null },
+    sponsorCategory: { type: String, default: 'general' },
+    message: { type: String, default: '' },
+    isAnonymous: { type: Boolean, default: false },
     
     orderId: { type: String, index: true },
     paymentSessionId: { type: String },

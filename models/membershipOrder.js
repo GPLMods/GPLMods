@@ -11,10 +11,18 @@ const MembershipOrderSchema = new Schema({
     subscriptionSessionId: { type: String },
     cfPaymentId: { type: String },
     amount: { type: Number, required: true },
+    originalAmount: { type: Number },
+    discountAmount: { type: Number, default: 0 },
+    couponCode: { type: String, default: null },
     currency: { type: String, default: 'INR' },
+    tier: { type: String, enum: ['lite', 'plus', 'premium'], default: 'plus' },
     duration: { 
         type: String, 
-        enum: ['monthly', '6months', 'yearly', 'lifetime'], 
+        enum: [
+            'monthly', '6months', 'yearly', 'lifetime',
+            'lite_monthly', 'lite_6months', 'lite_yearly',
+            'plus_monthly', 'plus_6months', 'plus_yearly', 'plus_lifetime'
+        ], 
         required: true 
     },
     status: { 

@@ -390,3 +390,199 @@ exports.processNewsletterCampaign = async (campaignId) => {
         } catch (e) { }
     }
 };
+
+/**
+ * Send confirmation email when a user submits a support ticket
+ */
+exports.sendTicketConfirmationEmail = async (ticket, userEmail, userName = 'Community Member') => {
+    try {
+        if (!userEmail) return;
+
+        const ticketRef = ticket._id ? String(ticket._id).slice(-8).toUpperCase() : 'NEW';
+        const emailContent = `
+            <div style="border-left: 4px solid #FFD700; padding-left: 15px; margin-bottom: 25px;">
+                <h2 style="margin: 0 0 10px 0; color: #ffffff; font-size: 22px;">Support Ticket Received #${ticketRef}</h2>
+                <span style="display: inline-block; background-color: #2196F3; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+                    Category: ${ticket.category || 'General'}
+                </span>
+            </div>
+            <p style="color: #c0c0c0; font-size: 15px; line-height: 1.6;">
+                Hi <strong>${userName}</strong>, thank you for reaching out to GPL Mods Support. We have received your request and our team is actively reviewing it.
+            </p>
+            <div style="background-color: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 18px; margin: 25px 0;">
+                <div style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Subject</div>
+                <div style="color: #ffffff; font-weight: bold; font-size: 16px; margin-bottom: 12px;">${ticket.subject}</div>
+                <div style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Message Preview</div>
+                <div style="color: #c0c0c0; font-size: 14px; line-height: 1.5; font-style: italic;">
+                    "${(ticket.message || '').slice(0, 300)}${(ticket.message && ticket.message.length > 300) ? '...' : ''}"
+                </div>
+            </div>
+            <p style="color: #888888; font-size: 13px; line-height: 1.6;">
+                Replies from our support specialists will appear directly in your <strong>GPL Mods Notifications</strong> and will be emailed to this address.
+            </p>
+            <div style="text-align: center; margin: 30px 0 10px 0;">
+                <a href="https://gplmods.webredirect.org/notifications" style="display: inline-block; padding: 12px 28px; background-color: #FFD700; color: #0a0a0a; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 14px;">
+                    View Your Notifications
+                </a>
+            </div>
+        `;
+
+        const payload = {
+            api_key: process.env.SMTP2GO_API_KEY,
+            to: [userEmail],
+            sender: process.env.EMAIL_FROM,
+            subject: `[Support Ticket #${ticketRef}] We have received your request: ${ticket.subject}`,
+            text_body: `Hi ${userName},\n\nWe have received your support ticket #${ticketRef}: "${ticket.subject}".\n\nOur team is reviewing your message and will respond via your GPL Mods notifications.`,
+            html_body: getBrandedEmailHtml(emailContent)
+        };
+
+        await sendSmtpEmail(payload);
+        console.log(`Support ticket confirmation email sent successfully to ${userEmail} (#${ticketRef})`);
+    } catch (error) {
+        console.error("SMTP2GO Support Ticket Email Error:", error.response ? error.response.data : error.message);
+    }
+};
+
+/**
+ * Send DMCA notice submission acknowledgment to the claimant
+ */
+exports.sendDmcaReportConfirmationEmail = async (dmca, claimantEmail, claimantName = 'Copyright Claimant') => {
+    try {
+        if (!claimantEmail) return;
+
+        const dmcaRef = dmca._id ? String(dmca._id).slice(-8).toUpperCase() : 'DMCA';
+        const reportedCount = (dmca.infringingUrls && dmca.infringingUrls.length) || (dmca.reportedFiles && dmca.reportedFiles.length) || 1;
+        const emailContent = `
+            <div style="border-left: 4px solid #e53935; padding-left: 15px; margin-bottom: 25px;">
+                <h2 style="margin: 0 0 10px 0; color: #ffffff; font-size: 22px;">DMCA Notice Acknowledgment #${dmcaRef}</h2>
+                <span style="display: inline-block; background-color: #e53935; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+                    Notice of Copyright Claim
+                </span>
+            </div>
+            <p style="color: #c0c0c0; font-size: 15px; line-height: 1.6;">
+                Dear <strong>${claimantName}</strong>,
+            </p>
+            <p style="color: #c0c0c0; font-size: 15px; line-height: 1.6;">
+                This automated confirmation acknowledges receipt of your Digital Millennium Copyright Act (DMCA) notice submitted on behalf of <strong>${dmca.copyrightHolder || claimantName}</strong>.
+            </p>
+            <div style="background-color: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 18px; margin: 25px 0;">
+                <div style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Notice ID</div>
+                <div style="color: #FFD700; font-weight: bold; font-size: 16px; margin-bottom: 12px;">#${dmcaRef}</div>
+                <div style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Reported Items</div>
+                <div style="color: #ffffff; font-size: 14px; margin-bottom: 12px;">${reportedCount} URL(s) submitted for copyright review</div>
+                <div style="color: #888888; font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Original Work / Proof URL</div>
+                <div style="color: #2196F3; font-size: 13px; word-break: break-all;">${dmca.originalWorkUrl || 'Provided in submission'}</div>
+            </div>
+            <p style="color: #c0c0c0; font-size: 14px; line-height: 1.6;">
+                <strong>What happens next?</strong><br>
+                Our legal compliance team reviews notices for validity. If the reported items are confirmed on our platform, automated link protection and takedown measures will activate within 24 hours of verification in accordance with 17 U.S.C. &sect; 512(c).
+            </p>
+            <p style="color: #888888; font-size: 12px; line-height: 1.5; margin-top: 20px;">
+                Reference ID: ${dmcaRef} &bull; GPL Mods Copyright & Intellectual Property Operations
+            </p>
+        `;
+
+        const payload = {
+            api_key: process.env.SMTP2GO_API_KEY,
+            to: [claimantEmail],
+            sender: process.env.EMAIL_FROM,
+            subject: `[DMCA Notice #${dmcaRef}] Official Acknowledgment of Copyright Infringement Claim`,
+            text_body: `Dear ${claimantName},\n\nWe have received your DMCA takedown claim #${dmcaRef} for ${dmca.copyrightHolder || claimantName}.\n\nOur compliance team is verifying the notice and will take necessary legal action within 24 hours.`,
+            html_body: getBrandedEmailHtml(emailContent)
+        };
+
+        await sendSmtpEmail(payload);
+        console.log(`DMCA confirmation email sent successfully to ${claimantEmail} (#${dmcaRef})`);
+    } catch (error) {
+        console.error("SMTP2GO DMCA Email Error:", error.response ? error.response.data : error.message);
+    }
+};
+
+/**
+ * Send subscription confirmation email upon successful membership payment/activation
+ */
+exports.sendSubscriptionStatusEmail = async (user, orderDetails = {}) => {
+    try {
+        if (!user || !user.email) return;
+
+        const isLite = orderDetails.tier === 'lite' || user.membership === 'lite';
+        const planName = orderDetails.planName || (isLite ? 'GPL Lite' : 'GPL Plus');
+        const badgeColor = isLite ? '#2196F3' : '#FFD700';
+        const expiresAt = user.membershipExpiresAt ? new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Lifetime / Active';
+
+        const perksHtml = isLite ? `
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>No Popunder Ads</strong> on downloads</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>Lightning Fast</strong> download speeds</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>5 Upload Slots</strong> with rolling weekly resets</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>600MB Max File Size</strong> for mods</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>Priority Support</strong> queue</li>
+        ` : `
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>100% Ad-Free Experience</strong> (no video ads, no popunders)</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>10 Upload Slots</strong> with immediate live refunds</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>2GB Max File Size</strong> for all mods</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>Ad-Free YouTube/YTMusic Player</strong> in background</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>1-Click Installs</strong> (AltStore, Sileo, etc.)</li>
+            <li style="margin-bottom: 8px; color: #ffffff;">&check; <strong>VIP Priority Support</strong> queue</li>
+        `;
+
+        const emailContent = `
+            <div style="text-align: center; margin-bottom: 30px;">
+                <span style="display: inline-block; background-color: ${badgeColor}; color: #0a0a0a; font-size: 13px; font-weight: bold; padding: 6px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;">
+                    ${planName} Activated
+                </span>
+                <h2 style="margin: 15px 0 10px 0; color: #ffffff; font-size: 26px;">Welcome to ${planName}!</h2>
+                <p style="color: #c0c0c0; font-size: 15px; margin: 0;">Hi <strong>${user.username}</strong>, your membership is now active.</p>
+            </div>
+            <div style="background-color: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 20px; margin: 25px 0;">
+                <table width="100%" cellpadding="6" cellspacing="0" style="color: #c0c0c0; font-size: 14px;">
+                    <tr>
+                        <td style="color: #888888;">Plan Tier:</td>
+                        <td align="right" style="color: #ffffff; font-weight: bold;">${planName}</td>
+                    </tr>
+                    ${orderDetails.amount ? `
+                    <tr>
+                        <td style="color: #888888;">Amount Paid:</td>
+                        <td align="right" style="color: #ffffff; font-weight: bold;">${orderDetails.currency || 'INR'} ${orderDetails.amount}</td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                        <td style="color: #888888;">Valid Until:</td>
+                        <td align="right" style="color: #FFD700; font-weight: bold;">${expiresAt}</td>
+                    </tr>
+                    ${orderDetails.orderId ? `
+                    <tr>
+                        <td style="color: #888888;">Order / Receipt:</td>
+                        <td align="right" style="color: #888888; font-family: monospace;">#${String(orderDetails.orderId).slice(-10)}</td>
+                    </tr>
+                    ` : ''}
+                </table>
+            </div>
+            <div style="margin: 25px 0;">
+                <h4 style="color: #ffffff; font-size: 15px; margin-bottom: 12px;">Your Unlocked Perks:</h4>
+                <ul style="padding-left: 20px; line-height: 1.6; margin: 0;">
+                    ${perksHtml}
+                </ul>
+            </div>
+            <div style="text-align: center; margin: 35px 0 10px 0;">
+                <a href="https://gplmods.webredirect.org" style="display: inline-block; padding: 14px 32px; background-color: ${badgeColor}; color: #0a0a0a; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 15px;">
+                    Explore GPL Mods with Your Perks
+                </a>
+            </div>
+        `;
+
+        const payload = {
+            api_key: process.env.SMTP2GO_API_KEY,
+            to: [user.email],
+            sender: process.env.EMAIL_FROM,
+            subject: `🎉 Your ${planName} Membership is Active!`,
+            text_body: `Hi ${user.username},\n\nYour ${planName} membership is now active! Valid until: ${expiresAt}.\n\nVisit GPL Mods to enjoy your new perks.`,
+            html_body: getBrandedEmailHtml(emailContent)
+        };
+
+        await sendSmtpEmail(payload);
+        console.log(`Subscription status email sent successfully to ${user.email} for ${planName}`);
+    } catch (error) {
+        console.error("SMTP2GO Subscription Status Email Error:", error.response ? error.response.data : error.message);
+    }
+};
+

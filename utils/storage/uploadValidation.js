@@ -16,13 +16,22 @@ function getSubmissionValidationErrors({
     directDownloadUrlValue,
     manualFileScanUrlValue,
     manualSiteScanUrlValue,
-    isValidNameFn
+    isValidNameFn,
+    user
 }) {
     if (actionType !== 'submit') {
         return [];
     }
 
     const errors = [];
+
+    if (user && Number(fileSize || fileToUpdate?.fileSize || 0) > 0) {
+        const { validateUploadFileSize } = require('../uploadQuota');
+        const sizeCheck = validateUploadFileSize(user, Number(fileSize || fileToUpdate?.fileSize || 0));
+        if (!sizeCheck.valid) {
+            errors.push(sizeCheck.error);
+        }
+    }
 
     const modName = (formData.modName || '').trim();
     if (!modName) {

@@ -173,6 +173,92 @@
         background: #555;
         color: var(--white);
     }
+
+    /* --- DOMAIN TABS & COMMUNITY SEARCH RESULTS --- */
+    .search-domain-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 15px;
+        overflow-x: auto;
+    }
+    .search-domain-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        border-radius: 25px;
+        background: var(--dark-gray);
+        color: var(--silver);
+        border: 1px solid #333;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95em;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+    .search-domain-tab:hover {
+        color: var(--white);
+        border-color: var(--gold);
+    }
+    .search-domain-tab.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 15px var(--glow-gold);
+    }
+    .search-domain-tab .tab-count {
+        background: rgba(0,0,0,0.25);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+    }
+    .search-domain-tab.active .tab-count {
+        background: rgba(0,0,0,0.2);
+        color: var(--black);
+    }
+    
+    .dev-badge-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        padding: 8px 16px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9em;
+        transition: all 0.2s;
+    }
+    .dev-badge-chip:hover {
+        background: var(--gold);
+        color: var(--black);
+        transform: translateY(-2px);
+    }
+    
+    .community-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+    .community-card {
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+    .community-card:hover {
+        border-color: var(--gold);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
 </style>
 
 <main>
@@ -190,183 +276,283 @@
     </section>
 
     <div class="container">
-        
         <!-- ============================================== -->
-        <!-- THE NEW CUSTOM FILTER FORM (Matches Category Page) -->
+        <!-- DOMAIN TABS: MODS, USERS, COMMUNITY FORUMS/DOCS -->
         <!-- ============================================== -->
-        <form action="/search" method="GET" class="filter-section" id="searchFilterForm" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 20px; align-items: center; background-color: var(--dark-gray); padding: 25px; border-radius: 15px; margin-bottom: 40px;">
-            
-            <!-- Hidden input to pass the search query along with the filters -->
-            <input type="hidden" name="q" value="<%= query %>">
+        <div class="search-domain-tabs">
+            <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods" class="search-domain-tab <%= (typeof activeTab === 'undefined' || activeTab === 'mods') ? 'active' : '' %>">
+                <i class="fas fa-cubes"></i> Mods &amp; Platform 
+                <span class="tab-count"><%= (typeof counts !== 'undefined' && counts) ? counts.mods : totalResults %></span>
+            </a>
+            <a href="/search?q=<%= encodeURIComponent(query) %>&tab=users" class="search-domain-tab <%= (typeof activeTab !== 'undefined' && activeTab === 'users') ? 'active' : '' %>">
+                <i class="fas fa-users"></i> Users &amp; Developers 
+                <span class="tab-count"><%= (typeof counts !== 'undefined' && counts) ? counts.users : (userResults ? userResults.length : 0) %></span>
+            </a>
+            <a href="/search?q=<%= encodeURIComponent(query) %>&tab=community" class="search-domain-tab <%= (typeof activeTab !== 'undefined' && activeTab === 'community') ? 'active' : '' %>">
+                <i class="fas fa-comments"></i> Community Forums &amp; Docs 
+                <span class="tab-count"><%= (typeof counts !== 'undefined' && counts) ? counts.community : 0 %></span>
+            </a>
+        </div>
 
-            <div class="results-count" style="grid-column: 1 / -1; margin-bottom: 10px;">
-                <span>Showing <%= results.length %> of <%= totalResults %> results</span>
-            </div>
+        <% if (!activeTab || activeTab === 'mods') { %>
+            <!-- ============================================== -->
+            <!-- TAB 1: MODS & PLATFORM                         -->
+            <!-- ============================================== -->
+            <form action="/search" method="GET" class="filter-section" id="searchFilterForm" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 20px; align-items: center; background-color: var(--dark-gray); padding: 25px; border-radius: 15px; margin-bottom: 40px;">
+                <input type="hidden" name="q" value="<%= query %>">
+                <input type="hidden" name="tab" value="mods">
 
-            <!-- 1. PLATFORM DROPDOWN -->
-            <div class="filter-group" style="display: flex; flex-direction: column;">
-                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Platform</label>
-                <!-- Hidden Native Select -->
-                <select id="platform" name="platform" style="display: none;">
-                    <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
-                    <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
-                    <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
-                    <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
-                    <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
-                    <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper" id="wrapper-platform">
-                    <div class="custom-select">
-                        <span class="selected-text">All Platforms</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option" data-value="all">All Platforms</div>
-                        <div class="custom-option" data-value="windows">Windows</div>
-                        <div class="custom-option" data-value="android">Android</div>
-                        <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
-                        <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
-                        <div class="custom-option" data-value="wordpress">WordPress</div>
+                <div class="results-count" style="grid-column: 1 / -1; margin-bottom: 10px;">
+                    <span>Showing <%= results.length %> of <%= totalResults %> mod results</span>
+                </div>
+
+                <!-- 1. PLATFORM DROPDOWN -->
+                <div class="filter-group" style="display: flex; flex-direction: column;">
+                    <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Platform</label>
+                    <select id="platform" name="platform" style="display: none;">
+                        <option value="all" <%= currentPlatform === 'all' ? 'selected' : '' %>>All Platforms</option>
+                        <option value="windows" <%= currentPlatform === 'windows' ? 'selected' : '' %>>Windows</option>
+                        <option value="android" <%= currentPlatform === 'android' ? 'selected' : '' %>>Android</option>
+                        <option value="ios-jailed" <%= currentPlatform === 'ios-jailed' ? 'selected' : '' %>>iOS - Jailed (IPA)</option>
+                        <option value="ios-jailbroken" <%= currentPlatform === 'ios-jailbroken' ? 'selected' : '' %>>iOS - Jailbroken (DEB)</option>
+                        <option value="wordpress" <%= currentPlatform === 'wordpress' ? 'selected' : '' %>>WordPress</option>
+                    </select>
+                    <div class="custom-select-wrapper" id="wrapper-platform">
+                        <div class="custom-select">
+                            <span class="selected-text">All Platforms</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="all">All Platforms</div>
+                            <div class="custom-option" data-value="windows">Windows</div>
+                            <div class="custom-option" data-value="android">Android</div>
+                            <div class="custom-option" data-value="ios-jailed">iOS - Jailed (IPA)</div>
+                            <div class="custom-option" data-value="ios-jailbroken">iOS - Jailbroken (DEB)</div>
+                            <div class="custom-option" data-value="wordpress">WordPress</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 2. SUB-CATEGORY DROPDOWN (Dynamic) -->
-            <div class="filter-group" style="display: flex; flex-direction: column;">
-                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Category</label>
-                <!-- Hidden Native Select -->
-                <select id="subCategory" name="subCategory" style="display: none;">
-                    <option value="all" <%= currentSubCategory === 'all' ? 'selected' : '' %>>All Categories</option>
-                    <!-- Options populated by JS -->
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>" id="wrapper-subCategory">
-                    <div class="custom-select" style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
-                        <span class="selected-text">All Categories</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options" id="options-subCategory">
-                        <div class="custom-option" data-value="all">All Categories</div>
-                        <!-- Options populated by JS -->
+                
+                <!-- 2. SUB-CATEGORY DROPDOWN (Dynamic) -->
+                <div class="filter-group" style="display: flex; flex-direction: column;">
+                    <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Category</label>
+                    <select id="subCategory" name="subCategory" style="display: none;">
+                        <option value="all" <%= currentSubCategory === 'all' ? 'selected' : '' %>>All Categories</option>
+                    </select>
+                    <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>" id="wrapper-subCategory">
+                        <div class="custom-select" style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
+                            <span class="selected-text">All Categories</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options" id="options-subCategory">
+                            <div class="custom-option" data-value="all">All Categories</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 3. SORT DROPDOWN -->
-            <div class="filter-group" style="display: flex; flex-direction: column;">
-                <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Sort By</label>
-                <!-- Hidden Native Select -->
-                <select id="sort" name="sort" style="display: none;">
-                    <option value="newest" <%= currentSort === 'newest' ? 'selected' : '' %>>Newest</option>
-                    <option value="downloads" <%= currentSort === 'downloads' ? 'selected' : '' %>>Most Downloads</option>
-                    <option value="rating" <%= currentSort === 'rating' ? 'selected' : '' %>>Highest Rating</option>
-                </select>
-                <!-- Custom UI Wrapper -->
-                <div class="custom-select-wrapper" id="wrapper-sort">
-                    <div class="custom-select">
-                        <span class="selected-text">Newest</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option" data-value="newest">Newest</div>
-                        <div class="custom-option" data-value="downloads">Most Downloads</div>
-                        <div class="custom-option" data-value="rating">Highest Rating</div>
+                
+                <!-- 3. SORT DROPDOWN -->
+                <div class="filter-group" style="display: flex; flex-direction: column;">
+                    <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 8px;">Sort By</label>
+                    <select id="sort" name="sort" style="display: none;">
+                        <option value="newest" <%= currentSort === 'newest' ? 'selected' : '' %>>Newest</option>
+                        <option value="downloads" <%= currentSort === 'downloads' ? 'selected' : '' %>>Most Downloads</option>
+                        <option value="rating" <%= currentSort === 'rating' ? 'selected' : '' %>>Highest Rating</option>
+                    </select>
+                    <div class="custom-select-wrapper" id="wrapper-sort">
+                        <div class="custom-select">
+                            <span class="selected-text">Newest</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <div class="custom-option" data-value="newest">Newest</div>
+                            <div class="custom-option" data-value="downloads">Most Downloads</div>
+                            <div class="custom-option" data-value="rating">Highest Rating</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <button type="submit" class="filter-button" style="background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; border: none; font-size: 1em; font-weight: 600; cursor: pointer; align-self: end; height: 48px; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
-        </form>
-        <!-- ============================================== -->
-        <!-- ============================================== -->
-        <!-- NEW: USER SEARCH RESULTS                       -->
-        <!-- ============================================== -->
-        <% if (userResults && userResults.length > 0) { %>
-            <section class="user-results-section" style="margin-bottom: 45px;">
-                <h2 style="color: var(--white); font-size: 1.5em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <span><i class="fas fa-users" style="color: #46b5e8; margin-right: 8px;"></i> Community Members</span>
-                    <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= userResults.length %> matched</span>
-                </h2>
-                <div class="user-grid">
-                    <% userResults.forEach(u => { %>
-                        <a href="/users/<%= slugify(u.username) %>" class="user-card">
-                            <img src="<%= u.signedAvatarUrl %>" alt="<%= u.username %>" class="user-card-avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
-                            
-                            <div class="user-card-info">
-                                <span class="user-card-name"><%= u.username %></span>
-                                <% if (u.role !== 'member') { %>
-                                    <span class="user-card-role role-<%= u.role %>"><%= u.role %></span>
-                                <% } %>
-                                <div class="user-card-stats">
-                                    <span><i class="fas fa-users"></i> <%= u.followers ? u.followers.length : 0 %></span>
-                                    <span><i class="fas fa-clock"></i> <%= timeAgo(u.lastSeen) %></span>
-                                </div>
-                            </div>
+                <button type="submit" class="filter-button" style="background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; border: none; font-size: 1em; font-weight: 600; cursor: pointer; align-self: end; height: 48px; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
+            </form>
 
-                            <% if (user && user._id.toString() !== u._id.toString()) { %>
-                                <!-- We wrap the button in an object to prevent the 'a' tag click from triggering -->
-                                <object>
-                                    <form action="/users/<%= u._id %>/follow" method="POST" style="margin: 0;">
-                                        <button type="submit" class="follow-btn-small <%= u.isFollowing ? 'following' : '' %>">
-                                            <%= u.isFollowing ? 'Unfollow' : 'Follow' %>
-                                        </button>
-                                    </form>
-                                </object>
-                            <% } %>
-                        </a>
+            <% if (results.length > 0) { %>
+                <section style="margin-bottom: 30px;">
+                    <div class="mod-grid" id="search-results-grid">
+                    <% results.forEach(file => { %>
+                        <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
                     <% }) %>
+                    </div>
+                </section>
+            <% } else { %>
+                <div style="text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <i class="fas fa-search-minus" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--silver); margin-bottom: 10px;">No Mods Found</h2>
+                    <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
+                        We couldn't find any mods matching "<strong><%= query %></strong>".<br>
+                        Try adjusting your filters or checking the Users &amp; Community tabs above.
+                    </p>
+                    <% if (currentPlatform !== 'all' || currentSubCategory !== 'all') { %>
+                        <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods" class="btn" style="display: inline-block; background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none;">Clear Filters</a>
+                    <% } else { %>
+                        <a href="/" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold);">Return Home</a>
+                    <% } %>
                 </div>
-            </section>
-        <% } %>
-        <!-- ============================================== -->
+            <% } %>
 
-        <!-- Only show the grid if there are results -->
-        <% if(results.length > 0) { %>
-            <section style="margin-bottom: 30px;">
-                <h2 style="color: var(--white); font-size: 1.5em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <span><i class="fas fa-cubes" style="color: var(--gold); margin-right: 8px;"></i> Mods &amp; Applications</span>
-                    <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= totalResults %> total</span>
-                </h2>
-                <div class="mod-grid" id="search-results-grid">
-                <% results.forEach(file => { %>
-                    <%- include('../partials/mod-card', { file: file, showUploaderInfo: false }) %>
-                <% }) %>
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+                <nav class="pagination">
+                    <% for(let i = 1; i <= totalPages; i++) { %>
+                        <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
+                           class="<%= currentPage === i ? 'active' : '' %>">
+                            <%= i %>
+                        </a>
+                    <% } %>
+                </nav>
+            <% } %>
+
+        <% } else if (activeTab === 'users') { %>
+            <!-- ============================================== -->
+            <!-- TAB 2: USERS & DEVELOPERS                      -->
+            <!-- ============================================== -->
+            <% if (typeof developerResults !== 'undefined' && developerResults.length > 0) { %>
+                <section style="margin-bottom: 35px;">
+                    <h3 style="color: var(--silver); font-size: 1.1em; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-laptop-code" style="color: var(--gold);"></i> Developers Matching "<%= query %>"
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <% developerResults.forEach(dev => { %>
+                            <a href="/search?q=<%= encodeURIComponent(dev) %>&tab=mods" class="dev-badge-chip">
+                                <i class="fas fa-code"></i> <%= dev %>
+                            </a>
+                        <% }) %>
+                    </div>
+                </section>
+            <% } %>
+
+            <% if (userResults && userResults.length > 0) { %>
+                <section class="user-results-section" style="margin-bottom: 45px;">
+                    <h2 style="color: var(--white); font-size: 1.4em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-users" style="color: #46b5e8; margin-right: 8px;"></i> Community Members</span>
+                        <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= userResults.length %> matched</span>
+                    </h2>
+                    <div class="user-grid">
+                        <% userResults.forEach(u => { %>
+                            <a href="/users/<%= slugify(u.username) %>" class="user-card">
+                                <img src="<%= u.signedAvatarUrl %>" alt="<%= u.username %>" class="user-card-avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                
+                                <div class="user-card-info">
+                                    <span class="user-card-name"><%= u.username %></span>
+                                    <% if (u.role !== 'member') { %>
+                                        <span class="user-card-role role-<%= u.role %>"><%= u.role %></span>
+                                    <% } %>
+                                    <div class="user-card-stats">
+                                        <span><i class="fas fa-users"></i> <%= u.followers ? u.followers.length : 0 %></span>
+                                        <span><i class="fas fa-clock"></i> <%= timeAgo(u.lastSeen) %></span>
+                                    </div>
+                                </div>
+
+                                <% if (user && user._id.toString() !== u._id.toString()) { %>
+                                    <object>
+                                        <form action="/users/<%= u._id %>/follow" method="POST" style="margin: 0;">
+                                            <button type="submit" class="follow-btn-small <%= u.isFollowing ? 'following' : '' %>">
+                                                <%= u.isFollowing ? 'Unfollow' : 'Follow' %>
+                                            </button>
+                                        </form>
+                                    </object>
+                                <% } %>
+                            </a>
+                        <% }) %>
+                    </div>
+                </section>
+            <% } %>
+
+            <% if ((!developerResults || developerResults.length === 0) && (!userResults || userResults.length === 0)) { %>
+                <div style="text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px;">
+                    <i class="fas fa-user-slash" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--silver); margin-bottom: 10px;">No Users or Developers Found</h2>
+                    <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
+                        No community members or mod creators found matching "<strong><%= query %></strong>".
+                    </p>
+                    <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none;">Search in Mods</a>
                 </div>
-            </section>
-        <% } %>
+            <% } %>
 
-        <!-- ======== NO RESULTS FALLBACK ======== -->
-        <!-- Show this ONLY if there are no mods AND no users found -->
-        <% if (results.length === 0 && (!userResults || userResults.length === 0)) { %>
-            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                <i class="fas fa-search-minus" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
-                <h2 style="color: var(--silver); margin-bottom: 10px;">No Results Found</h2>
-                <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
-                    We couldn't find any mods or community members matching "<strong><%= query %></strong>".<br>
-                    Try adjusting your filters or using different keywords.
-                </p>
-                <!-- If they have filters active, suggest clearing them -->
-                <% if (currentPlatform !== 'all' || currentSubCategory !== 'all') { %>
-                    <a href="/search?q=<%= encodeURIComponent(query) %>" class="btn" style="display: inline-block; background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.background='var(--gold)'; this.style.color='var(--black)';" onmouseout="this.style.background='transparent'; this.style.color='var(--gold)';">Clear Filters</a>
-                <% } else { %>
-                    <a href="/" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.3s ease;">Return Home</a>
-                <% } %>
-            </div>
-        <% } %>
-        <!-- ===================================== -->
+        <% } else if (activeTab === 'community') { %>
+            <!-- ============================================== -->
+            <!-- TAB 3: COMMUNITY FORUMS & DOCS                 -->
+            <!-- ============================================== -->
+            <% const hasForum = communityResults && communityResults.issues && communityResults.issues.length > 0; %>
+            <% const hasDocs = communityResults && communityResults.docs && communityResults.docs.length > 0; %>
 
-        <!-- Pagination -->
-        <% if (totalPages > 1) { %>
-            <nav class="pagination">
-                <% for(let i = 1; i <= totalPages; i++) { %>
-                    <!-- UPDATED PAGINATION LINK to include subCategory -->
-                    <a href="/search?q=<%= encodeURIComponent(query) %>&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
-                       class="<%= currentPage === i ? 'active' : '' %>">
-                        <%= i %>
-                    </a>
-                <% } %>
-            </nav>
+            <% if (hasDocs) { %>
+                <section style="margin-bottom: 40px;">
+                    <h2 style="color: var(--white); font-size: 1.4em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-book-open" style="color: var(--gold); margin-right: 8px;"></i> Documentation &amp; Knowledge Base</span>
+                        <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= communityResults.docs.length %> articles</span>
+                    </h2>
+                    <div class="community-cards-grid">
+                        <% communityResults.docs.forEach(doc => { %>
+                            <a href="/docs/<%= doc.slug %>" class="community-card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                    <span style="font-size: 0.75em; text-transform: uppercase; background: rgba(255, 215, 0, 0.15); color: var(--gold); padding: 3px 10px; border-radius: 12px; font-weight: bold;">
+                                        <%= doc.category ? doc.category.name : 'Guide' %>
+                                    </span>
+                                </div>
+                                <h3 style="color: var(--white); font-size: 1.15em; margin-bottom: 8px;"><%= doc.title %></h3>
+                                <p style="color: var(--silver); font-size: 0.88em; line-height: 1.5; margin-bottom: 15px; flex-grow: 1;">
+                                    <%= (doc.content || '').replace(/<[^>]+>/g, ' ').slice(0, 140).trim() %>...
+                                </p>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; color: #777; border-top: 1px solid #222; padding-top: 10px;">
+                                    <span><i class="fas fa-external-link-alt" style="margin-right: 4px; color: var(--gold);"></i> Read Guide</span>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </section>
+            <% } %>
+
+            <% if (hasForum) { %>
+                <section style="margin-bottom: 40px;">
+                    <h2 style="color: var(--white); font-size: 1.4em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-comments" style="color: #46b5e8; margin-right: 8px;"></i> Forum Discussions</span>
+                        <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= communityResults.issues.length %> threads</span>
+                    </h2>
+                    <div class="community-cards-grid">
+                        <% communityResults.issues.forEach(issue => { %>
+                            <a href="/community/<%= issue.slug %>" class="community-card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                    <span style="font-size: 0.75em; text-transform: uppercase; background: rgba(70, 181, 232, 0.15); color: #46b5e8; padding: 3px 10px; border-radius: 12px; font-weight: bold;">
+                                        <%= issue.category || 'General' %>
+                                    </span>
+                                    <span style="font-size: 0.75em; color: <%= issue.status === 'resolved' ? 'var(--green)' : '#aaa' %>;">
+                                        <i class="fas fa-circle" style="font-size: 0.6em; margin-right: 3px;"></i> <%= issue.status || 'open' %>
+                                    </span>
+                                </div>
+                                <h3 style="color: var(--white); font-size: 1.15em; margin-bottom: 8px;"><%= issue.title %></h3>
+                                <p style="color: var(--silver); font-size: 0.88em; line-height: 1.5; margin-bottom: 15px; flex-grow: 1;">
+                                    <%= (issue.description || '').slice(0, 140).trim() %>...
+                                </p>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; color: #777; border-top: 1px solid #222; padding-top: 10px;">
+                                    <span>By <strong style="color: var(--silver);"><%= issue.author ? issue.author.username : 'Community Member' %></strong></span>
+                                    <span><i class="fas fa-eye" style="margin-right: 4px;"></i><%= issue.views || 0 %> views</span>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </section>
+            <% } %>
+
+            <% if (!hasDocs && !hasForum) { %>
+                <div style="text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px;">
+                    <i class="fas fa-comments" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                    <h2 style="color: var(--silver); margin-bottom: 10px;">No Discussions or Guides Found</h2>
+                    <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
+                        We couldn't find any community forum posts or documentation articles matching "<strong><%= query %></strong>".
+                    </p>
+                    <a href="/community" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; margin-right: 10px;">Visit Forums</a>
+                    <a href="/docs" class="btn btn-secondary" style="display: inline-block; padding: 12px 30px; border-radius: 25px; text-decoration: none;">Browse Docs</a>
+                </div>
+            <% } %>
         <% } %>
     </div>
 </main>

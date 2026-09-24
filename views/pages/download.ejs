@@ -1484,6 +1484,46 @@
                                                                             </span>
                                                                         </li>
                                                                         <% } %>
+                                                                    <% if (file.requiresRoot) { %>
+                                                                        <li>
+                                                                            <span>Root Access:</span>
+                                                                            <span class="meta-value" style="color: #ff5252; font-weight: 600;">
+                                                                                <i class="fas fa-hashtag" style="margin-right: 4px;"></i> Required
+                                                                            </span>
+                                                                        </li>
+                                                                    <% } %>
+                                                                    <% if (file.requiresDevMode) { %>
+                                                                        <li>
+                                                                            <span>Developer Mode:</span>
+                                                                            <span class="meta-value" style="color: var(--gold); font-weight: 600;">
+                                                                                <i class="fas fa-code" style="margin-right: 4px;"></i> Required
+                                                                            </span>
+                                                                        </li>
+                                                                    <% } %>
+                                                                    <% if (file.isTweakConvertible) { %>
+                                                                        <li>
+                                                                            <span>Tweak Conversion:</span>
+                                                                            <span class="meta-value" style="color: #69f0ae; font-weight: 600;">
+                                                                                <i class="fas fa-sync-alt" style="margin-right: 4px;"></i> Convertible (Rootful / Rootless)
+                                                                            </span>
+                                                                        </li>
+                                                                    <% } %>
+                                                                    <% if (file.requiresDependencies) { %>
+                                                                        <li>
+                                                                            <span>Dependencies:</span>
+                                                                            <span class="meta-value" style="color: #ffd740; font-weight: 600;">
+                                                                                <i class="fas fa-cubes" style="margin-right: 4px;"></i> Required
+                                                                            </span>
+                                                                        </li>
+                                                                    <% } %>
+                                                                    <% if (file.requiresDisableAntivirus) { %>
+                                                                        <li>
+                                                                            <span>Antivirus:</span>
+                                                                            <span class="meta-value" style="color: #ff7043; font-weight: 600;">
+                                                                                <i class="fas fa-shield-virus" style="margin-right: 4px;"></i> Exclusion / Disable Required
+                                                                            </span>
+                                                                        </li>
+                                                                    <% } %>
                                                                             <li>
                                                                                 <span>License:</span>
                                                                                 <% if (file.license) { %>

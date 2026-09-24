@@ -45,7 +45,7 @@ const UserSchema = new Schema({
     },
     membership: {
         type: String,
-        enum: ['free', 'premium'],
+        enum: ['free', 'lite', 'plus', 'premium'],
         default: 'free'
     },
     membershipExpiresAt: {

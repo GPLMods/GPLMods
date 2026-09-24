@@ -12,6 +12,7 @@ const Review = require('./core/review');
 const Reply = require('./core/reply');
 const Donation = require('./donation');
 const MembershipOrder = require('./membershipOrder');
+const Coupon = require('./coupon');
 
 // --- COMMUNITY MODELS ---
 const Issue = require('./community/issue');
@@ -56,6 +57,7 @@ module.exports = {
     Reply,
     Donation,
     MembershipOrder,
+    Coupon,
     ChatSession,
     ChatSettings,
     AIKnowledge,

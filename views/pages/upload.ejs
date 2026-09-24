@@ -65,6 +65,59 @@
             <div style="background-color: rgba(229, 57, 53, 0.1); color: var(--red); border: 1px solid var(--red); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold;"><%= error %></div>
         <% } %>
 
+        <!-- ======== UPLOAD QUOTA & TIER STATUS ======== -->
+        <% if (typeof quota !== 'undefined' && quota) { %>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                        <span style="font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: var(--silver); display: block;">Membership Tier</span>
+                        <strong style="color: var(--gold); font-size: 1.15em;"><i class="fas fa-crown" style="margin-right: 6px;"></i><%= quota.label %></strong>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: var(--silver); display: block;">Max File Size</span>
+                        <span style="background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85em;">
+                            <%= quota.maxFileSizeMb >= 1024 ? (quota.maxFileSizeMb / 1024).toFixed(1) + ' GB' : quota.maxFileSizeMb + ' MB' %>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Slot Meter Progress Bar -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">
+                        <span>Pending Upload Slots</span>
+                        <strong style="color: <%= quota.canUpload ? 'var(--white)' : 'var(--red)' %>;">
+                            <%= quota.usedSlots %> / <%= quota.totalSlots %> Used (<%= quota.remainingSlots %> Available)
+                        </strong>
+                    </div>
+                    <div style="background: #111; border-radius: 10px; height: 10px; overflow: hidden; border: 1px solid #333;">
+                        <% const usedPercent = Math.min(100, Math.round((quota.usedSlots / quota.totalSlots) * 100)); %>
+                        <div style="width: <%= usedPercent %>%; height: 100%; background: <%= quota.canUpload ? 'linear-gradient(90deg, #ffb300, #ffd700)' : '#e53935' %>; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- Live Replenishment Rules & Reset Time -->
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.82em; color: var(--silver); line-height: 1.5; border-left: 3px solid var(--gold);">
+                    <div><i class="fas fa-bolt" style="color: var(--gold); margin-right: 6px;"></i><strong>Live Replenishment:</strong> +1 slot is immediately restored the moment your pending mod is approved live by staff. Updates to existing mods do not consume slots.</div>
+                    <% if (quota.earliestReset) { %>
+                        <div style="margin-top: 5px;"><i class="fas fa-clock" style="color: #46b5e8; margin-right: 6px;"></i><strong>Rolling Weekly Reset:</strong> Oldest pending slot will reset on <%= new Date(quota.earliestReset).toLocaleDateString() %>.</div>
+                    <% } %>
+                </div>
+
+                <!-- Limit Exceeded Warning Card -->
+                <% if (!quota.canUpload) { %>
+                    <div style="margin-top: 15px; background: rgba(229, 57, 53, 0.15); border: 1px solid var(--red); border-radius: 8px; padding: 14px; text-align: center;">
+                        <i class="fas fa-exclamation-circle" style="color: var(--red); font-size: 1.4em; margin-bottom: 6px; display: block;"></i>
+                        <strong style="color: var(--white); font-size: 1.05em; display: block; margin-bottom: 6px;">Upload Slots Full</strong>
+                        <p style="color: #ffcdd2; font-size: 0.9em; margin-bottom: 12px;">You have <%= quota.usedSlots %> mods pending staff review. Slots will unlock automatically upon mod approval or after the 7-day rolling window.</p>
+                        <a href="/membership" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 8px 20px; border-radius: 20px; font-weight: bold; text-decoration: none; font-size: 0.9em;">
+                            <i class="fas fa-arrow-up" style="margin-right: 5px;"></i> Upgrade for More Slots (Up to 10 Slots &amp; 2GB)
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
+        <!-- ============================================== -->
+
         <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
             <!-- DISTRIBUTOR / ADMIN / OWNER FORM -->
             <p style="color: var(--silver); margin-bottom: 1.5rem;">
@@ -183,29 +236,49 @@
 
         <% } else { %>
             <!-- STANDARD USER UPLOAD FORM -->
-            <% let limitText = (user && user.membership === 'premium') ? "1 GB" : "300 MB"; %>
-            <% let limitBytes = (user && user.membership === 'premium') ? 1073741824 : 314572800; %>
+            <% 
+                const tierMb = (typeof quota !== 'undefined' && quota && quota.maxFileSizeMb) ? quota.maxFileSizeMb : ((user && (user.membership === 'plus' || user.membership === 'premium')) ? 2048 : (user && user.membership === 'lite' ? 600 : 300));
+                const tierBytes = (typeof quota !== 'undefined' && quota && quota.maxFileSizeBytes) ? quota.maxFileSizeBytes : (tierMb * 1024 * 1024);
+                const limitText = tierMb >= 1024 ? (tierMb / 1024).toFixed(1) + ' GB' : tierMb + ' MB';
+            %>
             
             <p style="color: var(--silver); margin-bottom: 1rem;">Step 1 of 2: Select the primary mod file (.zip, .apk, .exe).</p>
             <p style="color: var(--gold); font-weight: bold; margin-bottom: 2rem;">Max File Size: <%= limitText %></p>
             
-            <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
-                <div class="form-group">
-                    <label for="modFile" class="file-input-label" id="drop-zone">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
-                        Click to Choose File
-                    </label>
-                    <input type="file" id="modFile" name="modFile" required style="display:none;" data-limit="<%= limitBytes %>">
-                    <div id="file-name-display">No file selected</div>
+            <% if (typeof quota !== 'undefined' && quota && !quota.canUpload) { %>
+                <div style="padding: 35px 25px; background: rgba(0,0,0,0.35); border: 2px dashed #444; border-radius: 12px; color: var(--silver); text-align: center; margin-bottom: 25px;">
+                    <i class="fas fa-lock" style="font-size: 2.8em; color: var(--gold); margin-bottom: 15px; display: block;"></i>
+                    <h3 style="color: var(--white); margin-bottom: 10px;">Upload Limit Reached</h3>
+                    <p style="margin-bottom: 20px; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        All <%= quota.totalSlots %> of your upload slots are currently holding pending submissions.
+                        Slots will unlock automatically as staff approves your mods or after the rolling 7-day period.
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/my-uploads" class="btn btn-secondary" style="padding: 10px 22px; border-radius: 8px; text-decoration: none;">View My Submissions</a>
+                        <a href="/membership" class="btn btn-primary" style="padding: 10px 24px; border-radius: 8px; background: var(--gold); color: var(--black); text-decoration: none; font-weight: bold; box-shadow: 0 0 15px var(--glow-gold);">
+                            <i class="fas fa-crown" style="margin-right: 6px;"></i> Upgrade Membership
+                        </a>
+                    </div>
                 </div>
-                
-                <div class="progress-wrapper" id="progressWrapper">
-                    <div class="progress-container"><div class="progress-bar" id="progressBar">0%</div></div>
-                    <p class="status-text" id="statusText">Starting upload...</p>
-                </div>
+            <% } else { %>
+                <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
+                    <div class="form-group">
+                        <label for="modFile" class="file-input-label" id="drop-zone">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
+                            Click to Choose File
+                        </label>
+                        <input type="file" id="modFile" name="modFile" required style="display:none;" data-limit="<%= tierBytes %>" data-limit-label="<%= limitText %>">
+                        <div id="file-name-display">No file selected</div>
+                    </div>
+                    
+                    <div class="progress-wrapper" id="progressWrapper">
+                        <div class="progress-container"><div class="progress-bar" id="progressBar">0%</div></div>
+                        <p class="status-text" id="statusText">Starting upload...</p>
+                    </div>
 
-                <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
-            </form>
+                    <button type="submit" class="submit-button" id="submitBtn">Upload & Continue</button>
+                </form>
+            <% } %>
             <p style="font-size: 0.85em; color: var(--silver); margin-top: 2rem; margin-bottom: 1rem;">By uploading, you agree to our <a href="/upload-policy" target="_blank" style="color: var(--gold); text-decoration: underline;">Upload & Update Policy</a>.</p>
         <% } %>
     </div>
@@ -260,10 +333,10 @@
                     const file = this.files[0];
                     const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
                     const maxLimit = parseInt(this.getAttribute('data-limit') || '999999999999', 10);
+                    const limitLabel = this.getAttribute('data-limit-label') || 'your allowed limit';
                     
                     if (file.size > maxLimit) {
-                        // ✅ FIX: Using the Custom Modal instead of alert()
-                        showErrorModal(`File is too large! Your limit is ${maxLimit === 314572800 ? '300 MB' : '1 GB'}.`);
+                        showErrorModal(`File is too large! Your limit is ${limitLabel}. Upgrade your membership tier for larger file limits.`);
                         this.value = ''; 
                         fileNameDisplay.textContent = 'No file selected';
                         dropZone.style.borderColor = 'var(--red)';

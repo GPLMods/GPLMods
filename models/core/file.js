@@ -80,6 +80,13 @@ const FileSchema = new Schema({
         default: ''
     },
 
+    // Platform Specific Requirement Flags
+    requiresRoot: { type: Boolean, default: false },
+    requiresDevMode: { type: Boolean, default: false },
+    isTweakConvertible: { type: Boolean, default: false },
+    requiresDependencies: { type: Boolean, default: false },
+    requiresDisableAntivirus: { type: Boolean, default: false },
+
     fileSize: { type: Number, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 0 },
     originalFilename: { type: String, required: function() { return !this.externalDownloadUrl && this.status !== 'processing'; }, default: 'External File' },
     uploader: { type: String, default: "GPL Community" },
@@ -92,6 +99,10 @@ const FileSchema = new Schema({
     isLatestVersion: {
         type: Boolean,
         default: true
+    },
+    isUpdate: {
+        type: Boolean,
+        default: false
     },
     parentFile: {
         type: Schema.Types.ObjectId,

@@ -183,6 +183,57 @@
                 <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>" placeholder="e.g., Required Android 8.0 or above">
             </div>
 
+            <!-- PLATFORM COMPATIBILITY FLAGS -->
+            <% if (parentFile.category === 'android') { %>
+                <div class="form-group" style="background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25);">
+                    <h4 style="color: #00e676; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fab fa-android"></i> Android Compatibility Flags
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="requiresRoot" id="requiresRoot" value="true" <%= parentFile.requiresRoot ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Requires Root</strong> <span style="color: var(--silver); font-size: 0.88em;">(App requires root permissions like Magisk, KernelSU, or APatch to work)</span></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="requiresDevMode" id="requiresDevMode" value="true" <%= parentFile.requiresDevMode ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(App needs Developer Options or USB Debugging enabled, but does not require root)</span></span>
+                        </label>
+                    </div>
+                </div>
+            <% } else if (parentFile.category === 'ios-jailbroken') { %>
+                <div class="form-group" style="background: rgba(255, 152, 0, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.25);">
+                    <h4 style="color: #ff9800; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-terminal"></i> Jailbreak Compatibility & Dependencies
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="isTweakConvertible" id="isTweakConvertible" value="true" <%= parentFile.isTweakConvertible ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Convertible Tweak</strong> <span style="color: var(--silver); font-size: 0.88em;">(Can be converted between rootful & rootless via Derootifier, RootHidePatcher, or Xinam1neAIO)</span></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="requiresDependencies" id="requiresDependencies" value="true" <%= parentFile.requiresDependencies ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Requires Dependencies</strong> <span style="color: var(--silver); font-size: 0.88em;">(Requires external tweak dependencies/libraries like Cephei, preferenceloader, etc. to be installed first)</span></span>
+                        </label>
+                    </div>
+                </div>
+            <% } else if (parentFile.category === 'windows') { %>
+                <div class="form-group" style="background: rgba(33, 150, 243, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.25);">
+                    <h4 style="color: #2196f3; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fab fa-windows"></i> Windows Compatibility Flags
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="requiresDisableAntivirus" id="requiresDisableAntivirus" value="true" <%= parentFile.requiresDisableAntivirus ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Requires Disabling Antivirus</strong> <span style="color: var(--silver); font-size: 0.88em;">(May be flagged as false positive; user must disable Windows Defender or add an exclusion)</span></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="requiresDevMode" id="requiresDevMode" value="true" <%= parentFile.requiresDevMode ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                            <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(Requires Windows Developer Mode enabled to install/run unsigned packages)</span></span>
+                        </label>
+                    </div>
+                </div>
+            <% } %>
+
             <!-- e. WHAT'S NEW IN THIS VERSION -->
             <div class="form-group" style="position: relative;">
                 <label>
@@ -929,6 +980,110 @@
         const progressBar = document.getElementById('progressBar');
         const statusText = document.getElementById('statusText');
 
+        function autoDetectFromFilename(filename) {
+            if (!filename) return;
+            const lower = filename.toLowerCase();
+            const base = lower.replace(/\.[a-z0-9]+$/i, '');
+
+            // 1. Version detection
+            const verInput = document.getElementById('softwareVersion');
+            if (verInput && (!verInput.value || verInput.value.trim() === '')) {
+                const tweakMatch = filename.match(/_([0-9]+(?:\.[0-9]+)+)_/);
+                if (tweakMatch && tweakMatch[1]) {
+                    verInput.value = tweakMatch[1];
+                } else {
+                    const verMatch = filename.match(/v?(\d+\.\d+(?:\.\d+)?)/i);
+                    if (verMatch && verMatch[1]) {
+                        verInput.value = verMatch[1];
+                    }
+                }
+            }
+
+            // 2. Min OS Detection
+            const minOsInput = document.getElementById('minOsVersion');
+            if (minOsInput) {
+                let detectedOs = '';
+                const apiMap = {
+                    1: 'Android 1.0', 2: 'Android 1.1', 3: 'Android 1.5', 4: 'Android 1.6',
+                    5: 'Android 2.0', 6: 'Android 2.0.1', 7: 'Android 2.1', 8: 'Android 2.2',
+                    9: 'Android 2.3', 10: 'Android 2.3.3', 11: 'Android 3.0', 12: 'Android 3.1',
+                    13: 'Android 3.2', 14: 'Android 4.0', 15: 'Android 4.0.3', 16: 'Android 4.1',
+                    17: 'Android 4.2', 18: 'Android 4.3', 19: 'Android 4.4', 20: 'Android 4.4W',
+                    21: 'Android 5.0', 22: 'Android 5.1', 23: 'Android 6.0', 24: 'Android 7.0',
+                    25: 'Android 7.1', 26: 'Android 8.0', 27: 'Android 8.1', 28: 'Android 9.0',
+                    29: 'Android 10', 30: 'Android 11', 31: 'Android 12', 32: 'Android 12L',
+                    33: 'Android 13', 34: 'Android 14', 35: 'Android 15', 36: 'Android 16'
+                };
+                const winBuildMap = {
+                    '10.0.19041': 'Windows 10 (2004 / 20H1)',
+                    '10.0.19042': 'Windows 10 (2004 / 20H1)',
+                    '10.0.19043': 'Windows 10 (21H1)',
+                    '10.0.19044': 'Windows 10 (21H2)',
+                    '10.0.19045': 'Windows 10 (22H2)',
+                    '10.0.22000': 'Windows 11 (21H2)',
+                    '10.0.22621': 'Windows 11 (22H2)',
+                    '10.0.22631': 'Windows 11 (23H2)',
+                    '10.0.26100': 'Windows 11 (24H2)'
+                };
+
+                const parentCat = "<%= parentFile.category %>";
+                if (parentCat === 'android' || /\.(apk|xapk|apks|apkm|aab|abb)$/i.test(filename)) {
+                    const apiMatch = base.match(/(?:[-_]minapi|[-_]api|[-_]sdk|[-_]nodpi[-_]sdk)(\d{1,2})(?:[^0-9]|$)/i);
+                    if (apiMatch && apiMatch[1] && apiMap[parseInt(apiMatch[1], 10)]) {
+                        detectedOs = apiMap[parseInt(apiMatch[1], 10)];
+                    } else {
+                        const rangeMatch = base.match(/android[-_]?(\d+)[-_](\d+)/i);
+                        if (rangeMatch) detectedOs = `Android ${rangeMatch[1]} - ${rangeMatch[2]}`;
+                        else {
+                            const plusMatch = base.match(/(?:android|minos)[-_]?(\d+(?:\.\d+)?)\+/i);
+                            if (plusMatch) detectedOs = `Android ${plusMatch[1]}+`;
+                            else {
+                                const expMatch = base.match(/(?:android|minos)[-_]?(\d+(?:\.\d+)?)/i);
+                                if (expMatch) detectedOs = `Android ${expMatch[1]}`;
+                            }
+                        }
+                    }
+                } else if (parentCat === 'ios-jailed' || parentCat === 'ios-jailbroken' || /\.(ipa|tipa|app|deb)$/i.test(filename)) {
+                    const iosRange = base.match(/ios[-_]?(\d+(?:\.[0-9x]+)?)[-_](\d+(?:\.[0-9x]+)?)/i);
+                    if (iosRange) detectedOs = `iOS ${iosRange[1]} - ${iosRange[2]}`;
+                    else {
+                        const iosPlus = base.match(/ios[-_]?(\d+(?:\.[0-9x]+)?)\+/i);
+                        if (iosPlus) detectedOs = `iOS ${iosPlus[1]}+`;
+                        else {
+                            const minIos = base.match(/min[-_]?ios[-_]?(\d+(?:\.[0-9x]+)?)/i);
+                            if (minIos) detectedOs = `iOS ${minIos[1]}+`;
+                            else {
+                                const iosVer = base.match(/ios[-_]?(\d+(?:\.[0-9x]+)?)/i);
+                                if (iosVer) detectedOs = `iOS ${iosVer[1]}`;
+                            }
+                        }
+                    }
+                } else if (parentCat === 'windows' || /\.(exe|msi|msix|appx|iso|rar|7z)$/i.test(filename)) {
+                    const buildMatch = base.match(/(?:^|[^0-9])(10\.0\.\d{5})(?:[^0-9]|$)/);
+                    if (buildMatch && buildMatch[1]) {
+                        detectedOs = winBuildMap[buildMatch[1]] || `Windows 10/11 (Build ${buildMatch[1]})`;
+                    } else {
+                        const winRange = base.match(/win(?:dows)?[-_]?([0-9]+(?:\.[0-9]+)?)[-_]win(?:dows)?[-_]?([0-9]+(?:\.[0-9]+)?)/i);
+                        if (winRange) detectedOs = `Windows ${winRange[1]} - ${winRange[2]}`;
+                        else {
+                            const winVer = base.match(/(?:^|[^a-z0-9])win(?:dows)?[-_]?(11|10|8\.1|8|7|xp|vista)(?:[^a-z0-9]|$)/i);
+                            if (winVer) detectedOs = `Windows ${winVer[1]}`;
+                        }
+                    }
+                } else if (parentCat === 'wordpress' || /\.zip$/i.test(filename)) {
+                    const phpMatch = base.match(/php[-_]?(\d+(?:\.\d+)?)/i);
+                    const wpMatch = base.match(/wp[-_]?(\d+(?:\.\d+)?)/i);
+                    if (phpMatch && wpMatch) detectedOs = `PHP ${phpMatch[1]}+, WP ${wpMatch[1]}+`;
+                    else if (wpMatch) detectedOs = `WordPress ${wpMatch[1]}+`;
+                    else if (phpMatch) detectedOs = `PHP ${phpMatch[1]}+`;
+                }
+
+                if (detectedOs) {
+                    minOsInput.value = detectedOs;
+                }
+            }
+        }
+
         if (modFileInput) {
             modFileInput.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {
@@ -947,7 +1102,14 @@
                     fileNameDisplay.textContent = `Ready: ${file.name} (${sizeInMB} MB)`;
                     dropZone.style.borderColor = 'var(--gold)';
                     dropZone.style.backgroundColor = 'rgba(255, 215, 0, 0.05)';
+                    autoDetectFromFilename(file.name);
                 }
+            });
+        }
+
+        if (origNameInput) {
+            origNameInput.addEventListener('input', function() {
+                autoDetectFromFilename(this.value.trim());
             });
         }
 

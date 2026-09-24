@@ -60,9 +60,22 @@ const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthent
 const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
 const { normalizeSingleValue } = require('./utils/formHelpers');
 const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
+const { analyzeFileDetails } = require('./utils/platformDetector');
 
 // Custom Utilities & Config
-const { sendVerificationEmail, sendPasswordResetEmail, sendDeletionOtpEmail, send2faEmail, sendLoginAlertEmail, sendFailedAttemptEmail, processNewsletterCampaign} = require('./utils/mailer');
+const { 
+    sendVerificationEmail, 
+    sendPasswordResetEmail, 
+    sendDeletionOtpEmail, 
+    send2faEmail, 
+    sendLoginAlertEmail, 
+    sendFailedAttemptEmail, 
+    processNewsletterCampaign,
+    sendTicketConfirmationEmail,
+    sendDmcaReportConfirmationEmail,
+    sendSubscriptionStatusEmail
+} = require('./utils/mailer');
+const { getUserUploadQuota, validateUploadFileSize, TIER_CONFIGS } = require('./utils/uploadQuota');
 
 // AWS SDK v3 Imports (Backblaze B2)
 // Add DeleteObjectCommand to this list
@@ -90,6 +103,7 @@ const StaticPage = require('./models/staticPage');
 const DraftSnapshot = require('./models/draftSnapshot');
 const Donation = require('./models/donation');
 const MembershipOrder = require('./models/membershipOrder');
+const Coupon = require('./models/coupon');
 const DevtoolLog = require('./models/devtoolLog');
 
 // Cashfree Payments SDK Initialization (Sandbox / Test Environment)
@@ -3482,6 +3496,7 @@ app.get('/search', async (req, res, next) => {
         const rawQuery = (req.query.q || '').trim();
         if (!rawQuery) return res.redirect('/');
         
+        const activeTab = req.query.tab || 'mods'; // 'mods' | 'users' | 'community'
         const platform = req.query.platform || 'all';
         const subCategory = req.query.subCategory || 'all'; 
         const sort = req.query.sort || 'newest';
@@ -3508,6 +3523,7 @@ app.get('/search', async (req, res, next) => {
             };
         });
 
+        // 1. MODS & PLATFORM QUERY
         let searchQuery = {
             isLatestVersion: true,
             status: 'live',
@@ -3521,17 +3537,14 @@ app.get('/search', async (req, res, next) => {
             ]
         };
 
-        // 1. Filter by Platform
         if (platform && platform !== 'all') {
             searchQuery.category = platform;
         }
 
-        // 2. Filter by Sub-Category
         if (subCategory && subCategory !== 'all') {
             searchQuery.platforms = { $in: [subCategory] };
         }
 
-        // 3. Sorting Logic
         let sortQuery = {};
         switch (sort) {
             case 'downloads': sortQuery = { downloads: -1 }; break;
@@ -3559,7 +3572,7 @@ app.get('/search', async (req, res, next) => {
             return { ...file, iconUrl: signedIconUrl };
         }));
 
-        // Search for Users matching query tokens
+        // 2. USERS & DEVELOPERS QUERY
         const userTokenConditions = tokens.map(t => {
             const tr = new RegExp(escapeRegex(t), 'i');
             return {
@@ -3572,25 +3585,32 @@ app.get('/search', async (req, res, next) => {
             };
         });
 
-        const userResultsRaw = await User.find({
-            isBanned: { $ne: true },
-            $or: [
-                { username: { $regex: queryRegex } },
-                { bio: { $regex: queryRegex } },
-                { role: { $regex: queryRegex } },
-                { cardId: { $regex: queryRegex } },
-                ...(tokens.length > 1 ? [{ $and: userTokenConditions }] : [])
-            ]
-        })
-        .select('username role profileImageKey followers following lastSeen bio cardId')
-        .limit(24);
+        const [userResultsRaw, developerMods] = await Promise.all([
+            User.find({
+                isBanned: { $ne: true },
+                $or: [
+                    { username: { $regex: queryRegex } },
+                    { bio: { $regex: queryRegex } },
+                    { role: { $regex: queryRegex } },
+                    { cardId: { $regex: queryRegex } },
+                    ...(tokens.length > 1 ? [{ $and: userTokenConditions }] : [])
+                ]
+            })
+            .select('username role profileImageKey followers following lastSeen bio cardId isVerified')
+            .limit(24)
+            .lean(),
+            File.find({
+                developer: { $regex: queryRegex, $ne: 'N/A' },
+                status: 'live'
+            }).distinct('developer')
+        ]);
 
         const usersWithAvatars = await Promise.all(userResultsRaw.map(async (u) => {
             let avatarUrl = '/images/default-avatar.png';
             if (u.profileImageKey) {
                 try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) {}
             }
-            return { ...u.toObject(), signedAvatarUrl: avatarUrl };
+            return { ...u, signedAvatarUrl: avatarUrl };
         }));
 
         const processedUsers = usersWithAvatars.map(u => {
@@ -3601,11 +3621,48 @@ app.get('/search', async (req, res, next) => {
             return { ...u, isFollowing };
         });
 
+        // 3. COMMUNITY FORUMS & DOCS QUERY
+        const [forumIssues, docPages] = await Promise.all([
+            Issue.find({
+                $or: [
+                    { title: { $regex: queryRegex } },
+                    { description: { $regex: queryRegex } },
+                    { category: { $regex: queryRegex } }
+                ]
+            })
+            .populate('author', 'username profileImageKey role')
+            .sort({ views: -1, createdAt: -1 })
+            .limit(16)
+            .lean(),
+            DocPage.find({
+                $or: [
+                    { title: { $regex: queryRegex } },
+                    { content: { $regex: queryRegex } }
+                ]
+            })
+            .populate('category', 'name slug')
+            .limit(16)
+            .lean()
+        ]);
+
+        const counts = {
+            mods: totalResults,
+            users: processedUsers.length + developerMods.length,
+            community: (forumIssues.length + docPages.length)
+        };
+
         // --- RENDER THE PAGE ---
         res.render('pages/search', {
             results: resultsWithUrls, 
-            userResults: processedUsers, 
-            query: rawQuery, // <--- ✅ FIX: We pass rawQuery back to the EJS template so it shows perfectly normal spaces!
+            userResults: processedUsers,
+            developerResults: developerMods || [],
+            communityResults: {
+                issues: forumIssues || [],
+                docs: docPages || []
+            },
+            counts,
+            activeTab,
+            query: rawQuery,
             totalResults: totalResults,
             totalPages: totalPages,
             currentPage: page,
@@ -4606,6 +4663,23 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId, versionBaseName);
         }
 
+        let newRequiresRoot = previousVersion.requiresRoot || false;
+        let newRequiresDevMode = previousVersion.requiresDevMode || false;
+        let newIsTweakConvertible = previousVersion.isTweakConvertible || false;
+        let newRequiresDependencies = previousVersion.requiresDependencies || false;
+        let newRequiresDisableAntivirus = previousVersion.requiresDisableAntivirus || false;
+
+        if (previousVersion.category === 'android') {
+            if (formData.requiresRoot !== undefined) newRequiresRoot = (formData.requiresRoot === 'true' || formData.requiresRoot === true || formData.requiresRoot === 'on');
+            if (formData.requiresDevMode !== undefined) newRequiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        } else if (previousVersion.category === 'ios-jailbroken') {
+            if (formData.isTweakConvertible !== undefined) newIsTweakConvertible = (formData.isTweakConvertible === 'true' || formData.isTweakConvertible === true || formData.isTweakConvertible === 'on');
+            if (formData.requiresDependencies !== undefined) newRequiresDependencies = (formData.requiresDependencies === 'true' || formData.requiresDependencies === true || formData.requiresDependencies === 'on');
+        } else if (previousVersion.category === 'windows') {
+            if (formData.requiresDisableAntivirus !== undefined) newRequiresDisableAntivirus = (formData.requiresDisableAntivirus === 'true' || formData.requiresDisableAntivirus === true || formData.requiresDisableAntivirus === 'on');
+            if (formData.requiresDevMode !== undefined) newRequiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        }
+
         const newVersion = new File({
             name: previousVersion.name,
             developer: previousVersion.developer,
@@ -4617,8 +4691,13 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             category: previousVersion.category,
             platforms: previousVersion.platforms,
             tags: previousVersion.tags,
-            architectures: previousVersion.architectures,
+            architectures: (formData.architectures !== undefined ? (Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures]) : previousVersion.architectures),
             minOsVersion: formData.minOsVersion || previousVersion.minOsVersion,
+            requiresRoot: newRequiresRoot,
+            requiresDevMode: newRequiresDevMode,
+            isTweakConvertible: newIsTweakConvertible,
+            requiresDependencies: newRequiresDependencies,
+            requiresDisableAntivirus: newRequiresDisableAntivirus,
             ageRating: formData.ageRating || previousVersion.ageRating,
             importantNote: formData.importantNote || previousVersion.importantNote,
             uploader: req.user.username,
@@ -5803,9 +5882,12 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             return file;
         }));
 
+        const quota = await getUserUploadQuota(req.user);
+
         res.render('pages/my-uploads', { 
             uploads: uploadsWithUrls,
-            dmcaUploads: dmcaUploads || []
+            dmcaUploads: dmcaUploads || [],
+            quota
         }); 
     } catch (error) { 
         console.error("My Uploads Error:", error);
@@ -7209,12 +7291,27 @@ app.get('/rewards', ensureAuthenticated, async (req, res) => {
 // 7. FILE UPLOAD & MANAGEMENT
 // ===================================
 
-app.get('/upload', ensureAuthenticated, (req, res) => {
-    res.render('pages/upload');
-});
-// --- INITIAL UPLOAD ROUTE (SERVER-SIDE WITH LIMITS) ---
-app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res) => {
+app.get('/upload', ensureAuthenticated, async (req, res) => {
     try {
+        const quota = await getUserUploadQuota(req.user);
+        res.render('pages/upload', { quota });
+    } catch (err) {
+        console.error("Error retrieving upload quota:", err);
+        res.render('pages/upload', { quota: null });
+    }
+});
+
+// --- INITIAL UPLOAD ROUTE (SERVER-SIDE WITH QUOTA & LIMITS) ---
+app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async (req, res, next) => {
+    try {
+        // ======== UPLOAD QUOTA SLOTS CHECK ========
+        const quota = await getUserUploadQuota(req.user);
+        if (!quota.canUpload) {
+            if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            const resetMsg = quota.earliestReset ? ` Next slot resets on ${new Date(quota.earliestReset).toLocaleDateString()}.` : '';
+            return res.status(429).redirect(`/upload?error=${encodeURIComponent(`You have reached your limit of ${quota.totalSlots} upload slots (${quota.usedSlots} pending review). Slots reset rolling weekly or immediately when your submitted mods are approved live.${resetMsg} Upgrade your tier for more slots.`)}`);
+        }
+
         // ======== DAILY UPLOAD LIMIT CHECK ========
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const recentUploadCount = await File.countDocuments({
@@ -7238,14 +7335,10 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             return res.status(429).redirect('/upload?error=Daily upload limit reached. Please check your notifications for details.');
         }
 
-    // ========================================================
-    // ✅ FIX: YOU MUST ADD THIS CLOSING BLOCK HERE!
-    // This closes the 'try' block that started at the top of the route.
     } catch (limitError) {
         console.error("Upload limit check failed:", limitError);
-        return next(error);
+        return next(limitError);
     }
-    // ========================================================
 
 
     // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
@@ -7261,11 +7354,8 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 fileSize: 0, 
                 name: originalFilename, 
                 version: 'Draft',
-                
-                // ✅ FIX: Set category to empty string instead of 'android'
                 category: 'n/a',         
                 platforms: [],
-                
                 status: 'processing' 
             });
             await newFile.save();
@@ -7274,7 +7364,6 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             console.log(`Starting VT URL scan for Distributor link: ${externalUrl}`);
             (async () => {
                 try {
-                    // API v3 requires the URL to be form-urlencoded
                     const urlParams = new URLSearchParams();
                     urlParams.append('url', externalUrl);
 
@@ -7310,19 +7399,10 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     }
     
     const fileSize = req.file.size;
-    const isPremium = req.user.membership === 'premium';
-    const isAdminOrDist = req.user.role === 'admin' || req.user.role === 'owner' || req.user.role === 'distributor';
-    
-    const limit300MB = 314572800;
-    const limit1GB = 1073741824;
-
-    if (!isAdminOrDist) {
-        if (!isPremium && fileSize > limit300MB) {
-            return res.status(413).redirect('/upload?error=File exceeds your 300MB limit. Please upgrade to Premium.');
-        }
-        if (isPremium && fileSize > limit1GB) {
-             return res.status(413).redirect('/upload?error=File exceeds the 1GB Premium limit.');
-        }
+    const sizeCheck = validateUploadFileSize(req.user, fileSize);
+    if (!sizeCheck.valid) {
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        return res.status(413).redirect(`/upload?error=${encodeURIComponent(sizeCheck.error)}`);
     }
 
     try {
@@ -7383,17 +7463,9 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         if (pendingFile.uploader !== req.user.username) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
 
         const filename = pendingFile.originalFilename || "";
-        const savedName = pendingFile.name && pendingFile.name !== 'Pending Upload' ? pendingFile.name : '';
-        const savedVersion = pendingFile.version && pendingFile.version !== 'Draft' ? pendingFile.version : '';
-        const licenses = await License.find().sort({ name: 1 }).lean();
-        
-        const ext = filename.split('.').pop().toLowerCase();
-        let defaultPlatform = "";
-        if (ext === 'apk' || ext === 'xapk' || ext === 'apks') defaultPlatform = 'android';
-        else if (ext === 'exe' || ext === 'msi') defaultPlatform = 'windows';
-        else if (ext === 'ipa') defaultPlatform = 'ios-jailed';
-        else if (ext === 'deb') defaultPlatform = 'ios-jailbroken';
-        else if (ext === 'zip') defaultPlatform = 'wordpress'; 
+        const analysis = analyzeFileDetails(filename);
+
+        let defaultPlatform = analysis.platform || "";
         // ======== NEW: AUTO-DETECT DROPBOX LINK ========
         if (pendingFile.externalDownloadUrl && pendingFile.externalDownloadUrl.toLowerCase().includes('dropbox.com')) {
             defaultPlatform = 'ios-jailed';
@@ -7410,15 +7482,55 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             cleanName = cleanName.replace(/[-_]+/g, " ").trim();
         }
 
+        // Auto-extract tweak details if it's a debian tweak package
+        let defaultDeveloper = pendingFile.developer && pendingFile.developer !== 'N/A' ? pendingFile.developer : '';
+        let defaultIosPackageId = pendingFile.iosPackageId || '';
+
+        if (analysis.tweakInfo) {
+            if (!defaultDeveloper && analysis.tweakInfo.developer) {
+                defaultDeveloper = analysis.tweakInfo.developer;
+            }
+            if (!defaultIosPackageId && analysis.tweakInfo.packageId) {
+                defaultIosPackageId = analysis.tweakInfo.packageId;
+            }
+            if (analysis.tweakInfo.version && (!pendingFile.version || pendingFile.version === 'Draft')) {
+                defaultVersion = analysis.tweakInfo.version;
+            }
+            if (analysis.tweakInfo.tweakName) {
+                cleanName = analysis.tweakInfo.tweakName;
+            }
+        }
+
+        const savedName = (pendingFile.name && pendingFile.name !== 'Pending Upload' && pendingFile.name !== pendingFile.originalFilename) 
+            ? pendingFile.name 
+            : cleanName;
+        const savedVersion = (pendingFile.version && pendingFile.version !== 'Draft') 
+            ? pendingFile.version 
+            : defaultVersion;
+        const savedPlatform = (pendingFile.category && pendingFile.category !== 'n/a')
+            ? pendingFile.category
+            : defaultPlatform;
+        const savedMinOs = pendingFile.minOsVersion || analysis.minOsVersion || '';
+        const savedArchitectures = (pendingFile.architectures && pendingFile.architectures.length > 0)
+            ? pendingFile.architectures
+            : analysis.architectures;
+
+        const licenses = await License.find().sort({ name: 1 }).lean();
+
         // Draft media lives in private storage too, so sign it before rendering the
         // form.  Previously only the edit route did this, which made media appear
         // missing until the mod was live.
         const iconUrl = await getSmartImageUrl(pendingFile.iconKey);
         const screenshotUrls = await Promise.all((pendingFile.screenshotKeys || []).map(key => getSmartImageUrl(key)));
-        const renderedFile = { ...pendingFile.toObject(), iconUrl, screenshotUrls };
-        const savedPlatform = pendingFile.category && pendingFile.category !== 'n/a'
-            ? pendingFile.category
-            : defaultPlatform;
+        const renderedFile = { 
+            ...pendingFile.toObject(), 
+            iconUrl, 
+            screenshotUrls,
+            minOsVersion: savedMinOs,
+            architectures: savedArchitectures,
+            developer: defaultDeveloper,
+            iosPackageId: defaultIosPackageId
+        };
 
         const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
 
@@ -7427,8 +7539,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             fileKey: pendingFile.fileKey,
             filename: pendingFile.originalFilename,
             filesize: pendingFile.fileSize,
-            defaultName: savedName || cleanName,
-            defaultVersion: savedVersion || defaultVersion,
+            defaultName: savedName,
+            defaultVersion: savedVersion,
             defaultPlatform: savedPlatform,
             file: renderedFile,
             licenses,
@@ -7817,6 +7929,19 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (formData.architectures !== undefined) {
             file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
         }
+
+        const activePlatform = formData.modPlatform || file.category;
+        if (activePlatform === 'android') {
+            file.requiresRoot = (formData.requiresRoot === 'true' || formData.requiresRoot === true || formData.requiresRoot === 'on');
+            file.requiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        } else if (activePlatform === 'ios-jailbroken') {
+            file.isTweakConvertible = (formData.isTweakConvertible === 'true' || formData.isTweakConvertible === true || formData.isTweakConvertible === 'on');
+            file.requiresDependencies = (formData.requiresDependencies === 'true' || formData.requiresDependencies === true || formData.requiresDependencies === 'on');
+        } else if (activePlatform === 'windows') {
+            file.requiresDisableAntivirus = (formData.requiresDisableAntivirus === 'true' || formData.requiresDisableAntivirus === true || formData.requiresDisableAntivirus === 'on');
+            file.requiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        }
+
         if (formData.directDownloadUrl !== undefined) {
             file.directDownloadUrl = directDownloadUrlValue;
         }
@@ -8174,6 +8299,24 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanImportantNote = safeClean(formData.importantNote);
         const finalStatus = actionType === 'draft' ? 'draft' : 'pending';
 
+        let requiresRoot = false;
+        let requiresDevMode = false;
+        let isTweakConvertible = false;
+        let requiresDependencies = false;
+        let requiresDisableAntivirus = false;
+
+        const effectivePlatform = formData.modPlatform || fileToUpdate.category;
+        if (effectivePlatform === 'android') {
+            requiresRoot = (formData.requiresRoot === 'true' || formData.requiresRoot === true || formData.requiresRoot === 'on');
+            requiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        } else if (effectivePlatform === 'ios-jailbroken') {
+            isTweakConvertible = (formData.isTweakConvertible === 'true' || formData.isTweakConvertible === true || formData.isTweakConvertible === 'on');
+            requiresDependencies = (formData.requiresDependencies === 'true' || formData.requiresDependencies === true || formData.requiresDependencies === 'on');
+        } else if (effectivePlatform === 'windows') {
+            requiresDisableAntivirus = (formData.requiresDisableAntivirus === 'true' || formData.requiresDisableAntivirus === true || formData.requiresDisableAntivirus === 'on');
+            requiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
+        }
+
         // --- SAVE TO DATABASE (Always save fields so user inputs are never lost!) ---
         const updateData = {
             name: cleanName,
@@ -8198,6 +8341,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             architectures: archData,
             minOsVersion: formData.minOsVersion || '',
             iosPackageId: normalizeSingleValue(formData.iosPackageId) || '',
+            requiresRoot,
+            requiresDevMode,
+            isTweakConvertible,
+            requiresDependencies,
+            requiresDisableAntivirus,
             status: finalStatus
         };
 
@@ -8987,6 +9135,17 @@ app.get('/api/search/suggestions', async (req, res) => {
             c.category.toLowerCase().includes(rawQuery.toLowerCase())
         );
 
+        // 4. Match Community Forums & Docs
+        const [matchedDocs, matchedIssues] = await Promise.all([
+            DocPage.find({ title: { $regex: queryRegex } }).select('title slug').limit(3).lean(),
+            Issue.find({ title: { $regex: queryRegex } }).select('title _id category').limit(3).lean()
+        ]);
+
+        const communitySuggestions = [
+            ...matchedDocs.map(d => ({ title: d.title, type: 'Doc', url: `/docs/${d.slug}`, icon: 'fas fa-book' })),
+            ...matchedIssues.map(i => ({ title: i.title, type: 'Forum', url: `/community/issue/${i._id}`, icon: 'fas fa-comments' }))
+        ];
+
         const suggestionNames = [...new Set(modsWithIcons.map(m => m.name))];
 
         res.json({
@@ -8994,6 +9153,7 @@ app.get('/api/search/suggestions', async (req, res) => {
             query: rawQuery,
             mods: modsWithIcons,
             users: usersWithAvatars,
+            community: communitySuggestions,
             categories: matchedCategories,
             names: suggestionNames
         });
@@ -10474,43 +10634,153 @@ app.get('/membership', (req, res) => {
 // ============================================================================
 
 const MEMBERSHIP_PLANS = {
-    monthly: {
+    // --- GPL LITE PLANS ---
+    lite_monthly: {
+        tier: 'lite',
+        INR: 49,
+        originalINR: 49,
+        saveINR: 0,
+        savePercent: 0,
+        USD: 1.00,
+        EUR: 0.90,
+        GBP: 0.80,
+        name: 'GPL Lite (Monthly)',
+        planId: null,
+        durationDays: 30
+    },
+    lite_6months: {
+        tier: 'lite',
+        INR: 199,
+        originalINR: 294,
+        saveINR: 95,
+        savePercent: 32,
+        USD: 4.00,
+        EUR: 3.60,
+        GBP: 3.20,
+        name: 'GPL Lite 6 Months',
+        planId: null,
+        durationDays: 180
+    },
+    lite_yearly: {
+        tier: 'lite',
+        INR: 449,
+        originalINR: 588,
+        saveINR: 139,
+        savePercent: 24,
+        USD: 9.00,
+        EUR: 8.00,
+        GBP: 7.20,
+        name: 'GPL Lite Yearly',
+        planId: null,
+        durationDays: 365
+    },
+
+    // --- GPL PLUS PLANS ---
+    plus_monthly: {
+        tier: 'plus',
         INR: 99,
+        originalINR: 99,
+        saveINR: 0,
+        savePercent: 0,
         USD: 2.00,
         EUR: 1.80,
         GBP: 1.50,
-        name: 'GPLMods Plus (Monthly)',
+        name: 'GPL Plus (Monthly)',
         planId: 'gpl-mods-plus',
         durationDays: 30
     },
-    '6months': {
+    plus_6months: {
+        tier: 'plus',
         INR: 499,
+        originalINR: 594,
+        saveINR: 95,
+        savePercent: 16,
         USD: 10.00,
         EUR: 9.00,
         GBP: 8.00,
-        name: 'GPLMods Plus 6 Months',
+        name: 'GPL Plus 6 Months',
         planId: 'gpl-mods-plus-6-month',
         durationDays: 180
     },
-    yearly: {
+    plus_yearly: {
+        tier: 'plus',
         INR: 899,
+        originalINR: 1188,
+        saveINR: 289,
+        savePercent: 24,
         USD: 18.00,
         EUR: 16.00,
         GBP: 14.00,
-        name: 'GPLMods Plus Yearly',
+        name: 'GPL Plus Yearly',
         planId: 'gpl-mods-plus-yearly',
         durationDays: 365
     },
-    lifetime: {
+    plus_lifetime: {
+        tier: 'plus',
         INR: 2499,
+        originalINR: 2499,
+        saveINR: 0,
+        savePercent: 0,
         USD: 35.00,
         EUR: 32.00,
         GBP: 28.00,
-        name: 'GPLMods Plus Lifetime',
+        name: 'GPL Plus Lifetime',
         planId: 'gpl-mods-plus-lifetime',
         durationDays: 36500
     }
 };
+
+// Aliases for backwards compatibility with any existing queries, webhooks, or references
+MEMBERSHIP_PLANS.monthly = MEMBERSHIP_PLANS.plus_monthly;
+MEMBERSHIP_PLANS['6months'] = MEMBERSHIP_PLANS.plus_6months;
+MEMBERSHIP_PLANS.yearly = MEMBERSHIP_PLANS.plus_yearly;
+MEMBERSHIP_PLANS.lifetime = MEMBERSHIP_PLANS.plus_lifetime;
+
+/**
+ * Coupon Code Validation API
+ * POST /api/coupon/validate
+ */
+app.post('/api/coupon/validate', ensureAuthenticated, async (req, res) => {
+    try {
+        const { code, planKey = 'plus_monthly', currency = 'INR' } = req.body;
+        if (!code || !code.trim()) {
+            return res.status(400).json({ valid: false, message: 'Please enter a coupon code.' });
+        }
+
+        const cleanCode = code.trim().toUpperCase();
+        const coupon = await Coupon.findOne({ code: cleanCode, isActive: true });
+        if (!coupon) {
+            return res.status(404).json({ valid: false, message: 'Invalid or expired coupon code.' });
+        }
+
+        const planConfig = MEMBERSHIP_PLANS[planKey] || MEMBERSHIP_PLANS['plus_monthly'] || MEMBERSHIP_PLANS['monthly'];
+        const cur = String(currency).toUpperCase();
+        const originalAmount = planConfig[cur] || planConfig['INR'];
+
+        const validity = coupon.isValid(planKey, originalAmount);
+        if (!validity.valid) {
+            return res.status(400).json({ valid: false, message: validity.reason });
+        }
+
+        const discountAmount = coupon.calculateDiscount(originalAmount);
+        const finalAmount = Math.max(0, originalAmount - discountAmount);
+
+        return res.json({
+            valid: true,
+            code: coupon.code,
+            discountType: coupon.discountType,
+            discountValue: coupon.discountValue,
+            originalAmount,
+            discountAmount,
+            finalAmount,
+            currency: cur,
+            description: coupon.description || (coupon.discountType === 'percent' ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`)
+        });
+    } catch (error) {
+        console.error('Coupon validation error:', error);
+        return res.status(500).json({ valid: false, message: 'Error validating coupon code.' });
+    }
+});
 
 /**
  * 1. Create Donation Order (Payment Gateway)
@@ -10610,10 +10880,10 @@ app.post('/create-cashfree-order', async (req, res) => {
 app.post('/create-membership-order', async (req, res) => {
     try {
         if (!req.user) {
-            return res.status(401).json({ error: 'Please log in to purchase Premium Membership.' });
+            return res.status(401).json({ error: 'Please log in to purchase Membership.' });
         }
 
-        const { duration = 'monthly', currency = 'INR', phone } = req.body;
+        const { duration = 'plus_monthly', currency = 'INR', phone, couponCode } = req.body;
         const cur = String(currency).toUpperCase();
         const planConfig = MEMBERSHIP_PLANS[duration];
 
@@ -10621,12 +10891,31 @@ app.post('/create-membership-order', async (req, res) => {
             return res.status(400).json({ error: 'Invalid membership plan or currency.' });
         }
 
-        const amount = planConfig[cur];
+        let amount = planConfig[cur];
+        let originalAmount = amount;
+        let discountAmount = 0;
+        let validatedCoupon = null;
+
+        // Apply coupon code if provided
+        if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+            const cleanCode = couponCode.trim().toUpperCase();
+            const coupon = await Coupon.findOne({ code: cleanCode, isActive: true });
+            if (coupon) {
+                const validity = coupon.isValid(duration, originalAmount);
+                if (validity.valid) {
+                    discountAmount = coupon.calculateDiscount(originalAmount);
+                    amount = Math.max(1, originalAmount - discountAmount); // minimum 1 currency unit for PG checkout
+                    validatedCoupon = coupon;
+                }
+            }
+        }
+
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
         const customerPhone = phone || '9999999999';
+        const targetTier = planConfig.tier || 'plus';
 
-        // For INR currency, utilize Cashfree Subscriptions with registered Plan IDs
-        if (cur === 'INR' && planConfig.planId) {
+        // For INR currency, utilize Cashfree Subscriptions with registered Plan IDs if no coupon used (Subscriptions charge fixed recurring amt)
+        if (cur === 'INR' && planConfig.planId && discountAmount === 0) {
             const subId = `sub_${req.user._id}_${Date.now().toString().slice(-8)}`;
             const subRequest = {
                 subscription_id: subId,
@@ -10655,8 +10944,12 @@ app.post('/create-membership-order', async (req, res) => {
                     isSubscription: true,
                     subscriptionSessionId: subData.subscription_session_id,
                     amount: amount,
+                    originalAmount: originalAmount,
+                    discountAmount: discountAmount,
+                    couponCode: validatedCoupon ? validatedCoupon.code : null,
                     currency: cur,
                     duration: duration,
+                    tier: targetTier,
                     status: 'pending'
                 }).save();
 
@@ -10670,7 +10963,7 @@ app.post('/create-membership-order', async (req, res) => {
             }
         }
 
-        // Standard Payment Gateway Order (for one-time or international currencies)
+        // Standard Payment Gateway Order (for one-time, discounted, or international currencies)
         const orderId = `mem_${req.user._id}_${Date.now().toString().slice(-8)}`;
         const orderRequest = {
             order_id: orderId,
@@ -10686,7 +10979,7 @@ app.post('/create-membership-order', async (req, res) => {
                 return_url: `${baseUrl}/payment/verify-membership?order_id={order_id}`,
                 notify_url: `${baseUrl}/webhook/cashfree/pg`
             },
-            order_note: `GPL Mods+ ${planConfig.name}`
+            order_note: `${planConfig.name}${validatedCoupon ? ' (Discounted)' : ''}`
         };
 
         const response = await cashfree.PGCreateOrder(orderRequest);
@@ -10698,10 +10991,18 @@ app.post('/create-membership-order', async (req, res) => {
             isSubscription: false,
             paymentSessionId: response.data.payment_session_id,
             amount: amount,
+            originalAmount: originalAmount,
+            discountAmount: discountAmount,
+            couponCode: validatedCoupon ? validatedCoupon.code : null,
             currency: cur,
             duration: duration,
+            tier: targetTier,
             status: 'pending'
         }).save();
+
+        if (validatedCoupon) {
+            await Coupon.findByIdAndUpdate(validatedCoupon._id, { $inc: { usedCount: 1 } });
+        }
 
         return res.json({
             payment_session_id: response.data.payment_session_id,
@@ -10768,7 +11069,7 @@ app.get('/payment/verify-membership', async (req, res) => {
             memOrder.status = 'paid';
             memOrder.cfPaymentId = String(orderData.cf_order_id || '');
 
-            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus', name: 'GPL Plus' };
             const now = new Date();
             const expiresAt = new Date();
             expiresAt.setDate(now.getDate() + durationConfig.durationDays);
@@ -10776,11 +11077,22 @@ app.get('/payment/verify-membership', async (req, res) => {
             memOrder.membershipExpiresAt = expiresAt;
             await memOrder.save();
 
-            await User.findByIdAndUpdate(memOrder.user, {
-                membership: 'premium',
+            const targetTier = memOrder.tier || durationConfig.tier || 'plus';
+            const updatedUser = await User.findByIdAndUpdate(memOrder.user, {
+                membership: targetTier === 'lite' ? 'lite' : 'plus',
                 membershipExpiresAt: expiresAt,
                 membershipPlan: memOrder.duration
-            });
+            }, { new: true });
+
+            if (updatedUser) {
+                sendSubscriptionStatusEmail(updatedUser, {
+                    tier: targetTier,
+                    planName: durationConfig.name,
+                    amount: memOrder.amount,
+                    currency: memOrder.currency,
+                    orderId: memOrder.orderId
+                }).catch(e => console.error('Subscription email error:', e));
+            }
         }
 
         if (isPaid) {
@@ -10820,7 +11132,7 @@ app.get('/payment/verify-subscription', async (req, res) => {
         const memOrder = await MembershipOrder.findOne({ subscriptionId: subId });
         if (memOrder && isApproved) {
             memOrder.status = 'paid';
-            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+            const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus', name: 'GPL Plus' };
             const now = new Date();
             const expiresAt = new Date();
             expiresAt.setDate(now.getDate() + durationConfig.durationDays);
@@ -10828,12 +11140,23 @@ app.get('/payment/verify-subscription', async (req, res) => {
             memOrder.membershipExpiresAt = expiresAt;
             await memOrder.save();
 
-            await User.findByIdAndUpdate(memOrder.user, {
-                membership: 'premium',
+            const targetTier = memOrder.tier || durationConfig.tier || 'plus';
+            const updatedUser = await User.findByIdAndUpdate(memOrder.user, {
+                membership: targetTier === 'lite' ? 'lite' : 'plus',
                 membershipExpiresAt: expiresAt,
                 membershipPlan: memOrder.duration,
                 subscriptionId: subId
-            });
+            }, { new: true });
+
+            if (updatedUser) {
+                sendSubscriptionStatusEmail(updatedUser, {
+                    tier: targetTier,
+                    planName: durationConfig.name,
+                    amount: memOrder.amount,
+                    currency: memOrder.currency,
+                    orderId: memOrder.orderId
+                }).catch(e => console.error('Subscription email error:', e));
+            }
         }
 
         if (isApproved) {
@@ -11013,7 +11336,7 @@ app.post('/webhook/cashfree/pg', (req, res) => {
                         memOrder.cfPaymentId = String(data.payment?.cf_payment_id || verified.data.cf_order_id);
                         memOrder.paymentMethod = data.payment?.payment_group || 'cashfree';
                         
-                        const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+                        const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus', name: 'GPL Plus' };
                         const now = new Date();
                         const expiresAt = new Date();
                         expiresAt.setDate(now.getDate() + durationConfig.durationDays);
@@ -11021,12 +11344,23 @@ app.post('/webhook/cashfree/pg', (req, res) => {
                         memOrder.membershipExpiresAt = expiresAt;
                         await memOrder.save();
 
-                        await User.findByIdAndUpdate(memOrder.user, {
-                            membership: 'premium',
+                        const targetTier = memOrder.tier || durationConfig.tier || 'plus';
+                        const updatedUser = await User.findByIdAndUpdate(memOrder.user, {
+                            membership: targetTier === 'lite' ? 'lite' : 'plus',
                             membershipExpiresAt: expiresAt,
                             membershipPlan: memOrder.duration
-                        });
-                        console.log(`[Cashfree PG Webhook] User ${memOrder.user} upgraded to premium via ${orderId}.`);
+                        }, { new: true });
+
+                        if (updatedUser) {
+                            sendSubscriptionStatusEmail(updatedUser, {
+                                tier: targetTier,
+                                planName: durationConfig.name,
+                                amount: memOrder.amount,
+                                currency: memOrder.currency,
+                                orderId: memOrder.orderId
+                            }).catch(e => console.error('Webhook subscription email error:', e));
+                        }
+                        console.log(`[Cashfree PG Webhook] User ${memOrder.user} activated ${targetTier} via ${orderId}.`);
                     }
                 }
             } else if (type === 'PAYMENT_FAILED_WEBHOOK') {
@@ -11086,7 +11420,7 @@ app.post('/webhook/cashfree/subscriptions', (req, res) => {
 
             if (type === 'SUBSCRIPTION_PAYMENT_SUCCESS' || type === 'SUBSCRIPTION_AUTH_STATUS') {
                 memOrder.status = 'paid';
-                const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30 };
+                const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus', name: 'GPL Plus' };
                 const now = new Date();
                 const expiresAt = new Date();
                 expiresAt.setDate(now.getDate() + durationConfig.durationDays);
@@ -11094,13 +11428,24 @@ app.post('/webhook/cashfree/subscriptions', (req, res) => {
                 memOrder.membershipExpiresAt = expiresAt;
                 await memOrder.save();
 
-                await User.findByIdAndUpdate(memOrder.user, {
-                    membership: 'premium',
+                const targetTier = memOrder.tier || durationConfig.tier || 'plus';
+                const updatedUser = await User.findByIdAndUpdate(memOrder.user, {
+                    membership: targetTier === 'lite' ? 'lite' : 'plus',
                     membershipExpiresAt: expiresAt,
                     membershipPlan: memOrder.duration,
                     subscriptionId: subId
-                });
-                console.log(`[Cashfree Subs Webhook] User ${memOrder.user} activated/renewed premium via ${subId}.`);
+                }, { new: true });
+
+                if (updatedUser) {
+                    sendSubscriptionStatusEmail(updatedUser, {
+                        tier: targetTier,
+                        planName: durationConfig.name,
+                        amount: memOrder.amount,
+                        currency: memOrder.currency,
+                        orderId: memOrder.orderId
+                    }).catch(e => console.error('Subs webhook email error:', e));
+                }
+                console.log(`[Cashfree Subs Webhook] User ${memOrder.user} activated/renewed ${targetTier} via ${subId}.`);
             } else if (type === 'SUBSCRIPTION_STATUS_CHANGED') {
                 const subStatus = data?.subscription?.subscription_status;
                 if (['CANCELLED', 'EXPIRED'].includes(subStatus)) {
@@ -11114,13 +11459,21 @@ app.post('/webhook/cashfree/subscriptions', (req, res) => {
         }
     });
 });
-// --- UPDATED: DOCUMENTATION SYSTEM ROUTE ---
-app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
+// --- UPDATED: DOCUMENTATION SYSTEM ROUTE WITH CATEGORY DIRECTORY SUPPORT ---
+app.get(['/docs', '/docs/:slug', '/docs/category/:categorySlug'], async (req, res, next) => {
     try {
         const requestedSlug = req.params.slug;
+        const requestedCategorySlug = req.params.categorySlug;
 
         const allCategories = await DocCategory.find().sort({ order: 1 }).lean();
         const allPages = await DocPage.find().sort({ order: 1 }).populate('category').lean();
+
+        // Compute reading times and snippets for each page
+        allPages.forEach(p => {
+            const wordCount = (p.content || '').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+            p.readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 180));
+            p.plainSummary = (p.content || '').replace(/<[^>]+>/g, ' ').slice(0, 140).trim() + '...';
+        });
 
         const sidebarStructure = allCategories.map(cat => {
             return {
@@ -11130,12 +11483,25 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
         });
 
         let currentPage = null;
+        let currentCategory = null;
+        let isCategoryView = false;
 
-        if (requestedSlug) {
-            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category').lean(); // Use lean() to allow editing the object
-            
+        if (requestedCategorySlug) {
+            isCategoryView = true;
+            currentCategory = allCategories.find(c => c.slug === requestedCategorySlug || slugify(c.name) === requestedCategorySlug);
+            if (!currentCategory) {
+                return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Category Not Found', errorMessage: 'The documentation category you requested does not exist.' });
+            }
+            currentCategory.pages = allPages.filter(p => p.category && p.category._id.toString() === currentCategory._id.toString());
+        } else if (requestedSlug) {
+            currentPage = await DocPage.findOne({ slug: requestedSlug }).populate('category').lean();
             if (!currentPage) {
-                return res.status(404).render('pages/404'); // Using your standard 404
+                // Check if the requested slug is actually a category
+                const matchedCategory = allCategories.find(c => c.slug === requestedSlug || slugify(c.name) === requestedSlug);
+                if (matchedCategory) {
+                    return res.redirect(`/docs/category/${matchedCategory.slug || slugify(matchedCategory.name)}`);
+                }
+                return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Article Not Found', errorMessage: 'The documentation article you requested does not exist.' });
             }
         } else {
             if (sidebarStructure.length > 0 && sidebarStructure[0].pages.length > 0) {
@@ -11144,22 +11510,237 @@ app.get(['/docs', '/docs/:slug'], async (req, res, next) => {
             }
         }
 
-        // ======== NEW: PROCESS THE FEATURED IMAGE ========
+        // Process featured image if single article is active
         if (currentPage && currentPage.featuredImageKey) {
-            // Assuming getSmartImageUrl is available in this file. 
-            // If this is in a separate router file, make sure to import the helper!
             currentPage.featuredImageUrl = await getSmartImageUrl(currentPage.featuredImageKey);
         }
-        // =================================================
 
         res.render('pages/docs', {
             sidebarStructure: sidebarStructure,
-            currentPage: currentPage
+            currentPage: currentPage,
+            currentCategory: currentCategory,
+            isCategoryView: isCategoryView
         });
 
     } catch (error) {
         console.error("Docs Engine Error:", error);
         return next(error);
+    }
+});
+
+// ============================================================================
+// INFRASTRUCTURE SPONSORSHIP & "BUY FOOD & COFFEE" SYSTEM
+// ============================================================================
+
+const SPONSORSHIP_CATALOG = [
+    {
+        category: 'email',
+        categoryTitle: 'SMTP & Email Delivery',
+        icon: 'fas fa-paper-plane',
+        color: '#FFD700',
+        items: [
+            { id: 'smtp-starter-monthly', title: 'SMTP Starter (1 Month)', priceINR: 1252.50, priceUSD: 15, period: 'Month', desc: '10,000 monthly transactional verification & alert emails via SMTP2GO' },
+            { id: 'smtp-starter-yearly', title: 'SMTP Starter (1 Year)', priceINR: 12525.00, priceUSD: 150, period: 'Year', desc: '120,000 yearly transactional emails with dedicated SPF/DKIM routing' },
+            { id: 'smtp-pro-monthly', title: 'SMTP Professional (1 Month)', priceINR: 6262.50, priceUSD: 75, period: 'Month', desc: '100,000 monthly high-priority emails with subaccount telemetry' }
+        ]
+    },
+    {
+        category: 'forwarding',
+        categoryTitle: 'ImprovMX Mail Forwarding',
+        icon: 'fas fa-envelope-open-text',
+        color: '#2196F3',
+        items: [
+            { id: 'improv-light-yearly', title: 'ImprovMX Light (1 Year)', priceINR: 4785.00, period: 'Year', desc: 'Custom domain alias routing and inbound email protection' },
+            { id: 'improv-premium-monthly', title: 'ImprovMX Premium (1 Month)', priceINR: 860.00, period: 'Month', desc: 'High-volume MX routing with SMTP relay sending' },
+            { id: 'improv-pro-monthly', title: 'ImprovMX Pro (1 Month)', priceINR: 2298.00, period: 'Month', desc: 'Enterprise forwarding with priority throughput queue' }
+        ]
+    },
+    {
+        category: 'storage',
+        categoryTitle: 'Backblaze B2 Object Storage',
+        icon: 'fas fa-database',
+        color: '#e53935',
+        items: [
+            { id: 'b2-500gb-monthly', title: 'Storage B2 500GB (1 Month)', priceINR: 360.00, period: 'Month', desc: '500 GB redundant high-speed mod file hosting' },
+            { id: 'b2-500gb-yearly', title: 'Storage B2 500GB (1 Year)', priceINR: 4320.00, period: 'Year', desc: 'Annual 500 GB cloud bucket storage' },
+            { id: 'b2-1tb-monthly', title: 'Storage B2 1TB (1 Month)', priceINR: 730.00, period: 'Month', desc: '1,000 GB mod downloads with zero egress penalties' },
+            { id: 'b2-1tb-yearly', title: 'Storage B2 1TB (1 Year)', priceINR: 8760.00, period: 'Year', desc: 'Annual 1TB cloud mod repository capacity' },
+            { id: 'b2-2tb-monthly', title: 'Storage B2 2TB (1 Month)', priceINR: 1450.00, period: 'Month', desc: '2,000 GB high-capacity storage for heavy ISOs/APKs' },
+            { id: 'b2-2tb-yearly', title: 'Storage B2 2TB (1 Year)', priceINR: 17400.00, period: 'Year', desc: 'Annual 2TB cloud storage' },
+            { id: 'b2-5tb-monthly', title: 'Storage B2 5TB (1 Month)', priceINR: 3650.00, period: 'Month', desc: '5,000 GB enterprise capacity for complete GPL archive' },
+            { id: 'b2-5tb-yearly', title: 'Storage B2 5TB (1 Year)', priceINR: 43800.00, period: 'Year', desc: 'Annual 5TB full-archive preservation' }
+        ]
+    },
+    {
+        category: 'database',
+        categoryTitle: 'MongoDB Atlas Cloud Database',
+        icon: 'fas fa-server',
+        color: '#4caf50',
+        items: [
+            { id: 'mongo-flex-monthly', title: 'MongoDB Atlas Flex (1 Month)', priceINR: 1500.00, period: 'Month', desc: 'Scalable auto-tier database for user profiles & catalog' },
+            { id: 'mongo-flex-yearly', title: 'MongoDB Atlas Flex (1 Year)', priceINR: 18000.00, period: 'Year', desc: 'Annual high-availability replica set cluster' },
+            { id: 'mongo-m10-monthly', title: 'MongoDB Dedicated M10 (1 Month)', priceINR: 4900.00, period: 'Month', desc: 'Dedicated RAM & CPU compute with point-in-time restores' },
+            { id: 'mongo-m10-yearly', title: 'MongoDB Dedicated M10 (1 Year)', priceINR: 58800.00, period: 'Year', desc: 'Annual dedicated enterprise database tier' }
+        ]
+    },
+    {
+        category: 'compute',
+        categoryTitle: 'Hosting & Compute Nodes',
+        icon: 'fas fa-microchip',
+        color: '#9c27b0',
+        items: [
+            { id: 'host-8gb-monthly', title: 'Hosting 8GB RAM Instance (1 Month)', priceINR: 13360.00, priceUSD: 160, period: 'Month', desc: 'High-speed 8GB RAM vCPU server instance' },
+            { id: 'host-16gb-monthly', title: 'Hosting 16GB RAM Instance (1 Month)', priceINR: 18790.00, priceUSD: 225, period: 'Month', desc: 'Ultra 16GB RAM production cluster node' }
+        ]
+    },
+    {
+        category: 'domain',
+        categoryTitle: 'Domain & Registry Security',
+        icon: 'fas fa-globe',
+        color: '#00bcd4',
+        items: [
+            { id: 'domain-org-yearly', title: 'Domain .org Renewal (1 Year)', priceINR: 1799.00, period: 'Year', desc: 'Official non-profit domain registry and DNSSEC protection' }
+        ]
+    },
+    {
+        category: 'ai',
+        categoryTitle: 'Gemini AI Model Tokens',
+        icon: 'fas fa-brain',
+        color: '#ff9800',
+        items: [
+            { id: 'gemini-flash-lite', title: 'Gemini Flash-Lite Token Pack', priceINR: 50.00, period: 'One-time', desc: 'Powers ~100,000 smart search & translation tokens' },
+            { id: 'gemini-flash', title: 'Gemini Flash AI Token Pack', priceINR: 150.00, period: 'One-time', desc: 'Powers ~500,000 mod analysis & scanning tokens' },
+            { id: 'gemini-pro', title: 'Gemini Pro AI Token Pack', priceINR: 500.00, period: 'One-time', desc: 'Powers comprehensive code auditing & threat analysis' }
+        ]
+    },
+    {
+        category: 'security',
+        categoryTitle: 'VPNAPI.io & Threat Protection',
+        icon: 'fas fa-shield-alt',
+        color: '#f44336',
+        items: [
+            { id: 'vpnapi-basic-monthly', title: 'VPNAPI Threat Basic (1 Month)', priceINR: 1586.50, priceUSD: 19, period: 'Month', desc: 'Real-time proxy/Tor/VPN bot mitigation' },
+            { id: 'vpnapi-premium-monthly', title: 'VPNAPI Threat Premium (1 Month)', priceINR: 2421.50, priceUSD: 29, period: 'Month', desc: 'High-throughput threat intelligence firewall' },
+            { id: 'vpnapi-pro-monthly', title: 'VPNAPI Threat Pro (1 Month)', priceINR: 8266.50, priceUSD: 99, period: 'Month', desc: 'Enterprise DDoS and malicious subnet blocker' }
+        ]
+    },
+    {
+        category: 'translation',
+        categoryTitle: 'DeepL Pro & TempMail APIs',
+        icon: 'fas fa-language',
+        color: '#009688',
+        items: [
+            { id: 'deepl-pro-monthly', title: 'DeepL Pro Translation (1 Month)', priceINR: 2180.00, period: 'Month', desc: 'Neural AI translation for 30+ language localized mod pages' },
+            { id: 'tempmail-1k-monthly', title: 'TempMail Detector 1K Lookups', priceINR: 418.00, period: 'Month', desc: 'Disposable email detection for 1,000 user registrations' },
+            { id: 'tempmail-5k-monthly', title: 'TempMail Detector 5K Lookups', priceINR: 2088.00, period: 'Month', desc: 'Disposable email detection for 5,000 user registrations' }
+        ]
+    },
+    {
+        category: 'cdn',
+        categoryTitle: 'CDNs, Workers & Developer Tools',
+        icon: 'fas fa-bolt',
+        color: '#ffc107',
+        items: [
+            { id: 'cdn-super-premium-monthly', title: 'InfinityFree Fallback CDN Super Premium', priceINR: 500.00, priceUSD: 5.99, period: 'Month', desc: 'Global high-availability asset mirror' },
+            { id: 'cdn-ultimate-monthly', title: 'InfinityFree Fallback CDN Ultimate', priceINR: 750.00, priceUSD: 8.99, period: 'Month', desc: 'Unmetered edge distribution for scripts' },
+            { id: 'cf-pro-monthly', title: 'Cloudflare Pro CDN (1 Month)', priceINR: 2100.00, period: 'Month', desc: 'WAF rules, image optimization, edge caching' },
+            { id: 'cf-workers-monthly', title: 'Cloudflare Workers Paid (1 Month)', priceINR: 420.00, period: 'Month', desc: 'Serverless low-latency edge functions' },
+            { id: 'github-team-monthly', title: 'GitHub Team Seat (1 Month)', priceINR: 334.00, period: 'Month', desc: 'CI/CD runner minutes & repo collaboration' },
+            { id: 'github-copilot-monthly', title: 'GitHub Copilot Pro (1 Month)', priceINR: 835.00, period: 'Month', desc: 'AI code assistant seat for core platform engineering' }
+        ]
+    }
+];
+
+const COFFEE_FOOD_OPTIONS = [
+    { id: 'chai', title: 'A Cup of Chai ☕', priceINR: 50, icon: 'fas fa-mug-hot', desc: 'Keep our open-source devs caffeinated and inspired' },
+    { id: 'coffee', title: 'Warm Brewed Coffee ☕', priceINR: 100, icon: 'fas fa-coffee', desc: 'A rich roast to power late-night reverse engineering' },
+    { id: 'meal', title: 'Nutritious Meal 🍱', priceINR: 250, icon: 'fas fa-utensils', desc: 'A wholesome lunch after pushing a big security patch' },
+    { id: 'feast', title: 'Developer Feast 🍕', priceINR: 500, icon: 'fas fa-pizza-slice', desc: 'Pizza & snacks for a platform release party' }
+];
+
+app.get('/sponsor', async (req, res, next) => {
+    try {
+        const recentSponsors = await Donation.find({
+            status: 'successful',
+            $or: [{ sponsorItem: { $ne: null } }, { amount: { $gte: 50 } }]
+        })
+        .sort({ createdAt: -1 })
+        .limit(15)
+        .lean();
+
+        res.render('pages/sponsor', {
+            catalog: SPONSORSHIP_CATALOG,
+            coffeeFoodOptions: COFFEE_FOOD_OPTIONS,
+            recentSponsors
+        });
+    } catch (err) {
+        console.error("Sponsor page error:", err);
+        return next(err);
+    }
+});
+
+app.post('/create-sponsor-order', async (req, res) => {
+    try {
+        const { itemTitle, category = 'infrastructure', amount, currency = 'INR', name, email, phone, message, isAnonymous } = req.body;
+        const cur = String(currency || 'INR').toUpperCase();
+        const numAmount = parseFloat(amount);
+
+        if (isNaN(numAmount) || numAmount < 1) {
+            return res.status(400).json({ error: 'Please specify a valid sponsorship amount.' });
+        }
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const orderId = `spn_${Date.now().toString().slice(-8)}_${crypto.randomBytes(3).toString('hex')}`;
+        const customerId = req.user ? String(req.user._id) : `guest_${crypto.randomBytes(5).toString('hex')}`;
+        const customerName = isAnonymous ? 'Anonymous Supporter' : (name || (req.user ? req.user.username : 'Kind Sponsor'));
+        const customerEmail = email || (req.user ? req.user.email : 'sponsor@gplmods.com');
+        const customerPhone = phone || '9999999999';
+
+        const orderRequest = {
+            order_id: orderId,
+            order_amount: numAmount,
+            order_currency: cur,
+            customer_details: {
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_email: customerEmail,
+                customer_phone: customerPhone
+            },
+            order_meta: {
+                return_url: `${baseUrl}/payment/verify-donation?order_id={order_id}`,
+                notify_url: `${baseUrl}/webhook/cashfree/pg`
+            },
+            order_note: `GPL Mods Sponsorship: ${itemTitle || 'Infrastructure & Coffee'}`
+        };
+
+        const response = await cashfree.PGCreateOrder(orderRequest);
+
+        await new Donation({
+            user: req.user ? req.user._id : null,
+            username: customerName,
+            amount: numAmount,
+            currency: cur,
+            sponsorItem: itemTitle || 'General Support',
+            sponsorCategory: category,
+            message: message || '',
+            isAnonymous: !!isAnonymous,
+            orderId: orderId,
+            paymentSessionId: response.data.payment_session_id,
+            donorEmail: customerEmail,
+            donorPhone: customerPhone,
+            donorIp: getClientIp(req),
+            status: 'pending'
+        }).save();
+
+        return res.json({
+            payment_session_id: response.data.payment_session_id,
+            order_id: orderId
+        });
+    } catch (error) {
+        console.error('[Cashfree Sponsor Order Error]:', error.response?.data || error.message);
+        return res.status(500).json({ 
+            error: error.response?.data?.message || 'Failed to create sponsorship checkout.' 
+        });
     }
 });
 // ==================================================
@@ -12430,6 +13011,9 @@ app.post('/dmca-request', async (req, res) => {
 
         await newDmca.save();
 
+        // Send automated confirmation email to claimant
+        sendDmcaReportConfirmationEmail(newDmca, newDmca.email, newDmca.fullName).catch(err => console.error('DMCA confirmation email error:', err));
+
         // Send automated notification to admins
         await notifyAdminsOnDmcaSubmission(newDmca);
 
@@ -12709,6 +13293,10 @@ app.post('/support', ensureAuthenticated, async (req, res) => {
         });
 
         await newTicket.save();
+
+        // Send automated ticket confirmation email to the user
+        sendTicketConfirmationEmail(newTicket, req.user.email, req.user.username).catch(err => console.error('Ticket confirmation email error:', err));
+
         res.redirect('/support?message=Your support ticket has been submitted. We will reply via your Notifications.');
     } catch (error) {
         console.error("Error submitting support ticket:", error);

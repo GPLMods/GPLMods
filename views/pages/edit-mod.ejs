@@ -478,6 +478,60 @@
                         <div class="custom-options" id="archOptionsContainer" style="max-height: 250px; overflow-y: auto;"></div>
                     </div>
                 </div>
+
+                <!-- Platform-Specific Compatibility Flags -->
+                <div id="platform-flags-container" style="display: none; margin-top: 15px;">
+                    <!-- Android Flags -->
+                    <div id="flags-android" class="platform-flags-box" style="display: none; background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25); margin-bottom: 15px;">
+                        <h4 style="color: #00e676; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fab fa-android"></i> Android Compatibility Flags
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="requiresRoot" id="requiresRoot" value="true" <%= file.requiresRoot ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Requires Root</strong> <span style="color: var(--silver); font-size: 0.88em;">(App requires root permissions like Magisk, KernelSU, or APatch to work)</span></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeAndroid" value="true" <%= (file.requiresDevMode && file.category === 'android') ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(App needs Developer Options or USB Debugging enabled, but does not require root)</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- iOS Jailbroken Flags -->
+                    <div id="flags-ios-jailbroken" class="platform-flags-box" style="display: none; background: rgba(255, 152, 0, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.25); margin-bottom: 15px;">
+                        <h4 style="color: #ff9800; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-terminal"></i> Jailbreak Compatibility & Dependencies
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="isTweakConvertible" id="isTweakConvertible" value="true" <%= file.isTweakConvertible ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Convertible Tweak</strong> <span style="color: var(--silver); font-size: 0.88em;">(Can be converted between rootful & rootless via Derootifier, RootHidePatcher, or Xinam1neAIO)</span></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="requiresDependencies" id="requiresDependencies" value="true" <%= file.requiresDependencies ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Requires Dependencies</strong> <span style="color: var(--silver); font-size: 0.88em;">(Requires external tweak dependencies/libraries like Cephei, preferenceloader, etc. to be installed first)</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Windows Flags -->
+                    <div id="flags-windows" class="platform-flags-box" style="display: none; background: rgba(33, 150, 243, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.25); margin-bottom: 15px;">
+                        <h4 style="color: #2196f3; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fab fa-windows"></i> Windows Compatibility Flags
+                        </h4>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="requiresDisableAntivirus" id="requiresDisableAntivirus" value="true" <%= file.requiresDisableAntivirus ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Requires Disabling Antivirus</strong> <span style="color: var(--silver); font-size: 0.88em;">(May be flagged as false positive; user must disable Windows Defender or add an exclusion)</span></span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeWindows" value="true" <%= (file.requiresDevMode && file.category === 'windows') ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(Requires Windows Developer Mode enabled to install/run unsigned packages)</span></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </fieldset>
             
             <fieldset class="form-section">
@@ -1426,10 +1480,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const selectedPlatform = this.value;
             const archMap = {
-                'android':['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86'],
-                'windows':['x86-64', 'x64', 'x86'],
-                'ios-jailed':['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)'],
-                'ios-jailbroken':['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)']
+                'android': ['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86', 'universal'],
+                'windows': ['x64', 'x86', 'arm64', 'universal'],
+                'ios-jailed': ['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)', 'universal'],
+                'ios-jailbroken': ['arm', 'arm64', 'arm64e', 'armv7 / armv7s', 'universal'],
+                'wordpress': ['universal']
             };
 
             const archGroup = document.getElementById('arch-group');
@@ -1439,6 +1494,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
             const pkgIdGroup = document.getElementById('pkg-id-group');
+
+            // Platform Flags UI Logic
+            const platformFlagsContainer = document.getElementById('platform-flags-container');
+            const flagsAndroid = document.getElementById('flags-android');
+            const flagsIosJailbroken = document.getElementById('flags-ios-jailbroken');
+            const flagsWindows = document.getElementById('flags-windows');
+            const reqDevAndroid = document.getElementById('requiresDevModeAndroid');
+            const reqDevWindows = document.getElementById('requiresDevModeWindows');
+
+            if (platformFlagsContainer) {
+                if (selectedPlatform === 'android') {
+                    platformFlagsContainer.style.display = 'block';
+                    if (flagsAndroid) flagsAndroid.style.display = 'block';
+                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+                    if (flagsWindows) flagsWindows.style.display = 'none';
+                    if (reqDevAndroid) reqDevAndroid.disabled = false;
+                    if (reqDevWindows) reqDevWindows.disabled = true;
+                } else if (selectedPlatform === 'ios-jailbroken') {
+                    platformFlagsContainer.style.display = 'block';
+                    if (flagsAndroid) flagsAndroid.style.display = 'none';
+                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'block';
+                    if (flagsWindows) flagsWindows.style.display = 'none';
+                    if (reqDevAndroid) reqDevAndroid.disabled = true;
+                    if (reqDevWindows) reqDevWindows.disabled = true;
+                } else if (selectedPlatform === 'windows') {
+                    platformFlagsContainer.style.display = 'block';
+                    if (flagsAndroid) flagsAndroid.style.display = 'none';
+                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+                    if (flagsWindows) flagsWindows.style.display = 'block';
+                    if (reqDevAndroid) reqDevAndroid.disabled = true;
+                    if (reqDevWindows) reqDevWindows.disabled = false;
+                } else {
+                    platformFlagsContainer.style.display = 'none';
+                    if (flagsAndroid) flagsAndroid.style.display = 'none';
+                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+                    if (flagsWindows) flagsWindows.style.display = 'none';
+                    if (reqDevAndroid) reqDevAndroid.disabled = true;
+                    if (reqDevWindows) reqDevWindows.disabled = true;
+                }
+            }
 
             // ✅ SAFE INITIALIZATION: Architecture array
             const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;

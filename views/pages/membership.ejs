@@ -5,7 +5,7 @@
     .membership-header { position: relative; z-index: 2; }
     .membership-header h1 { font-size: 3em; color: var(--white); margin-bottom: 10px; }
     .membership-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    .membership-header p { color: var(--silver); font-size: 1.1em; max-width: 700px; margin: 0 auto 40px auto; }
+    .membership-header p { color: var(--silver); font-size: 1.1em; max-width: 700px; margin: 0 auto 30px auto; }
 
     /* Premium Animation Wrapper */
     .premium-animation-wrapper {
@@ -14,17 +14,16 @@
         margin-bottom: -15px;
     }
 
-    /* --- NEW: Custom Currency Switcher Styles --- */
-    .currency-selector-container { margin-bottom: 40px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+    /* Custom Currency Switcher */
+    .currency-selector-container { margin-bottom: 30px; display: flex; justify-content: center; align-items: center; gap: 15px; }
     .currency-selector-container label { color: var(--silver); font-weight: 600; font-size: 0.95em; }
 
-    /* Custom Select Wrapper */
     .custom-select-wrapper {
         position: relative;
         user-select: none;
-        width: 140px; /* Fixed width for the currency dropdown */
+        width: 140px;
         text-align: left;
-        z-index: 50; /* Ensures it drops over the pricing cards */
+        z-index: 50;
     }
     .custom-select {
         display: flex;
@@ -44,7 +43,6 @@
     .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
     .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
     
-    /* Custom Options Dropdown */
     .custom-options {
         position: absolute;
         top: 100%;
@@ -80,129 +78,142 @@
     }
     .custom-option:last-child { border-bottom: none; }
     .custom-option:hover, .custom-option.selected { background-color: var(--gold); color: var(--black); font-weight: bold; }
-    /* ------------------------------------------- */
 
-    /* Duration Switcher (Monthly / Yearly / Lifetime) */
-    .duration-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; position: relative; z-index: 10;}
+    /* Duration Switcher */
+    .duration-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 35px; flex-wrap: wrap; position: relative; z-index: 10;}
     .duration-btn { background: transparent; color: var(--silver); border: 2px solid #444; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: 'Poppins', sans-serif; }
     .duration-btn:hover { border-color: var(--gold); color: var(--gold); }
     .duration-btn.active { background: var(--gold); color: var(--black); border-color: var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
 
     /* Pricing Grid */
-    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; align-items: stretch; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1300px; margin: 0 auto; align-items: stretch; }
     
-    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 40px 30px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .pricing-card { background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 35px 25px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; text-align: left; }
+    .pricing-card:hover { transform: translateY(-8px); box-shadow: 0 12px 35px rgba(0,0,0,0.6); }
     
-    /* Specific Card Styling */
-    .card-guest { border-top: 4px solid #555; }
     .card-member { border-top: 4px solid var(--silver); }
-    .card-premium { border: 2px solid var(--gold); transform: scale(1.05); z-index: 5; box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); overflow: visible;} /* Changed z-index & overflow to fix dropdown overlap */
+    .card-lite { border: 2px solid #00bcd4; box-shadow: 0 0 20px rgba(0, 188, 212, 0.15); }
+    .card-plus { border: 2px solid var(--gold); transform: scale(1.03); z-index: 5; box-shadow: 0 0 25px rgba(255, 215, 0, 0.2); }
     .card-distributor { border-top: 4px solid var(--blue); }
 
-    /* Animated Gradient Border Magic */
-    .card-premium::before {
-        content: '';
-        position: absolute;
-        top: -2px; left: -2px; right: -2px; bottom: -2px;
-        background: linear-gradient(45deg, var(--gold), #ff8c00, var(--gold), #fff);
-        background-size: 400%;
-        z-index: -1;
-        border-radius: 16px;
-        animation: glowingBorder 6s linear infinite;
-    }
+    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.75em; font-weight: bold; padding: 5px 38px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    .lite-badge { position: absolute; top: 15px; right: -35px; background: #00bcd4; color: #000; font-size: 0.75em; font-weight: bold; padding: 5px 38px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+    .tier-header { text-align: center; margin-bottom: 20px; }
+    .tier-name { font-size: 1.6em; color: var(--white); margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .card-lite .tier-name { color: #00bcd4; }
+    .card-plus .tier-name { color: var(--gold); text-shadow: 0 0 3px var(--glow-gold); }
+    .tier-desc { color: var(--silver); font-size: 0.88em; min-height: 38px; margin: 0; line-height: 1.4; }
+
+    /* Price Presentation with Crossed-Out Bar */
+    .price-container { margin-bottom: 25px; min-height: 80px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .price-original { font-size: 1.15em; color: #ff5252; text-decoration: line-through; opacity: 0.85; font-weight: 600; margin-bottom: 2px; }
+    .price-main { font-size: 2.5em; font-weight: 800; color: var(--white); display: flex; align-items: baseline; justify-content: center; gap: 4px; line-height: 1; }
+    .currency-symbol { font-size: 0.55em; color: var(--silver); }
+    .price-period { color: var(--silver); font-size: 0.4em; font-weight: normal; margin-left: 2px; }
     
-    .card-premium::after {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: var(--dark-gray);
-        z-index: -1;
-        border-radius: 14px;
-    }
+    .savings-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(76, 175, 80, 0.15); border: 1px solid #4caf50; color: #4caf50; font-size: 0.78em; font-weight: bold; padding: 4px 10px; border-radius: 12px; margin-top: 8px; }
 
-    @keyframes glowingBorder {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 5px 40px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    .save-badge { background: var(--green); color: var(--white); font-size: 0.7em; padding: 3px 8px; border-radius: 10px; margin-left: 10px; vertical-align: middle; }
-
-    .tier-name { font-size: 1.5em; color: var(--white); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; }
-    .card-premium .tier-name { color: var(--gold); text-shadow: 0 0 3px var(--glow-gold); }
-    .tier-desc { color: var(--silver); font-size: 0.9em; min-height: 40px; margin-bottom: 20px; }
-    
-    /* Notice box for Distributor to make it clear */
-    .distributor-notice { background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); color: #90caf9; font-size: 0.8em; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-weight: 600; }
-
-    .price-container { margin-bottom: 30px; min-height: 55px; display: flex; align-items: center; justify-content: center; }
-    .price { font-size: 2.5em; font-weight: 700; color: var(--white); display: flex; align-items: center; justify-content: center; gap: 5px; }
-    .currency-symbol { font-size: 0.5em; color: var(--silver); align-self: flex-start; margin-top: 10px; }
-    .price-period { color: var(--silver); font-size: 0.4em; font-weight: normal; }
-
-    .feature-list { list-style: none; padding: 0; margin-bottom: 30px; text-align: left; flex-grow: 1; }
-    .feature-list li { color: var(--silver); margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95em; line-height: 1.4; }
-    .feature-list li i { color: var(--green); margin-top: 4px; }
-    .feature-list li.missing i { color: #555; }
+    .feature-list { list-style: none; padding: 0; margin-bottom: 25px; flex-grow: 1; }
+    .feature-list li { color: #ccc; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px; font-size: 0.92em; line-height: 1.45; }
+    .feature-list li i { margin-top: 3px; font-size: 0.9em; flex-shrink: 0; }
+    .feature-list li.check i { color: #4caf50; }
+    .feature-list li.check-cyan i { color: #00bcd4; }
+    .feature-list li.check-gold i { color: var(--gold); }
     .feature-list li.missing { color: #666; text-decoration: line-through; }
+    .feature-list li.missing i { color: #555; }
 
-    /* Action Buttons */
-    .plan-btn { padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; position: relative; z-index: 2;}
-    .btn-outline { background: transparent; border: 2px solid #555; color: var(--silver); }
-    
+    /* Plan Action Buttons */
+    .plan-btn { padding: 14px; border-radius: 10px; font-weight: bold; font-size: 1.05em; text-decoration: none; text-align: center; transition: all 0.3s ease; width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; display: block; }
     .btn-silver { background: transparent; border: 2px solid var(--silver); color: var(--silver); }
-    .btn-silver:hover { background: var(--silver); color: var(--black); box-shadow: 0 0 15px var(--glow-silver); }
-    
-    .btn-gold { background: var(--gold); color: var(--black); border: 2px solid var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
+    .btn-silver:hover { background: var(--silver); color: var(--black); }
+    .btn-cyan { background: #00bcd4; color: #000; border: 2px solid #00bcd4; font-weight: bold; }
+    .btn-cyan:hover { background: transparent; color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.4); }
+    .btn-gold { background: var(--gold); color: var(--black); border: 2px solid var(--gold); box-shadow: 0 0 15px var(--glow-gold); font-weight: bold; }
     .btn-gold:hover { background: transparent; color: var(--gold); border-color: var(--gold); }
-
     .btn-blue { background: transparent; border: 2px solid var(--blue); color: var(--blue); }
-    .btn-blue:hover { background: var(--blue); color: var(--white); box-shadow: 0 0 15px rgba(33, 150, 243, 0.5); }
+    .btn-blue:hover { background: var(--blue); color: var(--white); }
+
+    /* Coupon Box */
+    .coupon-section {
+        max-width: 600px;
+        margin: 45px auto 20px auto;
+        background: rgba(20, 20, 20, 0.8);
+        border: 1px dashed #444;
+        border-radius: 15px;
+        padding: 22px 25px;
+        text-align: center;
+        transition: border-color 0.3s;
+    }
+    .coupon-section:focus-within { border-color: var(--gold); }
+    .coupon-input-group { display: flex; gap: 10px; margin-top: 12px; }
+    .coupon-input {
+        flex-grow: 1;
+        background: #0d0d0d;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--white);
+        font-size: 1em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: bold;
+        font-family: monospace;
+    }
+    .coupon-input:focus { outline: none; border-color: var(--gold); }
+    .coupon-btn {
+        background: #2a2a2a;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .coupon-btn:hover { background: var(--gold); color: #000; }
+    .coupon-status { margin-top: 10px; font-size: 0.9em; font-weight: 600; min-height: 20px; }
+    .coupon-status.success { color: #4caf50; }
+    .coupon-status.error { color: #f44336; }
 
     /* Guarantee Box */
-    .guarantee-box { margin-top: 50px; background: rgba(0,0,0,0.3); border: 1px dashed var(--silver); padding: 20px; border-radius: 15px; display: inline-flex; align-items: center; gap: 20px; text-align: left; max-width: 800px; }
+    .guarantee-box { margin-top: 40px; background: rgba(0,0,0,0.3); border: 1px dashed var(--silver); padding: 20px; border-radius: 15px; display: inline-flex; align-items: center; gap: 20px; text-align: left; max-width: 800px; }
     .guarantee-icon { font-size: 3em; color: var(--gold); }
     .guarantee-text h4 { color: var(--white); margin: 0 0 5px 0; }
     .guarantee-text p { color: var(--silver); margin: 0; font-size: 0.9em; line-height: 1.5; }
     .guarantee-text a { color: var(--gold); text-decoration: none; font-weight: bold; }
     .guarantee-text a:hover { text-decoration: underline; }
 
-    #payment-error-message { color: var(--red); margin-top: 15px; font-weight: bold; }
+    .payment-err-box { color: var(--red); margin-top: 15px; font-weight: bold; text-align: center; }
 
     @media (max-width: 992px) {
-        .card-premium { transform: scale(1); }
+        .card-plus { transform: scale(1); }
         .guarantee-box { flex-direction: column; text-align: center; }
     }
 </style>
 
 <main class="membership-page">
     <div class="container">
-        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <div class="back-btn-wrapper">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
+        <!-- Back Button -->
+        <div class="back-btn-wrapper" style="text-align: left; margin-bottom: 20px;">
+            <a href="javascript:history.back()" class="dynamic-back-btn" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
                 <i class="fas fa-arrow-left"></i> Go Back
             </a>
         </div>
-        <!-- ======================================== -->
-        
-        <!-- ✅ UPGRADE: Premium Lottie Animation Header -->
+
+        <!-- Premium Lottie Animation Header -->
         <div class="premium-animation-wrapper">
-            <!-- Using a standard premium crown lottie file -->
-            <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/crown.json" background="transparent" speed="1" style="width: 120px; height: 120px;" loop autoplay></lottie-player>
+            <lottie-player src="<%= typeof cdnUrl !== 'undefined' ? cdnUrl : '' %>/animations/crown.json" background="transparent" speed="1" style="width: 110px; height: 110px;" loop autoplay></lottie-player>
         </div>
 
         <div class="membership-header">
             <h1>Choose Your <span>Experience</span></h1>
-            <p>Whether you're just browsing, an active community member, or a professional mod distributor, we have a plan for you.</p>
+            <p>Select the plan that suits you best. From free community access to ultra fast ad-free downloads and creator slots.</p>
         </div>
 
-        <!-- ======== CUSTOM CURRENCY SWITCHER ======== -->
+        <!-- Currency Switcher -->
         <div class="currency-selector-container">
             <label for="currency-select">Display prices in:</label>
-            
-            <!-- Hidden Native Select (Used by logic) -->
             <select id="currency-select" style="display: none;">
                 <option value="INR" selected>₹ INR</option>
                 <option value="USD">$ USD</option>
@@ -210,7 +221,6 @@
                 <option value="GBP">£ GBP</option>
             </select>
             
-            <!-- Custom UI Wrapper -->
             <div class="custom-select-wrapper" id="wrapper-currency">
                 <div class="custom-select">
                     <span class="selected-text">₹ INR</span>
@@ -224,141 +234,160 @@
                 </div>
             </div>
         </div>
-        <!-- ========================================== -->
 
         <!-- Duration Switcher -->
         <div class="duration-selector">
             <button class="duration-btn active" data-duration="monthly">Monthly</button>
-            <button class="duration-btn" data-duration="6months">6 Months <span class="save-badge">Save 15%</span></button>
-            <button class="duration-btn" data-duration="yearly">Yearly <span class="save-badge">Save 30%</span></button>
+            <button class="duration-btn" data-duration="6months">6 Months <span style="background: #4caf50; color: #fff; font-size: 0.72em; padding: 2px 7px; border-radius: 10px; margin-left: 5px;">Save Up to 32%</span></button>
+            <button class="duration-btn" data-duration="yearly">Yearly <span style="background: #4caf50; color: #fff; font-size: 0.72em; padding: 2px 7px; border-radius: 10px; margin-left: 5px;">Save Up to 24%</span></button>
             <button class="duration-btn" data-duration="lifetime">Lifetime Deal</button>
         </div>
 
+        <!-- Pricing Cards Grid -->
         <div class="pricing-grid">
             
-            <!-- 1. GUEST -->
-            <div class="pricing-card card-guest">
-                <h2 class="tier-name">Guest</h2>
-                <p class="tier-desc">Perfect for casual browsing.</p>
-                <div class="price-container">
-                    <div class="price"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
-                </div>
-                <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> Browse & Download Mods</li>
-                    <li><i class="fas fa-check"></i> View VirusTotal Scans</li>
-                    <li class="missing"><i class="fas fa-times"></i> Upload Mods</li>
-                    <li class="missing"><i class="fas fa-times"></i> Post Reviews & Comments</li>
-                    <li class="missing"><i class="fas fa-times"></i> Request For Mods & Updates</li>
-                </ul>
-                <% if (!user) { %>
-                    <button class="plan-btn btn-outline" disabled style="opacity: 0.5;">Your Current Status</button>
-                <% } else { %>
-                    <button class="plan-btn btn-outline" disabled style="opacity: 0.2;">Not Applicable</button>
-                <% } %>
-            </div>
-
-            <!-- 2. MEMBER -->
+            <!-- 1. FREE MEMBER -->
             <div class="pricing-card card-member">
-                <h2 class="tier-name">Member</h2>
-                <p class="tier-desc">Join the community and share your work.</p>
+                <div class="tier-header">
+                    <h2 class="tier-name">Free Member</h2>
+                    <p class="tier-desc">Join the community and share your work.</p>
+                </div>
                 <div class="price-container">
-                    <div class="price"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
+                    <div class="price-main"><span class="currency-symbol" data-currency>₹</span>0 <span class="price-period">/ forever</span></div>
+                    <div style="font-size: 0.8em; color: var(--silver); margin-top: 6px;">Free registered account</div>
                 </div>
                 <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> All Guest Features</li>
-                    <li><i class="fas fa-check"></i> <strong>Upload Free Mods</strong></li>
-                    <li><i class="fas fa-check"></i> Post Reviews & Comments</li>
-                    <li><i class="fas fa-check"></i> Create a Whitelist</li>
-                    <li><i class="fas fa-check"></i> Standard Support</li>
-                    <li class="missing"><i class="fas fa-times"></i> 1-Click IPA/DEB Installs</li>
-                   <li class="missing"><i class="fas fa-times"></i> Custom YT BG Music & Ad-Free Mirrors</li>
+                    <li class="check"><i class="fas fa-check"></i> Browse & Download Mods</li>
+                    <li class="check"><i class="fas fa-check"></i> <strong>3 Upload Slots</strong> (Rolling weekly reset)</li>
+                    <li class="check"><i class="fas fa-check"></i> <strong>300MB Max</strong> File Size Limit</li>
+                    <li class="check"><i class="fas fa-check"></i> Support Ad-Based Downloads</li>
+                    <li class="check"><i class="fas fa-check"></i> Post Reviews & Comments</li>
+                    <li class="check"><i class="fas fa-check"></i> Standard Community Support</li>
+                    <li class="missing"><i class="fas fa-times"></i> Ad-Free Browsing</li>
+                    <li class="missing"><i class="fas fa-times"></i> YT Background Music Player</li>
+                    <li class="missing"><i class="fas fa-times"></i> 1-Click AltStore / Sileo Installs</li>
                 </ul>
                 <% if (!user) { %>
                     <a href="/register" class="plan-btn btn-silver">Sign Up Free</a>
                 <% } else if (user.role === 'member' && user.membership === 'free') { %>
-                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Your Current Plan</button>
+                    <button class="plan-btn btn-silver" disabled style="opacity: 0.6;">Your Current Plan</button>
                 <% } else { %>
-                    <button class="plan-btn btn-silver" disabled style="opacity: 0.5;">Included</button>
+                    <button class="plan-btn btn-silver" disabled style="opacity: 0.4;">Included</button>
                 <% } %>
             </div>
 
-            <!-- 3. GPL MODS+ (PREMIUM) -->
-            <div class="pricing-card card-premium">
-                <div class="popular-badge">PREMIUM</div>
-                <h2 class="tier-name"><i class="fas fa-crown" style="margin-right: 8px;"></i> GPL Mods+</h2>
-                <p class="tier-desc" style="color: var(--white);">The ultimate, ad-free downloading experience.</p>
+            <!-- 2. GPL LITE (NEW TIER) -->
+            <div class="pricing-card card-lite">
+                <div class="lite-badge">LITE</div>
+                <div class="tier-header">
+                    <h2 class="tier-name"><i class="fas fa-bolt" style="font-size: 0.85em;"></i> GPL Lite</h2>
+                    <p class="tier-desc">Fast downloads without annoying popunders.</p>
+                </div>
                 
-                <div class="price-container">
-                    <div class="price">
+                <div class="price-container" id="lite-price-box">
+                    <div class="price-original" id="lite-original-price" style="display: none;"></div>
+                    <div class="price-main">
                         <span class="currency-symbol" data-currency>₹</span>
-                        <span class="price-value" id="premium-price"
+                        <span class="price-value" id="lite-price"
+                              data-monthly-inr="49" data-monthly-usd="1.00" data-monthly-eur="0.90" data-monthly-gbp="0.80"
+                              data-6months-inr="199" data-6months-usd="4.00" data-6months-eur="3.60" data-6months-gbp="3.20"
+                              data-yearly-inr="449" data-yearly-usd="9.00" data-yearly-eur="8.00" data-yearly-gbp="7.20"
+                              data-lifetime-inr="N/A" data-lifetime-usd="N/A" data-lifetime-eur="N/A" data-lifetime-gbp="N/A">
+                              49
+                        </span> 
+                        <span class="price-period" id="lite-period">/ month</span>
+                    </div>
+                    <div id="lite-savings-badge" class="savings-badge" style="display: none;"></div>
+                </div>
+
+                <ul class="feature-list">
+                    <li class="check-cyan"><i class="fas fa-check"></i> All Free Member Perks</li>
+                    <li class="check-cyan"><i class="fas fa-check"></i> <strong>Remove Popunder Ads</strong> (Video ads remain)</li>
+                    <li class="check-cyan"><i class="fas fa-check"></i> <strong>Lightning Fast</strong> Direct Downloads</li>
+                    <li class="check-cyan"><i class="fas fa-check"></i> <strong>5 Upload Slots</strong> (+1 refunded when live)</li>
+                    <li class="check-cyan"><i class="fas fa-check"></i> <strong>600MB Max</strong> File Size Limit</li>
+                    <li class="check-cyan"><i class="fas fa-check"></i> Priority Support Queue</li>
+                    <li class="missing"><i class="fas fa-times"></i> 100% Ad-Free (Video Ads still shown)</li>
+                    <li class="missing"><i class="fas fa-times"></i> YT Background Music Player</li>
+                    <li class="missing"><i class="fas fa-times"></i> 1-Click AltStore / Sileo Installs</li>
+                </ul>
+
+                <% if (!user) { %>
+                    <a href="/login?message=Please log in to upgrade to GPL Lite." class="plan-btn btn-cyan">Log in to Upgrade</a>
+                <% } else if (user.membership === 'lite') { %>
+                    <button class="plan-btn btn-cyan" disabled style="opacity: 0.7;">Active Plan (GPL Lite)</button>
+                <% } else if (user.membership === 'plus' || user.membership === 'premium') { %>
+                    <button class="plan-btn btn-cyan" disabled style="opacity: 0.4;">Included in Plus</button>
+                <% } else { %>
+                    <button id="lite-purchase-btn" class="plan-btn btn-cyan">Get GPL Lite</button>
+                <% } %>
+            </div>
+
+            <!-- 3. GPL PLUS (PREMIUM TIER) -->
+            <div class="pricing-card card-plus">
+                <div class="popular-badge">POPULAR</div>
+                <div class="tier-header">
+                    <h2 class="tier-name"><i class="fas fa-crown" style="font-size: 0.85em;"></i> GPL Plus</h2>
+                    <p class="tier-desc">100% ad-free experience, 2GB uploads & exclusive tools.</p>
+                </div>
+                
+                <div class="price-container" id="plus-price-box">
+                    <div class="price-original" id="plus-original-price" style="display: none;"></div>
+                    <div class="price-main">
+                        <span class="currency-symbol" data-currency>₹</span>
+                        <span class="price-value" id="plus-price"
                               data-monthly-inr="99" data-monthly-usd="2.00" data-monthly-eur="1.80" data-monthly-gbp="1.50"
                               data-6months-inr="499" data-6months-usd="10.00" data-6months-eur="9.00" data-6months-gbp="8.00"
                               data-yearly-inr="899" data-yearly-usd="18.00" data-yearly-eur="16.00" data-yearly-gbp="14.00"
                               data-lifetime-inr="2499" data-lifetime-usd="35.00" data-lifetime-eur="32.00" data-lifetime-gbp="28.00">
                               99
                         </span> 
-                        <span class="price-period" id="premium-period">/ month</span>
+                        <span class="price-period" id="plus-period">/ month</span>
                     </div>
+                    <div id="plus-savings-badge" class="savings-badge" style="display: none;"></div>
                 </div>
 
                 <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> All Member Features</li>
-                    <li><i class="fas fa-check"></i> <strong>100% Ad-Free Experience</strong></li>
-                    <li><i class="fas fa-check"></i> <strong>Lightning Fast Downloads</strong></li>
-                    
-                    <!-- ✅ UPGRADE: Custom Music & 1-Click Installs -->
-                    <li><i class="fas fa-check"></i> <strong>Custom YT Background Music Player</strong></li>
-                    <li><i class="fas fa-check"></i> <strong>1-Click IPA/DEB Installs (AltStore, Sileo, etc.)</strong></li>
-                    
-                    <li><i class="fas fa-check"></i> Priority Support</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> All Member & Lite Features</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> <strong>100% Ad-Free</strong> (No Video or Popunder Ads)</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> <strong>10 Upload Slots</strong> (+1 refunded when live)</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> <strong>2GB Max</strong> File Size Limit</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> <strong>Ad-Free Dynamic Music Player</strong> (YT/YTMusic)</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> <strong>1-Click Installs</strong> (AltStore, Sileo, etc.)</li>
+                    <li class="check-gold"><i class="fas fa-check"></i> VIP Priority 24/7 Support</li>
                 </ul>
-                
+
                 <% if (!user) { %>
-                    <a href="/login?message=Please log in to purchase Premium." class="plan-btn btn-gold">Log in to Purchase</a>
-                <% } else if (user.membership === 'premium') { %>
-                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold); border-color: var(--gold);">You are Premium!</button>
+                    <a href="/login?message=Please log in to upgrade to GPL Plus." class="plan-btn btn-gold">Log in to Upgrade</a>
+                <% } else if (user.membership === 'plus' || user.membership === 'premium') { %>
+                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold); border-color: var(--gold);">Active Plan (GPL Plus)</button>
                 <% } else { %>
-                    <button id="premium-purchase-btn" class="plan-btn btn-gold">Upgrade Now</button>
+                    <button id="plus-purchase-btn" class="plan-btn btn-gold">Upgrade to Plus</button>
                 <% } %>
-                <div id="payment-error-message"></div>
             </div>
 
             <!-- 4. DISTRIBUTOR -->
             <div class="pricing-card card-distributor">
-                <h2 class="tier-name" style="color: var(--blue);">Distributor</h2>
-                
-                <p class="tier-desc"><strong>For Mod Distributors & Organizations only.</strong> Not for individual users.</p>
-                <div class="distributor-notice">
-                    <i class="fas fa-info-circle"></i> Requires manual application & approval with a one-time setup fee.
+                <div class="tier-header">
+                    <h2 class="tier-name" style="color: var(--blue);">Distributor</h2>
+                    <p class="tier-desc">For Mod Distributors, Studios & Organizations.</p>
                 </div>
-
                 <div class="price-container">
-                    <div class="price">Apply <span class="price-period">for access</span></div>
+                    <div class="price-main">Partner <span class="price-period">Tier</span></div>
+                    <div style="font-size: 0.8em; color: #90caf9; margin-top: 6px;">Application & Verified Onboarding</div>
                 </div>
                 <ul class="feature-list">
-                    <li><i class="fas fa-check"></i> All GPL Mods+ Features</li>
-                    <li><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise)</strong></li>
-                    <li><i class="fas fa-check"></i> Verified Organization Badge</li>
-                    <li><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
-                    <li><i class="fas fa-check"></i> Bypass B2 Upload & Scan Waits</li>
+                    <li class="check"><i class="fas fa-check"></i> All GPL Plus Features Included</li>
+                    <li class="check"><i class="fas fa-check"></i> <strong>50 Upload Slots & Unlimited Sizes</strong></li>
+                    <li class="check"><i class="fas fa-check"></i> <strong>Use Monetized Links (Linkvertise)</strong></li>
+                    <li class="check"><i class="fas fa-check"></i> Verified Organization Badge</li>
+                    <li class="check"><i class="fas fa-check"></i> Promote Social Channels on Profile</li>
+                    <li class="check"><i class="fas fa-check"></i> Instant B2 Direct Upload Pipeline</li>
                 </ul>
-                
-                <!-- ======== NEW: RESOURCE LINKS ======== -->
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px dashed #444;">
-                    <a href="/distributor-features" target="_blank" style="color: var(--blue); text-decoration: none; font-size: 0.9em; font-weight: 600; transition: color 0.2s;">
-                        <i class="fas fa-list-ul" style="margin-right: 8px; width: 15px;"></i> View Full Feature List
-                    </a>
-                    <a href="/partnership-policy" target="_blank" style="color: var(--silver); text-decoration: none; font-size: 0.9em; transition: color 0.2s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-                        <i class="fas fa-file-contract" style="margin-right: 8px; width: 15px;"></i> Read Partnership Policy
-                    </a>
-                </div>
-                <!-- ===================================== -->
-
                 <% if (!user) { %>
                     <a href="/login?message=Please log in to apply for Partnership." class="plan-btn btn-blue">Log in to Apply</a>
                 <% } else if (user.role === 'distributor') { %>
-                    <button class="plan-btn btn-blue" disabled style="opacity: 0.5;">Active Partner</button>
+                    <button class="plan-btn btn-blue" disabled style="opacity: 0.6;">Active Partner</button>
                 <% } else { %>
                     <a href="/partnership" class="plan-btn btn-blue">Apply for Partnership</a>
                 <% } %>
@@ -366,22 +395,37 @@
 
         </div>
 
+        <!-- Coupon Code Box -->
+        <div class="coupon-section">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--white); font-weight: 600;">
+                <i class="fas fa-tags" style="color: var(--gold);"></i> Have a Promotional or Discount Coupon?
+            </div>
+            <div class="coupon-input-group">
+                <input type="text" id="coupon-code-input" class="coupon-input" placeholder="ENTER COUPON CODE" maxlength="20">
+                <button type="button" id="apply-coupon-btn" class="coupon-btn">Apply</button>
+            </div>
+            <div id="coupon-status-msg" class="coupon-status"></div>
+        </div>
+
+        <div id="payment-error-message" class="payment-err-box"></div>
+
+        <!-- Guarantee Box -->
         <div class="guarantee-box">
             <i class="fas fa-shield-check guarantee-icon"></i>
             <div class="guarantee-text">
                 <h4>7-Day Money-Back Guarantee</h4>
-                <p>We stand behind the quality of GPL Mods+. If you aren't completely satisfied with your premium experience, contact support within 7 days of your purchase for a full refund. No questions asked. Please read our full <a href="/refund-policy">Refund Policy</a> for details.</p>
+                <p>We stand behind the quality of GPL Mods memberships. If you aren't completely satisfied with your experience, contact support within 7 days of purchase for a full refund. Please read our full <a href="/refund-policy">Refund Policy</a>.</p>
             </div>
         </div>
 
-        <p style="font-size: 0.9em; color: #666; margin-top: 40px;"><i class="fas fa-lock"></i> Payments secured by Cashfree.</p>
+        <p style="font-size: 0.9em; color: #666; margin-top: 35px;"><i class="fas fa-lock"></i> All payments and subscriptions secured via Cashfree Payments.</p>
     </div>
 </main>
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. Custom Dropdown Logic (Imported from Search/Donate Page) ---
+        // 1. Currency Dropdown Logic
         function setupCustomSelect(wrapperId, nativeSelectId) {
             const wrapper = document.getElementById(wrapperId);
             const nativeSelect = document.getElementById(nativeSelectId);
@@ -391,25 +435,18 @@
             const selectedText = wrapper.querySelector('.selected-text');
             const optionsContainer = wrapper.querySelector('.custom-options');
 
-            // Click to open/close
             customSelect.addEventListener('click', (e) => {
                 wrapper.classList.toggle('open');
                 e.stopPropagation(); 
             });
 
-            // Delegate click events for options
             optionsContainer.addEventListener('click', (e) => {
                 const optionEl = e.target.closest('.custom-option');
                 if (!optionEl) return;
 
                 const value = optionEl.getAttribute('data-value');
-                const text = optionEl.textContent;
-
-                selectedText.textContent = text;
+                selectedText.textContent = optionEl.textContent;
                 nativeSelect.value = value;
-                
-                // CRITICAL: Manually trigger the 'change' event on the native select
-                // so the pricing logic further down the script knows it changed!
                 nativeSelect.dispatchEvent(new Event('change'));
 
                 wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
@@ -417,7 +454,6 @@
                 wrapper.classList.remove('open');
             });
 
-            // Close dropdowns when clicking outside
             document.addEventListener('click', (e) => {
                 if (!wrapper.contains(e.target)) {
                     wrapper.classList.remove('open');
@@ -425,34 +461,96 @@
             });
         }
 
-        // Initialize the custom dropdown
         setupCustomSelect('wrapper-currency', 'currency-select');
 
-
-        // --- 2. Pricing & Currency Logic ---
+        // 2. Pricing & Savings Presentation Logic
         const currencySelect = document.getElementById('currency-select');
-        const priceValueElements = document.querySelectorAll('.price-value');
         const currencySymbols = document.querySelectorAll('[data-currency]');
         
         let currentCurrency = 'INR';
         let currentDuration = 'monthly';
+        let appliedCoupon = null;
 
         const symbols = { 'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£' };
         const periods = { 'monthly': '/ month', '6months': '/ 6 months', 'yearly': '/ year', 'lifetime': '/ lifetime' };
 
+        // Original Crossed-out Prices & Savings Matrix (INR)
+        const pricingMeta = {
+            lite: {
+                monthly: { orig: null, save: null },
+                '6months': { orig: '₹294', save: 'You Save ₹95 (32% OFF)' },
+                yearly: { orig: '₹588', save: 'You Save ₹139 (24% OFF)' },
+                lifetime: { orig: null, save: null, na: true }
+            },
+            plus: {
+                monthly: { orig: null, save: null },
+                '6months': { orig: '₹594', save: 'You Save ₹95 (16% OFF)' },
+                yearly: { orig: '₹1,188', save: 'You Save ₹289 (24% OFF)' },
+                lifetime: { orig: null, save: null }
+            }
+        };
+
         function updatePricingUI() {
             currencySymbols.forEach(el => el.textContent = symbols[currentCurrency]);
-            const dataAttr = `data-${currentDuration}-${currentCurrency.toLowerCase()}`;
             
-            priceValueElements.forEach(el => {
-                const newPrice = el.getAttribute(dataAttr);
-                if (newPrice) el.textContent = newPrice;
-            });
-            const premiumPeriodEl = document.getElementById('premium-period');
-            if (premiumPeriodEl) premiumPeriodEl.textContent = periods[currentDuration];
+            // Lite Tier UI
+            const litePriceEl = document.getElementById('lite-price');
+            const litePeriodEl = document.getElementById('lite-period');
+            const liteOrigEl = document.getElementById('lite-original-price');
+            const liteSaveEl = document.getElementById('lite-savings-badge');
+            const liteBtn = document.getElementById('lite-purchase-btn');
+
+            if (currentDuration === 'lifetime') {
+                if (litePriceEl) litePriceEl.textContent = 'N/A';
+                if (litePeriodEl) litePeriodEl.textContent = '';
+                if (liteOrigEl) liteOrigEl.style.display = 'none';
+                if (liteSaveEl) liteSaveEl.style.display = 'none';
+                if (liteBtn) {
+                    liteBtn.disabled = true;
+                    liteBtn.textContent = 'Not Available for Lite';
+                    liteBtn.style.opacity = '0.4';
+                }
+            } else {
+                const liteDataVal = litePriceEl ? litePriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+                if (litePriceEl && liteDataVal) litePriceEl.textContent = liteDataVal;
+                if (litePeriodEl) litePeriodEl.textContent = periods[currentDuration];
+
+                const metaL = pricingMeta.lite[currentDuration];
+                if (currentCurrency === 'INR' && metaL && metaL.orig) {
+                    if (liteOrigEl) { liteOrigEl.textContent = metaL.orig; liteOrigEl.style.display = 'block'; }
+                    if (liteSaveEl) { liteSaveEl.innerHTML = `<i class="fas fa-tag"></i> ${metaL.save}`; liteSaveEl.style.display = 'inline-flex'; }
+                } else {
+                    if (liteOrigEl) liteOrigEl.style.display = 'none';
+                    if (liteSaveEl) liteSaveEl.style.display = 'none';
+                }
+
+                if (liteBtn && !liteBtn.hasAttribute('data-disabled-by-user')) {
+                    liteBtn.disabled = false;
+                    liteBtn.textContent = 'Get GPL Lite';
+                    liteBtn.style.opacity = '1';
+                }
+            }
+
+            // Plus Tier UI
+            const plusPriceEl = document.getElementById('plus-price');
+            const plusPeriodEl = document.getElementById('plus-period');
+            const plusOrigEl = document.getElementById('plus-original-price');
+            const plusSaveEl = document.getElementById('plus-savings-badge');
+
+            const plusDataVal = plusPriceEl ? plusPriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+            if (plusPriceEl && plusDataVal) plusPriceEl.textContent = plusDataVal;
+            if (plusPeriodEl) plusPeriodEl.textContent = periods[currentDuration];
+
+            const metaP = pricingMeta.plus[currentDuration];
+            if (currentCurrency === 'INR' && metaP && metaP.orig) {
+                if (plusOrigEl) { plusOrigEl.textContent = metaP.orig; plusOrigEl.style.display = 'block'; }
+                if (plusSaveEl) { plusSaveEl.innerHTML = `<i class="fas fa-tag"></i> ${metaP.save}`; plusSaveEl.style.display = 'inline-flex'; }
+            } else {
+                if (plusOrigEl) plusOrigEl.style.display = 'none';
+                if (plusSaveEl) plusSaveEl.style.display = 'none';
+            }
         }
 
-        // Fired by the custom dropdown logic!
         currencySelect.addEventListener('change', function() {
             currentCurrency = this.value;
             updatePricingUI();
@@ -468,53 +566,120 @@
             });
         });
 
-        // Initialize Pricing UI on load
         updatePricingUI();
 
-        // --- 3. Cashfree Payment Logic ---
+        // 3. Coupon Engine Validation
+        const couponInput = document.getElementById('coupon-code-input');
+        const applyCouponBtn = document.getElementById('apply-coupon-btn');
+        const couponStatusMsg = document.getElementById('coupon-status-msg');
+
+        if (applyCouponBtn && couponInput) {
+            applyCouponBtn.addEventListener('click', async () => {
+                const code = couponInput.value.trim().toUpperCase();
+                if (!code) {
+                    couponStatusMsg.className = 'coupon-status error';
+                    couponStatusMsg.textContent = 'Please enter a coupon code.';
+                    return;
+                }
+
+                couponStatusMsg.className = 'coupon-status';
+                couponStatusMsg.textContent = 'Validating coupon...';
+
+                try {
+                    const response = await fetch('/api/coupon/validate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            code,
+                            planKey: `plus_${currentDuration}`,
+                            currency: currentCurrency
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.valid) {
+                        appliedCoupon = result;
+                        couponStatusMsg.className = 'coupon-status success';
+                        couponStatusMsg.innerHTML = `<i class="fas fa-check-circle"></i> Coupon <strong>${result.code}</strong> applied! ${result.description} (-${symbols[currentCurrency]}${result.discountAmount})`;
+                    } else {
+                        appliedCoupon = null;
+                        couponStatusMsg.className = 'coupon-status error';
+                        couponStatusMsg.textContent = result.message || 'Invalid coupon code.';
+                    }
+                } catch (err) {
+                    appliedCoupon = null;
+                    couponStatusMsg.className = 'coupon-status error';
+                    couponStatusMsg.textContent = 'Network error while checking coupon.';
+                }
+            });
+        }
+
+        // 4. Checkout Handler for Lite and Plus Tiers
         const cashfree = Cashfree({ mode: "sandbox" });
-        const submitButton = document.getElementById('premium-purchase-btn');
         const errorMessage = document.getElementById('payment-error-message');
 
-        if (submitButton) {
-            submitButton.addEventListener('click', function(event) {
-                event.preventDefault();
-                this.disabled = true;
-                const originalText = this.textContent;
-                this.textContent = 'Preparing Checkout...';
-                errorMessage.textContent = ''; 
+        function initiateCheckout(tier) {
+            errorMessage.textContent = '';
+            const durationKey = `${tier}_${currentDuration}`;
+            const targetBtn = tier === 'lite' ? document.getElementById('lite-purchase-btn') : document.getElementById('plus-purchase-btn');
+            
+            if (targetBtn) {
+                targetBtn.disabled = true;
+                targetBtn.textContent = 'Preparing Checkout...';
+            }
 
-                fetch('/create-membership-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ duration: currentDuration, currency: currentCurrency })
+            fetch('/create-membership-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    duration: durationKey, 
+                    currency: currentCurrency,
+                    couponCode: appliedCoupon ? appliedCoupon.code : null
                 })
-                .then(res => {
-                    if (!res.ok) {
-                        return res.json().then(errData => { throw new Error(errData.error || 'Server error'); });
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    if (data.subscription_session_id) {
-                        cashfree.subscriptionsCheckout({
-                            subsSessionId: data.subscription_session_id,
-                            redirectTarget: "_self"
-                        });
-                    } else if (data.payment_session_id) {
-                        cashfree.checkout({
-                            paymentSessionId: data.payment_session_id,
-                            redirectTarget: "_self"
-                        });
-                    } else {
-                        throw new Error(data.error || 'Failed to initialize checkout session.');
-                    }
-                })
-                .catch(err => {
-                    errorMessage.textContent = err.message || 'Error processing request. Please try again.';
-                    this.disabled = false;
-                    this.textContent = originalText;
-                });
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(errData => { throw new Error(errData.error || 'Server error'); });
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.subscription_session_id) {
+                    cashfree.subscriptionsCheckout({
+                        subsSessionId: data.subscription_session_id,
+                        redirectTarget: "_self"
+                    });
+                } else if (data.payment_session_id) {
+                    cashfree.checkout({
+                        paymentSessionId: data.payment_session_id,
+                        redirectTarget: "_self"
+                    });
+                } else {
+                    throw new Error(data.error || 'Failed to initialize checkout session.');
+                }
+            })
+            .catch(err => {
+                errorMessage.textContent = err.message || 'Error processing request. Please try again.';
+                if (targetBtn) {
+                    targetBtn.disabled = false;
+                    targetBtn.textContent = tier === 'lite' ? 'Get GPL Lite' : 'Upgrade to Plus';
+                }
+            });
+        }
+
+        const liteBtn = document.getElementById('lite-purchase-btn');
+        if (liteBtn) {
+            liteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                initiateCheckout('lite');
+            });
+        }
+
+        const plusBtn = document.getElementById('plus-purchase-btn');
+        if (plusBtn) {
+            plusBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                initiateCheckout('plus');
             });
         }
     });
