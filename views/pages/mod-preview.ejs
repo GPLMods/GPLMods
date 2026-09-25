@@ -462,11 +462,7 @@
 <main class="container preview-page-container">
     <!-- ======== BACK BUTTON ======== -->
     <div style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
-        <a href="javascript:history.back()"
-            style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
-            onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-            <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-        </a>
+        <a href="javascript:void(0)" onclick="event.preventDefault(); window.smartGoBack('/upload')" class="dynamic-back-btn" data-fallback="/upload" style="margin-bottom: 0 !important; color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em;"><i class="fas fa-arrow-left"></i> Go Back</a>
         <a href="/upload-details/<%= file._id %>" class="btn-edit-mod">
             <i class="fas fa-edit"></i>
             <span>Edit Mod</span>

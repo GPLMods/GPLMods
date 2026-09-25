@@ -3,12 +3,7 @@
 
 <main class="container" style="padding-bottom: 60px; padding-top: 2rem;">
     
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div class="back-btn-wrapper" style="margin-bottom: 20px;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+    <%- include('../partials/go-back-button', { fallback: '/dashboard' }) %>
     <!-- ======================================== -->
 
     <!-- Header Section -->

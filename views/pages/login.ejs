@@ -420,11 +420,7 @@
     <main class="auth-page-wrapper">
         <div class="auth-container">
     <!-- ======== GO BACK BUTTON ======== -->
-    <div class="back-btn-wrapper">
-        <a href="/" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+    <%- include('../partials/go-back-button', { fallback: '/' }) %>
     <!-- ======================================== -->
             <a href="/" class="logo-area">GPL <span>Mods</span></a>
             
@@ -595,33 +591,49 @@
 
     <script>
         function smartGoBack(fallbackUrl) {
-            const fallback = fallbackUrl || '/';
-            if (document.referrer && document.referrer !== window.location.href) {
-                try {
-                    const refUrl = new URL(document.referrer);
-                    const currentUrl = new URL(window.location.href);
-                    if (refUrl.origin === currentUrl.origin) {
-                        const trapPaths = ['/login', '/register', '/logout', '/login/2fa', '/admin'];
-                        const isTrap = trapPaths.some(p => refUrl.pathname.startsWith(p));
-                        if (!isTrap && refUrl.pathname !== currentUrl.pathname) {
-                            window.location.href = document.referrer;
-                            return;
-                        }
-                    }
-                } catch (e) {}
+            const fallback = (fallbackUrl && typeof fallbackUrl === 'string' && fallbackUrl.trim()) ? fallbackUrl.trim() : '/';
+            const STORAGE_KEY = 'gpl_nav_history';
+            const GOING_BACK_KEY = 'gpl_nav_going_back';
+            let stack = [];
+            try {
+                stack = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
+                if (!Array.isArray(stack)) stack = [];
+            } catch(e) {
+                stack = [];
             }
-            if (window.history.length > 1) {
-                const prevLoc = window.location.href;
-                window.history.back();
-                setTimeout(() => {
-                    if (window.location.href === prevLoc) {
-                        window.location.href = fallback;
-                    }
-                }, 300);
+
+            const curPath = window.location.pathname + window.location.search;
+            while (stack.length > 0 && stack[stack.length - 1] === curPath) {
+                stack.pop();
+            }
+
+            let destination = null;
+            const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave'];
+            while (stack.length > 0) {
+                const candidate = stack.pop();
+                if (!candidate) continue;
+                const isTrap = trapPrefixes.some(prefix => candidate.startsWith(prefix));
+                if (!isTrap && candidate !== curPath) {
+                    destination = candidate;
+                    break;
+                }
+            }
+
+            if (destination) {
+                stack.push(destination);
+                try {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack));
+                    sessionStorage.setItem(GOING_BACK_KEY, 'true');
+                } catch(e) {}
+                window.location.href = destination;
             } else {
+                try {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify([fallback]));
+                } catch(e) {}
                 window.location.href = fallback;
             }
         }
+
 
         // ======== GPL CARD LOGIN CONTROLLER ========
         (function() {

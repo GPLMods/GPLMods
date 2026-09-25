@@ -105,6 +105,36 @@ const Donation = require('./models/donation');
 const MembershipOrder = require('./models/membershipOrder');
 const Coupon = require('./models/coupon');
 const DevtoolLog = require('./models/devtoolLog');
+const VolunteerApplication = require('./models/volunteerApplication');
+
+// Multer storage for Volunteer KYC documents
+const kycStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const kycDir = path.join(__dirname, 'public', 'uploads', 'kyc');
+        if (!fs.existsSync(kycDir)) {
+            fs.mkdirSync(kycDir, { recursive: true });
+        }
+        cb(null, kycDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, 'kyc-' + uniqueSuffix + ext);
+    }
+});
+const kycUpload = multer({
+    storage: kycStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = /jpeg|jpg|png|webp|pdf/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            return cb(null, true);
+        }
+        cb(new Error('Only JPG, PNG, WEBP, and PDF documents are allowed for KYC verification.'));
+    }
+});
 
 // Cashfree Payments SDK Initialization (Sandbox / Test Environment)
 const { Cashfree, CFEnvironment } = require('cashfree-pg');
@@ -10296,6 +10326,25 @@ app.get('/leaderboard', async (req, res) => {
                 return { name: f.name, score: f.downloads, subtext: `By ${f.uploader}`, avatar: iconUrl, link: `/${f.category}/${f.slug || f._id}` };
             }));
 
+        } else if (category === 'viewed') {
+            totalCount = await File.countDocuments({ status: 'live', isLatestVersion: true, ...dateFilter });
+            totalLabel = "Total Files Viewed";
+
+            const files = await File.find({ status: 'live', isLatestVersion: true, ...dateFilter })
+                .sort({ views: -1 })
+                .limit(100);
+                
+            results = await Promise.all(files.map(async (f) => {
+                const iconUrl = await getSmartImageUrl(f.iconKey || f.iconUrl);
+                return { 
+                    name: f.name, 
+                    score: (f.views || 0).toLocaleString() + ' views', 
+                    subtext: `By ${f.uploader}`, 
+                    avatar: iconUrl, 
+                    link: `/${f.category}/${f.slug || f._id}` 
+                };
+            }));
+
         } else if (category === 'followed') {
             totalCount = await User.countDocuments();
             totalLabel = "Total Registered Users";
@@ -10370,12 +10419,58 @@ app.get('/leaderboard', async (req, res) => {
             }));
         }
 
+        // ======== GLOBAL DONATIONS STATS (REGISTERED VS UNREGISTERED) ========
+        const globalDonationStats = await Donation.aggregate([
+            { $match: { status: 'successful' } },
+            {
+                $project: {
+                    user: 1,
+                    inrAmount: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ['$currency', 'USD'] }, then: { $multiply: ['$amount', 85] } },
+                                { case: { $eq: ['$currency', 'EUR'] }, then: { $multiply: ['$amount', 92] } },
+                                { case: { $eq: ['$currency', 'GBP'] }, then: { $multiply: ['$amount', 108] } }
+                            ],
+                            default: '$amount'
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    combinedTotal: { $sum: '$inrAmount' },
+                    combinedCount: { $sum: 1 },
+                    unregisteredTotal: {
+                        $sum: {
+                            $cond: [{ $eq: [{ $ifNull: ['$user', null] }, null] }, '$inrAmount', 0]
+                        }
+                    },
+                    unregisteredCount: {
+                        $sum: {
+                            $cond: [{ $eq: [{ $ifNull: ['$user', null] }, null] }, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const statsRecord = globalDonationStats && globalDonationStats.length > 0 ? globalDonationStats[0] : null;
+        const globalDonations = {
+            unregisteredTotal: Math.round(statsRecord?.unregisteredTotal || 0),
+            combinedTotal: Math.round(statsRecord?.combinedTotal || 0),
+            unregisteredCount: statsRecord?.unregisteredCount || 0,
+            combinedCount: statsRecord?.combinedCount || 0
+        };
+
         res.render('pages/leaderboard', {
             results,
             currentCategory: category,
             currentTimeframe: timeframe,
-            totalCount, // NEW
-            totalLabel  // NEW
+            totalCount,
+            totalLabel,
+            globalDonations
         });
 
     } catch (error) {
@@ -10540,7 +10635,7 @@ async function getUserDonationHistory(req, res) {
 
         const list = await Donation.find(matchQuery)
             .sort({ createdAt: -1 })
-            .limit(10)
+            .limit(50)
             .lean();
 
         return list.map(d => ({
@@ -10622,11 +10717,45 @@ app.get('/api/donation-history', async (req, res) => {
     }
 });
 
-app.get('/membership', (req, res) => {
-    res.render('pages/membership', {
-        cashfreeAppId: process.env.CASHFREE_APP_ID,
-        cashfreeEnv: process.env.CASHFREE_ENVIRONMENT || 'sandbox'
-    });
+app.get('/membership', async (req, res) => {
+    try {
+        let purchaseHistory = [];
+        if (req.user && req.user._id) {
+            const rawOrders = await MembershipOrder.find({ user: req.user._id })
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .lean();
+            purchaseHistory = rawOrders.map(o => {
+                const planCfg = MEMBERSHIP_PLANS[o.duration] || { name: o.duration, tier: o.tier };
+                return {
+                    id: String(o._id),
+                    orderId: o.orderId,
+                    amount: o.amount,
+                    currency: o.currency || 'INR',
+                    tier: o.tier,
+                    duration: o.duration,
+                    planName: planCfg.name || o.duration,
+                    status: o.status,
+                    refundStatus: o.refundStatus || 'none',
+                    refundAmount: o.refundAmount || 0,
+                    membershipExpiresAt: o.membershipExpiresAt,
+                    createdAt: o.createdAt
+                };
+            });
+        }
+        res.render('pages/membership', {
+            cashfreeAppId: process.env.CASHFREE_APP_ID,
+            cashfreeEnv: process.env.CASHFREE_ENVIRONMENT || 'sandbox',
+            purchaseHistory: purchaseHistory
+        });
+    } catch (err) {
+        console.error('Membership page error:', err);
+        res.render('pages/membership', {
+            cashfreeAppId: process.env.CASHFREE_APP_ID,
+            cashfreeEnv: process.env.CASHFREE_ENVIRONMENT || 'sandbox',
+            purchaseHistory: []
+        });
+    }
 });
 
 // ============================================================================
@@ -11042,6 +11171,9 @@ app.get('/payment/verify-donation', async (req, res) => {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=donation`);
         } else {
             const status = (orderData.order_status || 'incomplete').toLowerCase();
+            if (status === 'pending' || status === 'active' || status === 'processing') {
+                return res.redirect(`/payment/status?order_id=${encodeURIComponent(orderId)}&type=donation&status=pending`);
+            }
             return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=donation&status=${encodeURIComponent(status)}`);
         }
     } catch (error) {
@@ -11099,6 +11231,9 @@ app.get('/payment/verify-membership', async (req, res) => {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=membership`);
         } else {
             const status = (orderData.order_status || 'incomplete').toLowerCase();
+            if (status === 'pending' || status === 'active' || status === 'processing') {
+                return res.redirect(`/payment/status?order_id=${encodeURIComponent(orderId)}&type=membership&status=pending`);
+            }
             return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=membership&status=${encodeURIComponent(status)}`);
         }
     } catch (error) {
@@ -11162,6 +11297,10 @@ app.get('/payment/verify-subscription', async (req, res) => {
         if (isApproved) {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(subId)}&type=membership&is_sub=true`);
         } else {
+            const subStatus = subData ? (subData.subscription_status || '').toLowerCase() : '';
+            if (subStatus.includes('pending') || subStatus.includes('init')) {
+                return res.redirect(`/payment/status?order_id=${encodeURIComponent(subId)}&type=membership&status=pending`);
+            }
             return res.redirect(`/payment/failure?order_id=${encodeURIComponent(subId)}&type=membership&status=incomplete`);
         }
     } catch (error) {
@@ -11281,6 +11420,816 @@ app.get('/payment/failure', async (req, res) => {
             amount: '',
             currency: 'INR'
         });
+    }
+});
+
+/**
+ * Dedicated Transaction Status / Pending Page
+ */
+app.get('/payment/status', async (req, res) => {
+    try {
+        const orderId = req.query.order_id || req.query.orderId || req.query.sub_id || '';
+        let type = req.query.type || 'membership';
+        let status = req.query.status || 'pending';
+        let amount = '';
+        let currency = 'INR';
+
+        if (orderId) {
+            const memOrder = await MembershipOrder.findOne({
+                $or: [{ orderId: orderId }, { subscriptionId: orderId }]
+            });
+            if (memOrder) {
+                type = 'membership';
+                amount = memOrder.amount;
+                currency = memOrder.currency || 'INR';
+                if (memOrder.status === 'paid') status = 'success';
+            } else {
+                const donation = await Donation.findOne({ orderId: orderId });
+                if (donation) {
+                    type = 'donation';
+                    amount = donation.amount;
+                    currency = donation.currency || 'INR';
+                    if (donation.status === 'successful') status = 'success';
+                }
+            }
+        }
+
+        if (status === 'success' || status === 'paid') {
+            return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(type)}`);
+        }
+
+        res.render('pages/payment-status', {
+            pageTitle: 'Payment Status',
+            orderId: orderId,
+            type: type,
+            status: status,
+            amount: amount,
+            currency: currency,
+            title: 'Payment Pending / Processing',
+            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.'
+        });
+    } catch (err) {
+        console.error('[Payment Status Page Error]:', err);
+        res.render('pages/payment-status', {
+            pageTitle: 'Payment Status',
+            orderId: req.query.order_id || '',
+            type: req.query.type || 'membership',
+            status: 'pending',
+            amount: '',
+            currency: 'INR',
+            title: 'Payment Pending',
+            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.'
+        });
+    }
+});
+
+/**
+ * API: Check live payment status (for polling and manual check)
+ */
+app.get('/api/payment-status', async (req, res) => {
+    try {
+        const orderId = req.query.order_id || req.query.orderId || req.query.sub_id;
+        if (!orderId) {
+            return res.status(400).json({ error: 'Order ID is required' });
+        }
+
+        let isPaid = false;
+        let status = 'pending';
+
+        // Check local DB first
+        const memOrder = await MembershipOrder.findOne({
+            $or: [{ orderId: orderId }, { subscriptionId: orderId }]
+        });
+
+        if (memOrder && memOrder.status === 'paid') {
+            return res.json({ status: 'paid', isPaid: true, type: 'membership' });
+        }
+        const donation = await Donation.findOne({ orderId: orderId });
+        if (donation && donation.status === 'successful') {
+            return res.json({ status: 'successful', isPaid: true, type: 'donation' });
+        }
+
+        // Query Cashfree directly for live status
+        try {
+            const orderResp = await cashfree.PGFetchOrder(orderId);
+            const orderData = orderResp.data;
+            if (orderData.order_status === 'PAID') {
+                isPaid = true;
+                status = 'paid';
+                if (memOrder && memOrder.status !== 'paid') {
+                    memOrder.status = 'paid';
+                    memOrder.cfPaymentId = String(orderData.cf_order_id || '');
+                    const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus' };
+                    const now = new Date();
+                    const expiresAt = new Date();
+                    expiresAt.setDate(now.getDate() + durationConfig.durationDays);
+                    memOrder.membershipExpiresAt = expiresAt;
+                    await memOrder.save();
+
+                    const targetTier = memOrder.tier || durationConfig.tier || 'plus';
+                    await User.findByIdAndUpdate(memOrder.user, {
+                        membership: targetTier === 'lite' ? 'lite' : 'plus',
+                        membershipExpiresAt: expiresAt,
+                        membershipPlan: memOrder.duration
+                    });
+                } else if (donation && donation.status !== 'successful') {
+                    donation.status = 'successful';
+                    donation.cfPaymentId = String(orderData.cf_order_id || '');
+                    await donation.save();
+                }
+            } else if (orderData.order_status === 'EXPIRED' || orderData.order_status === 'CANCELLED') {
+                status = 'failed';
+            } else {
+                status = 'pending';
+            }
+        } catch (fetchErr) {
+            console.warn('[API Payment Status Fetch Warning]:', fetchErr.message);
+        }
+
+        return res.json({
+            status: status,
+            isPaid: isPaid,
+            orderId: orderId
+        });
+    } catch (err) {
+        console.error('[API Payment Status Error]:', err);
+        return res.status(500).json({ error: 'Failed to check status' });
+    }
+});
+
+/**
+ * ============================================================================
+ * COMPONENT 3: DEDICATED MEMBERSHIP MANAGEMENT (/my-membership)
+ * ============================================================================
+ */
+app.get(['/my-membership', '/membership/manage'], async (req, res) => {
+    if (!req.user) {
+        return res.redirect('/login?redirect=/my-membership');
+    }
+
+    try {
+        const user = await User.findById(req.user._id).lean();
+        const orders = await MembershipOrder.find({ user: user._id })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .lean();
+
+        const activeOrder = orders.find(o => o.status === 'paid');
+        const planKey = user.membershipPlan || (activeOrder ? activeOrder.duration : 'free');
+        const planConfig = MEMBERSHIP_PLANS[planKey] || { 
+            name: user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member'),
+            tier: user.membership || 'free'
+        };
+
+        const isLifetime = Boolean(
+            (user.membershipPlan && user.membershipPlan.includes('lifetime')) ||
+            (planKey && planKey.includes('lifetime'))
+        );
+
+        let daysRemaining = 'N/A';
+        let isExpired = false;
+
+        if (isLifetime) {
+            daysRemaining = 'Lifetime Access';
+        } else if (user.membershipExpiresAt) {
+            const diffMs = new Date(user.membershipExpiresAt).getTime() - Date.now();
+            if (diffMs > 0) {
+                daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            } else {
+                daysRemaining = 0;
+                isExpired = true;
+            }
+        }
+
+        // Refund Eligibility calculation for latest active order strictly per GPLMods Refund Policy
+        let refundEligibility = {
+            eligible: false,
+            percent: 0,
+            amount: 0,
+            reason: '',
+            hoursElapsed: 0
+        };
+
+        const onCooldown = Boolean(
+            user.lastRefundAt && (Date.now() - new Date(user.lastRefundAt).getTime() < 3 * 24 * 60 * 60 * 1000)
+        );
+
+        if (activeOrder && activeOrder.status === 'paid' && activeOrder.refundStatus === 'none' && !onCooldown) {
+            const hoursElapsed = (Date.now() - new Date(activeOrder.createdAt).getTime()) / (1000 * 60 * 60);
+            refundEligibility.hoursElapsed = Math.round(hoursElapsed);
+            const dur = activeOrder.duration || '';
+
+            if (dur.includes('monthly')) {
+                if (hoursElapsed <= 168) { // 7 days = 168 hours
+                    refundEligibility.eligible = true;
+                    refundEligibility.percent = 100;
+                    refundEligibility.amount = activeOrder.amount;
+                } else {
+                    refundEligibility.reason = '7-day full refund window has expired for monthly plans.';
+                }
+            } else if (dur.includes('6months') || dur.includes('yearly')) {
+                if (hoursElapsed <= 168) {
+                    refundEligibility.eligible = true;
+                    refundEligibility.percent = 100;
+                    refundEligibility.amount = activeOrder.amount;
+                } else if (hoursElapsed <= 336) { // 14 days = 336 hours
+                    refundEligibility.eligible = true;
+                    refundEligibility.percent = 80;
+                    refundEligibility.amount = Math.round(activeOrder.amount * 0.8);
+                } else {
+                    refundEligibility.reason = '14-day refund window has expired for 6-Month/Yearly plans.';
+                }
+            } else if (dur.includes('lifetime')) {
+                if (hoursElapsed <= 168) {
+                    refundEligibility.eligible = true;
+                    refundEligibility.percent = 100;
+                    refundEligibility.amount = activeOrder.amount;
+                } else {
+                    refundEligibility.eligible = true;
+                    refundEligibility.percent = 90; // 10% processing fee
+                    refundEligibility.amount = Math.round(activeOrder.amount * 0.9);
+                }
+            }
+        } else if (onCooldown) {
+            refundEligibility.reason = 'Refund requests are currently on 3-day cooldown from your last refund.';
+        }
+
+        res.render('pages/my-membership', {
+            pageTitle: 'My Membership Management',
+            user: user,
+            activeOrder: activeOrder,
+            orders: orders,
+            currentPlan: planConfig,
+            planKey: planKey,
+            isLifetime: isLifetime,
+            daysRemaining: daysRemaining,
+            isExpired: isExpired,
+            autoRenew: user.autoRenew !== false,
+            scheduledChange: user.scheduledPlanChange || null,
+            refundEligibility: refundEligibility,
+            onCooldown: onCooldown,
+            membershipPlans: MEMBERSHIP_PLANS
+        });
+    } catch (err) {
+        console.error('[My Membership Page Error]:', err);
+        res.status(500).send('Error loading membership details.');
+    }
+});
+
+/**
+ * Cancel Auto-Renew Subscription
+ */
+app.post('/membership/cancel-subscription', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    try {
+        const updatedUser = await User.findByIdAndUpdate(req.user._id, {
+            autoRenew: false,
+            membershipCancelledAt: new Date()
+        }, { new: true });
+
+        await MembershipOrder.findOneAndUpdate(
+            { user: req.user._id, status: 'paid' },
+            { autoRenew: false },
+            { sort: { createdAt: -1 } }
+        );
+
+        if (updatedUser.subscriptionId) {
+            try {
+                await cashfree.SubsCancelSubscription(updatedUser.subscriptionId);
+            } catch (subCancelErr) {
+                console.warn('[SubsCancelSubscription Warning]:', subCancelErr.message);
+            }
+        }
+
+        const expiryFormatted = updatedUser.membershipExpiresAt 
+            ? new Date(updatedUser.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'the end of your billing cycle';
+
+        return res.json({
+            success: true,
+            message: `Your subscription auto-renew has been cancelled. You will NOT be billed again. Your membership perks remain fully active until ${expiryFormatted}.`
+        });
+    } catch (err) {
+        console.error('[Cancel Subscription Error]:', err);
+        return res.status(500).json({ error: 'Failed to cancel subscription.' });
+    }
+});
+
+/**
+ * Upgrade / Downgrade Plan Handler
+ * - Lifetime memberships cannot be downgraded
+ * - Users can upgrade to Lifetime from any tier
+ */
+app.post('/membership/change-plan', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { targetPlan } = req.body;
+    if (!targetPlan || !MEMBERSHIP_PLANS[targetPlan]) {
+        return res.status(400).json({ error: 'Invalid plan selected.' });
+    }
+
+    try {
+        const user = await User.findById(req.user._id);
+        const isCurrentLifetime = Boolean(user.membershipPlan && user.membershipPlan.includes('lifetime'));
+        const isTargetLifetime = Boolean(targetPlan.includes('lifetime'));
+
+        // STRICT CONSTRAINT: Users CANNOT downgrade from Lifetime
+        if (isCurrentLifetime && !isTargetLifetime) {
+            return res.status(400).json({
+                error: 'Downgrades from Lifetime Membership are strictly prohibited according to GPLMods Policy.'
+            });
+        }
+
+        const targetConfig = MEMBERSHIP_PLANS[targetPlan];
+
+        // If target is Lifetime or an immediate upgrade from Lite to Plus
+        if (isTargetLifetime || (user.membership === 'lite' && targetConfig.tier === 'plus')) {
+            return res.json({
+                success: true,
+                requirePayment: true,
+                targetPlan: targetPlan,
+                message: `Upgrade to ${targetConfig.name} requires checkout. Redirecting to payment...`
+            });
+        }
+
+        // Otherwise schedule plan change for the next renewal date
+        const effectiveDate = user.membershipExpiresAt || new Date();
+        user.scheduledPlanChange = {
+            targetPlan: targetPlan,
+            targetTier: targetConfig.tier,
+            effectiveDate: effectiveDate
+        };
+        await user.save();
+
+        const dateStr = new Date(effectiveDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return res.json({
+            success: true,
+            scheduled: true,
+            message: `Your membership change to ${targetConfig.name} has been scheduled. You will automatically switch on ${dateStr}.`
+        });
+    } catch (err) {
+        console.error('[Change Plan Error]:', err);
+        return res.status(500).json({ error: 'Failed to schedule plan change.' });
+    }
+});
+
+/**
+ * Self-Service Refund Request (GPLMods Refund Policy)
+ */
+app.post('/membership/request-refund', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { orderId, reason } = req.body;
+    if (!orderId) {
+        return res.status(400).json({ error: 'Order ID is required.' });
+    }
+
+    try {
+        const user = await User.findById(req.user._id);
+        
+        // Cooldown check (3 days / 72 hours)
+        if (user.lastRefundAt && (Date.now() - new Date(user.lastRefundAt).getTime() < 3 * 24 * 60 * 60 * 1000)) {
+            return res.status(400).json({
+                error: 'A 3-day cooldown period applies between refund requests and re-subscriptions. Please wait before submitting another request.'
+            });
+        }
+
+        const order = await MembershipOrder.findOne({ orderId: orderId, user: user._id });
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found.' });
+        }
+        if (order.status !== 'paid') {
+            return res.status(400).json({ error: 'Only paid orders can be refunded.' });
+        }
+        if (order.refundStatus !== 'none') {
+            return res.status(400).json({ error: 'A refund has already been requested or processed for this order.' });
+        }
+
+        // Elapsed hours
+        const elapsedHours = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+        let refundAmount = 0;
+        const dur = order.duration || '';
+
+        if (dur.includes('monthly')) {
+            if (elapsedHours <= 168) {
+                refundAmount = order.amount;
+            } else {
+                return res.status(400).json({ error: 'Monthly memberships are only refundable within 7 days (168 hours) of purchase.' });
+            }
+        } else if (dur.includes('6months') || dur.includes('yearly')) {
+            if (elapsedHours <= 168) {
+                refundAmount = order.amount;
+            } else if (elapsedHours <= 336) {
+                refundAmount = Math.round(order.amount * 0.8);
+            } else {
+                return res.status(400).json({ error: '6-Month and Yearly memberships are only refundable within 14 days of purchase.' });
+            }
+        } else if (dur.includes('lifetime')) {
+            if (elapsedHours <= 168) {
+                refundAmount = order.amount;
+            } else {
+                refundAmount = Math.round(order.amount * 0.9);
+            }
+        }
+
+        if (refundAmount <= 0) {
+            return res.status(400).json({ error: 'This order is not eligible for a refund according to our policy.' });
+        }
+
+        // Record refund request on order
+        order.status = 'refund_requested';
+        order.refundStatus = 'pending';
+        order.refundRequestedAt = new Date();
+        order.refundAmount = refundAmount;
+        order.refundReason = reason || 'Customer request under Refund Policy';
+        await order.save();
+
+        // Update user cooldown
+        user.lastRefundAt = new Date();
+        await user.save();
+
+        // Create support ticket
+        try {
+            await SupportTicket.create({
+                user: user._id,
+                username: user.username,
+                email: user.email,
+                subject: `Refund Request - ${order.orderId} (₹${refundAmount})`,
+                category: 'billing',
+                message: `Refund requested for order ${order.orderId} (${order.duration}). Amount: ₹${refundAmount}. Reason: ${reason || 'Not specified'}.`
+            });
+        } catch (ticketErr) {
+            console.warn('[Create Support Ticket Warning]:', ticketErr.message);
+        }
+
+        // Create user notification
+        try {
+            await UserNotification.create({
+                user: user._id,
+                title: 'Refund Request Registered',
+                message: `Your refund request for ₹${refundAmount} (Order: ${order.orderId}) has been registered under the GPLMods Refund Policy and is being processed.`,
+                type: 'info'
+            });
+        } catch (notifErr) {
+            console.warn('[Create User Notification Warning]:', notifErr.message);
+        }
+
+        return res.json({
+            success: true,
+            refundAmount: refundAmount,
+            currency: order.currency || 'INR',
+            message: `Your refund request for ₹${refundAmount} has been registered under the GPLMods Refund Policy. The amount will be returned to your original payment method within 5-7 business days.`
+        });
+    } catch (err) {
+        console.error('[Request Refund Error]:', err);
+        return res.status(500).json({ error: 'Failed to submit refund request.' });
+    }
+});
+
+/**
+ * ============================================================================
+ * COMPONENT 4: VOLUNTEER SUPPORT TEAM & ADMIN APPLICATION SYSTEM (/volunteer)
+ * ============================================================================
+ */
+app.get('/volunteer', async (req, res) => {
+    try {
+        const supportCount = await VolunteerApplication.countDocuments({
+            role: 'support',
+            paymentStatus: 'paid',
+            applicationStatus: { $in: ['submitted', 'under_review', 'approved'] }
+        });
+        const adminCount = await VolunteerApplication.countDocuments({
+            role: 'admin',
+            paymentStatus: 'paid',
+            applicationStatus: { $in: ['submitted', 'under_review', 'approved'] }
+        });
+
+        let myApplication = null;
+        if (req.user) {
+            myApplication = await VolunteerApplication.findOne({ user: req.user._id })
+                .sort({ createdAt: -1 })
+                .lean();
+        }
+
+        res.render('pages/volunteer', {
+            pageTitle: 'Volunteer Support Team & Admin Staff Application',
+            supportCount: supportCount,
+            adminCount: adminCount,
+            maxSlots: 10,
+            myApplication: myApplication,
+            cashfreeAppId: process.env.CASHFREE_APP_ID,
+            cashfreeEnv: process.env.CASHFREE_ENVIRONMENT || 'sandbox'
+        });
+    } catch (err) {
+        console.error('[Volunteer Page Error]:', err);
+        res.status(500).send('Error loading volunteer applications.');
+    }
+});
+
+/**
+ * Create Cashfree Order for Volunteer Safety Commitment Fee
+ * Support Team: ₹150 / mo, Admin Staff: ₹300 / mo
+ */
+app.post('/create-volunteer-order', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Please log in to submit a volunteer application.' });
+    }
+
+    const { role } = req.body;
+    if (role !== 'support' && role !== 'admin') {
+        return res.status(400).json({ error: 'Invalid role selected.' });
+    }
+
+    try {
+        // Enforce 10 capacity slots limit
+        const activeCount = await VolunteerApplication.countDocuments({
+            role: role,
+            paymentStatus: 'paid',
+            applicationStatus: { $in: ['submitted', 'under_review', 'approved'] }
+        });
+
+        if (activeCount >= 10) {
+            return res.status(400).json({
+                error: `Applications for the ${role === 'admin' ? 'Community Admin' : 'Support Team'} role are currently full (10/10 slots occupied).`
+            });
+        }
+
+        const fee = role === 'admin' ? 300 : 150;
+        const orderId = `GPLVOL_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const orderRequest = {
+            order_id: orderId,
+            order_amount: fee,
+            order_currency: 'INR',
+            customer_details: {
+                customer_id: String(req.user._id),
+                customer_name: req.user.username,
+                customer_email: req.user.email,
+                customer_phone: req.user.phone || '9999999999'
+            },
+            order_meta: {
+                return_url: `${baseUrl}/volunteer/verify-fee?order_id={order_id}`,
+                notify_url: `${baseUrl}/webhook/cashfree/pg`
+            },
+            order_note: `GPL Mods Volunteer Commitment Fee: ${role === 'admin' ? 'Admin' : 'Support Team'} (₹${fee})`
+        };
+
+        const response = await cashfree.PGCreateOrder(orderRequest);
+
+        return res.json({
+            success: true,
+            order_id: orderId,
+            payment_session_id: response.data.payment_session_id,
+            amount: fee
+        });
+    } catch (err) {
+        console.error('[Volunteer Order Creation Error]:', err.response?.data || err.message);
+        return res.status(500).json({ error: 'Failed to initiate commitment fee payment.' });
+    }
+});
+
+/**
+ * Return Verification Handler for Volunteer Fee
+ */
+app.get('/volunteer/verify-fee', async (req, res) => {
+    const orderId = req.query.order_id || req.query.orderId;
+    if (!orderId) {
+        return res.redirect('/volunteer');
+    }
+
+    try {
+        const orderResponse = await cashfree.PGFetchOrder(orderId);
+        const orderData = orderResponse.data;
+        const isPaid = orderData.order_status === 'PAID';
+
+        if (isPaid) {
+            return res.redirect(`/volunteer?status=fee_paid&order_id=${encodeURIComponent(orderId)}`);
+        } else {
+            return res.redirect(`/volunteer?status=fee_failed&order_id=${encodeURIComponent(orderId)}`);
+        }
+    } catch (err) {
+        console.error('[Volunteer Fee Verification Error]:', err.message);
+        return res.redirect(`/volunteer?status=fee_failed&order_id=${encodeURIComponent(orderId)}`);
+    }
+});
+
+/**
+ * Submit Volunteer Application Form with KYC Upload & Validation
+ */
+app.post('/volunteer/apply', kycUpload.single('kycDocument'), async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Please log in to apply.' });
+    }
+
+    const {
+        fullName, phone, dateOfBirth,
+        street, city, district, state, pincode, country,
+        discord, telegram, github, twitter,
+        role, experience, orderId,
+        isVoluntaryAgreed, oneMonthLockinAgreed, eighteenPlusConfirmed, codeOfConductAgreed
+    } = req.body;
+
+    let languages = req.body.languages;
+    if (typeof languages === 'string') {
+        try {
+            languages = JSON.parse(languages);
+        } catch (_) {
+            languages = languages.split(',').map(s => s.trim().toLowerCase());
+        }
+    }
+    if (!Array.isArray(languages)) {
+        languages = [];
+    }
+    const normalizedLangs = languages.map(l => String(l).toLowerCase().trim());
+
+    // 1. Mandatory Language Validation: Hindi, English, or Hinglish
+    const hasMandatoryLang = normalizedLangs.some(l => 
+        l === 'hindi' || l === 'english' || l === 'hinglish' ||
+        l.includes('hindi') || l.includes('english') || l.includes('hinglish')
+    );
+
+    if (!hasMandatoryLang) {
+        return res.status(400).json({
+            error: 'Language Requirement Failed: You must be proficient in at least one of Hindi, English, or Hinglish.'
+        });
+    }
+
+    // 2. 18+ Age Validation
+    if (!dateOfBirth) {
+        return res.status(400).json({ error: 'Date of Birth is required for 18+ age verification.' });
+    }
+    const dob = new Date(dateOfBirth);
+    const ageYears = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    if (isNaN(ageYears) || ageYears < 18) {
+        return res.status(400).json({
+            error: 'Age Restriction: You must be at least 18 years old to join the Volunteer Support Team or Admin Staff.'
+        });
+    }
+
+    // 3. Agreements Validation (1-month lock-in, no salary, code of conduct)
+    const isVoluntary = isVoluntaryAgreed === true || isVoluntaryAgreed === 'true' || isVoluntaryAgreed === 'on';
+    const isLockedIn = oneMonthLockinAgreed === true || oneMonthLockinAgreed === 'true' || oneMonthLockinAgreed === 'on';
+    const isEighteen = eighteenPlusConfirmed === true || eighteenPlusConfirmed === 'true' || eighteenPlusConfirmed === 'on';
+    const isCodeAgreed = codeOfConductAgreed === true || codeOfConductAgreed === 'true' || codeOfConductAgreed === 'on';
+
+    if (!isVoluntary || !isLockedIn || !isEighteen || !isCodeAgreed) {
+        return res.status(400).json({
+            error: 'You must agree to all mandatory terms including the 1-month lock-in period and voluntary status.'
+        });
+    }
+
+    // 4. Capacity Check (10 slots)
+    const activeRoleCount = await VolunteerApplication.countDocuments({
+        role: role,
+        paymentStatus: 'paid',
+        applicationStatus: { $in: ['submitted', 'under_review', 'approved'] }
+    });
+    if (activeRoleCount >= 10) {
+        return res.status(400).json({
+            error: `Applications for the ${role === 'admin' ? 'Admin' : 'Support Team'} role have reached maximum capacity (10/10 slots).`
+        });
+    }
+
+    // 5. Verify Fee Payment via Cashfree
+    let paymentPaid = false;
+    let cfPaymentId = '';
+    const feeAmount = role === 'admin' ? 300 : 150;
+
+    if (orderId) {
+        try {
+            const orderResp = await cashfree.PGFetchOrder(orderId);
+            if (orderResp.data && orderResp.data.order_status === 'PAID') {
+                paymentPaid = true;
+                cfPaymentId = String(orderResp.data.cf_order_id || '');
+            }
+        } catch (fetchErr) {
+            console.warn('[Volunteer KYC Order Fetch Warning]:', fetchErr.message);
+        }
+    }
+
+    if (!paymentPaid) {
+        return res.status(400).json({
+            error: 'Commitment fee payment could not be verified. Please complete the ₹' + feeAmount + ' fee payment.'
+        });
+    }
+
+    try {
+        const kycKey = req.file ? `/uploads/kyc/${req.file.filename}` : '';
+
+        const application = await VolunteerApplication.create({
+            user: req.user._id,
+            fullName: fullName || req.user.username,
+            email: req.user.email,
+            phone: phone || '',
+            dateOfBirth: dob,
+            address: {
+                street: street || '',
+                city: city || '',
+                district: district || '',
+                state: state || '',
+                pincode: pincode || '',
+                country: country || 'India'
+            },
+            socialHandles: {
+                discord: discord || '',
+                telegram: telegram || '',
+                github: github || '',
+                twitter: twitter || ''
+            },
+            role: role,
+            languages: normalizedLangs,
+            experience: experience || '',
+            kycDocumentKey: kycKey,
+            isVoluntaryAgreed: isVoluntary,
+            oneMonthLockinAgreed: isLockedIn,
+            eighteenPlusConfirmed: isEighteen,
+            codeOfConductAgreed: isCodeAgreed,
+            feeAmount: feeAmount,
+            orderId: orderId,
+            cfPaymentId: cfPaymentId,
+            paymentStatus: 'paid',
+            paidAt: new Date(),
+            applicationStatus: 'submitted'
+        });
+
+        // Create support ticket for admin review
+        try {
+            await SupportTicket.create({
+                user: req.user._id,
+                username: req.user.username,
+                email: req.user.email,
+                subject: `New Volunteer Application: ${role.toUpperCase()} - ${fullName}`,
+                category: 'account',
+                message: `User ${req.user.username} submitted a volunteer application for ${role}. Fee paid: ₹${feeAmount}. Mandatory language: ${normalizedLangs.join(', ')}. Age: ${Math.floor(ageYears)}.`
+            });
+        } catch (_) {}
+
+        return res.json({
+            success: true,
+            message: 'Your volunteer application and KYC documents have been submitted successfully! Our administrative team will review your submission.'
+        });
+    } catch (saveErr) {
+        console.error('[Volunteer Application Save Error]:', saveErr);
+        return res.status(500).json({ error: 'Failed to submit volunteer application.' });
+    }
+});
+
+/**
+ * Volunteer Fee Refund Request (7-Day Money-Back Guarantee)
+ */
+app.post('/volunteer/request-refund', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { applicationId } = req.body;
+    if (!applicationId) {
+        return res.status(400).json({ error: 'Application ID is required' });
+    }
+
+    try {
+        const appDoc = await VolunteerApplication.findOne({ _id: applicationId, user: req.user._id, paymentStatus: 'paid' });
+        if (!appDoc) {
+            return res.status(404).json({ error: 'Application not found or fee not paid.' });
+        }
+
+        const elapsedDays = (Date.now() - new Date(appDoc.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (elapsedDays > 7) {
+            return res.status(400).json({
+                error: 'The 7-day money-back guarantee window for this volunteer application has expired.'
+            });
+        }
+
+        appDoc.refundStatus = 'pending';
+        appDoc.refundRequestedAt = new Date();
+        await appDoc.save();
+
+        try {
+            await SupportTicket.create({
+                user: req.user._id,
+                username: req.user.username,
+                email: req.user.email,
+                subject: `Volunteer Fee Refund Request - Application #${appDoc._id}`,
+                category: 'billing',
+                message: `Refund of ₹${appDoc.feeAmount} requested for volunteer application #${appDoc._id} under 7-day guarantee.`
+            });
+        } catch (_) {}
+
+        return res.json({
+            success: true,
+            message: `Your refund request for the ₹${appDoc.feeAmount} volunteer commitment fee has been registered under the 7-day guarantee.`
+        });
+    } catch (err) {
+        console.error('[Volunteer Refund Request Error]:', err);
+        return res.status(500).json({ error: 'Failed to submit refund request.' });
     }
 });
 
@@ -13046,6 +13995,11 @@ async function getOrRotateDebuggerKey(forceRotate = false, reason = 'routine') {
         const isExpired = !siteState.debuggerHourlyKeyExpiresAt || siteState.debuggerHourlyKeyExpiresAt <= now;
         const isMissing = !siteState.debuggerHourlyKey;
 
+        if (!siteState.debuggerMasterKey || siteState.debuggerMasterKey === 'OPAdmin@2026') {
+            siteState.debuggerMasterKey = 'T1BBZG1pbkAyMDI2';
+            await siteState.save();
+        }
+
         if (forceRotate || isExpired || isMissing) {
             const newKey = generate11DigitKey();
             siteState.debuggerHourlyKey = newKey;
@@ -13055,21 +14009,21 @@ async function getOrRotateDebuggerKey(forceRotate = false, reason = 'routine') {
             return {
                 key: siteState.debuggerHourlyKey,
                 expiresAt: siteState.debuggerHourlyKeyExpiresAt,
-                masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026'
+                masterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2'
             };
         }
 
         return {
             key: siteState.debuggerHourlyKey,
             expiresAt: siteState.debuggerHourlyKeyExpiresAt,
-            masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026'
+            masterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2'
         };
     } catch (err) {
         console.error("[Debugger Security] Error rotating key:", err);
         return {
             key: '92840192840',
             expiresAt: new Date(Date.now() + 3600000),
-            masterKey: 'OPAdmin@2026'
+            masterKey: 'T1BBZG1pbkAyMDI2'
         };
     }
 }
@@ -13125,7 +14079,20 @@ app.post('/api/devtool/verify-key', async (req, res) => {
         const { key: activeHourlyKey, masterKey } = await getOrRotateDebuggerKey(false);
 
         // A. Check Master Key (Multi-use, never expires)
-        if (trimmedCode === masterKey || trimmedCode === 'OPAdmin@2026') {
+        const isMasterKeyMatch = (
+            trimmedCode === masterKey ||
+            trimmedCode === 'T1BBZG1pbkAyMDI2' ||
+            trimmedCode === 'OPAdmin@2026' ||
+            (function() {
+                try {
+                    return Buffer.from(trimmedCode, 'base64').toString('utf8') === 'OPAdmin@2026';
+                } catch (e) {
+                    return false;
+                }
+            })()
+        );
+
+        if (isMasterKeyMatch) {
             if (logId && Types.ObjectId.isValid(logId)) {
                 await DevtoolLog.findByIdAndUpdate(logId, {
                     status: 'authorized-by-master-key',

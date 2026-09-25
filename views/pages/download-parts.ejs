@@ -168,14 +168,8 @@
     <main class="container">
         <div class="parts-page-container">
 
-            <!-- ======== DYNAMIC GO BACK BUTTON (Replaced hardcoded link) ======== -->
-            <div style="margin-bottom: 20px;">
-                <a href="javascript:history.back()"
-                    style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; font-weight: 600; font-size: 1.05em; transition: color 0.3s ease;"
-                    onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--silver)'">
-                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Go Back
-                </a>
-            </div>
+            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+            <%- include('../partials/go-back-button', { fallback: (typeof file !== 'undefined' && file && file.category ? ('/mods/' + file.category + '/' + (file.slug || file._id)) : '/') }) %>
             <!-- ================================================================== -->
 
 

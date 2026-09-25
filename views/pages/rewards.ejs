@@ -58,11 +58,7 @@
     <div class="rewards-container">
         
         <!-- ✅ NEW: Dynamic Back Button -->
-        <div class="back-btn-wrapper" style="margin-bottom: 20px;">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/dashboard' }) %>
 
         <!-- Live Status & Progress Bar -->
         <div class="status-box">

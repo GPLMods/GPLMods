@@ -2,11 +2,7 @@
 
     <main>
         <div class="container" style="padding-top: 2rem;">
-            <div class="back-btn-wrapper">
-                <a href="javascript:history.back()" class="dynamic-back-btn">
-                    <i class="fas fa-arrow-left"></i> Go Back
-                </a>
-            </div>
+            <%- include('../partials/go-back-button', { fallback: '/' }) %>
         </div>
 
         <section class="page-header" style="border-bottom: 1px solid var(--dark-gray); padding-bottom: 30px; padding-top: 20px;">

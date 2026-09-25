@@ -319,11 +319,7 @@
 
     <main>
         <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <div style="max-width: 900px; margin: 20px auto 0 auto; padding: 0 20px; display: flex; justify-content: flex-start;">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 900px; margin: 20px auto 0 auto; padding: 0 20px; display: flex; justify-content: flex-start;' }) %>
         <!-- ======================================== -->
         <div class="lb-header" style="padding-top: 20px;">
             <h1>Global <span>Leaderboards</span></h1>
@@ -338,6 +334,8 @@
                         class="lb-tab <%= currentCategory === 'uploaders' ? 'active' : '' %>">Top Uploaders</a>
                     <a href="/leaderboard?category=downloaded&timeframe=<%= currentTimeframe %>"
                         class="lb-tab <%= currentCategory === 'downloaded' ? 'active' : '' %>">Most Downloaded</a>
+                    <a href="/leaderboard?category=viewed&timeframe=<%= currentTimeframe %>"
+                        class="lb-tab <%= currentCategory === 'viewed' ? 'active' : '' %>">Most Viewed</a>
                     <a href="/leaderboard?category=followed"
                         class="lb-tab <%= currentCategory === 'followed' ? 'active' : '' %>">Most Followed</a>
                     <a href="/leaderboard?category=donators&timeframe=<%= currentTimeframe %>"
@@ -356,10 +354,64 @@
                         <a href="/leaderboard?category=<%= currentCategory %>&timeframe=all-time"
                             class="time-tab <%= currentTimeframe === 'all-time' ? 'active' : '' %>">All-Time</a>
                     </div>
-                    <% } %>
+                <% } %>
             </div>
 
-            <!-- NEW: Total Count Summary -->
+            <!-- ======== GLOBAL DONATIONS SECTION ======== -->
+            <% if (currentCategory === 'donators' && typeof globalDonations !== 'undefined' && globalDonations) { %>
+                <div class="global-donations-wrapper" style="max-width: 900px; margin: 0 auto 30px auto;">
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <span style="font-size: 0.8em; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); font-weight: 700;">
+                            <i class="fas fa-globe"></i> Community Impact
+                        </span>
+                        <h2 style="color: var(--white); font-size: 1.8em; margin: 4px 0 0 0;">Global Donations</h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <!-- Section 1: Unregistered Users Only -->
+                        <div style="background: rgba(18, 18, 22, 0.95); border: 1px solid rgba(70, 181, 232, 0.35); border-radius: 14px; padding: 22px; text-align: left; position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #46b5e8, #00d2ff);"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <span style="font-size: 0.75em; text-transform: uppercase; color: #46b5e8; letter-spacing: 0.8px; font-weight: 700; background: rgba(70, 181, 232, 0.1); padding: 3px 8px; border-radius: 6px;">Section 1: Guest Support</span>
+                                    <h3 style="color: var(--white); font-size: 1.25em; margin: 8px 0 0 0;">Unregistered Donors Only</h3>
+                                </div>
+                                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(70, 181, 232, 0.15); color: #46b5e8; display: flex; align-items: center; justify-content: center; font-size: 1.3em;">
+                                    <i class="fas fa-user-secret"></i>
+                                </div>
+                            </div>
+                            <div style="font-size: 2.3em; font-weight: 800; color: #46b5e8; margin-bottom: 6px;">
+                                ₹<%= (globalDonations.unregisteredTotal || 0).toLocaleString('en-IN') %>
+                            </div>
+                            <p style="color: var(--silver); font-size: 0.85em; margin: 0; line-height: 1.5;">
+                                Total raised exclusively from generous unregistered guest supporters (<%= (globalDonations.unregisteredCount || 0).toLocaleString() %> donations).
+                            </p>
+                        </div>
+
+                        <!-- Section 2: Combined Total (Registered + Unregistered) -->
+                        <div style="background: rgba(18, 18, 22, 0.95); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 14px; padding: 22px; text-align: left; position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), #2ecc71);"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <span style="font-size: 0.75em; text-transform: uppercase; color: var(--gold); letter-spacing: 0.8px; font-weight: 700; background: rgba(255, 215, 0, 0.1); padding: 3px 8px; border-radius: 6px;">Section 2: Entire Community Pool</span>
+                                    <h3 style="color: var(--white); font-size: 1.25em; margin: 8px 0 0 0;">Combined Global Donations</h3>
+                                </div>
+                                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 215, 0, 0.15); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.3em;">
+                                    <i class="fas fa-hand-holding-heart"></i>
+                                </div>
+                            </div>
+                            <div style="font-size: 2.3em; font-weight: 800; color: var(--gold); margin-bottom: 6px;">
+                                ₹<%= (globalDonations.combinedTotal || 0).toLocaleString('en-IN') %>
+                            </div>
+                            <p style="color: var(--silver); font-size: 0.85em; margin: 0; line-height: 1.5;">
+                                Combined total raised across registered members &amp; unregistered users (<%= (globalDonations.combinedCount || 0).toLocaleString() %> total donations).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+            <!-- ========================================== -->
+
+            <!-- Total Count Summary -->
             <div class="lb-stats-summary">
                 Out of <strong>
                     <%= totalCount.toLocaleString() %>

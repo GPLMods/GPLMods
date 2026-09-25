@@ -57,6 +57,21 @@ const UserSchema = new Schema({
     membershipPlan: {
         type: String
     },
+    autoRenew: {
+        type: Boolean,
+        default: true
+    },
+    scheduledPlanChange: {
+        targetPlan: { type: String },
+        targetTier: { type: String },
+        effectiveDate: { type: Date }
+    },
+    lastRefundAt: {
+        type: Date
+    },
+    membershipCancelledAt: {
+        type: Date
+    },
     referralCode: {
         type: String,
         unique: true,

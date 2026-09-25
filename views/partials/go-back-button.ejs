@@ -1,0 +1,15 @@
+<%
+    // Dynamic Go Back Button Partial
+    // Accepts optional: fallback (default '/'), label (default 'Go Back'), className (default ''), wrapperStyle (default ''), wrapperClass (default 'back-btn-wrapper'), buttonClass (default 'dynamic-back-btn'), buttonStyle (default '')
+    const targetFallback = (typeof fallback !== 'undefined' && fallback && typeof fallback === 'string') ? fallback : '/';
+    const textLabel = (typeof label !== 'undefined' && label) ? label : 'Go Back';
+    const outerStyle = (typeof wrapperStyle !== 'undefined' && wrapperStyle) ? wrapperStyle : '';
+    const outerClass = (typeof wrapperClass !== 'undefined' && wrapperClass) ? wrapperClass : 'back-btn-wrapper';
+    const linkClass = (typeof buttonClass !== 'undefined' && buttonClass) ? buttonClass : 'dynamic-back-btn';
+    const linkStyle = (typeof buttonStyle !== 'undefined' && buttonStyle) ? buttonStyle : '';
+%>
+<div class="<%= outerClass %>"<%- outerStyle ? ` style="${outerStyle}"` : '' %>>
+    <a href="javascript:void(0)" onclick="event.preventDefault(); window.smartGoBack('<%= targetFallback %>');" class="<%= linkClass %>" data-fallback="<%= targetFallback %>"<%- linkStyle ? ` style="${linkStyle}"` : '' %>>
+        <i class="fas fa-arrow-left"></i> <span><%= textLabel %></span>
+    </a>
+</div>

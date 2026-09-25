@@ -253,11 +253,7 @@
 
 <div class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+    <%- include('../partials/go-back-button', { fallback: '/my-uploads', wrapperStyle: 'max-width: 800px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;' }) %>
     <!-- ======================================== -->
     <div class="upload-form-container" style="margin-top: 1rem;">
         

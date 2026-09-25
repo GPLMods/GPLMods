@@ -102,7 +102,7 @@
         </div>
 
         <div class="action-buttons">
-            <a href="javascript:history.back()" class="btn-cancel">Go Back</a>
+            <a href="javascript:void(0)" onclick="window.smartGoBack('/')" data-fallback="/" class="btn-cancel">Go Back</a>
             <a href="<%= targetUrl %>" class="btn-continue" rel="noopener noreferrer">Continue to Download</a>
         </div>
     </div>

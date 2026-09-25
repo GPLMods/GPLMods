@@ -80,7 +80,7 @@
 
 <main class="license-reader">
     <div class="back-btn-wrapper" style="margin-bottom: 1.5rem;">
-        <a class="dynamic-back-btn" href="/licenses"><i class="fas fa-arrow-left"></i> Back to Licenses</a>
+        <%- include('../partials/go-back-button', { fallback: '/licenses', label: 'Back to Licenses' }) %>
     </div>
 
     <header class="license-header">

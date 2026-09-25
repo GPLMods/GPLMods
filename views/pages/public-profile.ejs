@@ -148,11 +148,7 @@
     <div class="container">
         
         <!-- ✅ NEW: Dynamic Back Button -->
-        <div class="back-btn-wrapper" style="margin-bottom: 20px;">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/' }) %>
 
         <% if (typeof isCardRef !== 'undefined' && isCardRef) { %>
             <% const isCardSuspended = profileUser.cardStatus === 'suspended' || (!profileUser.twoFactorEnabled && !profileUser.is2FAEnabled); %>

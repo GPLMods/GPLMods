@@ -24,11 +24,7 @@
     </style>
 
     <main class="container" style="padding: 50px 20px 70px;">
-        <div class="back-btn-wrapper" style="margin-bottom: 2rem;">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/' }) %>
         <header style="max-width: 760px; margin: 0 auto 35px; text-align: center;">
             <h1 style="color: var(--gold); margin-bottom: 12px;">Software Licenses</h1>
             <p style="color: var(--silver);">Browse the licenses attached to GPL Mods releases.</p>

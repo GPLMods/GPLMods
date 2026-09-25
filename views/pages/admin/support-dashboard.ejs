@@ -513,9 +513,7 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <a href="/admin" class="dynamic-back-btn" style="padding: 6px 14px; font-size: 0.85em; display: inline-flex;">
-                    <i class="fas fa-arrow-left"></i> AdminJS
-                </a>
+                <%- include('../../partials/go-back-button', { fallback: '/admin' }) %>
                 <button type="button" id="refreshDeskBtn" class="refresh-desk-btn" title="Refresh Live Queue & Stats">
                     <i class="fas fa-sync-alt" id="refreshDeskIcon"></i>
                     <span>Refresh</span>

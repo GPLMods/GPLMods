@@ -136,11 +136,7 @@
 
 <main class="container" style="display: flex; justify-content: center; align-items: center; min-height: 75vh; padding: 40px 0;">
     <div class="challenge-container">
-        <div class="back-btn-wrapper" style="margin-bottom: 20px; justify-content: flex-start;">
-            <a href="/login" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/login' }) %>
         
         <i class="fas fa-shield-alt" style="font-size: 3.5em; color: var(--gold); margin-bottom: 15px; filter: drop-shadow(0 0 12px rgba(255,215,0,0.35));"></i>
         <h2 style="color: var(--white); margin-bottom: 8px; font-size: 1.6em;">Security Verification</h2>

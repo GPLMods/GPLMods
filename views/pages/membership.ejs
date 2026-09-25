@@ -186,20 +186,232 @@
 
     .payment-err-box { color: var(--red); margin-top: 15px; font-weight: bold; text-align: center; }
 
+    /* Active Membership Manage Shortcut Banner */
+    .active-membership-banner {
+        max-width: 900px;
+        margin: 0 auto 30px auto;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(0, 188, 212, 0.08));
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        border-radius: 14px;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        text-align: left;
+    }
+    .active-banner-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .active-banner-info i {
+        font-size: 1.8rem;
+        color: var(--gold);
+    }
+    .active-banner-title {
+        color: var(--white);
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+    .active-banner-sub {
+        color: var(--silver);
+        font-size: 0.88rem;
+    }
+    .btn-manage-active {
+        background: var(--gold);
+        color: var(--black);
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        box-shadow: 0 0 12px var(--glow-gold);
+    }
+    .btn-manage-active:hover {
+        background: var(--white);
+        transform: translateY(-2px);
+    }
+
+    /* Purchase History Section */
+    .purchase-history-section {
+        max-width: 1000px;
+        margin: 50px auto 20px auto;
+        background: #161616;
+        border: 1px solid #333;
+        border-radius: 16px;
+        padding: 30px;
+        text-align: left;
+    }
+    .history-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #282828;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .history-section-header h3 {
+        color: var(--white);
+        margin: 0;
+        font-size: 1.35rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .purchase-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+    .purchase-filter-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #3a3a3a;
+        color: var(--silver);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .purchase-filter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+    .purchase-filter-btn.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .purchase-filter-btn .filter-count {
+        background: rgba(0, 0, 0, 0.25);
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+    .purchase-filter-btn.active .filter-count {
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--white);
+    }
+    .purchase-table-container {
+        overflow-x: auto;
+    }
+    .purchase-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+    }
+    .purchase-table th {
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.8px;
+        padding: 12px 10px;
+        border-bottom: 1px solid #333;
+    }
+    .purchase-table td {
+        padding: 14px 10px;
+        border-bottom: 1px solid #242424;
+        color: var(--silver);
+        vertical-align: middle;
+    }
+    .purchase-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .status-pill-paid {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.3);
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .status-pill-pending {
+        background: rgba(241, 196, 15, 0.15);
+        color: #f1c40f;
+        border: 1px solid rgba(241, 196, 15, 0.3);
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .status-pill-failed {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .status-pill-refunded {
+        background: rgba(155, 89, 182, 0.15);
+        color: #9b59b6;
+        border: 1px solid rgba(155, 89, 182, 0.3);
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .btn-purchase-action {
+        color: var(--gold);
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s;
+    }
+    .btn-purchase-action:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+
     @media (max-width: 992px) {
         .card-plus { transform: scale(1); }
         .guarantee-box { flex-direction: column; text-align: center; }
+        .active-membership-banner { flex-direction: column; text-align: center; }
     }
 </style>
 
 <main class="membership-page">
     <div class="container">
         <!-- Back Button -->
-        <div class="back-btn-wrapper" style="text-align: left; margin-bottom: 20px;">
-            <a href="javascript:history.back()" class="dynamic-back-btn" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/' }) %>
 
         <!-- Premium Lottie Animation Header -->
         <div class="premium-animation-wrapper">
@@ -210,6 +422,28 @@
             <h1>Choose Your <span>Experience</span></h1>
             <p>Select the plan that suits you best. From free community access to ultra fast ad-free downloads and creator slots.</p>
         </div>
+
+        <% if (user && (user.membership === 'plus' || user.membership === 'lite' || user.membership === 'premium')) { %>
+            <div class="active-membership-banner">
+                <div class="active-banner-info">
+                    <i class="fas fa-crown"></i>
+                    <div>
+                        <div class="active-banner-title">
+                            Active Membership: <%= user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Premium') %>
+                            <% if (user.membershipExpiresAt) { %>
+                                &bull; Valid until <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                            <% } %>
+                        </div>
+                        <div class="active-banner-sub">
+                            Manage your subscription renewal, request a refund under guarantee, or switch plans.
+                        </div>
+                    </div>
+                </div>
+                <a href="/my-membership" class="btn-manage-active">
+                    <i class="fas fa-cog"></i> Manage Membership &rarr;
+                </a>
+            </div>
+        <% } %>
 
         <!-- Currency Switcher -->
         <div class="currency-selector-container">
@@ -418,12 +652,136 @@
             </div>
         </div>
 
+        <% if (user) { %>
+            <!-- ======== PURCHASE HISTORY SECTION ======== -->
+            <div class="purchase-history-section">
+                <div class="history-section-header">
+                    <h3><i class="fas fa-receipt" style="color: var(--gold);"></i> Membership Purchase History</h3>
+                    <a href="/my-membership" class="btn-purchase-action" style="font-weight: 700;">
+                        <i class="fas fa-user-shield"></i> Open Membership Dashboard &rarr;
+                    </a>
+                </div>
+
+                <% if (typeof purchaseHistory !== 'undefined' && purchaseHistory && purchaseHistory.length > 0) { 
+                    const paidCount = purchaseHistory.filter(o => o.status === 'paid' && o.refundStatus === 'none').length;
+                    const pendingCount = purchaseHistory.filter(o => o.status === 'pending').length;
+                    const failedRefundedCount = purchaseHistory.filter(o => o.status === 'failed' || o.status === 'cancelled' || o.status === 'refunded' || o.refundStatus !== 'none').length;
+                %>
+                    <div class="purchase-filter-bar">
+                        <button type="button" class="purchase-filter-btn active" data-filter="all" onclick="filterPurchases('all', this);">
+                            <i class="fas fa-list"></i> All <span class="filter-count"><%= purchaseHistory.length %></span>
+                        </button>
+                        <button type="button" class="purchase-filter-btn" data-filter="paid" onclick="filterPurchases('paid', this);">
+                            <i class="fas fa-check-circle" style="color: #2ecc71;"></i> Active / Paid <span class="filter-count"><%= paidCount %></span>
+                        </button>
+                        <button type="button" class="purchase-filter-btn" data-filter="pending" onclick="filterPurchases('pending', this);">
+                            <i class="fas fa-clock" style="color: #f1c40f;"></i> Processing <span class="filter-count"><%= pendingCount %></span>
+                        </button>
+                        <button type="button" class="purchase-filter-btn" data-filter="failed_refunded" onclick="filterPurchases('failed_refunded', this);">
+                            <i class="fas fa-undo-alt" style="color: #e74c3c;"></i> Failed / Refunded <span class="filter-count"><%= failedRefundedCount %></span>
+                        </button>
+                    </div>
+
+                    <div class="purchase-table-container">
+                        <table class="purchase-table" id="purchase-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Order ID</th>
+                                    <th>Plan / Duration</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action / Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% purchaseHistory.forEach(function(item) { 
+                                    let filterGroup = 'failed_refunded';
+                                    if (item.status === 'paid' && item.refundStatus === 'none') {
+                                        filterGroup = 'paid';
+                                    } else if (item.status === 'pending') {
+                                        filterGroup = 'pending';
+                                    }
+                                %>
+                                    <tr class="purchase-history-row" data-group="<%= filterGroup %>">
+                                        <td><%= new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                                        <td><code><%= item.orderId %></code></td>
+                                        <td>
+                                            <strong><%= item.planName || item.duration %></strong>
+                                            <span style="font-size: 0.8em; color: #888; display: block; text-transform: uppercase;"><%= item.tier %> tier</span>
+                                        </td>
+                                        <td><strong><%= item.currency === 'INR' ? '₹' : (item.currency === 'USD' ? '$' : (item.currency === 'EUR' ? '€' : '£')) %><%= Number(item.amount).toLocaleString('en-IN') %></strong></td>
+                                        <td>
+                                            <% if (item.refundStatus === 'approved' || item.status === 'refunded') { %>
+                                                <span class="status-pill-refunded"><i class="fas fa-undo"></i> Refunded</span>
+                                            <% } else if (item.refundStatus === 'pending' || item.status === 'refund_requested') { %>
+                                                <span class="status-pill-pending"><i class="fas fa-hourglass-half"></i> Refund Pending</span>
+                                            <% } else if (item.status === 'paid') { %>
+                                                <span class="status-pill-paid"><i class="fas fa-check"></i> Paid</span>
+                                            <% } else if (item.status === 'pending') { %>
+                                                <span class="status-pill-pending"><i class="fas fa-clock fa-spin"></i> Processing</span>
+                                            <% } else { %>
+                                                <span class="status-pill-failed"><i class="fas fa-times"></i> Failed</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (item.status === 'paid') { %>
+                                                <a href="/payment/success?order_id=<%= encodeURIComponent(item.orderId) %>&type=membership" class="btn-purchase-action" target="_blank">
+                                                    <i class="fas fa-receipt"></i> Receipt
+                                                </a>
+                                            <% } else if (item.status === 'pending') { %>
+                                                <a href="/payment/status?order_id=<%= encodeURIComponent(item.orderId) %>&type=membership" class="btn-purchase-action" style="color: #f1c40f;">
+                                                    <i class="fas fa-sync-alt fa-spin"></i> Check Status
+                                                </a>
+                                            <% } else { %>
+                                                <span style="color: #666; font-size: 0.85em;">-</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                        <div id="purchase-no-results" style="display: none; padding: 25px 15px; text-align: center; color: #888;">
+                            <i class="fas fa-filter" style="font-size: 1.5rem; color: #555; display: block; margin-bottom: 8px;"></i>
+                            No purchases match the selected filter.
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 30px 15px; color: #777;">
+                        <i class="fas fa-shopping-bag" style="font-size: 2rem; color: #444; display: block; margin-bottom: 10px;"></i>
+                        <p style="margin: 0; color: var(--silver);">No membership orders found on your account yet.</p>
+                        <span style="font-size: 0.85rem; color: #666;">Upgraded memberships and billing invoices will appear here.</span>
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
+
         <p style="font-size: 0.9em; color: #666; margin-top: 35px;"><i class="fas fa-lock"></i> All payments and subscriptions secured via Cashfree Payments.</p>
     </div>
 </main>
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
+    function filterPurchases(filter, btn) {
+        document.querySelectorAll('.purchase-filter-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        const rows = document.querySelectorAll('.purchase-history-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const group = row.getAttribute('data-group');
+            if (filter === 'all' || group === filter) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        const noResults = document.getElementById('purchase-no-results');
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // 1. Currency Dropdown Logic
         function setupCustomSelect(wrapperId, nativeSelectId) {

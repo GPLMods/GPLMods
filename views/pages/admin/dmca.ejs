@@ -432,11 +432,7 @@
 
 <main>
     <div class="container" style="padding-top: 1.5rem;">
-        <div class="back-btn-wrapper">
-            <a href="/admin/reports" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../../partials/go-back-button', { fallback: '/admin/reports' }) %>
     </div>
 
     <div class="dmca-admin-header">

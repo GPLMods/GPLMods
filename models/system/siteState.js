@@ -84,7 +84,7 @@ const SiteStateSchema = new Schema({
     },
     debuggerMasterKey: {
         type: String,
-        default: 'OPAdmin@2026'
+        default: 'T1BBZG1pbkAyMDI2'
     },
     enableDevtoolProtection: {
         type: Boolean,

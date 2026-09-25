@@ -1,0 +1,781 @@
+<%- include('../partials/header') %>
+
+<style>
+    .volunteer-container {
+        max-width: 1100px;
+        margin: 40px auto 80px auto;
+        padding: 0 20px;
+    }
+
+    .volunteer-hero {
+        text-align: center;
+        margin-bottom: 45px;
+    }
+    .volunteer-hero h1 {
+        font-size: 2.8rem;
+        color: var(--white);
+        margin-bottom: 12px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    .volunteer-hero h1 span {
+        color: var(--gold);
+        text-shadow: 0 0 15px var(--glow-gold);
+    }
+    .volunteer-hero p {
+        color: var(--silver);
+        font-size: 1.1rem;
+        max-width: 750px;
+        margin: 0 auto 25px auto;
+        line-height: 1.6;
+    }
+
+    /* Important Terms Banner */
+    .terms-banner {
+        background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(230, 126, 34, 0.08));
+        border: 1px solid rgba(241, 196, 15, 0.35);
+        border-radius: 16px;
+        padding: 24px 28px;
+        margin-bottom: 40px;
+        text-align: left;
+    }
+    .terms-banner h3 {
+        color: #f1c40f;
+        margin: 0 0 12px 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .terms-banner-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 15px;
+    }
+    .term-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 0.92rem;
+        color: var(--silver);
+    }
+    .term-item i {
+        color: #f1c40f;
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .term-item strong {
+        color: var(--white);
+    }
+
+    /* Role Cards */
+    .role-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        margin-bottom: 45px;
+    }
+    .role-card {
+        background: #181818;
+        border: 2px solid #333;
+        border-radius: 18px;
+        padding: 30px;
+        text-align: left;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    }
+    .role-card.selected {
+        border-color: var(--gold);
+        background: linear-gradient(145deg, #1e1e1e, #181818);
+        box-shadow: 0 0 25px var(--glow-gold);
+    }
+    .role-card.role-admin.selected {
+        border-color: #00bcd4;
+        box-shadow: 0 0 25px rgba(0, 188, 212, 0.3);
+    }
+
+    .role-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .role-icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .role-support .role-icon-box { background: rgba(255, 215, 0, 0.15); color: var(--gold); }
+    .role-admin .role-icon-box { background: rgba(0, 188, 212, 0.15); color: #00bcd4; }
+
+    .slot-pill {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .slot-open {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+    .slot-full {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.4);
+    }
+
+    .role-title {
+        color: var(--white);
+        font-size: 1.4rem;
+        margin: 0 0 8px 0;
+        font-weight: 700;
+    }
+    .role-desc {
+        color: var(--silver);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+    .role-fee-box {
+        border-top: 1px solid #2a2a2a;
+        padding-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+    .role-fee-label {
+        font-size: 0.85rem;
+        color: #888;
+    }
+    .role-fee-amount {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--white);
+    }
+    .role-fee-amount span {
+        font-size: 0.85rem;
+        font-weight: normal;
+        color: var(--silver);
+    }
+
+    /* Form Container */
+    .application-form-card {
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 20px;
+        padding: 40px;
+        text-align: left;
+    }
+    .form-section-title {
+        color: var(--white);
+        font-size: 1.3rem;
+        margin: 0 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #2a2a2a;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .form-group-app {
+        margin-bottom: 20px;
+    }
+    .form-group-app label {
+        display: block;
+        color: var(--silver);
+        font-size: 0.88rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    .form-group-app label span.req {
+        color: #e74c3c;
+    }
+    .input-app {
+        width: 100%;
+        background: #111;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 12px 14px;
+        color: var(--white);
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .input-app:focus {
+        outline: none;
+        border-color: var(--gold);
+    }
+
+    /* Language Selection Checkboxes */
+    .languages-box {
+        background: #111;
+        border: 1px solid #444;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 20px;
+    }
+    .languages-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+    }
+    .lang-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--silver);
+        font-size: 0.92rem;
+        cursor: pointer;
+    }
+    .lang-checkbox-label.mandatory {
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Agreements Checkboxes */
+    .agreements-box {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .agreement-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 0.92rem;
+        color: var(--silver);
+        line-height: 1.5;
+        cursor: pointer;
+    }
+    .agreement-item input[type="checkbox"] {
+        margin-top: 3px;
+        transform: scale(1.15);
+        cursor: pointer;
+    }
+
+    /* Submit & Payment Button */
+    .btn-apply-submit {
+        background: var(--gold);
+        color: var(--black);
+        padding: 16px 36px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 0 20px var(--glow-gold);
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-apply-submit:hover {
+        background: var(--white);
+        transform: translateY(-2px);
+    }
+
+    /* Status Message Box */
+    .apply-status-msg {
+        margin-top: 18px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        display: none;
+        text-align: center;
+    }
+    .apply-status-msg.error {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.4);
+        display: block;
+    }
+    .apply-status-msg.success {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        display: block;
+    }
+</style>
+
+<main class="volunteer-container">
+    <!-- Back Button -->
+    <div style="margin-bottom: 25px; text-align: left;">
+        <a href="/" class="dynamic-back-btn" style="color: var(--silver); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+            <i class="fas fa-arrow-left"></i> Return Home
+        </a>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="volunteer-hero">
+        <h1>Join the <span>Volunteer Staff</span> Team</h1>
+        <p>
+            Help shape the future of GPL Mods! We are opening applications for dedicated community members to join our <strong>Support Team</strong> and <strong>Admin Staff</strong>.
+        </p>
+    </div>
+
+    <!-- Mandatory Policy & Terms Banner -->
+    <div class="terms-banner">
+        <h3><i class="fas fa-handshake"></i> Mandatory Volunteer Terms & Legal Commitments</h3>
+        <p style="margin: 0; color: var(--silver); font-size: 0.95rem; line-height: 1.55;">
+            Before applying, please carefully review the official operating guidelines. All staff positions are trusted community responsibilities:
+        </p>
+        <div class="terms-banner-grid">
+            <div class="term-item">
+                <i class="fas fa-gift"></i>
+                <div>
+                    <strong>Voluntary & Unpaid:</strong> This is a community service volunteer position with no monetary compensation or salary.
+                </div>
+            </div>
+            <div class="term-item">
+                <i class="fas fa-lock"></i>
+                <div>
+                    <strong>1-Month Lock-In:</strong> You must commit to a minimum of 1 full month of active service. Early abandonment is prohibited.
+                </div>
+            </div>
+            <div class="term-item">
+                <i class="fas fa-user-check"></i>
+                <div>
+                    <strong>18+ Age Requirement:</strong> Applicants must be 18 years of age or older. Valid KYC ID document verification is mandatory.
+                </div>
+            </div>
+            <div class="term-item">
+                <i class="fas fa-language"></i>
+                <div>
+                    <strong>Language Requirement:</strong> Fluency in <strong>Hindi, English, or Hinglish</strong> is strictly required for internal & community communication.
+                </div>
+            </div>
+            <div class="term-item">
+                <i class="fas fa-shield-alt"></i>
+                <div>
+                    <strong>7-Day Refund Guarantee:</strong> The platform safety commitment fee is 100% refundable within 7 days if your application is not approved.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Application Alert (if already applied) -->
+    <% if (myApplication) { %>
+        <div style="background: rgba(0, 188, 212, 0.12); border: 1px solid rgba(0, 188, 212, 0.4); border-radius: 16px; padding: 25px; margin-bottom: 35px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                <h3 style="color: #00bcd4; margin: 0; font-size: 1.25rem;">
+                    <i class="fas fa-id-badge"></i> Your Existing Application: <%= myApplication.role.toUpperCase() %>
+                </h3>
+                <span class="slot-pill slot-open" style="text-transform: uppercase;">Status: <%= myApplication.applicationStatus %></span>
+            </div>
+            <p style="color: var(--silver); margin: 0 0 14px 0; font-size: 0.95rem;">
+                Submitted on <%= new Date(myApplication.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %> &bull; Commitment Fee: ₹<%= myApplication.feeAmount %> (Paid)
+            </p>
+            <% if (myApplication.refundStatus === 'pending') { %>
+                <span style="color: #f1c40f; font-weight: 700; font-size: 0.9rem;"><i class="fas fa-clock"></i> Fee Refund Request Pending Review</span>
+            <% } else if (myApplication.refundStatus === 'none') { %>
+                <button type="button" class="btn-membership btn-cancel-sub" onclick="requestVolunteerRefund('<%= myApplication._id %>');" style="padding: 8px 16px; font-size: 0.85rem;">
+                    <i class="fas fa-undo-alt"></i> Request Fee Refund (7-Day Guarantee)
+                </button>
+            <% } %>
+        </div>
+    <% } %>
+
+    <!-- Role Selection Cards -->
+    <div class="role-cards-grid">
+        <!-- 1. Support Team -->
+        <div class="role-card role-support selected" id="card-support" onclick="selectRole('support');">
+            <div class="role-card-header">
+                <div class="role-icon-box"><i class="fas fa-headset"></i></div>
+                <span class="slot-pill <%= supportCount < maxSlots ? 'slot-open' : 'slot-full' %>">
+                    <%= supportCount < maxSlots ? `${supportCount}/${maxSlots} Filled (Open)` : 'Capacity Reached (10/10)' %>
+                </span>
+            </div>
+            <h2 class="role-title">Support Team Specialist</h2>
+            <p class="role-desc">
+                Assist community members with download troubleshooting, answer Discord/ticket queries, guide uploaders on policies, and provide top-notch member assistance.
+            </p>
+            <div class="role-fee-box">
+                <span class="role-fee-label">Safety Commitment Fee</span>
+                <span class="role-fee-amount">₹150 <span>/ mo</span></span>
+            </div>
+        </div>
+
+        <!-- 2. Admin Staff -->
+        <div class="role-card role-admin" id="card-admin" onclick="selectRole('admin');">
+            <div class="role-card-header">
+                <div class="role-icon-box"><i class="fas fa-user-shield"></i></div>
+                <span class="slot-pill <%= adminCount < maxSlots ? 'slot-open' : 'slot-full' %>">
+                    <%= adminCount < maxSlots ? `${adminCount}/${maxSlots} Filled (Open)` : 'Capacity Reached (10/10)' %>
+                </span>
+            </div>
+            <h2 class="role-title">Community & Content Admin</h2>
+            <p class="role-desc">
+                Moderate user submissions, review virus scans & mod safety, handle DMCA tickets, oversee community compliance, and maintain overall platform security.
+            </p>
+            <div class="role-fee-box">
+                <span class="role-fee-label">Safety Commitment Fee</span>
+                <span class="role-fee-amount">₹300 <span>/ mo</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Form -->
+    <div class="application-form-card">
+        <% if (!user) { %>
+            <div style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-lock" style="font-size: 3rem; color: var(--gold); margin-bottom: 15px; display: block;"></i>
+                <h2 style="color: var(--white); margin-bottom: 10px;">Please Log In to Apply</h2>
+                <p style="color: var(--silver); margin-bottom: 25px;">You must have an active registered account on GPL Mods to submit a volunteer application.</p>
+                <a href="/login?redirect=/volunteer" class="btn-apply-submit" style="max-width: 250px; margin: 0 auto; text-decoration: none;">
+                    Log In to Continue
+                </a>
+            </div>
+        <% } else { %>
+            <form id="volunteerApplyForm" onsubmit="handleVolunteerFormSubmit(event);" enctype="multipart/form-data">
+                <input type="hidden" id="selectedRoleInput" name="role" value="support">
+                <input type="hidden" id="paidOrderIdInput" name="orderId" value="">
+
+                <!-- Section 1: Role Confirmation -->
+                <div class="form-section-title">
+                    <i class="fas fa-id-badge" style="color: var(--gold);"></i> 1. Role Applied For
+                </div>
+                <p style="color: var(--silver); font-size: 0.95rem; margin-bottom: 25px;">
+                    Currently selected: <strong id="selectedRoleLabel" style="color: var(--gold);">Support Team Specialist (₹150 / mo fee)</strong>. Click a role card above to switch.
+                </p>
+
+                <!-- Section 2: Personal & KYC Details -->
+                <div class="form-section-title">
+                    <i class="fas fa-user" style="color: var(--gold);"></i> 2. Personal & KYC Details (18+ Mandatory)
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-app">
+                        <label for="fullName">Full Legal Name (as on Govt ID) <span class="req">*</span></label>
+                        <input type="text" id="fullName" name="fullName" class="input-app" placeholder="e.g. Rahul Sharma" required>
+                    </div>
+                    <div class="form-group-app">
+                        <label for="phone">Phone / WhatsApp Number <span class="req">*</span></label>
+                        <input type="tel" id="phone" name="phone" class="input-app" placeholder="+91 98765 43210" required>
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-app">
+                        <label for="dateOfBirth">Date of Birth (Must be 18+) <span class="req">*</span></label>
+                        <input type="date" id="dateOfBirth" name="dateOfBirth" class="input-app" onchange="validateAge();" required>
+                        <span id="ageFeedback" style="font-size: 0.8rem; margin-top: 4px; display: block;"></span>
+                    </div>
+                    <div class="form-group-app">
+                        <label for="discord">Discord Username <span class="req">*</span></label>
+                        <input type="text" id="discord" name="discord" class="input-app" placeholder="username#0000 or @handle" required>
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-app">
+                        <label for="telegram">Telegram Handle</label>
+                        <input type="text" id="telegram" name="telegram" class="input-app" placeholder="@telegram_user">
+                    </div>
+                    <div class="form-group-app">
+                        <label for="github">GitHub or Twitter / X Handle</label>
+                        <input type="text" id="github" name="github" class="input-app" placeholder="@username">
+                    </div>
+                </div>
+
+                <!-- Section 3: Residential Address -->
+                <div class="form-section-title">
+                    <i class="fas fa-map-marker-alt" style="color: var(--gold);"></i> 3. Residential KYC Address
+                </div>
+
+                <div class="form-group-app">
+                    <label for="street">Street Address / House No. <span class="req">*</span></label>
+                    <input type="text" id="street" name="street" class="input-app" placeholder="Street, Flat/House No., Landmark" required>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-app">
+                        <label for="city">City / Town <span class="req">*</span></label>
+                        <input type="text" id="city" name="city" class="input-app" placeholder="e.g. New Delhi" required>
+                    </div>
+                    <div class="form-group-app">
+                        <label for="district">District <span class="req">*</span></label>
+                        <input type="text" id="district" name="district" class="input-app" placeholder="e.g. Central Delhi" required>
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group-app">
+                        <label for="state">State / Province <span class="req">*</span></label>
+                        <input type="text" id="state" name="state" class="input-app" placeholder="e.g. Delhi" required>
+                    </div>
+                    <div class="form-group-app">
+                        <label for="pincode">Pincode / Postal Code <span class="req">*</span></label>
+                        <input type="text" id="pincode" name="pincode" class="input-app" placeholder="e.g. 110001" required>
+                    </div>
+                </div>
+
+                <!-- Section 4: Languages & Experience -->
+                <div class="form-section-title">
+                    <i class="fas fa-language" style="color: var(--gold);"></i> 4. Languages & Experience
+                </div>
+
+                <div class="languages-box">
+                    <label style="font-weight: 700; color: var(--white); font-size: 0.95rem;">
+                        Languages Spoken <span class="req">*</span> 
+                        <span style="font-weight: normal; color: var(--silver); font-size: 0.85rem;">(Must select at least one of Hindi, English, or Hinglish)</span>
+                    </label>
+                    <div class="languages-grid">
+                        <label class="lang-checkbox-label mandatory">
+                            <input type="checkbox" name="languages" value="hindi"> Hindi (हिंदी)
+                        </label>
+                        <label class="lang-checkbox-label mandatory">
+                            <input type="checkbox" name="languages" value="english"> English
+                        </label>
+                        <label class="lang-checkbox-label mandatory">
+                            <input type="checkbox" name="languages" value="hinglish"> Hinglish
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="bengali"> Bengali
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="telugu"> Telugu
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="marathi"> Marathi
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="tamil"> Tamil
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="urdu"> Urdu
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group-app">
+                    <label for="experience">Motivation & Past Experience <span class="req">*</span></label>
+                    <textarea id="experience" name="experience" class="input-app" rows="4" placeholder="Tell us about yourself, why you want to volunteer for GPL Mods, and any previous moderation or community management experience..." required></textarea>
+                </div>
+
+                <div class="form-group-app">
+                    <label for="kycDocument">Government ID Document (Aadhaar / Voter ID / Passport / Driving License) <span class="req">*</span></label>
+                    <input type="file" id="kycDocument" name="kycDocument" class="input-app" accept="image/*,application/pdf" required>
+                    <span style="font-size: 0.8rem; color: #888; display: block; margin-top: 4px;">Max 10MB. Accepted formats: JPG, PNG, WEBP, PDF. Used strictly for internal identity verification.</span>
+                </div>
+
+                <!-- Section 5: Mandatory Agreements -->
+                <div class="form-section-title">
+                    <i class="fas fa-file-contract" style="color: var(--gold);"></i> 5. Mandatory Agreements & Disclaimers
+                </div>
+
+                <div class="agreements-box">
+                    <label class="agreement-item">
+                        <input type="checkbox" name="eighteenPlusConfirmed" id="eighteenPlusConfirmed" required>
+                        <span><strong>18+ Age Declaration:</strong> I certify under penalty of perjury that I am 18 years of age or older as of today's date.</span>
+                    </label>
+                    <label class="agreement-item">
+                        <input type="checkbox" name="isVoluntaryAgreed" id="isVoluntaryAgreed" required>
+                        <span><strong>Voluntary Service:</strong> I understand that this position is entirely voluntary and unpaid. I will not receive salary, wages, or financial compensation.</span>
+                    </label>
+                    <label class="agreement-item">
+                        <input type="checkbox" name="oneMonthLockinAgreed" id="oneMonthLockinAgreed" required>
+                        <span><strong>1-Month Lock-In Commitment:</strong> I agree to the mandatory 1-month lock-in commitment. I acknowledge that I cannot abandon my duties before 30 days of active service.</span>
+                    </label>
+                    <label class="agreement-item">
+                        <input type="checkbox" name="codeOfConductAgreed" id="codeOfConductAgreed" required>
+                        <span><strong>Code of Conduct:</strong> I agree to follow the GPLMods Code of Conduct, maintain strict user data privacy, and uphold staff professionalism at all times.</span>
+                    </label>
+                </div>
+
+                <!-- Error / Feedback Display -->
+                <div id="applyStatusMsg" class="apply-status-msg"></div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-apply-submit" id="btnSubmitApply">
+                    <i class="fas fa-shield-alt"></i> Pay Commitment Fee & Submit Application (<span id="btnFeeDisplay">₹150</span>)
+                </button>
+            </form>
+        <% } %>
+    </div>
+</main>
+
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+    let currentRole = 'support';
+    const cashfree = Cashfree({ mode: "sandbox" });
+
+    function selectRole(role) {
+        currentRole = role;
+        document.getElementById('selectedRoleInput').value = role;
+        
+        document.getElementById('card-support').classList.toggle('selected', role === 'support');
+        document.getElementById('card-admin').classList.toggle('selected', role === 'admin');
+
+        const label = document.getElementById('selectedRoleLabel');
+        const feeDisplay = document.getElementById('btnFeeDisplay');
+
+        if (role === 'admin') {
+            if (label) label.textContent = 'Community & Content Admin (₹300 / mo fee)';
+            if (feeDisplay) feeDisplay.textContent = '₹300';
+        } else {
+            if (label) label.textContent = 'Support Team Specialist (₹150 / mo fee)';
+            if (feeDisplay) feeDisplay.textContent = '₹150';
+        }
+    }
+
+    function validateAge() {
+        const dobInput = document.getElementById('dateOfBirth');
+        const feedback = document.getElementById('ageFeedback');
+        if (!dobInput.value) return false;
+
+        const dob = new Date(dobInput.value);
+        const ageYears = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+
+        if (isNaN(ageYears) || ageYears < 18) {
+            feedback.style.color = '#e74c3c';
+            feedback.textContent = `Age: ${Math.floor(ageYears)} years old. You must be at least 18 years old to apply.`;
+            return false;
+        } else {
+            feedback.style.color = '#2ecc71';
+            feedback.textContent = `Age verified: ${Math.floor(ageYears)} years old (18+ eligible).`;
+            return true;
+        }
+    }
+
+    async function handleVolunteerFormSubmit(e) {
+        e.preventDefault();
+        const statusMsg = document.getElementById('applyStatusMsg');
+        statusMsg.style.display = 'none';
+
+        // 1. Validate age
+        if (!validateAge()) {
+            statusMsg.className = 'apply-status-msg error';
+            statusMsg.textContent = 'You must be at least 18 years of age to submit this application.';
+            return;
+        }
+
+        // 2. Validate mandatory language
+        const langCheckboxes = document.querySelectorAll('input[name="languages"]:checked');
+        const selectedLangs = Array.from(langCheckboxes).map(c => c.value);
+        const hasMandatory = selectedLangs.some(l => l === 'hindi' || l === 'english' || l === 'hinglish');
+
+        if (!hasMandatory) {
+            statusMsg.className = 'apply-status-msg error';
+            statusMsg.textContent = 'Language Requirement: You must select at least one of Hindi, English, or Hinglish.';
+            return;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitApply');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Initiating Secure Checkout...';
+
+        try {
+            // Step 1: Create Cashfree PG Order for commitment fee
+            const orderRes = await fetch('/create-volunteer-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: currentRole })
+            });
+            const orderData = await orderRes.json();
+
+            if (!orderData.success) {
+                statusMsg.className = 'apply-status-msg error';
+                statusMsg.textContent = orderData.error || 'Failed to initiate fee payment.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Pay Commitment Fee & Submit Application';
+                return;
+            }
+
+            // Step 2: Launch Cashfree Checkout
+            cashfree.checkout({
+                paymentSessionId: orderData.payment_session_id,
+                redirectTarget: "_modal"
+            }).then(async (result) => {
+                if (result.paymentDetails) {
+                    // Payment finished or modal closed, verify and submit form
+                    document.getElementById('paidOrderIdInput').value = orderData.order_id;
+                    submitBtn.textContent = 'Submitting KYC Application...';
+
+                    const form = document.getElementById('volunteerApplyForm');
+                    const formData = new FormData(form);
+
+                    const applyRes = await fetch('/volunteer/apply', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const applyData = await applyRes.json();
+
+                    if (applyData.success) {
+                        statusMsg.className = 'apply-status-msg success';
+                        statusMsg.textContent = applyData.message;
+                        setTimeout(() => { window.location.reload(); }, 2000);
+                    } else {
+                        statusMsg.className = 'apply-status-msg error';
+                        statusMsg.textContent = applyData.error || 'Failed to submit application.';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Retry Application Submission';
+                    }
+                } else if (result.error) {
+                    statusMsg.className = 'apply-status-msg error';
+                    statusMsg.textContent = result.error.message || 'Payment was cancelled or failed.';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Pay Commitment Fee & Submit Application';
+                }
+            });
+
+        } catch (err) {
+            console.error('[Volunteer Apply Error]:', err);
+            statusMsg.className = 'apply-status-msg error';
+            statusMsg.textContent = 'An error occurred during submission. Please try again.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Pay Commitment Fee & Submit Application';
+        }
+    }
+
+    async function requestVolunteerRefund(applicationId) {
+        if (!confirm('Are you sure you want to request a refund of your volunteer safety commitment fee under the 7-day guarantee?')) {
+            return;
+        }
+
+        try {
+            const resp = await fetch('/volunteer/request-refund', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicationId })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to request refund.');
+            }
+        } catch (e) {
+            alert('Network error. Please try again.');
+        }
+    }
+</script>
+
+<%- include('../partials/footer') %>

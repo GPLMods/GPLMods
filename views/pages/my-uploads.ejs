@@ -115,11 +115,7 @@
 
 <main>
     <div class="container" style="padding-top: 2rem;">
-        <div class="back-btn-wrapper">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/dashboard' }) %>
     </div>
 
     <div class="page-header" style="padding-top: 20px;">

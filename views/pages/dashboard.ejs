@@ -81,11 +81,7 @@
         <h1>Your <span>Dashboard</span></h1>
     </div>
 
-    <div class="back-btn-wrapper" style="max-width: 900px; margin: 0 auto 20px auto; display: flex; justify-content: flex-start;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+    <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 900px; margin: 0 auto 20px auto; display: flex; justify-content: flex-start;' }) %>
 
     <div class="dashboard-user-card">
         <img src="<%= user.signedAvatarUrl %>" alt="Avatar">

@@ -48,6 +48,7 @@ const SourceCode = require('./sourceCode');
 const ChatSession = require('./chatSession');
 const ChatSettings = require('./chatSettings');
 const AIKnowledge = require('./aiKnowledge');
+const VolunteerApplication = require('./system/volunteerApplication');
 
 module.exports = {
     // Core
@@ -93,11 +94,12 @@ module.exports = {
     ApiLimit,
     VpnCache,
     SourceCode,
+    VolunteerApplication,
 
     // Categorized Namespaces
     Core: { File, User, Review, Reply },
     Community: { Issue, Request, SupportTicket, UserNotification, UnbanRequest },
     Content: { DocPage, DocCategory, Announcement, License },
-    System: { DistributorApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache },
+    System: { DistributorApplication, VolunteerApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache },
     Repositories: { SourceCode }
 };

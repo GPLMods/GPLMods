@@ -133,45 +133,134 @@
             }
         }
 
-        // ======== SMART GO BACK CONTROLLER ========
-        window.smartGoBack = function(fallbackUrl) {
-            const fallback = fallbackUrl || '/';
-            if (document.referrer && document.referrer !== window.location.href) {
+        // ======== DYNAMIC NAVIGATION HISTORY & SMART GO BACK CONTROLLER ========
+        (function() {
+            const STORAGE_KEY = 'gpl_nav_history';
+            const GOING_BACK_KEY = 'gpl_nav_going_back';
+            const MAX_STACK = 50;
+
+            function getHistoryStack() {
                 try {
-                    const refUrl = new URL(document.referrer);
-                    const currentUrl = new URL(window.location.href);
-                    // Check same origin
-                    if (refUrl.origin === currentUrl.origin) {
-                        const trapPaths = ['/login', '/register', '/logout', '/login/2fa', '/admin'];
-                        const isTrap = trapPaths.some(p => refUrl.pathname.startsWith(p));
-                        if (!isTrap && refUrl.pathname !== currentUrl.pathname) {
-                            window.location.href = document.referrer;
-                            return;
-                        }
-                    }
+                    const raw = sessionStorage.getItem(STORAGE_KEY);
+                    const parsed = JSON.parse(raw || '[]');
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function saveHistoryStack(stack) {
+                try {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack.slice(-MAX_STACK)));
                 } catch (e) {}
             }
-            if (window.history.length > 1) {
-                const prevLoc = window.location.href;
-                window.history.back();
-                setTimeout(() => {
-                    if (window.location.href === prevLoc) {
-                        window.location.href = fallback;
-                    }
-                }, 300);
-            } else {
-                window.location.href = fallback;
-            }
-        };
 
-        // Automatically bind to any back links across the entire page
-        document.addEventListener('click', function(e) {
-            const target = e.target.closest('a[href*="history.back"], .dynamic-back-btn, .btn-go-back');
-            if (target) {
-                e.preventDefault();
-                window.smartGoBack(target.getAttribute('data-fallback') || '/');
+            function getRelativePath(urlStr) {
+                try {
+                    const u = new URL(urlStr || window.location.href, window.location.origin);
+                    return u.pathname + u.search;
+                } catch(e) {
+                    return window.location.pathname + window.location.search;
+                }
             }
-        });
+
+            const currentPath = getRelativePath();
+
+            // Paths that must never be in back history (auth actions / API / external redirects)
+            const ignoredPrefixes = [
+                '/logout', '/login/2fa', '/api/', '/leave', '/admin-auth', '/download-file/', '/cdn-cgi/'
+            ];
+            const isIgnored = ignoredPrefixes.some(prefix => currentPath.startsWith(prefix));
+
+            if (!isIgnored) {
+                let stack = getHistoryStack();
+                const isGoingBack = sessionStorage.getItem(GOING_BACK_KEY) === 'true';
+
+                if (isGoingBack) {
+                    // Arrived via Go Back button: clear flag and truncate forward history
+                    sessionStorage.removeItem(GOING_BACK_KEY);
+                    const existingIdx = stack.lastIndexOf(currentPath);
+                    if (existingIdx !== -1) {
+                        stack = stack.slice(0, existingIdx + 1);
+                    } else {
+                        stack.push(currentPath);
+                    }
+                } else {
+                    // Normal forward navigation or refresh:
+                    // "doing /settings in settings page will do nothing" ->
+                    // If user reloads or navigates to the same page, do not push duplicate!
+                    const lastEntry = stack.length > 0 ? stack[stack.length - 1] : null;
+                    if (lastEntry !== currentPath) {
+                        stack.push(currentPath);
+                    }
+                }
+                saveHistoryStack(stack);
+            }
+
+            // Sync with browser native back button
+            window.addEventListener('popstate', function() {
+                try {
+                    sessionStorage.setItem(GOING_BACK_KEY, 'true');
+                } catch(e) {}
+            });
+
+            // Smart Go Back function:
+            // Searches history backwards for the first valid prior page on the site.
+            // If none exists (e.g., user directly opened /settings), routes to fallbackUrl!
+            window.smartGoBack = function(fallbackUrl) {
+                const fallback = (fallbackUrl && typeof fallbackUrl === 'string' && fallbackUrl.trim()) ? fallbackUrl.trim() : '/';
+                const curPath = getRelativePath();
+                let stack = getHistoryStack();
+
+                // 1. Pop any trailing entries matching the current page
+                while (stack.length > 0 && stack[stack.length - 1] === curPath) {
+                    stack.pop();
+                }
+
+                // 2. Find the previous valid internal URL
+                let destination = null;
+                const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave'];
+
+                while (stack.length > 0) {
+                    const candidate = stack.pop();
+                    if (!candidate) continue;
+
+                    const isTrap = trapPrefixes.some(prefix => candidate.startsWith(prefix));
+                    if (!isTrap && candidate !== curPath) {
+                        destination = candidate;
+                        break;
+                    }
+                }
+
+                if (destination) {
+                    // Keep destination on top so history remains intact
+                    stack.push(destination);
+                    saveHistoryStack(stack);
+                    try {
+                        sessionStorage.setItem(GOING_BACK_KEY, 'true');
+                    } catch(e) {}
+
+                    window.location.href = destination;
+                } else {
+                    // 3. Fallback connection:
+                    // If stack is empty (e.g. user directly opened /settings), redirect to fallback
+                    // (e.g. for /settings -> fallback is /dashboard!)
+                    saveHistoryStack([fallback]);
+                    window.location.href = fallback;
+                }
+            };
+
+            // Global delegation listener for any back button clicks
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('a[href*="history.back"], .dynamic-back-btn, .btn-go-back, [data-go-back], [data-fallback]');
+                if (target) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const fallbackAttr = target.getAttribute('data-fallback');
+                    window.smartGoBack(fallbackAttr || '/');
+                }
+            }, true);
+        })();
     </script>
     <!-- ============================================ -->
 
@@ -741,6 +830,10 @@
                 <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
                 <li><a href="/community-chat"><i class="fas fa-comment-dots" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Chat</a></li>
                 <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> Membership</a></li>
+                <% if (user && (user.membership === 'plus' || user.membership === 'lite' || user.membership === 'premium')) { %>
+                    <li><a href="/my-membership"><i class="fas fa-id-card" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> My Membership</a></li>
+                <% } %>
+                <li><a href="/volunteer"><i class="fas fa-hands-helping" style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i> Volunteer Team</a></li>
                 <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
                 <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
                 <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
@@ -752,6 +845,8 @@
                 <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 10px; width: 18px; text-align: center;"></i> License Hub</a></li>
                 <li><a href="/community"><i class="fas fa-comments" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Forums</a></li>
                 <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
+                <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> Membership</a></li>
+                <li><a href="/volunteer"><i class="fas fa-hands-helping" style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i> Volunteer Team</a></li>
                 <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
                 <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
                 <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
@@ -1181,11 +1276,7 @@
             }
 
             window.handleDebuggerExit = function() {
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = '/';
-                }
+                window.smartGoBack('/');
             };
 
             window.submitDebuggerCode = async function() {

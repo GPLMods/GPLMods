@@ -315,6 +315,69 @@
         font-weight: 700;
         border: 1px solid rgba(255, 215, 0, 0.3);
     }
+    .history-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #282828;
+    }
+    .history-filter-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #3a3a3a;
+        color: var(--silver);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .history-filter-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+    .history-filter-btn.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .history-filter-btn .filter-count {
+        background: rgba(0, 0, 0, 0.25);
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+    .history-filter-btn.active .filter-count {
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--white);
+    }
+    .btn-history-check-status {
+        background: rgba(241, 196, 15, 0.15);
+        border: 1px solid rgba(241, 196, 15, 0.4);
+        color: #f1c40f;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s ease;
+    }
+    .btn-history-check-status:hover {
+        background: #f1c40f;
+        color: #000;
+        box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+    }
     .history-table-container {
         overflow-x: auto;
     }
@@ -424,12 +487,8 @@
 
 <main class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;">
-        <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
+            <%- include('../../partials/go-back-button', { fallback: '/' }) %>
+            <!-- ======================================== -->
     
     <div class="donate-wrapper">
         <h1>Support <span>GPL Mods</span></h1>
@@ -552,24 +611,44 @@
     <div class="donation-history-wrapper">
         <div class="history-header">
             <h2><i class="fas fa-history" style="color: var(--gold); margin-right: 10px;"></i> Your Donation History</h2>
-            <span class="history-badge" id="history-count-badge"><%= typeof donationHistory !== 'undefined' && donationHistory ? donationHistory.length : 0 %> Donations</span>
+            <span class="history-badge" id="history-count-badge"><%= typeof donationHistory !== 'undefined' && donationHistory ? donationHistory.length : 0 %> Total</span>
         </div>
 
-        <% if (typeof donationHistory !== 'undefined' && donationHistory && donationHistory.length > 0) { %>
+        <% if (typeof donationHistory !== 'undefined' && donationHistory && donationHistory.length > 0) { 
+            const completedCount = donationHistory.filter(d => d.status === 'successful').length;
+            const pendingCount = donationHistory.filter(d => d.status === 'pending').length;
+            const failedCount = donationHistory.filter(d => d.status === 'failed' || d.status === 'cancelled').length;
+        %>
+            <!-- Filter Pills -->
+            <div class="history-filter-bar">
+                <button type="button" class="history-filter-btn active" data-filter="all" onclick="filterDonations('all', this);">
+                    <i class="fas fa-list"></i> All <span class="filter-count"><%= donationHistory.length %></span>
+                </button>
+                <button type="button" class="history-filter-btn" data-filter="successful" onclick="filterDonations('successful', this);">
+                    <i class="fas fa-check-circle" style="color: #2ecc71;"></i> Completed <span class="filter-count"><%= completedCount %></span>
+                </button>
+                <button type="button" class="history-filter-btn" data-filter="pending" onclick="filterDonations('pending', this);">
+                    <i class="fas fa-clock" style="color: #f1c40f;"></i> Processing <span class="filter-count"><%= pendingCount %></span>
+                </button>
+                <button type="button" class="history-filter-btn" data-filter="failed" onclick="filterDonations('failed', this);">
+                    <i class="fas fa-times-circle" style="color: #e74c3c;"></i> Failed <span class="filter-count"><%= failedCount %></span>
+                </button>
+            </div>
+
             <div class="history-table-container">
-                <table class="history-table">
+                <table class="history-table" id="donations-table">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Order ID</th>
                             <th>Amount</th>
                             <th>Status</th>
-                            <th>Receipt</th>
+                            <th>Action / Receipt</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% donationHistory.forEach(function(item) { %>
-                            <tr>
+                            <tr class="donation-history-row" data-status="<%= item.status === 'successful' ? 'successful' : (item.status === 'pending' ? 'pending' : 'failed') %>">
                                 <td class="history-date">
                                     <%= new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
                                 </td>
@@ -583,7 +662,7 @@
                                     <% if (item.status === 'successful') { %>
                                         <span class="status-pill status-pill-success"><i class="fas fa-check"></i> Completed</span>
                                     <% } else if (item.status === 'pending') { %>
-                                        <span class="status-pill status-pill-pending"><i class="fas fa-clock"></i> Processing</span>
+                                        <span class="status-pill status-pill-pending"><i class="fas fa-clock fa-spin"></i> Processing</span>
                                     <% } else { %>
                                         <span class="status-pill status-pill-failed"><i class="fas fa-times"></i> Failed</span>
                                     <% } %>
@@ -593,6 +672,10 @@
                                         <a href="/payment/success?order_id=<%= encodeURIComponent(item.orderId) %>&type=donation" class="btn-history-receipt" target="_blank">
                                             <i class="fas fa-receipt"></i> Receipt
                                         </a>
+                                    <% } else if (item.status === 'pending') { %>
+                                        <a href="/payment/status?order_id=<%= encodeURIComponent(item.orderId) %>&type=donation" class="btn-history-check-status">
+                                            <i class="fas fa-sync-alt"></i> Check Status
+                                        </a>
                                     <% } else { %>
                                         <span style="color: #666; font-size: 0.85em;">-</span>
                                     <% } %>
@@ -601,6 +684,10 @@
                         <% }); %>
                     </tbody>
                 </table>
+                <div id="filter-no-results" class="history-empty-state" style="display: none; padding: 25px 15px;">
+                    <i class="fas fa-filter" style="font-size: 1.6rem; color: #555;"></i>
+                    <p style="margin: 0; color: #888;">No donations found for this filter.</p>
+                </div>
             </div>
         <% } else { %>
             <div class="history-empty-state">
@@ -614,6 +701,26 @@
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
+    function filterDonations(filter, btn) {
+        document.querySelectorAll('.history-filter-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        const rows = document.querySelectorAll('.donation-history-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            if (filter === 'all' || status === filter) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        const noResults = document.getElementById('filter-no-results');
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // --- Server-Injected Daily Cap Data ---
         let currentCapData = <%- JSON.stringify(typeof capData !== 'undefined' ? capData : { totalCapInr: 2000, spentInr: 0, remainingInr: 2000, rates: { INR: 1, USD: 85, EUR: 92, GBP: 108 } }) %>;

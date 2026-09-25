@@ -215,12 +215,7 @@
 
 <main class="container">
     <div class="source-hub-container">
-        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <div class="back-btn-wrapper" style="margin-bottom: 20px;">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/' }) %>
         <!-- ======================================== -->
         <header class="source-hub-header">
             <h1><i class="fab fa-github" aria-hidden="true"></i> Source Code Hub</h1>

@@ -826,11 +826,7 @@
         <!-- SCREEN 1: SUPPORT CHOICE / GATEWAY HUB -->
         <!-- ============================================== -->
         <div id="supportChoiceScreen" class="support-choice-container">
-            <div style="display: flex; justify-content: flex-start; margin-bottom: 1.5rem;">
-                <a href="javascript:history.back()" class="dynamic-back-btn">
-                    <i class="fas fa-arrow-left"></i> Go Back
-                </a>
-            </div>
+            <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'margin-bottom: 1.5rem;' }) %>
 
             <div class="support-hero-header">
                 <h1>Help & <span>Support Desk</span></h1>

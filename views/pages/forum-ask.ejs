@@ -36,11 +36,7 @@
 
 <main class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="max-width: 900px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;">
-        <a href="javascript:history.back()" class="dynamic-back-btn">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
+    <%- include('../partials/go-back-button', { fallback: '/forum', wrapperStyle: 'max-width: 900px; margin: 2rem auto 0 auto; display: flex; justify-content: flex-start;' }) %>
     <!-- ======================================== -->
     <div class="ask-container" style="margin-top: 1rem;">
         <h1 style="color: var(--white); font-size: 2.5em; margin-bottom: 5px;">Ask the <span style="color: var(--blue);">Community</span></h1>

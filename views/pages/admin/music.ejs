@@ -555,11 +555,7 @@
 
 <main class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div class="back-btn-wrapper" style="margin: 1.5rem auto; max-width: 1200px; padding: 0 20px;">
-        <a href="/admin" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/admin');">
-            <i class="fas fa-arrow-left"></i> Back to AdminJS
-        </a>
-    </div>
+    <%- include('../../partials/go-back-button', { fallback: '/admin' }) %>
     <!-- ======================================== -->
 
     <div class="music-manager-wrapper">

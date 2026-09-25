@@ -74,12 +74,8 @@
 <main>
     <div class="policy-page-header">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-    <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;">
-        <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
-    </div>
-    <!-- ======================================== -->
+            <%- include('../../partials/go-back-button', { fallback: '/partnership' }) %>
+            <!-- ======================================== -->
         <div class="container">
             <h1>Distributor <span>Partnership Policy</span></h1>
             <p>By joining the GPL Mods Distributor Partnership Program, you agree to adhere strictly to the following guidelines. Our priority is the safety and trust of our community.</p>

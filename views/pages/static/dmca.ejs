@@ -274,10 +274,8 @@
 
 <main>
     <div class="dmca-page-header">
-        <div style="margin-bottom: 20px; text-align: left; width: 100%; clear: both; overflow: hidden;" class="container">
-            <a href="#" class="dynamic-back-btn" onclick="event.preventDefault(); smartGoBack('/');">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
+        <div class="container" style="padding-top: 10px;">
+            <%- include('../../partials/go-back-button', { fallback: '/' }) %>
         </div>
         <div class="container">
             <h1>DMCA & <span>Copyright Policy</span></h1>

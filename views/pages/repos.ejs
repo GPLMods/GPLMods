@@ -144,12 +144,7 @@
     </style>
 
     <main class="container">
-        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <div class="back-btn-wrapper">
-            <a href="javascript:history.back()" class="dynamic-back-btn">
-                <i class="fas fa-arrow-left"></i> Go Back
-            </a>
-        </div>
+        <%- include('../partials/go-back-button', { fallback: '/' }) %>
         <!-- ======================================== -->
         <div class="repo-page-header">
             <h1>Source <span>Repositories</span></h1>

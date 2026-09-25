@@ -27,9 +27,20 @@ const MembershipOrderSchema = new Schema({
     },
     status: { 
         type: String, 
-        enum: ['pending', 'paid', 'failed', 'cancelled'], 
+        enum: ['pending', 'paid', 'failed', 'cancelled', 'refund_requested', 'refunded'], 
         default: 'pending' 
     },
+    autoRenew: { type: Boolean, default: true },
+    refundStatus: { 
+        type: String, 
+        enum: ['none', 'pending', 'approved', 'rejected'], 
+        default: 'none' 
+    },
+    refundRequestedAt: { type: Date },
+    refundProcessedAt: { type: Date },
+    refundAmount: { type: Number, default: 0 },
+    refundReason: { type: String, default: '' },
+    scheduledPlanChange: { type: Schema.Types.Mixed, default: null },
     paymentMethod: { type: String },
     membershipExpiresAt: { type: Date },
     rawWebhookData: { type: Schema.Types.Mixed }

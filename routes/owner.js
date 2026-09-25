@@ -627,7 +627,7 @@ router.post('/api/owner/debugger/generate-key', catchAsync(async (req, res) => {
         success: true, 
         key: newKey, 
         expiresAt: siteState.debuggerHourlyKeyExpiresAt, 
-        masterKey: siteState.debuggerMasterKey || 'OPAdmin@2026' 
+        masterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2' 
     });
 }));
 
@@ -644,7 +644,7 @@ router.get('/owner', catchAsync(async (req, res) => {
         improvmxDomain: process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org',
         debuggerKey: siteState.debuggerHourlyKey || 'N/A',
         debuggerExpiresAt: siteState.debuggerHourlyKeyExpiresAt,
-        debuggerMasterKey: siteState.debuggerMasterKey || 'OPAdmin@2026',
+        debuggerMasterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2',
         recentDevtoolLogs: recentDevtoolLogs || []
     });
 }));
