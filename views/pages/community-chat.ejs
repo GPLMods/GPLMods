@@ -233,10 +233,39 @@
         return item; 
     }
 
+    // Link Restriction Validator: Only GPLMods links allowed!
+    const ALLOWED_DOMAINS = ['gplmods.webredirect.org', 'gplmods.mytunnel.org', 'localhost', '127.0.0.1'];
+    function containsExternalLinks(text) {
+        if (!text) return false;
+        const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(?:com|org|net|io|gg|me|app|xyz|site|online|tv|cc|ru|cn|in|info|biz|co|uk|de|eu|club|link|live)[^\s]*)/gi;
+        const matches = text.match(urlPattern);
+        if (!matches || matches.length === 0) return false;
+
+        for (const match of matches) {
+            let testUrl = match;
+            if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) {
+                testUrl = 'http://' + testUrl;
+            }
+            try {
+                const parsed = new URL(testUrl);
+                const host = parsed.hostname.toLowerCase();
+                const isAllowed = ALLOWED_DOMAINS.some(allowed => host === allowed || host.endsWith('.' + allowed));
+                if (!isAllowed) return true;
+            } catch(e) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // --- Handle Form Submission ---
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (input.value) {
+            if (containsExternalLinks(input.value)) {
+                alert('External links are forbidden! Only official GPLMods site links are allowed in the chat.');
+                return;
+            }
             socket.emit('chat message', {
                 username: currentUser.username,
                 avatar: currentUser.avatar,
@@ -244,6 +273,10 @@
             });
             input.value = '';
         }
+    });
+
+    socket.on('chat error', function(err) {
+        alert(err.message || 'Error sending chat message.');
     });
     
     // --- Listen for message history on connection ---

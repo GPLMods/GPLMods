@@ -1,0 +1,281 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .club-create-wrapper {
+        max-width: 820px;
+        margin: 40px auto 70px;
+    }
+    .club-create-card {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 20px;
+        padding: 36px 32px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+    }
+    .create-card-header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #282a36;
+        padding-bottom: 20px;
+    }
+    .create-card-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    .create-card-subtitle {
+        color: var(--silver);
+        font-size: 0.95rem;
+    }
+    .form-group-block {
+        margin-bottom: 22px;
+    }
+    .form-group-block label {
+        display: block;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 8px;
+        letter-spacing: 0.3px;
+    }
+    .form-group-block label .req {
+        color: #ff5252;
+    }
+    .form-group-block label .hint {
+        color: var(--silver);
+        font-size: 0.8rem;
+        font-weight: 400;
+        margin-left: 6px;
+    }
+    .form-control-input,
+    .form-control-select,
+    .form-control-textarea {
+        width: 100%;
+        background: #0d0e12;
+        border: 1px solid #333645;
+        border-radius: 10px;
+        color: #fff;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.25s, box-shadow 0.25s;
+        box-sizing: border-box;
+    }
+    .form-control-input:focus,
+    .form-control-select:focus,
+    .form-control-textarea:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+    }
+    .form-row-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+    .privacy-toggle-box {
+        background: #0d0e12;
+        border: 1px solid #333645;
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .privacy-toggle-info h4 {
+        margin: 0 0 4px 0;
+        color: #fff;
+        font-size: 1rem;
+    }
+    .privacy-toggle-info p {
+        margin: 0;
+        color: var(--silver);
+        font-size: 0.85rem;
+    }
+    .switch-ui {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+        flex-shrink: 0;
+    }
+    .switch-ui input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider-ui {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #333645;
+        transition: .3s;
+        border-radius: 34px;
+    }
+    .slider-ui:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+    input:checked + .slider-ui {
+        background-color: var(--gold);
+    }
+    input:checked + .slider-ui:before {
+        transform: translateX(22px);
+        background-color: #000;
+    }
+    .btn-submit-club {
+        background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+        color: #000;
+        font-weight: 700;
+        font-size: 1.05rem;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 12px;
+        width: 100%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.35);
+        transition: all 0.25s ease;
+        margin-top: 10px;
+    }
+    .btn-submit-club:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(255, 215, 0, 0.5);
+    }
+    .error-alert-banner {
+        background: rgba(244, 67, 54, 0.15);
+        border: 1px solid #f44336;
+        color: #ff8a80;
+        padding: 12px 18px;
+        border-radius: 10px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+    }
+    @media (max-width: 768px) {
+        .form-row-2col { grid-template-columns: 1fr; }
+        .club-create-card { padding: 24px 18px; }
+    }
+</style>
+
+<div class="container club-create-wrapper">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <%- include('../../partials/go-back-button', { fallback: '/clubs' }) %>
+    <!-- ======================================== -->
+
+    <div class="club-create-card" style="margin-top: 1rem;">
+        <div class="create-card-header">
+            <h1 class="create-card-title"><i class="fas fa-users-cog" style="color: var(--gold);"></i> Create a Club</h1>
+            <p class="create-card-subtitle">
+                Establish your community hub on GPLMods. You will receive dedicated Discord-like channels including #rules, #announcements, #new-uploads, #new-updates, and text channels.
+            </p>
+        </div>
+
+        <% if (error) { %>
+            <div class="error-alert-banner">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span><%= error %></span>
+            </div>
+        <% } %>
+
+        <form action="/clubs/create" method="POST" enctype="multipart/form-data">
+            <!-- Club Name -->
+            <div class="form-group-block">
+                <label for="clubName">Club Name <span class="req">*</span> <span class="hint">(Unique, 3–60 characters. Reserved names like GPLMods/GPL Community are protected)</span></label>
+                <input type="text" id="clubName" name="name" class="form-control-input" placeholder="e.g. Apex Modding Guild, Retro Tweakers" required maxlength="60" value="<%= formData.name || '' %>">
+            </div>
+
+            <!-- Description -->
+            <div class="form-group-block">
+                <label for="clubDesc">Description <span class="hint">(Brief summary of what your community is about)</span></label>
+                <textarea id="clubDesc" name="description" class="form-control-textarea" rows="3" placeholder="Tell members what mods, tweaks, or topics you discuss here..." maxlength="1000"><%= formData.description || '' %></textarea>
+            </div>
+
+            <!-- Tags -->
+            <div class="form-group-block">
+                <label for="clubTags">Tags <span class="hint">(Up to 10 comma-separated keywords)</span></label>
+                <input type="text" id="clubTags" name="tags" class="form-control-input" placeholder="e.g. Android, IPA, Gaming, Tools, Tweaks, Windows" value="<%= formData.tags || '' %>">
+            </div>
+
+            <!-- Language & Country/Region -->
+            <div class="form-row-2col">
+                <div class="form-group-block">
+                    <label for="primaryLanguage">Primary Language</label>
+                    <select id="primaryLanguage" name="primaryLanguage" class="form-control-select">
+                        <option value="English" <%= (formData.primaryLanguage === 'English') ? 'selected' : '' %>>English</option>
+                        <option value="Spanish" <%= (formData.primaryLanguage === 'Spanish') ? 'selected' : '' %>>Español (Spanish)</option>
+                        <option value="Hindi" <%= (formData.primaryLanguage === 'Hindi') ? 'selected' : '' %>>हिन्दी (Hindi)</option>
+                        <option value="French" <%= (formData.primaryLanguage === 'French') ? 'selected' : '' %>>Français (French)</option>
+                        <option value="Russian" <%= (formData.primaryLanguage === 'Russian') ? 'selected' : '' %>>Русский (Russian)</option>
+                        <option value="German" <%= (formData.primaryLanguage === 'German') ? 'selected' : '' %>>Deutsch (German)</option>
+                        <option value="Portuguese" <%= (formData.primaryLanguage === 'Portuguese') ? 'selected' : '' %>>Português (Portuguese)</option>
+                        <option value="Arabic" <%= (formData.primaryLanguage === 'Arabic') ? 'selected' : '' %>>العربية (Arabic)</option>
+                        <option value="Chinese" <%= (formData.primaryLanguage === 'Chinese') ? 'selected' : '' %>>中文 (Chinese)</option>
+                        <option value="Indonesian" <%= (formData.primaryLanguage === 'Indonesian') ? 'selected' : '' %>>Bahasa Indonesia</option>
+                    </select>
+                </div>
+
+                <div class="form-group-block">
+                    <label for="country">Country / Region</label>
+                    <input type="text" id="country" name="country" class="form-control-input" placeholder="e.g. GLOBAL, United States, India, Germany" value="<%= formData.country || 'GLOBAL' %>">
+                </div>
+            </div>
+
+            <!-- About Admin -->
+            <div class="form-group-block">
+                <label for="aboutAdmin">About Admin / Creator Bio <span class="hint">(Displayed on the pre-join preview card for transparency)</span></label>
+                <textarea id="aboutAdmin" name="aboutAdmin" class="form-control-textarea" rows="2" placeholder="Introduce yourself, your modding background, and your role in this club..."><%= formData.aboutAdmin || '' %></textarea>
+            </div>
+
+            <!-- Custom Rules -->
+            <div class="form-group-block">
+                <label for="rules">Community Rules <span class="hint">(One rule per line. Displayed in #rules channel and pre-join preview)</span></label>
+                <textarea id="rules" name="rules" class="form-control-textarea" rows="4" placeholder="1. Be respectful to all members.&#10;2. Only GPLMods site links are allowed in chat.&#10;3. No malicious files or scamming."><%= formData.rules || "Be respectful to all members and staff.\nOnly official GPLMods site links are allowed in the chat.\nNo spam, scamming, or abusive language.\nFollow platform community safety guidelines." %></textarea>
+            </div>
+
+            <!-- Icon & Banner Upload -->
+            <div class="form-row-2col">
+                <div class="form-group-block">
+                    <label for="icon">Club Icon <span class="hint">(Square image, max 5MB)</span></label>
+                    <input type="file" id="icon" name="icon" class="form-control-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                </div>
+
+                <div class="form-group-block">
+                    <label for="banner">Club Banner <span class="hint">(Wide banner image, max 5MB)</span></label>
+                    <input type="file" id="banner" name="banner" class="form-control-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                </div>
+            </div>
+
+            <!-- Privacy Setting -->
+            <div class="privacy-toggle-box">
+                <div class="privacy-toggle-info">
+                    <h4><i class="fas fa-lock" style="color: #ff8a80;"></i> Private Club</h4>
+                    <p>When enabled, users must request to join or be invited, and must be approved by group admin/owner.</p>
+                </div>
+                <label class="switch-ui">
+                    <input type="checkbox" name="isPrivate" id="isPrivateToggle" <%= (formData.isPrivate === 'true' || formData.isPrivate === 'on') ? 'checked' : '' %>>
+                    <span class="slider-ui"></span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-submit-club">
+                <i class="fas fa-rocket"></i> Launch Community Club
+            </button>
+        </form>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>

@@ -287,6 +287,10 @@
                 <i class="fas fa-comments"></i> Community Forums &amp; Docs 
                 <span class="tab-count"><%= (typeof counts !== 'undefined' && counts) ? counts.community : 0 %></span>
             </a>
+            <a href="/search?q=<%= encodeURIComponent(query) %>&tab=clubs" class="search-domain-tab <%= (typeof activeTab !== 'undefined' && activeTab === 'clubs') ? 'active' : '' %>">
+                <i class="fas fa-users"></i> Clubs &amp; Communities 
+                <span class="tab-count"><%= (typeof counts !== 'undefined' && counts) ? (counts.clubs || 0) : 0 %></span>
+            </a>
         </div>
 
         <% if (!activeTab || activeTab === 'mods') { %>
@@ -549,6 +553,72 @@
                 </div>
             <% } %>
         <% } %>
+
+        <% if (activeTab === 'clubs') { %>
+            <!-- ============================================== -->
+            <!-- TAB 4: CLUBS & COMMUNITIES                     -->
+            <!-- ============================================== -->
+            <section style="margin-bottom: 40px;">
+                <h2 style="color: var(--white); font-size: 1.4em; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-users" style="color: var(--gold); margin-right: 8px;"></i> Clubs &amp; Communities</span>
+                    <span style="font-size: 0.65em; color: var(--silver); font-weight: normal; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 12px;"><%= (typeof clubResults !== 'undefined' && clubResults) ? clubResults.length : 0 %> clubs found</span>
+                </h2>
+
+                <% if (typeof clubResults !== 'undefined' && clubResults.length > 0) { %>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                        <% clubResults.forEach(club => { %>
+                            <div style="background: var(--dark-gray); border: 1px solid #333; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+                                <div style="height: 90px; background-size: cover; background-position: center; background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>'); position: relative;">
+                                    <div style="position: absolute; bottom: -20px; left: 16px;">
+                                        <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" style="width: 50px; height: 50px; border-radius: 12px; border: 2px solid #222; object-fit: cover;" onerror="this.src='/images/default-avatar.png';">
+                                    </div>
+                                    <div style="position: absolute; top: 8px; right: 8px;">
+                                        <% if (club.isPrivate) { %>
+                                            <span style="background: rgba(244, 67, 54, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">Private</span>
+                                        <% } else { %>
+                                            <span style="background: rgba(76, 175, 80, 0.2); color: #69f0ae; border: 1px solid #69f0ae; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">Public</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                <div style="padding: 28px 16px 16px; flex: 1; display: flex; flex-direction: column;">
+                                    <h3 style="margin: 0 0 6px; font-size: 1.15rem; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                        <%= club.name %>
+                                        <% if (club.isVerified || club.isDefault) { %>
+                                            <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.85em;"></i>
+                                        <% } %>
+                                    </h3>
+                                    <p style="color: var(--silver); font-size: 0.86rem; line-height: 1.4; margin: 0 0 12px; flex: 1;">
+                                        <%= (club.description || '').slice(0, 110) %>...
+                                    </p>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--silver); border-top: 1px solid #282a36; padding-top: 10px; margin-bottom: 12px;">
+                                        <span><i class="fas fa-users" style="color: var(--gold); margin-right: 4px;"></i> <%= club.memberCount || 1 %> Members</span>
+                                        <span><i class="fas fa-language" style="color: #ba68c8; margin-right: 4px;"></i> <%= club.primaryLanguage || 'English' %></span>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <a href="/clubs/<%= club.slug %>" style="flex: 1; background: var(--gold); color: #000; text-align: center; padding: 8px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem;">
+                                            View Club
+                                        </a>
+                                        <button type="button" onclick="shareClub('<%= club._id %>', '<%= club.name.replace(/'/g, "\\'") %>', '/clubs/<%= club.slug %>')" style="background: #232532; border: 1px solid #333645; color: var(--silver); padding: 8px 12px; border-radius: 8px; cursor: pointer;" title="Share Club">
+                                            <i class="fas fa-share-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 60px 20px; background: var(--dark-gray); border-radius: 15px; border: 1px solid #333; margin: 40px auto; max-width: 800px;">
+                        <i class="fas fa-users" style="font-size: 4em; color: #444; margin-bottom: 20px;"></i>
+                        <h2 style="color: var(--silver); margin-bottom: 10px;">No Clubs Found</h2>
+                        <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
+                            We couldn't find any community clubs matching "<strong><%= query %></strong>".
+                        </p>
+                        <a href="/clubs" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; margin-right: 10px;">Browse All Clubs</a>
+                        <a href="/clubs/create" class="btn btn-secondary" style="display: inline-block; padding: 12px 30px; border-radius: 25px; text-decoration: none;">Create a Club</a>
+                    </div>
+                <% } %>
+            </section>
+        <% } %>
     </div>
 </main>
 
@@ -705,6 +775,16 @@
         `;
         document.head.appendChild(style);
     });
+    function shareClub(clubId, clubName, clubUrl) {
+        const fullShareUrl = window.location.origin + clubUrl;
+        if (navigator.share) {
+            navigator.share({ title: clubName + ' on GPL Mods', text: 'Join ' + clubName + ' on GPL Mods!', url: fullShareUrl });
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(fullShareUrl).then(() => alert('Link copied to clipboard!'));
+        } else {
+            prompt('Copy club link:', fullShareUrl);
+        }
+    }
 </script>
 
 <%- include('../partials/popunder-ads') %>

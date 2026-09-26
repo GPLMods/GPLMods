@@ -1,48 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <%
-        const siteName = "GPL Mods Official";
-        const defaultTitle = "GPL Mods - 100% Safe & Working Premium Unlocked Mods";
-        const defaultDesc = "Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free.";
-        const defaultKeywords = "gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked";
-        const defaultImage = "https://gplmods.webredirect.org/images/logo.png";
-        const defaultUrl = "https://gplmods.webredirect.org";
+    <% const siteName="GPL Mods Official" ; const defaultTitle="GPL Mods - 100% Safe & Working Premium Unlocked Mods" ;
+        const
+        defaultDesc="Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free."
+        ; const
+        defaultKeywords="gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked"
+        ; const defaultImage="https://gplmods.webredirect.org/images/logo.png" ; const
+        defaultUrl="https://gplmods.webredirect.org" ; const finalTitle=typeof pageTitle !=='undefined' ? `${pageTitle}
+        | ${siteName}` : defaultTitle; const finalDesc=typeof pageDescription !=='undefined' ? pageDescription :
+        defaultDesc; const finalKeywords=typeof pageKeywords !=='undefined' ? pageKeywords : defaultKeywords; const
+        finalImage=typeof pageImage !=='undefined' ? pageImage : defaultImage; const finalUrl=typeof pageUrl
+        !=='undefined' ? pageUrl : defaultUrl; %>
 
-        const finalTitle = typeof pageTitle !== 'undefined' ? `${pageTitle} | ${siteName}` : defaultTitle;
-        const finalDesc = typeof pageDescription !== 'undefined' ? pageDescription : defaultDesc;
-        const finalKeywords = typeof pageKeywords !== 'undefined' ? pageKeywords : defaultKeywords;
-        const finalImage = typeof pageImage !== 'undefined' ? pageImage : defaultImage;
-        const finalUrl = typeof pageUrl !== 'undefined' ? pageUrl : defaultUrl;
-    %>
+        <title>
+            <%= finalTitle %>
+        </title>
+        <meta name="description" content="<%= finalDesc %>">
+        <meta name="keywords" content="<%= finalKeywords %>">
+        <meta name="author" content="GPL Mods Team">
+        <link rel="canonical" href="<%= finalUrl %>">
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+        <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 
-    <title><%= finalTitle %></title>
-    <meta name="description" content="<%= finalDesc %>">
-    <meta name="keywords" content="<%= finalKeywords %>">
-    <meta name="author" content="GPL Mods Team">
-    <link rel="canonical" href="<%= finalUrl %>">
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+        <meta property="og:site_name" content="<%= siteName %>">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="<%= finalUrl %>">
+        <meta property="og:title" content="<%= finalTitle %>">
+        <meta property="og:description" content="<%= finalDesc %>">
+        <meta property="og:image" content="<%= finalImage %>">
 
-    <meta property="og:site_name" content="<%= siteName %>">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= finalUrl %>">
-    <meta property="og:title" content="<%= finalTitle %>">
-    <meta property="og:description" content="<%= finalDesc %>">
-    <meta property="og:image" content="<%= finalImage %>">
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:url" content="<%= finalUrl %>">
+        <meta property="twitter:title" content="<%= finalTitle %>">
+        <meta property="twitter:description" content="<%= finalDesc %>">
+        <meta property="twitter:image" content="<%= finalImage %>">
 
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="<%= finalUrl %>">
-    <meta property="twitter:title" content="<%= finalTitle %>">
-    <meta property="twitter:description" content="<%= finalDesc %>">
-    <meta property="twitter:image" content="<%= finalImage %>">
-
-    <!-- Schema.org JSON-LD Structured Data for Search Engine Bots -->
-    <script type="application/ld+json">
+        <!-- Schema.org JSON-LD Structured Data for Search Engine Bots -->
+        <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
@@ -76,1312 +76,1731 @@
       ]
     }
     </script>
-    
-    <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
-    <link rel="apple-touch-icon" href="<%= cdnUrl %>/favicon.png">
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0a0a0a">
-    
-    <!-- iOS Support -->
-    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="GPL Mods">
-    
-    <!-- Android/Chrome Support -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css"/>
 
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+        <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
+        <link rel="apple-touch-icon" href="<%= cdnUrl %>/favicon.png">
+        <!-- PWA Meta Tags -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#0a0a0a">
+
+        <!-- iOS Support -->
+        <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="GPL Mods">
+
+        <!-- Android/Chrome Support -->
+        <meta name="mobile-web-app-capable" content="yes">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+            rel="stylesheet">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+            integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+
+        <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
         <!-- ======== CDN CIRCUIT BREAKER SCRIPT ======== -->
-    <script>
-        function triggerCdnFallback() {
-            // 1. Set the cookie to expire in exactly 12 hours (43200 seconds)
-            // This tells the backend to stop sending CDN URLs for the next 12 hours.
-            document.cookie = "cdn_down=true; max-age=43200; path=/";
-            console.warn("CDN Failure Detected! Switched to Local Server for the next 12 hours.");
-            
-            // 2. Fix the assets currently on this page that have already failed
-            const fixPageAssets = () => {
-                const cdnUrl = "<%= rawCdnUrl %>";
-                if (!cdnUrl) return; // If no CDN was configured, do nothing
-                
-                // Find all Lottie players, images, and audio tags
-                const elements = document.querySelectorAll('lottie-player, img, audio, source');
-                
-                elements.forEach(el => {
-                    const src = el.getAttribute('src');
-                    // If the source contains the broken CDN URL, strip it out so it loads locally
-                    if (src && src.startsWith(cdnUrl)) {
-                        el.setAttribute('src', src.replace(cdnUrl, ''));
+        <script>
+            function triggerCdnFallback() {
+                // 1. Set the cookie to expire in exactly 12 hours (43200 seconds)
+                // This tells the backend to stop sending CDN URLs for the next 12 hours.
+                document.cookie = "cdn_down=true; max-age=43200; path=/";
+                console.warn("CDN Failure Detected! Switched to Local Server for the next 12 hours.");
+
+                // 2. Fix the assets currently on this page that have already failed
+                const fixPageAssets = () => {
+                    const cdnUrl = "<%= rawCdnUrl %>";
+                    if (!cdnUrl) return; // If no CDN was configured, do nothing
+
+                    // Find all Lottie players, images, and audio tags
+                    const elements = document.querySelectorAll('lottie-player, img, audio, source');
+
+                    elements.forEach(el => {
+                        const src = el.getAttribute('src');
+                        // If the source contains the broken CDN URL, strip it out so it loads locally
+                        if (src && src.startsWith(cdnUrl)) {
+                            el.setAttribute('src', src.replace(cdnUrl, ''));
+                        }
+                    });
+                };
+
+                // Run immediately for elements already loaded
+                fixPageAssets();
+
+                // Run again when the whole page finishes loading to catch everything at the bottom
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', fixPageAssets);
+                }
+            }
+
+            // ======== DYNAMIC NAVIGATION HISTORY & SMART GO BACK CONTROLLER ========
+            (function () {
+                const STORAGE_KEY = 'gpl_nav_history';
+                const GOING_BACK_KEY = 'gpl_nav_going_back';
+                const MAX_STACK = 50;
+
+                function getHistoryStack() {
+                    try {
+                        const raw = sessionStorage.getItem(STORAGE_KEY);
+                        const parsed = JSON.parse(raw || '[]');
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch (e) {
+                        return [];
                     }
-                });
-            };
-
-            // Run immediately for elements already loaded
-            fixPageAssets();
-            
-            // Run again when the whole page finishes loading to catch everything at the bottom
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', fixPageAssets);
-            }
-        }
-
-        // ======== DYNAMIC NAVIGATION HISTORY & SMART GO BACK CONTROLLER ========
-        (function() {
-            const STORAGE_KEY = 'gpl_nav_history';
-            const GOING_BACK_KEY = 'gpl_nav_going_back';
-            const MAX_STACK = 50;
-
-            function getHistoryStack() {
-                try {
-                    const raw = sessionStorage.getItem(STORAGE_KEY);
-                    const parsed = JSON.parse(raw || '[]');
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch (e) {
-                    return [];
                 }
-            }
 
-            function saveHistoryStack(stack) {
-                try {
-                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack.slice(-MAX_STACK)));
-                } catch (e) {}
-            }
-
-            function getRelativePath(urlStr) {
-                try {
-                    const u = new URL(urlStr || window.location.href, window.location.origin);
-                    return u.pathname + u.search;
-                } catch(e) {
-                    return window.location.pathname + window.location.search;
+                function saveHistoryStack(stack) {
+                    try {
+                        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stack.slice(-MAX_STACK)));
+                    } catch (e) { }
                 }
-            }
 
-            const currentPath = getRelativePath();
+                function getRelativePath(urlStr) {
+                    try {
+                        const u = new URL(urlStr || window.location.href, window.location.origin);
+                        return u.pathname + u.search;
+                    } catch (e) {
+                        return window.location.pathname + window.location.search;
+                    }
+                }
 
-            // Paths that must never be in back history (auth actions / API / external redirects)
-            const ignoredPrefixes = [
-                '/logout', '/login/2fa', '/api/', '/leave', '/admin-auth', '/download-file/', '/cdn-cgi/'
-            ];
-            const isIgnored = ignoredPrefixes.some(prefix => currentPath.startsWith(prefix));
+                const currentPath = getRelativePath();
 
-            if (!isIgnored) {
-                let stack = getHistoryStack();
-                const isGoingBack = sessionStorage.getItem(GOING_BACK_KEY) === 'true';
+                // Paths that must never be in back history (auth actions / API / external redirects)
+                const ignoredPrefixes = [
+                    '/logout', '/login/2fa', '/api/', '/leave', '/admin-auth', '/download-file/', '/cdn-cgi/'
+                ];
+                const isIgnored = ignoredPrefixes.some(prefix => currentPath.startsWith(prefix));
 
-                if (isGoingBack) {
-                    // Arrived via Go Back button: clear flag and truncate forward history
-                    sessionStorage.removeItem(GOING_BACK_KEY);
-                    const existingIdx = stack.lastIndexOf(currentPath);
-                    if (existingIdx !== -1) {
-                        stack = stack.slice(0, existingIdx + 1);
+                if (!isIgnored) {
+                    let stack = getHistoryStack();
+                    const isGoingBack = sessionStorage.getItem(GOING_BACK_KEY) === 'true';
+
+                    if (isGoingBack) {
+                        // Arrived via Go Back button: clear flag and truncate forward history
+                        sessionStorage.removeItem(GOING_BACK_KEY);
+                        const existingIdx = stack.lastIndexOf(currentPath);
+                        if (existingIdx !== -1) {
+                            stack = stack.slice(0, existingIdx + 1);
+                        } else {
+                            stack.push(currentPath);
+                        }
                     } else {
-                        stack.push(currentPath);
+                        // Normal forward navigation or refresh:
+                        // "doing /settings in settings page will do nothing" ->
+                        // If user reloads or navigates to the same page, do not push duplicate!
+                        const lastEntry = stack.length > 0 ? stack[stack.length - 1] : null;
+                        if (lastEntry !== currentPath) {
+                            stack.push(currentPath);
+                        }
                     }
-                } else {
-                    // Normal forward navigation or refresh:
-                    // "doing /settings in settings page will do nothing" ->
-                    // If user reloads or navigates to the same page, do not push duplicate!
-                    const lastEntry = stack.length > 0 ? stack[stack.length - 1] : null;
-                    if (lastEntry !== currentPath) {
-                        stack.push(currentPath);
-                    }
-                }
-                saveHistoryStack(stack);
-            }
-
-            // Sync with browser native back button
-            window.addEventListener('popstate', function() {
-                try {
-                    sessionStorage.setItem(GOING_BACK_KEY, 'true');
-                } catch(e) {}
-            });
-
-            // Smart Go Back function:
-            // Searches history backwards for the first valid prior page on the site.
-            // If none exists (e.g., user directly opened /settings), routes to fallbackUrl!
-            window.smartGoBack = function(fallbackUrl) {
-                const fallback = (fallbackUrl && typeof fallbackUrl === 'string' && fallbackUrl.trim()) ? fallbackUrl.trim() : '/';
-                const curPath = getRelativePath();
-                let stack = getHistoryStack();
-
-                // 1. Pop any trailing entries matching the current page
-                while (stack.length > 0 && stack[stack.length - 1] === curPath) {
-                    stack.pop();
-                }
-
-                // 2. Find the previous valid internal URL
-                let destination = null;
-                const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave'];
-
-                while (stack.length > 0) {
-                    const candidate = stack.pop();
-                    if (!candidate) continue;
-
-                    const isTrap = trapPrefixes.some(prefix => candidate.startsWith(prefix));
-                    if (!isTrap && candidate !== curPath) {
-                        destination = candidate;
-                        break;
-                    }
-                }
-
-                if (destination) {
-                    // Keep destination on top so history remains intact
-                    stack.push(destination);
                     saveHistoryStack(stack);
+                }
+
+                // Sync with browser native back button
+                window.addEventListener('popstate', function () {
                     try {
                         sessionStorage.setItem(GOING_BACK_KEY, 'true');
-                    } catch(e) {}
+                    } catch (e) { }
+                });
 
-                    window.location.href = destination;
-                } else {
-                    // 3. Fallback connection:
-                    // If stack is empty (e.g. user directly opened /settings), redirect to fallback
-                    // (e.g. for /settings -> fallback is /dashboard!)
-                    saveHistoryStack([fallback]);
-                    window.location.href = fallback;
-                }
-            };
+                // Smart Go Back function:
+                // Searches history backwards for the first valid prior page on the site.
+                // If none exists (e.g., user directly opened /settings), routes to fallbackUrl!
+                window.smartGoBack = function (fallbackUrl) {
+                    const fallback = (fallbackUrl && typeof fallbackUrl === 'string' && fallbackUrl.trim()) ? fallbackUrl.trim() : '/';
+                    const curPath = getRelativePath();
+                    let stack = getHistoryStack();
 
-            // Global delegation listener for any back button clicks
-            document.addEventListener('click', function(e) {
-                const target = e.target.closest('a[href*="history.back"], .dynamic-back-btn, .btn-go-back, [data-go-back], [data-fallback]');
-                if (target) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const fallbackAttr = target.getAttribute('data-fallback');
-                    window.smartGoBack(fallbackAttr || '/');
-                }
-            }, true);
-        })();
-    </script>
-    <!-- ============================================ -->
-
-    <!-- ✅ Apply the trigger to your CSS file -->
-    <link rel="stylesheet" href="<%= cdnUrl %>/css/style.css" onerror="this.onerror=null; this.href='/css/style.css'; triggerCdnFallback();">
-
-    <script src="<%= cdnUrl %>/js/main.js" onerror="this.onerror=null; this.src='/js/image-fallback.js'; triggerCdnFallback();"></script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
-
-    <!-- ====================================================================== -->
-    <!-- ✅ FIX: BULLETPROOF GRID HEADER & SEARCH BAR LAYOUT                    -->
-    <!-- ====================================================================== -->
-    <style>
-        .main-header { padding: 15px 0; background-color: var(--black); border-bottom: 1px solid var(--dark-gray); position: sticky; top: 0; z-index: 1000; }
-        
-        /* 1. Base Grid Layout (Fixes Button Alignment!) */
-        .header-content { 
-            display: grid; 
-            grid-template-columns: max-content 1fr max-content; /* Logo | Search | Actions */
-            align-items: center; 
-            gap: 20px; 
-        }
-        
-        .logo { font-size: 1.8em; font-weight: 700; text-decoration: none; white-space: nowrap; justify-self: start; }
-        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 4px rgba(255, 215, 0, 0.32); }
-        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
-        
-        /* 2. Search Bar */
-        .search-bar { 
-            width: 100%; 
-            max-width: 600px; 
-            justify-self: center; /* Centers it within the middle grid column */
-            position: relative; 
-            z-index: 1001; 
-        }
-        
-        .search-form { position: relative; width: 100%; display: block; }
-        
-        #searchInput { 
-            width: 100%; 
-            padding: 12px 15px 12px 45px !important; 
-            box-sizing: border-box; 
-            border-radius: 25px; 
-            border: 1px solid #333;
-            background-color: var(--dark-gray, #1a1a1a);
-            color: var(--white, #fff);
-            font-size: 1em;
-            outline: none;
-            transition: border-color 0.3s ease;
-            --placeholder-color: var(--silver); /* Default color before animation */
-        }
-        #searchInput:focus { border-color: var(--gold, #FFD700); box-shadow: 0 0 10px var(--glow-gold); }
-        #searchInput::placeholder { color: var(--placeholder-color); opacity: 1; transition: color 0.4s ease-in-out; }
-        
-        /* Custom Silver Close (X) Icon for Search */
-        input[type="search"]::-webkit-search-cancel-button {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c0c0'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") no-repeat center center;
-            background-size: contain;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s ease;
-        }
-        input[type="search"]::-webkit-search-cancel-button:hover { opacity: 1; }
-        input[type="search"]::-webkit-search-decoration,
-        input[type="search"]::-webkit-search-results-button,
-        input[type="search"]::-webkit-search-results-decoration { -webkit-appearance:none; }
-
-        /* Search Dropdown Results */
-        .search-suggestions, .search-history {
-            display: none; 
-            position: absolute;
-            top: calc(100% + 10px); 
-            left: 0;
-            right: 0; 
-            background-color: var(--dark-gray, #1a1a1a);
-            border: 1px solid #333;
-            border-radius: 12px;
-            max-height: 350px;
-            overflow-y: auto;
-            z-index: 1001; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        .search-suggestions::-webkit-scrollbar, .search-history::-webkit-scrollbar { width: 6px; }
-        .search-suggestions::-webkit-scrollbar-track, .search-history::-webkit-scrollbar-track { background: transparent; }
-        .search-suggestions::-webkit-scrollbar-thumb, .search-history::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-        
-        .search-suggestions ul, .search-history ul { list-style: none; padding: 0; margin: 0; }
-        .search-suggestions li a, .search-history li a {
-            display: block; 
-            padding: 12px 20px; 
-            color: var(--silver, #c0c0c0); 
-            text-decoration: none;
-            transition: all 0.2s ease; 
-            border-bottom: 1px solid #222;
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis;
-        }
-        .search-suggestions li:last-child a, .search-history li:last-child a { border-bottom: none; }
-        .search-suggestions li a:hover, .search-history li a:hover { background-color: #2a2a2a; color: var(--gold, #FFD700); }
-        .search-history li a::before { content: '\f017'; font-family: 'Font Awesome 6 Free'; font-weight: 400; margin-right: 10px; color: #555; }
-        .search-history h4 { padding: 15px 20px 10px; margin: 0; color: var(--gold, #FFD700); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #222; background-color: #111; position: sticky; top: 0; z-index: 2; }
-
-        /* 3. Right Side Actions */
-        .header-right-actions { 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            justify-self: end; /* Aligns this whole block to the right */
-            flex-shrink: 0; 
-        }
-        
-        .desktop-text-buttons { display: none; }
-        
-        /* Mobile Avatar Styling */
-        .avatar-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 35px !important;  
-            height: 35px !important; 
-            min-width: 35px; 
-            min-height: 35px; 
-            border: 2px solid var(--silver, #c0c0c0);
-            background-color: var(--black, #000); 
-            border-radius: 50%; 
-            cursor: pointer; 
-            text-decoration: none;
-            overflow: hidden; 
-            box-sizing: border-box;
-        }
-        .avatar-placeholder img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block; }
-        
-        .hamburger-menu { 
-            display: inline-flex !important; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            font-size: 1.55em; 
-            color: var(--silver, #c0c0c0); 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            width: auto !important; 
-            height: auto !important; 
-            border-radius: 0 !important; 
-            background: transparent !important; 
-            border: none !important; 
-            outline: none !important; 
-            box-shadow: none !important; 
-            line-height: 1 !important; 
-            -webkit-tap-highlight-color: transparent; 
-            transition: color 0.2s ease; 
-        }
-        .hamburger-menu:hover, .hamburger-menu:focus, .hamburger-menu.open { 
-            color: var(--gold, #FFD700) !important; 
-            background: transparent !important; 
-            border: none !important; 
-            outline: none !important; 
-            box-shadow: none !important; 
-            transform: none !important; 
-        }
-        
-        /* Desktop Breakpoint */
-        @media (min-width: 1024px) {
-            .desktop-text-buttons { display: flex; align-items: center; gap: 10px; }
-            /* Keep hamburger visible on desktop as requested */
-            .hamburger-menu { display: flex !important; }
-            /* Show avatar on desktop too */
-            .header-mobile-actions .avatar-placeholder { display: block; }
-            /* Slightly reduce spacing so both avatar and desktop buttons fit */
-            .header-right-actions { gap: 10px; }
-        }
-
-        /* Mobile Breakpoint (Drops Search Bar to bottom row) */
-        @media (max-width: 992px) {
-            .header-content {
-                grid-template-columns: max-content 1fr; /* Logo takes only what it needs */
-                grid-template-areas: 
-                    "logo actions"
-                    "search search"; 
-            }
-            .logo { grid-area: logo; justify-self: start; }
-            .header-right-actions { grid-area: actions; justify-self: end; } /* Push to far right */
-            .search-bar { 
-                grid-area: search; 
-                max-width: 100%; /* Full width on mobile */
-                margin-top: 5px;
-            }
-        }
-
-        /* ====================================================================== */
-        /* ✅ MOBILE NAVIGATION DRAWER & WISHLIST BUTTON STYLES                  */
-        /* ====================================================================== */
-        .mobile-nav {
-            z-index: 100000 !important;
-            box-sizing: border-box !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            padding: 20px 18px 50px 18px !important;
-            width: 82% !important;
-            max-width: 320px !important;
-            background-color: #121212 !important;
-            box-shadow: 5px 0 30px rgba(0, 0, 0, 0.85) !important;
-        }
-        .mobile-nav > ul {
-            list-style: none !important;
-            padding: 10px 0 30px 0 !important;
-            margin: 0 !important;
-        }
-        .mobile-nav li {
-            margin-bottom: 10px !important;
-            list-style: none !important;
-        }
-        .mobile-nav a,
-        .mobile-nav li a,
-        .mobile-nav .sub-menu a {
-            text-decoration: none !important;
-            font-size: 1.05em !important;
-            color: var(--silver, #c0c0c0) !important;
-            display: flex !important;
-            align-items: center !important;
-            transition: color 0.2s ease, transform 0.2s ease !important;
-        }
-        .mobile-nav a:hover,
-        .mobile-nav li a:hover,
-        .mobile-nav .sub-menu a:hover {
-            color: var(--gold, #ffd700) !important;
-            text-decoration: none !important;
-        }
-        .mobile-nav .collapsible-trigger {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            cursor: pointer !important;
-            user-select: none;
-        }
-        .mobile-nav .has-submenu .arrow {
-            display: inline-block !important;
-            transition: transform 0.3s ease !important;
-            font-size: 0.75em !important;
-            margin-left: 8px !important;
-            line-height: 1 !important;
-        }
-        .mobile-nav .has-submenu.open > .collapsible-trigger .arrow {
-            transform: rotate(180deg) !important;
-        }
-        /* Reset rogue padding/margins causing phantom gap under categories and admin suite */
-        .mobile-nav .sub-menu {
-            list-style: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            max-height: 0 !important;
-            overflow: hidden !important;
-            opacity: 0 !important;
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease !important;
-            box-sizing: border-box !important;
-        }
-        .mobile-nav .has-submenu.open > .sub-menu {
-            max-height: 800px !important; /* Fully displays all 7 items without cutting off */
-            opacity: 1 !important;
-            padding: 8px 0 8px 12px !important;
-            margin-top: 4px !important;
-        }
-        .mobile-nav .sub-menu li {
-            margin-bottom: 8px !important;
-            font-size: 0.92em !important;
-        }
-        .mobile-nav .sub-menu li a {
-            padding: 4px 0 !important;
-            gap: 10px !important;
-        }
-        .mobile-nav .admin-suite-box {
-            background: rgba(255, 215, 0, 0.08) !important;
-            border: 1px solid rgba(255, 215, 0, 0.35) !important;
-            border-radius: 10px !important;
-            padding: 6px 12px !important;
-            margin: 8px 0 !important;
-            box-sizing: border-box !important;
-        }
-        .mobile-nav .admin-suite-box > .collapsible-trigger {
-            padding: 6px 0 !important;
-        }
-        .mobile-nav .admin-suite-box.open {
-            background: rgba(255, 215, 0, 0.12) !important;
-            border-color: rgba(255, 215, 0, 0.6) !important;
-        }
-        .mobile-nav .admin-suite-box .sub-menu {
-            border-top: 1px solid rgba(255, 215, 0, 0.15) !important;
-            margin-top: 6px !important;
-        }
-
-        .mobile-nav .owner-suite-box {
-            background: rgba(244, 67, 54, 0.08) !important;
-            border: 1px solid rgba(244, 67, 54, 0.35) !important;
-            border-radius: 10px !important;
-            padding: 6px 12px !important;
-            margin: 8px 0 !important;
-            box-sizing: border-box !important;
-        }
-        .mobile-nav .owner-suite-box > .collapsible-trigger {
-            padding: 6px 0 !important;
-        }
-        .mobile-nav .owner-suite-box.open {
-            background: rgba(244, 67, 54, 0.14) !important;
-            border-color: rgba(244, 67, 54, 0.6) !important;
-        }
-        .mobile-nav .owner-suite-box .sub-menu {
-            border-top: 1px solid rgba(244, 67, 54, 0.2) !important;
-            margin-top: 6px !important;
-        }
-
-        .mobile-nav .support-suite-box {
-            background: rgba(33, 150, 243, 0.08) !important;
-            border: 1px solid rgba(33, 150, 243, 0.35) !important;
-            border-radius: 10px !important;
-            padding: 6px 12px !important;
-            margin: 8px 0 !important;
-            box-sizing: border-box !important;
-        }
-        .mobile-nav .support-suite-box > .collapsible-trigger {
-            padding: 6px 0 !important;
-        }
-        .mobile-nav .support-suite-box.open {
-            background: rgba(33, 150, 243, 0.14) !important;
-            border-color: rgba(33, 150, 243, 0.6) !important;
-        }
-        .mobile-nav .support-suite-box .sub-menu {
-            border-top: 1px solid rgba(33, 150, 243, 0.2) !important;
-            margin-top: 6px !important;
-        }
-
-        /* Wishlist button micro-animations (applied to button, not whole card) */
-        .wishlist-btn {
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease !important;
-        }
-        .wishlist-btn:hover {
-            transform: scale(1.04) !important;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.25) !important;
-        }
-        .wishlist-btn.is-whitelisted:hover {
-            box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3) !important;
-        }
-        .wishlist-btn:active {
-            transform: scale(0.96) !important;
-        }
-    </style>
-</head>
-<body>
-    <% if (typeof isOfficialDeployment !== 'undefined' && !isOfficialDeployment && !isCrawler) { %>
-        <% const isTestEnv = (typeof isTestDeployment !== 'undefined' && isTestDeployment); %>
-        <div class="deployment-notice <%= isTestEnv ? 'test-deployment' : 'unofficial-deployment' %>" role="status">
-            <strong><%= isTestEnv ? 'Test or Local Deployment' : 'Unofficial deployment' %></strong>
-            <span><%= isTestEnv ? 'This copy is running in a local test development environment.' : 'This copy is not the official GPL Mods website.' %></span>
-            <% if (!isTestEnv) { %>
-                <a href="<%= officialSiteUrl %>">Visit the official site</a>
-            <% } %>
-        </div>
-        <style>
-            .deployment-notice { position: relative; z-index: 9999; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; padding: 8px 16px; color: #fff; font: 600 .88rem/1.4 monospace; text-align: center; }
-            .deployment-notice.test-deployment { background: #1e3a5f; border-bottom: 2px solid #2b6cb0; }
-            .deployment-notice.test-deployment span { color: #dbeafe; font-weight: 400; }
-            .deployment-notice.unofficial-deployment { background: #a51d2d; border-bottom: 2px solid #e01b24; }
-            .deployment-notice.unofficial-deployment span { color: #ffe8e8; font-weight: 400; }
-            .deployment-notice.unofficial-deployment a { color: #ffe066; text-decoration: underline; }
-        </style>
-    <% } %>
-
-    <header class="main-header">
-        <div class="container header-content">
-            
-            <!-- Grid Area: Logo -->
-            <a href="<%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? '#' : (user ? '/home' : '/') %>" class="logo" <%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? 'style="pointer-events: none;"' : '' %>><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></a>
-            
-            <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
-            <!-- Grid Area: Search Bar -->
-            <div class="search-bar" id="animatedSearchBar">
-                <form action="/search" method="GET" class="search-form">
-                    <!-- Custom SVG Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; fill: var(--silver); pointer-events: none; z-index: 10;">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    
-                    <input type="search" id="searchInput" name="q" placeholder="" autocomplete="off">
-                </form>
-                
-                <!-- Dropdown Containers -->
-                <div id="searchSuggestions" class="search-suggestions"></div>
-                <div id="searchHistory" class="search-history"></div>
-            </div>
-            <% } %>
-            
-            <!-- ========================================== -->
-            <!-- UNIFIED USER ACTIONS (All Devices)         -->
-            <!-- ========================================== -->
-            <div class="header-right-actions">
-                
-                <!-- Language Selector: Fully functional across all pages including 2FA -->
-                <div class="lang-dropdown-wrapper" style="position: relative; display: flex; align-items: center;">
-                    <button id="lang-btn" class="nav-bell" title="Change Language" style="background:none; border:none; cursor:pointer; font-size: 1.6em; padding: 0; line-height: 0;">
-                        <i class="fas fa-globe"></i>
-                    </button>
-                    <div id="lang-menu" class="lang-dropdown-content">
-                        <a href="#" data-lang="en" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-us" style="border-radius: 2px;"></span> English (Default)</a>
-                        <a href="#" data-lang="es" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-es" style="border-radius: 2px;"></span> Español</a>
-                        <a href="#" data-lang="fr" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-fr" style="border-radius: 2px;"></span> Français</a>
-                        <a href="#" data-lang="hi" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-in" style="border-radius: 2px;"></span> हिन्दी</a>
-                        <a href="#" data-lang="ar" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-sa" style="border-radius: 2px;"></span> العربية</a>
-                        <!-- DeepL: 'zh-Hans' is mapped to 'zh' via DEEPL_LANG_MAP on the server -->
-                        <a href="#" data-lang="zh-Hans" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-cn" style="border-radius: 2px;"></span> 中文</a>
-                        <a href="#" data-lang="pt" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-br" style="border-radius: 2px;"></span> Português</a>
-                        <a href="#" data-lang="ru" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-ru" style="border-radius: 2px;"></span> Русский</a>
-                        <a href="#" data-lang="id" style="display: flex; align-items: center; gap: 9px;"><span class="fi fi-id" style="border-radius: 2px;"></span> Indonesia</a>
-                    </div>
-                </div>
-
-                <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
-                <!-- Notification Bell -->
-                <a href="/notifications" class="nav-bell" title="Site Updates" id="nav-bell-link" 
-                   data-user-id="<%= user ? user._id : '' %>"
-                   data-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>"
-                   data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
-                   data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
-                   data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
-                    <i class="fas fa-bell"></i>
-                    <span id="notification-badge" class="update-badge" style="display: none;"></span>
-                </a>
-                <% } %>
-                
-               <!-- Mobile Only Items -->
-                <div class="header-mobile-actions" style="display: flex; align-items: center; gap: 12px;">
-                    <% if (user) { %>
-                        <% if (typeof is2FAVerification !== 'undefined' && is2FAVerification) { %>
-                            <!-- In 2FA Security Lockdown: Display avatar clearly, non-clickable -->
-                            <div class="avatar-placeholder" style="cursor: default; pointer-events: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);" title="Pending 2FA: <%= user.username %>">
-                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
-                            </div>
-                        <% } else { %>
-                            <a href="/dashboard" class="avatar-placeholder">
-                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
-                            </a>
-                        <% } %>
-                    <% } %>
-                    <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
-                        <div class="hamburger-menu" id="hamburger"><i class="fas fa-bars"></i></div>
-                    <% } %>
-                </div>
-                
-                <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
-                <!-- Desktop Only Items -->
-                <div class="desktop-text-buttons">
-                    <% if (user) { %>
-                        <% if (user.role === 'owner') { %>
-                            <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
-                                <i class="fas fa-shield-alt"></i> Admin Panel
-                            </a>
-                            <a href="/owner" class="btn btn-login" style="border-color: #f44336; color: #f44336; font-weight: 600;" title="Owner Command Center">
-                                <i class="fas fa-crown"></i> Owner Center
-                            </a>
-                        <% } else if (user.role === 'admin') { %>
-                            <a href="/admin" class="btn btn-login" style="border-color: var(--gold); color: var(--gold); font-weight: 600;" title="Open Admin Panel">
-                                <i class="fas fa-shield-alt"></i> Admin Panel
-                            </a>
-                        <% } else if (user.role === 'support') { %>
-                            <a href="/admin/support" class="btn btn-login" style="border-color: #2196f3; color: #2196f3; font-weight: 600;" title="Support Console">
-                                <i class="fas fa-headset"></i> Support Console
-                            </a>
-                        <% } %>
-                        <a href="/upload" class="btn btn-login">Upload A New Mod</a>
-                        <a href="/logout" class="btn btn-signup">Logout</a>
-                    <% } else { %>
-                        <a href="/upload" class="btn btn-login">Upload A New Mod</a>
-                        <a href="/login" class="btn btn-login">Login</a>
-                        <a href="/register" class="btn btn-signup">Sign Up</a>
-                    <% } %>
-                </div>
-                <% } %>
-            </div>
-        </div> 
-    </header>
-
-    <% if (typeof is2FAVerification === 'undefined' || !is2FAVerification) { %>
-    <!-- Mobile Sidebar Navigation -->
-    <nav class="mobile-nav" id="mobileNav">
-        <!-- GPL Mods Branding Header -->
-        <div class="mobile-nav-brand" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0 16px 0; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 215, 0, 0.25);">
-            <a href="<%= user ? '/home' : '/' %>" style="display: flex; align-items: center; gap: 10px; text-decoration: none !important;">
-                <img src="/images/team-logo.png" alt="GPL Mods Logo" style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.35); flex-shrink: 0;">
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 1.25em; font-weight: 700; line-height: 1.1;"><span class="logo-gold-glow" style="color: var(--gold); text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 12px rgba(255, 215, 0, 0.22);">GPL</span> <span class="logo-silver-glow" style="color: #f0f4f8 !important; text-shadow: 0 0 6px rgba(200, 205, 215, 0.4), 0 0 12px rgba(200, 205, 215, 0.2);">Mods</span></span>
-                    <span style="font-size: 0.65em; color: var(--silver); letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">100% Safe &amp; Working</span>
-                </div>
-            </a>
-            <button type="button" id="closeMobileNav" aria-label="Close navigation" style="background: none; border: none; color: var(--silver); font-size: 1.7em; cursor: pointer; padding: 0 6px; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">&times;</button>
-        </div>
-        <ul>
-            <li><a href="<%= user ? '/home' : '/' %>"><i class="fas fa-home" style="margin-right: 10px; width: 18px;"></i> Home</a></li>
-            <li class="has-submenu">
-                <a href="#" class="collapsible-trigger">
-                    <span><i class="fas fa-th-large" style="margin-right: 10px; width: 18px;"></i> Categories</span>
-                    <span class="arrow">▼</span>
-                </a>
-                <ul class="sub-menu">
-                    <li><a href="/category?cat=android"><i class="fab fa-android" style="margin-right: 8px; color: #A4C639;"></i> Android</a></li>
-                    <li><a href="/category?cat=ios-jailed"><i class="fab fa-apple" style="margin-right: 8px; color: #fff;"></i> IPA</a></li>
-                    <li><a href="/category?cat=ios-jailbroken"><i class="fas fa-unlock-alt" style="margin-right: 8px; color: #FF9800;"></i> DEB</a></li>
-                    <li><a href="/category?cat=wordpress"><i class="fab fa-wordpress" style="margin-right: 8px; color: #21759B;"></i> WordPress</a></li>
-                    <li><a href="/category?cat=windows"><i class="fab fa-windows" style="margin-right: 8px; color: #0078D6;"></i> Windows</a></li>
-                </ul>
-            </li>
-            
-            <% if (user) { %>
-                <% if (user.role === 'owner') { %>
-                    <li class="has-submenu owner-suite-box">
-                        <a href="#" class="collapsible-trigger" style="color: #f44336; font-weight: 700;">
-                            <span><i class="fas fa-crown" style="color: #f44336; margin-right: 8px;"></i> Owner Suite</span>
-                            <span class="arrow">▼</span>
-                        </a>
-                        <ul class="sub-menu">
-                            <li><a href="/owner"><i class="fas fa-crown" style="margin-right: 8px; color: #f44336;"></i> Owner Center</a></li>
-                            <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
-                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editor Choice For Platforms</a></li>
-                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
-                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
-                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
-                            <li><a href="/admin/music"><i class="fas fa-music" style="margin-right: 8px; color: #ba68c8;"></i> Music Manager</a></li>
-                        </ul>
-                    </li>
-                <% } else if (user.role === 'admin') { %>
-                    <li class="has-submenu admin-suite-box">
-                        <a href="#" class="collapsible-trigger" style="color: var(--gold); font-weight: 700;">
-                            <span><i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 8px;"></i> Admin Suite</span>
-                            <span class="arrow">▼</span>
-                        </a>
-                        <ul class="sub-menu">
-                            <li><a href="/admin"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> AdminJS Panel</a></li>
-                            <li><a href="/admin/editors-choice"><i class="fas fa-star" style="margin-right: 8px; color: #ffd700;"></i> Editor Choice For Platforms</a></li>
-                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
-                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
-                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
-                            <li><a href="/admin/music"><i class="fas fa-music" style="margin-right: 8px; color: #ba68c8;"></i> Music Manager</a></li>
-                        </ul>
-                    </li>
-                <% } else if (user.role === 'support') { %>
-                    <li class="has-submenu support-suite-box">
-                        <a href="#" class="collapsible-trigger" style="color: #2196f3; font-weight: 700;">
-                            <span><i class="fas fa-headset" style="color: #2196f3; margin-right: 8px;"></i> Support Suite</span>
-                            <span class="arrow">▼</span>
-                        </a>
-                        <ul class="sub-menu">
-                            <li><a href="/admin/support"><i class="fas fa-headset" style="margin-right: 8px; color: #2196f3;"></i> Support Tickets</a></li>
-                            <li><a href="/admin/reports"><i class="fas fa-flag" style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a></li>
-                            <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health</a></li>
-                        </ul>
-                    </li>
-                <% } %>
-                <li><a href="/dashboard"><i class="fas fa-user-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> Dashboard</a></li>
-                <li><a href="/settings"><i class="fas fa-cog" style="margin-right: 10px; width: 18px; text-align: center;"></i> Settings</a></li>
-                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book" style="margin-right: 10px; width: 18px; text-align: center;"></i> Documentation</a></li>
-                <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 10px; width: 18px; text-align: center;"></i> License Hub</a></li>
-                <li><a href="/community"><i class="fas fa-comments" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Forums</a></li>
-                <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
-                <li><a href="/community-chat"><i class="fas fa-comment-dots" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Chat</a></li>
-                <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> Membership</a></li>
-                <% if (user && (user.membership === 'plus' || user.membership === 'lite' || user.membership === 'premium')) { %>
-                    <li><a href="/my-membership"><i class="fas fa-id-card" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> My Membership</a></li>
-                <% } %>
-                <li><a href="/volunteer"><i class="fas fa-hands-helping" style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i> Volunteer Team</a></li>
-                <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
-                <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
-                <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
-                <li><a href="/request-mod"><i class="fas fa-plus-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> Required New Mods</a></li>
-                <li><a href="/support"><i class="fas fa-headset" style="margin-right: 10px; width: 18px; text-align: center;"></i> Support Tickets</a></li>
-                <li><a href="/logout" style="color: var(--red);"><i class="fas fa-sign-out-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Logout</a></li>
-            <% } else { %>
-                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book" style="margin-right: 10px; width: 18px; text-align: center;"></i> Documentation</a></li>
-                <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 10px; width: 18px; text-align: center;"></i> License Hub</a></li>
-                <li><a href="/community"><i class="fas fa-comments" style="margin-right: 10px; width: 18px; text-align: center;"></i> Community Forums</a></li>
-                <li><a href="/upload"><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Upload A New Mod</a></li>
-                <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i> Membership</a></li>
-                <li><a href="/volunteer"><i class="fas fa-hands-helping" style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i> Volunteer Team</a></li>
-                <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 10px; width: 18px; text-align: center;"></i> About Us!</a></li>
-                <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i> Leaderboard!</a></li>
-                <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i> Donate Us!</a></li>
-                <li><a href="/login"><i class="fas fa-sign-in-alt" style="margin-right: 10px; width: 18px; text-align: center;"></i> Login</a></li>
-                <li><a href="/register"><i class="fas fa-user-plus" style="margin-right: 10px; width: 18px; text-align: center;"></i> Sign Up</a></li>               
-            <% } %>
-            <li style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
-                <a href="/cc" title="Purge Web Cache (/cc)" style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">
-                    <i class="fas fa-broom"></i> Clear Web Cache (/cc)
-                </a>
-            </li>
-        </ul>
-    </nav>
-    <% } %>
-
-    <!-- Global Action Confirmation Modals (Logout & Clear Cache) -->
-    <div id="globalLogoutModal" class="gpl-action-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
-        <div class="gpl-action-modal-card" style="background: linear-gradient(145deg, #181116 0%, #0d0e12 100%); border: 1px solid rgba(244, 67, 54, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 67, 54, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
-            <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(244, 67, 54, 0.12); border: 1px solid rgba(244, 67, 54, 0.35); display: flex; align-items: center; justify-content: center; color: #ff5252; font-size: 1.6rem; box-shadow: 0 0 20px rgba(244, 67, 54, 0.25);">
-                <i class="fas fa-sign-out-alt"></i>
-            </div>
-            <h3 style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">Confirm Logout</h3>
-            <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
-                Are you sure you want to end your active session? You will need to sign in again to access your licenses, downloads, and account support.
-            </p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button type="button" class="btn-cancel-logout" style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
-                    Stay Logged In
-                </button>
-                <a href="/logout" id="confirmLogoutBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(244, 67, 54, 0.4); cursor: pointer;">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div id="globalCcModal" class="gpl-action-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
-        <div class="gpl-action-modal-card" style="background: linear-gradient(145deg, #1c1810 0%, #0d0e12 100%); border: 1px solid rgba(246, 173, 85, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(246, 173, 85, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
-            <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(246, 173, 85, 0.12); border: 1px solid rgba(246, 173, 85, 0.35); display: flex; align-items: center; justify-content: center; color: #f6ad55; font-size: 1.6rem; box-shadow: 0 0 20px rgba(246, 173, 85, 0.25);">
-                <i class="fas fa-broom"></i>
-            </div>
-            <h3 style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">Purge Web Cache</h3>
-            <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
-                Clear cached scripts, stylesheets, and local device assets? This refreshes your browser state without affecting your saved session or account data.
-            </p>
-            <div id="globalCcStatus" style="display: none; margin-bottom: 15px; font-size: 0.88rem; font-weight: 600; color: #f6ad55;"></div>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button type="button" class="btn-cancel-cc" style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
-                    Cancel
-                </button>
-                <button type="button" id="confirmCcBtn" style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4); cursor: pointer;">
-                    <i class="fas fa-broom"></i> Purge Now
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        (function() {
-            function initActionModals() {
-                var logoutModal = document.getElementById('globalLogoutModal');
-                var ccModal = document.getElementById('globalCcModal');
-
-                function openModal(modal) {
-                    if (!modal) return;
-                    modal.style.display = 'flex';
-                    requestAnimationFrame(function() {
-                        modal.style.opacity = '1';
-                        var card = modal.querySelector('.gpl-action-modal-card');
-                        if (card) card.style.transform = 'scale(1)';
-                    });
-                }
-
-                function closeModal(modal) {
-                    if (!modal) return;
-                    modal.style.opacity = '0';
-                    var card = modal.querySelector('.gpl-action-modal-card');
-                    if (card) card.style.transform = 'scale(0.95)';
-                    setTimeout(function() {
-                        modal.style.display = 'none';
-                    }, 250);
-                }
-
-                async function executeGlobalCacheClear() {
-                    var btn = document.getElementById('confirmCcBtn');
-                    var cancelBtn = ccModal ? ccModal.querySelector('.btn-cancel-cc') : null;
-                    var statusEl = document.getElementById('globalCcStatus');
-
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning Cache...';
-                    }
-                    if (cancelBtn) cancelBtn.disabled = true;
-                    if (statusEl) {
-                        statusEl.style.display = 'block';
-                        statusEl.style.color = '#f6ad55';
-                        statusEl.textContent = 'Clearing Service Workers & Browser Cache...';
+                    // 1. Pop any trailing entries matching the current page
+                    while (stack.length > 0 && stack[stack.length - 1] === curPath) {
+                        stack.pop();
                     }
 
-                    try {
-                        // 1. Unregister Service Workers
-                        if ('serviceWorker' in navigator) {
-                            var registrations = await navigator.serviceWorker.getRegistrations();
-                            for (var i = 0; i < registrations.length; i++) {
-                                await registrations[i].unregister();
-                            }
+                    // 2. Find the previous valid internal URL
+                    let destination = null;
+                    const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave'];
+
+                    while (stack.length > 0) {
+                        const candidate = stack.pop();
+                        if (!candidate) continue;
+
+                        const isTrap = trapPrefixes.some(prefix => candidate.startsWith(prefix));
+                        if (!isTrap && candidate !== curPath) {
+                            destination = candidate;
+                            break;
                         }
+                    }
 
-                        // 2. Clear Cache Storage
-                        if ('caches' in window) {
-                            var keys = await caches.keys();
-                            await Promise.all(keys.map(function(k) { return caches.delete(k); }));
-                        }
-
-                        // 3. Clear temporary storage
-                        try { localStorage.clear(); } catch(e){}
-                        try { sessionStorage.clear(); } catch(e){}
-
-                        // 4. Trigger server-side header clear
+                    if (destination) {
+                        // Keep destination on top so history remains intact
+                        stack.push(destination);
+                        saveHistoryStack(stack);
                         try {
-                            await fetch('/cc', { cache: 'reload' });
-                        } catch(e) {}
+                            sessionStorage.setItem(GOING_BACK_KEY, 'true');
+                        } catch (e) { }
 
-                        if (statusEl) {
-                            statusEl.style.color = '#4caf50';
-                            statusEl.textContent = '✔ All caches cleared! Reloading fresh...';
-                        }
-                        if (btn) {
-                            btn.innerHTML = '<i class="fas fa-check"></i> Reloading...';
-                        }
-                    } catch(err) {
-                        console.error('Cache clear error:', err);
-                        if (statusEl) {
-                            statusEl.style.color = '#ff5252';
-                            statusEl.textContent = 'Reloading fresh...';
-                        }
-                    } finally {
-                        setTimeout(function() {
-                            var currentPath = window.location.pathname;
-                            var currentSearch = window.location.search || '';
-                            var sep = currentSearch.indexOf('?') !== -1 ? '&' : '?';
-                            window.location.replace(currentPath + currentSearch + sep + '_cc=' + Date.now() + '&cache_cleared=1');
-                        }, 500);
-                    }
-                }
-
-                document.addEventListener('click', function(e) {
-                    var logoutTarget = e.target.closest('a[href="/logout"]');
-                    if (logoutTarget && logoutTarget.id !== 'confirmLogoutBtn') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openModal(logoutModal);
-                        return;
-                    }
-
-                    var ccTarget = e.target.closest('a[href="/cc"]');
-                    if (ccTarget && ccTarget.id !== 'confirmCcBtn') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openModal(ccModal);
-                        return;
-                    }
-
-                    var confirmCcTarget = e.target.closest('#confirmCcBtn');
-                    if (confirmCcTarget) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        executeGlobalCacheClear();
-                        return;
-                    }
-
-                    if (e.target.closest('.btn-cancel-logout')) {
-                        closeModal(logoutModal);
-                        return;
-                    }
-
-                    if (e.target.closest('.btn-cancel-cc')) {
-                        closeModal(ccModal);
-                        return;
-                    }
-
-                    if (e.target === logoutModal) {
-                        closeModal(logoutModal);
-                        return;
-                    }
-
-                    if (e.target === ccModal) {
-                        closeModal(ccModal);
-                        return;
-                    }
-                }, true);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initActionModals);
-            } else {
-                initActionModals();
-            }
-        })();
-    </script>
-
-<% if (typeof isDebuggerExempt === 'undefined' || !isDebuggerExempt) { %>
-    <!-- ============================================== -->
-    <!-- GPLMODS DEVTOOLS & DEBUGGER ACCESS MODAL -->
-    <!-- ============================================== -->
-    <style>
-        .gpl-debugger-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 2147483647;
-            background: rgba(0, 0, 0, 0.94);
-            backdrop-filter: blur(10px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            font-family: 'Poppins', sans-serif;
-        }
-        .gpl-debugger-modal.show {
-            display: flex;
-        }
-        .gpl-debugger-card {
-            background: #141414;
-            border: 1px solid #ff3366;
-            border-top: 4px solid #ff3366;
-            border-radius: 16px;
-            padding: 35px 30px;
-            max-width: 480px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.35);
-            animation: gplModalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes gplModalPop {
-            0% { transform: scale(0.92); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .gpl-debugger-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: rgba(255, 51, 102, 0.15);
-            color: #ff3366;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2em;
-            margin: 0 auto 16px auto;
-            border: 1px solid rgba(255, 51, 102, 0.4);
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.3);
-        }
-        .gpl-debugger-card h2 {
-            color: #fff;
-            margin: 0 0 10px 0;
-            font-size: 1.5em;
-            font-weight: 700;
-        }
-        .gpl-debugger-card p {
-            color: var(--silver);
-            font-size: 0.95em;
-            line-height: 1.6;
-            margin: 0 0 22px 0;
-        }
-        .gpl-debugger-input-wrap {
-            position: relative;
-            margin-bottom: 15px;
-        }
-        .gpl-debugger-input {
-            width: 100%;
-            background: #0a0a0a;
-            border: 1.5px solid #333;
-            border-radius: 10px;
-            padding: 14px 16px;
-            color: #fff;
-            font-size: 1.1em;
-            letter-spacing: 2px;
-            text-align: center;
-            font-family: monospace;
-            outline: none;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-        .gpl-debugger-input:focus {
-            border-color: #ff3366;
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.35);
-        }
-        .gpl-debugger-error {
-            color: #ff4d4d;
-            background: rgba(255, 77, 77, 0.1);
-            border: 1px solid rgba(255, 77, 77, 0.3);
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 0.88em;
-            margin-bottom: 18px;
-            display: none;
-        }
-        .gpl-debugger-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-        .btn-debugger-verify {
-            flex: 1.2;
-            padding: 12px 20px;
-            background: #ff3366;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.95em;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-family: inherit;
-        }
-        .btn-debugger-verify:hover {
-            background: #e02253;
-            transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
-        }
-        .btn-debugger-back {
-            flex: 1;
-            padding: 12px 18px;
-            background: transparent;
-            border: 1px solid #444;
-            color: var(--silver);
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95em;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-family: inherit;
-        }
-        .btn-debugger-back:hover {
-            border-color: #777;
-            color: #fff;
-        }
-    </style>
-
-    <div id="debuggerAccessModal" class="gpl-debugger-modal" role="dialog" aria-modal="true">
-        <div class="gpl-debugger-card">
-            <div class="gpl-debugger-icon">
-                <i class="fas fa-shield-alt"></i>
-            </div>
-            <h2>Debugger Access Restricted</h2>
-            <p>
-                Developer tools inspection has been detected. Enter your <strong>10–12 digit access code</strong> or <strong>Master Key</strong> to unlock developer mode.
-            </p>
-            <div class="gpl-debugger-input-wrap">
-                <input type="text" id="debuggerAccessCodeInput" class="gpl-debugger-input" placeholder="Enter Access Code / Master Key" autocomplete="off" maxlength="25">
-            </div>
-            <div id="debuggerModalError" class="gpl-debugger-error"></div>
-            <div class="gpl-debugger-actions">
-                <button type="button" class="btn-debugger-back" onclick="handleDebuggerExit()">
-                    <i class="fas fa-arrow-left"></i> Leave Page
-                </button>
-                <button type="button" class="btn-debugger-verify" id="btnSubmitDebuggerCode" onclick="submitDebuggerCode()">
-                    <i class="fas fa-key"></i> Unlock Debugger
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CDN for DisableDevtool -->
-    <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
-    <script>
-        (function() {
-            if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
-                return;
-            }
-
-            var currentLogId = null;
-            var isModalOpen = false;
-
-            function clearBrowserConsole() {
-                try {
-                    console.clear();
-                } catch(e) {}
-            }
-
-            function triggerDevtoolBlock(triggerType) {
-                if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
-                    return;
-                }
-
-                clearBrowserConsole();
-
-                var modal = document.getElementById('debuggerAccessModal');
-                if (modal && !isModalOpen) {
-                    isModalOpen = true;
-                    modal.classList.add('show');
-                    var input = document.getElementById('debuggerAccessCodeInput');
-                    if (input) {
-                        input.value = '';
-                        setTimeout(function() { input.focus(); }, 100);
-                    }
-                }
-
-                if (!currentLogId) {
-                    fetch('/api/devtool/log', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            triggerType: triggerType || 'devtools-opened',
-                            url: window.location.href,
-                            screenDetails: {
-                                width: window.screen ? window.screen.width : null,
-                                height: window.screen ? window.screen.height : null,
-                                innerWidth: window.innerWidth,
-                                innerHeight: window.innerHeight
-                            }
-                        })
-                    }).then(function(r) { return r.json(); }).then(function(data) {
-                        if (data && data.logId) {
-                            currentLogId = data.logId;
-                        }
-                    }).catch(function() {});
-                }
-            }
-
-            window.handleDebuggerExit = function() {
-                window.smartGoBack('/');
-            };
-
-            window.submitDebuggerCode = async function() {
-                var input = document.getElementById('debuggerAccessCodeInput');
-                var errEl = document.getElementById('debuggerModalError');
-                var btn = document.getElementById('btnSubmitDebuggerCode');
-                var code = (input.value || '').trim();
-
-                if (!code) {
-                    errEl.textContent = 'Please enter an access code or master key.';
-                    errEl.style.display = 'block';
-                    input.focus();
-                    return;
-                }
-
-                errEl.style.display = 'none';
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
-
-                try {
-                    var res = await fetch('/api/devtool/verify-key', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: code, logId: currentLogId })
-                    });
-                    var data = await res.json();
-
-                    if (data && data.success) {
-                        sessionStorage.setItem('gpl_devtool_authorized', 'true');
-                        clearBrowserConsole();
-
-                        var modal = document.getElementById('debuggerAccessModal');
-                        if (modal) {
-                            modal.classList.remove('show');
-                        }
-                        isModalOpen = false;
-
-                        if (window.DisableDevtool && typeof window.DisableDevtool.stop === 'function') {
-                            window.DisableDevtool.stop();
-                        }
+                        window.location.href = destination;
                     } else {
-                        clearBrowserConsole();
-                        errEl.textContent = (data && data.message) ? data.message : 'Invalid 10–12 digit code or master key. Attempt logged.';
-                        errEl.style.display = 'block';
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
-                        input.value = '';
-                        input.focus();
+                        // 3. Fallback connection:
+                        // If stack is empty (e.g. user directly opened /settings), redirect to fallback
+                        // (e.g. for /settings -> fallback is /dashboard!)
+                        saveHistoryStack([fallback]);
+                        window.location.href = fallback;
                     }
-                } catch (e) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
-                    errEl.textContent = 'Connection error. Please retry.';
-                    errEl.style.display = 'block';
-                }
-            };
+                };
 
-            document.addEventListener('keydown', function(e) {
-                if (isModalOpen && e.key === 'Enter') {
-                    submitDebuggerCode();
-                }
-            });
-
-            function initProtection() {
-                if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
-                    return;
-                }
-
-                if (window.DisableDevtool) {
-                    try {
-                        window.DisableDevtool({
-                            ondevtoolopen: function(type) {
-                                triggerDevtoolBlock(type);
-                            },
-                            disableMenu: false,
-                            disableCopy: false,
-                            disableSelect: false,
-                            interval: 350
-                        });
-                    } catch (e) {
-                        console.error("Devtool security init:", e);
-                    }
-                }
-
-                window.addEventListener('keydown', function(e) {
-                    if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') return;
-                    if (
-                        e.key === 'F12' ||
-                        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
-                        (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
-                        (e.ctrlKey && (e.key === 'U' || e.key === 'u'))
-                    ) {
+                // Global delegation listener for any back button clicks
+                document.addEventListener('click', function (e) {
+                    const target = e.target.closest('a[href*="history.back"], .dynamic-back-btn, .btn-go-back, [data-go-back], [data-fallback]');
+                    if (target) {
                         e.preventDefault();
-                        triggerDevtoolBlock('keyboard-shortcut');
+                        e.stopPropagation();
+                        const fallbackAttr = target.getAttribute('data-fallback');
+                        window.smartGoBack(fallbackAttr || '/');
                     }
                 }, true);
+            })();
+        </script>
+        <!-- ============================================ -->
+
+        <!-- ✅ Apply the trigger to your CSS file -->
+        <link rel="stylesheet" href="<%= cdnUrl %>/css/style.css"
+            onerror="this.onerror=null; this.href='/css/style.css'; triggerCdnFallback();">
+
+        <script src="<%= cdnUrl %>/js/main.js"
+            onerror="this.onerror=null; this.src='/js/image-fallback.js'; triggerCdnFallback();"></script>
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+
+        <!-- ====================================================================== -->
+        <!-- ✅ FIX: BULLETPROOF GRID HEADER & SEARCH BAR LAYOUT                    -->
+        <!-- ====================================================================== -->
+        <style>
+            .main-header {
+                padding: 15px 0;
+                background-color: var(--black);
+                border-bottom: 1px solid var(--dark-gray);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initProtection);
-            } else {
-                initProtection();
+            /* 1. Base Grid Layout (Fixes Button Alignment!) */
+            .header-content {
+                display: grid;
+                grid-template-columns: max-content 1fr max-content;
+                /* Logo | Search | Actions */
+                align-items: center;
+                gap: 20px;
             }
-        })();
-    </script>
-<% } %>
 
-    <main>
+            .logo {
+                font-size: 1.8em;
+                font-weight: 700;
+                text-decoration: none;
+                white-space: nowrap;
+                justify-self: start;
+            }
+
+            .logo-gold-glow {
+                color: var(--gold);
+                text-shadow: 0 0 4px rgba(255, 215, 0, 0.32);
+            }
+
+            .logo-silver-glow {
+                color: var(--silver);
+                text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
+            }
+
+            /* 2. Search Bar */
+            .search-bar {
+                width: 100%;
+                max-width: 600px;
+                justify-self: center;
+                /* Centers it within the middle grid column */
+                position: relative;
+                z-index: 1001;
+            }
+
+            .search-form {
+                position: relative;
+                width: 100%;
+                display: block;
+            }
+
+            #searchInput {
+                width: 100%;
+                padding: 12px 15px 12px 45px !important;
+                box-sizing: border-box;
+                border-radius: 25px;
+                border: 1px solid #333;
+                background-color: var(--dark-gray, #1a1a1a);
+                color: var(--white, #fff);
+                font-size: 1em;
+                outline: none;
+                transition: border-color 0.3s ease;
+                --placeholder-color: var(--silver);
+                /* Default color before animation */
+            }
+
+            #searchInput:focus {
+                border-color: var(--gold, #FFD700);
+                box-shadow: 0 0 10px var(--glow-gold);
+            }
+
+            #searchInput::placeholder {
+                color: var(--placeholder-color);
+                opacity: 1;
+                transition: color 0.4s ease-in-out;
+            }
+
+            /* Custom Silver Close (X) Icon for Search */
+            input[type="search"]::-webkit-search-cancel-button {
+                -webkit-appearance: none;
+                height: 16px;
+                width: 16px;
+                background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c0c0'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") no-repeat center center;
+                background-size: contain;
+                cursor: pointer;
+                opacity: 0.7;
+                transition: opacity 0.2s ease;
+            }
+
+            input[type="search"]::-webkit-search-cancel-button:hover {
+                opacity: 1;
+            }
+
+            input[type="search"]::-webkit-search-decoration,
+            input[type="search"]::-webkit-search-results-button,
+            input[type="search"]::-webkit-search-results-decoration {
+                -webkit-appearance: none;
+            }
+
+            /* Search Dropdown Results */
+            .search-suggestions,
+            .search-history {
+                display: none;
+                position: absolute;
+                top: calc(100% + 10px);
+                left: 0;
+                right: 0;
+                background-color: var(--dark-gray, #1a1a1a);
+                border: 1px solid #333;
+                border-radius: 12px;
+                max-height: 350px;
+                overflow-y: auto;
+                z-index: 1001;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            }
+
+            .search-suggestions::-webkit-scrollbar,
+            .search-history::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .search-suggestions::-webkit-scrollbar-track,
+            .search-history::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .search-suggestions::-webkit-scrollbar-thumb,
+            .search-history::-webkit-scrollbar-thumb {
+                background: #444;
+                border-radius: 10px;
+            }
+
+            .search-suggestions ul,
+            .search-history ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .search-suggestions li a,
+            .search-history li a {
+                display: block;
+                padding: 12px 20px;
+                color: var(--silver, #c0c0c0);
+                text-decoration: none;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #222;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .search-suggestions li:last-child a,
+            .search-history li:last-child a {
+                border-bottom: none;
+            }
+
+            .search-suggestions li a:hover,
+            .search-history li a:hover {
+                background-color: #2a2a2a;
+                color: var(--gold, #FFD700);
+            }
+
+            .search-history li a::before {
+                content: '\f017';
+                font-family: 'Font Awesome 6 Free';
+                font-weight: 400;
+                margin-right: 10px;
+                color: #555;
+            }
+
+            .search-history h4 {
+                padding: 15px 20px 10px;
+                margin: 0;
+                color: var(--gold, #FFD700);
+                font-size: 0.85em;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border-bottom: 1px solid #222;
+                background-color: #111;
+                position: sticky;
+                top: 0;
+                z-index: 2;
+            }
+
+            /* 3. Right Side Actions */
+            .header-right-actions {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                justify-self: end;
+                /* Aligns this whole block to the right */
+                flex-shrink: 0;
+            }
+
+            .desktop-text-buttons {
+                display: none;
+            }
+
+            /* Mobile Avatar Styling */
+            .avatar-placeholder {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 35px !important;
+                height: 35px !important;
+                min-width: 35px;
+                min-height: 35px;
+                border: 2px solid var(--silver, #c0c0c0);
+                background-color: var(--black, #000);
+                border-radius: 50%;
+                cursor: pointer;
+                text-decoration: none;
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+
+            .avatar-placeholder img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                display: block;
+            }
+
+            .hamburger-menu {
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 1.55em;
+                color: var(--silver, #c0c0c0);
+                margin: 0 !important;
+                padding: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                line-height: 1 !important;
+                -webkit-tap-highlight-color: transparent;
+                transition: color 0.2s ease;
+            }
+
+            .hamburger-menu:hover,
+            .hamburger-menu:focus,
+            .hamburger-menu.open {
+                color: var(--gold, #FFD700) !important;
+                background: transparent !important;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+
+            /* Desktop Breakpoint */
+            @media (min-width: 1024px) {
+                .desktop-text-buttons {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                /* Keep hamburger visible on desktop as requested */
+                .hamburger-menu {
+                    display: flex !important;
+                }
+
+                /* Show avatar on desktop too */
+                .header-mobile-actions .avatar-placeholder {
+                    display: block;
+                }
+
+                /* Slightly reduce spacing so both avatar and desktop buttons fit */
+                .header-right-actions {
+                    gap: 10px;
+                }
+            }
+
+            /* Mobile Breakpoint (Drops Search Bar to bottom row) */
+            @media (max-width: 992px) {
+                .header-content {
+                    grid-template-columns: max-content 1fr;
+                    /* Logo takes only what it needs */
+                    grid-template-areas:
+                        "logo actions"
+                        "search search";
+                }
+
+                .logo {
+                    grid-area: logo;
+                    justify-self: start;
+                }
+
+                .header-right-actions {
+                    grid-area: actions;
+                    justify-self: end;
+                }
+
+                /* Push to far right */
+                .search-bar {
+                    grid-area: search;
+                    max-width: 100%;
+                    /* Full width on mobile */
+                    margin-top: 5px;
+                }
+            }
+
+            /* ====================================================================== */
+            /* ✅ MOBILE NAVIGATION DRAWER & WISHLIST BUTTON STYLES                  */
+            /* ====================================================================== */
+            .mobile-nav {
+                z-index: 100000 !important;
+                box-sizing: border-box !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                padding: 20px 18px 50px 18px !important;
+                width: 82% !important;
+                max-width: 320px !important;
+                background-color: #121212 !important;
+                box-shadow: 5px 0 30px rgba(0, 0, 0, 0.85) !important;
+            }
+
+            .mobile-nav>ul {
+                list-style: none !important;
+                padding: 10px 0 30px 0 !important;
+                margin: 0 !important;
+            }
+
+            .mobile-nav li {
+                margin-bottom: 10px !important;
+                list-style: none !important;
+            }
+
+            .mobile-nav a,
+            .mobile-nav li a,
+            .mobile-nav .sub-menu a {
+                text-decoration: none !important;
+                font-size: 1.05em !important;
+                color: var(--silver, #c0c0c0) !important;
+                display: flex !important;
+                align-items: center !important;
+                transition: color 0.2s ease, transform 0.2s ease !important;
+            }
+
+            .mobile-nav a:hover,
+            .mobile-nav li a:hover,
+            .mobile-nav .sub-menu a:hover {
+                color: var(--gold, #ffd700) !important;
+                text-decoration: none !important;
+            }
+
+            .mobile-nav .collapsible-trigger {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                cursor: pointer !important;
+                user-select: none;
+            }
+
+            .mobile-nav .has-submenu .arrow {
+                display: inline-block !important;
+                transition: transform 0.3s ease !important;
+                font-size: 0.75em !important;
+                margin-left: 8px !important;
+                line-height: 1 !important;
+            }
+
+            .mobile-nav .has-submenu.open>.collapsible-trigger .arrow {
+                transform: rotate(180deg) !important;
+            }
+
+            /* Reset rogue padding/margins causing phantom gap under categories and admin suite */
+            .mobile-nav .sub-menu {
+                list-style: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-height: 0 !important;
+                overflow: hidden !important;
+                opacity: 0 !important;
+                transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-nav .has-submenu.open>.sub-menu {
+                max-height: 800px !important;
+                /* Fully displays all 7 items without cutting off */
+                opacity: 1 !important;
+                padding: 8px 0 8px 12px !important;
+                margin-top: 4px !important;
+            }
+
+            .mobile-nav .sub-menu li {
+                margin-bottom: 8px !important;
+                font-size: 0.92em !important;
+            }
+
+            .mobile-nav .sub-menu li a {
+                padding: 4px 0 !important;
+                gap: 10px !important;
+            }
+
+            .mobile-nav .admin-suite-box {
+                background: rgba(255, 215, 0, 0.08) !important;
+                border: 1px solid rgba(255, 215, 0, 0.35) !important;
+                border-radius: 10px !important;
+                padding: 6px 12px !important;
+                margin: 8px 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-nav .admin-suite-box>.collapsible-trigger {
+                padding: 6px 0 !important;
+            }
+
+            .mobile-nav .admin-suite-box.open {
+                background: rgba(255, 215, 0, 0.12) !important;
+                border-color: rgba(255, 215, 0, 0.6) !important;
+            }
+
+            .mobile-nav .admin-suite-box .sub-menu {
+                border-top: 1px solid rgba(255, 215, 0, 0.15) !important;
+                margin-top: 6px !important;
+            }
+
+            .mobile-nav .owner-suite-box {
+                background: rgba(244, 67, 54, 0.08) !important;
+                border: 1px solid rgba(244, 67, 54, 0.35) !important;
+                border-radius: 10px !important;
+                padding: 6px 12px !important;
+                margin: 8px 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-nav .owner-suite-box>.collapsible-trigger {
+                padding: 6px 0 !important;
+            }
+
+            .mobile-nav .owner-suite-box.open {
+                background: rgba(244, 67, 54, 0.14) !important;
+                border-color: rgba(244, 67, 54, 0.6) !important;
+            }
+
+            .mobile-nav .owner-suite-box .sub-menu {
+                border-top: 1px solid rgba(244, 67, 54, 0.2) !important;
+                margin-top: 6px !important;
+            }
+
+            .mobile-nav .support-suite-box {
+                background: rgba(33, 150, 243, 0.08) !important;
+                border: 1px solid rgba(33, 150, 243, 0.35) !important;
+                border-radius: 10px !important;
+                padding: 6px 12px !important;
+                margin: 8px 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-nav .support-suite-box>.collapsible-trigger {
+                padding: 6px 0 !important;
+            }
+
+            .mobile-nav .support-suite-box.open {
+                background: rgba(33, 150, 243, 0.14) !important;
+                border-color: rgba(33, 150, 243, 0.6) !important;
+            }
+
+            .mobile-nav .support-suite-box .sub-menu {
+                border-top: 1px solid rgba(33, 150, 243, 0.2) !important;
+                margin-top: 6px !important;
+            }
+
+            /* Wishlist button micro-animations (applied to button, not whole card) */
+            .wishlist-btn {
+                transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease !important;
+            }
+
+            .wishlist-btn:hover {
+                transform: scale(1.04) !important;
+                box-shadow: 0 4px 15px rgba(255, 215, 0, 0.25) !important;
+            }
+
+            .wishlist-btn.is-whitelisted:hover {
+                box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3) !important;
+            }
+
+            .wishlist-btn:active {
+                transform: scale(0.96) !important;
+            }
+        </style>
+</head>
+
+<body>
+    <% if (typeof isOfficialDeployment !=='undefined' && !isOfficialDeployment && !isCrawler) { %>
+        <% const isTestEnv=(typeof isTestDeployment !=='undefined' && isTestDeployment); %>
+            <div class="deployment-notice <%= isTestEnv ? 'test-deployment' : 'unofficial-deployment' %>" role="status">
+                <strong>
+                    <%= isTestEnv ? 'Test or Local Deployment' : 'Unofficial deployment' %>
+                </strong>
+                <span>
+                    <%= isTestEnv ? 'This copy is running in a local test development environment.'
+                        : 'This copy is not the official GPL Mods website.' %>
+                </span>
+                <% if (!isTestEnv) { %>
+                    <a href="<%= officialSiteUrl %>">Visit the official site</a>
+                    <% } %>
+            </div>
+            <style>
+                .deployment-notice {
+                    position: relative;
+                    z-index: 9999;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px 14px;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 8px 16px;
+                    color: #fff;
+                    font: 600 .88rem/1.4 monospace;
+                    text-align: center;
+                }
+
+                .deployment-notice.test-deployment {
+                    background: #1e3a5f;
+                    border-bottom: 2px solid #2b6cb0;
+                }
+
+                .deployment-notice.test-deployment span {
+                    color: #dbeafe;
+                    font-weight: 400;
+                }
+
+                .deployment-notice.unofficial-deployment {
+                    background: #a51d2d;
+                    border-bottom: 2px solid #e01b24;
+                }
+
+                .deployment-notice.unofficial-deployment span {
+                    color: #ffe8e8;
+                    font-weight: 400;
+                }
+
+                .deployment-notice.unofficial-deployment a {
+                    color: #ffe066;
+                    text-decoration: underline;
+                }
+            </style>
+            <% } %>
+
+                <header class="main-header">
+                    <div class="container header-content">
+
+                        <!-- Grid Area: Logo -->
+                        <a href="<%- (typeof is2FAVerification !== 'undefined' && is2FAVerification) ? '#' : (user ? '/home' : '/') %>"
+                            class="logo" <%- (typeof is2FAVerification !=='undefined' && is2FAVerification)
+                            ? 'style="pointer-events: none;"' : '' %>><span class="logo-gold-glow">GPL</span> <span
+                                class="logo-silver-glow">Mods</span></a>
+
+                        <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
+                            <!-- Grid Area: Search Bar -->
+                            <div class="search-bar" id="animatedSearchBar">
+                                <form action="/search" method="GET" class="search-form">
+                                    <!-- Custom SVG Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; fill: var(--silver); pointer-events: none; z-index: 10;">
+                                        <path
+                                            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                                    </svg>
+
+                                    <input type="search" id="searchInput" name="q" placeholder="" autocomplete="off">
+                                </form>
+
+                                <!-- Dropdown Containers -->
+                                <div id="searchSuggestions" class="search-suggestions"></div>
+                                <div id="searchHistory" class="search-history"></div>
+                            </div>
+                            <% } %>
+
+                                <!-- ========================================== -->
+                                <!-- UNIFIED USER ACTIONS (All Devices)         -->
+                                <!-- ========================================== -->
+                                <div class="header-right-actions">
+
+                                    <!-- Language Selector: Fully functional across all pages including 2FA -->
+                                    <div class="lang-dropdown-wrapper"
+                                        style="position: relative; display: flex; align-items: center;">
+                                        <button id="lang-btn" class="nav-bell" title="Change Language"
+                                            style="background:none; border:none; cursor:pointer; font-size: 1.6em; padding: 0; line-height: 0;">
+                                            <i class="fas fa-globe"></i>
+                                        </button>
+                                        <div id="lang-menu" class="lang-dropdown-content">
+                                            <a href="#" data-lang="en"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-us" style="border-radius: 2px;"></span> English
+                                                (Default)</a>
+                                            <a href="#" data-lang="es"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-es" style="border-radius: 2px;"></span> Español</a>
+                                            <a href="#" data-lang="fr"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-fr" style="border-radius: 2px;"></span> Français</a>
+                                            <a href="#" data-lang="hi"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-in" style="border-radius: 2px;"></span> हिन्दी</a>
+                                            <a href="#" data-lang="ar"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-sa" style="border-radius: 2px;"></span> العربية</a>
+                                            <!-- DeepL: 'zh-Hans' is mapped to 'zh' via DEEPL_LANG_MAP on the server -->
+                                            <a href="#" data-lang="zh-Hans"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-cn" style="border-radius: 2px;"></span> 中文</a>
+                                            <a href="#" data-lang="pt"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-br" style="border-radius: 2px;"></span> Português</a>
+                                            <a href="#" data-lang="ru"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-ru" style="border-radius: 2px;"></span> Русский</a>
+                                            <a href="#" data-lang="id"
+                                                style="display: flex; align-items: center; gap: 9px;"><span
+                                                    class="fi fi-id" style="border-radius: 2px;"></span> Indonesia</a>
+                                        </div>
+                                    </div>
+
+                                    <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
+                                        <!-- Notification Bell -->
+                                        <a href="/notifications" class="nav-bell" title="Site Updates"
+                                            id="nav-bell-link" data-user-id="<%= user ? user._id : '' %>"
+                                            data-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>"
+                                            data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
+                                            data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
+                                            data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
+                                            <i class="fas fa-bell"></i>
+                                            <span id="notification-badge" class="update-badge"
+                                                style="display: none;"></span>
+                                        </a>
+                                        <% } %>
+
+                                            <!-- Mobile Only Items -->
+                                            <div class="header-mobile-actions"
+                                                style="display: flex; align-items: center; gap: 12px;">
+                                                <% if (user) { %>
+                                                    <% if (typeof is2FAVerification !=='undefined' && is2FAVerification)
+                                                        { %>
+                                                        <!-- In 2FA Security Lockdown: Display avatar clearly, non-clickable -->
+                                                        <div class="avatar-placeholder"
+                                                            style="cursor: default; pointer-events: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);"
+                                                            title="Pending 2FA: <%= user.username %>">
+                                                            <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>"
+                                                                alt="User Avatar"
+                                                                onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                                        </div>
+                                                        <% } else { %>
+                                                            <a href="/dashboard" class="avatar-placeholder">
+                                                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>"
+                                                                    alt="User Avatar"
+                                                                    onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                                            </a>
+                                                            <% } %>
+                                                                <% } %>
+                                                                    <% if (typeof is2FAVerification==='undefined' ||
+                                                                        !is2FAVerification) { %>
+                                                                        <div class="hamburger-menu" id="hamburger"><i
+                                                                                class="fas fa-bars"></i></div>
+                                                                        <% } %>
+                                            </div>
+
+                                            <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
+                                                <!-- Desktop Only Items -->
+                                                <div class="desktop-text-buttons">
+                                                    <% if (user) { %>
+                                                        <% if (user.role==='owner' ) { %>
+                                                            <a href="/admin" class="btn btn-login"
+                                                                style="border-color: var(--gold); color: var(--gold); font-weight: 600;"
+                                                                title="Open Admin Panel">
+                                                                <i class="fas fa-shield-alt"></i> Admin Panel
+                                                            </a>
+                                                            <a href="/owner" class="btn btn-login"
+                                                                style="border-color: #f44336; color: #f44336; font-weight: 600;"
+                                                                title="Owner Command Center">
+                                                                <i class="fas fa-crown"></i> Owner Center
+                                                            </a>
+                                                            <% } else if (user.role==='admin' ) { %>
+                                                                <a href="/admin" class="btn btn-login"
+                                                                    style="border-color: var(--gold); color: var(--gold); font-weight: 600;"
+                                                                    title="Open Admin Panel">
+                                                                    <i class="fas fa-shield-alt"></i> Admin Panel
+                                                                </a>
+                                                                <% } else if (user.role==='support' ) { %>
+                                                                    <a href="/admin/support" class="btn btn-login"
+                                                                        style="border-color: #2196f3; color: #2196f3; font-weight: 600;"
+                                                                        title="Support Console">
+                                                                        <i class="fas fa-headset"></i> Support Console
+                                                                    </a>
+                                                                    <% } %>
+                                                                        <a href="/upload" class="btn btn-login">Upload A
+                                                                            New Mod</a>
+                                                                        <a href="/logout"
+                                                                            class="btn btn-signup">Logout</a>
+                                                                        <% } else { %>
+                                                                            <a href="/upload"
+                                                                                class="btn btn-login">Upload A New
+                                                                                Mod</a>
+                                                                            <a href="/login"
+                                                                                class="btn btn-login">Login</a>
+                                                                            <a href="/register"
+                                                                                class="btn btn-signup">Sign Up</a>
+                                                                            <% } %>
+                                                </div>
+                                                <% } %>
+                                </div>
+                    </div>
+                </header>
+
+                <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
+                    <!-- Mobile Sidebar Navigation -->
+                    <nav class="mobile-nav" id="mobileNav">
+                        <!-- GPL Mods Branding Header -->
+                        <div class="mobile-nav-brand"
+                            style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0 16px 0; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 215, 0, 0.25);">
+                            <a href="<%= user ? '/home' : '/' %>"
+                                style="display: flex; align-items: center; gap: 10px; text-decoration: none !important;">
+                                <img src="/images/team-logo.png" alt="GPL Mods Logo"
+                                    style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.35); flex-shrink: 0;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 1.25em; font-weight: 700; line-height: 1.1;"><span
+                                            class="logo-gold-glow"
+                                            style="color: var(--gold); text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 12px rgba(255, 215, 0, 0.22);">GPL</span>
+                                        <span class="logo-silver-glow"
+                                            style="color: #f0f4f8 !important; text-shadow: 0 0 6px rgba(200, 205, 215, 0.4), 0 0 12px rgba(200, 205, 215, 0.2);">Mods</span></span>
+                                    <span
+                                        style="font-size: 0.65em; color: var(--silver); letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">100%
+                                        Safe &amp; Working</span>
+                                </div>
+                            </a>
+                            <button type="button" id="closeMobileNav" aria-label="Close navigation"
+                                style="background: none; border: none; color: var(--silver); font-size: 1.7em; cursor: pointer; padding: 0 6px; line-height: 1; transition: color 0.2s;"
+                                onmouseover="this.style.color='var(--gold)'"
+                                onmouseout="this.style.color='var(--silver)'">&times;</button>
+                        </div>
+                        <ul>
+                            <li><a href="<%= user ? '/home' : '/' %>"><i class="fas fa-home"
+                                        style="margin-right: 10px; width: 18px;"></i> Home</a></li>
+                            <li class="has-submenu">
+                                <a href="#" class="collapsible-trigger">
+                                    <span><i class="fas fa-th-large" style="margin-right: 10px; width: 18px;"></i>
+                                        Categories</span>
+                                    <span class="arrow">▼</span>
+                                </a>
+                                <ul class="sub-menu">
+                                    <li><a href="/category?cat=android"><i class="fab fa-android"
+                                                style="margin-right: 8px; color: #A4C639;"></i> Android</a></li>
+                                    <li><a href="/category?cat=ios-jailed"><i class="fab fa-apple"
+                                                style="margin-right: 8px; color: #fff;"></i> IPA</a></li>
+                                    <li><a href="/category?cat=ios-jailbroken"><i class="fas fa-unlock-alt"
+                                                style="margin-right: 8px; color: #FF9800;"></i> DEB</a></li>
+                                    <li><a href="/category?cat=wordpress"><i class="fab fa-wordpress"
+                                                style="margin-right: 8px; color: #21759B;"></i> WordPress</a></li>
+                                    <li><a href="/category?cat=windows"><i class="fab fa-windows"
+                                                style="margin-right: 8px; color: #0078D6;"></i> Windows</a></li>
+                                </ul>
+                            </li>
+
+                            <% if (user) { %>
+                                <% if (user.role==='owner' ) { %>
+                                    <li class="has-submenu owner-suite-box">
+                                        <a href="#" class="collapsible-trigger"
+                                            style="color: #f44336; font-weight: 700;">
+                                            <span><i class="fas fa-crown"
+                                                    style="color: #f44336; margin-right: 8px;"></i> Owner Suite</span>
+                                            <span class="arrow">▼</span>
+                                        </a>
+                                        <ul class="sub-menu">
+                                            <li><a href="/owner"><i class="fas fa-crown"
+                                                        style="margin-right: 8px; color: #f44336;"></i> Owner Center</a>
+                                            </li>
+                                            <li><a href="/admin"><i class="fas fa-tachometer-alt"
+                                                        style="margin-right: 8px; color: var(--gold);"></i> AdminJS
+                                                    Panel</a></li>
+                                            <li><a href="/admin/editors-choice"><i class="fas fa-star"
+                                                        style="margin-right: 8px; color: #ffd700;"></i> Editor Choice
+                                                    For Platforms</a></li>
+                                            <li><a href="/admin/reports"><i class="fas fa-flag"
+                                                        style="margin-right: 8px; color: #e53935;"></i> Mod Reports</a>
+                                            </li>
+                                            <li><a href="/admin/support"><i class="fas fa-headset"
+                                                        style="margin-right: 8px; color: #2196f3;"></i> Support
+                                                    Tickets</a></li>
+                                            <li><a href="/status"><i class="fas fa-server"
+                                                        style="margin-right: 8px; color: #43a047;"></i> Server
+                                                    Health</a></li>
+                                            <li><a href="/admin/music"><i class="fas fa-music"
+                                                        style="margin-right: 8px; color: #ba68c8;"></i> Music
+                                                    Manager</a></li>
+                                        </ul>
+                                    </li>
+                                    <% } else if (user.role==='admin' ) { %>
+                                        <li class="has-submenu admin-suite-box">
+                                            <a href="#" class="collapsible-trigger"
+                                                style="color: var(--gold); font-weight: 700;">
+                                                <span><i class="fas fa-shield-alt"
+                                                        style="color: var(--gold); margin-right: 8px;"></i> Admin
+                                                    Suite</span>
+                                                <span class="arrow">▼</span>
+                                            </a>
+                                            <ul class="sub-menu">
+                                                <li><a href="/admin"><i class="fas fa-tachometer-alt"
+                                                            style="margin-right: 8px; color: var(--gold);"></i> AdminJS
+                                                        Panel</a></li>
+                                                <li><a href="/admin/editors-choice"><i class="fas fa-star"
+                                                            style="margin-right: 8px; color: #ffd700;"></i> Editor
+                                                        Choice For Platforms</a></li>
+                                                <li><a href="/admin/reports"><i class="fas fa-flag"
+                                                            style="margin-right: 8px; color: #e53935;"></i> Mod
+                                                        Reports</a></li>
+                                                <li><a href="/admin/support"><i class="fas fa-headset"
+                                                            style="margin-right: 8px; color: #2196f3;"></i> Support
+                                                        Tickets</a></li>
+                                                <li><a href="/status"><i class="fas fa-server"
+                                                            style="margin-right: 8px; color: #43a047;"></i> Server
+                                                        Health</a></li>
+                                                <li><a href="/admin/music"><i class="fas fa-music"
+                                                            style="margin-right: 8px; color: #ba68c8;"></i> Music
+                                                        Manager</a></li>
+                                            </ul>
+                                        </li>
+                                        <% } else if (user.role==='support' ) { %>
+                                            <li class="has-submenu support-suite-box">
+                                                <a href="#" class="collapsible-trigger"
+                                                    style="color: #2196f3; font-weight: 700;">
+                                                    <span><i class="fas fa-headset"
+                                                            style="color: #2196f3; margin-right: 8px;"></i> Support
+                                                        Suite</span>
+                                                    <span class="arrow">▼</span>
+                                                </a>
+                                                <ul class="sub-menu">
+                                                    <li><a href="/admin/support"><i class="fas fa-headset"
+                                                                style="margin-right: 8px; color: #2196f3;"></i> Support
+                                                            Tickets</a></li>
+                                                    <li><a href="/admin/reports"><i class="fas fa-flag"
+                                                                style="margin-right: 8px; color: #e53935;"></i> Mod
+                                                            Reports</a></li>
+                                                    <li><a href="/status"><i class="fas fa-server"
+                                                                style="margin-right: 8px; color: #43a047;"></i> Server
+                                                            Health</a></li>
+                                                </ul>
+                                            </li>
+                                            <% } %>
+                                                <li><a href="/dashboard"><i class="fas fa-user-circle"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        Dashboard</a></li>
+                                                <li><a href="/settings"><i class="fas fa-cog"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        Settings</a></li>
+                                                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        Documentation</a></li>
+                                                <li><a href="/licenses"><i class="fas fa-file-contract"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        License Hub</a></li>
+                                                <li><a href="/community"><i class="fas fa-comments"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        Community Forums</a></li>
+                                                <li><a href="/upload"><i class="fas fa-cloud-upload-alt"
+                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                        Upload A New Mod</a></li>
+                                                <li><a href="/clubs"><i class="fas fa-comments"
+                                                            style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                        Chat &amp; Clubs</a></li>
+                                                <li><a href="/membership"><i class="fas fa-gem"
+                                                            style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                        Membership</a></li>
+                                                <% if (user && (user.membership==='plus' || user.membership==='lite' ||
+                                                    user.membership==='premium' )) { %>
+                                                    <li><a href="/my-membership"><i class="fas fa-id-card"
+                                                                style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                            My Membership</a></li>
+                                                    <% } %>
+                                                        <li><a href="/volunteer"><i class="fas fa-hands-helping"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i>
+                                                                Volunteer Team</a></li>
+                                                        <li><a href="/about"><i class="fas fa-info-circle"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                About Us!</a></li>
+                                                        <li><a href="/leaderboard"><i class="fas fa-trophy"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i>
+                                                                Leaderboard!</a></li>
+                                                        <li><a href="/donate"><i class="fas fa-hand-holding-heart"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
+                                                                Donate Us!</a></li>
+                                                        <li><a href="/request-mod"><i class="fas fa-plus-circle"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                Required New Mods</a></li>
+                                                        <li><a href="/support"><i class="fas fa-headset"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                Support Tickets</a></li>
+                                                        <li><a href="/logout" style="color: var(--red);"><i
+                                                                    class="fas fa-sign-out-alt"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                Logout</a></li>
+                                                        <% } else { %>
+                                                            <li><a href="/docs" style="color: var(--gold);"><i
+                                                                        class="fas fa-book"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    Documentation</a></li>
+                                                            <li><a href="/licenses"><i class="fas fa-file-contract"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    License Hub</a></li>
+                                                            <li><a href="/community"><i class="fas fa-comments"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    Community Forums</a></li>
+                                                            <li><a href="/clubs"><i class="fas fa-comments"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                                    Chat &amp; Clubs</a></li>
+                                                            <li><a href="/upload"><i class="fas fa-cloud-upload-alt"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    Upload A New Mod</a></li>
+                                                            <li><a href="/membership"><i class="fas fa-gem"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                                    Membership</a></li>
+                                                            <li><a href="/volunteer"><i class="fas fa-hands-helping"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i>
+                                                                    Volunteer Team</a></li>
+                                                            <li><a href="/about"><i class="fas fa-info-circle"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    About Us!</a></li>
+                                                            <li><a href="/leaderboard"><i class="fas fa-trophy"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i>
+                                                                    Leaderboard!</a></li>
+                                                            <li><a href="/donate"><i class="fas fa-hand-holding-heart"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
+                                                                    Donate Us!</a></li>
+                                                            <li><a href="/sponsor"><i class="fas fa-hand-holding-heart"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
+                                                                    Sponsors!</a></li>
+                                                            <li><a href="/login"><i class="fas fa-sign-in-alt"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    Login</a></li>
+                                                            <li><a href="/register"><i class="fas fa-user-plus"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
+                                                                    Sign Up</a></li>
+                                                            <% } %>
+                                                                <li
+                                                                    style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
+                                                                    <a href="/cc" title="Purge Web Cache (/cc)"
+                                                                        style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">
+                                                                        <i class="fas fa-broom"></i> Clear Web Cache
+                                                                        (/cc)
+                                                                    </a>
+                                                                </li>
+                        </ul>
+                    </nav>
+                    <% } %>
+
+                        <!-- Global Action Confirmation Modals (Logout & Clear Cache) -->
+                        <div id="globalLogoutModal" class="gpl-action-modal-backdrop"
+                            style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
+                            <div class="gpl-action-modal-card"
+                                style="background: linear-gradient(145deg, #181116 0%, #0d0e12 100%); border: 1px solid rgba(244, 67, 54, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(244, 67, 54, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
+                                <div
+                                    style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(244, 67, 54, 0.12); border: 1px solid rgba(244, 67, 54, 0.35); display: flex; align-items: center; justify-content: center; color: #ff5252; font-size: 1.6rem; box-shadow: 0 0 20px rgba(244, 67, 54, 0.25);">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </div>
+                                <h3
+                                    style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">
+                                    Confirm Logout</h3>
+                                <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
+                                    Are you sure you want to end your active session? You will need to sign in again to
+                                    access your licenses, downloads, and account support.
+                                </p>
+                                <div style="display: flex; gap: 12px; justify-content: center;">
+                                    <button type="button" class="btn-cancel-logout"
+                                        style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                                        Stay Logged In
+                                    </button>
+                                    <a href="/logout" id="confirmLogoutBtn"
+                                        style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(244, 67, 54, 0.4); cursor: pointer;">
+                                        <i class="fas fa-sign-out-alt"></i> Log Out
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="globalCcModal" class="gpl-action-modal-backdrop"
+                            style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease;">
+                            <div class="gpl-action-modal-card"
+                                style="background: linear-gradient(145deg, #1c1810 0%, #0d0e12 100%); border: 1px solid rgba(246, 173, 85, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(246, 173, 85, 0.2); border-radius: 18px; padding: 30px 24px; max-width: 420px; width: 90%; text-align: center; transform: scale(0.95); transition: transform 0.25s ease;">
+                                <div
+                                    style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: rgba(246, 173, 85, 0.12); border: 1px solid rgba(246, 173, 85, 0.35); display: flex; align-items: center; justify-content: center; color: #f6ad55; font-size: 1.6rem; box-shadow: 0 0 20px rgba(246, 173, 85, 0.25);">
+                                    <i class="fas fa-broom"></i>
+                                </div>
+                                <h3
+                                    style="color: #fff; font-size: 1.35rem; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em;">
+                                    Purge Web Cache</h3>
+                                <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin: 0 0 24px;">
+                                    Clear cached scripts, stylesheets, and local device assets? This refreshes your
+                                    browser state without affecting your saved session or account data.
+                                </p>
+                                <div id="globalCcStatus"
+                                    style="display: none; margin-bottom: 15px; font-size: 0.88rem; font-weight: 600; color: #f6ad55;">
+                                </div>
+                                <div style="display: flex; gap: 12px; justify-content: center;">
+                                    <button type="button" class="btn-cancel-cc"
+                                        style="flex: 1; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                                        Cancel
+                                    </button>
+                                    <button type="button" id="confirmCcBtn"
+                                        style="flex: 1; padding: 12px 18px; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4); cursor: pointer;">
+                                        <i class="fas fa-broom"></i> Purge Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <script>
+                            (function () {
+                                function initActionModals() {
+                                    var logoutModal = document.getElementById('globalLogoutModal');
+                                    var ccModal = document.getElementById('globalCcModal');
+
+                                    function openModal(modal) {
+                                        if (!modal) return;
+                                        modal.style.display = 'flex';
+                                        requestAnimationFrame(function () {
+                                            modal.style.opacity = '1';
+                                            var card = modal.querySelector('.gpl-action-modal-card');
+                                            if (card) card.style.transform = 'scale(1)';
+                                        });
+                                    }
+
+                                    function closeModal(modal) {
+                                        if (!modal) return;
+                                        modal.style.opacity = '0';
+                                        var card = modal.querySelector('.gpl-action-modal-card');
+                                        if (card) card.style.transform = 'scale(0.95)';
+                                        setTimeout(function () {
+                                            modal.style.display = 'none';
+                                        }, 250);
+                                    }
+
+                                    async function executeGlobalCacheClear() {
+                                        var btn = document.getElementById('confirmCcBtn');
+                                        var cancelBtn = ccModal ? ccModal.querySelector('.btn-cancel-cc') : null;
+                                        var statusEl = document.getElementById('globalCcStatus');
+
+                                        if (btn) {
+                                            btn.disabled = true;
+                                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning Cache...';
+                                        }
+                                        if (cancelBtn) cancelBtn.disabled = true;
+                                        if (statusEl) {
+                                            statusEl.style.display = 'block';
+                                            statusEl.style.color = '#f6ad55';
+                                            statusEl.textContent = 'Clearing Service Workers & Browser Cache...';
+                                        }
+
+                                        try {
+                                            // 1. Unregister Service Workers
+                                            if ('serviceWorker' in navigator) {
+                                                var registrations = await navigator.serviceWorker.getRegistrations();
+                                                for (var i = 0; i < registrations.length; i++) {
+                                                    await registrations[i].unregister();
+                                                }
+                                            }
+
+                                            // 2. Clear Cache Storage
+                                            if ('caches' in window) {
+                                                var keys = await caches.keys();
+                                                await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                                            }
+
+                                            // 3. Clear temporary storage
+                                            try { localStorage.clear(); } catch (e) { }
+                                            try { sessionStorage.clear(); } catch (e) { }
+
+                                            // 4. Trigger server-side header clear
+                                            try {
+                                                await fetch('/cc', { cache: 'reload' });
+                                            } catch (e) { }
+
+                                            if (statusEl) {
+                                                statusEl.style.color = '#4caf50';
+                                                statusEl.textContent = '✔ All caches cleared! Reloading fresh...';
+                                            }
+                                            if (btn) {
+                                                btn.innerHTML = '<i class="fas fa-check"></i> Reloading...';
+                                            }
+                                        } catch (err) {
+                                            console.error('Cache clear error:', err);
+                                            if (statusEl) {
+                                                statusEl.style.color = '#ff5252';
+                                                statusEl.textContent = 'Reloading fresh...';
+                                            }
+                                        } finally {
+                                            setTimeout(function () {
+                                                var currentPath = window.location.pathname;
+                                                var currentSearch = window.location.search || '';
+                                                var sep = currentSearch.indexOf('?') !== -1 ? '&' : '?';
+                                                window.location.replace(currentPath + currentSearch + sep + '_cc=' + Date.now() + '&cache_cleared=1');
+                                            }, 500);
+                                        }
+                                    }
+
+                                    document.addEventListener('click', function (e) {
+                                        var logoutTarget = e.target.closest('a[href="/logout"]');
+                                        if (logoutTarget && logoutTarget.id !== 'confirmLogoutBtn') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openModal(logoutModal);
+                                            return;
+                                        }
+
+                                        var ccTarget = e.target.closest('a[href="/cc"]');
+                                        if (ccTarget && ccTarget.id !== 'confirmCcBtn') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openModal(ccModal);
+                                            return;
+                                        }
+
+                                        var confirmCcTarget = e.target.closest('#confirmCcBtn');
+                                        if (confirmCcTarget) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            executeGlobalCacheClear();
+                                            return;
+                                        }
+
+                                        if (e.target.closest('.btn-cancel-logout')) {
+                                            closeModal(logoutModal);
+                                            return;
+                                        }
+
+                                        if (e.target.closest('.btn-cancel-cc')) {
+                                            closeModal(ccModal);
+                                            return;
+                                        }
+
+                                        if (e.target === logoutModal) {
+                                            closeModal(logoutModal);
+                                            return;
+                                        }
+
+                                        if (e.target === ccModal) {
+                                            closeModal(ccModal);
+                                            return;
+                                        }
+                                    }, true);
+                                }
+
+                                if (document.readyState === 'loading') {
+                                    document.addEventListener('DOMContentLoaded', initActionModals);
+                                } else {
+                                    initActionModals();
+                                }
+                            })();
+                        </script>
+
+                        <% if (typeof isDebuggerExempt==='undefined' || !isDebuggerExempt) { %>
+                            <!-- ============================================== -->
+                            <!-- GPLMODS DEVTOOLS & DEBUGGER ACCESS MODAL -->
+                            <!-- ============================================== -->
+                            <style>
+                                .gpl-debugger-modal {
+                                    position: fixed;
+                                    inset: 0;
+                                    z-index: 2147483647;
+                                    background: rgba(0, 0, 0, 0.94);
+                                    backdrop-filter: blur(10px);
+                                    display: none;
+                                    align-items: center;
+                                    justify-content: center;
+                                    padding: 20px;
+                                    font-family: 'Poppins', sans-serif;
+                                }
+
+                                .gpl-debugger-modal.show {
+                                    display: flex;
+                                }
+
+                                .gpl-debugger-card {
+                                    background: #141414;
+                                    border: 1px solid #ff3366;
+                                    border-top: 4px solid #ff3366;
+                                    border-radius: 16px;
+                                    padding: 35px 30px;
+                                    max-width: 480px;
+                                    width: 100%;
+                                    text-align: center;
+                                    box-shadow: 0 10px 40px rgba(255, 51, 102, 0.35);
+                                    animation: gplModalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                                }
+
+                                @keyframes gplModalPop {
+                                    0% {
+                                        transform: scale(0.92);
+                                        opacity: 0;
+                                    }
+
+                                    100% {
+                                        transform: scale(1);
+                                        opacity: 1;
+                                    }
+                                }
+
+                                .gpl-debugger-icon {
+                                    width: 64px;
+                                    height: 64px;
+                                    border-radius: 50%;
+                                    background: rgba(255, 51, 102, 0.15);
+                                    color: #ff3366;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 2em;
+                                    margin: 0 auto 16px auto;
+                                    border: 1px solid rgba(255, 51, 102, 0.4);
+                                    box-shadow: 0 0 20px rgba(255, 51, 102, 0.3);
+                                }
+
+                                .gpl-debugger-card h2 {
+                                    color: #fff;
+                                    margin: 0 0 10px 0;
+                                    font-size: 1.5em;
+                                    font-weight: 700;
+                                }
+
+                                .gpl-debugger-card p {
+                                    color: var(--silver);
+                                    font-size: 0.95em;
+                                    line-height: 1.6;
+                                    margin: 0 0 22px 0;
+                                }
+
+                                .gpl-debugger-input-wrap {
+                                    position: relative;
+                                    margin-bottom: 15px;
+                                }
+
+                                .gpl-debugger-input {
+                                    width: 100%;
+                                    background: #0a0a0a;
+                                    border: 1.5px solid #333;
+                                    border-radius: 10px;
+                                    padding: 14px 16px;
+                                    color: #fff;
+                                    font-size: 1.1em;
+                                    letter-spacing: 2px;
+                                    text-align: center;
+                                    font-family: monospace;
+                                    outline: none;
+                                    transition: all 0.3s ease;
+                                    box-sizing: border-box;
+                                }
+
+                                .gpl-debugger-input:focus {
+                                    border-color: #ff3366;
+                                    box-shadow: 0 0 15px rgba(255, 51, 102, 0.35);
+                                }
+
+                                .gpl-debugger-error {
+                                    color: #ff4d4d;
+                                    background: rgba(255, 77, 77, 0.1);
+                                    border: 1px solid rgba(255, 77, 77, 0.3);
+                                    border-radius: 8px;
+                                    padding: 10px;
+                                    font-size: 0.88em;
+                                    margin-bottom: 18px;
+                                    display: none;
+                                }
+
+                                .gpl-debugger-actions {
+                                    display: flex;
+                                    gap: 12px;
+                                    justify-content: center;
+                                }
+
+                                .btn-debugger-verify {
+                                    flex: 1.2;
+                                    padding: 12px 20px;
+                                    background: #ff3366;
+                                    color: #fff;
+                                    border: none;
+                                    border-radius: 10px;
+                                    font-weight: 700;
+                                    font-size: 0.95em;
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                    box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    gap: 8px;
+                                    font-family: inherit;
+                                }
+
+                                .btn-debugger-verify:hover {
+                                    background: #e02253;
+                                    transform: translateY(-2px);
+                                    box-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
+                                }
+
+                                .btn-debugger-back {
+                                    flex: 1;
+                                    padding: 12px 18px;
+                                    background: transparent;
+                                    border: 1px solid #444;
+                                    color: var(--silver);
+                                    border-radius: 10px;
+                                    font-weight: 600;
+                                    font-size: 0.95em;
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    gap: 8px;
+                                    font-family: inherit;
+                                }
+
+                                .btn-debugger-back:hover {
+                                    border-color: #777;
+                                    color: #fff;
+                                }
+                            </style>
+
+                            <div id="debuggerAccessModal" class="gpl-debugger-modal" role="dialog" aria-modal="true">
+                                <div class="gpl-debugger-card">
+                                    <div class="gpl-debugger-icon">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <h2>Debugger Access Restricted</h2>
+                                    <p>
+                                        Developer tools inspection has been detected. Enter your <strong>10–12 digit
+                                            access code</strong> or <strong>Master Key</strong> to unlock developer
+                                        mode.
+                                    </p>
+                                    <div class="gpl-debugger-input-wrap">
+                                        <input type="text" id="debuggerAccessCodeInput" class="gpl-debugger-input"
+                                            placeholder="Enter Access Code / Master Key" autocomplete="off"
+                                            maxlength="25">
+                                    </div>
+                                    <div id="debuggerModalError" class="gpl-debugger-error"></div>
+                                    <div class="gpl-debugger-actions">
+                                        <button type="button" class="btn-debugger-back" onclick="handleDebuggerExit()">
+                                            <i class="fas fa-arrow-left"></i> Leave Page
+                                        </button>
+                                        <button type="button" class="btn-debugger-verify" id="btnSubmitDebuggerCode"
+                                            onclick="submitDebuggerCode()">
+                                            <i class="fas fa-key"></i> Unlock Debugger
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CDN for DisableDevtool -->
+                            <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+                            <script>
+                                (function () {
+                                    if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                        return;
+                                    }
+
+                                    var currentLogId = null;
+                                    var isModalOpen = false;
+
+                                    function clearBrowserConsole() {
+                                        try {
+                                            console.clear();
+                                        } catch (e) { }
+                                    }
+
+                                    function triggerDevtoolBlock(triggerType) {
+                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                            return;
+                                        }
+
+                                        clearBrowserConsole();
+
+                                        var modal = document.getElementById('debuggerAccessModal');
+                                        if (modal && !isModalOpen) {
+                                            isModalOpen = true;
+                                            modal.classList.add('show');
+                                            var input = document.getElementById('debuggerAccessCodeInput');
+                                            if (input) {
+                                                input.value = '';
+                                                setTimeout(function () { input.focus(); }, 100);
+                                            }
+                                        }
+
+                                        if (!currentLogId) {
+                                            fetch('/api/devtool/log', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    triggerType: triggerType || 'devtools-opened',
+                                                    url: window.location.href,
+                                                    screenDetails: {
+                                                        width: window.screen ? window.screen.width : null,
+                                                        height: window.screen ? window.screen.height : null,
+                                                        innerWidth: window.innerWidth,
+                                                        innerHeight: window.innerHeight
+                                                    }
+                                                })
+                                            }).then(function (r) { return r.json(); }).then(function (data) {
+                                                if (data && data.logId) {
+                                                    currentLogId = data.logId;
+                                                }
+                                            }).catch(function () { });
+                                        }
+                                    }
+
+                                    window.handleDebuggerExit = function () {
+                                        window.smartGoBack('/');
+                                    };
+
+                                    window.submitDebuggerCode = async function () {
+                                        var input = document.getElementById('debuggerAccessCodeInput');
+                                        var errEl = document.getElementById('debuggerModalError');
+                                        var btn = document.getElementById('btnSubmitDebuggerCode');
+                                        var code = (input.value || '').trim();
+
+                                        if (!code) {
+                                            errEl.textContent = 'Please enter an access code or master key.';
+                                            errEl.style.display = 'block';
+                                            input.focus();
+                                            return;
+                                        }
+
+                                        errEl.style.display = 'none';
+                                        btn.disabled = true;
+                                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+                                        try {
+                                            var res = await fetch('/api/devtool/verify-key', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ code: code, logId: currentLogId })
+                                            });
+                                            var data = await res.json();
+
+                                            if (data && data.success) {
+                                                sessionStorage.setItem('gpl_devtool_authorized', 'true');
+                                                clearBrowserConsole();
+
+                                                var modal = document.getElementById('debuggerAccessModal');
+                                                if (modal) {
+                                                    modal.classList.remove('show');
+                                                }
+                                                isModalOpen = false;
+
+                                                if (window.DisableDevtool && typeof window.DisableDevtool.stop === 'function') {
+                                                    window.DisableDevtool.stop();
+                                                }
+                                            } else {
+                                                clearBrowserConsole();
+                                                errEl.textContent = (data && data.message) ? data.message : 'Invalid 10–12 digit code or master key. Attempt logged.';
+                                                errEl.style.display = 'block';
+                                                btn.disabled = false;
+                                                btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
+                                                input.value = '';
+                                                input.focus();
+                                            }
+                                        } catch (e) {
+                                            btn.disabled = false;
+                                            btn.innerHTML = '<i class="fas fa-key"></i> Unlock Debugger';
+                                            errEl.textContent = 'Connection error. Please retry.';
+                                            errEl.style.display = 'block';
+                                        }
+                                    };
+
+                                    document.addEventListener('keydown', function (e) {
+                                        if (isModalOpen && e.key === 'Enter') {
+                                            submitDebuggerCode();
+                                        }
+                                    });
+
+                                    function initProtection() {
+                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                            return;
+                                        }
+
+                                        if (window.DisableDevtool) {
+                                            try {
+                                                window.DisableDevtool({
+                                                    ondevtoolopen: function (type) {
+                                                        triggerDevtoolBlock(type);
+                                                    },
+                                                    disableMenu: false,
+                                                    disableCopy: false,
+                                                    disableSelect: false,
+                                                    interval: 350
+                                                });
+                                            } catch (e) {
+                                                console.error("Devtool security init:", e);
+                                            }
+                                        }
+
+                                        window.addEventListener('keydown', function (e) {
+                                            if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') return;
+                                            if (
+                                                e.key === 'F12' ||
+                                                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+                                                (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+                                                (e.ctrlKey && (e.key === 'U' || e.key === 'u'))
+                                            ) {
+                                                e.preventDefault();
+                                                triggerDevtoolBlock('keyboard-shortcut');
+                                            }
+                                        }, true);
+                                    }
+
+                                    if (document.readyState === 'loading') {
+                                        document.addEventListener('DOMContentLoaded', initProtection);
+                                    } else {
+                                        initProtection();
+                                    }
+                                })();
+                            </script>
+                            <% } %>
+
+                                <main>

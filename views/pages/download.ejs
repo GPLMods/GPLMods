@@ -754,6 +754,418 @@
         #description .whats-new-panel {
             order: 4;
         }
+    
+        /* ============================================================== */
+        /* RECOMMENDATION & PROMOTION SECTIONS CSS (Item 1)              */
+        /* ============================================================== */
+        .sidebar-tags-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .sidebar-tags-row > span {
+            font-size: 0.85em;
+            color: var(--silver);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .sidebar-tags-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .clickable-tag-btn {
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            color: var(--gold);
+            font-size: 0.78em;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .clickable-tag-btn:hover {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px var(--glow-gold);
+        }
+
+        .download-recommendations-wrapper {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 45px;
+            width: 100%;
+        }
+
+        .rec-section {
+            background: rgba(18, 19, 25, 0.85);
+            border: 1px solid #262936;
+            border-radius: 18px;
+            padding: 26px 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .rec-section-sponsored {
+            border-color: rgba(212, 175, 55, 0.35);
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.04) 0%, rgba(18, 19, 25, 0.95) 100%);
+        }
+
+        .rec-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            gap: 15px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 16px;
+        }
+
+        .rec-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .rec-section-title {
+            font-size: 1.35rem;
+            color: #fff;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        .rec-section-subtitle {
+            font-size: 0.85rem;
+            color: var(--silver);
+            margin: 4px 0 0 0;
+        }
+
+        .sponsored-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-promote-trigger {
+            background: linear-gradient(135deg, #d4af37, #f3cf65);
+            color: #111;
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+        }
+
+        .btn-promote-trigger:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.55);
+            color: #000;
+        }
+
+        .rec-mod-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .sponsored-card-wrapper {
+            position: relative;
+            border-radius: 12px;
+            transition: transform 0.25s ease;
+        }
+
+        .sponsored-card-wrapper .card-ad-pill {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 1px 6px;
+            border-radius: 4px;
+            z-index: 15;
+            letter-spacing: 0.5px;
+        }
+
+        .sponsored-card-wrapper .mod-card {
+            border: 1px solid rgba(212, 175, 55, 0.35) !important;
+            box-shadow: 0 4px 18px rgba(212, 175, 55, 0.12);
+        }
+
+        .sponsored-card-wrapper:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Also Available For Other Platforms */
+        .cross-platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            width: 100%;
+        }
+
+        .platform-cross-card {
+            background: rgba(28, 30, 40, 0.9);
+            border: 1px solid #333648;
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.25s ease;
+        }
+
+        .platform-cross-card:hover {
+            border-color: #64b5f6;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(100, 181, 246, 0.15);
+        }
+
+        .platform-cross-icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .platform-cross-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: #111;
+            border: 1px solid #3a3a4a;
+        }
+
+        .platform-os-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .os-android { background: rgba(76, 175, 80, 0.15); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3); }
+        .os-windows { background: rgba(33, 150, 243, 0.15); color: #64b5f6; border: 1px solid rgba(33, 150, 243, 0.3); }
+        .os-ios-jailed { background: rgba(186, 104, 200, 0.15); color: #ce93d8; border: 1px solid rgba(186, 104, 200, 0.3); }
+        .os-ios-jailbroken { background: rgba(255, 152, 0, 0.15); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.3); }
+        .os-wordpress { background: rgba(0, 150, 200, 0.15); color: #4fc3f7; border: 1px solid rgba(0, 150, 200, 0.3); }
+
+        .platform-cross-info h4 {
+            color: #fff;
+            margin: 0;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .platform-cross-meta {
+            display: flex;
+            gap: 12px;
+            color: var(--silver);
+            font-size: 0.8rem;
+        }
+
+        .btn-switch-platform {
+            background: #1e2230;
+            border: 1px solid #3d4358;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .btn-switch-platform:hover {
+            background: #64b5f6;
+            color: #000;
+            border-color: #64b5f6;
+        }
+
+        .rec-uploader-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            object-fit: cover;
+        }
+
+        .badge-distributor-mini {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-view-developer {
+            color: var(--gold);
+            font-size: 0.86rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: gap 0.2s;
+        }
+
+        .btn-view-developer:hover {
+            gap: 10px;
+            text-decoration: underline;
+        }
+
+        /* Tag Explorer & Promote Modals */
+        .gpl-rec-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .gpl-rec-modal-card {
+            background: #14161f;
+            border: 1px solid #2d3142;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+            animation: recModalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes recModalFadeIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .gpl-rec-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #252838;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gpl-rec-modal-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gpl-rec-modal-close {
+            background: none;
+            border: none;
+            color: var(--silver);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .gpl-rec-modal-close:hover {
+            color: #fff;
+        }
+
+        .gpl-rec-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .gpl-rec-modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #252838;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #111219;
+        }
+
+        .promo-tier-card {
+            border: 1px solid #2d3142;
+            background: #1a1c27;
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .promo-tier-card:hover,
+        .promo-tier-card.selected {
+            border-color: var(--gold);
+            background: rgba(212, 175, 55, 0.08);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .promo-tier-card input[type="radio"] {
+            accent-color: var(--gold);
+            transform: scale(1.2);
+        }
+
     </style>
 
     <main class="container">
@@ -2611,4 +3023,292 @@
             }
         });
     </script>
+    
+    <!-- ============================================================== -->
+    <!-- INTERACTIVE TAG EXPLORER MODAL                                 -->
+    <!-- ============================================================== -->
+    <div id="tagExploreModal" class="gpl-rec-modal-overlay" style="display: none;">
+        <div class="gpl-rec-modal-card">
+            <div class="gpl-rec-modal-header">
+                <h3>
+                    <i class="fas fa-tags" style="color: var(--gold);"></i>
+                    <span>Mods Tagged with <span id="tagExploreModalTitle" style="color: var(--gold);">#tag</span></span>
+                </h3>
+                <button type="button" class="gpl-rec-modal-close" onclick="closeTagExploreModal()">&times;</button>
+            </div>
+            <div class="gpl-rec-modal-body" id="tagExploreModalBody">
+                <div style="text-align: center; padding: 40px; color: var(--silver);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--gold); margin-bottom: 12px;"></i>
+                    <p>Loading similar mods...</p>
+                </div>
+            </div>
+            <div class="gpl-rec-modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeTagExploreModal()" style="border-color: #444; color: #bbb;">Close</button>
+                <a id="tagExploreSearchBtn" href="/search" class="btn btn-primary" style="background: var(--gold); color: #000; font-weight: bold; text-decoration: none; padding: 8px 18px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-search"></i> View All in Search
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- PROMOTE MOD MODAL (Play Store Style Promotion Ads System)       -->
+    <!-- ============================================================== -->
+    <div id="promoteModModal" class="gpl-rec-modal-overlay" style="display: none;">
+        <div class="gpl-rec-modal-card" style="max-width: 540px;">
+            <div class="gpl-rec-modal-header">
+                <h3>
+                    <i class="fas fa-rocket" style="color: var(--gold);"></i>
+                    <span>Promote Your Mod</span>
+                </h3>
+                <button type="button" class="gpl-rec-modal-close" onclick="closePromoteModal()">&times;</button>
+            </div>
+            <div class="gpl-rec-modal-body">
+                <div style="display: flex; gap: 14px; align-items: center; background: #1b1d28; padding: 14px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #2e3245;">
+                    <img src="<%= file.iconUrl %>" alt="<%= file.name %>" style="width: 48px; height: 48px; border-radius: 10px; object-fit: cover;">
+                    <div>
+                        <h4 style="color: #fff; margin: 0 0 4px 0; font-size: 1.05rem;"><%= file.name %></h4>
+                        <span style="font-size: 0.8rem; color: var(--silver);"><i class="fas fa-code-branch"></i> v<%= file.version %> • <%= file.category.toUpperCase() %></span>
+                    </div>
+                </div>
+
+                <p style="color: var(--silver); font-size: 0.88rem; margin-bottom: 16px;">
+                    Promote this mod to display it in the <strong>Suggested For You</strong> carousel across download pages. Gain instant visibility, more downloads, and an official <strong>Sponsored</strong> badge!
+                </p>
+
+                <label style="display: block; color: #fff; font-weight: 600; margin-bottom: 10px; font-size: 0.9rem;">Select Promotion Duration:</label>
+
+                <div class="promo-tier-card selected" onclick="selectPromoPlan(this, 1, 149)">
+                    <div>
+                        <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">1 Day Trial</div>
+                        <div style="color: var(--silver); font-size: 0.78rem;">Quick visibility boost</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--gold); font-size: 1.1rem; font-weight: 800;">₹149</span>
+                        <input type="radio" name="promoDuration" value="1" checked style="margin-left: 8px;">
+                    </div>
+                </div>
+
+                <div class="promo-tier-card" onclick="selectPromoPlan(this, 3, 349)">
+                    <div>
+                        <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">3 Days Boost</div>
+                        <div style="color: var(--silver); font-size: 0.78rem;">Weekend gamer rush</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--gold); font-size: 1.1rem; font-weight: 800;">₹349</span>
+                        <input type="radio" name="promoDuration" value="3" style="margin-left: 8px;">
+                    </div>
+                </div>
+
+                <div class="promo-tier-card" onclick="selectPromoPlan(this, 7, 699)">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: #fff; font-weight: 700; font-size: 0.95rem;">7 Days Spotlight</span>
+                            <span style="background: var(--gold); color: #000; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">POPULAR</span>
+                        </div>
+                        <div style="color: var(--silver); font-size: 0.78rem;">Full week sustained traffic</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--gold); font-size: 1.1rem; font-weight: 800;">₹699</span>
+                        <input type="radio" name="promoDuration" value="7" style="margin-left: 8px;">
+                    </div>
+                </div>
+
+                <div class="promo-tier-card" onclick="selectPromoPlan(this, 14, 1299)">
+                    <div>
+                        <div style="color: #fff; font-weight: 700; font-size: 0.95rem;">14 Days Mega</div>
+                        <div style="color: var(--silver); font-size: 0.78rem;">Two weeks top rank placement</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--gold); font-size: 1.1rem; font-weight: 800;">₹1,299</span>
+                        <input type="radio" name="promoDuration" value="14" style="margin-left: 8px;">
+                    </div>
+                </div>
+
+                <div class="promo-tier-card" onclick="selectPromoPlan(this, 30, 2499)">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: #fff; font-weight: 700; font-size: 0.95rem;">30 Days Platinum</span>
+                            <span style="background: #64b5f6; color: #000; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">BEST VALUE</span>
+                        </div>
+                        <div style="color: var(--silver); font-size: 0.78rem;">Entire month maximum reach</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: var(--gold); font-size: 1.1rem; font-weight: 800;">₹2,499</span>
+                        <input type="radio" name="promoDuration" value="30" style="margin-left: 8px;">
+                    </div>
+                </div>
+
+                <div id="promoFeedbackMsg" style="display: none; padding: 12px; border-radius: 8px; margin-top: 14px; font-size: 0.9rem;"></div>
+            </div>
+            <div class="gpl-rec-modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePromoteModal()" style="border-color: #444; color: #bbb;">Cancel</button>
+                <button type="button" id="btnSubmitPromotion" class="btn btn-primary" onclick="submitModPromotion('<%= file._id %>')" style="background: linear-gradient(135deg, #d4af37, #f3cf65); color: #000; font-weight: 700; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-bolt"></i>
+                    <span>Activate Promotion</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Script for Tag Explorer, Promotions & Ad Impressions -->
+    <script>
+        // --- 1. Tag Explorer Modal Logic ---
+        function openTagExploreModal(rawTag) {
+            const modal = document.getElementById('tagExploreModal');
+            const titleSpan = document.getElementById('tagExploreModalTitle');
+            const body = document.getElementById('tagExploreModalBody');
+            const searchBtn = document.getElementById('tagExploreSearchBtn');
+
+            if (!modal) return;
+            titleSpan.textContent = '#' + rawTag;
+            searchBtn.href = '/search?q=' + encodeURIComponent(rawTag) + '&tab=mods';
+            modal.style.display = 'flex';
+
+            body.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--silver);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--gold); margin-bottom: 12px;"></i>
+                    <p>Loading mods tagged with #${rawTag}...</p>
+                </div>
+            `;
+
+            fetch('/api/mods/by-tag?tag=' + encodeURIComponent(rawTag))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.mods && data.mods.length > 0) {
+                        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;">';
+                        data.mods.forEach(m => {
+                            html += `
+                                <div style="background: #1c1e2b; border: 1px solid #313548; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <img src="${m.iconUrl}" alt="${m.name}" style="width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: #111;">
+                                        <div style="overflow: hidden;">
+                                            <h5 style="color: #fff; margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${m.name}">${m.name}</h5>
+                                            <span style="font-size: 0.72rem; color: var(--silver);">v${m.version} • ${m.category.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--silver); margin-top: auto;">
+                                        <span><i class="fas fa-star" style="color: var(--gold);"></i> ${m.averageRating.toFixed(1)}</span>
+                                        <span><i class="fas fa-download"></i> ${m.downloads}</span>
+                                    </div>
+                                    <a href="${m.url}" class="btn btn-secondary" style="font-size: 0.75rem; text-align: center; padding: 4px 8px; border-color: #444; color: var(--gold); text-decoration: none; border-radius: 6px;">View Mod</a>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        body.innerHTML = html;
+                    } else {
+                        body.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: var(--silver);">
+                                <i class="fas fa-search" style="font-size: 2.2rem; color: #555; margin-bottom: 12px;"></i>
+                                <h4 style="color: #fff; margin-bottom: 6px;">No other mods found for #${rawTag}</h4>
+                                <p style="font-size: 0.85rem;">Try exploring the full catalog via search.</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(() => {
+                    body.innerHTML = '<p style="color: var(--red); text-align: center; padding: 20px;">Failed to load tag results.</p>';
+                });
+        }
+
+        function closeTagExploreModal() {
+            const modal = document.getElementById('tagExploreModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // --- 2. Promote Mod Modal Logic ---
+        let selectedPromoDays = 1;
+        let selectedPromoPrice = 149;
+
+        function openPromoteModal() {
+            const modal = document.getElementById('promoteModModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closePromoteModal() {
+            const modal = document.getElementById('promoteModModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function selectPromoPlan(el, days, price) {
+            document.querySelectorAll('.promo-tier-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            const radio = el.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            selectedPromoDays = days;
+            selectedPromoPrice = price;
+        }
+
+        function submitModPromotion(fileId) {
+            const submitBtn = document.getElementById('btnSubmitPromotion');
+            const feedback = document.getElementById('promoFeedbackMsg');
+
+            if (!submitBtn || !feedback) return;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            feedback.style.display = 'none';
+
+            fetch('/api/mods/' + fileId + '/promote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ days: selectedPromoDays })
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-bolt"></i> <span>Activate Promotion</span>';
+
+                if (data.success) {
+                    feedback.style.display = 'block';
+                    feedback.style.background = 'rgba(76, 175, 80, 0.15)';
+                    feedback.style.color = '#81c784';
+                    feedback.style.border = '1px solid rgba(76, 175, 80, 0.3)';
+                    feedback.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    feedback.style.display = 'block';
+                    feedback.style.background = 'rgba(244, 67, 54, 0.15)';
+                    feedback.style.color = '#ef5350';
+                    feedback.style.border = '1px solid rgba(244, 67, 54, 0.3)';
+                    feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.error || 'Failed to activate promotion');
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-bolt"></i> <span>Activate Promotion</span>';
+                feedback.style.display = 'block';
+                feedback.style.background = 'rgba(244, 67, 54, 0.15)';
+                feedback.style.color = '#ef5350';
+                feedback.style.border = '1px solid rgba(244, 67, 54, 0.3)';
+                feedback.innerHTML = '<i class="fas fa-exclamation-circle"></i> An unexpected network error occurred.';
+            });
+        }
+
+        // --- 3. Track Impressions & Clicks for Promoted Mods ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const sponsoredCards = document.querySelectorAll('.sponsored-card-wrapper');
+            if (sponsoredCards.length > 0) {
+                const fileIds = Array.from(sponsoredCards).map(c => c.getAttribute('data-mod-id')).filter(Boolean);
+                if (fileIds.length > 0) {
+                    fetch('/api/promotions/track-impressions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileIds })
+                    }).catch(() => {});
+                }
+                sponsoredCards.forEach(card => {
+                    const fileId = card.getAttribute('data-mod-id');
+                    card.querySelectorAll('a').forEach(link => {
+                        link.addEventListener('click', () => {
+                            fetch('/api/promotions/track-click/' + fileId, { method: 'POST' }).catch(() => {});
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+
     <%- include('../partials/footer') %>

@@ -1,0 +1,1462 @@
+<%- include('../../partials/header') %>
+
+<style>
+    /* Discord Glassmorphism Container */
+    body {
+        overflow: hidden;
+    }
+    .discord-app-layout {
+        display: flex;
+        height: calc(100vh - 65px);
+        background: #0f1015;
+        color: #dcddde;
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+        position: relative;
+    }
+
+    /* 1. LEFTMOST VERTICAL RAIL (CLUBS NAV) */
+    .discord-rail {
+        width: 72px;
+        background: #090a0d;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 14px 0 10px;
+        gap: 10px;
+        border-right: 1px solid #1c1d25;
+        overflow-y: auto;
+        flex-shrink: 0;
+        z-index: 50;
+    }
+    .rail-item {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #1e1f29;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+        text-decoration: none;
+        color: var(--silver);
+    }
+    .rail-item:hover, .rail-item.active {
+        border-radius: 16px;
+        background: var(--gold);
+        color: #000;
+        box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+    }
+    .rail-item img {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+    }
+    .rail-item-pill {
+        position: absolute;
+        left: -12px;
+        width: 4px;
+        height: 0;
+        background: #fff;
+        border-radius: 0 4px 4px 0;
+        transition: height 0.2s ease;
+    }
+    .rail-item:hover .rail-item-pill { height: 20px; }
+    .rail-item.active .rail-item-pill { height: 40px; background: var(--gold); }
+    .rail-divider {
+        width: 32px;
+        height: 2px;
+        background: #232530;
+        border-radius: 1px;
+        margin: 2px 0;
+    }
+
+    /* 2. CHANNELS SIDEBAR (2ND COLUMN) */
+    .discord-channels-col {
+        width: 250px;
+        background: #14151c;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #20222c;
+        flex-shrink: 0;
+    }
+    .club-header-box {
+        padding: 14px 16px;
+        border-bottom: 1px solid #20222c;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        position: relative;
+        background: rgba(255, 255, 255, 0.02);
+        transition: background 0.2s;
+    }
+    .club-header-box:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .club-header-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .channels-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 8px;
+    }
+    .channel-category-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #8e9297;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 12px 8px 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .channel-item-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        color: #96989d;
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 500;
+        margin-bottom: 2px;
+        transition: all 0.2s;
+    }
+    .channel-item-link:hover {
+        background: #232532;
+        color: #dcddde;
+    }
+    .channel-item-link.active {
+        background: #2b2d3c;
+        color: #fff;
+        font-weight: 600;
+    }
+    .channel-item-link.active i {
+        color: var(--gold);
+    }
+    .channel-lock-icon {
+        font-size: 0.75rem;
+        color: #ff8a80;
+        margin-left: auto;
+    }
+
+    /* User Profile Footer */
+    .discord-user-footer {
+        height: 58px;
+        background: #111218;
+        border-top: 1px solid #1c1d25;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .footer-user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+    .footer-user-info:hover {
+        background: #1e1f29;
+    }
+    .footer-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+        position: relative;
+    }
+    .footer-name-box {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+    .footer-username {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #fff;
+    }
+    .footer-status-tag {
+        font-size: 0.72rem;
+        color: var(--silver);
+    }
+
+    /* 3. CENTER CHAT AREA */
+    .discord-chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #181922;
+        position: relative;
+        min-width: 0;
+    }
+    .chat-topbar {
+        height: 52px;
+        background: #181922;
+        border-bottom: 1px solid #222430;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+        flex-shrink: 0;
+    }
+    .topbar-channel-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    .topbar-topic {
+        color: #8e9297;
+        font-size: 0.82rem;
+        font-weight: 400;
+        border-left: 1px solid #333645;
+        padding-left: 12px;
+        margin-left: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 400px;
+    }
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .topbar-btn {
+        background: transparent;
+        border: none;
+        color: #b9bbbe;
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        transition: color 0.2s, background 0.2s;
+    }
+    .topbar-btn:hover {
+        color: #fff;
+        background: #252735;
+    }
+
+    /* Message Feed */
+    .chat-messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .message-item {
+        display: flex;
+        gap: 14px;
+        padding: 4px 6px;
+        border-radius: 8px;
+        transition: background 0.15s;
+    }
+    .message-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .message-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .message-content-col {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+    .message-header-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+        flex-wrap: wrap;
+    }
+    .message-username {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #fff;
+        text-decoration: none;
+    }
+    .badge-icon-tag {
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .badge-owner { background: rgba(255, 215, 0, 0.2); color: var(--gold); border: 1px solid var(--gold); }
+    .badge-admin { background: rgba(33, 150, 243, 0.2); color: #64b5f6; border: 1px solid #2196f3; }
+    .badge-premium { background: rgba(186, 104, 200, 0.2); color: #e1bee7; border: 1px solid #ba68c8; }
+    .badge-creator { background: rgba(255, 112, 67, 0.2); color: #ffab91; border: 1px solid #ff7043; }
+    .message-time {
+        font-size: 0.75rem;
+        color: #72767d;
+        margin-left: 4px;
+    }
+    .message-body-text {
+        font-size: 0.94rem;
+        color: #dcddde;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+    .btn-translate-msg {
+        background: transparent;
+        border: 1px solid #333645;
+        color: #8e9297;
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-top: 4px;
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+    }
+    .btn-translate-msg:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    /* Mod Update Embed Card */
+    .mod-update-embed-box {
+        background: #111219;
+        border-left: 4px solid var(--gold);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-top: 8px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        max-width: 600px;
+    }
+    .mod-embed-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+    .mod-embed-info h4 {
+        margin: 0 0 4px;
+        color: #fff;
+        font-size: 1.05rem;
+    }
+    .mod-embed-info p {
+        margin: 0 0 8px;
+        color: var(--silver);
+        font-size: 0.85rem;
+    }
+
+    /* Poll Card */
+    .poll-embed-card {
+        background: #12131b;
+        border: 1px solid #282a36;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 8px;
+        max-width: 520px;
+    }
+    .poll-question {
+        font-weight: 700;
+        color: #fff;
+        font-size: 1.05rem;
+        margin-bottom: 12px;
+    }
+    .poll-option-row {
+        background: #1a1b24;
+        border: 1px solid #2e3040;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s;
+    }
+    .poll-option-row:hover {
+        border-color: var(--gold);
+    }
+    .poll-progress-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(255, 215, 0, 0.15);
+        pointer-events: none;
+        transition: width 0.3s ease;
+    }
+
+    /* Reactions Bar */
+    .reactions-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+    .reaction-pill {
+        background: #12131b;
+        border: 1px solid #282a36;
+        color: #b9bbbe;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .reaction-pill:hover, .reaction-pill.user-reacted {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    /* Chat Input Bar */
+    .chat-input-bar-wrap {
+        padding: 0 18px 18px;
+        position: relative;
+        flex-shrink: 0;
+    }
+    .chat-input-box {
+        background: #232532;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        border: 1px solid #2d3040;
+        position: relative;
+    }
+    .chat-textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #fff;
+        padding: 12px 8px;
+        font-size: 0.95rem;
+        outline: none;
+        resize: none;
+        max-height: 120px;
+    }
+    .chat-input-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .chat-action-btn {
+        background: transparent;
+        border: none;
+        color: #b9bbbe;
+        font-size: 1.15rem;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s, transform 0.15s;
+    }
+    .chat-action-btn:hover {
+        color: var(--gold);
+        transform: scale(1.1);
+    }
+    .btn-send-chat {
+        background: var(--gold);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+    .btn-send-chat:hover {
+        background: #ffe066;
+        transform: scale(1.05);
+    }
+
+    /* 4. RIGHT SIDEBAR (MEMBERS LIST) */
+    .discord-members-col {
+        width: 240px;
+        background: #14151c;
+        border-left: 1px solid #20222c;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+    .members-scroll-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 12px;
+    }
+    .member-group-header {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #8e9297;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 8px;
+    }
+    .member-card-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 3px;
+        transition: background 0.15s;
+    }
+    .member-card-row:hover {
+        background: #232532;
+    }
+    .member-avatar-wrap {
+        position: relative;
+        width: 32px;
+        height: 32px;
+    }
+    .member-avatar-img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .online-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #43b581;
+        border: 2px solid #14151c;
+    }
+    .member-meta-box {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+    .member-display-name {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    /* Emoticons Popover */
+    .emoticon-popover {
+        position: absolute;
+        bottom: 60px;
+        right: 80px;
+        background: #1a1b24;
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        padding: 12px;
+        display: none;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        z-index: 100;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    }
+    .emoticon-popover.active {
+        display: grid;
+    }
+    .emoticon-btn {
+        background: #232532;
+        border: 1px solid #333645;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .emoticon-btn:hover {
+        background: var(--gold);
+        color: #000;
+    }
+
+    /* GIF Picker Popover */
+    .gif-picker-modal {
+        position: absolute;
+        bottom: 60px;
+        right: 40px;
+        width: 340px;
+        background: #14151c;
+        border: 1px solid var(--gold);
+        border-radius: 14px;
+        padding: 14px;
+        display: none;
+        flex-direction: column;
+        z-index: 100;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    }
+    .gif-picker-modal.active {
+        display: flex;
+    }
+    .gif-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        max-height: 250px;
+        overflow-y: auto;
+        margin-top: 10px;
+    }
+    .gif-item img {
+        width: 100%;
+        height: 90px;
+        border-radius: 8px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .gif-item img:hover {
+        transform: scale(1.04);
+    }
+
+    /* Modal Backdrop */
+    .gpl-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    .gpl-modal-backdrop.active {
+        display: flex;
+    }
+    .gpl-modal-box {
+        background: #14151c;
+        border: 1px solid var(--gold);
+        border-radius: 18px;
+        padding: 28px;
+        width: 90%;
+        max-width: 480px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    }
+</style>
+
+<div class="discord-app-layout">
+
+    <!-- ========================================== -->
+    <!-- 1. LEFT RAIL: JOINED CLUBS & DISCOVER      -->
+    <!-- ========================================== -->
+    <div class="discord-rail">
+        <!-- GPL Mods Home -->
+        <a href="/home" class="rail-item" title="GPL Mods Home">
+            <div class="rail-item-pill"></div>
+            <img src="/images/team-logo.png" alt="GPL Mods">
+        </a>
+
+        <div class="rail-divider"></div>
+
+        <!-- Joined Clubs Icons -->
+        <% if (joinedClubs && joinedClubs.length > 0) { %>
+            <% joinedClubs.forEach(jClub => { %>
+                <a href="/clubs/<%= jClub.slug %>" class="rail-item <%= String(jClub._id) === String(club._id) ? 'active' : '' %>" title="<%= jClub.name %>">
+                    <div class="rail-item-pill"></div>
+                    <img src="<%= jClub.iconUrl || '/images/default-avatar.png' %>" alt="<%= jClub.name %>" onerror="this.src='/images/default-avatar.png';">
+                </a>
+            <% }) %>
+        <% } %>
+
+        <div class="rail-divider"></div>
+
+        <!-- Add Club (+) -->
+        <a href="/clubs/create" class="rail-item" title="Create a New Club">
+            <i class="fas fa-plus" style="font-size: 1.2rem;"></i>
+        </a>
+
+        <!-- Explore Clubs (Compass) -->
+        <a href="/clubs" class="rail-item" title="Discover Clubs &amp; Communities">
+            <i class="fas fa-compass" style="font-size: 1.2rem;"></i>
+        </a>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. CHANNELS SIDEBAR                        -->
+    <!-- ========================================== -->
+    <div class="discord-channels-col">
+        <!-- Club Header -->
+        <div class="club-header-box" onclick="toggleClubMenu()">
+            <div class="club-header-title">
+                <span><%= club.name %></span>
+                <% if (club.isVerified || club.isDefault) { %>
+                    <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.85em;"></i>
+                <% } %>
+            </div>
+            <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: #8e9297;"></i>
+        </div>
+
+        <!-- Channels Scroll Area -->
+        <div class="channels-scroll-area">
+            <!-- 1. INFORMATION CHANNELS -->
+            <div class="channel-category-label">
+                <span>📌 Information</span>
+            </div>
+            <% channels.filter(c => ['rules', 'announcements'].includes(c.type)).forEach(chan => { %>
+                <a href="/clubs/<%= club.slug %>?channel=<%= chan._id %>" class="channel-item-link <%= (activeChannel && String(activeChannel._id) === String(chan._id)) ? 'active' : '' %>">
+                    <i class="fas <%= chan.type === 'rules' ? 'fa-scroll' : 'fa-bullhorn' %>"></i>
+                    <span><%= chan.name %></span>
+                </a>
+            <% }) %>
+
+            <!-- 2. MOD FEEDS (Automated uploader/distributor feeds) -->
+            <div class="channel-category-label" style="margin-top: 8px;">
+                <span>🚀 Mod Feeds</span>
+            </div>
+            <% channels.filter(c => ['new-uploads', 'new-updates'].includes(c.type)).forEach(chan => { %>
+                <a href="/clubs/<%= club.slug %>?channel=<%= chan._id %>" class="channel-item-link <%= (activeChannel && String(activeChannel._id) === String(chan._id)) ? 'active' : '' %>">
+                    <i class="fas <%= chan.type === 'new-uploads' ? 'fa-download' : 'fa-sync-alt' %>"></i>
+                    <span><%= chan.name %></span>
+                </a>
+            <% }) %>
+
+            <!-- 3. TEXT & POLL CHANNELS -->
+            <div class="channel-category-label" style="margin-top: 8px;">
+                <span>💬 Text Channels</span>
+                <% if (hasManageClubPerm) { %>
+                    <button type="button" onclick="openCreateChannelModal()" title="Create Channel" style="background: none; border: none; color: #8e9297; cursor: pointer;">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                <% } %>
+            </div>
+            <% channels.filter(c => !['rules', 'announcements', 'new-uploads', 'new-updates'].includes(c.type)).forEach(chan => { %>
+                <a href="/clubs/<%= club.slug %>?channel=<%= chan._id %>" class="channel-item-link <%= (activeChannel && String(activeChannel._id) === String(chan._id)) ? 'active' : '' %>">
+                    <i class="fas <%= chan.type === 'polls' ? 'fa-poll' : 'fa-hashtag' %>"></i>
+                    <span><%= chan.name %></span>
+                    <% if (chan.isPrivate) { %>
+                        <i class="fas fa-lock channel-lock-icon" title="Role-Specific Channel"></i>
+                    <% } %>
+                </a>
+            <% }) %>
+        </div>
+
+        <!-- User Profile Footer with Vanished Mode for Staff -->
+        <div class="discord-user-footer">
+            <div class="footer-user-info" onclick="window.location.href='/users/<%= user ? user.username : '' %>'">
+                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" class="footer-avatar">
+                <div class="footer-name-box">
+                    <span class="footer-username"><%= user ? user.username : 'Guest' %></span>
+                    <span class="footer-status-tag"><%= isStaff ? 'Site Staff' : 'Member' %></span>
+                </div>
+            </div>
+
+            <!-- Vanished Mode Toggle (Site Owner & Admin Only) -->
+            <% if (isStaff) { %>
+                <button type="button" id="vanishToggleBtn" onclick="toggleVanishedMode()" title="Vanished Mode (Ghost Audit Mode: Visit without showing online or increasing count)" style="background: none; border: 1px solid #444; border-radius: 8px; color: <%= vanishedModeDefault ? 'var(--gold)' : '#777' %>; padding: 4px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                    <i class="fas fa-ghost"></i>
+                    <span id="vanishStatusText"><%= vanishedModeDefault ? 'Ghost ON' : 'Ghost' %></span>
+                </button>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. MAIN CHAT AREA                          -->
+    <!-- ========================================== -->
+    <div class="discord-chat-main">
+        <!-- Top Bar -->
+        <div class="chat-topbar">
+            <div class="topbar-channel-info">
+                <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
+                <span><%= activeChannel ? activeChannel.name : 'general' %></span>
+                <% if (activeChannel && activeChannel.topic) { %>
+                    <span class="topbar-topic"><%= activeChannel.topic %></span>
+                <% } %>
+            </div>
+
+            <div class="topbar-actions">
+                <!-- Mod Share System -->
+                <button type="button" class="topbar-btn" data-club-id="<%= club._id %>" data-club-name="<%= club.name %>" data-club-url="/clubs/<%= club.slug %>" onclick="handleClubShare(this)" title="Share Club">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+
+                <% if (hasManageClubPerm) { %>
+                    <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Track Creator Mod Updates">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                <% } %>
+
+                <!-- Toggle Members Sidebar on Mobile/Desktop -->
+                <button type="button" class="topbar-btn" onclick="toggleMembersSidebar()" title="Toggle Members List">
+                    <i class="fas fa-users"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div class="chat-messages-container" id="messagesFeed">
+            <% if (messages && messages.length > 0) { %>
+                <% messages.forEach(msg => { %>
+                    <div class="message-item" id="msg-<%= msg._id %>">
+                        <img src="<%= (msg.sender && msg.sender.signedAvatarUrl) ? msg.sender.signedAvatarUrl : '/images/default-avatar.png' %>" alt="Sender Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.png';">
+                        <div class="message-content-col">
+                            <div class="message-header-row">
+                                <a href="/users/<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" class="message-username" target="_blank">
+                                    <%= (msg.sender && msg.sender.username) ? msg.sender.username : 'System' %>
+                                </a>
+
+                                <!-- Badges -->
+                                <% if (msg.sender && msg.sender.role === 'owner') { %>
+                                    <span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>
+                                <% } else if (msg.sender && msg.sender.role === 'admin') { %>
+                                    <span class="badge-icon-tag badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>
+                                <% } %>
+                                <% if (msg.sender && (msg.sender.membership === 'premium' || msg.sender.isPremium)) { %>
+                                    <span class="badge-icon-tag badge-premium"><i class="fas fa-star"></i> Premium</span>
+                                <% } %>
+                                <% if (String(club.creator._id || club.creator) === String(msg.sender ? msg.sender._id : '')) { %>
+                                    <span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>
+                                <% } %>
+
+                                <span class="message-time"><%= new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                            </div>
+
+                            <!-- Body Text -->
+                            <div class="message-body-text" id="msg-text-<%= msg._id %>"><%= msg.content %></div>
+
+                            <!-- Mod Update Embed (for #new-uploads and #new-updates) -->
+                            <% if (msg.modUpdate && msg.modUpdate.name) { %>
+                                <div class="mod-update-embed-box">
+                                    <img src="<%= msg.modUpdate.iconUrl || '/images/default-avatar.png' %>" class="mod-embed-icon" alt="Mod Icon">
+                                    <div class="mod-embed-info">
+                                        <h4><%= msg.modUpdate.name %> <span style="font-size: 0.8rem; color: var(--gold); font-weight: normal;">v<%= msg.modUpdate.version %></span></h4>
+                                        <p><%= msg.modUpdate.changelog || 'Download this release safely on GPLMods.' %></p>
+                                        <a href="<%= msg.modUpdate.downloadUrl %>" class="btn-send-chat" style="display: inline-flex; text-decoration: none; padding: 4px 14px; font-size: 0.85rem;">
+                                            <i class="fas fa-download"></i> View Mod Page
+                                        </a>
+                                    </div>
+                                </div>
+                            <% } %>
+
+                            <!-- Poll Embed -->
+                            <% if (msg.poll && msg.poll.question) { %>
+                                <div class="poll-embed-card" id="poll-<%= msg._id %>">
+                                    <div class="poll-question"><i class="fas fa-poll" style="color: var(--gold);"></i> <%= msg.poll.question %></div>
+                                    <div class="poll-options-list">
+                                        <% 
+                                            const totalVotes = msg.poll.options.reduce((sum, opt) => sum + (opt.votes ? opt.votes.length : 0), 0);
+                                        %>
+                                        <% msg.poll.options.forEach((opt, idx) => { %>
+                                            <% 
+                                                const voteCount = opt.votes ? opt.votes.length : 0;
+                                                const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                                                const hasVoted = user && opt.votes && opt.votes.some(v => String(v) === String(user._id));
+                                            %>
+                                            <div class="poll-option-row" onclick="votePoll('<%= msg._id %>', <%= idx %>)">
+                                                <div class="poll-progress-fill" style="width: <%= pct %>%;"></div>
+                                                <span style="position: relative; z-index: 2; font-weight: <%= hasVoted ? '700' : 'normal' %>;">
+                                                    <%= hasVoted ? '✓ ' : '' %><%= opt.text %>
+                                                </span>
+                                                <span style="position: relative; z-index: 2; font-size: 0.85rem; color: var(--gold);">
+                                                    <%= pct %>% (<%= voteCount %>)
+                                                </span>
+                                            </div>
+                                        <% }) %>
+                                    </div>
+                                </div>
+                            <% } %>
+
+                            <!-- Reactions Bar -->
+                            <div class="reactions-row" id="reactions-<%= msg._id %>">
+                                <% if (msg.reactions && msg.reactions.length > 0) { %>
+                                    <% msg.reactions.forEach(r => { %>
+                                        <% const userReacted = user && r.users && r.users.some(u => String(u) === String(user._id)); %>
+                                        <div class="reaction-pill <%= userReacted ? 'user-reacted' : '' %>" onclick="toggleReaction('<%= msg._id %>', '<%= r.emoji %>')">
+                                            <span><%= r.emoji %></span>
+                                            <span><%= r.users.length %></span>
+                                        </div>
+                                    <% }) %>
+                                <% } %>
+                                <div class="reaction-pill" onclick="quickReactPicker('<%= msg._id %>')" title="Add Reaction">
+                                    <i class="far fa-smile-plus"></i>
+                                </div>
+                            </div>
+
+                            <!-- Live Translate Button -->
+                            <button type="button" class="btn-translate-msg" onclick="translateMessage('<%= msg._id %>')">
+                                <i class="fas fa-language"></i> Translate
+                            </button>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align: center; color: #72767d; margin: auto;">
+                    <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 12px; color: #333645;"></i>
+                    <p>Welcome to <strong>#<%= activeChannel ? activeChannel.name : 'general' %></strong>!</p>
+                    <p style="font-size: 0.85rem;">This is the start of the channel history.</p>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="chat-input-bar-wrap">
+            <div id="linkWarningBanner" style="display: none; background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; color: #ff8a80; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;">
+                <i class="fas fa-ban"></i> <strong>External links are forbidden!</strong> Only official GPLMods site links are allowed in this chat.
+            </div>
+
+            <div class="chat-input-box">
+                <textarea id="chatInput" class="chat-textarea" rows="1" placeholder="<%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'This channel is read-only.' : `Message #${activeChannel ? activeChannel.name : 'general'}...` %>" <%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'disabled' : '' %>></textarea>
+
+                <div class="chat-input-actions">
+                    <!-- Emoticon Button (ASCII faces) -->
+                    <button type="button" class="chat-action-btn" onclick="toggleEmoticonPopover()" title="Insert Emoticon">
+                        <span style="font-size: 1rem; font-weight: 700;">(✿)</span>
+                    </button>
+
+                    <!-- Emoji Picker Button -->
+                    <button type="button" class="chat-action-btn" id="emojiPickerBtn" title="Insert Emoji">
+                        <i class="far fa-smile"></i>
+                    </button>
+
+                    <!-- GIF Selector Button -->
+                    <button type="button" class="chat-action-btn" onclick="toggleGifPicker()" title="Insert GIF">
+                        <i class="fas fa-film"></i>
+                    </button>
+
+                    <!-- Poll Button -->
+                    <button type="button" class="chat-action-btn" onclick="openCreatePollModal()" title="Create Poll">
+                        <i class="fas fa-poll"></i>
+                    </button>
+
+                    <!-- Send Button -->
+                    <button type="button" class="btn-send-chat" id="sendChatBtn" onclick="sendClubMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ASCII Emoticons Popover -->
+            <div class="emoticon-popover" id="emoticonPopover">
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(✿◠‿◠)')">(✿◠‿◠)</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(づ｡◕‿‿◕｡)づ')">(づ｡◕‿‿◕｡)づ</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('¯\\_(ツ)_/¯')">¯\_(ツ)_/¯</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(╯°□°)╯︵ ┻━┻')">(╯°□°)╯︵ ┻━┻</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(•‿•)')">(•‿•)</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(▀̿Ĺ̯▀̿ ̿)')">(▀̿Ĺ̯▀̿ ̿)</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(ง\'̀-\'́)ง')">(ง'̀-'́)ง</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('ʕ•ᴥ•ʔ')">ʕ•ᴥ•ʔ</button>
+                <button type="button" class="emoticon-btn" onclick="insertEmoticon('(ʘ‿ʘ)')">(ʘ‿ʘ)</button>
+            </div>
+
+            <!-- GIF Picker Popover -->
+            <div class="gif-picker-modal" id="gifPickerModal">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">Select Animated GIF</span>
+                    <button type="button" onclick="toggleGifPicker()" style="background: none; border: none; color: #aaa; cursor: pointer;">&times;</button>
+                </div>
+                <div class="gif-grid">
+                    <div class="gif-item" onclick="insertGif('https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif')">
+                        <img src="https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif" alt="Gaming GIF">
+                    </div>
+                    <div class="gif-item" onclick="insertGif('https://media.giphy.com/media/blSTtZehjAZ8I/giphy.gif')">
+                        <img src="https://media.giphy.com/media/blSTtZehjAZ8I/giphy.gif" alt="Victory GIF">
+                    </div>
+                    <div class="gif-item" onclick="insertGif('https://media.giphy.com/media/LmN8OYiY4m0X85K0Zz/giphy.gif')">
+                        <img src="https://media.giphy.com/media/LmN8OYiY4m0X85K0Zz/giphy.gif" alt="Rocket GIF">
+                    </div>
+                    <div class="gif-item" onclick="insertGif('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif')">
+                        <img src="https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif" alt="Hype GIF">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lightweight Emoji Picker Element -->
+            <emoji-picker class="dark" id="mainEmojiPicker" style="position: absolute; bottom: 70px; right: 80px; display: none; z-index: 1000;"></emoji-picker>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. RIGHT SIDEBAR: MEMBERS LIST             -->
+    <!-- ========================================== -->
+    <div class="discord-members-col" id="membersSidebar">
+        <div class="members-scroll-area">
+            <!-- SITE STAFF SECTION -->
+            <% const staffMembers = members.filter(m => m.user && ['owner', 'admin'].includes(m.user.role)); %>
+            <% if (staffMembers.length > 0) { %>
+                <div class="member-group-header">👑 SITE STAFF — <%= staffMembers.length %></div>
+                <% staffMembers.forEach(sm => { %>
+                    <div class="member-card-row" onclick="window.location.href='/users/<%= sm.user.username %>'">
+                        <div class="member-avatar-wrap">
+                            <img src="<%= sm.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Staff">
+                            <div class="online-dot"></div>
+                        </div>
+                        <div class="member-meta-box">
+                            <span class="member-display-name" style="color: <%= sm.user.role === 'owner' ? 'var(--gold)' : '#64b5f6' %>;">
+                                <%= sm.user.username %>
+                            </span>
+                            <span style="font-size: 0.72rem; color: #8e9297;"><%= sm.user.role === 'owner' ? 'Site Owner' : 'Site Admin' %></span>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+
+            <!-- CLUB CREATOR -->
+            <% const creatorMember = members.find(m => m.user && String(m.user._id) === String(club.creator._id || club.creator)); %>
+            <% if (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) { %>
+                <div class="member-group-header" style="margin-top: 14px;">🎨 CLUB CREATOR — 1</div>
+                <div class="member-card-row" onclick="window.location.href='/users/<%= creatorMember.user.username %>'">
+                    <div class="member-avatar-wrap">
+                        <img src="<%= creatorMember.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Creator">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="member-meta-box">
+                        <span class="member-display-name" style="color: #ffab91;"><%= creatorMember.user.username %></span>
+                        <span style="font-size: 0.72rem; color: #8e9297;">Club Owner</span>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- ONLINE MEMBERS -->
+            <div class="member-group-header" style="margin-top: 14px;">ONLINE MEMBERS — <span id="onlineCountNum"><%= members.length %></span></div>
+            <div id="onlineMembersList">
+                <% members.forEach(mem => { %>
+                    <% if (mem.user) { %>
+                        <div class="member-card-row" onclick="window.location.href='/users/<%= mem.user.username %>'">
+                            <div class="member-avatar-wrap">
+                                <img src="<%= mem.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Member">
+                                <div class="online-dot"></div>
+                            </div>
+                            <div class="member-meta-box">
+                                <span class="member-display-name"><%= mem.user.username %></span>
+                                <% if (mem.roles && mem.roles.length > 0) { %>
+                                    <span style="font-size: 0.72rem; color: <%= mem.roles[0].color || '#99aab5' %>;"><%= mem.roles[0].name %></span>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODALS (CREATE CHANNEL, POLL, SHARE, ETC)  -->
+<!-- ========================================== -->
+
+<!-- Create Channel Modal -->
+<div class="gpl-modal-backdrop" id="createChannelModal">
+    <div class="gpl-modal-box">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-hashtag" style="color: var(--gold);"></i> Create Text Channel</h3>
+        <form action="/clubs/<%= club.slug %>/channels" method="POST">
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Name</label>
+                <input type="text" name="name" placeholder="e.g. android-mods, general-chat" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Topic</label>
+                <input type="text" name="topic" placeholder="Channel purpose or guidelines..." style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Type</label>
+                <select name="type" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+                    <option value="text">Text Channel</option>
+                    <option value="polls">Community Polls Channel</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" name="isPrivate" id="channelPrivateCheck">
+                <label for="channelPrivateCheck" style="color: #fff; font-size: 0.88rem;">Private / Role-Specific Channel</label>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeCreateChannelModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Create Channel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Poll Modal -->
+<div class="gpl-modal-backdrop" id="createPollModal">
+    <div class="gpl-modal-box">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-poll" style="color: var(--gold);"></i> Create Community Poll</h3>
+        <form action="/clubs/<%= club.slug %>/channels/<%= activeChannel ? activeChannel._id : '' %>/poll" method="POST">
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Poll Question</label>
+                <input type="text" name="question" placeholder="e.g. Which platform should we focus on next?" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Options (One per line, minimum 2)</label>
+                <textarea name="options" rows="4" placeholder="Android APK&#10;iOS IPA&#10;Windows Software" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeCreatePollModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Launch Poll</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tracked Creator Profiles Modal -->
+<div class="gpl-modal-backdrop" id="trackedCreatorsModal">
+    <div class="gpl-modal-box">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 14px;"><i class="fas fa-rss" style="color: var(--gold);"></i> Track Creator Mod Updates</h3>
+        <p style="color: var(--silver); font-size: 0.85rem; margin-bottom: 18px;">
+            Assign developer/creator profiles to track. When they upload a new mod or publish an update, an automated rich card will be posted to #new-uploads and #new-updates.
+        </p>
+        <form action="/clubs/<%= club.slug %>/tracked-creators" method="POST">
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Creator Username</label>
+                <input type="text" name="username" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeTrackedCreatorsModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Add Tracked Creator</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+<script>
+    const clubId = '<%= club._id %>';
+    const channelId = '<%= activeChannel ? activeChannel._id : "" %>';
+    const isChannelReadOnly = <%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'true' : 'false' %>;
+    const currentUserId = '<%= user ? user._id : "" %>';
+    const currentUsername = '<%= user ? user.username : "" %>';
+    let isVanished = <%= vanishedModeDefault ? 'true' : 'false' %>;
+
+    const socket = io();
+
+    // 1. Join Club & Channel on Socket Connection
+    socket.emit('club_join', { clubId, vanished: isVanished });
+    if (channelId) {
+        socket.emit('club_join_channel', { clubId, channelId });
+    }
+
+    // Scroll chat to bottom
+    const messagesFeed = document.getElementById('messagesFeed');
+    function scrollChatToBottom() {
+        if (messagesFeed) messagesFeed.scrollTop = messagesFeed.scrollHeight;
+    }
+    scrollChatToBottom();
+
+    // 2. Strict Link Validation (Only GPLMods Links Allowed)
+    const ALLOWED_DOMAINS = ['gplmods.webredirect.org', 'gplmods.mytunnel.org', 'localhost', '127.0.0.1'];
+    function containsExternalLinks(text) {
+        if (!text) return false;
+        const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(?:com|org|net|io|gg|me|app|xyz|site|online|tv|cc|ru|cn|in|info|biz|co|uk|de|eu|club|link|live)[^\s]*)/gi;
+        const matches = text.match(urlPattern);
+        if (!matches || matches.length === 0) return false;
+
+        for (const match of matches) {
+            let testUrl = match;
+            if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) {
+                testUrl = 'http://' + testUrl;
+            }
+            try {
+                const parsed = new URL(testUrl);
+                const host = parsed.hostname.toLowerCase();
+                const isAllowed = ALLOWED_DOMAINS.some(allowed => host === allowed || host.endsWith('.' + allowed));
+                if (!isAllowed) return true;
+            } catch(e) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 3. Send Message Handler
+    const chatInput = document.getElementById('chatInput');
+    const warningBanner = document.getElementById('linkWarningBanner');
+
+    function sendClubMessage() {
+        if (isChannelReadOnly) return;
+        const text = chatInput.value ? chatInput.value.trim() : '';
+        if (!text) return;
+
+        // Strictly check for external links
+        if (containsExternalLinks(text)) {
+            warningBanner.style.display = 'block';
+            setTimeout(() => { warningBanner.style.display = 'none'; }, 5000);
+            return;
+        }
+
+        socket.emit('club_send_message', {
+            clubId,
+            channelId,
+            text
+        });
+
+        chatInput.value = '';
+    }
+
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendClubMessage();
+        }
+    });
+
+    // 4. Socket Listeners for Real-Time Updates
+    socket.on('club_new_message', (msg) => {
+        if (String(msg.channel) !== channelId) return;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message-item';
+        msgDiv.id = `msg-${msg._id}`;
+
+        const senderAvatar = msg.sender?.signedAvatarUrl || '/images/default-avatar.png';
+        const senderName = msg.sender?.username || 'Member';
+        const roleBadges = [];
+
+        if (msg.sender?.role === 'owner') roleBadges.push('<span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>');
+        else if (msg.sender?.role === 'admin') roleBadges.push('<span class="badge-icon-tag badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>');
+        if (msg.sender?.membership === 'premium' || msg.sender?.isPremium) roleBadges.push('<span class="badge-icon-tag badge-premium"><i class="fas fa-star"></i> Premium</span>');
+        if (msg.sender?.isCreator) roleBadges.push('<span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>');
+
+        msgDiv.innerHTML = `
+            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.png';">
+            <div class="message-content-col">
+                <div class="message-header-row">
+                    <a href="/users/${senderName}" class="message-username" target="_blank">${senderName}</a>
+                    ${roleBadges.join(' ')}
+                    <span class="message-time">${new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div class="message-body-text" id="msg-text-${msg._id}">${msg.content}</div>
+                <div class="reactions-row" id="reactions-${msg._id}">
+                    <div class="reaction-pill" onclick="quickReactPicker('${msg._id}')" title="Add Reaction">
+                        <i class="far fa-smile-plus"></i>
+                    </div>
+                </div>
+                <button type="button" class="btn-translate-msg" onclick="translateMessage('${msg._id}')">
+                    <i class="fas fa-language"></i> Translate
+                </button>
+            </div>
+        `;
+
+        messagesFeed.appendChild(msgDiv);
+        scrollChatToBottom();
+    });
+
+    socket.on('club_message_error', (data) => {
+        alert(data.message || 'Error sending message.');
+    });
+
+    socket.on('club_reaction_updated', (data) => {
+        const reactionsRow = document.getElementById(`reactions-${data.messageId}`);
+        if (!reactionsRow) return;
+
+        let html = '';
+        (data.reactions || []).forEach(r => {
+            const hasReacted = r.users && r.users.some(u => String(u) === currentUserId);
+            html += `
+                <div class="reaction-pill ${hasReacted ? 'user-reacted' : ''}" onclick="toggleReaction('${data.messageId}', '${r.emoji}')">
+                    <span>${r.emoji}</span>
+                    <span>${r.users.length}</span>
+                </div>
+            `;
+        });
+        html += `<div class="reaction-pill" onclick="quickReactPicker('${data.messageId}')" title="Add Reaction"><i class="far fa-smile-plus"></i></div>`;
+        reactionsRow.innerHTML = html;
+    });
+
+    socket.on('club_poll_updated', (data) => {
+        const pollCard = document.getElementById(`poll-${data.messageId}`);
+        if (!pollCard) return;
+
+        const totalVotes = data.poll.options.reduce((sum, opt) => sum + (opt.votes ? opt.votes.length : 0), 0);
+        let optionsHtml = '';
+        data.poll.options.forEach((opt, idx) => {
+            const voteCount = opt.votes ? opt.votes.length : 0;
+            const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+            const hasVoted = opt.votes && opt.votes.some(v => String(v) === currentUserId);
+
+            optionsHtml += `
+                <div class="poll-option-row" onclick="votePoll('${data.messageId}', ${idx})">
+                    <div class="poll-progress-fill" style="width: ${pct}%;"></div>
+                    <span style="position: relative; z-index: 2; font-weight: ${hasVoted ? '700' : 'normal'};">
+                        ${hasVoted ? '✓ ' : ''}${opt.text}
+                    </span>
+                    <span style="position: relative; z-index: 2; font-size: 0.85rem; color: var(--gold);">
+                        ${pct}% (${voteCount})
+                    </span>
+                </div>
+            `;
+        });
+        pollCard.querySelector('.poll-options-list').innerHTML = optionsHtml;
+    });
+
+    // 5. Presence & Online Members Update
+    socket.on('club_presence_update', (data) => {
+        const onlineCountEl = document.getElementById('onlineCountNum');
+        if (onlineCountEl) onlineCountEl.textContent = data.onlineCount || 0;
+
+        const listEl = document.getElementById('onlineMembersList');
+        if (listEl && data.onlineUsers) {
+            let html = '';
+            data.onlineUsers.forEach(u => {
+                html += `
+                    <div class="member-card-row" onclick="window.location.href='/users/${u.username}'">
+                        <div class="member-avatar-wrap">
+                            <img src="${u.avatarUrl || '/images/default-avatar.png'}" class="member-avatar-img" alt="${u.username}">
+                            <div class="online-dot"></div>
+                        </div>
+                        <div class="member-meta-box">
+                            <span class="member-display-name">${u.username}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+    });
+
+    // 6. Vanished Mode Toggle (Site Owner / Admin)
+    function toggleVanishedMode() {
+        isVanished = !isVanished;
+        socket.emit('club_vanish_toggle', { clubId, vanished: isVanished });
+        const btn = document.getElementById('vanishToggleBtn');
+        const txt = document.getElementById('vanishStatusText');
+        if (btn) btn.style.color = isVanished ? 'var(--gold)' : '#777';
+        if (txt) txt.textContent = isVanished ? 'Ghost ON' : 'Ghost';
+    }
+
+    // 7. Interactive Reactions & Poll Actions
+    function toggleReaction(messageId, emoji) {
+        socket.emit('club_message_reaction', { clubId, channelId, messageId, emoji });
+    }
+
+    function quickReactPicker(messageId) {
+        const emojis = ['👍', '❤️', '🔥', '🚀', '🎉', '😂'];
+        const chosen = prompt('Choose reaction emoji:\n' + emojis.join('  '), '🔥');
+        if (chosen) {
+            toggleReaction(messageId, chosen.trim());
+        }
+    }
+
+    function votePoll(messageId, optionIndex) {
+        socket.emit('club_poll_vote', { clubId, channelId, messageId, optionIndex });
+    }
+
+    // 8. Live Translation Helper
+    async function translateMessage(messageId) {
+        const msgEl = document.getElementById(`msg-text-${messageId}`);
+        if (!msgEl) return;
+        const currentLang = localStorage.getItem('site_language') || 'es';
+        if (window.executeTranslation) {
+            await window.executeTranslation(currentLang, msgEl);
+        } else {
+            alert('Live translation engine active.');
+        }
+    }
+
+    // 9. Emoji & Emoticon Popovers
+    const emojiBtn = document.getElementById('emojiPickerBtn');
+    const mainEmojiPicker = document.getElementById('mainEmojiPicker');
+    if (emojiBtn && mainEmojiPicker) {
+        emojiBtn.addEventListener('click', () => {
+            mainEmojiPicker.style.display = (mainEmojiPicker.style.display === 'block') ? 'none' : 'block';
+        });
+        mainEmojiPicker.addEventListener('emoji-click', event => {
+            chatInput.value += event.detail.unicode;
+            chatInput.focus();
+        });
+    }
+
+    function toggleEmoticonPopover() {
+        const pop = document.getElementById('emoticonPopover');
+        pop.classList.toggle('active');
+    }
+
+    function insertEmoticon(emoticon) {
+        chatInput.value += ' ' + emoticon + ' ';
+        chatInput.focus();
+        document.getElementById('emoticonPopover').classList.remove('active');
+    }
+
+    function toggleGifPicker() {
+        const gifModal = document.getElementById('gifPickerModal');
+        gifModal.classList.toggle('active');
+    }
+
+    function insertGif(gifUrl) {
+        chatInput.value += ` ${gifUrl} `;
+        chatInput.focus();
+        toggleGifPicker();
+    }
+
+    // Modal Controllers
+    function openCreateChannelModal() { document.getElementById('createChannelModal').classList.add('active'); }
+    function closeCreateChannelModal() { document.getElementById('createChannelModal').classList.remove('active'); }
+    function openCreatePollModal() { document.getElementById('createPollModal').classList.add('active'); }
+    function closeCreatePollModal() { document.getElementById('createPollModal').classList.remove('active'); }
+    function openTrackedCreatorsModal() { document.getElementById('trackedCreatorsModal').classList.add('active'); }
+    function closeTrackedCreatorsModal() { document.getElementById('trackedCreatorsModal').classList.remove('active'); }
+
+    function toggleMembersSidebar() {
+        const sidebar = document.getElementById('membersSidebar');
+        sidebar.style.display = (sidebar.style.display === 'none') ? 'flex' : 'none';
+    }
+
+    // Share Club System (from download.ejs)
+    function handleClubShare(btn) {
+        const clubId = btn.getAttribute('data-club-id');
+        const clubName = btn.getAttribute('data-club-name');
+        const clubUrl = btn.getAttribute('data-club-url');
+        shareClub(clubId, clubName, clubUrl);
+    }
+
+    function shareClub(clubId, clubName, clubUrl) {
+        const fullShareUrl = window.location.origin + clubUrl;
+        if (navigator.share) {
+            navigator.share({
+                title: `${clubName} on GPL Mods`,
+                text: `Join ${clubName} community chat and distributor channels on GPL Mods!`,
+                url: fullShareUrl
+            }).catch(e => console.log('Share dismissed'));
+        } else {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(fullShareUrl).then(() => {
+                    alert(`Link to "${clubName}" copied to clipboard!`);
+                });
+            } else {
+                prompt('Copy this club link:', fullShareUrl);
+            }
+        }
+    }
+</script>
+
+<%- include('../../partials/footer') %>

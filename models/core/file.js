@@ -234,6 +234,23 @@ const FileSchema = new Schema({
         ref: 'File',
         default: null
     },
+
+    // Paid / Sponsored Promotion (Play Store style ads system)
+    isPromoted: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    promotedUntil: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    promotionTier: {
+        type: String,
+        enum: ['standard', 'featured', 'spotlight'],
+        default: 'standard'
+    }
 }, {
     timestamps: true
 }); 

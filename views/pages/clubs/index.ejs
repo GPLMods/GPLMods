@@ -1,0 +1,546 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .clubs-page-hero {
+        background: radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.12) 0%, rgba(20, 20, 25, 0.95) 75%), #0c0d12;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+        padding: 50px 20px 40px;
+        text-align: center;
+        position: relative;
+    }
+    .clubs-hero-title {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+    }
+    .clubs-hero-subtitle {
+        color: var(--silver);
+        font-size: 1.15rem;
+        max-width: 720px;
+        margin: 0 auto 30px;
+        line-height: 1.6;
+    }
+    .clubs-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .btn-create-club {
+        background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+        color: #000 !important;
+        font-weight: 700;
+        padding: 12px 28px;
+        border-radius: 30px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35);
+        transition: all 0.25s ease;
+    }
+    .btn-create-club:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+    }
+    .btn-explore-default {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        color: var(--gold) !important;
+        font-weight: 600;
+        padding: 12px 26px;
+        border-radius: 30px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.25s ease;
+    }
+    .btn-explore-default:hover {
+        background: rgba(255, 215, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    /* Filter Bar Container */
+    .clubs-filter-card {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 18px;
+        padding: 22px 24px;
+        margin: -25px auto 40px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 10;
+    }
+    .clubs-filter-form {
+        display: grid;
+        grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr auto;
+        gap: 16px;
+        align-items: flex-end;
+    }
+    .filter-input-group label {
+        display: block;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--silver);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .filter-input-group input,
+    .filter-input-group select {
+        width: 100%;
+        background: #0d0e12;
+        border: 1px solid #333645;
+        border-radius: 10px;
+        color: #fff;
+        padding: 11px 14px;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.25s ease;
+    }
+    .filter-input-group input:focus,
+    .filter-input-group select:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    }
+    .filter-submit-btn {
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 26px;
+        height: 44px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+    .filter-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(255, 215, 0, 0.35);
+    }
+
+    /* Popular Tag Chips */
+    .popular-tags-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .tag-chip {
+        font-size: 0.8rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #333645;
+        color: #bbb;
+        padding: 5px 12px;
+        border-radius: 20px;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .tag-chip:hover, .tag-chip.active {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    /* Clubs Grid */
+    .clubs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 26px;
+        margin-bottom: 60px;
+    }
+    .club-card {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 18px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        position: relative;
+    }
+    .club-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 215, 0, 0.45);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+    }
+    .club-card-banner {
+        height: 120px;
+        background-size: cover;
+        background-position: center;
+        background-color: #1f2029;
+        position: relative;
+    }
+    .club-card-banner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(20,21,27,0.95) 100%);
+    }
+    .club-card-badges {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        gap: 6px;
+        z-index: 2;
+    }
+    .badge-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .badge-default { background: rgba(255, 215, 0, 0.2); color: var(--gold); border: 1px solid var(--gold); }
+    .badge-private { background: rgba(244, 67, 54, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
+    .badge-public { background: rgba(76, 175, 80, 0.2); color: #69f0ae; border: 1px solid #69f0ae; }
+
+    .club-card-avatar-wrap {
+        position: absolute;
+        bottom: -28px;
+        left: 20px;
+        z-index: 3;
+    }
+    .club-card-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        border: 3px solid #14151b;
+        background: #0d0e12;
+        object-fit: cover;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .club-card-body {
+        padding: 38px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+    .club-card-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 6px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .club-card-desc {
+        color: #a4a9b6;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0 0 16px 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex-grow: 1;
+    }
+    .club-tags-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 18px;
+    }
+    .club-tag-pill {
+        font-size: 0.72rem;
+        background: #1b1c24;
+        border: 1px solid #2e3040;
+        color: var(--silver);
+        padding: 3px 9px;
+        border-radius: 12px;
+    }
+
+    .club-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        border-top: 1px solid #232530;
+        font-size: 0.85rem;
+        color: var(--silver);
+    }
+    .club-meta-stat {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .club-card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+    .btn-enter-club {
+        flex: 1;
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+        text-align: center;
+        padding: 10px 16px;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .btn-enter-club:hover {
+        background: #ffe066;
+        transform: translateY(-2px);
+    }
+    .btn-share-club {
+        background: #1f2029;
+        border: 1px solid #333645;
+        color: var(--silver);
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-share-club:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 992px) {
+        .clubs-filter-form {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @media (max-width: 600px) {
+        .clubs-filter-form {
+            grid-template-columns: 1fr;
+        }
+        .clubs-hero-title {
+            font-size: 2.1rem;
+        }
+    }
+</style>
+
+<section class="clubs-page-hero">
+    <div class="container">
+        <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+        <%- include('../../partials/go-back-button', { fallback: '/' }) %>
+        <!-- ======================================== -->
+
+        <h1 class="clubs-hero-title"><span class="logo-gold-glow">GPLMods</span> <span class="logo-silver-glow">Clubs &amp; Communities</span></h1>
+        <p class="clubs-hero-subtitle">
+            Join distributor updates, creator guilds, platform channels, and live text chats. Connect directly with top mod developers, participate in polls, and track updates in real-time.
+        </p>
+
+        <div class="clubs-hero-actions">
+            <% if (user) { %>
+                <a href="/clubs/create" class="btn-create-club">
+                    <i class="fas fa-plus-circle"></i> Create Your Own Club
+                </a>
+            <% } else { %>
+                <a href="/login?redirect=/clubs/create" class="btn-create-club">
+                    <i class="fas fa-plus-circle"></i> Login to Create a Club
+                </a>
+            <% } %>
+
+            <a href="/clubs/gpl-community" class="btn-explore-default">
+                <i class="fas fa-users"></i> Visit GPL Community (Official Hub)
+            </a>
+        </div>
+    </div>
+</section>
+
+<main class="container">
+    <!-- Filter Card -->
+    <div class="clubs-filter-card">
+        <form action="/clubs" method="GET" class="clubs-filter-form">
+            <div class="filter-input-group">
+                <label for="filter-q"><i class="fas fa-search"></i> Search Clubs or ID</label>
+                <input type="text" id="filter-q" name="q" placeholder="Search by name, tag, or club ID..." value="<%= filters.q %>" autocomplete="off">
+            </div>
+
+            <div class="filter-input-group">
+                <label for="filter-tag"><i class="fas fa-tag"></i> Tag</label>
+                <input type="text" id="filter-tag" name="tag" placeholder="e.g. Gaming, Android" value="<%= filters.tag %>">
+            </div>
+
+            <div class="filter-input-group">
+                <label for="filter-access"><i class="fas fa-lock"></i> Access</label>
+                <select id="filter-access" name="access">
+                    <option value="all" <%= filters.access === 'all' ? 'selected' : '' %>>All Clubs</option>
+                    <option value="public" <%= filters.access === 'public' ? 'selected' : '' %>>Public (Instant Join)</option>
+                    <option value="private" <%= filters.access === 'private' ? 'selected' : '' %>>Private (Approval Needed)</option>
+                </select>
+            </div>
+
+            <div class="filter-input-group">
+                <label for="filter-sort"><i class="fas fa-sort"></i> Sort By</label>
+                <select id="filter-sort" name="sort">
+                    <option value="members" <%= filters.sort === 'members' ? 'selected' : '' %>>Most Members</option>
+                    <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Newest Created</option>
+                    <option value="name" <%= filters.sort === 'name' ? 'selected' : '' %>>Alphabetical</option>
+                </select>
+            </div>
+
+            <button type="submit" class="filter-submit-btn">
+                <i class="fas fa-filter"></i> Apply
+            </button>
+        </form>
+
+        <!-- Popular Tags Row -->
+        <div class="popular-tags-row">
+            <span style="font-size: 0.8rem; color: var(--silver); margin-right: 4px;">Popular:</span>
+            <% popularTags.forEach(t => { %>
+                <a href="/clubs?tag=<%= encodeURIComponent(t) %>" class="tag-chip <%= filters.tag.toLowerCase() === t.toLowerCase() ? 'active' : '' %>">
+                    #<%= t %>
+                </a>
+            <% }) %>
+            <% if (filters.tag || filters.q || filters.access !== 'all') { %>
+                <a href="/clubs" class="tag-chip" style="color: #ff6b6b; border-color: rgba(255, 107, 107, 0.4);">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Clubs Grid -->
+    <% if (clubs && clubs.length > 0) { %>
+        <div class="clubs-grid">
+            <% clubs.forEach(club => { %>
+                <% const isJoined = joinedClubIds.includes(String(club._id)); %>
+                <div class="club-card">
+                    <div class="club-card-banner" style="background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>');">
+                        <div class="club-card-badges">
+                            <% if (club.isDefault) { %>
+                                <span class="badge-pill badge-default"><i class="fas fa-star"></i> Official Hub</span>
+                            <% } else if (club.isPrivate) { %>
+                                <span class="badge-pill badge-private"><i class="fas fa-lock"></i> Private</span>
+                            <% } else { %>
+                                <span class="badge-pill badge-public"><i class="fas fa-globe"></i> Public</span>
+                            <% } %>
+                        </div>
+                        <div class="club-card-avatar-wrap">
+                            <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" alt="<%= club.name %> Icon" class="club-card-avatar" onerror="this.src='/images/default-avatar.png';">
+                        </div>
+                    </div>
+
+                    <div class="club-card-body">
+                        <h3 class="club-card-name">
+                            <span><%= club.name %></span>
+                            <% if (club.isVerified || club.isDefault) { %>
+                                <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.9em;" title="Verified Community"></i>
+                            <% } %>
+                        </h3>
+
+                        <p class="club-card-desc"><%= club.description || 'Welcome to this community on GPLMods!' %></p>
+
+                        <% if (club.tags && club.tags.length > 0) { %>
+                            <div class="club-tags-list">
+                                <% club.tags.slice(0, 5).forEach(tag => { %>
+                                    <span class="club-tag-pill">#<%= tag %></span>
+                                <% }) %>
+                                <% if (club.tags.length > 5) { %>
+                                    <span class="club-tag-pill">+<%= club.tags.length - 5 %></span>
+                                <% } %>
+                            </div>
+                        <% } %>
+
+                        <div class="club-card-meta">
+                            <div class="club-meta-stat">
+                                <i class="fas fa-users" style="color: var(--gold);"></i>
+                                <span><%= club.memberCount || 1 %> <%= (club.memberCount === 1) ? 'Member' : 'Members' %></span>
+                            </div>
+                            <div class="club-meta-stat">
+                                <i class="fas fa-hashtag" style="color: #64b5f6;"></i>
+                                <span><%= club.channelCount || 6 %> Channels</span>
+                            </div>
+                            <div class="club-meta-stat">
+                                <i class="fas fa-language" style="color: #ba68c8;"></i>
+                                <span><%= club.primaryLanguage || 'English' %></span>
+                            </div>
+                        </div>
+
+                        <div class="club-card-actions">
+                            <a href="/clubs/<%= club.slug %>" class="btn-enter-club">
+                                <% if (isJoined) { %>
+                                    <i class="fas fa-comments"></i> Open Chat
+                                <% } else if (club.isPrivate) { %>
+                                    <i class="fas fa-eye"></i> View Preview
+                                <% } else { %>
+                                    <i class="fas fa-sign-in-alt"></i> Join Club
+                                <% } %>
+                            </a>
+
+                            <!-- Integrated Share Button (Mod Share System from download.ejs) -->
+                            <button type="button" class="btn-share-club" data-club-id="<%= club._id %>" data-club-name="<%= club.name %>" data-club-url="/clubs/<%= club.slug %>" onclick="handleClubShare(this)" title="Share this club">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <div style="background: #14151b; border: 1px dashed #333645; border-radius: 18px; padding: 60px 20px; text-align: center; margin-bottom: 60px;">
+            <i class="fas fa-search" style="font-size: 3rem; color: #555; margin-bottom: 16px;"></i>
+            <h3 style="color: #fff; font-size: 1.4rem; margin-bottom: 8px;">No Clubs Found</h3>
+            <p style="color: var(--silver); margin-bottom: 24px;">No clubs matched your search criteria. Try modifying your search query or create the first one!</p>
+            <a href="/clubs/create" class="btn-create-club">
+                <i class="fas fa-plus-circle"></i> Create a Club
+            </a>
+        </div>
+    <% } %>
+</main>
+
+<!-- Share System Modal (Unified from download.ejs) -->
+<script>
+    function handleClubShare(btn) {
+        const clubId = btn.getAttribute('data-club-id');
+        const clubName = btn.getAttribute('data-club-name');
+        const clubUrl = btn.getAttribute('data-club-url');
+        shareClub(clubId, clubName, clubUrl);
+    }
+
+    function shareClub(clubId, clubName, clubUrl) {
+        const fullShareUrl = window.location.origin + clubUrl;
+        const gatewayShareUrl = `https://gplmods.webredirect.org${clubUrl}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: `${clubName} on GPL Mods`,
+                text: `Join ${clubName} community chat and distributor channels on GPL Mods!`,
+                url: fullShareUrl
+            }).catch(e => console.log('Share dismissed'));
+        } else {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(fullShareUrl).then(() => {
+                    alert(`Link to "${clubName}" copied to clipboard!`);
+                }).catch(() => {
+                    prompt('Copy this club link:', fullShareUrl);
+                });
+            } else {
+                prompt('Copy this club link:', fullShareUrl);
+            }
+        }
+    }
+</script>
+
+<%- include('../../partials/footer') %>

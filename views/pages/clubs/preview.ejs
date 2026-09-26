@@ -1,0 +1,419 @@
+<%- include('../../partials/header') %>
+
+<style>
+    .club-preview-container {
+        max-width: 860px;
+        margin: 40px auto 70px;
+    }
+    .club-preview-card {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    }
+    .preview-banner {
+        height: 220px;
+        background-size: cover;
+        background-position: center;
+        background-color: #1a1c24;
+        position: relative;
+    }
+    .preview-banner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(20,21,27,0.95) 100%);
+    }
+    .preview-header-content {
+        position: absolute;
+        bottom: 20px;
+        left: 28px;
+        right: 28px;
+        display: flex;
+        align-items: flex-end;
+        gap: 20px;
+        z-index: 2;
+    }
+    .preview-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 24px;
+        border: 4px solid #14151b;
+        background: #0d0e12;
+        object-fit: cover;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+        flex-shrink: 0;
+    }
+    .preview-title-box h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 0 6px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .preview-badges-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .preview-body {
+        padding: 30px;
+    }
+
+    .info-at-a-glance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+    .glance-stat-card {
+        background: #0d0e12;
+        border: 1px solid #232530;
+        border-radius: 14px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .glance-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+    .glance-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: var(--silver);
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+    .glance-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .preview-section {
+        margin-bottom: 28px;
+    }
+    .preview-section-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid #232530;
+        padding-bottom: 8px;
+    }
+
+    .creator-bio-card {
+        background: #0d0e12;
+        border: 1px solid #232530;
+        border-radius: 14px;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .creator-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 2px solid var(--gold);
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+    .creator-info h4 {
+        margin: 0 0 4px 0;
+        color: #fff;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .creator-bio-text {
+        color: var(--silver);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin: 6px 0 0;
+    }
+
+    .rules-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .rules-list li {
+        background: #0d0e12;
+        border: 1px solid #232530;
+        border-radius: 12px;
+        padding: 12px 18px;
+        color: #ddd;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .rule-number {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        font-weight: 700;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .preview-action-footer {
+        border-top: 1px solid #232530;
+        padding-top: 24px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+    }
+    .btn-join-main {
+        flex: 1;
+        background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+        color: #000;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 14px 28px;
+        border-radius: 14px;
+        text-align: center;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35);
+    }
+    .btn-join-main:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+    }
+    .request-pending-notice {
+        background: rgba(255, 152, 0, 0.15);
+        border: 1px solid #ff9800;
+        color: #ffb74d;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+
+    @media (max-width: 600px) {
+        .preview-header-content {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+        }
+        .preview-title-box h1 {
+            font-size: 1.6rem;
+            justify-content: center;
+        }
+        .preview-badges-row {
+            justify-content: center;
+        }
+        .preview-body {
+            padding: 20px 16px;
+        }
+    }
+</style>
+
+<div class="container club-preview-container">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <%- include('../../partials/go-back-button', { fallback: '/clubs' }) %>
+    <!-- ======================================== -->
+
+    <div class="club-preview-card" style="margin-top: 1rem;">
+        <div class="preview-banner" style="background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>');">
+            <div class="preview-header-content">
+                <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" alt="<%= club.name %> Icon" class="preview-icon" onerror="this.src='/images/default-avatar.png';">
+                <div class="preview-title-box">
+                    <h1>
+                        <span><%= club.name %></span>
+                        <% if (club.isVerified || club.isDefault) { %>
+                            <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.8em;" title="Verified Community"></i>
+                        <% } %>
+                    </h1>
+                    <div class="preview-badges-row">
+                        <% if (club.isDefault) { %>
+                            <span style="background: rgba(255, 215, 0, 0.2); color: var(--gold); border: 1px solid var(--gold); padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-star"></i> OFFICIAL COMMUNITY</span>
+                        <% } else if (club.isPrivate) { %>
+                            <span style="background: rgba(244, 67, 54, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-lock"></i> PRIVATE GROUP</span>
+                        <% } else { %>
+                            <span style="background: rgba(76, 175, 80, 0.2); color: #69f0ae; border: 1px solid #69f0ae; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-globe"></i> PUBLIC GROUP</span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-body">
+            <!-- Information at a Glance -->
+            <div class="info-at-a-glance-grid">
+                <div class="glance-stat-card">
+                    <div class="glance-icon"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="glance-label">Total Members</div>
+                        <div class="glance-value"><%= club.memberCount || 1 %> Joined</div>
+                    </div>
+                </div>
+
+                <div class="glance-stat-card">
+                    <div class="glance-icon"><i class="fas fa-language"></i></div>
+                    <div>
+                        <div class="glance-label">Primary Language</div>
+                        <div class="glance-value"><%= club.primaryLanguage || 'English' %></div>
+                    </div>
+                </div>
+
+                <div class="glance-stat-card">
+                    <div class="glance-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div>
+                        <div class="glance-label">Country / Region</div>
+                        <div class="glance-value"><%= club.country || 'GLOBAL' %></div>
+                    </div>
+                </div>
+
+                <div class="glance-stat-card">
+                    <div class="glance-icon"><i class="fas fa-hashtag"></i></div>
+                    <div>
+                        <div class="glance-label">Channels Available</div>
+                        <div class="glance-value"><%= club.channelCount || 6 %> Channels</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Community & Topics -->
+            <div class="preview-section">
+                <h3 class="preview-section-title"><i class="fas fa-info-circle" style="color: var(--gold);"></i> About This Club</h3>
+                <p style="color: #bbb; line-height: 1.6; font-size: 0.95rem;">
+                    <%= club.description || 'Welcome to this community on GPLMods!' %>
+                </p>
+                <% if (club.tags && club.tags.length > 0) { %>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
+                        <% club.tags.forEach(tag => { %>
+                            <span style="background: #0d0e12; border: 1px solid #282a36; color: var(--gold); padding: 4px 12px; border-radius: 16px; font-size: 0.82rem; font-weight: 600;">
+                                #<%= tag %>
+                            </span>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Creator & About Admin -->
+            <div class="preview-section">
+                <h3 class="preview-section-title"><i class="fas fa-user-shield" style="color: #64b5f6;"></i> Club Creator &amp; Admin</h3>
+                <div class="creator-bio-card">
+                    <img src="<%= (club.creator && club.creator.signedAvatarUrl) ? club.creator.signedAvatarUrl : '/images/default-avatar.png' %>" alt="Creator Avatar" class="creator-avatar" onerror="this.src='/images/default-avatar.png';">
+                    <div class="creator-info">
+                        <h4>
+                            <a href="/users/<%= (club.creator && club.creator.username) ? club.creator.username : 'GPLMods' %>" style="color: #fff; text-decoration: none;">
+                                <%= (club.creator && club.creator.username) ? club.creator.username : 'GPLMods Admin' %>
+                            </a>
+                            <span style="background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;">
+                                <i class="fas fa-paint-brush"></i> Club Creator
+                            </span>
+                        </h4>
+                        <p class="creator-bio-text">
+                            <%= club.aboutAdmin || (club.creator && club.creator.bio) || 'Official community administrator ensuring safe discussions and mod distribution.' %>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Rules -->
+            <div class="preview-section">
+                <h3 class="preview-section-title"><i class="fas fa-scroll" style="color: #e57373;"></i> Community Rules</h3>
+                <% if (club.rules && club.rules.length > 0) { %>
+                    <ul class="rules-list">
+                        <% club.rules.forEach((rule, idx) => { %>
+                            <li>
+                                <span class="rule-number"><%= idx + 1 %></span>
+                                <span><%= rule %></span>
+                            </li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p style="color: var(--silver);">1. Be respectful to all members and developers.<br>2. Only official GPLMods site links are permitted.</p>
+                <% } %>
+            </div>
+
+            <!-- Action Footer -->
+            <div class="preview-action-footer">
+                <% if (isMember) { %>
+                    <a href="/clubs/<%= club.slug %>" class="btn-join-main">
+                        <i class="fas fa-comments"></i> Enter Club Chat
+                    </a>
+                <% } else if (isPending) { %>
+                    <div class="request-pending-notice">
+                        <i class="fas fa-clock" style="font-size: 1.2rem;"></i>
+                        <span>Your join request is currently pending review by the club administrator. You will receive an alert in your Notification Hub once approved.</span>
+                    </div>
+                <% } else if (club.isPrivate) { %>
+                    <% if (user) { %>
+                        <form action="/clubs/<%= club.slug %>/request-join" method="POST" style="flex: 1; display: flex; gap: 10px;">
+                            <input type="text" name="message" placeholder="Optional message to group admin..." style="flex: 1; background: #0d0e12; border: 1px solid #333645; border-radius: 12px; color: #fff; padding: 0 16px;">
+                            <button type="submit" class="btn-join-main" style="flex: initial;">
+                                <i class="fas fa-paper-plane"></i> Request to Join
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <a href="/login?redirect=/clubs/<%= club.slug %>/preview" class="btn-join-main">
+                            <i class="fas fa-sign-in-alt"></i> Login to Request Access
+                        </a>
+                    <% } %>
+                <% } else { %>
+                    <% if (user) { %>
+                        <form action="/clubs/<%= club.slug %>/join" method="POST" style="flex: 1;">
+                            <button type="submit" class="btn-join-main" style="width: 100%;">
+                                <i class="fas fa-sign-in-alt"></i> Join Community Club
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <a href="/login?redirect=/clubs/<%= club.slug %>" class="btn-join-main">
+                            <i class="fas fa-sign-in-alt"></i> Login to Join Club
+                        </a>
+                    <% } %>
+                <% } %>
+
+                <% if (isStaff) { %>
+                    <a href="/clubs/<%= club.slug %>" style="color: var(--gold); border: 1px solid var(--gold); padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-shield-alt"></i> Staff Audit Entry
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>

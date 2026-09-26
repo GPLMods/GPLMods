@@ -106,6 +106,16 @@ const MembershipOrder = require('./models/membershipOrder');
 const Coupon = require('./models/coupon');
 const DevtoolLog = require('./models/devtoolLog');
 const VolunteerApplication = require('./models/volunteerApplication');
+const Club = require('./models/club');
+const ClubChannel = require('./models/clubChannel');
+const ClubRole = require('./models/clubRole');
+const ClubMember = require('./models/clubMember');
+const ClubMessage = require('./models/clubMessage');
+const ClubJoinRequest = require('./models/clubJoinRequest');
+const { ensureDefaultClub } = require('./utils/clubSeed');
+const { validateMessageLinks } = require('./utils/linkSanitizer');
+const { saveClubChatArchive } = require('./utils/clubStorage');
+const ModPromotion = require('./models/modPromotion');
 
 // Multer storage for Volunteer KYC documents
 const kycStorage = multer.diskStorage({
@@ -205,6 +215,77 @@ const profanityFilter = new Filter();
 global.profanityFilter = profanityFilter;
 
 app.set('view engine', 'ejs');
+
+// --- HELPER: AUTOMATED MOD FEEDS POSTING TO CLUBS (#new-uploads and #new-updates) ---
+async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
+    try {
+        if (!file || !file.uploader) return;
+        const uploaderUser = await User.findOne({ username: file.uploader });
+        const uploaderId = uploaderUser ? uploaderUser._id : null;
+
+        const clubQuery = {
+            $or: [
+                { isDefault: true }
+            ]
+        };
+        if (uploaderId) {
+            clubQuery.$or.push({ trackedCreators: uploaderId }, { creator: uploaderId });
+        }
+
+        const clubs = await Club.find(clubQuery);
+        if (!clubs || clubs.length === 0) return;
+
+        const targetChannelName = isUpdate ? 'new-updates' : 'new-uploads';
+        const io = app.get('io');
+        const resolvedIcon = await getSmartImageUrl(file.iconKey || file.iconUrl);
+
+        for (const club of clubs) {
+            const channel = await ClubChannel.findOne({ club: club._id, name: targetChannelName });
+            if (!channel) continue;
+
+            const contentText = isUpdate
+                ? `🔄 **Mod Updated:** **${file.name}** has a new update (**v${file.version}**)! Release notes: ${whatsNew || 'Bug fixes and performance improvements.'}`
+                : `🚀 **New Mod Upload:** **${file.name}** (**v${file.version}**) is now available in category **${(file.category || 'mods').toUpperCase()}**!`;
+
+            const modMsg = await ClubMessage.create({
+                club: club._id,
+                channel: channel._id,
+                sender: uploaderId || club.creator,
+                content: contentText,
+                modUpdate: {
+                    modId: file._id,
+                    name: file.name,
+                    iconUrl: resolvedIcon,
+                    version: file.version,
+                    category: file.category,
+                    downloadUrl: `/download/${file.slug || file._id}`,
+                    changelog: whatsNew || (isUpdate ? 'General improvements.' : 'Initial release.'),
+                    isNewUpload: !isUpdate
+                },
+                isSystemMessage: true
+            });
+
+            if (io) {
+                io.to(`club_${club._id}_chan_${channel._id}`).emit('club_new_message', {
+                    _id: modMsg._id,
+                    channel: channel._id,
+                    club: club._id,
+                    content: contentText,
+                    modUpdate: modMsg.modUpdate,
+                    createdAt: modMsg.createdAt,
+                    sender: {
+                        username: 'GPL Mods Feeds',
+                        signedAvatarUrl: '/images/team-logo.png',
+                        role: 'admin',
+                        badges: []
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.error('[Clubs] notifyClubModFeeds error:', err.message);
+    }
+}
 app.set('views', path.join(__dirname, 'views'));
 
 // ===============================
@@ -3172,9 +3253,28 @@ app.get('/notifications', async (req, res) => {
             }
         }
 
+        let clubNotificationsCount = 0;
+        if (req.isAuthenticated() && req.user) {
+            const userManagedClubs = await Club.find({ creator: req.user._id }).select('_id');
+            const managedClubIds = userManagedClubs.map(c => c._id);
+            const pendingReqs = await ClubJoinRequest.countDocuments({
+                club: { $in: managedClubIds },
+                status: 'pending'
+            });
+            const unreadClubNotifs = await UserNotification.countDocuments({
+                user: req.user._id,
+                isRead: false,
+                $or: [
+                    { title: { $regex: /club/i } },
+                    { message: { $regex: /club/i } }
+                ]
+            });
+            clubNotificationsCount = pendingReqs + unreadClubNotifs;
+        }
+
         res.render('pages/notifications-hub', {
-            // Unread Personal and Global Counts are already provided by res.locals
-            followingCount: followingCount
+            followingCount: followingCount,
+            clubNotificationsCount: clubNotificationsCount
         });
 
     } catch (error) {
@@ -3194,6 +3294,48 @@ app.get('/notifications/site-updates', async (req, res) => {
     }
 });
 
+
+// --- CLUBS NOTIFICATIONS & REQUESTS INBOX ---
+app.get('/notifications/clubs', ensureAuthenticated, async (req, res) => {
+    try {
+        const userManagedClubs = await Club.find({
+            $or: [
+                { creator: req.user._id },
+                { isDefault: true }
+            ]
+        }).select('_id');
+        const managedClubIds = userManagedClubs.map(c => c._id);
+
+        const joinRequests = await ClubJoinRequest.find({
+            club: { $in: managedClubIds },
+            status: 'pending'
+        })
+        .populate('club')
+        .populate('user', 'username profileImageKey role signedAvatarUrl')
+        .sort({ createdAt: -1 })
+        .lean();
+
+        const clubAlerts = await UserNotification.find({
+            user: req.user._id,
+            $or: [
+                { title: { $regex: /club/i } },
+                { message: { $regex: /club/i } }
+            ]
+        })
+        .sort({ createdAt: -1 })
+        .limit(25)
+        .lean();
+
+        res.render('pages/notifications/club-messages', {
+            joinRequests,
+            clubAlerts,
+            pageTitle: 'Club Alerts & Requests'
+        });
+    } catch (err) {
+        console.error('Club notifications error:', err);
+        res.status(500).render('pages/500');
+    }
+});
 // 3. Admin Responses List (Personal Direct Messages)
 app.get('/notifications/admin-messages', ensureAuthenticated, async (req, res) => {
     try {
@@ -3675,10 +3817,26 @@ app.get('/search', async (req, res, next) => {
             .lean()
         ]);
 
+        // 4. CLUBS & COMMUNITIES QUERY
+        const clubOrConditions = [
+            { name: { $regex: queryRegex } },
+            { description: { $regex: queryRegex } },
+            { tags: { $regex: queryRegex } }
+        ];
+        if (rawQuery.match(/^[0-9a-fA-F]{24}$/)) {
+            clubOrConditions.push({ _id: rawQuery });
+        }
+        const clubResultsRaw = await Club.find({ $or: clubOrConditions })
+            .populate('creator', 'username profileImageKey role signedAvatarUrl')
+            .sort({ memberCount: -1 })
+            .limit(20)
+            .lean();
+
         const counts = {
             mods: totalResults,
             users: processedUsers.length + developerMods.length,
-            community: (forumIssues.length + docPages.length)
+            community: (forumIssues.length + docPages.length),
+            clubs: clubResultsRaw.length
         };
 
         // --- RENDER THE PAGE ---
@@ -3690,6 +3848,7 @@ app.get('/search', async (req, res, next) => {
                 issues: forumIssues || [],
                 docs: docPages || []
             },
+            clubResults: clubResultsRaw || [],
             counts,
             activeTab,
             query: rawQuery,
@@ -4266,6 +4425,152 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             } catch (vtErr) {}
         }
 
+        // --- RECOMMENDATION & PROMOTION SECTIONS (Item 1) ---
+        const excludedIds = [masterFile._id, displayFile._id].filter(Boolean);
+
+        // Helper to attach signed icon URLs
+        const attachIcons = async (list) => {
+            if (!Array.isArray(list) || list.length === 0) return [];
+            return Promise.all(list.map(async (m) => {
+                const key = m.iconUrl || m.iconKey;
+                const iUrl = key ? await getSmartImageUrl(key) : '/images/default-app-icon.png';
+                return { ...m, iconUrl: iUrl };
+            }));
+        };
+
+        // 1. Suggested For You (Promoted / Sponsored Ads)
+        let rawSuggested = await File.find({
+            status: 'live',
+            isPromoted: true,
+            promotedUntil: { $gte: new Date() },
+            _id: { $nin: excludedIds }
+        }).sort({ promotionTier: -1, views: -1 }).limit(6).lean();
+
+        // Backfill if fewer than 4 promoted mods
+        if (rawSuggested.length < 4) {
+            const currentSuggestedIds = [...excludedIds, ...rawSuggested.map(s => s._id)];
+            const backfill = await File.find({
+                status: 'live',
+                $or: [
+                    { isEditorsChoice: true },
+                    { averageRating: { $gte: 4.0 } },
+                    { views: { $gte: 50 } }
+                ],
+                _id: { $nin: currentSuggestedIds }
+            }).sort({ views: -1, averageRating: -1 }).limit(6 - rawSuggested.length).lean();
+            rawSuggested = [...rawSuggested, ...backfill];
+        }
+
+        // 2. Similar Apps
+        const isApp = (displayFile.subCategory && /app|tool|util|product|social|media|software/i.test(displayFile.subCategory)) || displayFile.category === 'wordpress';
+        let rawSimilarApps = [];
+        if (isApp) {
+            rawSimilarApps = await File.find({
+                status: 'live',
+                category: displayFile.category,
+                _id: { $nin: excludedIds },
+                $or: [
+                    { subCategory: displayFile.subCategory },
+                    { tags: { $in: displayFile.tags || [] } }
+                ]
+            }).sort({ views: -1, downloads: -1 }).limit(6).lean();
+        } else {
+            rawSimilarApps = await File.find({
+                status: 'live',
+                category: displayFile.category,
+                _id: { $nin: excludedIds },
+                $or: [
+                    { subCategory: { $regex: /app|tool|util|emulator|software/i } },
+                    { tags: { $in: ['tools', 'utilities', 'emulator', 'patcher', 'mod-manager', 'app', 'helper', 'tweaks'] } }
+                ]
+            }).sort({ views: -1 }).limit(6).lean();
+        }
+        // Fallback for similar apps if empty
+        if (rawSimilarApps.length === 0) {
+            rawSimilarApps = await File.find({
+                status: 'live',
+                category: displayFile.category,
+                _id: { $nin: excludedIds }
+            }).sort({ downloads: -1 }).limit(6).lean();
+        }
+
+        // 3. Similar Mods
+        const similarAppsIds = rawSimilarApps.map(a => a._id);
+        const similarModsExclude = [...excludedIds, ...similarAppsIds];
+        const similarModsFilter = {
+            status: 'live',
+            _id: { $nin: similarModsExclude }
+        };
+        if (Array.isArray(displayFile.tags) && displayFile.tags.length > 0) {
+            similarModsFilter.$or = [
+                { tags: { $in: displayFile.tags } },
+                { category: displayFile.category, subCategory: displayFile.subCategory }
+            ];
+        } else {
+            similarModsFilter.category = displayFile.category;
+        }
+        let rawSimilarMods = await File.find(similarModsFilter)
+            .sort({ views: -1, downloads: -1 })
+            .limit(8)
+            .lean();
+
+        // 4. More By Uploader
+        let rawMoreByUploader = [];
+        if (displayFile.uploader) {
+            rawMoreByUploader = await File.find({
+                uploader: displayFile.uploader,
+                status: 'live',
+                _id: { $nin: excludedIds }
+            }).sort({ createdAt: -1 }).limit(6).lean();
+        }
+
+        // 5. More By Developer
+        let rawMoreByDeveloper = [];
+        if (displayFile.developer && displayFile.developer !== 'N/A') {
+            rawMoreByDeveloper = await File.find({
+                developer: displayFile.developer,
+                status: 'live',
+                _id: { $nin: excludedIds }
+            }).sort({ createdAt: -1 }).limit(6).lean();
+        }
+
+        // 6. Also Available for Other Platforms
+        const cleanName = (masterFile.name || '').trim();
+        const otherPlatformConditions = [];
+        if (cleanName) {
+            otherPlatformConditions.push({ name: new RegExp('^' + escapeRegex(cleanName) + '$', 'i') });
+        }
+        if (masterFile.iosPackageId) {
+            otherPlatformConditions.push({ iosPackageId: masterFile.iosPackageId });
+        }
+        if (masterFile.slug) {
+            otherPlatformConditions.push({ slug: masterFile.slug });
+        }
+        let rawOtherPlatformMods = [];
+        if (otherPlatformConditions.length > 0) {
+            rawOtherPlatformMods = await File.find({
+                status: 'live',
+                category: { $ne: masterFile.category },
+                _id: { $nin: excludedIds },
+                $or: otherPlatformConditions
+            }).limit(6).lean();
+        }
+
+        // Resolve uploader avatar
+        let uploaderAvatar = '/images/default-avatar.png';
+        if (uploaderUser && uploaderUser.profileImageKey) {
+            try { uploaderAvatar = await getSmartImageUrl(uploaderUser.profileImageKey); } catch (e) {}
+        }
+
+        const [suggestedMods, similarApps, similarMods, moreByUploader, moreByDeveloper, otherPlatformMods] = await Promise.all([
+            attachIcons(rawSuggested),
+            attachIcons(rawSimilarApps),
+            attachIcons(rawSimilarMods),
+            attachIcons(rawMoreByUploader),
+            attachIcons(rawMoreByDeveloper),
+            attachIcons(rawOtherPlatformMods)
+        ]);
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -4277,6 +4582,13 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             userVotedNotWorking,
             canVoteOnFile,
             isUploaderDistributor,
+            uploaderAvatar,
+            suggestedMods,
+            similarApps,
+            similarMods,
+            moreByUploader,
+            moreByDeveloper,
+            otherPlatformMods,
             themeMusic: displayFile.themeMusic,
             musicSettings: req.user ? req.user.musicSettings : { allowThemeMusic: true, autoPlayTheme: true },
             pageTitle: seoTitle,
@@ -4363,6 +4675,159 @@ app.get('/:category/:slug', async (req, res, next) => {
         return renderModDownloadPage(req, res, next, { category, slug, variantId });
     } catch (e) {
         return next(e);
+    }
+});
+
+// ============================================================================
+// MOD RECOMMENDATIONS & SPONSORED PROMOTIONS API (Item 1)
+// ============================================================================
+
+// 1. Explore Mods by Tag (Instant AJAX Drawer / Modal)
+app.get('/api/mods/by-tag', async (req, res) => {
+    try {
+        const rawTag = (req.query.tag || '').trim();
+        if (!rawTag) {
+            return res.json({ success: true, tag: '', count: 0, mods: [] });
+        }
+
+        const tagRegex = new RegExp('^' + escapeRegex(rawTag) + '$', 'i');
+        const mods = await File.find({
+            status: 'live',
+            tags: { $in: [tagRegex] }
+        })
+        .sort({ views: -1, downloads: -1 })
+        .limit(12)
+        .lean();
+
+        const modsWithIcons = await Promise.all(mods.map(async (m) => {
+            const key = m.iconUrl || m.iconKey;
+            const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-app-icon.png';
+            const slug = m.slug || slugify(m.name) || m._id.toString();
+            return {
+                _id: m._id,
+                name: m.name,
+                version: m.version,
+                category: m.category,
+                developer: m.developer,
+                averageRating: m.averageRating || 0,
+                ratingCount: m.ratingCount || 0,
+                views: m.views || 0,
+                downloads: m.downloads || 0,
+                iconUrl,
+                url: `/mods/${m.category}/${slug}`
+            };
+        }));
+
+        return res.json({
+            success: true,
+            tag: rawTag,
+            count: modsWithIcons.length,
+            mods: modsWithIcons
+        });
+    } catch (err) {
+        console.error('[API by-tag Error]:', err);
+        return res.status(500).json({ success: false, error: 'Failed to search mods by tag.' });
+    }
+});
+
+// 2. Promote Mod Endpoint (Play Store style ads system)
+app.post('/api/mods/:id/promote', async (req, res) => {
+    try {
+        if (!req.isAuthenticated()) {
+            return res.status(401).json({ success: false, error: 'Please log in to promote your mod.' });
+        }
+
+        const fileId = req.params.id;
+        const targetFile = await File.findById(fileId);
+        if (!targetFile) {
+            return res.status(404).json({ success: false, error: 'Mod not found.' });
+        }
+
+        // Must be uploader or admin/owner/distributor
+        const isUploader = targetFile.uploader === req.user.username;
+        const isStaff = ['admin', 'owner', 'distributor'].includes(req.user.role);
+        if (!isUploader && !isStaff) {
+            return res.status(403).json({ success: false, error: 'You can only promote your own mods.' });
+        }
+
+        const days = parseInt(req.body.days, 10) || 7;
+        if (days < 1 || days > 365) {
+            return res.status(400).json({ success: false, error: 'Invalid duration. Choose between 1 and 365 days.' });
+        }
+
+        const tier = req.body.tier || 'standard';
+        const pricing = {
+            1: 149,
+            3: 349,
+            7: 699,
+            14: 1299,
+            30: 2499
+        };
+        const amount = pricing[days] || Math.round(days * 120);
+
+        const currentExpiry = (targetFile.isPromoted && targetFile.promotedUntil && targetFile.promotedUntil > new Date())
+            ? targetFile.promotedUntil
+            : new Date();
+        const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
+
+        targetFile.isPromoted = true;
+        targetFile.promotedUntil = newExpiry;
+        targetFile.promotionTier = tier;
+        await targetFile.save();
+
+        const promo = new ModPromotion({
+            file: targetFile._id,
+            user: req.user._id,
+            days,
+            amount,
+            currency: 'INR',
+            tier,
+            startDate: currentExpiry,
+            endDate: newExpiry,
+            status: 'active',
+            paymentMethod: isStaff && !isUploader ? 'admin-grant' : 'direct-activation'
+        });
+        await promo.save();
+
+        return res.json({
+            success: true,
+            message: `Mod "${targetFile.name}" successfully promoted for ${days} days!`,
+            promotedUntil: newExpiry,
+            tier
+        });
+    } catch (err) {
+        console.error('[Mod Promotion Error]:', err);
+        return res.status(500).json({ success: false, error: 'Failed to activate promotion.' });
+    }
+});
+
+// 3. Track Promotion Click
+app.post('/api/promotions/track-click/:fileId', async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        await ModPromotion.updateMany(
+            { file: fileId, status: 'active', endDate: { $gte: new Date() } },
+            { $inc: { clicks: 1 } }
+        );
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false });
+    }
+});
+
+// 4. Track Promotion Impressions
+app.post('/api/promotions/track-impressions', async (req, res) => {
+    try {
+        const fileIds = Array.isArray(req.body.fileIds) ? req.body.fileIds : [];
+        if (fileIds.length > 0) {
+            await ModPromotion.updateMany(
+                { file: { $in: fileIds }, status: 'active', endDate: { $gte: new Date() } },
+                { $inc: { impressions: 1 } }
+            );
+        }
+        return res.json({ success: true });
+    } catch (e) {
+        return res.json({ success: false });
     }
 });
 
@@ -4755,6 +5220,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
 
         newVersion.isLatestVersion = true;
         await newVersion.save();
+        notifyClubModFeeds(newVersion, true, req.body.whatsNew);
 
         if (req.file && req.file.size > 100) {
             (async () => {
@@ -6039,6 +6505,18 @@ app.get('/users/:username', async (req, res, next) => {
         }
 
         // --- 8. RENDER PAGE ---
+        // Fetch Joined Clubs for Public Profile
+        const userClubMemberships = await ClubMember.find({ user: targetUser._id, status: 'active' })
+            .populate('club')
+            .populate('roles')
+            .lean();
+        const joinedClubs = userClubMemberships.filter(m => m.club).map(m => ({
+            club: m.club,
+            roles: m.roles || [],
+            isCreator: m.isCreator,
+            joinedAt: m.joinedAt
+        }));
+
         const profileTitle = `${targetUserObj.username}'s Profile`;
         const profileDescription = targetUserObj.bio ? targetUserObj.bio : `Check out all the latest safe and working mods uploaded by ${targetUserObj.username} on GPL Mods Official.`;
         const profileImage = targetUserObj.signedAvatarUrl && targetUserObj.signedAvatarUrl !== '/images/default-avatar.png' ? targetUserObj.signedAvatarUrl : 'https://gplmods.webredirect.org/images/logo.png';
@@ -6054,7 +6532,8 @@ app.get('/users/:username', async (req, res, next) => {
             pageImage: profileImage,
             pageKeywords: `gpl mods, ${targetUserObj.username}, distributor profile, mod uploads`,
             pageUrl: `https://gplmods.webredirect.org/users/${targetUserObj.username}`,
-            isCardRef: req.query.ref === 'card'
+            isCardRef: req.query.ref === 'card',
+            joinedClubs: joinedClubs
         });
 
     } catch (error) { 
@@ -8411,6 +8890,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             res.redirect(`/upload-details/${fileId}?success=Draft saved successfully! You can return to finish it later.`);
         } else {
             await User.adjustForumPoints(req.user._id, 50, "Uploaded a new mod");
+            const justUploadedFile = await File.findById(fileId);
+            if (justUploadedFile && justUploadedFile.status === 'live') {
+                notifyClubModFeeds(justUploadedFile, false);
+            }
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
 
@@ -15031,6 +15514,16 @@ const startServer = async () => {
         await clientPromise;
         mongoose.Model.count = mongoose.Model.countDocuments; 
 
+        // Initialize Default GPL Community Club
+        if (typeof ensureDefaultClub === 'function') {
+            try {
+                await ensureDefaultClub();
+                console.log('[Clubs] Default GPL Community verified/initialized.');
+            } catch (clubInitErr) {
+                console.error('[Clubs Error] Failed initializing default club:', clubInitErr.message);
+            }
+        } 
+
         // Automatically purge any empty AI Chatbot sessions
         ChatSession.deleteMany({
             $or: [
@@ -15115,6 +15608,7 @@ const startServer = async () => {
         const connectedSupportSockets = new Set();
         const connectedAgentSockets = new Set();
         const connectedUsers = new Map(); // socket.id -> { userId, username, role, avatarUrl, isStaff }
+        const clubOnlinePresences = new Map(); // clubId -> Map(userId -> userObj)
 
         // ✅ CRITICAL FIX: Make Socket.IO & state globally accessible to Express routes (e.g. /logout)
         app.set('io', io); 
@@ -15200,24 +15694,21 @@ const startServer = async () => {
             socket.emit('chat history', recentMessages);
             
             socket.on('chat message', (msg) => {
-                // --- FIXED: Sanitize chat messages with Try/Catch ---
-                let finalSafeText = msg.text; // Default to original text
-
-                try {
-                    // Try to clean it. If it's just emojis, this might fail.
-                    finalSafeText = global.profanityFilter.clean(msg.text);
-                } catch (error) {
-                    // If the filter crashes (because of emojis), do nothing!
-                    // finalSafeText remains the original emoji string.
+                // Strict Link Restriction: Only GPLMods links allowed!
+                const linkValidation = validateMessageLinks(msg.text);
+                if (!linkValidation.valid) {
+                    return socket.emit('chat error', { message: linkValidation.error });
                 }
+
+                let finalSafeText = msg.text;
+                try {
+                    finalSafeText = global.profanityFilter.clean(msg.text);
+                } catch (error) {}
 
                 const messageData = {
                     username: msg.username,
                     avatar: msg.avatar, 
-                    
-                    // ✅ FIXED: We are now passing the SAFE text, not the dirty text!
                     text: finalSafeText, 
-                    
                     timestamp: new Date()
                 };
                 
@@ -15226,6 +15717,236 @@ const startServer = async () => {
                     recentMessages.shift();
                 }
                 io.emit('chat message', messageData);
+            });
+
+            // ==========================================
+            // --- CLUBS & COMMUNITIES REAL-TIME EVENTS ---
+            // ==========================================
+
+            socket.on('club_join', async (data) => {
+                const { clubId, vanished } = data || {};
+                if (!clubId) return;
+
+                const user = socket.request && socket.request.user;
+                const isStaff = user && ['owner', 'admin'].includes(user.role);
+                const isVanished = isStaff && Boolean(vanished);
+
+                socket.join(`club_${clubId}`);
+                socket.data = socket.data || {};
+                socket.data.clubId = clubId;
+                socket.data.isVanished = isVanished;
+
+                if (!isVanished && user) {
+                    if (!clubOnlinePresences.has(clubId)) {
+                        clubOnlinePresences.set(clubId, new Map());
+                    }
+                    const cUsers = clubOnlinePresences.get(clubId);
+                    cUsers.set(String(user._id), {
+                        userId: String(user._id),
+                        username: user.username,
+                        avatarUrl: await resolveUserAvatar(user),
+                        role: user.role,
+                        membership: user.membership,
+                        isPremium: user.isPremium,
+                        badges: user.badges
+                    });
+                }
+
+                const onlineList = clubOnlinePresences.has(clubId) ? Array.from(clubOnlinePresences.get(clubId).values()) : [];
+                io.to(`club_${clubId}`).emit('club_presence_update', {
+                    clubId,
+                    onlineCount: onlineList.length,
+                    onlineUsers: onlineList
+                });
+            });
+
+            socket.on('club_join_channel', (data) => {
+                const { clubId, channelId } = data || {};
+                if (clubId && channelId) {
+                    socket.join(`club_${clubId}_chan_${channelId}`);
+                }
+            });
+
+            socket.on('club_leave_channel', (data) => {
+                const { clubId, channelId } = data || {};
+                if (clubId && channelId) {
+                    socket.leave(`club_${clubId}_chan_${channelId}`);
+                }
+            });
+
+            socket.on('club_send_message', async (data) => {
+                try {
+                    const { clubId, channelId, text, attachments } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user) {
+                        return socket.emit('club_message_error', { message: 'You must be signed in to send messages.' });
+                    }
+
+                    // 1. Strict Link Restriction
+                    const linkCheck = validateMessageLinks(text);
+                    if (!linkCheck.valid) {
+                        return socket.emit('club_message_error', { message: linkCheck.error });
+                    }
+
+                    // 2. Channel & Club verification
+                    const channel = await ClubChannel.findById(channelId);
+                    if (!channel) return;
+                    const club = await Club.findById(clubId);
+                    if (!club) return;
+
+                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isCreator = String(club.creator) === String(user._id);
+
+                    if (channel.isReadOnly && !isStaff && !isCreator) {
+                        return socket.emit('club_message_error', { message: `Channel #${channel.name} is read-only.` });
+                    }
+
+                    // 3. Profanity filtering
+                    let safeText = text;
+                    try {
+                        safeText = global.profanityFilter.clean(text);
+                    } catch (e) {}
+
+                    // 4. Save to DB
+                    const message = await ClubMessage.create({
+                        club: clubId,
+                        channel: channelId,
+                        sender: user._id,
+                        content: safeText,
+                        attachments: attachments || []
+                    });
+
+                    const membership = await ClubMember.findOne({ club: clubId, user: user._id }).populate('roles');
+                    const avatar = await resolveUserAvatar(user);
+
+                    const payload = {
+                        _id: message._id,
+                        channel: channelId,
+                        club: clubId,
+                        content: safeText,
+                        reactions: [],
+                        createdAt: message.createdAt,
+                        sender: {
+                            _id: user._id,
+                            username: user.username,
+                            signedAvatarUrl: avatar,
+                            role: user.role,
+                            membership: user.membership,
+                            isPremium: user.isPremium,
+                            badges: user.badges,
+                            clubRoles: membership ? (membership.roles || []) : [],
+                            isCreator
+                        }
+                    };
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_new_message', payload);
+
+                    // Disk dump archive
+                    (async () => {
+                        try {
+                            const recentMsgs = await ClubMessage.find({ channel: channelId })
+                                .sort({ createdAt: -1 })
+                                .limit(100)
+                                .lean();
+                            saveClubChatArchive(club.name, channel.name, recentMsgs.reverse());
+                        } catch (e) {}
+                    })();
+
+                } catch (err) {
+                    console.error('[Clubs] Send message error:', err);
+                    socket.emit('club_message_error', { message: 'Failed to send message.' });
+                }
+            });
+
+            socket.on('club_message_reaction', async (data) => {
+                try {
+                    const { clubId, channelId, messageId, emoji } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !messageId || !emoji) return;
+
+                    const message = await ClubMessage.findById(messageId);
+                    if (!message) return;
+
+                    let reactionObj = message.reactions.find(r => r.emoji === emoji);
+                    if (!reactionObj) {
+                        reactionObj = { emoji, users: [user._id] };
+                        message.reactions.push(reactionObj);
+                    } else {
+                        const uIdx = reactionObj.users.findIndex(u => String(u) === String(user._id));
+                        if (uIdx > -1) {
+                            reactionObj.users.splice(uIdx, 1);
+                            if (reactionObj.users.length === 0) {
+                                message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+                            }
+                        } else {
+                            reactionObj.users.push(user._id);
+                        }
+                    }
+                    await message.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_reaction_updated', {
+                        messageId: message._id,
+                        reactions: message.reactions
+                    });
+                } catch (e) {}
+            });
+
+            socket.on('club_poll_vote', async (data) => {
+                try {
+                    const { clubId, channelId, messageId, optionIndex } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !messageId) return;
+
+                    const message = await ClubMessage.findById(messageId);
+                    if (!message || !message.poll || message.poll.closed) return;
+
+                    message.poll.options.forEach(opt => {
+                        opt.votes = opt.votes.filter(v => String(v) !== String(user._id));
+                    });
+                    const opt = message.poll.options[parseInt(optionIndex, 10)];
+                    if (opt) {
+                        opt.votes.push(user._id);
+                    }
+                    await message.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_poll_updated', {
+                        messageId: message._id,
+                        poll: message.poll
+                    });
+                } catch (e) {}
+            });
+
+            socket.on('club_vanish_toggle', async (data) => {
+                const user = socket.request && socket.request.user;
+                if (!user || !['owner', 'admin'].includes(user.role)) return;
+                const { clubId, vanished } = data || {};
+
+                socket.data = socket.data || {};
+                socket.data.isVanished = Boolean(vanished);
+
+                if (clubOnlinePresences.has(clubId)) {
+                    const clubUsers = clubOnlinePresences.get(clubId);
+                    if (vanished) {
+                        clubUsers.delete(String(user._id));
+                    } else {
+                        clubUsers.set(String(user._id), {
+                            userId: String(user._id),
+                            username: user.username,
+                            avatarUrl: await resolveUserAvatar(user),
+                            role: user.role,
+                            membership: user.membership,
+                            isPremium: user.isPremium,
+                            badges: user.badges
+                        });
+                    }
+                    const onlineList = Array.from(clubUsers.values());
+                    io.to(`club_${clubId}`).emit('club_presence_update', {
+                        clubId,
+                        onlineCount: onlineList.length,
+                        onlineUsers: onlineList
+                    });
+                }
+                socket.emit('club_vanish_state', { vanished: Boolean(vanished) });
             });
 
             // ==========================================
@@ -15814,6 +16535,22 @@ const startServer = async () => {
                 connectedSupportSockets.delete(socket.id);
                 connectedAgentSockets.delete(socket.id);
                 connectedUsers.delete(socket.id);
+
+                if (socket.data && socket.data.clubId && !socket.data.isVanished) {
+                    const cId = socket.data.clubId;
+                    const u = socket.request && socket.request.user;
+                    if (u && clubOnlinePresences.has(cId)) {
+                        const cUsers = clubOnlinePresences.get(cId);
+                        cUsers.delete(String(u._id));
+                        const onlineList = Array.from(cUsers.values());
+                        io.to(`club_${cId}`).emit('club_presence_update', {
+                            clubId: cId,
+                            onlineCount: onlineList.length,
+                            onlineUsers: onlineList
+                        });
+                    }
+                }
+
                 broadcastOnlineStats();
             });
         });
@@ -16012,6 +16749,12 @@ cron.schedule('* * * * *', async () => {
 // ===================================
 const ownerRoutes = require('./routes/owner');
 app.use('/', ownerRoutes);
+
+// ===================================
+// CLUBS & COMMUNITIES ROUTES
+// ===================================
+const clubsRoutes = require('./routes/clubs');
+app.use('/clubs', clubsRoutes);
 
 // ✅ START THE SERVER
 startServer(); 

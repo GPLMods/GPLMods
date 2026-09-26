@@ -192,6 +192,26 @@
                     <div class="cat-badge" id="following-badge" style="display: none;"></div>
                     <i class="fas fa-chevron-right card-arrow" id="following-arrow"></i>
                 </a>
+
+                <!-- Category 6: Clubs & Community Alerts -->
+                <a href="/notifications/clubs" class="category-card" id="clubs-notifs-card">
+                    <div class="category-info">
+                        <div class="category-icon" style="background: rgba(255, 215, 0, 0.15); border: 2px solid var(--gold); color: var(--gold); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-users" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="category-text">
+                            <h2>Clubs &amp; Community Alerts</h2>
+                            <p>Join requests, invites, announcements, and tracked mod feeds.</p>
+                        </div>
+                    </div>
+                    <% if (typeof clubNotificationsCount !== 'undefined' && clubNotificationsCount > 0) { %>
+                        <div class="cat-badge">
+                            <%= clubNotificationsCount > 9 ? '9+' : clubNotificationsCount %> New
+                        </div>
+                    <% } else { %>
+                        <i class="fas fa-chevron-right card-arrow"></i>
+                    <% } %>
+                </a>
             <% } %>
 
         </div> <!-- Closes .notification-categories -->

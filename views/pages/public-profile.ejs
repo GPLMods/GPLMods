@@ -712,6 +712,7 @@ GLOBAL|Earth
             <div class="tabs-nav">
                 <button class="tab-button active" data-tab="overview">Overview</button>
                 <button class="tab-button" data-tab="uploads">Uploads</button>
+                <button class="tab-button" data-tab="clubs">Clubs &amp; Communities</button>
                 <button class="tab-button" data-tab="community">Community</button>
             </div>
 
@@ -736,6 +737,68 @@ GLOBAL|Earth
                     </section>
                 <% } else { %>
                     <p style="color: var(--silver);"><%= profileUser.username %> hasn't uploaded any mods yet.</p>
+                <% } %>
+            </div>
+
+            <!-- Clubs Tab -->
+            <div id="clubs" class="tab-content">
+                <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-users" style="color: var(--gold); margin-right: 8px;"></i> Joined Clubs &amp; Communities</span>
+                    <span style="font-size: 0.7em; color: var(--silver); font-weight: normal;"><%= (typeof joinedClubs !== 'undefined' && joinedClubs) ? joinedClubs.length : 0 %> Clubs</span>
+                </h2>
+
+                <% if (typeof joinedClubs !== 'undefined' && joinedClubs && joinedClubs.length > 0) { %>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+                        <% joinedClubs.forEach(item => { %>
+                            <% const club = item.club; %>
+                            <% if (club) { %>
+                                <div style="background: var(--dark-gray); border: 1px solid #333; border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 16px; transition: transform 0.2s, border-color 0.2s; position: relative;">
+                                    <a href="/clubs/<%= club.slug %>" title="Click to view or join <%= club.name %>" style="display: block; position: relative; flex-shrink: 0;">
+                                        <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" alt="<%= club.name %>" style="width: 56px; height: 56px; border-radius: 16px; border: 2px solid var(--gold); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.4);" onerror="this.src='/images/default-avatar.png';">
+                                    </a>
+
+                                    <div style="flex-grow: 1; min-width: 0;">
+                                        <a href="/clubs/<%= club.slug %>" style="color: var(--white); font-weight: 700; font-size: 1.05rem; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= club.name %></span>
+                                            <% if (club.isVerified || club.isDefault) { %>
+                                                <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.8em;" title="Verified"></i>
+                                            <% } %>
+                                        </a>
+
+                                        <!-- User Role in this Club -->
+                                        <div style="margin-bottom: 6px;">
+                                            <% if (item.isCreator) { %>
+                                                <span style="background: rgba(255, 112, 67, 0.2); color: #ffab91; border: 1px solid #ff7043; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;">
+                                                    <i class="fas fa-paint-brush"></i> Club Creator
+                                                </span>
+                                            <% } else if (item.roles && item.roles.length > 0) { %>
+                                                <span style="background: rgba(255, 255, 255, 0.08); color: <%= item.roles[0].color || '#99aab5' %>; border: 1px solid <%= item.roles[0].color || '#555' %>; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;">
+                                                    <%= item.roles[0].badgeIcon || '🔰' %> <%= item.roles[0].name %>
+                                                </span>
+                                            <% } else { %>
+                                                <span style="background: rgba(255, 255, 255, 0.05); color: #bbb; border: 1px solid #444; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px;">
+                                                    🔰 Member
+                                                </span>
+                                            <% } %>
+                                        </div>
+
+                                        <!-- Total Member Count -->
+                                        <div style="font-size: 0.8rem; color: var(--silver); display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-users" style="color: var(--gold);"></i>
+                                            <span><%= club.memberCount || 1 %> <%= club.memberCount === 1 ? 'member' : 'members' %></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Visit/Join Button -->
+                                    <a href="/clubs/<%= club.slug %>" style="background: rgba(255, 215, 0, 0.15); border: 1px solid var(--gold); color: var(--gold); padding: 6px 12px; border-radius: 12px; text-decoration: none; font-size: 0.78rem; font-weight: 700; white-space: nowrap; align-self: center;" title="Join or View Group">
+                                        Visit
+                                    </a>
+                                </div>
+                            <% } %>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--silver);"><%= profileUser.username %> hasn't joined any creator clubs yet.</p>
                 <% } %>
             </div>
 
