@@ -445,28 +445,29 @@
             </div>
         <% } %>
 
-        <!-- Currency Switcher -->
-        <div class="currency-selector-container">
-            <label for="currency-select">Display prices in:</label>
-            <select id="currency-select" style="display: none;">
-                <option value="INR" selected>₹ INR</option>
-                <option value="USD">$ USD</option>
-                <option value="EUR">€ EUR</option>
-                <option value="GBP">£ GBP</option>
-            </select>
-            
-            <div class="custom-select-wrapper" id="wrapper-currency">
-                <div class="custom-select">
-                    <span class="selected-text">₹ INR</span>
-                    <i class="fas fa-chevron-down custom-select-arrow"></i>
-                </div>
-                <div class="custom-options">
-                    <div class="custom-option selected" data-value="INR">₹ INR</div>
-                    <div class="custom-option" data-value="USD">$ USD</div>
-                    <div class="custom-option" data-value="EUR">€ EUR</div>
-                    <div class="custom-option" data-value="GBP">£ GBP</div>
-                </div>
+        <!-- Dedicated In-Page Currency Selector -->
+        <div class="gpl-page-currency-bar">
+            <span class="gpl-currency-bar-label"><i class="fas fa-coins"></i> Currency:</span>
+            <div class="gpl-currency-pills">
+                <button type="button" class="cur-pill-btn active" data-cur="INR" onclick="setMembershipCurrency('INR')"><span class="fi fi-in"></span> ₹ INR</button>
+                <button type="button" class="cur-pill-btn" data-cur="USD" onclick="setMembershipCurrency('USD')"><span class="fi fi-us"></span> $ USD</button>
+                <button type="button" class="cur-pill-btn" data-cur="EUR" onclick="setMembershipCurrency('EUR')"><span class="fi fi-eu"></span> € EUR</button>
+                <button type="button" class="cur-pill-btn" data-cur="GBP" onclick="setMembershipCurrency('GBP')"><span class="fi fi-gb"></span> £ GBP</button>
+                <button type="button" class="cur-pill-btn" data-cur="AED" onclick="setMembershipCurrency('AED')"><span class="fi fi-ae"></span> د.إ AED</button>
+                <button type="button" class="cur-pill-btn" data-cur="CAD" onclick="setMembershipCurrency('CAD')"><span class="fi fi-ca"></span> CA$ CAD</button>
+                <button type="button" class="cur-pill-btn" data-cur="AUD" onclick="setMembershipCurrency('AUD')"><span class="fi fi-au"></span> AU$ AUD</button>
+                <button type="button" class="cur-pill-btn" data-cur="JPY" onclick="setMembershipCurrency('JPY')"><span class="fi fi-jp"></span> ¥ JPY</button>
             </div>
+            <select id="currency-select" style="display: none;">
+                <option value="INR" selected>INR</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="AED">AED</option>
+                <option value="CAD">CAD</option>
+                <option value="AUD">AUD</option>
+                <option value="JPY">JPY</option>
+            </select>
         </div>
 
         <!-- Duration Switcher -->
@@ -819,17 +820,32 @@
             });
         }
 
-        setupCustomSelect('wrapper-currency', 'currency-select');
-
         // 2. Pricing & Savings Presentation Logic
         const currencySelect = document.getElementById('currency-select');
         const currencySymbols = document.querySelectorAll('[data-currency]');
         
-        let currentCurrency = 'INR';
+        let currentCurrency = (window.GPLCurrency && window.GPLCurrency.getCurrency()) || 'INR';
         let currentDuration = 'monthly';
         let appliedCoupon = null;
 
-        const symbols = { 'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£' };
+        function setMembershipCurrency(code) {
+            currentCurrency = code;
+            if (currencySelect) currencySelect.value = code;
+            if (window.GPLCurrency) {
+                window.GPLCurrency.setCurrency(code);
+            }
+            updatePricingUI();
+        }
+
+        window.addEventListener('gplCurrencyChange', function(e) {
+            if (e.detail && e.detail.currency) {
+                currentCurrency = e.detail.currency;
+                if (currencySelect) currencySelect.value = currentCurrency;
+                updatePricingUI();
+            }
+        });
+
+        const symbols = { 'INR': '₹', 'USD': '$', 'EUR': '€', 'GBP': '£', 'AED': 'AED ', 'CAD': 'CA$', 'AUD': 'AU$', 'JPY': '¥' };
         const periods = { 'monthly': '/ month', '6months': '/ 6 months', 'yearly': '/ year', 'lifetime': '/ lifetime' };
 
         // Original Crossed-out Prices & Savings Matrix (INR)
@@ -849,7 +865,8 @@
         };
 
         function updatePricingUI() {
-            currencySymbols.forEach(el => el.textContent = symbols[currentCurrency]);
+            const activeSymbol = (window.GPLCurrency && window.GPLCurrency.symbols[currentCurrency]) || symbols[currentCurrency] || '₹';
+            currencySymbols.forEach(el => el.textContent = activeSymbol);
             
             // Lite Tier UI
             const litePriceEl = document.getElementById('lite-price');
@@ -869,7 +886,14 @@
                     liteBtn.style.opacity = '0.4';
                 }
             } else {
-                const liteDataVal = litePriceEl ? litePriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+                let liteDataVal = litePriceEl ? litePriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+                if (!liteDataVal || liteDataVal === 'N/A') {
+                    const inrVal = litePriceEl ? parseFloat(litePriceEl.getAttribute(`data-${currentDuration}-inr`)) : NaN;
+                    if (!isNaN(inrVal) && window.GPLCurrency) {
+                        const converted = window.GPLCurrency.convert(inrVal, currentCurrency);
+                        liteDataVal = currentCurrency === 'INR' || currentCurrency === 'JPY' ? Math.round(converted).toLocaleString() : (converted >= 10 ? Math.round(converted) : converted.toFixed(2));
+                    }
+                }
                 if (litePriceEl && liteDataVal) litePriceEl.textContent = liteDataVal;
                 if (litePeriodEl) litePeriodEl.textContent = periods[currentDuration];
 
@@ -895,7 +919,14 @@
             const plusOrigEl = document.getElementById('plus-original-price');
             const plusSaveEl = document.getElementById('plus-savings-badge');
 
-            const plusDataVal = plusPriceEl ? plusPriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+            let plusDataVal = plusPriceEl ? plusPriceEl.getAttribute(`data-${currentDuration}-${currentCurrency.toLowerCase()}`) : null;
+            if (!plusDataVal) {
+                const inrVal = plusPriceEl ? parseFloat(plusPriceEl.getAttribute(`data-${currentDuration}-inr`)) : NaN;
+                if (!isNaN(inrVal) && window.GPLCurrency) {
+                    const converted = window.GPLCurrency.convert(inrVal, currentCurrency);
+                    plusDataVal = currentCurrency === 'INR' || currentCurrency === 'JPY' ? Math.round(converted).toLocaleString() : (converted >= 10 ? Math.round(converted) : converted.toFixed(2));
+                }
+            }
             if (plusPriceEl && plusDataVal) plusPriceEl.textContent = plusDataVal;
             if (plusPeriodEl) plusPeriodEl.textContent = periods[currentDuration];
 
@@ -909,10 +940,11 @@
             }
         }
 
-        currencySelect.addEventListener('change', function() {
-            currentCurrency = this.value;
-            updatePricingUI();
-        });
+        if (currencySelect) {
+            currencySelect.addEventListener('change', function() {
+                setMembershipCurrency(this.value);
+            });
+        }
 
         const durationBtns = document.querySelectorAll('.duration-btn');
         durationBtns.forEach(btn => {
@@ -922,6 +954,12 @@
                 currentDuration = this.getAttribute('data-duration');
                 updatePricingUI();
             });
+        });
+
+        // Initialize active currency from global engine
+        document.addEventListener('DOMContentLoaded', () => {
+            const cur = (window.GPLCurrency && window.GPLCurrency.getCurrency()) || 'INR';
+            setMembershipCurrency(cur);
         });
 
         updatePricingUI();
@@ -1010,7 +1048,23 @@
                 } else if (data.payment_session_id) {
                     cashfree.checkout({
                         paymentSessionId: data.payment_session_id,
-                        redirectTarget: "_self"
+                        redirectTarget: "_modal"
+                    }).then(result => {
+                        if (targetBtn) {
+                            targetBtn.disabled = false;
+                            targetBtn.textContent = tier === 'lite' ? 'Get GPL Lite' : 'Upgrade to Plus';
+                        }
+                        if (result && result.error) {
+                            if (typeof window.showCancellationSurvey === 'function') {
+                                window.showCancellationSurvey({
+                                    orderId: data.order_id,
+                                    type: 'membership',
+                                    onSubmitted: function() {
+                                        window.location.href = `/payment/failure?order_id=${encodeURIComponent(data.order_id)}&type=membership&status=cancelled`;
+                                    }
+                                });
+                            }
+                        }
                     });
                 } else {
                     throw new Error(data.error || 'Failed to initialize checkout session.');

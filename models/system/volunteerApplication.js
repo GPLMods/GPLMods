@@ -32,7 +32,7 @@ const VolunteerApplicationSchema = new Schema({
         required: true 
     },
     
-    // Languages: At least one of 'hindi', 'english', 'hinglish' mandatory
+    // Languages: International (Spanish, French, Arabic, Russian, Portuguese, German, Chinese, Japanese, Indonesian, Turkish, English) & Regional
     languages: [{ type: String, trim: true }],
 
     experience: { type: String, required: true, trim: true },
@@ -51,10 +51,14 @@ const VolunteerApplicationSchema = new Schema({
     cfPaymentId: { type: String },
     paymentStatus: { 
         type: String, 
-        enum: ['pending', 'paid', 'failed', 'refunded'], 
+        enum: ['pending', 'paid', 'failed', 'cancelled', 'refunded'], 
         default: 'pending' 
     },
     paidAt: { type: Date },
+    failureReason: { type: String, default: null },
+    cancellationReason: { type: String, default: null },
+    cancellationNotes: { type: String, default: null },
+    cancelledAt: { type: Date },
 
     // Refund window tracking (7-day money-back guarantee)
     refundStatus: { 

@@ -45,7 +45,7 @@ const UserSchema = new Schema({
     },
     membership: {
         type: String,
-        enum: ['free', 'lite', 'plus', 'premium'],
+        enum: ['free', 'lite', 'plus', 'premium', 'GPLLite', 'GPLPlus'],
         default: 'free'
     },
     membershipExpiresAt: {
@@ -207,6 +207,13 @@ const UserSchema = new Schema({
     globalCouncil: {
         type: Boolean,
         default: false
+    },
+    notificationSettings: {
+        enabled: { type: Boolean, default: true },
+        newUploads: { type: Boolean, default: true },
+        clubUpdates: { type: Boolean, default: true },
+        adminMessages: { type: Boolean, default: true },
+        soundEnabled: { type: Boolean, default: true }
     },
     failedLoginAttempts: {
         type: Number,
@@ -384,6 +391,16 @@ UserSchema.statics.findByCategory = function(categoryQuery) {
         default:
             return this.find({ role: 'member', isVerified: true });
     }
+};
+
+UserSchema.virtual('storageBasePath').get(function() {
+    const { getUserStorageBasePath } = require('../../utils/storagePaths');
+    return getUserStorageBasePath(this);
+});
+
+UserSchema.methods.getUserAssetKey = function(assetType, originalFilename) {
+    const { getUserAssetKey } = require('../../utils/storagePaths');
+    return getUserAssetKey(this, assetType, originalFilename);
 };
 
 UserSchema.set('toObject', { virtuals: true });

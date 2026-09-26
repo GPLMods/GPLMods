@@ -100,6 +100,7 @@
             integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
             crossorigin="anonymous" referrerpolicy="no-referrer" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+        <script src="/js/currency-exchange.js"></script>
 
         <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
         <!-- ======== CDN CIRCUIT BREAKER SCRIPT ======== -->
@@ -273,6 +274,8 @@
 
         <script src="<%= cdnUrl %>/js/main.js"
             onerror="this.onerror=null; this.src='/js/image-fallback.js'; triggerCdnFallback();"></script>
+        <link rel="stylesheet" href="/css/notifications.css">
+        <script src="/js/notifications.js" defer></script>
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 
@@ -977,11 +980,21 @@
                                                                         <i class="fas fa-headset"></i> Support Console
                                                                     </a>
                                                                     <% } %>
+                                                                        <a href="/my-membership" class="btn btn-login"
+                                                                            style="border-color: rgba(255, 215, 0, 0.45); color: var(--gold);"
+                                                                            title="My Membership Status">
+                                                                            <i class="fas fa-crown"></i> Membership
+                                                                        </a>
                                                                         <a href="/upload" class="btn btn-login">Upload A
                                                                             New Mod</a>
                                                                         <a href="/logout"
                                                                             class="btn btn-signup">Logout</a>
                                                                         <% } else { %>
+                                                                            <a href="/membership" class="btn btn-login"
+                                                                                style="border-color: rgba(255, 215, 0, 0.4); color: var(--gold);"
+                                                                                title="VIP Membership Plans">
+                                                                                <i class="fas fa-gem"></i> VIP
+                                                                            </a>
                                                                             <a href="/upload"
                                                                                 class="btn btn-login">Upload A New
                                                                                 Mod</a>
@@ -1154,11 +1167,10 @@
                                                 <li><a href="/membership"><i class="fas fa-gem"
                                                             style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
                                                         Membership</a></li>
-                                                <% if (user && (user.membership==='plus' || user.membership==='lite' ||
-                                                    user.membership==='premium' )) { %>
+                                                <% if (user) { %>
                                                     <li><a href="/my-membership"><i class="fas fa-id-card"
                                                                 style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                            My Membership</a></li>
+                                                            My Membership &amp; Status</a></li>
                                                     <% } %>
                                                         <li><a href="/volunteer"><i class="fas fa-hands-helping"
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i>
@@ -1172,6 +1184,12 @@
                                                         <li><a href="/donate"><i class="fas fa-hand-holding-heart"
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                 Donate Us!</a></li>
+                                                        <li><a href="/sponsor"><i class="fa-solid fa-hearts"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
+                                                                Sponsors!</a></li>
+                                                        <li><a href="/promote"><i class="fas fa-bullhorn"
+                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #ff9800;"></i>
+                                                                Promote Mods</a></li>
                                                         <li><a href="/request-mod"><i class="fas fa-plus-circle"
                                                                     style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                                 Required New Mods</a></li>
@@ -1214,9 +1232,12 @@
                                                             <li><a href="/donate"><i class="fas fa-hand-holding-heart"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                     Donate Us!</a></li>
-                                                            <li><a href="/sponsor"><i class="fas fa-hand-holding-heart"
+                                                            <li><a href="/sponsor"><i class="fa-solid fa-hearts"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                     Sponsors!</a></li>
+                                                            <li><a href="/promote"><i class="fas fa-bullhorn"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #ff9800;"></i>
+                                                                    Promote Mods</a></li>
                                                             <li><a href="/login"><i class="fas fa-sign-in-alt"
                                                                         style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                                     Login</a></li>

@@ -233,6 +233,114 @@
             color: var(--gold);
             transform: translateY(-2px);
         }
+
+        /* Cancellation Survey Styles */
+        .cancellation-survey-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-radius: 16px;
+            padding: 24px 20px;
+            margin-bottom: 30px;
+            text-align: left;
+            position: relative;
+        }
+
+        .survey-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gold);
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .cancellation-survey-card h3 {
+            color: var(--white);
+            font-size: 1.25rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .survey-subtitle {
+            color: var(--silver);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .survey-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .survey-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 11px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.93rem;
+            color: #ddd;
+        }
+
+        .survey-label:hover {
+            border-color: rgba(255, 215, 0, 0.4);
+            background: rgba(255, 215, 0, 0.05);
+            color: var(--white);
+        }
+
+        .survey-label input[type="radio"] {
+            accent-color: var(--gold);
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .survey-label .reason-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .btn-survey-submit {
+            background: linear-gradient(135deg, var(--gold), #f39c12);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .btn-survey-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-survey-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 
     <main class="payment-result-container">
@@ -297,6 +405,58 @@
                                 </div>
             </div>
 
+            <!-- Cancellation Feedback Survey: "Why did you cancel?" -->
+            <div class="cancellation-survey-card" id="cancelSurveyBox">
+                <div class="survey-badge"><i class="fas fa-question-circle"></i> Quick Feedback</div>
+                <h3>Why did you cancel your purchase?</h3>
+                <p class="survey-subtitle">Your answer helps us improve pricing, features, and payment methods for everyone.</p>
+
+                <form id="cancelSurveyForm" onsubmit="submitCancelSurvey(event);">
+                    <div class="survey-options">
+                        <label class="survey-label">
+                            <input type="radio" name="cancel_reason" value="Don't want to purchase it" required onchange="toggleOtherInput(false);">
+                            <span class="reason-text"><i class="fas fa-ban" style="color: #e74c3c;"></i> Don't want to purchase it</span>
+                        </label>
+
+                        <label class="survey-label">
+                            <input type="radio" name="cancel_reason" value="Don't find payment method I need" onchange="toggleOtherInput(false);">
+                            <span class="reason-text"><i class="fas fa-credit-card" style="color: var(--gold);"></i> Don't find payment method I need</span>
+                        </label>
+
+                        <label class="survey-label">
+                            <input type="radio" name="cancel_reason" value="Click by mistake" onchange="toggleOtherInput(false);">
+                            <span class="reason-text"><i class="fas fa-mouse-pointer" style="color: #3498db;"></i> Click by mistake</span>
+                        </label>
+
+                        <label class="survey-label">
+                            <input type="radio" name="cancel_reason" value="Network issue" onchange="toggleOtherInput(false);">
+                            <span class="reason-text"><i class="fas fa-wifi" style="color: #e67e22;"></i> Network issue</span>
+                        </label>
+
+                        <label class="survey-label">
+                            <input type="radio" name="cancel_reason" value="Other" onchange="toggleOtherInput(true);">
+                            <span class="reason-text"><i class="fas fa-comment-dots" style="color: #2ecc71;"></i> Etc / Other reason</span>
+                        </label>
+                    </div>
+
+                    <div id="other-notes-wrapper" style="display: none; margin-top: 12px;">
+                        <textarea id="other-notes-input" placeholder="Tell us what payment method you needed, or why you cancelled (optional)..." rows="2" maxlength="300" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-family: inherit; resize: vertical; outline: none;"></textarea>
+                    </div>
+
+                    <div style="margin-top: 18px; display: flex; align-items: center; justify-content: flex-start; gap: 12px;">
+                        <button type="submit" class="btn-survey-submit" id="btn-survey-submit">
+                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                        </button>
+                    </div>
+                </form>
+
+                <div id="survey-success-state" style="display: none; padding: 15px 10px; text-align: center;">
+                    <i class="fas fa-check-circle" style="font-size: 2rem; color: #2ecc71; margin-bottom: 6px;"></i>
+                    <h4 style="color: #fff; margin-bottom: 4px;">Thank you for your feedback!</h4>
+                    <p style="color: var(--silver); font-size: 0.88rem; margin: 0;">Your input helps us improve checkout and payment options on GPLMods.</p>
+                </div>
+            </div>
+
             <div class="tips-box">
                 <h4><i class="fas fa-lightbulb" style="color: var(--gold);"></i> Common Fixes:</h4>
                 <ul>
@@ -326,5 +486,47 @@
             </div>
         </div>
     </main>
+
+    <script>
+        function toggleOtherInput(show) {
+            const wrapper = document.getElementById('other-notes-wrapper');
+            if (wrapper) wrapper.style.display = show ? 'block' : 'none';
+        }
+
+        async function submitCancelSurvey(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('btn-survey-submit');
+            const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+            if (!selectedReason) return;
+
+            const reasonVal = selectedReason.value;
+            const notesVal = document.getElementById('other-notes-input') ? document.getElementById('other-notes-input').value.trim() : '';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            }
+
+            try {
+                await fetch('/api/payment/cancel-feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: "<%= orderId || '' %>",
+                        type: "<%= type || 'membership' %>",
+                        reason: reasonVal,
+                        notes: notesVal
+                    })
+                });
+
+                document.getElementById('cancelSurveyForm').style.display = 'none';
+                document.getElementById('survey-success-state').style.display = 'block';
+            } catch (err) {
+                console.error('[Feedback Submit Error]:', err);
+                document.getElementById('cancelSurveyForm').style.display = 'none';
+                document.getElementById('survey-success-state').style.display = 'block';
+            }
+        }
+    </script>
 
     <%- include('../partials/footer') %>

@@ -1,0 +1,372 @@
+<!-- ========================================================================= -->
+<!-- GLOBAL PURCHASE CANCELLATION FEEDBACK MODAL                               -->
+<!-- ========================================================================= -->
+<div id="globalCancellationModal" class="gpl-cancel-modal-overlay" style="display: none;">
+    <div class="gpl-cancel-modal-card">
+        <button type="button" class="gpl-cancel-modal-close" onclick="window.closeCancellationSurvey();" aria-label="Close survey">&times;</button>
+        
+        <div class="gpl-cancel-modal-header">
+            <div class="gpl-cancel-icon-wrapper">
+                <i class="fas fa-question"></i>
+            </div>
+            <h3>Why did you cancel your purchase?</h3>
+            <p>Please help us improve. Why did you choose not to complete this purchase?</p>
+        </div>
+
+        <form id="globalCancelFeedbackForm" onsubmit="window.submitGlobalCancelFeedback(event);">
+            <div class="gpl-cancel-options">
+                <label class="gpl-cancel-option-label">
+                    <input type="radio" name="global_cancel_reason" value="Don't want to purchase it" required onchange="window.toggleGlobalOther(false);">
+                    <span class="gpl-option-body">
+                        <i class="fas fa-ban" style="color: #e74c3c;"></i>
+                        <span>Don't want to purchase it</span>
+                    </span>
+                </label>
+
+                <label class="gpl-cancel-option-label">
+                    <input type="radio" name="global_cancel_reason" value="Don't find payment method I need" onchange="window.toggleGlobalOther(false);">
+                    <span class="gpl-option-body">
+                        <i class="fas fa-credit-card" style="color: var(--gold, #f1c40f);"></i>
+                        <span>Don't find payment method I need</span>
+                    </span>
+                </label>
+
+                <label class="gpl-cancel-option-label">
+                    <input type="radio" name="global_cancel_reason" value="Click by mistake" onchange="window.toggleGlobalOther(false);">
+                    <span class="gpl-option-body">
+                        <i class="fas fa-mouse-pointer" style="color: #3498db;"></i>
+                        <span>Click by mistake</span>
+                    </span>
+                </label>
+
+                <label class="gpl-cancel-option-label">
+                    <input type="radio" name="global_cancel_reason" value="Network issue" onchange="window.toggleGlobalOther(false);">
+                    <span class="gpl-option-body">
+                        <i class="fas fa-wifi" style="color: #e67e22;"></i>
+                        <span>Network issue</span>
+                    </span>
+                </label>
+
+                <label class="gpl-cancel-option-label">
+                    <input type="radio" name="global_cancel_reason" value="Other" onchange="window.toggleGlobalOther(true);">
+                    <span class="gpl-option-body">
+                        <i class="fas fa-comment-dots" style="color: #2ecc71;"></i>
+                        <span>Etc / Other reason</span>
+                    </span>
+                </label>
+            </div>
+
+            <div id="globalOtherTextWrapper" style="display: none; margin-top: 12px;">
+                <textarea id="globalOtherNotes" placeholder="What payment method did you need, or what can we improve? (optional)" rows="2" maxlength="300" class="gpl-cancel-textarea"></textarea>
+            </div>
+
+            <div class="gpl-cancel-actions">
+                <button type="button" class="btn-cancel-skip" onclick="window.closeCancellationSurvey();">Skip</button>
+                <button type="submit" class="btn-cancel-submit" id="btnGlobalCancelSubmit">
+                    <i class="fas fa-paper-plane"></i> Submit Feedback
+                </button>
+            </div>
+        </form>
+
+        <div id="globalCancelSuccessState" style="display: none; padding: 25px 10px; text-align: center;">
+            <i class="fas fa-check-circle" style="font-size: 2.5rem; color: #2ecc71; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="color: #fff; margin-bottom: 6px; font-size: 1.2rem;">Thank you for your feedback!</h4>
+            <p style="color: var(--silver, #bbb); font-size: 0.9rem; line-height: 1.5; margin: 0;">We appreciate your input as we work to make GPLMods even better.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.gpl-cancel-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.gpl-cancel-modal-card {
+    background: linear-gradient(145deg, #1c1c1c, #121212);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 215, 0, 0.15);
+    max-width: 520px;
+    width: 100%;
+    padding: 30px 25px;
+    position: relative;
+    box-sizing: border-box;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    animation: slideUpCard 0.25s ease-out;
+}
+
+@keyframes slideUpCard {
+    from { transform: translateY(20px) scale(0.97); }
+    to { transform: translateY(0) scale(1); }
+}
+
+.gpl-cancel-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.gpl-cancel-modal-close:hover {
+    color: #fff;
+}
+
+.gpl-cancel-modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.gpl-cancel-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 215, 0, 0.12);
+    border: 2px solid var(--gold, #f1c40f);
+    color: var(--gold, #f1c40f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin: 0 auto 12px auto;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
+}
+
+.gpl-cancel-modal-header h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+.gpl-cancel-modal-header p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--silver, #bbb);
+    line-height: 1.45;
+}
+
+.gpl-cancel-options {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.gpl-cancel-option-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.92rem;
+    color: #ddd;
+}
+
+.gpl-cancel-option-label:hover {
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.4);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.gpl-cancel-option-label input[type="radio"] {
+    accent-color: var(--gold, #f1c40f);
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.gpl-option-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.gpl-cancel-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.gpl-cancel-textarea:focus {
+    border-color: var(--gold, #f1c40f);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.gpl-cancel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.btn-cancel-skip {
+    background: transparent;
+    color: #888;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-cancel-skip:hover {
+    color: #fff;
+    border-color: #666;
+}
+
+.btn-cancel-submit {
+    background: linear-gradient(135deg, var(--gold, #ffd700), #f39c12);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+.btn-cancel-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+.btn-cancel-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+</style>
+
+<script>
+(function() {
+    let currentSurveyConfig = {
+        orderId: '',
+        type: 'membership',
+        onSubmitted: null,
+        onDismiss: null
+    };
+
+    window.showCancellationSurvey = function(config = {}) {
+        currentSurveyConfig = {
+            orderId: config.orderId || '',
+            type: config.type || 'membership',
+            onSubmitted: config.onSubmitted || null,
+            onDismiss: config.onDismiss || null
+        };
+
+        const modal = document.getElementById('globalCancellationModal');
+        const form = document.getElementById('globalCancelFeedbackForm');
+        const success = document.getElementById('globalCancelSuccessState');
+        const otherWrap = document.getElementById('globalOtherTextWrapper');
+        const otherText = document.getElementById('globalOtherNotes');
+
+        if (form) form.reset();
+        if (form) form.style.display = 'block';
+        if (success) success.style.display = 'none';
+        if (otherWrap) otherWrap.style.display = 'none';
+        if (otherText) otherText.value = '';
+
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeCancellationSurvey = function() {
+        const modal = document.getElementById('globalCancellationModal');
+        if (modal) modal.style.display = 'none';
+        if (typeof currentSurveyConfig.onDismiss === 'function') {
+            currentSurveyConfig.onDismiss();
+        }
+    };
+
+    window.toggleGlobalOther = function(show) {
+        const otherWrap = document.getElementById('globalOtherTextWrapper');
+        if (otherWrap) otherWrap.style.display = show ? 'block' : 'none';
+    };
+
+    window.submitGlobalCancelFeedback = async function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const selectedRadio = document.querySelector('input[name="global_cancel_reason"]:checked');
+        if (!selectedRadio) return;
+
+        const reason = selectedRadio.value;
+        const notes = (document.getElementById('globalOtherNotes') ? document.getElementById('globalOtherNotes').value : '').trim();
+        const submitBtn = document.getElementById('btnGlobalCancelSubmit');
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        }
+
+        try {
+            await fetch('/api/payment/cancel-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: currentSurveyConfig.orderId,
+                    type: currentSurveyConfig.type,
+                    reason: reason,
+                    notes: notes
+                })
+            });
+        } catch (err) {
+            console.warn('[Feedback Submit Warning]:', err);
+        }
+
+        const form = document.getElementById('globalCancelFeedbackForm');
+        const success = document.getElementById('globalCancelSuccessState');
+        if (form) form.style.display = 'none';
+        if (success) success.style.display = 'block';
+
+        setTimeout(() => {
+            window.closeCancellationSurvey();
+            if (typeof currentSurveyConfig.onSubmitted === 'function') {
+                currentSurveyConfig.onSubmitted();
+            }
+        }, 1600);
+    };
+})();
+</script>

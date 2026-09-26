@@ -1,17 +1,192 @@
 <%- include('../../partials/header') %>
 
 <style>
-    /* Discord Glassmorphism Container */
+    /* Discord Container & Page Layout */
+    html, body {
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden !important;
+        margin: 0;
+        padding: 0;
+    }
     body {
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: #0f1015;
+    }
+    main {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    footer.main-footer {
+        display: none !important;
     }
     .discord-app-layout {
+        flex: 1;
+        height: 100%;
+        min-height: 0;
         display: flex;
-        height: calc(100vh - 65px);
         background: #0f1015;
         color: #dcddde;
         font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
         position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    /* Left Drawer Container (Combines Rail + Channels on Mobile) */
+    .discord-left-pane-wrapper {
+        display: flex;
+        height: 100%;
+        flex-shrink: 0;
+    }
+
+    /* Mobile Backdrop for off-canvas drawers */
+    .discord-mobile-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 1080;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        pointer-events: none;
+    }
+    .discord-mobile-backdrop.active {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Mobile Drawer Toggle & Close Buttons */
+    .mobile-channels-toggle-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1.05rem;
+        transition: background 0.2s, color 0.2s;
+        flex-shrink: 0;
+    }
+    .mobile-channels-toggle-btn:hover {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        border-color: var(--gold);
+    }
+    .mobile-drawer-close-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #333645;
+        border-radius: 6px;
+        color: #8e9297;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+    .mobile-drawer-close-btn:hover {
+        background: rgba(244, 67, 54, 0.2);
+        color: #ff5252;
+        border-color: #ff5252;
+    }
+    .members-mobile-header {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-bottom: 1px solid #20222c;
+        background: #111218;
+    }
+    .drawer-close-btn {
+        background: transparent;
+        border: none;
+        color: #8e9297;
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 2px 8px;
+        line-height: 1;
+        border-radius: 6px;
+        transition: color 0.2s, background 0.2s;
+    }
+    .drawer-close-btn:hover {
+        color: #fff;
+        background: #232532;
+    }
+
+    /* Club Dropdown Menu */
+    .club-header-box {
+        position: relative;
+    }
+    .club-header-dropdown {
+        position: absolute;
+        top: 52px;
+        left: 8px;
+        right: 8px;
+        background: #12131b;
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        padding: 6px;
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+        z-index: 1200;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
+    }
+    .club-header-dropdown.active {
+        display: flex;
+    }
+    .club-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        color: #dcddde;
+        font-size: 0.88rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        box-sizing: border-box;
+    }
+    .club-menu-item:hover {
+        background: #232532;
+        color: #fff;
+    }
+    .club-menu-item i {
+        width: 18px;
+        text-align: center;
+        color: var(--silver);
+    }
+    .club-menu-item:hover i {
+        color: var(--gold);
+    }
+    .club-menu-divider {
+        height: 1px;
+        background: #222430;
+        margin: 4px 6px;
     }
 
     /* 1. LEFTMOST VERTICAL RAIL (CLUBS NAV) */
@@ -671,9 +846,189 @@
         max-width: 480px;
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
     }
+
+    /* RESPONSIVE MOBILE STYLING (Discord / Telegram Mobile Experience) */
+    @media (max-width: 992px) {
+        .discord-left-pane-wrapper {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 320px;
+            max-width: 86vw;
+            height: 100dvh;
+            height: 100%;
+            z-index: 1100;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            box-shadow: 6px 0 30px rgba(0, 0, 0, 0.8);
+        }
+        .discord-left-pane-wrapper.open {
+            transform: translateX(0);
+        }
+        .discord-rail {
+            width: 64px;
+            padding: 12px 0 10px;
+            gap: 8px;
+        }
+        .rail-item {
+            width: 44px;
+            height: 44px;
+        }
+        .discord-channels-col {
+            width: auto;
+            flex: 1;
+            min-width: 0;
+        }
+        .mobile-channels-toggle-btn {
+            display: inline-flex;
+        }
+        .mobile-drawer-close-btn {
+            display: inline-flex;
+        }
+        .members-mobile-header {
+            display: flex;
+        }
+        .discord-members-col {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 280px;
+            max-width: 85vw;
+            height: 100dvh;
+            height: 100%;
+            z-index: 1100;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 1px solid #282a38;
+            box-shadow: -6px 0 30px rgba(0, 0, 0, 0.8);
+            display: flex !important;
+        }
+        .discord-members-col.open {
+            transform: translateX(0);
+        }
+        .chat-topbar {
+            padding: 0 10px;
+            height: 50px;
+        }
+        .topbar-topic {
+            display: none;
+        }
+        .topbar-channel-info {
+            gap: 8px;
+            font-size: 0.95rem;
+            min-width: 0;
+        }
+        .topbar-actions {
+            gap: 4px;
+        }
+        .topbar-btn {
+            padding: 6px;
+            font-size: 1rem;
+        }
+        .chat-messages-container {
+            padding: 12px 10px;
+            gap: 12px;
+        }
+        .message-item {
+            padding: 4px 2px;
+            gap: 10px;
+        }
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+        }
+        .message-username {
+            font-size: 0.9rem;
+        }
+        .message-body-text {
+            font-size: 0.9rem;
+        }
+        .chat-input-bar-wrap {
+            padding: 0 8px 8px;
+        }
+        .chat-input-box {
+            padding: 0 8px;
+            border-radius: 10px;
+        }
+        .chat-textarea {
+            font-size: 16px; /* Prevents auto-zoom in mobile browsers */
+            padding: 10px 4px;
+        }
+        .chat-input-actions {
+            gap: 4px;
+        }
+        .chat-action-btn {
+            padding: 6px 4px;
+            font-size: 1.05rem;
+            min-width: 32px;
+        }
+        .btn-send-chat {
+            padding: 8px 12px;
+        }
+        .emoticon-popover {
+            left: 8px;
+            right: 8px;
+            bottom: 60px;
+            width: auto;
+            max-width: calc(100vw - 16px);
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .gif-picker-modal {
+            left: 8px;
+            right: 8px;
+            bottom: 60px;
+            width: auto;
+            max-width: calc(100vw - 16px);
+        }
+        #mainEmojiPicker {
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 60px !important;
+            width: auto !important;
+            max-width: calc(100vw - 16px) !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .discord-left-pane-wrapper {
+            width: 295px;
+        }
+        .chat-action-btn {
+            padding: 5px 2px;
+            font-size: 0.95rem;
+            min-width: 28px;
+        }
+        .btn-send-chat {
+            padding: 7px 10px;
+        }
+        .mod-update-embed-box {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px;
+            gap: 10px;
+            max-width: 100%;
+        }
+        .mod-embed-icon {
+            width: 44px;
+            height: 44px;
+        }
+        .poll-embed-card {
+            max-width: 100%;
+            padding: 12px;
+        }
+    }
 </style>
 
 <div class="discord-app-layout">
+
+    <!-- Mobile Backdrop for off-canvas Drawers -->
+    <div class="discord-mobile-backdrop" id="discordBackdrop" onclick="closeDiscordDrawers()"></div>
+
+    <!-- LEFT DRAWER: RAIL (Clubs) + CHANNELS SIDEBAR -->
+    <div class="discord-left-pane-wrapper" id="leftNavDrawer">
 
     <!-- ========================================== -->
     <!-- 1. LEFT RAIL: JOINED CLUBS & DISCOVER      -->
@@ -714,15 +1069,56 @@
     <!-- 2. CHANNELS SIDEBAR                        -->
     <!-- ========================================== -->
     <div class="discord-channels-col">
-        <!-- Club Header -->
-        <div class="club-header-box" onclick="toggleClubMenu()">
+        <!-- Club Header with Server Actions Dropdown -->
+        <div class="club-header-box" onclick="toggleClubMenu(event)">
             <div class="club-header-title">
                 <span><%= club.name %></span>
                 <% if (club.isVerified || club.isDefault) { %>
                     <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.85em;"></i>
                 <% } %>
             </div>
-            <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: #8e9297;"></i>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: #8e9297;"></i>
+                <button type="button" class="mobile-drawer-close-btn" onclick="closeDiscordDrawers(event)" title="Close Navigation">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Club Dropdown Menu -->
+        <div class="club-header-dropdown" id="clubHeaderDropdown">
+            <a href="/clubs/<%= club.slug %>/preview" class="club-menu-item">
+                <i class="fas fa-info-circle"></i>
+                <span>Club Overview &amp; Info</span>
+            </a>
+            <div class="club-menu-item" data-club-id="<%= club._id %>" data-club-name="<%= club.name %>" data-club-url="/clubs/<%= club.slug %>" onclick="handleClubShare(this); toggleClubMenu();">
+                <i class="fas fa-share-alt"></i>
+                <span>Invite &amp; Share Club</span>
+            </div>
+            <% if (hasManageClubPerm) { %>
+                <div class="club-menu-divider"></div>
+                <div class="club-menu-item" onclick="openCreateChannelModal(); toggleClubMenu();">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create Text Channel</span>
+                </div>
+                <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Tracked Creators</span>
+                </div>
+            <% } %>
+            <div class="club-menu-divider"></div>
+            <a href="/clubs" class="club-menu-item">
+                <i class="fas fa-compass"></i>
+                <span>Explore Other Clubs</span>
+            </a>
+            <% if (!club.isDefault && membership && !isClubCreator) { %>
+                <form action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to leave this club?');">
+                    <button type="submit" class="club-menu-item" style="color: #ff5252;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Leave Club</span>
+                    </button>
+                </form>
+            <% } %>
         </div>
 
         <!-- Channels Scroll Area -->
@@ -788,6 +1184,7 @@
             <% } %>
         </div>
     </div>
+    </div> <!-- Close .discord-left-pane-wrapper -->
 
     <!-- ========================================== -->
     <!-- 3. MAIN CHAT AREA                          -->
@@ -796,6 +1193,10 @@
         <!-- Top Bar -->
         <div class="chat-topbar">
             <div class="topbar-channel-info">
+                <!-- Mobile Navigation Toggle Button -->
+                <button type="button" class="mobile-channels-toggle-btn" id="mobileChannelsToggleBtn" onclick="toggleLeftDrawer()" title="Channels &amp; Clubs">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
                 <span><%= activeChannel ? activeChannel.name : 'general' %></span>
                 <% if (activeChannel && activeChannel.topic) { %>
@@ -1008,6 +1409,14 @@
     <!-- 4. RIGHT SIDEBAR: MEMBERS LIST             -->
     <!-- ========================================== -->
     <div class="discord-members-col" id="membersSidebar">
+        <!-- Mobile Members Header -->
+        <div class="members-mobile-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-users" style="color: var(--gold);"></i>
+                <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">Club Members</span>
+            </div>
+            <button type="button" class="drawer-close-btn" onclick="toggleMembersSidebar()" title="Close Members">&times;</button>
+        </div>
         <div class="members-scroll-area">
             <!-- SITE STAFF SECTION -->
             <% const staffMembers = members.filter(m => m.user && ['owner', 'admin'].includes(m.user.role)); %>
@@ -1175,6 +1584,9 @@
 
     // 2. Strict Link Validation (Only GPLMods Links Allowed)
     const ALLOWED_DOMAINS = ['gplmods.webredirect.org', 'gplmods.mytunnel.org', 'localhost', '127.0.0.1'];
+    if (window.location.hostname && !ALLOWED_DOMAINS.includes(window.location.hostname)) {
+        ALLOWED_DOMAINS.push(window.location.hostname);
+    }
     function containsExternalLinks(text) {
         if (!text) return false;
         const urlPattern = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(?:com|org|net|io|gg|me|app|xyz|site|online|tv|cc|ru|cn|in|info|biz|co|uk|de|eu|club|link|live)[^\s]*)/gi;
@@ -1426,10 +1838,85 @@
     function openTrackedCreatorsModal() { document.getElementById('trackedCreatorsModal').classList.add('active'); }
     function closeTrackedCreatorsModal() { document.getElementById('trackedCreatorsModal').classList.remove('active'); }
 
+    // Drawer Controllers (Mobile Off-Canvas & Desktop)
+    function toggleLeftDrawer() {
+        const drawer = document.getElementById('leftNavDrawer');
+        const backdrop = document.getElementById('discordBackdrop');
+        if (!drawer) return;
+        const isOpen = drawer.classList.contains('open');
+        closeDiscordDrawers();
+        if (!isOpen) {
+            drawer.classList.add('open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+    }
+
     function toggleMembersSidebar() {
         const sidebar = document.getElementById('membersSidebar');
-        sidebar.style.display = (sidebar.style.display === 'none') ? 'flex' : 'none';
+        const backdrop = document.getElementById('discordBackdrop');
+        if (!sidebar) return;
+        if (window.innerWidth <= 992) {
+            const isOpen = sidebar.classList.contains('open');
+            closeDiscordDrawers();
+            if (!isOpen) {
+                sidebar.classList.add('open');
+                if (backdrop) backdrop.classList.add('active');
+            }
+        } else {
+            sidebar.style.display = (sidebar.style.display === 'none') ? 'flex' : 'none';
+        }
     }
+
+    function closeDiscordDrawers(e) {
+        if (e && e.stopPropagation) {
+            e.stopPropagation();
+        }
+        const leftDrawer = document.getElementById('leftNavDrawer');
+        const membersSidebar = document.getElementById('membersSidebar');
+        const backdrop = document.getElementById('discordBackdrop');
+        const clubDropdown = document.getElementById('clubHeaderDropdown');
+        if (leftDrawer) leftDrawer.classList.remove('open');
+        if (membersSidebar && window.innerWidth <= 992) membersSidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+        if (clubDropdown) clubDropdown.classList.remove('active');
+    }
+
+    function toggleClubMenu(e) {
+        if (e && e.stopPropagation) {
+            e.stopPropagation();
+        }
+        const dropdown = document.getElementById('clubHeaderDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('active');
+        }
+    }
+
+    // Auto-close navigation drawer on mobile when clicking channel link
+    document.querySelectorAll('.channel-item-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 992) {
+                closeDiscordDrawers();
+            }
+        });
+    });
+
+    // Close club dropdown on outside click
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('clubHeaderDropdown');
+        const headerBox = document.querySelector('.club-header-box');
+        if (dropdown && dropdown.classList.contains('active')) {
+            if (!dropdown.contains(e.target) && (!headerBox || !headerBox.contains(e.target))) {
+                dropdown.classList.remove('active');
+            }
+        }
+    });
+
+    // Close drawers on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDiscordDrawers();
+        }
+    });
 
     // Share Club System (from download.ejs)
     function handleClubShare(btn) {

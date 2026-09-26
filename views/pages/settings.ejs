@@ -22,6 +22,29 @@
             <h1 style="color: var(--white); font-size: 2.8em; margin-bottom: 10px;">Account <span style="color: var(--gold); text-shadow: 0 0 4px var(--glow-gold);">Settings</span></h1>
         </div>
 
+        <!-- Membership & Subscription Status Section -->
+        <div class="settings-section" style="border: 1px solid rgba(255, 215, 0, 0.35); background: linear-gradient(145deg, rgba(255, 215, 0, 0.05), rgba(18, 18, 18, 0.9)); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+            <div class="settings-info" style="flex: 1;">
+                <h3 style="color: var(--gold); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-crown"></i> Membership &amp; Subscription Status
+                </h3>
+                <p style="margin: 4px 0 0 0; color: var(--silver); font-size: 0.9em;">
+                    Current Tier: <strong style="color: #fff; text-transform: uppercase;"><%= (user.membership && user.membership !== 'free') ? user.membership : 'Free Member' %></strong>
+                    <% if (user.membershipExpiresAt) { %>
+                        &middot; Expires: <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                    <% } %>
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <a href="/my-membership" class="btn" style="background: var(--gold); color: #000; font-weight: 700; padding: 9px 18px; border-radius: 8px; text-decoration: none; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-id-card"></i> Manage Membership
+                </a>
+                <a href="/membership" class="btn" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid #444; font-weight: 600; padding: 9px 15px; border-radius: 8px; text-decoration: none; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-gem"></i> All Plans
+                </a>
+            </div>
+        </div>
+
         <!-- 2FA Settings (INDIVIDUAL METHOD TOGGLES) -->
         <div class="settings-section" style="flex-direction: column; align-items: stretch;">
             <div class="settings-info" style="width: 100%;">
@@ -93,6 +116,113 @@
                     <input type="checkbox" name="loginAlertEmailsEnabled" onchange="this.form.submit()" <%= user.loginAlertEmailsEnabled ? 'checked' : '' %>>
                     <span class="slider round"></span>
                 </label>
+            </form>
+        </div>
+
+        <!-- Dynamic & PWA Notifications Settings -->
+        <%
+            const notifSettings = user.notificationSettings || {
+                enabled: true,
+                newUploads: true,
+                clubUpdates: true,
+                adminMessages: true,
+                soundEnabled: true
+            };
+        %>
+        <div class="settings-section" style="flex-direction: column; align-items: stretch;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
+                <div class="settings-info" style="max-width: 580px;">
+                    <h3><i class="fas fa-bell" style="color: var(--gold);"></i> Dynamic &amp; PWA Notifications</h3>
+                    <p>Receive real-time push and in-app alerts on your device for new mod uploads, club releases, and official administrator messages.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="enablePushNotifications()" id="btn-request-push" style="border-color: var(--gold); color: var(--gold); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-mobile-alt"></i> Sync PWA Push
+                    </button>
+                </div>
+            </div>
+
+            <form action="/settings/notifications" method="POST" id="notif-settings-form" style="margin-top: 18px; width: 100%;">
+                <!-- Master Toggle -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 10px; margin-bottom: 14px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(255, 215, 0, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold);">
+                            <i class="fas fa-toggle-on" style="font-size: 1.1em;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Enable Notifications</div>
+                            <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Master switch for Web Push, PWA alerts, and live in-app notifications</div>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="notificationsEnabled" onchange="this.form.submit()" <%= notifSettings.enabled ? 'checked' : '' %>>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Sub-preferences Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                    <!-- 1. New Uploads -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-rocket" style="color: #64b5f6; width: 18px;"></i>
+                            <span style="font-size: 0.9em; color: #fff; font-weight: 500;">New Mod Uploads</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="newUploads" onchange="this.form.submit()" <%= notifSettings.newUploads ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- 2. Club Updates -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-sync-alt" style="color: #81c784; width: 18px;"></i>
+                            <span style="font-size: 0.9em; color: #fff; font-weight: 500;">Club &amp; Mod Updates</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="clubUpdates" onchange="this.form.submit()" <%= notifSettings.clubUpdates ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- 3. Admin Messages -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
+                            <span style="font-size: 0.9em; color: #fff; font-weight: 500;">Admin Announcements</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="adminMessages" onchange="this.form.submit()" <%= notifSettings.adminMessages ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- 4. Notification Sound -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
+                            <span style="font-size: 0.9em; color: #fff; font-weight: 500;">Notification Sound</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" name="soundEnabled" onchange="this.form.submit()" <%= notifSettings.soundEnabled ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Testing & Sound Controls -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" class="btn btn-secondary" onclick="testNotificationSound()" style="border-color: #444; color: var(--silver); padding: 7px 12px; font-size: 0.82em; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-play" style="color: var(--gold); margin-right: 5px;"></i> Test Sound Effect
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="sendTestNotification()" style="border-color: #444; color: var(--silver); padding: 7px 12px; font-size: 0.82em; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-paper-plane" style="color: #64b5f6; margin-right: 5px;"></i> Send Test Push
+                        </button>
+                    </div>
+                    <span style="font-size: 0.76em; color: #72767d;">Custom sound effect: <code>/sfx/notification.mp3</code></span>
+                </div>
             </form>
         </div>
 

@@ -56,8 +56,10 @@ const ChatSession = require('./chatSession');
 const ChatSettings = require('./chatSettings');
 const AIKnowledge = require('./aiKnowledge');
 const VolunteerApplication = require('./system/volunteerApplication');
+const PushSubscription = require('./pushSubscription');
 
 module.exports = {
+    PushSubscription,
     // Core
     File,
     User,

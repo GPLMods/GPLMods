@@ -255,4 +255,20 @@ const FileSchema = new Schema({
     timestamps: true
 }); 
 
+FileSchema.methods.getStorageKey = function(assetType, options = {}) {
+    const { getModStorageKey } = require('../../utils/storagePaths');
+    return getModStorageKey({
+        category: this.category,
+        modName: this.name || options.modName,
+        uploader: this.uploader || options.uploader,
+        uploaderEmail: options.uploaderEmail,
+        isVariant: Boolean(this.isVariant),
+        variantId: this.isVariant ? this._id : null,
+        assetType: assetType,
+        screenshotIndex: options.screenshotIndex,
+        originalFilename: options.originalFilename,
+        version: this.version || options.version
+    });
+};
+
 module.exports = mongoose.model('File', FileSchema);

@@ -78,6 +78,7 @@
     "socket.io": "^4.8.3",
     "speakeasy": "^2.0.0",
     "styled-components": "^5.3.11",
-    "ua-parser-js": "^2.0.10"
+    "ua-parser-js": "^2.0.10",
+    "web-push": "^3.6.7"
   }
 }

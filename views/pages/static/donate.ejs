@@ -537,33 +537,31 @@
         </div>
         <!-- ============================================== -->
 
-        <!-- ======== CUSTOM CURRENCY SWITCHER ======== -->
-        <div class="currency-selector-container">
-            <label for="currency-select">Select Currency:</label>
-            
-            <!-- Hidden Native Select (Used by logic) -->
-            <select id="currency-select" style="display: none;">
-                <option value="INR" selected>₹ INR</option>
-                <option value="USD">$ USD</option>
-                <option value="EUR">€ EUR</option>
-                <option value="GBP">£ GBP</option>
-            </select>
-            
-            <!-- Custom UI Wrapper -->
-            <div class="custom-select-wrapper" id="wrapper-currency">
-                <div class="custom-select">
-                    <span class="selected-text">₹ INR</span>
-                    <i class="fas fa-chevron-down custom-select-arrow"></i>
-                </div>
-                <div class="custom-options">
-                    <div class="custom-option selected" data-value="INR">₹ INR</div>
-                    <div class="custom-option" data-value="USD">$ USD</div>
-                    <div class="custom-option" data-value="EUR">€ EUR</div>
-                    <div class="custom-option" data-value="GBP">£ GBP</div>
-                </div>
+        <!-- ======== DEDICATED IN-PAGE CURRENCY SELECTOR ======== -->
+        <div class="gpl-page-currency-bar">
+            <span class="gpl-currency-bar-label"><i class="fas fa-coins"></i> Currency:</span>
+            <div class="gpl-currency-pills">
+                <button type="button" class="cur-pill-btn active" data-cur="INR" onclick="setDonateCurrency('INR')"><span class="fi fi-in"></span> ₹ INR</button>
+                <button type="button" class="cur-pill-btn" data-cur="USD" onclick="setDonateCurrency('USD')"><span class="fi fi-us"></span> $ USD</button>
+                <button type="button" class="cur-pill-btn" data-cur="EUR" onclick="setDonateCurrency('EUR')"><span class="fi fi-eu"></span> € EUR</button>
+                <button type="button" class="cur-pill-btn" data-cur="GBP" onclick="setDonateCurrency('GBP')"><span class="fi fi-gb"></span> £ GBP</button>
+                <button type="button" class="cur-pill-btn" data-cur="AED" onclick="setDonateCurrency('AED')"><span class="fi fi-ae"></span> د.إ AED</button>
+                <button type="button" class="cur-pill-btn" data-cur="CAD" onclick="setDonateCurrency('CAD')"><span class="fi fi-ca"></span> CA$ CAD</button>
+                <button type="button" class="cur-pill-btn" data-cur="AUD" onclick="setDonateCurrency('AUD')"><span class="fi fi-au"></span> AU$ AUD</button>
+                <button type="button" class="cur-pill-btn" data-cur="JPY" onclick="setDonateCurrency('JPY')"><span class="fi fi-jp"></span> ¥ JPY</button>
             </div>
+            <select id="currency-select" style="display: none;">
+                <option value="INR" selected>INR</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="AED">AED</option>
+                <option value="CAD">CAD</option>
+                <option value="AUD">AUD</option>
+                <option value="JPY">JPY</option>
+            </select>
         </div>
-        <!-- ========================================== -->
+        <!-- ==================================================== -->
 
         <!-- Preset Buttons -->
         <div id="donation-form" class="donation-options">
@@ -790,8 +788,32 @@
             'INR': { min: 100, max: 2000, symbol: '₹' },
             'USD': { min: 2, max: 23.53, symbol: '$' },
             'EUR': { min: 1.80, max: 21.74, symbol: '€' },
-            'GBP': { min: 1.50, max: 18.52, symbol: '£' }
+            'GBP': { min: 1.50, max: 18.52, symbol: '£' },
+            'AED': { min: 5, max: 88, symbol: 'AED ' },
+            'CAD': { min: 2, max: 32, symbol: 'CA$' },
+            'AUD': { min: 2, max: 36, symbol: 'AU$' },
+            'JPY': { min: 200, max: 3500, symbol: '¥' }
         };
+
+        function getPresetAmountForCurrency(btn, cur) {
+            const explicit = btn.getAttribute(`data-${cur.toLowerCase()}`);
+            if (explicit) return parseFloat(explicit);
+            const inrVal = parseFloat(btn.getAttribute('data-inr'));
+            if (!isNaN(inrVal) && window.GPLCurrency) {
+                const converted = window.GPLCurrency.convert(inrVal, cur);
+                return cur === 'INR' || cur === 'JPY' ? Math.round(converted) : (converted >= 10 ? Math.round(converted) : parseFloat(converted.toFixed(2)));
+            }
+            return 100;
+        }
+
+        function setDonateCurrency(code) {
+            if (!limits[code]) code = 'INR';
+            if (currencySelect) currencySelect.value = code;
+            if (window.GPLCurrency) {
+                window.GPLCurrency.setCurrency(code);
+            }
+            applyCurrencyChange(code);
+        }
 
         function formatCurrencyAmount(val, cur) {
             if (cur === 'INR') {
@@ -917,19 +939,18 @@
         }
 
         // --- 4. Event Listeners ---
-
-        // A. Currency Switcher
-        currencySelect.addEventListener('change', function() {
-            const selectedCurrency = this.value;
-            const rules = limits[selectedCurrency];
+        function applyCurrencyChange(selectedCurrency) {
+            const rules = limits[selectedCurrency] || limits['INR'];
 
             donationButtons.forEach(btn => {
-                btn.querySelector('.currency-symbol').textContent = rules.symbol;
-                const newPrice = btn.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
-                if (newPrice) btn.querySelector('.price-value').textContent = newPrice;
+                const sym = btn.querySelector('.currency-symbol');
+                if (sym) sym.textContent = rules.symbol;
+                const newPrice = getPresetAmountForCurrency(btn, selectedCurrency);
+                const valSpan = btn.querySelector('.price-value');
+                if (valSpan) valSpan.textContent = selectedCurrency === 'INR' || selectedCurrency === 'JPY' ? Math.round(newPrice).toLocaleString() : newPrice;
             });
 
-            inputSymbol.textContent = rules.symbol;
+            if (inputSymbol) inputSymbol.textContent = rules.symbol;
             updateCapAndLimits(selectedCurrency);
 
             // Select an allowed preset button or fallback to custom
@@ -937,10 +958,24 @@
             if (firstAllowedBtn) {
                 donationButtons.forEach(b => b.classList.remove('selected'));
                 firstAllowedBtn.classList.add('selected');
-                customInput.value = firstAllowedBtn.getAttribute(`data-${selectedCurrency.toLowerCase()}`);
+                customInput.value = getPresetAmountForCurrency(firstAllowedBtn, selectedCurrency);
             }
 
             syncFinalButton();
+        }
+
+        // A. Currency Switcher
+        if (currencySelect) {
+            currencySelect.addEventListener('change', function() {
+                setDonateCurrency(this.value);
+            });
+        }
+
+        window.addEventListener('gplCurrencyChange', function(e) {
+            if (e.detail && e.detail.currency) {
+                if (currencySelect) currencySelect.value = e.detail.currency;
+                applyCurrencyChange(e.detail.currency);
+            }
         });
 
         // B. Preset Buttons Click
@@ -951,7 +986,7 @@
                 this.classList.add('selected');
                 
                 const currency = currencySelect.value;
-                const value = this.getAttribute(`data-${currency.toLowerCase()}`);
+                const value = getPresetAmountForCurrency(this, currency);
                 customInput.value = value;
                 
                 syncFinalButton();
@@ -964,8 +999,11 @@
             syncFinalButton();
         });
 
-        // Initialize on load
-        updateCapAndLimits('INR');
+        // Initialize with globally saved currency on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialCur = (window.GPLCurrency && window.GPLCurrency.getCurrency()) || 'INR';
+            setDonateCurrency(initialCur);
+        });
 
         // Optional Background Refresh of Live Cap Data
         fetch('/api/donation-cap')
@@ -1014,7 +1052,24 @@
             .then(res => res.json())
             .then(data => {
                 if (data.payment_session_id) {
-                    cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
+                    cashfree.checkout({ 
+                        paymentSessionId: data.payment_session_id, 
+                        redirectTarget: "_modal" 
+                    }).then(result => {
+                        this.disabled = false;
+                        this.innerHTML = originalHTML;
+                        if (result && result.error) {
+                            if (typeof window.showCancellationSurvey === 'function') {
+                                window.showCancellationSurvey({
+                                    orderId: data.order_id,
+                                    type: 'donation',
+                                    onSubmitted: function() {
+                                        window.location.href = `/payment/failure?order_id=${encodeURIComponent(data.order_id)}&type=donation&status=cancelled`;
+                                    }
+                                });
+                            }
+                        }
+                    });
                 } else {
                     throw new Error(data.error || 'Server error.');
                 }

@@ -37,7 +37,7 @@ function getCleanFallbackUrl(originalSrc) {
     try {
         // This Regex matches any of our cloud storage folders and grabs the relative path,
         // ignoring any '?' URL query parameters attached by Backblaze signed URLs.
-        const match = originalSrc.match(/(avatars|mods|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)\/([^\?]+)/);
+        const match = originalSrc.match(/(users|mods|clubs|avatars|card-avatars|card-backgrounds|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)\/([^\?]+)/);
         
         if (match) {
             // match[0] contains "folder/subfolder/.../filename.png"
@@ -87,7 +87,7 @@ document.addEventListener('error', function(event) {
         const src = failedImg.src || '';
         
         // Ensure it's one of our cloud images that failed, not a local asset
-        const cloudFolderPattern = /(avatars|mods|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)/;
+        const cloudFolderPattern = /(users|mods|clubs|avatars|card-avatars|card-backgrounds|icons|screenshots|docs|forums|requests|support|distributors|dmca|ios-certs|announcements)/;
         if (cloudFolderPattern.test(src)) {
             activateFallbackMode(); // Set the 24-hour cookie
             applyFallback(failedImg); // Swap the broken image with the backup

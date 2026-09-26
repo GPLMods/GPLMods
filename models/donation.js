@@ -22,7 +22,11 @@ const DonationSchema = new Schema({
     transactionId: { type: String },
     guestId: { type: String, index: true, default: null },
     donorIp: { type: String, default: null },
-    status: { type: String, enum: ['pending', 'successful', 'failed'], default: 'pending' }
+    status: { type: String, enum: ['pending', 'successful', 'failed', 'cancelled'], default: 'pending' },
+    failureReason: { type: String, default: null },
+    cancellationReason: { type: String, default: null },
+    cancellationNotes: { type: String, default: null },
+    cancelledAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Donation', DonationSchema);

@@ -2,7 +2,7 @@ const ftp = require("basic-ftp");
 const fs = require("fs");
 const path = require("path");
 
-const IMAGE_FOLDERS = new Set(['avatars', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements']);
+const IMAGE_FOLDERS = new Set(['users', 'clubs', 'avatars', 'card-avatars', 'card-backgrounds', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements']);
 
 function normalizeB2Key(b2Key) {
     if (!b2Key || typeof b2Key !== 'string') return null;
@@ -12,17 +12,36 @@ function normalizeB2Key(b2Key) {
 function shouldMirrorToFTP(b2Key) {
     const normalized = normalizeB2Key(b2Key);
     if (!normalized) return false;
-    const topLevel = normalized.split('/')[0].toLowerCase();
+    const parts = normalized.split('/');
+    const topLevel = parts[0].toLowerCase();
+    const ext = path.extname(normalized).toLowerCase();
+    const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico'].includes(ext);
 
-    // Mod archives stay in B2; only their generated icon and screenshot assets are mirrored.
+    // 1. Users hierarchy: users/staff/... and users/members/...
+    if (topLevel === 'users') {
+        return isImage;
+    }
+
+    // 2. Mod archives stay in B2; only app icons, screenshots, and reviews metadata are mirrored.
     if (topLevel === 'mods') {
-        return normalized.split('/').some(folder => folder === 'icons' || folder === 'screenshots');
+        const fileName = parts[parts.length - 1].toLowerCase();
+        if (fileName.startsWith('app-icon') || fileName.startsWith('file-screenshot') || parts.includes('screenshot') || parts.includes('screenshots') || parts.includes('icons')) {
+            return isImage;
+        }
+        if (parts.includes('reviews') && ext === '.json') {
+            return true;
+        }
+        return false;
+    }
+
+    // 3. Clubs hierarchy
+    if (topLevel === 'clubs') {
+        return isImage;
     }
 
     if (IMAGE_FOLDERS.has(topLevel)) return true;
     
-    const ext = path.extname(normalized).toLowerCase();
-    return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico'].includes(ext);
+    return isImage;
 }
 
 async function mirrorToFTP(fileData, b2Key) {

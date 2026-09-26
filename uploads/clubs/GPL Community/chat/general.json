@@ -1,0 +1,28 @@
+[
+  {
+    "_id": "6ab765c12e59519b5e38cf0e",
+    "club": "6ab765c02e59519b5e38cef1",
+    "channel": "6ab765c02e59519b5e38cf03",
+    "sender": "6a487f539c417470b01b5dd6",
+    "content": "👋 Welcome to the official **#general** channel of GPLMods! Introduce yourself and share what mods you're playing.",
+    "translatedContent": {},
+    "isSystemMessage": true,
+    "reactions": [],
+    "createdAt": "2026-09-26T06:27:13.402Z",
+    "updatedAt": "2026-09-26T06:27:13.402Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ab7ebd8b5d16d56e53ab50b",
+    "club": "6ab765c02e59519b5e38cef1",
+    "channel": "6ab765c02e59519b5e38cf03",
+    "sender": "6a487f539c417470b01b5dd6",
+    "content": "Gi",
+    "translatedContent": {},
+    "isSystemMessage": false,
+    "reactions": [],
+    "createdAt": "2026-09-26T15:59:20.702Z",
+    "updatedAt": "2026-09-26T15:59:20.702Z",
+    "__v": 0
+  }
+]

@@ -37,6 +37,12 @@ const SourceCode = require('../models/sourceCode');
 const StaticPage = require('../models/staticPage');
 const AIKnowledge = require('../models/aiKnowledge');
 const ModTemplate = require('../models/modTemplate');
+const Club = require('../models/community/club');
+const ClubChannel = require('../models/community/clubChannel');
+const ClubRole = require('../models/community/clubRole');
+const ClubMember = require('../models/community/clubMember');
+const ClubMessage = require('../models/community/clubMessage');
+const ClubJoinRequest = require('../models/community/clubJoinRequest');
 
 function extractVTId(input) {
     if (!input) return "";
@@ -138,6 +144,7 @@ async function createAdminRouter() {
     // --- Structured AdminJS Navigation Groups ---
     const usersNav = { name: 'Users & Access', icon: 'Users' };
     const modsNav = { name: 'Mods & Repositories', icon: 'Package' };
+    const clubsNav = { name: 'Clubs & Communities', icon: 'Compass' };
     const communityNav = { name: 'Community & Forum', icon: 'MessageSquare' };
     const docsNav = { name: 'Documentation & Content', icon: 'BookOpen' };
     const moderationNav = { name: 'Publishers & Moderation', icon: 'Shield' };
@@ -326,6 +333,14 @@ async function createAdminRouter() {
                             description: 'Security: Only the Owner can modify user roles.'
                         },
                         membership: {
+                            availableValues: [
+                                { value: 'free', label: 'Free Member' },
+                                { value: 'GPLLite', label: 'GPLLite' },
+                                { value: 'GPLPlus', label: 'GPLPlus' },
+                                { value: 'lite', label: 'Lite (Legacy)' },
+                                { value: 'plus', label: 'Plus (Legacy)' },
+                                { value: 'premium', label: 'Premium (General)' }
+                            ],
                             isVisible: {
                                 list: true,
                                 show: true,
@@ -450,7 +465,27 @@ async function createAdminRouter() {
                                 return request;
                             }
                         },
-                        delete: { isAccessible: true }
+                        delete: {
+                            isAccessible: true,
+                            before: async (request, context) => {
+                                const userId = context.record?.params?._id;
+                                if (userId) {
+                                    const userToDelete = await User.findById(userId);
+                                    if (userToDelete) {
+                                        if (userToDelete.profileImageKey) {
+                                            await deleteFromB2Admin(userToDelete.profileImageKey);
+                                        }
+                                        if (userToDelete.cardAvatarUrl && !userToDelete.cardAvatarUrl.startsWith('http')) {
+                                            await deleteFromB2Admin(userToDelete.cardAvatarUrl);
+                                        }
+                                        if (userToDelete.cardBgUrl && !userToDelete.cardBgUrl.startsWith('http')) {
+                                            await deleteFromB2Admin(userToDelete.cardBgUrl);
+                                        }
+                                    }
+                                }
+                                return request;
+                            }
+                        }
                     }
                 }
             },
@@ -769,6 +804,89 @@ async function createAdminRouter() {
                             ]
                         }
                     }
+                }
+            },
+
+            // ---------------------------------
+            // CLUBS & COMMUNITIES
+            // ---------------------------------
+            {
+                resource: Club,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['name', 'slug', 'primaryLanguage', 'isDefault', 'isPrivate', 'memberCount', 'channelCount', 'createdAt'],
+                    showProperties: ['name', 'slug', 'description', 'tags', 'creator', 'isDefault', 'isPrivate', 'joinApprovalRequired', 'primaryLanguage', 'country', 'aboutAdmin', 'rules', 'iconUrl', 'bannerUrl', 'storageFolderName', 'storagePath', 'memberCount', 'channelCount', 'isVerified', 'createdAt', 'updatedAt'],
+                    editProperties: ['name', 'slug', 'description', 'tags', 'primaryLanguage', 'country', 'aboutAdmin', 'rules', 'isDefault', 'isPrivate', 'joinApprovalRequired', 'isVerified', 'iconUrl', 'bannerUrl'],
+                    properties: {
+                        description: { type: 'textarea' },
+                        aboutAdmin: { type: 'textarea' }
+                    },
+                    actions: {
+                        delete: {
+                            before: async (request, context) => {
+                                const recordId = context.record?.params?._id;
+                                if (recordId) {
+                                    const club = await Club.findById(recordId);
+                                    if (club && club.storagePath && fs.existsSync(club.storagePath)) {
+                                        try {
+                                            fs.rmSync(club.storagePath, { recursive: true, force: true });
+                                        } catch (e) {
+                                            console.error('Error removing club disk directory:', e.message);
+                                        }
+                                    }
+                                    await ClubChannel.deleteMany({ club: recordId });
+                                    await ClubRole.deleteMany({ club: recordId });
+                                    await ClubMember.deleteMany({ club: recordId });
+                                    await ClubMessage.deleteMany({ club: recordId });
+                                    await ClubJoinRequest.deleteMany({ club: recordId });
+                                }
+                                return request;
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                resource: ClubChannel,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['club', 'name', 'type', 'topic', 'isPrivate', 'isReadOnly', 'position'],
+                    editProperties: ['club', 'name', 'topic', 'type', 'isPrivate', 'isReadOnly', 'position']
+                }
+            },
+            {
+                resource: ClubRole,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['club', 'name', 'badgeIcon', 'color', 'position', 'isDefault'],
+                    editProperties: ['club', 'name', 'badgeIcon', 'color', 'position', 'isDefault']
+                }
+            },
+            {
+                resource: ClubMember,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['club', 'user', 'roles', 'isCreator', 'status', 'joinedAt'],
+                    editProperties: ['club', 'user', 'roles', 'status']
+                }
+            },
+            {
+                resource: ClubMessage,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['club', 'channel', 'sender', 'content', 'isSystemMessage', 'createdAt'],
+                    showProperties: ['club', 'channel', 'sender', 'content', 'translatedContent', 'poll', 'modUpdate', 'isSystemMessage', 'createdAt'],
+                    editProperties: ['content'],
+                    properties: { content: { type: 'textarea' } }
+                }
+            },
+            {
+                resource: ClubJoinRequest,
+                options: {
+                    navigation: clubsNav,
+                    listProperties: ['club', 'user', 'status', 'createdAt'],
+                    editProperties: ['status', 'message', 'reviewedBy'],
+                    properties: { message: { type: 'textarea' } }
                 }
             },
 

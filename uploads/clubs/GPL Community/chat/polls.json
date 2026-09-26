@@ -1,0 +1,15 @@
+[
+  {
+    "_id": "6ab7d951fc205c75325607e9",
+    "club": "6ab765c02e59519b5e38cef1",
+    "channel": "6ab765c12e59519b5e38cf05",
+    "sender": "6a487f539c417470b01b5dd6",
+    "content": "Hello",
+    "translatedContent": {},
+    "isSystemMessage": false,
+    "reactions": [],
+    "createdAt": "2026-09-26T14:40:17.938Z",
+    "updatedAt": "2026-09-26T14:40:17.938Z",
+    "__v": 0
+  }
+]

@@ -61,6 +61,8 @@ const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSy
 const { normalizeSingleValue } = require('./utils/formHelpers');
 const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
 const { analyzeFileDetails } = require('./utils/platformDetector');
+const { getUserStorageBasePath, getUserAssetKey, getPlatformStoragePath, getModStorageKey } = require('./utils/storagePaths');
+const { ensureModDirectories, saveModMetadata, saveModReviewsArchive } = require('./utils/fileStorage');
 
 // Custom Utilities & Config
 const { 
@@ -79,7 +81,7 @@ const { getUserUploadQuota, validateUploadFileSize, TIER_CONFIGS } = require('./
 
 // AWS SDK v3 Imports (Backblaze B2)
 // Add DeleteObjectCommand to this list
-const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // Mongoose Models
@@ -106,6 +108,7 @@ const MembershipOrder = require('./models/membershipOrder');
 const Coupon = require('./models/coupon');
 const DevtoolLog = require('./models/devtoolLog');
 const VolunteerApplication = require('./models/volunteerApplication');
+const PaymentCancellation = require('./models/paymentCancellation');
 const Club = require('./models/club');
 const ClubChannel = require('./models/clubChannel');
 const ClubRole = require('./models/clubRole');
@@ -282,6 +285,29 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
                 });
             }
         }
+
+        // Broadcast dynamic push notification to subscribed PWA / web devices
+        try {
+            const pushNotification = require('./utils/pushNotification');
+            const notifCategory = isUpdate ? 'club-updates' : 'new-uploads';
+            const notifTitle = isUpdate
+                ? `🔄 Mod Update: ${file.name} v${file.version}`
+                : `🚀 New Mod Upload: ${file.name}`;
+            const notifBody = isUpdate
+                ? (whatsNew || `${file.name} has a new update! Check out what's new.`)
+                : `${file.name} (v${file.version}) is now available in ${(file.category || 'mods').toUpperCase()}!`;
+
+            pushNotification.broadcastPushNotification(notifCategory, {
+                title: notifTitle,
+                body: notifBody,
+                url: `/download/${file.slug || file._id}`,
+                icon: resolvedIcon || '/images/icon-192x192.png',
+                tag: `gplmods-${isUpdate ? 'update' : 'upload'}-${file.slug || file._id}`,
+                sound: true
+            }, io);
+        } catch (pushErr) {
+            console.error('[WebPush] notifyClubModFeeds push error:', pushErr.message);
+        }
     } catch (err) {
         console.error('[Clubs] notifyClubModFeeds error:', err.message);
     }
@@ -438,7 +464,7 @@ async function getSmartImageUrl(key) {
     
     // If it's a Backblaze B2 URL (expired or active), extract the B2 key to re-sign it fresh
     if (typeof key === 'string' && key.includes('backblazeb2.com')) {
-        const b2Match = key.match(/(?:card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
+        const b2Match = key.match(/(?:users|mods|clubs|card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
         if (b2Match) {
             key = b2Match[0];
         }
@@ -478,7 +504,7 @@ async function getImageAsDataUrl(urlOrKey) {
         // 2. Backblaze B2 key or URL
         let b2Key = urlOrKey;
         if (typeof urlOrKey === 'string' && urlOrKey.includes('backblazeb2.com')) {
-            const b2Match = urlOrKey.match(/(?:card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
+            const b2Match = urlOrKey.match(/(?:users|mods|clubs|card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
             if (b2Match) b2Key = b2Match[0];
         }
 
@@ -879,10 +905,50 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 
     let fileName = '';
 
-    if (folder === 'avatars') {
+    if (options.exactKey) {
+        fileName = options.exactKey;
+    } else if (options.user && (folder === 'avatars' || folder === 'card-avatars' || folder === 'card-backgrounds' || folder === 'users')) {
+        const userAssetType = options.assetType || (folder === 'card-backgrounds' ? 'card-bg' : (folder === 'card-avatars' ? 'card-avatar' : 'avatar'));
+        fileName = getUserAssetKey(options.user, userAssetType, file.originalname);
+    } else if (folder === 'avatars') {
         const username = options.username || baseName || 'user';
         const userSlug = slugify(username);
         fileName = `avatars/${userSlug}/${userSlug}-avatar-${Date.now()}${ext}`;
+    } else if (folder === 'mods' && (options.modName || options.modSlug)) {
+        fileName = getModStorageKey({
+            category: options.category || options.platform || rawCategory,
+            modName: options.modName || options.modSlug || cleanBase,
+            uploader: options.uploader || options.username,
+            uploaderEmail: options.uploaderEmail,
+            isVariant: options.isVariant,
+            variantId: options.variantId,
+            assetType: options.isOldVersion ? 'old-version' : 'file',
+            originalFilename: file.originalname,
+            version: options.version
+        });
+    } else if (folder === 'icons' && (options.modName || options.modSlug)) {
+        fileName = getModStorageKey({
+            category: options.category || options.platform || rawCategory,
+            modName: options.modName || options.modSlug || cleanBase,
+            uploader: options.uploader || options.username,
+            uploaderEmail: options.uploaderEmail,
+            isVariant: options.isVariant,
+            variantId: options.variantId,
+            assetType: 'icon',
+            originalFilename: file.originalname
+        });
+    } else if (folder === 'screenshots' && (options.modName || options.modSlug)) {
+        fileName = getModStorageKey({
+            category: options.category || options.platform || rawCategory,
+            modName: options.modName || options.modSlug || cleanBase,
+            uploader: options.uploader || options.username,
+            uploaderEmail: options.uploaderEmail,
+            isVariant: options.isVariant,
+            variantId: options.variantId,
+            assetType: 'screenshot',
+            screenshotIndex: options.screenshotIndex || 1,
+            originalFilename: file.originalname
+        });
     } else if (folder === 'mods') {
         const modSlug = options.modSlug || cleanBase;
         if (options.isVariant && options.masterSlug) {
@@ -4730,6 +4796,104 @@ app.get('/api/mods/by-tag', async (req, res) => {
     }
 });
 
+// DEDICATED MOD PROMOTION PAGE
+app.get('/promote', async (req, res, next) => {
+    try {
+        let userMods = [];
+        let promotions = [];
+        let activeCampaigns = 0;
+        let totalImpressions = 0;
+        let totalClicks = 0;
+
+        if (req.isAuthenticated && req.isAuthenticated()) {
+            const isStaff = req.user && ['admin', 'owner', 'distributor'].includes(req.user.role);
+            
+            // Fetch creator's mods
+            userMods = await File.find({
+                uploader: req.user.username
+            })
+            .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status')
+            .sort({ totalDownloads: -1 })
+            .lean();
+
+            // If staff has no uploaded mods of their own, provide recent/popular mods for testing/management
+            if (userMods.length === 0 && isStaff) {
+                userMods = await File.find({ isLatestVersion: true })
+                    .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status')
+                    .sort({ totalDownloads: -1 })
+                    .limit(20)
+                    .lean();
+            }
+
+            // Fetch promotions
+            const promoQuery = isStaff ? {} : { user: req.user._id };
+            promotions = await ModPromotion.find(promoQuery)
+                .populate('file', 'name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl')
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .lean();
+
+            const now = new Date();
+            promotions.forEach(p => {
+                if (p.status === 'active' && p.endDate && new Date(p.endDate) > now) {
+                    activeCampaigns++;
+                }
+                totalImpressions += (p.impressions || 0);
+                totalClicks += (p.clicks || 0);
+            });
+        }
+
+        const preselectedModId = req.query.modId || (userMods.length > 0 ? String(userMods[0]._id) : null);
+
+        res.render('pages/promote', {
+            pageTitle: 'Promote Your Mods - Play Store Style Ads System',
+            pageDescription: 'Boost your mod visibility, gain targeted installs, and reach top ranks across GPL Mods with dedicated promotional placements.',
+            userMods,
+            promotions,
+            activeCampaigns,
+            totalImpressions,
+            totalClicks,
+            preselectedModId,
+            pricingConfig: {
+                durations: [
+                    { days: 1, baseINR: 149, label: '1 Day', subtitle: 'Quick Exposure' },
+                    { days: 3, baseINR: 349, label: '3 Days', subtitle: 'Weekend Burst' },
+                    { days: 7, baseINR: 699, label: '7 Days', subtitle: 'Most Popular', isPopular: true },
+                    { days: 14, baseINR: 1299, label: '14 Days', subtitle: 'Extended Reach' },
+                    { days: 30, baseINR: 2499, label: '30 Days', subtitle: 'Maximum Power' }
+                ],
+                tiers: [
+                    {
+                        id: 'standard',
+                        name: 'Standard Boost',
+                        badge: 'Essential',
+                        multiplier: 1.0,
+                        features: ['Top 5 Search Placement', 'Related Mods Recommendation Tag', 'Verified Mod Status Badge', 'Standard Analytics']
+                    },
+                    {
+                        id: 'featured',
+                        name: 'Featured Highlight',
+                        badge: 'High Impact',
+                        multiplier: 1.4,
+                        isPopular: true,
+                        features: ['Top 3 Category Sticky Placement', 'Gilded Gold Border & Badge', 'High Priority Search Index', 'Real-time CTR Analytics']
+                    },
+                    {
+                        id: 'spotlight',
+                        name: 'Spotlight VIP',
+                        badge: 'Maximum Domination',
+                        multiplier: 2.0,
+                        features: ['Homepage Hero Carousel Spotlight', '#1 Sticky Category Banner', 'Exclusive Sponsored Tag', 'VIP 24/7 Dedicated Support']
+                    }
+                ]
+            }
+        });
+    } catch (err) {
+        console.error('[GET /promote Error]:', err);
+        next(err);
+    }
+});
+
 // 2. Promote Mod Endpoint (Play Store style ads system)
 app.post('/api/mods/:id/promote', async (req, res) => {
     try {
@@ -5153,9 +5317,18 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             }
 
             const io = req.app.get('io');
-            // Pass the parent file's name and the new version as the base
-            const versionBaseName = `${previousVersion.name}-${req.body.softwareVersion}`;
-            newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId, versionBaseName);
+            const targetModKey = getModStorageKey({
+                category: previousVersion.category,
+                modName: previousVersion.name,
+                uploader: req.user,
+                uploaderEmail: req.user.email,
+                isVariant: Boolean(previousVersion.isVariant),
+                variantId: previousVersion._id,
+                assetType: 'file',
+                originalFilename: req.file.originalname,
+                version: req.body.softwareVersion
+            });
+            newFileKey = await uploadToB2(req.file, 'mods', io, formData.uploadId, null, { exactKey: targetModKey });
         }
 
         let newRequiresRoot = previousVersion.requiresRoot || false;
@@ -5220,6 +5393,39 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
 
         newVersion.isLatestVersion = true;
         await newVersion.save();
+        saveModMetadata(newVersion);
+
+        // Archive previous live version file to old-version/ subfolder in B2
+        try {
+            if (previousVersion.fileKey && previousVersion.fileKey !== 'external-link' && !previousVersion.fileKey.includes('old-version')) {
+                const archivedOldKey = getModStorageKey({
+                    category: previousVersion.category,
+                    modName: previousVersion.name,
+                    uploader: req.user,
+                    uploaderEmail: req.user.email,
+                    isVariant: Boolean(previousVersion.isVariant),
+                    variantId: previousVersion._id,
+                    assetType: 'old-version',
+                    originalFilename: previousVersion.originalFilename || path.basename(previousVersion.fileKey),
+                    version: previousVersion.version
+                });
+                await s3Client.send(new CopyObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME,
+                    CopySource: `${process.env.B2_BUCKET_NAME}/${encodeURI(previousVersion.fileKey)}`,
+                    Key: archivedOldKey
+                }));
+                await s3Client.send(new DeleteObjectCommand({
+                    Bucket: process.env.B2_BUCKET_NAME,
+                    Key: previousVersion.fileKey
+                }));
+                previousVersion.fileKey = archivedOldKey;
+                await previousVersion.save();
+                saveModMetadata(previousVersion);
+            }
+        } catch (archiveErr) {
+            console.warn('[Storage] Notice: Could not archive previous version file in B2:', archiveErr.message);
+        }
+
         notifyClubModFeeds(newVersion, true, req.body.whatsNew);
 
         if (req.file && req.file.size > 100) {
@@ -6118,6 +6324,33 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
     }
 });
 
+app.post('/settings/notifications', ensureAuthenticated, async (req, res) => {
+    try {
+        const enabled = req.body.notificationsEnabled === 'on' || req.body.notificationsEnabled === 'true' || req.body.notificationsEnabled === true;
+        const newUploads = req.body.newUploads === 'on' || req.body.newUploads === 'true' || req.body.newUploads === true;
+        const clubUpdates = req.body.clubUpdates === 'on' || req.body.clubUpdates === 'true' || req.body.clubUpdates === true;
+        const adminMessages = req.body.adminMessages === 'on' || req.body.adminMessages === 'true' || req.body.adminMessages === true;
+        const soundEnabled = req.body.soundEnabled === 'on' || req.body.soundEnabled === 'true' || req.body.soundEnabled === true;
+
+        const notificationSettings = {
+            enabled,
+            newUploads,
+            clubUpdates,
+            adminMessages,
+            soundEnabled
+        };
+
+        await User.findByIdAndUpdate(req.user._id, { notificationSettings });
+        const pushNotification = require('./utils/pushNotification');
+        await pushNotification.updatePreferences(req.user._id, notificationSettings);
+
+        res.redirect('/settings?success=Notification preferences updated successfully.');
+    } catch (error) {
+        console.error('Notification settings error:', error);
+        res.redirect('/settings?error=Unable to update notification settings.');
+    }
+});
+
 app.get('/security/login/:action/:token', async (req, res) => {
     try {
         const { action, token } = req.params;
@@ -6752,15 +6985,16 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
         if (!req.file.mimetype.startsWith('image/')) return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
         
         // ======== NEW: DELETE OLD AVATAR ========
-        // Before we upload the new one, delete the old one from B2 to save space!
-        if (req.user.profileImageKey) {
-            await deleteFromB2(req.user.profileImageKey);
+        // Before we upload the new one, delete the old one from B2 & FTP to save space!
+        const userDoc = await User.findById(req.user.id || req.user._id);
+        if (userDoc && userDoc.profileImageKey) {
+            await deleteFromB2(userDoc.profileImageKey);
         }
         // ========================================
 
-        // Upload new avatar with slugified name
-        const avatarBaseName = `${req.user._id}-${req.user.username}`;
-        const imageKey = await uploadToB2(req.file, 'avatars', null, null, avatarBaseName, { username: req.user.username });
+        // Upload new avatar according to the users/staff or users/members folder structure
+        const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', req.file.originalname);
+        const imageKey = await uploadToB2(req.file, 'users', null, null, null, { exactKey: targetKey });
         
         const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
         
@@ -6803,19 +7037,20 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
         // Create a mock multer file object
         const mockFile = {
             buffer: buffer,
-            originalname: `gravatar.jpg`,
+            originalname: `user-profile-avatar.jpg`,
             mimetype: mimetype,
             size: buffer.length
         };
         
-        // Before we upload the new one, delete the old one from B2 to save space
-        if (req.user.profileImageKey) {
-            await deleteFromB2(req.user.profileImageKey);
+        // Before we upload the new one, delete the old one from B2 & FTP to save space
+        const userDoc = await User.findById(req.user.id || req.user._id);
+        if (userDoc && userDoc.profileImageKey) {
+            await deleteFromB2(userDoc.profileImageKey);
         }
         
-        // Upload new avatar with slugified name
-        const avatarBaseName = `${req.user._id}-${req.user.username}-gravatar`;
-        const imageKey = await uploadToB2(mockFile, 'avatars', null, null, avatarBaseName, { username: req.user.username });
+        // Upload new avatar according to the users/staff or users/members folder structure
+        const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', 'user-profile-avatar.jpg');
+        const imageKey = await uploadToB2(mockFile, 'users', null, null, null, { exactKey: targetKey });
 
         const updateFields = { profileImageKey: imageKey };
         if (!req.user.cardAvatarUrl || req.user.cardAvatarUrl.includes('gravatar') || req.user.cardAvatarUrl === req.user.profileImageKey) {
@@ -8357,7 +8592,9 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const actionType = formData.actionType || 'submit';
 
         // 1. Update images ONLY IF new ones were uploaded
-        const baseName = formData.modName || file.name;
+        const targetCategory = formData.modPlatform || file.category;
+        const targetModName = formData.modName || file.name;
+        const uploaderUser = req.user || { username: file.uploader };
         
         // --- HANDLE ICON OVERWRITE ---
         if (softwareIcon && softwareIcon.length > 0) {
@@ -8365,8 +8602,18 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             if (file.iconKey) {
                 await deleteFromB2(file.iconKey);
             }
-            // Upload the new one
-            file.iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${baseName}-icon`);
+            // Upload the new one with standardized app-icon key
+            const iconTargetKey = getModStorageKey({
+                category: targetCategory,
+                modName: targetModName,
+                uploader: uploaderUser,
+                uploaderEmail: req.user?.email,
+                isVariant: Boolean(file.isVariant),
+                variantId: file._id,
+                assetType: 'icon',
+                originalFilename: softwareIcon[0].originalname
+            });
+            file.iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, null, { exactKey: iconTargetKey });
         }
 
         // --- HANDLE DYNAMIC SCREENSHOTS ---
@@ -8386,14 +8633,28 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
             const finalScreenshotKeys = [];
             const uploadedShots = screenshots || [];
+            let shotIndex = 1;
             for (const item of incomingOrder) {
                 if (item.type === 'existing' && item.key) {
                     if (file.screenshotKeys && file.screenshotKeys.includes(item.key)) {
                         finalScreenshotKeys.push(item.key);
+                        shotIndex++;
                     }
                 } else if (item.type === 'new' && typeof item.fileIndex === 'number' && uploadedShots[item.fileIndex]) {
-                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, baseName);
+                    const shotTargetKey = getModStorageKey({
+                        category: targetCategory,
+                        modName: targetModName,
+                        uploader: uploaderUser,
+                        uploaderEmail: req.user?.email,
+                        isVariant: Boolean(file.isVariant),
+                        variantId: file._id,
+                        assetType: 'screenshot',
+                        screenshotIndex: shotIndex,
+                        originalFilename: uploadedShots[item.fileIndex].originalname
+                    });
+                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, null, { exactKey: shotTargetKey });
                     finalScreenshotKeys.push(newKey);
+                    shotIndex++;
                 }
             }
 
@@ -8417,7 +8678,20 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
                 }
             }
             // Upload the new ones
-            file.screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, baseName)));
+            file.screenshotKeys = await Promise.all(screenshots.map((f, idx) => {
+                const shotTargetKey = getModStorageKey({
+                    category: targetCategory,
+                    modName: targetModName,
+                    uploader: uploaderUser,
+                    uploaderEmail: req.user?.email,
+                    isVariant: Boolean(file.isVariant),
+                    variantId: file._id,
+                    assetType: 'screenshot',
+                    screenshotIndex: idx + 1,
+                    originalFilename: f.originalname
+                });
+                return uploadToB2(f, 'screenshots', null, null, null, { exactKey: shotTargetKey });
+            }));
         }
 
         // 2. Format tags
@@ -8582,6 +8856,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
 
         await file.save();
+        saveModMetadata(file);
 
         // --- AUTOMATED VIRUSTOTAL SCAN TRIGGER ON UPDATE ---
         if ((file.virusTotalAnalysisId || file.manualFileScanUrl || file.virusTotalId) && !file.virusTotalScanDate) {
@@ -8676,7 +8951,17 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             // Variant uses shared icon from master file
             iconKey = existingMasterFile.iconKey;
         } else if (softwareIcon && softwareIcon.length > 0) {
-            iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, `${formData.modName}-icon`, b2Opts);
+            const iconTargetKey = getModStorageKey({
+                category: formData.modPlatform,
+                modName: formData.modName,
+                uploader: req.user,
+                uploaderEmail: req.user.email,
+                isVariant: isVariant,
+                variantId: fileId,
+                assetType: 'icon',
+                originalFilename: softwareIcon[0].originalname
+            });
+            iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, null, { exactKey: iconTargetKey });
         }
 
         // --- HANDLE DYNAMIC SCREENSHOTS ---
@@ -8696,14 +8981,28 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
             const finalScreenshotKeys = [];
             const uploadedShots = screenshots || [];
+            let shotIndex = 1;
             for (const item of incomingOrder) {
                 if (item.type === 'existing' && item.key) {
                     if (screenshotKeys.includes(item.key) || (fileToUpdate.screenshotKeys && fileToUpdate.screenshotKeys.includes(item.key))) {
                         finalScreenshotKeys.push(item.key);
+                        shotIndex++;
                     }
                 } else if (item.type === 'new' && typeof item.fileIndex === 'number' && uploadedShots[item.fileIndex]) {
-                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, formData.modName, b2Opts);
+                    const shotTargetKey = getModStorageKey({
+                        category: formData.modPlatform,
+                        modName: formData.modName,
+                        uploader: req.user,
+                        uploaderEmail: req.user.email,
+                        isVariant: isVariant,
+                        variantId: fileId,
+                        assetType: 'screenshot',
+                        screenshotIndex: shotIndex,
+                        originalFilename: uploadedShots[item.fileIndex].originalname
+                    });
+                    const newKey = await uploadToB2(uploadedShots[item.fileIndex], 'screenshots', null, null, null, { exactKey: shotTargetKey });
                     finalScreenshotKeys.push(newKey);
+                    shotIndex++;
                 }
             }
 
@@ -8720,7 +9019,20 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             if (screenshots.length > 4) {
                 return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${screenshots.length - 4} of Screenshot`)}`);
             }
-            screenshotKeys = await Promise.all(screenshots.map(f => uploadToB2(f, 'screenshots', null, null, formData.modName, b2Opts)));
+            screenshotKeys = await Promise.all(screenshots.map((f, idx) => {
+                const shotTargetKey = getModStorageKey({
+                    category: formData.modPlatform,
+                    modName: formData.modName,
+                    uploader: req.user,
+                    uploaderEmail: req.user.email,
+                    isVariant: isVariant,
+                    variantId: fileId,
+                    assetType: 'screenshot',
+                    screenshotIndex: idx + 1,
+                    originalFilename: f.originalname
+                });
+                return uploadToB2(f, 'screenshots', null, null, null, { exactKey: shotTargetKey });
+            }));
         } else if (isVariant && existingMasterFile && (!screenshotKeys || screenshotKeys.length === 0)) {
             screenshotKeys = existingMasterFile.screenshotKeys || [];
         }
@@ -8891,6 +9203,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         } else {
             await User.adjustForumPoints(req.user._id, 50, "Uploaded a new mod");
             const justUploadedFile = await File.findById(fileId);
+            if (justUploadedFile) {
+                saveModMetadata(justUploadedFile);
+            }
             if (justUploadedFile && justUploadedFile.status === 'live') {
                 notifyClubModFeeds(justUploadedFile, false);
             }
@@ -10177,6 +10492,7 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         if (stats.length > 0) {
             await File.findByIdAndUpdate(req.params.fileId, { averageRating: stats[0].avg.toFixed(1), ratingCount: stats[0].count });
         }
+        saveModReviewsArchive(req.params.fileId).catch(err => console.warn('[ReviewArchive]', err.message));
         res.redirect(`/mods/${req.params.fileId}`);
     } catch (e) { res.status(500).send("Error."); }
 });
@@ -10196,8 +10512,10 @@ app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
         const review = await Review.findById(req.params.id);
         if (!review || review.user.toString() !== req.user._id.toString()) return res.status(404).send('Not found');
         
+        const fileId = review.file;
         await Review.findByIdAndDelete(review._id);
-        await recalculateRating(review.file);
+        await recalculateRating(fileId);
+        saveModReviewsArchive(fileId).catch(err => console.warn('[ReviewArchive]', err.message));
         await User.adjustForumPoints(review.user, -20, "Deleted your mod review");
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
@@ -10214,6 +10532,7 @@ app.post('/reviews/:id/edit', ensureAuthenticated, async (req, res) => {
         review.comment = comment;
         await review.save();
         await recalculateRating(review.file);
+        saveModReviewsArchive(review.file).catch(err => console.warn('[ReviewArchive]', err.message));
         res.redirect('back');
     } catch (e) { res.status(500).send("Error"); }
 });
@@ -11003,14 +11322,22 @@ const CURRENCY_TO_INR_RATES = {
     INR: 1,
     USD: 85,
     EUR: 92,
-    GBP: 108
+    GBP: 108,
+    AED: 23,
+    CAD: 62,
+    AUD: 55,
+    JPY: 0.56
 };
 
 const DONATION_LIMITS = {
     'INR': { min: 100, max: 2000, symbol: '₹' },
     'USD': { min: 2, max: 23.53, symbol: '$' },
     'EUR': { min: 1.80, max: 21.74, symbol: '€' },
-    'GBP': { min: 1.50, max: 18.52, symbol: '£' }
+    'GBP': { min: 1.50, max: 18.52, symbol: '£' },
+    'AED': { min: 5, max: 88, symbol: 'AED ' },
+    'CAD': { min: 2, max: 32, symbol: 'CA$' },
+    'AUD': { min: 2, max: 36, symbol: 'AU$' },
+    'JPY': { min: 200, max: 3500, symbol: '¥' }
 };
 
 /**
@@ -11499,11 +11826,12 @@ app.post('/create-membership-order', async (req, res) => {
         const cur = String(currency).toUpperCase();
         const planConfig = MEMBERSHIP_PLANS[duration];
 
-        if (!planConfig || !planConfig[cur]) {
-            return res.status(400).json({ error: 'Invalid membership plan or currency.' });
+        if (!planConfig) {
+            return res.status(400).json({ error: 'Invalid membership plan.' });
         }
 
-        let amount = planConfig[cur];
+        const rate = CURRENCY_TO_INR_RATES[cur] || 1;
+        let amount = planConfig[cur] || Math.max(1, Math.round(planConfig.INR / rate));
         let originalAmount = amount;
         let discountAmount = 0;
         let validatedCoupon = null;
@@ -11654,6 +11982,16 @@ app.get('/payment/verify-donation', async (req, res) => {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=donation`);
         } else {
             const status = (orderData.order_status || 'incomplete').toLowerCase();
+            const elapsedMs = (donation && donation.createdAt) ? (Date.now() - new Date(donation.createdAt).getTime()) : 0;
+            if (elapsedMs >= PAYMENT_TIMEOUT_MS) {
+                if (donation) {
+                    donation.status = 'failed';
+                    donation.failureReason = 'Payment timed out after 10 minutes.';
+                    await donation.save();
+                }
+                return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=donation&status=timeout&reason=${encodeURIComponent('Payment timed out after 10 minutes.')}`);
+            }
+
             if (status === 'pending' || status === 'active' || status === 'processing') {
                 return res.redirect(`/payment/status?order_id=${encodeURIComponent(orderId)}&type=donation&status=pending`);
             }
@@ -11714,6 +12052,16 @@ app.get('/payment/verify-membership', async (req, res) => {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=membership`);
         } else {
             const status = (orderData.order_status || 'incomplete').toLowerCase();
+            const elapsedMs = (memOrder && memOrder.createdAt) ? (Date.now() - new Date(memOrder.createdAt).getTime()) : 0;
+            if (elapsedMs >= PAYMENT_TIMEOUT_MS) {
+                if (memOrder) {
+                    memOrder.status = 'failed';
+                    memOrder.failureReason = 'Payment timed out after 10 minutes.';
+                    await memOrder.save();
+                }
+                return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=membership&status=timeout&reason=${encodeURIComponent('Payment timed out after 10 minutes.')}`);
+            }
+
             if (status === 'pending' || status === 'active' || status === 'processing') {
                 return res.redirect(`/payment/status?order_id=${encodeURIComponent(orderId)}&type=membership&status=pending`);
             }
@@ -11909,6 +12257,8 @@ app.get('/payment/failure', async (req, res) => {
 /**
  * Dedicated Transaction Status / Pending Page
  */
+const PAYMENT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes maximum pending window
+
 app.get('/payment/status', async (req, res) => {
     try {
         const orderId = req.query.order_id || req.query.orderId || req.query.sub_id || '';
@@ -11916,29 +12266,84 @@ app.get('/payment/status', async (req, res) => {
         let status = req.query.status || 'pending';
         let amount = '';
         let currency = 'INR';
+        let orderCreatedAt = null;
+        let memOrder = null;
+        let donation = null;
+        let volunteerApp = null;
 
         if (orderId) {
-            const memOrder = await MembershipOrder.findOne({
+            memOrder = await MembershipOrder.findOne({
                 $or: [{ orderId: orderId }, { subscriptionId: orderId }]
             });
             if (memOrder) {
                 type = 'membership';
                 amount = memOrder.amount;
                 currency = memOrder.currency || 'INR';
+                orderCreatedAt = memOrder.createdAt;
                 if (memOrder.status === 'paid') status = 'success';
+                else if (memOrder.status === 'failed' || memOrder.status === 'cancelled') status = memOrder.status;
             } else {
-                const donation = await Donation.findOne({ orderId: orderId });
+                donation = await Donation.findOne({ orderId: orderId });
                 if (donation) {
                     type = 'donation';
                     amount = donation.amount;
                     currency = donation.currency || 'INR';
+                    orderCreatedAt = donation.createdAt;
                     if (donation.status === 'successful') status = 'success';
+                    else if (donation.status === 'failed' || donation.status === 'cancelled') status = donation.status;
+                } else {
+                    volunteerApp = await VolunteerApplication.findOne({ orderId: orderId });
+                    if (volunteerApp) {
+                        type = 'volunteer';
+                        amount = volunteerApp.feeAmount;
+                        currency = volunteerApp.feeCurrency || 'INR';
+                        orderCreatedAt = volunteerApp.createdAt;
+                        if (volunteerApp.paymentStatus === 'paid') status = 'success';
+                        else if (volunteerApp.paymentStatus === 'failed' || volunteerApp.paymentStatus === 'cancelled') status = volunteerApp.paymentStatus;
+                    }
                 }
             }
         }
 
+        // 1. If paid, redirect to success
         if (status === 'success' || status === 'paid') {
             return res.redirect(`/payment/success?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(type)}`);
+        }
+
+        // 2. If already marked failed or cancelled in DB, redirect to failure page
+        if (status === 'failed' || status === 'cancelled') {
+            const failReason = (memOrder && (memOrder.failureReason || memOrder.cancellationReason)) ||
+                               (donation && (donation.failureReason || donation.cancellationReason)) ||
+                               (volunteerApp && (volunteerApp.failureReason || volunteerApp.cancellationReason)) ||
+                               'Transaction not completed';
+            return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}&reason=${encodeURIComponent(failReason)}`);
+        }
+
+        // 3. Strict 10-Minute Timeout Check:
+        // Any pending status taking more than 10 minutes is automatically considered a failed payment
+        let remainingTimeoutSeconds = 600;
+        if (orderCreatedAt) {
+            const elapsedMs = Date.now() - new Date(orderCreatedAt).getTime();
+            if (elapsedMs >= PAYMENT_TIMEOUT_MS) {
+                // Persist failed state to DB
+                if (memOrder && memOrder.status === 'pending') {
+                    memOrder.status = 'failed';
+                    memOrder.failureReason = 'Payment timed out after 10 minutes.';
+                    await memOrder.save();
+                } else if (donation && donation.status === 'pending') {
+                    donation.status = 'failed';
+                    donation.failureReason = 'Payment timed out after 10 minutes.';
+                    await donation.save();
+                } else if (volunteerApp && volunteerApp.paymentStatus === 'pending') {
+                    volunteerApp.paymentStatus = 'failed';
+                    volunteerApp.failureReason = 'Payment timed out after 10 minutes.';
+                    await volunteerApp.save();
+                }
+
+                return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(type)}&status=timeout&reason=${encodeURIComponent('Payment timed out after 10 minutes.')}`);
+            } else {
+                remainingTimeoutSeconds = Math.max(5, Math.floor((PAYMENT_TIMEOUT_MS - elapsedMs) / 1000));
+            }
         }
 
         res.render('pages/payment-status', {
@@ -11949,7 +12354,9 @@ app.get('/payment/status', async (req, res) => {
             amount: amount,
             currency: currency,
             title: 'Payment Pending / Processing',
-            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.'
+            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.',
+            remainingTimeoutSeconds: remainingTimeoutSeconds,
+            totalTimeoutSeconds: 600
         });
     } catch (err) {
         console.error('[Payment Status Page Error]:', err);
@@ -11961,13 +12368,17 @@ app.get('/payment/status', async (req, res) => {
             amount: '',
             currency: 'INR',
             title: 'Payment Pending',
-            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.'
+            message: 'Your payment is awaiting confirmation from your bank or UPI gateway.',
+            remainingTimeoutSeconds: 600,
+            totalTimeoutSeconds: 600
         });
     }
 });
 
 /**
  * API: Check live payment status (for polling and manual check)
+ * Automatically enforces the 10-minute timeout rule:
+ * Any transaction pending for > 10 minutes transitions to failed status.
  */
 app.get('/api/payment-status', async (req, res) => {
     try {
@@ -11976,20 +12387,87 @@ app.get('/api/payment-status', async (req, res) => {
             return res.status(400).json({ error: 'Order ID is required' });
         }
 
+        const PAYMENT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
         let isPaid = false;
         let status = 'pending';
+        let type = req.query.type || 'membership';
 
         // Check local DB first
         const memOrder = await MembershipOrder.findOne({
             $or: [{ orderId: orderId }, { subscriptionId: orderId }]
         });
+        const donation = !memOrder ? await Donation.findOne({ orderId: orderId }) : null;
+        const volunteerApp = (!memOrder && !donation) ? await VolunteerApplication.findOne({ orderId: orderId }) : null;
+        const orderDoc = memOrder || donation || volunteerApp;
 
+        if (memOrder) type = 'membership';
+        else if (donation) type = 'donation';
+        else if (volunteerApp) type = 'volunteer';
+
+        // Check if already paid
         if (memOrder && memOrder.status === 'paid') {
             return res.json({ status: 'paid', isPaid: true, type: 'membership' });
         }
-        const donation = await Donation.findOne({ orderId: orderId });
         if (donation && donation.status === 'successful') {
             return res.json({ status: 'successful', isPaid: true, type: 'donation' });
+        }
+        if (volunteerApp && volunteerApp.paymentStatus === 'paid') {
+            return res.json({ status: 'paid', isPaid: true, type: 'volunteer' });
+        }
+
+        // Check if marked failed or cancelled
+        if (memOrder && (memOrder.status === 'failed' || memOrder.status === 'cancelled')) {
+            return res.json({ 
+                status: memOrder.status, 
+                isPaid: false, 
+                type: 'membership',
+                reason: memOrder.failureReason || memOrder.cancellationReason || 'Payment not completed'
+            });
+        }
+        if (donation && (donation.status === 'failed' || donation.status === 'cancelled')) {
+            return res.json({ 
+                status: donation.status, 
+                isPaid: false, 
+                type: 'donation',
+                reason: donation.failureReason || donation.cancellationReason || 'Payment not completed'
+            });
+        }
+        if (volunteerApp && (volunteerApp.paymentStatus === 'failed' || volunteerApp.paymentStatus === 'cancelled')) {
+            return res.json({ 
+                status: volunteerApp.paymentStatus, 
+                isPaid: false, 
+                type: 'volunteer',
+                reason: volunteerApp.failureReason || volunteerApp.cancellationReason || 'Payment not completed'
+            });
+        }
+
+        // Strict 10-Minute Timeout check against order creation time
+        if (orderDoc && orderDoc.createdAt) {
+            const elapsedMs = Date.now() - new Date(orderDoc.createdAt).getTime();
+            if (elapsedMs >= PAYMENT_TIMEOUT_MS) {
+                if (memOrder && memOrder.status === 'pending') {
+                    memOrder.status = 'failed';
+                    memOrder.failureReason = 'Payment timed out after 10 minutes.';
+                    await memOrder.save();
+                } else if (donation && donation.status === 'pending') {
+                    donation.status = 'failed';
+                    donation.failureReason = 'Payment timed out after 10 minutes.';
+                    await donation.save();
+                } else if (volunteerApp && volunteerApp.paymentStatus === 'pending') {
+                    volunteerApp.paymentStatus = 'failed';
+                    volunteerApp.failureReason = 'Payment timed out after 10 minutes.';
+                    await volunteerApp.save();
+                }
+
+                return res.json({
+                    status: 'failed',
+                    isPaid: false,
+                    timedOut: true,
+                    type: type,
+                    reason: 'Payment timed out after 10 minutes.',
+                    orderId: orderId
+                });
+            }
         }
 
         // Query Cashfree directly for live status
@@ -12019,9 +12497,28 @@ app.get('/api/payment-status', async (req, res) => {
                     donation.status = 'successful';
                     donation.cfPaymentId = String(orderData.cf_order_id || '');
                     await donation.save();
+                } else if (volunteerApp && volunteerApp.paymentStatus !== 'paid') {
+                    volunteerApp.paymentStatus = 'paid';
+                    volunteerApp.cfPaymentId = String(orderData.cf_order_id || '');
+                    volunteerApp.paidAt = new Date();
+                    await volunteerApp.save();
                 }
-            } else if (orderData.order_status === 'EXPIRED' || orderData.order_status === 'CANCELLED') {
+            } else if (orderData.order_status === 'EXPIRED' || orderData.order_status === 'CANCELLED' || orderData.order_status === 'TERMINATED') {
                 status = 'failed';
+                const gatewayReason = `Gateway marked order as ${orderData.order_status}`;
+                if (memOrder && memOrder.status === 'pending') {
+                    memOrder.status = 'failed';
+                    memOrder.failureReason = gatewayReason;
+                    await memOrder.save();
+                } else if (donation && donation.status === 'pending') {
+                    donation.status = 'failed';
+                    donation.failureReason = gatewayReason;
+                    await donation.save();
+                } else if (volunteerApp && volunteerApp.paymentStatus === 'pending') {
+                    volunteerApp.paymentStatus = 'failed';
+                    volunteerApp.failureReason = gatewayReason;
+                    await volunteerApp.save();
+                }
             } else {
                 status = 'pending';
             }
@@ -12029,14 +12526,132 @@ app.get('/api/payment-status', async (req, res) => {
             console.warn('[API Payment Status Fetch Warning]:', fetchErr.message);
         }
 
+        // Final timeout check if still pending
+        let remainingSeconds = 600;
+        if (orderDoc && orderDoc.createdAt) {
+            const elapsedMs = Date.now() - new Date(orderDoc.createdAt).getTime();
+            if (elapsedMs >= PAYMENT_TIMEOUT_MS && status === 'pending') {
+                status = 'failed';
+                if (memOrder && memOrder.status === 'pending') {
+                    memOrder.status = 'failed';
+                    memOrder.failureReason = 'Payment timed out after 10 minutes.';
+                    await memOrder.save();
+                } else if (donation && donation.status === 'pending') {
+                    donation.status = 'failed';
+                    donation.failureReason = 'Payment timed out after 10 minutes.';
+                    await donation.save();
+                } else if (volunteerApp && volunteerApp.paymentStatus === 'pending') {
+                    volunteerApp.paymentStatus = 'failed';
+                    volunteerApp.failureReason = 'Payment timed out after 10 minutes.';
+                    await volunteerApp.save();
+                }
+                return res.json({
+                    status: 'failed',
+                    isPaid: false,
+                    timedOut: true,
+                    type: type,
+                    reason: 'Payment timed out after 10 minutes.',
+                    orderId: orderId
+                });
+            }
+            remainingSeconds = Math.max(0, Math.floor((PAYMENT_TIMEOUT_MS - elapsedMs) / 1000));
+        }
+
         return res.json({
             status: status,
             isPaid: isPaid,
-            orderId: orderId
+            orderId: orderId,
+            type: type,
+            remainingTimeoutSeconds: remainingSeconds
         });
     } catch (err) {
         console.error('[API Payment Status Error]:', err);
         return res.status(500).json({ error: 'Failed to check status' });
+    }
+});
+
+/**
+ * Global Cancellation Feedback Endpoint
+ * Saves feedback when user self-cancels or cancels purchase
+ */
+app.post('/api/payment/cancel-feedback', async (req, res) => {
+    try {
+        const { orderId, type, reason, notes } = req.body;
+        if (!reason) {
+            return res.status(400).json({ error: 'Cancellation reason is required.' });
+        }
+
+        const validReasons = [
+            "Don't want to purchase it",
+            "Don't find payment method I need",
+            "Click by mistake",
+            "Network issue",
+            "Other",
+            "Pricing too high / Looking for discount",
+            "Timed out after 10 minutes"
+        ];
+
+        const sanitizedReason = validReasons.includes(reason) ? reason : "Other";
+        const sanitizedNotes = typeof notes === 'string' ? notes.trim().slice(0, 500) : '';
+
+        // Save in dedicated PaymentCancellation collection
+        const cancellationRecord = new PaymentCancellation({
+            orderId: orderId || `CANCEL-${Date.now()}`,
+            type: type || 'membership',
+            user: req.user ? req.user._id : null,
+            username: req.user ? req.user.username : 'Guest',
+            reason: sanitizedReason,
+            notes: sanitizedNotes,
+            ipAddress: req.ip || req.headers['x-forwarded-for'] || null,
+            userAgent: req.headers['user-agent'] || null
+        });
+        await cancellationRecord.save();
+
+        // Also update matching Order if orderId provided
+        if (orderId) {
+            const memOrder = await MembershipOrder.findOne({
+                $or: [{ orderId: orderId }, { subscriptionId: orderId }]
+            });
+            if (memOrder) {
+                memOrder.cancellationReason = sanitizedReason;
+                memOrder.cancellationNotes = sanitizedNotes;
+                memOrder.cancelledAt = new Date();
+                if (memOrder.status === 'pending') {
+                    memOrder.status = 'cancelled';
+                }
+                await memOrder.save();
+            }
+
+            const donation = await Donation.findOne({ orderId: orderId });
+            if (donation) {
+                donation.cancellationReason = sanitizedReason;
+                donation.cancellationNotes = sanitizedNotes;
+                donation.cancelledAt = new Date();
+                if (donation.status === 'pending') {
+                    donation.status = 'cancelled';
+                }
+                await donation.save();
+            }
+
+            const volunteerApp = await VolunteerApplication.findOne({ orderId: orderId });
+            if (volunteerApp) {
+                volunteerApp.cancellationReason = sanitizedReason;
+                volunteerApp.cancellationNotes = sanitizedNotes;
+                volunteerApp.cancelledAt = new Date();
+                if (volunteerApp.paymentStatus === 'pending') {
+                    volunteerApp.paymentStatus = 'cancelled';
+                }
+                await volunteerApp.save();
+            }
+        }
+
+        return res.json({ 
+            success: true, 
+            message: 'Feedback received successfully. Thank you for helping us improve!' 
+        });
+    } catch (err) {
+        console.error('[Payment Cancel Feedback Error]:', err);
+        return res.status(500).json({ error: 'Failed to record feedback.' });
     }
 });
 
@@ -12533,15 +13148,10 @@ app.post('/volunteer/apply', kycUpload.single('kycDocument'), async (req, res) =
     }
     const normalizedLangs = languages.map(l => String(l).toLowerCase().trim());
 
-    // 1. Mandatory Language Validation: Hindi, English, or Hinglish
-    const hasMandatoryLang = normalizedLangs.some(l => 
-        l === 'hindi' || l === 'english' || l === 'hinglish' ||
-        l.includes('hindi') || l.includes('english') || l.includes('hinglish')
-    );
-
-    if (!hasMandatoryLang) {
+    // 1. Language Requirement Validation: Support international & regional languages
+    if (!normalizedLangs || normalizedLangs.length === 0) {
         return res.status(400).json({
-            error: 'Language Requirement Failed: You must be proficient in at least one of Hindi, English, or Hinglish.'
+            error: 'Language Requirement Failed: You must specify at least one language (international or regional) you are proficient in.'
         });
     }
 
@@ -13084,10 +13694,10 @@ const SPONSORSHIP_CATALOG = [
 ];
 
 const COFFEE_FOOD_OPTIONS = [
-    { id: 'chai', title: 'A Cup of Chai ☕', priceINR: 50, icon: 'fas fa-mug-hot', desc: 'Keep our open-source devs caffeinated and inspired' },
-    { id: 'coffee', title: 'Warm Brewed Coffee ☕', priceINR: 100, icon: 'fas fa-coffee', desc: 'A rich roast to power late-night reverse engineering' },
-    { id: 'meal', title: 'Nutritious Meal 🍱', priceINR: 250, icon: 'fas fa-utensils', desc: 'A wholesome lunch after pushing a big security patch' },
-    { id: 'feast', title: 'Developer Feast 🍕', priceINR: 500, icon: 'fas fa-pizza-slice', desc: 'Pizza & snacks for a platform release party' }
+    { id: 'chai', title: 'A Cup of Chai', priceINR: 50, icon: 'fas fa-mug-hot', desc: 'Keep our open-source devs caffeinated and inspired' },
+    { id: 'coffee', title: 'Warm Brewed Coffee', priceINR: 100, icon: 'fa-duotone fa-solid fa-cup-togo', desc: 'A rich roast to power late-night reverse engineering' },
+    { id: 'meal', title: 'Nutritious Meal', priceINR: 250, icon: 'fas fa-utensils', desc: 'A wholesome lunch after pushing a big security patch' },
+    { id: 'feast', title: 'Developer Feast', priceINR: 500, icon: 'fas fa-pizza-slice', desc: 'Pizza and refreshments for a platform release celebration' }
 ];
 
 app.get('/sponsor', async (req, res, next) => {
@@ -15242,11 +15852,18 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
         if (req.files && req.files['cardBgFile'] && req.files['cardBgFile'][0]) {
             const file = req.files['cardBgFile'][0];
             if (file.mimetype.startsWith('image/')) {
-                const bgBaseName = `${user._id}-${user.username}-card-bg`;
-                const bgKey = await uploadToB2(file, 'card-backgrounds', null, null, bgBaseName, { username: user.username });
+                // Delete old card background from B2 & FTP
+                if (user.cardBgUrl && !user.cardBgUrl.startsWith('http')) {
+                    await deleteFromB2(user.cardBgUrl);
+                }
+                const targetKey = getUserAssetKey(user, 'card-bg', file.originalname);
+                const bgKey = await uploadToB2(file, 'users', null, null, null, { exactKey: targetKey });
                 user.cardBgUrl = bgKey;
             }
         } else if (resetBgToDefault === 'true' || resetBgToDefault === true) {
+            if (user.cardBgUrl && !user.cardBgUrl.startsWith('http')) {
+                await deleteFromB2(user.cardBgUrl);
+            }
             user.cardBgUrl = '';
         } else if (cardBgUrl !== undefined) {
             user.cardBgUrl = String(cardBgUrl).trim();
@@ -15256,15 +15873,22 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
         if (req.files && req.files['cardAvatarFile'] && req.files['cardAvatarFile'][0]) {
             const file = req.files['cardAvatarFile'][0];
             if (file.mimetype.startsWith('image/')) {
-                const avatarBaseName = `${user._id}-${user.username}-card-avatar`;
-                const avatarKey = await uploadToB2(file, 'card-avatars', null, null, avatarBaseName, { username: user.username });
+                // Delete old card avatar from B2 & FTP
+                if (user.cardAvatarUrl && !user.cardAvatarUrl.startsWith('http')) {
+                    await deleteFromB2(user.cardAvatarUrl);
+                }
+                const targetKey = getUserAssetKey(user, 'card-avatar', file.originalname);
+                const avatarKey = await uploadToB2(file, 'users', null, null, null, { exactKey: targetKey });
                 user.cardAvatarUrl = avatarKey;
             }
         } else if (resetAvatarToAccount === 'true' || resetAvatarToAccount === true) {
+            if (user.cardAvatarUrl && !user.cardAvatarUrl.startsWith('http')) {
+                await deleteFromB2(user.cardAvatarUrl);
+            }
             user.cardAvatarUrl = '';
         } else if (cardAvatarUrl !== undefined) {
             let cleanAvatar = String(cardAvatarUrl).trim();
-            const b2Match = cleanAvatar.match(/(?:card-avatars|avatars)\/[^?#\s]+/);
+            const b2Match = cleanAvatar.match(/(?:users|mods|clubs|card-avatars|avatars)\/[^?#\s]+/);
             if (b2Match) {
                 user.cardAvatarUrl = b2Match[0];
             } else {
@@ -15364,15 +15988,19 @@ app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
         const mimetype = response.headers['content-type'] || 'image/jpeg';
         const mockFile = {
             buffer: buffer,
-            originalname: `card-gravatar.jpg`,
+            originalname: `user-id-card-avatar.jpg`,
             mimetype: mimetype,
             size: buffer.length
         };
 
-        const avatarBaseName = `${req.user._id}-${req.user.username}-card-gravatar`;
-        const imageKey = await uploadToB2(mockFile, 'card-avatars', null, null, avatarBaseName, { username: req.user.username });
-
         const user = await User.findById(req.user._id);
+        if (user && user.cardAvatarUrl && !user.cardAvatarUrl.startsWith('http')) {
+            await deleteFromB2(user.cardAvatarUrl);
+        }
+
+        const targetKey = getUserAssetKey(user || req.user, 'card-avatar', 'user-id-card-avatar.jpg');
+        const imageKey = await uploadToB2(mockFile, 'users', null, null, null, { exactKey: targetKey });
+
         user.cardAvatarUrl = imageKey;
         await user.save();
 
@@ -16732,6 +17360,18 @@ cron.schedule('* * * * *', async () => {
 
             if (notificationsToInsert.length > 0) {
                 await UserNotification.insertMany(notificationsToInsert);
+                try {
+                    const pushNotification = require('./utils/pushNotification');
+                    pushNotification.broadcastPushNotification('admin-messages', {
+                        title: `🛡️ Admin: ${campaign.notificationTitle || campaign.title}`,
+                        body: campaign.notificationMessage || 'Important update from GPL Mods.',
+                        url: '/notifications/admin-messages',
+                        tag: `gplmods-admin-${campaign._id || Date.now()}`,
+                        sound: true
+                    }, app.get('io'));
+                } catch (e) {
+                    console.error('[WebPush] Campaign broadcast error:', e.message);
+                }
             }
 
             campaign.status = 'completed';
@@ -16755,6 +17395,12 @@ app.use('/', ownerRoutes);
 // ===================================
 const clubsRoutes = require('./routes/clubs');
 app.use('/clubs', clubsRoutes);
+
+// ===================================
+// DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES
+// ===================================
+const notificationsRoutes = require('./routes/notifications');
+app.use('/api/notifications', notificationsRoutes);
 
 // ✅ START THE SERVER
 startServer(); 

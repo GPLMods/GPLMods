@@ -1,0 +1,996 @@
+<%- include('../partials/header') %>
+
+<style>
+    .promote-hero {
+        text-align: center;
+        padding: clamp(35px, 6vw, 65px) 20px clamp(30px, 5vw, 45px) 20px;
+        background: radial-gradient(circle at 50% 20%, rgba(255, 215, 0, 0.12) 0%, rgba(10, 12, 18, 0.8) 75%), #0c0e14;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    .promote-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 152, 0, 0.05) 0%, transparent 60%);
+        pointer-events: none;
+        animation: rotateGlow 25s linear infinite;
+    }
+    @keyframes rotateGlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .promote-badge-top {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+    }
+    .promote-hero h1 {
+        font-size: clamp(1.8rem, 4vw + 0.5rem, 3.1rem);
+        color: var(--white);
+        margin-bottom: 14px;
+        line-height: 1.25;
+        letter-spacing: -0.5px;
+    }
+    .promote-hero h1 span {
+        color: var(--gold);
+        text-shadow: 0 0 18px var(--glow-gold);
+    }
+    .promote-hero p {
+        color: var(--silver);
+        max-width: 760px;
+        margin: 0 auto 30px auto;
+        font-size: clamp(0.95em, 2vw, 1.15em);
+        line-height: 1.65;
+    }
+
+    /* Stats Pill Bar */
+    .promote-stats-bar {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .stat-pill {
+        background: rgba(22, 24, 32, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 12px 22px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(10px);
+    }
+    .stat-pill i {
+        font-size: 1.6em;
+        color: var(--gold);
+    }
+    .stat-pill-val {
+        font-size: 1.35em;
+        font-weight: 800;
+        color: var(--white);
+        line-height: 1;
+    }
+    .stat-pill-label {
+        font-size: 0.78em;
+        color: var(--silver);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 3px;
+    }
+
+    /* Main Grid Layout */
+    .promote-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px 60px 20px;
+    }
+
+    .promote-split-layout {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 30px;
+        align-items: start;
+        margin-bottom: 50px;
+    }
+    @media (max-width: 992px) {
+        .promote-split-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Wizard Step Cards */
+    .wizard-card {
+        background: rgba(18, 20, 28, 0.95);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 18px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        margin-bottom: 25px;
+    }
+    .wizard-step-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .step-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold), #ff9800);
+        color: var(--black);
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1em;
+        box-shadow: 0 0 12px var(--glow-gold);
+        flex-shrink: 0;
+    }
+    .step-title {
+        margin: 0;
+        color: var(--white);
+        font-size: 1.25em;
+        font-weight: 700;
+    }
+    .step-sub {
+        font-size: 0.85em;
+        color: var(--silver);
+        margin-top: 2px;
+    }
+
+    /* Mod Selection Cards */
+    .mod-select-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+    .mod-select-item {
+        background: var(--dark-gray);
+        border: 2px solid #333;
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.25s ease;
+        position: relative;
+    }
+    .mod-select-item:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+        transform: translateY(-2px);
+    }
+    .mod-select-item.selected {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.08);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    }
+    .mod-thumb {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #222;
+        border: 1px solid #444;
+        flex-shrink: 0;
+    }
+    .mod-info-title {
+        color: var(--white);
+        font-size: 0.95em;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+    .mod-info-meta {
+        font-size: 0.8em;
+        color: var(--silver);
+    }
+    .mod-promoted-pill {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        border-radius: 10px;
+        font-size: 0.68em;
+        padding: 2px 6px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    /* Tier Selection Cards */
+    .tier-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+    @media (max-width: 768px) {
+        .tier-cards-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .tier-card {
+        background: var(--dark-gray);
+        border: 2px solid #333;
+        border-radius: 14px;
+        padding: 20px 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+    }
+    .tier-card:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+        transform: translateY(-3px);
+    }
+    .tier-card.selected {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.08);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
+    }
+    .tier-badge {
+        display: inline-block;
+        font-size: 0.72em;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--silver);
+        margin-bottom: 8px;
+        align-self: flex-start;
+    }
+    .tier-card.selected .tier-badge {
+        background: var(--gold);
+        color: var(--black);
+    }
+    .tier-title {
+        color: var(--white);
+        font-size: 1.1em;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+    }
+    .tier-features-list {
+        list-style: none;
+        padding: 0;
+        margin: 12px 0;
+        font-size: 0.82em;
+        color: var(--silver);
+    }
+    .tier-features-list li {
+        margin-bottom: 6px;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .tier-features-list li i {
+        color: var(--gold);
+        font-size: 0.9em;
+        margin-top: 3px;
+        flex-shrink: 0;
+    }
+
+    /* Duration Pills */
+    .duration-pills-bar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .duration-pill {
+        flex: 1;
+        min-width: 100px;
+        background: var(--dark-gray);
+        border: 2px solid #333;
+        border-radius: 12px;
+        padding: 12px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .duration-pill:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .duration-pill.selected {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    }
+    .dur-days {
+        font-size: 1.15em;
+        font-weight: 800;
+        color: var(--white);
+    }
+    .dur-sub {
+        font-size: 0.72em;
+        color: var(--silver);
+        margin-top: 2px;
+    }
+    .dur-badge {
+        font-size: 0.65em;
+        font-weight: 700;
+        background: var(--gold);
+        color: var(--black);
+        padding: 2px 6px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-top: 4px;
+    }
+
+    /* Checkout Sticky Summary Card */
+    .checkout-summary-card {
+        background: rgba(18, 20, 28, 0.98);
+        border: 1px solid var(--gold);
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+        position: sticky;
+        top: 90px;
+    }
+    .summary-heading {
+        color: var(--white);
+        font-size: 1.3em;
+        margin: 0 0 18px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.92em;
+    }
+    .summary-row-label {
+        color: var(--silver);
+    }
+    .summary-row-val {
+        color: var(--white);
+        font-weight: 700;
+        text-align: right;
+    }
+    .summary-total-bar {
+        margin: 22px 0;
+        padding: 16px;
+        background: rgba(255, 215, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .summary-total-label {
+        font-size: 1em;
+        color: var(--white);
+        font-weight: 700;
+    }
+    .summary-total-val {
+        font-size: 1.7em;
+        font-weight: 800;
+        color: var(--gold);
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    .btn-launch-promo {
+        width: 100%;
+        background: linear-gradient(135deg, var(--gold), #ff9800);
+        color: var(--black);
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 1.1em;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .btn-launch-promo:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+    .btn-launch-promo:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Live Campaigns Section */
+    .campaigns-section {
+        background: rgba(18, 20, 28, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 30px;
+        margin-bottom: 50px;
+    }
+    .campaign-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: var(--dark-gray);
+        border: 1px solid #333;
+        border-radius: 14px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .campaign-item:hover {
+        border-color: rgba(255, 215, 0, 0.4);
+    }
+
+    /* In-Page Currency Switcher */
+    .promote-currency-bar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(18, 20, 26, 0.9);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        border-radius: 30px;
+        padding: 6px 14px;
+        margin: 22px auto 0 auto;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        max-width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .cur-pill-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--silver);
+        padding: 4px 10px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.8em;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s ease;
+    }
+    .cur-pill-btn:hover {
+        color: var(--white);
+        border-color: rgba(255, 215, 0, 0.4);
+    }
+    .cur-pill-btn.active {
+        background: var(--gold);
+        color: var(--black);
+        font-weight: 700;
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+</style>
+
+<main>
+    <div class="promote-hero">
+        <div class="container">
+            <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+            <%- include('../partials/go-back-button', { fallback: '/dashboard' }) %>
+            <!-- ======================================== -->
+            <div class="promote-badge-top">
+                <i class="fas fa-bullhorn"></i> Play Store Style Ads Engine
+            </div>
+            <h1>Skyrocket Your Mod <span>Visibility &amp; Downloads</span></h1>
+            <p>
+                Get your mod directly in front of thousands of active gamers, modders, and developers every single day. Gain guaranteed top placement in category feeds, search results, and homepage banners.
+            </p>
+
+            <div class="promote-stats-bar">
+                <div class="stat-pill">
+                    <i class="fas fa-users"></i>
+                    <div>
+                        <div class="stat-pill-val">100K+</div>
+                        <div class="stat-pill-label">Monthly Gamers</div>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-chart-line"></i>
+                    <div>
+                        <div class="stat-pill-val">+450%</div>
+                        <div class="stat-pill-label">Avg. Download Surge</div>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-shield-halved"></i>
+                    <div>
+                        <div class="stat-pill-val">100%</div>
+                        <div class="stat-pill-label">Verified Installs</div>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <i class="fas fa-bolt"></i>
+                    <div>
+                        <div class="stat-pill-val">Instant</div>
+                        <div class="stat-pill-label">Live Activation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dedicated In-Page Currency Selector -->
+            <div class="gpl-page-currency-bar">
+                <span class="gpl-currency-bar-label">
+                    <i class="fas fa-coins"></i> Currency:
+                </span>
+                <div class="gpl-currency-pills">
+                    <button type="button" class="cur-pill-btn active" data-cur="INR" onclick="setPromoteCurrency('INR')"><span class="fi fi-in"></span> ₹ INR</button>
+                    <button type="button" class="cur-pill-btn" data-cur="USD" onclick="setPromoteCurrency('USD')"><span class="fi fi-us"></span> $ USD</button>
+                    <button type="button" class="cur-pill-btn" data-cur="EUR" onclick="setPromoteCurrency('EUR')"><span class="fi fi-eu"></span> € EUR</button>
+                    <button type="button" class="cur-pill-btn" data-cur="GBP" onclick="setPromoteCurrency('GBP')"><span class="fi fi-gb"></span> £ GBP</button>
+                    <button type="button" class="cur-pill-btn" data-cur="AED" onclick="setPromoteCurrency('AED')"><span class="fi fi-ae"></span> د.إ AED</button>
+                    <button type="button" class="cur-pill-btn" data-cur="CAD" onclick="setPromoteCurrency('CAD')"><span class="fi fi-ca"></span> CA$ CAD</button>
+                    <button type="button" class="cur-pill-btn" data-cur="AUD" onclick="setPromoteCurrency('AUD')"><span class="fi fi-au"></span> AU$ AUD</button>
+                    <button type="button" class="cur-pill-btn" data-cur="JPY" onclick="setPromoteCurrency('JPY')"><span class="fi fi-jp"></span> ¥ JPY</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="promote-container">
+        <!-- ========================================== -->
+        <!-- 1. INTERACTIVE PROMOTION WIZARD & CHECKOUT -->
+        <!-- ========================================== -->
+        <div class="promote-split-layout">
+            <div>
+                <!-- Step 1: Select Mod -->
+                <div class="wizard-card">
+                    <div class="wizard-step-header">
+                        <div class="step-circle">1</div>
+                        <div>
+                            <h2 class="step-title">Select Mod to Promote</h2>
+                            <div class="step-sub">Pick from your live uploaded mods on GPL Mods</div>
+                        </div>
+                    </div>
+
+                    <% if (!user) { %>
+                        <div style="text-align: center; padding: 25px 15px; color: var(--silver);">
+                            <i class="fas fa-lock" style="font-size: 2em; color: var(--gold); margin-bottom: 12px; display: block;"></i>
+                            <h3 style="color: var(--white); margin: 0 0 8px 0;">Sign In Required</h3>
+                            <p style="font-size: 0.9em; margin: 0 0 16px 0;">You must be logged in to promote your creations.</p>
+                            <a href="/login?redirect=/promote" class="btn" style="background: var(--gold); color: var(--black); padding: 10px 22px; border-radius: 20px; font-weight: 700; text-decoration: none;">
+                                <i class="fas fa-sign-in-alt"></i> Login Now
+                            </a>
+                        </div>
+                    <% } else if (userMods && userMods.length > 0) { %>
+                        <div class="mod-select-grid" id="modSelectGrid">
+                            <% userMods.forEach(mod => { %>
+                                <div class="mod-select-item <%= (preselectedModId === String(mod._id)) ? 'selected' : '' %>"
+                                     data-id="<%= mod._id %>"
+                                     data-name="<%= mod.name || mod.title %>"
+                                     data-downloads="<%= (mod.totalDownloads || 0).toLocaleString() %>"
+                                     data-category="<%= mod.category || 'General' %>"
+                                     onclick="selectModItem(this)">
+                                    <img src="<%= mod.iconUrl || mod.fileIconUrl || '/images/default-mod-icon.png' %>"
+                                         class="mod-thumb"
+                                         alt="<%= mod.name %>"
+                                         onerror="this.src='/images/default-mod-icon.png';">
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div class="mod-info-title" title="<%= mod.name || mod.title %>"><%= mod.name || mod.title %></div>
+                                        <div class="mod-info-meta">
+                                            <i class="fas fa-download" style="color: var(--gold); margin-right: 3px;"></i> <%= (mod.totalDownloads || 0).toLocaleString() %> &bull; <%= mod.category || 'Mod' %>
+                                        </div>
+                                    </div>
+                                    <% if (mod.isPromoted && mod.promotedUntil && new Date(mod.promotedUntil) > new Date()) { %>
+                                        <span class="mod-promoted-pill">Active</span>
+                                    <% } %>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <div style="text-align: center; padding: 30px 15px; color: var(--silver);">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2.2em; color: var(--gold); margin-bottom: 12px; display: block;"></i>
+                            <h3 style="color: var(--white); margin: 0 0 8px 0;">No Mods Uploaded Yet</h3>
+                            <p style="font-size: 0.9em; margin: 0 0 16px 0;">You haven't published any mods yet. Upload your first release to start promoting!</p>
+                            <a href="/upload" class="btn" style="background: var(--gold); color: var(--black); padding: 10px 22px; border-radius: 20px; font-weight: 700; text-decoration: none;">
+                                <i class="fas fa-plus"></i> Upload A New Mod
+                            </a>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Step 2: Choose Tier -->
+                <div class="wizard-card">
+                    <div class="wizard-step-header">
+                        <div class="step-circle">2</div>
+                        <div>
+                            <h2 class="step-title">Choose Promotion Placement Tier</h2>
+                            <div class="step-sub">Select the level of visibility and prestige for your mod</div>
+                        </div>
+                    </div>
+
+                    <div class="tier-cards-grid">
+                        <% (pricingConfig.tiers || []).forEach(tier => { %>
+                            <div class="tier-card <%= (tier.id === 'featured') ? 'selected' : '' %>"
+                                 id="tierCard_<%= tier.id %>"
+                                 data-tier="<%= tier.id %>"
+                                 data-multiplier="<%= tier.multiplier %>"
+                                 onclick="selectTier('<%= tier.id %>', <%= tier.multiplier %>, '<%= tier.name %>')">
+                                <div>
+                                    <div class="tier-badge"><%= tier.badge %></div>
+                                    <h3 class="tier-title"><%= tier.name %></h3>
+                                    <ul class="tier-features-list">
+                                        <% (tier.features || []).forEach(feat => { %>
+                                            <li><i class="fas fa-check"></i> <span><%= feat %></span></li>
+                                        <% }) %>
+                                    </ul>
+                                </div>
+                                <div style="font-size: 0.78em; color: var(--gold); font-weight: 700; margin-top: 8px;">
+                                    Multiplier: <%= tier.multiplier %>x
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+
+                <!-- Step 3: Choose Duration -->
+                <div class="wizard-card">
+                    <div class="wizard-step-header">
+                        <div class="step-circle">3</div>
+                        <div>
+                            <h2 class="step-title">Select Duration</h2>
+                            <div class="step-sub">Campaign runs continuously from moment of activation</div>
+                        </div>
+                    </div>
+
+                    <div class="duration-pills-bar">
+                        <% (pricingConfig.durations || []).forEach(dur => { %>
+                            <div class="duration-pill <%= dur.isPopular ? 'selected' : '' %>"
+                                 id="durPill_<%= dur.days %>"
+                                 data-days="<%= dur.days %>"
+                                 data-base-inr="<%= dur.baseINR %>"
+                                 onclick="selectDuration(<%= dur.days %>, <%= dur.baseINR %>, '<%= dur.label %>')">
+                                <div class="dur-days"><%= dur.label %></div>
+                                <div class="dur-sub" data-inr-price="<%= dur.baseINR %>">₹<%= dur.baseINR %></div>
+                                <% if (dur.isPopular) { %>
+                                    <div class="dur-badge">Popular</div>
+                                <% } %>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Checkout Box -->
+            <div>
+                <div class="checkout-summary-card">
+                    <h3 class="summary-heading">
+                        <i class="fas fa-receipt" style="color: var(--gold);"></i> Campaign Summary
+                    </h3>
+
+                    <div class="summary-row">
+                        <span class="summary-row-label">Target Mod:</span>
+                        <span class="summary-row-val" id="summaryModName">
+                            <%= (userMods && userMods.length > 0) ? (userMods[0].name || userMods[0].title) : 'Select a mod' %>
+                        </span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-row-label">Placement Tier:</span>
+                        <span class="summary-row-val" id="summaryTierName">Featured Highlight</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-row-label">Duration:</span>
+                        <span class="summary-row-val" id="summaryDuration">7 Days</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-row-label">Expected Impressions:</span>
+                        <span class="summary-row-val" style="color: #2ecc71;" id="summaryImpressions">~35,000 - 50,000</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-row-label">Global Currency:</span>
+                        <span class="summary-row-val" style="color: var(--gold);" id="summaryActiveCur">INR (₹)</span>
+                    </div>
+
+                    <div class="summary-total-bar">
+                        <div>
+                            <div class="summary-total-label">Total Investment</div>
+                            <div style="font-size: 0.75em; color: var(--silver);">No hidden platform taxes</div>
+                        </div>
+                        <div class="summary-total-val" id="summaryTotalAmount" data-inr-price="979">₹979</div>
+                    </div>
+
+                    <div id="promoAlertBox" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.88em; margin-bottom: 14px;"></div>
+
+                    <% if (user) { %>
+                        <button type="button" class="btn-launch-promo" id="btnLaunchPromo" onclick="executePromotion()">
+                            <i class="fas fa-rocket"></i> Launch Promotion Now
+                        </button>
+                    <% } else { %>
+                        <a href="/login?redirect=/promote" class="btn-launch-promo" style="text-decoration: none;">
+                            <i class="fas fa-sign-in-alt"></i> Login to Promote
+                        </a>
+                    <% } %>
+
+                    <div style="text-align: center; margin-top: 14px; font-size: 0.78em; color: var(--silver);">
+                        <i class="fas fa-shield-alt" style="color: var(--gold);"></i> 100% Instant Live Activation &bull; Direct Verified Links
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. MY ACTIVE CAMPAIGNS & REAL-TIME STATS   -->
+        <!-- ========================================== -->
+        <% if (user) { %>
+            <section class="campaigns-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 style="color: var(--white); font-size: 1.6em; margin: 0;">
+                            <i class="fas fa-chart-pie" style="color: var(--gold); margin-right: 8px;"></i> My Promotion Campaigns
+                        </h2>
+                        <p style="color: var(--silver); margin: 4px 0 0 0; font-size: 0.9em;">
+                            Monitor real-time impressions, player clicks, and active campaign durations.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <span style="background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.3); padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em;">
+                            Active Campaigns: <%= activeCampaigns %>
+                        </span>
+                        <span style="background: rgba(46, 204, 113, 0.12); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85em;">
+                            Total Clicks: <%= totalClicks %>
+                        </span>
+                    </div>
+                </div>
+
+                <% if (promotions && promotions.length > 0) { %>
+                    <div style="margin-top: 15px;">
+                        <% promotions.forEach(promo => { %>
+                            <% const isLive = promo.status === 'active' && promo.endDate && new Date(promo.endDate) > new Date(); %>
+                            <div class="campaign-item">
+                                <div style="display: flex; align-items: center; gap: 14px; min-width: 200px;">
+                                    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(255, 215, 0, 0.15); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.4em;">
+                                        <i class="fas fa-bullhorn"></i>
+                                    </div>
+                                    <div>
+                                        <strong style="color: var(--white); font-size: 1.05em; display: block;">
+                                            <%= (promo.file && (promo.file.name || promo.file.title)) ? (promo.file.name || promo.file.title) : 'Mod Campaign' %>
+                                        </strong>
+                                        <span style="font-size: 0.8em; color: var(--silver);">
+                                            Tier: <strong style="color: var(--gold); text-transform: uppercase;"><%= promo.tier || 'standard' %></strong>
+                                            &bull; Started <%= new Date(promo.startDate).toLocaleDateString() %>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                                    <div>
+                                        <div style="font-size: 0.75em; color: var(--silver); text-transform: uppercase;">Impressions</div>
+                                        <div style="font-size: 1.1em; color: var(--white); font-weight: 800;"><%= (promo.impressions || 0).toLocaleString() %></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75em; color: var(--silver); text-transform: uppercase;">Clicks</div>
+                                        <div style="font-size: 1.1em; color: #2ecc71; font-weight: 800;"><%= (promo.clicks || 0).toLocaleString() %></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75em; color: var(--silver); text-transform: uppercase;">Duration</div>
+                                        <div style="font-size: 1.1em; color: var(--white); font-weight: 700;"><%= promo.days %> Days</div>
+                                    </div>
+                                    <div>
+                                        <span style="background: <%= isLive ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)' %>; color: <%= isLive ? '#2ecc71' : '#e74c3c' %>; border: 1px solid <%= isLive ? 'rgba(46, 204, 113, 0.3)' : 'rgba(231, 76, 60, 0.3)' %>; padding: 4px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8em;">
+                                            <%= isLive ? 'Active' : 'Ended' %>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } else { %>
+                    <div style="text-align: center; padding: 35px 15px; color: var(--silver);">
+                        <i class="fas fa-chart-line" style="font-size: 2.2em; opacity: 0.4; margin-bottom: 10px; display: block;"></i>
+                        <p style="margin: 0;">No promotions launched yet. Use the configurator above to launch your first promotional campaign!</p>
+                    </div>
+                <% } %>
+            </section>
+        <% } %>
+    </div>
+</main>
+
+<script>
+    // State management for wizard
+    let selectedModId = '<%= preselectedModId || "" %>';
+    let selectedModName = <%- JSON.stringify((userMods && userMods.length > 0) ? (userMods[0].name || userMods[0].title) : '') %>;
+    let selectedTier = 'featured';
+    let selectedMultiplier = 1.4;
+    let selectedTierName = 'Featured Highlight';
+    let selectedDays = 7;
+    let selectedBaseINR = 699;
+
+    function selectModItem(el) {
+        const id = el.getAttribute('data-id');
+        const name = el.getAttribute('data-name');
+        selectedModId = id;
+        selectedModName = name;
+        document.getElementById('summaryModName').textContent = name;
+        
+        document.querySelectorAll('.mod-select-item').forEach(item => {
+            if (item === el) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+        calculateTotal();
+    }
+
+    function selectTier(id, multiplier, name) {
+        selectedTier = id;
+        selectedMultiplier = multiplier;
+        selectedTierName = name;
+        document.getElementById('summaryTierName').textContent = name;
+
+        document.querySelectorAll('.tier-card').forEach(el => {
+            if (el.getAttribute('data-tier') === id) {
+                el.classList.add('selected');
+            } else {
+                el.classList.remove('selected');
+            }
+        });
+        calculateTotal();
+    }
+
+    function selectDuration(days, baseINR, label) {
+        selectedDays = days;
+        selectedBaseINR = baseINR;
+        document.getElementById('summaryDuration').textContent = label;
+
+        document.querySelectorAll('.duration-pill').forEach(el => {
+            if (parseInt(el.getAttribute('data-days'), 10) === days) {
+                el.classList.add('selected');
+            } else {
+                el.classList.remove('selected');
+            }
+        });
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        const rawTotalINR = Math.round(selectedBaseINR * selectedMultiplier);
+        const totalEl = document.getElementById('summaryTotalAmount');
+        totalEl.setAttribute('data-inr-price', rawTotalINR);
+
+        // Update estimated impressions
+        const impEl = document.getElementById('summaryImpressions');
+        if (selectedDays === 1) impEl.textContent = '~5,000 - 8,000';
+        else if (selectedDays === 3) impEl.textContent = '~15,000 - 22,000';
+        else if (selectedDays === 7) impEl.textContent = '~35,000 - 55,000';
+        else if (selectedDays === 14) impEl.textContent = '~75,000 - 110,000';
+        else impEl.textContent = '~160,000 - 250,000+';
+
+        // Apply active currency formatting
+        if (window.GPLCurrency) {
+            const cur = window.GPLCurrency.getCurrency();
+            const formatted = window.GPLCurrency.format(rawTotalINR, cur);
+            totalEl.textContent = formatted;
+            document.getElementById('summaryActiveCur').textContent = `${cur} (${window.GPLCurrency.symbols[cur] || ''})`;
+        } else {
+            totalEl.textContent = '₹' + rawTotalINR.toLocaleString('en-IN');
+        }
+    }
+
+    // In-Page Currency Switcher Logic
+    function setPromoteCurrency(code) {
+        if (window.GPLCurrency) {
+            window.GPLCurrency.setCurrency(code);
+        }
+        document.querySelectorAll('.cur-pill-btn').forEach(btn => {
+            if (btn.getAttribute('data-cur') === code) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        calculateTotal();
+    }
+
+    // React to global currency change events
+    window.addEventListener('gplCurrencyChange', function(e) {
+        if (e.detail && e.detail.currency) {
+            document.querySelectorAll('.cur-pill-btn').forEach(btn => {
+                if (btn.getAttribute('data-cur') === e.detail.currency) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        calculateTotal();
+    });
+
+    // Execute Promotion API Call
+    async function executePromotion() {
+        const alertBox = document.getElementById('promoAlertBox');
+        alertBox.style.display = 'none';
+
+        if (!selectedModId) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(231, 76, 60, 0.15)';
+            alertBox.style.color = '#e74c3c';
+            alertBox.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+            alertBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please select a mod to promote.';
+            return;
+        }
+
+        const btn = document.getElementById('btnLaunchPromo');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Activating Promotion...';
+
+        try {
+            const res = await fetch(`/api/mods/${selectedModId}/promote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    days: selectedDays,
+                    tier: selectedTier
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to activate promotion.');
+            }
+
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(46, 204, 113, 0.15)';
+            alertBox.style.color = '#2ecc71';
+            alertBox.style.border = '1px solid rgba(46, 204, 113, 0.3)';
+            alertBox.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message || 'Promotion successfully activated!'}`;
+            btn.innerHTML = '<i class="fas fa-check"></i> Promotion Activated!';
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1800);
+        } catch (err) {
+            console.error('Promotion error:', err);
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(231, 76, 60, 0.15)';
+            alertBox.style.color = '#e74c3c';
+            alertBox.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+            alertBox.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${err.message || 'An error occurred during activation.'}`;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Promotion Now';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const cur = (window.GPLCurrency && window.GPLCurrency.getCurrency()) || 'INR';
+        setPromoteCurrency(cur);
+    });
+</script>
+
+<%- include('../partials/footer') %>

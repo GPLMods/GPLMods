@@ -391,9 +391,24 @@
         <% } %>
 
         <% if (status === 'pending' || status === 'active' || status === 'processing') { %>
+            <!-- 10-Minute Strict Timeout Tracker Card -->
+            <div class="timeout-timer-card" style="background: rgba(231, 76, 60, 0.08); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 25px; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-hourglass-half" style="font-size: 1.5rem; color: #e74c3c;"></i>
+                    <div>
+                        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Confirmation Expiration Window</div>
+                        <div style="color: var(--silver); font-size: 0.82rem;">Transactions pending clearance for over 10 minutes are automatically marked as failed.</div>
+                    </div>
+                </div>
+                <div style="background: rgba(0,0,0,0.6); border: 1.5px solid #e74c3c; border-radius: 8px; padding: 6px 14px; text-align: center;">
+                    <div style="font-size: 0.7rem; color: #bbb; text-transform: uppercase; letter-spacing: 0.5px;">Auto-Closes In</div>
+                    <div id="session-timeout-clock" style="font-family: monospace; font-size: 1.3rem; font-weight: 700; color: #e74c3c;">09:59</div>
+                </div>
+            </div>
+
             <div class="polling-timer-box" id="polling-box">
                 <i class="fas fa-spinner fa-spin" style="color: var(--gold);"></i>
-                <span>Auto-refreshing status in <span class="seconds" id="countdown-sec">10</span>s...</span>
+                <span>Auto-refreshing bank clearance in <span class="seconds" id="countdown-sec">10</span>s...</span>
             </div>
         <% } %>
 
@@ -401,6 +416,9 @@
             <% if (status === 'pending' || status === 'active' || status === 'processing') { %>
                 <button type="button" class="btn-action btn-status-check" id="btn-check-now" onclick="checkCurrentStatus(true);">
                     <i class="fas fa-sync-alt" id="check-icon"></i> Check Status Now
+                </button>
+                <button type="button" class="btn-action" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4);" onclick="handleSelfCancel();">
+                    <i class="fas fa-times-circle"></i> Cancel Payment
                 </button>
             <% } %>
 
@@ -430,14 +448,30 @@
 
 <% if (status === 'pending' || status === 'active' || status === 'processing') { %>
 <script>
-    let remainingSeconds = 10;
+    let pollIntervalSeconds = 10;
     const countdownEl = document.getElementById('countdown-sec');
+    const timeoutClockEl = document.getElementById('session-timeout-clock');
     const orderId = "<%= orderId || '' %>";
     const orderType = "<%= type || '' %>";
     let isChecking = false;
+    let isCancelled = false;
+
+    // Remaining seconds before strict 10-minute timeout auto-fails transaction
+    let remainingTimeoutSec = <%= typeof remainingTimeoutSeconds !== 'undefined' ? remainingTimeoutSeconds : 600 %>;
+
+    function formatTime(totalSeconds) {
+        if (totalSeconds <= 0) return "00:00";
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    if (timeoutClockEl) {
+        timeoutClockEl.textContent = formatTime(remainingTimeoutSec);
+    }
 
     async function checkCurrentStatus(manual = false) {
-        if (!orderId || isChecking) return;
+        if (!orderId || isChecking || isCancelled) return;
         isChecking = true;
         const icon = document.getElementById('check-icon');
         if (icon) icon.classList.add('fa-spin');
@@ -449,11 +483,12 @@
             if (data.status === 'paid' || data.status === 'successful' || data.isPaid) {
                 window.location.href = `/payment/success?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}`;
                 return;
-            } else if (data.status === 'failed' || data.status === 'expired' || data.status === 'cancelled') {
-                window.location.href = `/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}&status=${encodeURIComponent(data.status)}`;
+            } else if (data.status === 'failed' || data.status === 'expired' || data.status === 'cancelled' || data.timedOut) {
+                const failReason = data.reason || 'Payment timed out after 10 minutes.';
+                window.location.href = `/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}&status=${encodeURIComponent(data.status)}&reason=${encodeURIComponent(failReason)}`;
                 return;
             } else if (manual) {
-                alert('Payment is still pending bank confirmation. Please allow a few moments or refresh again.');
+                alert('Payment is still awaiting bank clearance. Transactions taking longer than 10 minutes are automatically marked as failed.');
             }
         } catch (e) {
             console.warn('[Status Poll Error]:', e);
@@ -466,14 +501,46 @@
         }
     }
 
-    const timer = setInterval(() => {
-        remainingSeconds--;
-        if (countdownEl) countdownEl.textContent = remainingSeconds;
-        if (remainingSeconds <= 0) {
-            remainingSeconds = 10;
+    // 1-second interval loop handling both 10-second polling and 10-minute timeout
+    const countdownTimer = setInterval(() => {
+        // Decrement 10-minute overall window
+        remainingTimeoutSec--;
+        if (timeoutClockEl) {
+            timeoutClockEl.textContent = formatTime(Math.max(0, remainingTimeoutSec));
+        }
+
+        // STRICT 10-MINUTE EXPIRATION:
+        if (remainingTimeoutSec <= 0) {
+            clearInterval(countdownTimer);
+            if (timeoutClockEl) timeoutClockEl.textContent = "EXPIRED";
+            window.location.href = `/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}&status=timeout&reason=${encodeURIComponent('Payment timed out after 10 minutes.')}`;
+            return;
+        }
+
+        // Decrement 10-second poll interval
+        pollIntervalSeconds--;
+        if (countdownEl) countdownEl.textContent = pollIntervalSeconds;
+        if (pollIntervalSeconds <= 0) {
+            pollIntervalSeconds = 10;
             checkCurrentStatus(false);
         }
     }, 1000);
+
+    function handleSelfCancel() {
+        if (typeof window.showCancellationSurvey === 'function') {
+            window.showCancellationSurvey({
+                orderId: orderId,
+                type: orderType,
+                onSubmitted: function() {
+                    window.location.href = `/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}&status=cancelled`;
+                }
+            });
+        } else {
+            if (confirm('Are you sure you want to cancel this payment?')) {
+                window.location.href = `/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(orderType)}&status=cancelled`;
+            }
+        }
+    }
 </script>
 <% } %>
 

@@ -542,34 +542,77 @@
                 </div>
 
                 <div class="languages-box">
-                    <label style="font-weight: 700; color: var(--white); font-size: 0.95rem;">
+                    <label style="font-weight: 700; color: var(--white); font-size: 0.95rem; margin-bottom: 6px; display: block;">
                         Languages Spoken <span class="req">*</span> 
-                        <span style="font-weight: normal; color: var(--silver); font-size: 0.85rem;">(Must select at least one of Hindi, English, or Hinglish)</span>
+                        <span style="font-weight: normal; color: var(--silver); font-size: 0.85rem;">(Select all languages you can assist users with — International & Regional)</span>
                     </label>
+
+                    <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: var(--gold); margin: 12px 0 8px 0; letter-spacing: 0.5px;">
+                        <i class="fas fa-globe"></i> International Languages
+                    </div>
                     <div class="languages-grid">
-                        <label class="lang-checkbox-label mandatory">
-                            <input type="checkbox" name="languages" value="hindi"> Hindi (हिंदी)
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="english" checked> <span class="fi fi-us"></span> English
                         </label>
-                        <label class="lang-checkbox-label mandatory">
-                            <input type="checkbox" name="languages" value="english"> English
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="spanish"> <span class="fi fi-es"></span> Spanish (Español)
                         </label>
-                        <label class="lang-checkbox-label mandatory">
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="french"> <span class="fi fi-fr"></span> French (Français)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="arabic"> <span class="fi fi-sa"></span> Arabic (العربية)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="russian"> <span class="fi fi-ru"></span> Russian (Русский)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="portuguese"> <span class="fi fi-br"></span> Portuguese (Português)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="german"> <span class="fi fi-de"></span> German (Deutsch)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="chinese"> <span class="fi fi-cn"></span> Chinese (中文)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="japanese"> <span class="fi fi-jp"></span> Japanese (日本語)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="indonesian"> <span class="fi fi-id"></span> Indonesian (Bahasa)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="turkish"> <span class="fi fi-tr"></span> Turkish (Türkçe)
+                        </label>
+                    </div>
+
+                    <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: var(--gold); margin: 16px 0 8px 0; letter-spacing: 0.5px;">
+                        <i class="fas fa-map-marker-alt"></i> Regional & South Asian Languages
+                    </div>
+                    <div class="languages-grid">
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="hindi"> <span class="fi fi-in"></span> Hindi (हिंदी)
+                        </label>
+                        <label class="lang-checkbox-label">
                             <input type="checkbox" name="languages" value="hinglish"> Hinglish
                         </label>
                         <label class="lang-checkbox-label">
-                            <input type="checkbox" name="languages" value="bengali"> Bengali
+                            <input type="checkbox" name="languages" value="bengali"> Bengali (বাংলা)
                         </label>
                         <label class="lang-checkbox-label">
-                            <input type="checkbox" name="languages" value="telugu"> Telugu
+                            <input type="checkbox" name="languages" value="urdu"> Urdu (اردو)
                         </label>
                         <label class="lang-checkbox-label">
-                            <input type="checkbox" name="languages" value="marathi"> Marathi
+                            <input type="checkbox" name="languages" value="telugu"> Telugu (తెలుగు)
                         </label>
                         <label class="lang-checkbox-label">
-                            <input type="checkbox" name="languages" value="tamil"> Tamil
+                            <input type="checkbox" name="languages" value="tamil"> Tamil (தமிழ்)
                         </label>
                         <label class="lang-checkbox-label">
-                            <input type="checkbox" name="languages" value="urdu"> Urdu
+                            <input type="checkbox" name="languages" value="marathi"> Marathi (मराठी)
+                        </label>
+                        <label class="lang-checkbox-label">
+                            <input type="checkbox" name="languages" value="punjabi"> Punjabi (ਪੰਜਾਬੀ)
                         </label>
                     </div>
                 </div>
@@ -676,14 +719,13 @@
             return;
         }
 
-        // 2. Validate mandatory language
+        // 2. Validate language selection (must select at least 1 language)
         const langCheckboxes = document.querySelectorAll('input[name="languages"]:checked');
         const selectedLangs = Array.from(langCheckboxes).map(c => c.value);
-        const hasMandatory = selectedLangs.some(l => l === 'hindi' || l === 'english' || l === 'hinglish');
 
-        if (!hasMandatory) {
+        if (selectedLangs.length === 0) {
             statusMsg.className = 'apply-status-msg error';
-            statusMsg.textContent = 'Language Requirement: You must select at least one of Hindi, English, or Hinglish.';
+            statusMsg.textContent = 'Language Requirement: Please select at least one language you are proficient in.';
             return;
         }
 
@@ -742,6 +784,12 @@
                     statusMsg.textContent = result.error.message || 'Payment was cancelled or failed.';
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Pay Commitment Fee & Submit Application';
+                    if (typeof window.showCancellationSurvey === 'function') {
+                        window.showCancellationSurvey({
+                            orderId: orderData.order_id,
+                            type: 'volunteer'
+                        });
+                    }
                 }
             });
 

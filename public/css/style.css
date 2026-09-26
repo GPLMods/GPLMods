@@ -2950,3 +2950,118 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         margin: 0 auto !important;
     }
 }
+
+/* ==========================================================================
+   DYNAMIC IN-PAGE CURRENCY BAR FOR PAYMENT PAGES & PRO ICON FALLBACKS
+   ========================================================================== */
+.gpl-page-currency-bar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(18, 20, 26, 0.95);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 30px;
+    padding: 6px 14px;
+    margin: 20px auto 25px auto;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    max-width: 100%;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+}
+
+.gpl-currency-bar-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.gpl-currency-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.cur-pill-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--silver);
+    padding: 5px 11px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.82em;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+.cur-pill-btn:hover {
+    color: var(--white);
+    border-color: rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.cur-pill-btn.active {
+    background: var(--gold) !important;
+    color: var(--black) !important;
+    font-weight: 700;
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 12px var(--glow-gold);
+}
+
+/* Mobile Layout Responsiveness - Guaranteed No Header/Page Breakage */
+@media (max-width: 640px) {
+    .gpl-page-currency-bar {
+        border-radius: 16px;
+        padding: 10px 10px;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        flex-direction: column;
+    }
+    .gpl-currency-bar-label {
+        font-size: 0.8em;
+    }
+    .gpl-currency-pills {
+        gap: 5px;
+        width: 100%;
+        justify-content: center;
+    }
+    .cur-pill-btn {
+        padding: 4px 8px;
+        font-size: 0.76em;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 360px) {
+    .cur-pill-btn {
+        padding: 3px 6px;
+        font-size: 0.72em;
+    }
+}
+
+/* Fallback glyphs for fa-cup-togo and fa-hearts to guarantee crisp rendering */
+.fa-cup-togo::before {
+    content: "\f0f4";
+}
+.fa-hearts::before {
+    content: "\f004";
+}
+

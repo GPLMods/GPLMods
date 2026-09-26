@@ -43,6 +43,10 @@ const MembershipOrderSchema = new Schema({
     scheduledPlanChange: { type: Schema.Types.Mixed, default: null },
     paymentMethod: { type: String },
     membershipExpiresAt: { type: Date },
+    failureReason: { type: String, default: null },
+    cancellationReason: { type: String, default: null },
+    cancellationNotes: { type: String, default: null },
+    cancelledAt: { type: Date },
     rawWebhookData: { type: Schema.Types.Mixed }
 }, { timestamps: true });
 

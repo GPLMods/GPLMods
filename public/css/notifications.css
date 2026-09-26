@@ -1,0 +1,305 @@
+/* ==========================================================================
+   GPL MODS DYNAMIC NOTIFICATIONS & PWA PUSH STYLES
+   ========================================================================== */
+
+/* 1. Floating In-App Toast Container */
+.gpl-toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 100005;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    width: 100%;
+    pointer-events: none;
+}
+
+.gpl-toast-card {
+    pointer-events: auto;
+    background: rgba(18, 19, 27, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75), 0 0 15px rgba(255, 215, 0, 0.15);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+.gpl-toast-card.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.gpl-toast-icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.gpl-toast-icon-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gpl-toast-icon-wrap i {
+    color: var(--gold, #ffd700);
+    font-size: 1.25rem;
+}
+
+.gpl-toast-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gpl-toast-title {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 3px 0;
+    line-height: 1.25;
+}
+
+.gpl-toast-message {
+    color: #b9bbbe;
+    font-size: 0.84rem;
+    margin: 0;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.gpl-toast-close {
+    background: transparent;
+    border: none;
+    color: #72767d;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.2s;
+    align-self: flex-start;
+}
+
+.gpl-toast-close:hover {
+    color: #fff;
+}
+
+.gpl-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold, #ffd700), #ff9800);
+    width: 100%;
+    transform-origin: left;
+    animation: toastProgress 6s linear forwards;
+}
+
+@keyframes toastProgress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+/* 2. Custom Permission Prompt Card (7-day dismiss cooldown) */
+.gpl-notif-prompt-card {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    max-width: 390px;
+    width: calc(100vw - 36px);
+    background: rgba(16, 18, 25, 0.97);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255, 215, 0, 0.4);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(255, 215, 0, 0.2);
+    z-index: 100004;
+    transform: translateY(140%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+.gpl-notif-prompt-card.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.gpl-notif-prompt-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.gpl-notif-prompt-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 152, 0, 0.15) 100%);
+    border: 1px solid var(--gold, #ffd700);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--gold, #ffd700);
+    font-size: 1.3rem;
+    animation: bellGlow 2s infinite ease-in-out;
+}
+
+@keyframes bellGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); transform: scale(1); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); transform: scale(1.05); }
+}
+
+.gpl-notif-prompt-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.gpl-notif-prompt-text h4 {
+    margin: 0 0 4px 0;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.gpl-notif-prompt-text p {
+    margin: 0;
+    color: #a0a4b0;
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.gpl-notif-prompt-close {
+    background: transparent;
+    border: none;
+    color: #72767d;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.gpl-notif-prompt-close:hover {
+    color: #fff;
+}
+
+.gpl-notif-prompt-features {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.gpl-notif-feature-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 0.74rem;
+    color: #d1d5db;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.gpl-notif-feature-chip i {
+    color: var(--gold, #ffd700);
+}
+
+.gpl-notif-prompt-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.gpl-notif-btn-dismiss {
+    background: transparent;
+    border: 1px solid #333645;
+    color: #a0a4b0;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.gpl-notif-btn-dismiss:hover {
+    border-color: #555970;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.gpl-notif-btn-enable {
+    background: var(--gold, #ffd700);
+    color: #000;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
+}
+
+.gpl-notif-btn-enable:hover {
+    background: #ffe066;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    .gpl-toast-container {
+        top: 60px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
+        width: auto;
+    }
+    .gpl-notif-prompt-card {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-width: none;
+        padding: 16px;
+    }
+    .gpl-notif-prompt-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .gpl-notif-btn-dismiss, .gpl-notif-btn-enable {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
+}
