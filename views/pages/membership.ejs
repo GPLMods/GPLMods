@@ -96,8 +96,40 @@
     .card-plus { border: 2px solid var(--gold); transform: scale(1.03); z-index: 5; box-shadow: 0 0 25px rgba(255, 215, 0, 0.2); }
     .card-distributor { border-top: 4px solid var(--blue); }
 
-    .popular-badge { position: absolute; top: 15px; right: -35px; background: var(--gold); color: var(--black); font-size: 0.75em; font-weight: bold; padding: 5px 38px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-    .lite-badge { position: absolute; top: 15px; right: -35px; background: #00bcd4; color: #000; font-size: 0.75em; font-weight: bold; padding: 5px 38px; transform: rotate(45deg); z-index: 2; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    .popular-badge {
+        position: absolute;
+        top: 20px;
+        right: -35px;
+        width: 135px;
+        text-align: center;
+        background: linear-gradient(135deg, #ffd700, #ffb300);
+        color: #121002;
+        font-size: 0.72em;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        padding: 5px 0;
+        transform: rotate(45deg);
+        z-index: 3;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.35);
+        text-transform: uppercase;
+    }
+    .lite-badge {
+        position: absolute;
+        top: 20px;
+        right: -35px;
+        width: 135px;
+        text-align: center;
+        background: linear-gradient(135deg, #00e5ff, #00b0ff);
+        color: #05141c;
+        font-size: 0.72em;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        padding: 5px 0;
+        transform: rotate(45deg);
+        z-index: 3;
+        box-shadow: 0 4px 12px rgba(0, 188, 212, 0.4);
+        text-transform: uppercase;
+    }
 
     .tier-header { text-align: center; margin-bottom: 20px; }
     .tier-name { font-size: 1.6em; color: var(--white); margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -146,15 +178,25 @@
         transition: border-color 0.3s;
     }
     .coupon-section:focus-within { border-color: var(--gold); }
-    .coupon-input-group { display: flex; gap: 10px; margin-top: 12px; }
+    .coupon-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 14px;
+        max-width: 440px;
+        margin-left: auto;
+        margin-right: auto;
+    }
     .coupon-input {
-        flex-grow: 1;
+        width: 100%;
+        box-sizing: border-box;
         background: #0d0d0d;
         border: 1px solid #333;
         border-radius: 8px;
         padding: 12px 16px;
         color: var(--white);
         font-size: 1em;
+        text-align: center;
         text-transform: uppercase;
         letter-spacing: 1px;
         font-weight: bold;
@@ -162,6 +204,7 @@
     }
     .coupon-input:focus { outline: none; border-color: var(--gold); }
     .coupon-btn {
+        width: 100%;
         background: #2a2a2a;
         color: var(--gold);
         border: 1px solid var(--gold);
@@ -200,6 +243,18 @@
         gap: 15px;
         flex-wrap: wrap;
         text-align: left;
+    }
+    .active-membership-banner.banner-lite {
+        background: linear-gradient(135deg, rgba(0, 188, 212, 0.15), rgba(0, 229, 255, 0.05));
+        border-color: rgba(0, 188, 212, 0.5);
+    }
+    .active-membership-banner.banner-lite .active-banner-info i {
+        color: #00e5ff;
+    }
+    .active-membership-banner.banner-lite .btn-manage-active {
+        background: #00bcd4;
+        color: #000;
+        box-shadow: 0 0 12px rgba(0, 188, 212, 0.5);
     }
     .active-banner-info {
         display: flex;
@@ -423,24 +478,36 @@
             <p>Select the plan that suits you best. From free community access to ultra fast ad-free downloads and creator slots.</p>
         </div>
 
-        <% if (user && (user.membership === 'plus' || user.membership === 'lite' || user.membership === 'premium')) { %>
-            <div class="active-membership-banner">
+        <% 
+            const isOwnerOrAdmin = user && ['admin', 'owner', 'support'].includes(user.role);
+            const hasPlusMembership = user && (user.membership === 'plus' || user.isPlus || isOwnerOrAdmin);
+            const hasLiteMembership = user && (user.membership === 'lite');
+            const hasActiveMembership = hasPlusMembership || hasLiteMembership || (user && user.membership === 'premium');
+        %>
+        <% if (hasActiveMembership) { %>
+            <div class="active-membership-banner <%= (hasLiteMembership && !isOwnerOrAdmin) ? 'banner-lite' : '' %>">
                 <div class="active-banner-info">
-                    <i class="fas fa-crown"></i>
+                    <i class="<%= (hasLiteMembership && !isOwnerOrAdmin) ? 'fas fa-bolt' : 'fas fa-crown' %>"></i>
                     <div>
                         <div class="active-banner-title">
-                            Active Membership: <%= user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Premium') %>
-                            <% if (user.membershipExpiresAt) { %>
+                            Active Membership: <%= hasPlusMembership ? 'GPL Plus' : (hasLiteMembership ? 'GPL Lite' : 'Premium') %>
+                            <% if (isOwnerOrAdmin) { %>
+                                <span style="background: rgba(255, 215, 0, 0.2); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 2px 9px; border-radius: 12px; font-size: 0.78em; margin-left: 8px;"><i class="fas fa-shield-alt"></i> <%= user.role.toUpperCase() %> VIP ACCESS</span>
+                            <% } else if (user.membershipExpiresAt) { %>
                                 &bull; Valid until <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
                             <% } %>
                         </div>
                         <div class="active-banner-sub">
-                            Manage your subscription renewal, request a refund under guarantee, or switch plans.
+                            <% if (isOwnerOrAdmin) { %>
+                                Your account has permanent GPL Plus privileges linked directly with your <%= user.role.toUpperCase() %> credentials.
+                            <% } else { %>
+                                Manage your subscription renewal, request a refund under guarantee, or switch plans.
+                            <% } %>
                         </div>
                     </div>
                 </div>
                 <a href="/my-membership" class="btn-manage-active">
-                    <i class="fas fa-cog"></i> Manage Membership &rarr;
+                    <i class="fas fa-cog"></i> View Membership Status &rarr;
                 </a>
             </div>
         <% } %>
@@ -594,8 +661,8 @@
 
                 <% if (!user) { %>
                     <a href="/login?message=Please log in to upgrade to GPL Plus." class="plan-btn btn-gold">Log in to Upgrade</a>
-                <% } else if (user.membership === 'plus' || user.membership === 'premium') { %>
-                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold); border-color: var(--gold);">Active Plan (GPL Plus)</button>
+                <% } else if (user.membership === 'plus' || user.membership === 'premium' || (user && ['admin', 'owner', 'support'].includes(user.role))) { %>
+                    <button class="plan-btn btn-gold" disabled style="background: transparent; color: var(--gold); border-color: var(--gold);"><i class="fas fa-crown"></i> Active Plan (<%= (user && ['admin', 'owner', 'support'].includes(user.role)) ? user.role.toUpperCase() + ' VIP' : 'GPL Plus' %>)</button>
                 <% } else { %>
                     <button id="plus-purchase-btn" class="plan-btn btn-gold">Upgrade to Plus</button>
                 <% } %>
@@ -637,7 +704,7 @@
             </div>
             <div class="coupon-input-group">
                 <input type="text" id="coupon-code-input" class="coupon-input" placeholder="ENTER COUPON CODE" maxlength="20">
-                <button type="button" id="apply-coupon-btn" class="coupon-btn">Apply</button>
+                <button type="button" id="apply-coupon-btn" class="coupon-btn">Apply Coupon</button>
             </div>
             <div id="coupon-status-msg" class="coupon-status"></div>
         </div>
@@ -763,6 +830,25 @@
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
+    // Global setMembershipCurrency exposure to prevent any onclick ReferenceErrors
+    window.setMembershipCurrency = function(code) {
+        if (typeof window._setMembershipCurrencyImpl === 'function') {
+            window._setMembershipCurrencyImpl(code);
+        } else {
+            window._queuedMembershipCurrency = code;
+            if (window.GPLCurrency) {
+                window.GPLCurrency.setCurrency(code);
+            }
+            document.querySelectorAll('.cur-pill-btn').forEach(btn => {
+                if (btn.getAttribute('data-cur') === code) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+    };
+
     function filterPurchases(filter, btn) {
         document.querySelectorAll('.purchase-filter-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
@@ -828,13 +914,29 @@
         let currentDuration = 'monthly';
         let appliedCoupon = null;
 
-        function setMembershipCurrency(code) {
+        window._setMembershipCurrencyImpl = function(code) {
             currentCurrency = code;
             if (currencySelect) currencySelect.value = code;
             if (window.GPLCurrency) {
                 window.GPLCurrency.setCurrency(code);
             }
+            document.querySelectorAll('.cur-pill-btn').forEach(btn => {
+                if (btn.getAttribute('data-cur') === code) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
             updatePricingUI();
+        };
+
+        function setMembershipCurrency(code) {
+            window.setMembershipCurrency(code);
+        }
+
+        if (window._queuedMembershipCurrency) {
+            window._setMembershipCurrencyImpl(window._queuedMembershipCurrency);
+            window._queuedMembershipCurrency = null;
         }
 
         window.addEventListener('gplCurrencyChange', function(e) {

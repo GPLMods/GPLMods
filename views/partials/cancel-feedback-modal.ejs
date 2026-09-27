@@ -1,5 +1,5 @@
 <!-- ========================================================================= -->
-<!-- GLOBAL PURCHASE CANCELLATION FEEDBACK MODAL                               -->
+<!-- GLOBAL PURCHASE CANCELLATION FEEDBACK MODAL (CUSTOM GUI - NO BROWSER STATIC) -->
 <!-- ========================================================================= -->
 <div id="globalCancellationModal" class="gpl-cancel-modal-overlay" style="display: none;">
     <div class="gpl-cancel-modal-card">
@@ -7,57 +7,54 @@
         
         <div class="gpl-cancel-modal-header">
             <div class="gpl-cancel-icon-wrapper">
-                <i class="fas fa-question"></i>
+                <i class="fas fa-question-circle"></i>
             </div>
-            <h3>Why did you cancel your purchase?</h3>
-            <p>Please help us improve. Why did you choose not to complete this purchase?</p>
+            <h3>Why did you cancel your checkout?</h3>
+            <p>Your input helps us improve GPL Mods checkout and payment experience.</p>
         </div>
 
         <form id="globalCancelFeedbackForm" onsubmit="window.submitGlobalCancelFeedback(event);">
-            <div class="gpl-cancel-options">
-                <label class="gpl-cancel-option-label">
-                    <input type="radio" name="global_cancel_reason" value="Don't want to purchase it" required onchange="window.toggleGlobalOther(false);">
-                    <span class="gpl-option-body">
-                        <i class="fas fa-ban" style="color: #e74c3c;"></i>
-                        <span>Don't want to purchase it</span>
-                    </span>
+            <!-- Custom Question / Reason Dropdown Selector (Pure GUI - No Browser Static) -->
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.84rem; font-weight: 700; color: var(--gold, #FFD700); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fas fa-list-ul" style="margin-right: 5px;"></i> Reason for Cancellation
                 </label>
-
-                <label class="gpl-cancel-option-label">
-                    <input type="radio" name="global_cancel_reason" value="Don't find payment method I need" onchange="window.toggleGlobalOther(false);">
-                    <span class="gpl-option-body">
-                        <i class="fas fa-credit-card" style="color: var(--gold, #f1c40f);"></i>
-                        <span>Don't find payment method I need</span>
-                    </span>
-                </label>
-
-                <label class="gpl-cancel-option-label">
-                    <input type="radio" name="global_cancel_reason" value="Click by mistake" onchange="window.toggleGlobalOther(false);">
-                    <span class="gpl-option-body">
-                        <i class="fas fa-mouse-pointer" style="color: #3498db;"></i>
-                        <span>Click by mistake</span>
-                    </span>
-                </label>
-
-                <label class="gpl-cancel-option-label">
-                    <input type="radio" name="global_cancel_reason" value="Network issue" onchange="window.toggleGlobalOther(false);">
-                    <span class="gpl-option-body">
-                        <i class="fas fa-wifi" style="color: #e67e22;"></i>
-                        <span>Network issue</span>
-                    </span>
-                </label>
-
-                <label class="gpl-cancel-option-label">
-                    <input type="radio" name="global_cancel_reason" value="Other" onchange="window.toggleGlobalOther(true);">
-                    <span class="gpl-option-body">
-                        <i class="fas fa-comment-dots" style="color: #2ecc71;"></i>
-                        <span>Etc / Other reason</span>
-                    </span>
-                </label>
+                <div class="gpl-custom-dropdown" id="cancelReasonDropdown">
+                    <input type="hidden" name="global_cancel_reason" id="cancelReasonValue" value="Don't want to purchase it" required>
+                    <div class="gpl-dropdown-trigger" onclick="window.toggleCancelReasonDropdown();">
+                        <span id="cancelReasonDisplay">
+                            <i class="fas fa-ban" style="color: #e74c3c; margin-right: 8px;"></i> Don't want to purchase it
+                        </span>
+                        <div class="gpl-dropdown-arrow-icon">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="gpl-dropdown-menu" id="cancelReasonMenu">
+                        <div class="gpl-dropdown-item selected" data-value="Don't want to purchase it" onclick="window.selectCancelReason(this, 'Don\'t want to purchase it', 'fas fa-ban', '#e74c3c');">
+                            <i class="fas fa-ban" style="color: #e74c3c;"></i> Don't want to purchase it
+                        </div>
+                        <div class="gpl-dropdown-item" data-value="Don't find payment method I need" onclick="window.selectCancelReason(this, 'Don\'t find payment method I need', 'fas fa-credit-card', '#f1c40f');">
+                            <i class="fas fa-credit-card" style="color: #f1c40f;"></i> Don't find payment method I need
+                        </div>
+                        <div class="gpl-dropdown-item" data-value="Click by mistake" onclick="window.selectCancelReason(this, 'Click by mistake', 'fas fa-mouse-pointer', '#3498db');">
+                            <i class="fas fa-mouse-pointer" style="color: #3498db;"></i> Click by mistake
+                        </div>
+                        <div class="gpl-dropdown-item" data-value="Pricing too high / Looking for discount" onclick="window.selectCancelReason(this, 'Pricing too high / Looking for discount', 'fas fa-tag', '#e67e22');">
+                            <i class="fas fa-tag" style="color: #e67e22;"></i> Pricing too high / Looking for discount
+                        </div>
+                        <div class="gpl-dropdown-item" data-value="Network issue" onclick="window.selectCancelReason(this, 'Network issue', 'fas fa-wifi', '#9b59b6');">
+                            <i class="fas fa-wifi" style="color: #9b59b6;"></i> Network or technical gateway issue
+                        </div>
+                        <div class="gpl-dropdown-item" data-value="Other" onclick="window.selectCancelReason(this, 'Other', 'fas fa-comment-dots', '#2ecc71');">
+                            <i class="fas fa-comment-dots" style="color: #2ecc71;"></i> Etc / Other reason
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div id="globalOtherTextWrapper" style="display: none; margin-top: 12px;">
-                <textarea id="globalOtherNotes" placeholder="What payment method did you need, or what can we improve? (optional)" rows="2" maxlength="300" class="gpl-cancel-textarea"></textarea>
+            <div id="globalOtherTextWrapper" style="display: none; margin-top: 14px; text-align: left;">
+                <label style="display: block; font-size: 0.82rem; color: var(--silver, #bbb); margin-bottom: 6px;">Additional Details (Optional):</label>
+                <textarea id="globalOtherNotes" placeholder="What payment method or improvements would you like to see?" rows="2" maxlength="300" class="gpl-cancel-textarea"></textarea>
             </div>
 
             <div class="gpl-cancel-actions">
@@ -71,7 +68,7 @@
         <div id="globalCancelSuccessState" style="display: none; padding: 25px 10px; text-align: center;">
             <i class="fas fa-check-circle" style="font-size: 2.5rem; color: #2ecc71; margin-bottom: 12px; display: inline-block;"></i>
             <h4 style="color: #fff; margin-bottom: 6px; font-size: 1.2rem;">Thank you for your feedback!</h4>
-            <p style="color: var(--silver, #bbb); font-size: 0.9rem; line-height: 1.5; margin: 0;">We appreciate your input as we work to make GPLMods even better.</p>
+            <p style="color: var(--silver, #bbb); font-size: 0.9rem; line-height: 1.5; margin: 0;">We appreciate your input as we work to make GPL Mods even better.</p>
         </div>
     </div>
 </div>
@@ -83,7 +80,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.82);
+    background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 999999;
@@ -101,10 +98,10 @@
 }
 
 .gpl-cancel-modal-card {
-    background: linear-gradient(145deg, #1c1c1c, #121212);
-    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: linear-gradient(145deg, #181922 0%, #101117 100%);
+    border: 1.5px solid rgba(255, 215, 0, 0.4);
     border-radius: 18px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 215, 0, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.15);
     max-width: 520px;
     width: 100%;
     padding: 30px 25px;
@@ -138,21 +135,21 @@
 
 .gpl-cancel-modal-header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .gpl-cancel-icon-wrapper {
-    width: 60px;
-    height: 60px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    background: rgba(255, 215, 0, 0.12);
-    border: 2px solid var(--gold, #f1c40f);
-    color: var(--gold, #f1c40f);
+    background: rgba(255, 215, 0, 0.14);
+    border: 2px solid var(--gold, #FFD700);
+    color: var(--gold, #FFD700);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    margin: 0 auto 12px auto;
+    font-size: 1.8rem;
+    margin: 0 auto 14px auto;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
 }
 
@@ -171,53 +168,111 @@
     line-height: 1.45;
 }
 
-.gpl-cancel-options {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
+/* Custom Dropdown GUI & Icon Styling */
+.gpl-custom-dropdown {
+    position: relative;
+    user-select: none;
+    width: 100%;
 }
 
-.gpl-cancel-option-label {
+.gpl-dropdown-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0d0d12;
+    border: 1.5px solid #333;
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.gpl-dropdown-trigger:hover {
+    border-color: var(--gold, #FFD700);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+}
+
+.gpl-custom-dropdown.open .gpl-dropdown-trigger {
+    border-color: var(--gold, #FFD700);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.gpl-dropdown-arrow-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: var(--gold, #FFD700);
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    justify-content: center;
+    font-size: 0.82rem;
+    transition: transform 0.3s ease, background 0.2s;
+}
+
+.gpl-custom-dropdown.open .gpl-dropdown-arrow-icon {
+    transform: rotate(180deg);
+    background: rgba(255, 215, 0, 0.25);
+}
+
+.gpl-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #14151c;
+    border: 1.5px solid var(--gold, #FFD700);
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.25s ease;
+    z-index: 1000;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.gpl-custom-dropdown.open .gpl-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.gpl-dropdown-item {
+    padding: 12px 16px;
+    color: var(--silver, #bbb);
     font-size: 0.92rem;
-    color: #ddd;
-}
-
-.gpl-cancel-option-label:hover {
-    background: rgba(255, 215, 0, 0.08);
-    border-color: rgba(255, 215, 0, 0.4);
-    color: #fff;
-    transform: translateX(2px);
-}
-
-.gpl-cancel-option-label input[type="radio"] {
-    accent-color: var(--gold, #f1c40f);
-    width: 17px;
-    height: 17px;
     cursor: pointer;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.gpl-option-body {
+    transition: background 0.2s, color 0.2s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
     gap: 10px;
-    font-weight: 500;
+}
+
+.gpl-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.gpl-dropdown-item:hover, .gpl-dropdown-item.selected {
+    background: rgba(255, 215, 0, 0.14);
+    color: var(--gold, #FFD700);
+    font-weight: 600;
 }
 
 .gpl-cancel-textarea {
     width: 100%;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.6);
+    background: #0d0d12;
     border: 1px solid #444;
     border-radius: 8px;
     color: #fff;
@@ -229,7 +284,7 @@
     transition: border-color 0.2s;
 }
 .gpl-cancel-textarea:focus {
-    border-color: var(--gold, #f1c40f);
+    border-color: var(--gold, #FFD700);
     box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
@@ -238,7 +293,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 18px;
+    margin-top: 20px;
 }
 
 .btn-cancel-skip {
@@ -291,6 +346,35 @@
         onDismiss: null
     };
 
+    window.toggleCancelReasonDropdown = function() {
+        const dd = document.getElementById('cancelReasonDropdown');
+        if (dd) dd.classList.toggle('open');
+    };
+
+    window.selectCancelReason = function(el, val, iconClass, iconColor) {
+        document.getElementById('cancelReasonValue').value = val;
+        document.getElementById('cancelReasonDisplay').innerHTML = `<i class="${iconClass}" style="color: ${iconColor}; margin-right: 8px;"></i> ${val}`;
+        
+        document.querySelectorAll('#cancelReasonMenu .gpl-dropdown-item').forEach(item => item.classList.remove('selected'));
+        el.classList.add('selected');
+
+        const dd = document.getElementById('cancelReasonDropdown');
+        if (dd) dd.classList.remove('open');
+
+        const otherWrap = document.getElementById('globalOtherTextWrapper');
+        if (otherWrap) {
+            otherWrap.style.display = val === 'Other' ? 'block' : 'none';
+        }
+    };
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('cancelReasonDropdown');
+        if (dd && !dd.contains(e.target)) {
+            dd.classList.remove('open');
+        }
+    });
+
     window.showCancellationSurvey = function(config = {}) {
         currentSurveyConfig = {
             orderId: config.orderId || '',
@@ -322,17 +406,9 @@
         }
     };
 
-    window.toggleGlobalOther = function(show) {
-        const otherWrap = document.getElementById('globalOtherTextWrapper');
-        if (otherWrap) otherWrap.style.display = show ? 'block' : 'none';
-    };
-
     window.submitGlobalCancelFeedback = async function(e) {
         if (e && e.preventDefault) e.preventDefault();
-        const selectedRadio = document.querySelector('input[name="global_cancel_reason"]:checked');
-        if (!selectedRadio) return;
-
-        const reason = selectedRadio.value;
+        const reason = document.getElementById('cancelReasonValue').value || "Other";
         const notes = (document.getElementById('globalOtherNotes') ? document.getElementById('globalOtherNotes').value : '').trim();
         const submitBtn = document.getElementById('btnGlobalCancelSubmit');
 

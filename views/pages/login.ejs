@@ -82,7 +82,12 @@
         .form-group { margin-bottom: 20px; position: relative; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); font-size: 0.9em; }
         .form-group input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; }
+        .form-group input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; box-sizing: border-box; }
         .form-group input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
+        .password-input-wrapper { position: relative; width: 100%; }
+        .password-input-wrapper input { padding-right: 44px !important; }
+        .password-toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--silver); cursor: pointer; font-size: 1.05em; padding: 6px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; z-index: 5; }
+        .password-toggle-btn:hover { color: var(--gold); }
 
         .submit-button { 
             display: block; 
@@ -413,6 +418,18 @@
     </style>
     <!-- jsQR Library for scanning QR code directly from uploaded ID card -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -444,7 +461,12 @@
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="********" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="password" name="password" placeholder="********" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                         <!-- Forgot Password Link -->
                         <div style="text-align: right; margin-top: 8px;">
                             <a href="/forgot-password" style="color: var(--silver); font-size: 0.85em; text-decoration: none; transition: color 0.3s ease;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--silver)'">Forgot Password?</a>
@@ -452,9 +474,11 @@
                     </div>
 
                     <!-- reCAPTCHA integration -->
+                    <% if (typeof isTestDeployment === 'undefined' || !isTestDeployment) { %>
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
                     </div>
+                    <% } %>
 
                     <button type="submit" class="submit-button">Login</button>
                 </form>

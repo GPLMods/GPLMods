@@ -1266,42 +1266,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Mod Tags & Trending Tags Section -->
-                                <% const hasModTags = file.tags && Array.isArray(file.tags) && file.tags.length > 0; %>
-                                <% const hasTrendingTags = typeof topModsTags !== 'undefined' && Array.isArray(topModsTags) && topModsTags.length > 0; %>
-                                <% if (hasModTags || hasTrendingTags) { %>
-                                    <div class="mod-tags-container" style="margin: 18px 0; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
-                                        <% if (hasModTags) { %>
-                                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                                <div style="font-size: 0.82rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                                                    <i class="fas fa-tags"></i> Mod Tags
-                                                </div>
-                                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                                    <% file.tags.forEach(tag => { %>
-                                                        <a href="/search?q=<%= encodeURIComponent(tag) %>" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; color: #fff; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.25)'; this.style.borderColor='var(--gold)';" onmouseout="this.style.background='rgba(212,175,55,0.12)'; this.style.borderColor='rgba(212,175,55,0.3)';">
-                                                            <i class="fas fa-tag" style="font-size: 0.75rem; color: var(--gold);"></i> #<%= tag %>
-                                                        </a>
-                                                    <% }); %>
-                                                </div>
-                                            </div>
-                                        <% } %>
 
-                                        <% if (hasTrendingTags) { %>
-                                            <div style="display: flex; flex-direction: column; gap: 6px; <%= hasModTags ? 'border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;' : '' %>">
-                                                <div style="font-size: 0.82rem; font-weight: 700; color: #ff9800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                                                    <i class="fas fa-fire"></i> Trending Mod Tags
-                                                </div>
-                                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                                    <% topModsTags.forEach(tTag => { %>
-                                                        <a href="/search?q=<%= encodeURIComponent(tTag) %>" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 20px; color: #f0f0f0; font-size: 0.82rem; font-weight: 500; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,152,0,0.25)'; this.style.borderColor='#ff9800';" onmouseout="this.style.background='rgba(255,152,0,0.1)'; this.style.borderColor='rgba(255,152,0,0.25)';">
-                                                            <i class="fas fa-hashtag" style="font-size: 0.75rem; color: #ff9800;"></i> <%= tTag %>
-                                                        </a>
-                                                    <% }); %>
-                                                </div>
-                                            </div>
-                                        <% } %>
-                                    </div>
-                                <% } %>
 
                                 <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
 
@@ -2499,6 +2464,153 @@
                         </div>
             </section>
         </div>
+
+        <!-- Mod Tags & Trending Tags Section (Placed at end of page before More Apps carousel) -->
+            <% const hasModTags = file.tags && Array.isArray(file.tags) && file.tags.length > 0; %>
+            <% const hasTrendingTags = typeof topModsTags !== 'undefined' && Array.isArray(topModsTags) && topModsTags.length > 0; %>
+            <% if (hasModTags || hasTrendingTags) { %>
+                <div class="mod-tags-container" style="margin: 30px 0 10px 0; padding: 18px 22px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; display: flex; flex-direction: column; gap: 14px;">
+                    <% if (hasModTags) { %>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="font-size: 0.88rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-tags"></i> Mod Tags
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <% file.tags.slice(0, 5).forEach(tag => { %>
+                                    <a href="/search?q=<%= encodeURIComponent(tag) %>" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; color: #fff; font-size: 0.84rem; font-weight: 600; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.25)'; this.style.borderColor='var(--gold)';" onmouseout="this.style.background='rgba(212,175,55,0.12)'; this.style.borderColor='rgba(212,175,55,0.3)';">
+                                        <i class="fas fa-tag" style="font-size: 0.75rem; color: var(--gold);"></i> #<%= tag %>
+                                    </a>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <% if (hasTrendingTags) { %>
+                        <div style="display: flex; flex-direction: column; gap: 8px; <%= hasModTags ? 'border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;' : '' %>">
+                            <div style="font-size: 0.88rem; font-weight: 700; color: #ff9800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-fire"></i> Trending Mod Tags
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <% topModsTags.slice(0, 5).forEach(tTag => { %>
+                                    <a href="/search?q=<%= encodeURIComponent(tTag) %>" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 20px; color: #f0f0f0; font-size: 0.84rem; font-weight: 500; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,152,0,0.25)'; this.style.borderColor='#ff9800';" onmouseout="this.style.background='rgba(255,152,0,0.1)'; this.style.borderColor='rgba(255,152,0,0.25)';">
+                                        <i class="fas fa-hashtag" style="font-size: 0.75rem; color: #ff9800;"></i> <%= tTag %>
+                                    </a>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <!-- ======================================================== -->
+            <!-- INDIVIDUAL CAROUSEL SECTIONS (INDIVIDUALIZED BY CATEGORY) -->
+            <!-- ======================================================== -->
+
+            <!-- 1. Ads Suggested for You -->
+            <% if (typeof suggestedMods !== 'undefined' && suggestedMods && suggestedMods.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 35px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-bullhorn" style="color: var(--gold);"></i> Ads Suggested for You
+                            <span style="background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.35); font-size: 0.65em; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Sponsored</span>
+                        </h2>
+                    </div>
+                    <div class="mod-carousel">
+                        <% suggestedMods.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+
+            <!-- 2. Similar Apps -->
+            <% if (typeof similarApps !== 'undefined' && similarApps && similarApps.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 30px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-th-large" style="color: #00bcd4;"></i> Similar Apps
+                        </h2>
+                        <% if (file.category) { %>
+                            <a href="/category?cat=<%= encodeURIComponent(file.category) %>" style="color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.85rem;">View All &gt;</a>
+                        <% } %>
+                    </div>
+                    <div class="mod-carousel">
+                        <% similarApps.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+
+            <!-- 3. Similar Mods -->
+            <% if (typeof similarMods !== 'undefined' && similarMods && similarMods.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 30px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-gamepad" style="color: #2ecc71;"></i> Similar Mods
+                        </h2>
+                        <% if (file.category) { %>
+                            <a href="/category?cat=<%= encodeURIComponent(file.category) %>" style="color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.85rem;">View All &gt;</a>
+                        <% } %>
+                    </div>
+                    <div class="mod-carousel">
+                        <% similarMods.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+
+            <!-- 4. More By Uploader -->
+            <% if (typeof moreByUploader !== 'undefined' && moreByUploader && moreByUploader.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 30px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-user-circle" style="color: #9b59b6;"></i> More by <%= file.uploader || 'Uploader' %>
+                        </h2>
+                        <% if (file.uploader) { %>
+                            <a href="/users/<%= encodeURIComponent(file.uploader) %>" style="color: var(--gold); text-decoration: none; font-weight: 600; font-size: 0.85rem;">Creator Profile &gt;</a>
+                        <% } %>
+                    </div>
+                    <div class="mod-carousel">
+                        <% moreByUploader.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+
+            <!-- 5. More By Developer -->
+            <% if (typeof moreByDeveloper !== 'undefined' && moreByDeveloper && moreByDeveloper.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 30px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-code-branch" style="color: #e67e22;"></i> More by <%= file.developer || 'Developer' %>
+                        </h2>
+                    </div>
+                    <div class="mod-carousel">
+                        <% moreByDeveloper.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
+
+            <!-- 6. Also Available for Other Platforms -->
+            <% if (typeof otherPlatformMods !== 'undefined' && otherPlatformMods && otherPlatformMods.length > 0) { %>
+                <section class="download-carousel-section" style="margin-top: 30px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h2 style="font-size: 1.3rem; color: #fff; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-mobile-alt" style="color: #e91e63;"></i> Also Available for Other Platforms
+                        </h2>
+                    </div>
+                    <div class="mod-carousel">
+                        <% otherPlatformMods.forEach(mItem => { %>
+                            <%- include('../partials/mod-card', { file: mItem }) %>
+                        <% }); %>
+                    </div>
+                </section>
+            <% } %>
     </main>
 
     <!-- Expandable description reader -->

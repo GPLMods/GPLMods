@@ -409,6 +409,170 @@
         font-weight: 700;
         box-shadow: 0 0 10px var(--glow-gold);
     }
+
+    /* ======== 24H DAILY DONATION CAP METER ======== */
+    .daily-cap-card {
+        background: rgba(18, 18, 22, 0.85);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 14px;
+        padding: 22px 25px;
+        margin-bottom: 35px;
+        text-align: left;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        position: relative;
+        overflow: hidden;
+    }
+    .daily-cap-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, var(--gold), #2ecc71);
+    }
+    .daily-cap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .cap-title-area {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .cap-icon-badge {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .cap-card-title {
+        color: var(--white);
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin: 0 0 3px 0;
+    }
+    .cap-rolling-note {
+        color: #888;
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .cap-status-pill {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cap-status-ok {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.35);
+    }
+    .cap-status-limit {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.35);
+    }
+    .cap-meter-container {
+        width: 100%;
+        height: 10px;
+        background: #252528;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 14px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .cap-meter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2ecc71, var(--gold));
+        border-radius: 10px;
+        transition: width 0.5s ease;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+    }
+    .cap-stats-grid {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.95rem;
+    }
+    .cap-stat-box {
+        display: flex;
+        flex-direction: column;
+    }
+    .cap-stat-title {
+        color: #999;
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cap-stat-number {
+        color: var(--gold);
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+    .cap-max-number {
+        color: var(--silver);
+        font-size: 1.05rem;
+    }
+    .cap-exhausted-banner {
+        margin-top: 14px;
+        background: rgba(231, 76, 60, 0.12);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+        border-radius: 8px;
+        padding: 12px 15px;
+        color: #ff9999;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        line-height: 1.5;
+    }
+    .cap-exhausted-banner i {
+        color: #e74c3c;
+        margin-top: 2px;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    /* Price Sorting Buttons */
+    .catalog-sort-btn {
+        background: var(--dark-gray);
+        color: var(--silver);
+        border: 1px solid #333;
+        padding: 6px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .catalog-sort-btn:hover {
+        color: var(--white);
+        border-color: var(--gold);
+    }
+    .catalog-sort-btn.active {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    }
+
 </style>
 
 <main>
@@ -426,7 +590,7 @@
             </p>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <a href="#coffee-section" class="btn" style="background: var(--gold); color: var(--black); padding: 12px 26px; border-radius: 25px; font-weight: 700; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold);">
-                    <i class="fa-duotone fa-solid fa-cup-togo" style="margin-right: 6px;"></i> Buy Food &amp; Coffee
+                    <i class="fas fa-coffee" style="margin-right: 6px;"></i> Buy Food &amp; Coffee
                 </a>
                 <a href="#catalog-section" class="btn" style="background: transparent; color: var(--white); border: 2px solid #555; padding: 10px 24px; border-radius: 25px; font-weight: 700; text-decoration: none;">
                     <i class="fas fa-server" style="margin-right: 6px;"></i> Sponsor A Server Component
@@ -467,13 +631,62 @@
     </div>
 
     <div class="container">
+        <!-- ======== 24H DAILY DONATION CAP METER (₹100,000 CAP) ======== -->
+        <% 
+            const capData = (typeof dailyCapStatus !== 'undefined' && dailyCapStatus) ? dailyCapStatus : { totalSpentInr: 0, remainingInr: 100000, totalCapInr: 100000 };
+            const spentPercent = Math.min(100, Math.max(0, (capData.totalSpentInr / capData.totalCapInr) * 100));
+            const isCapExhausted = capData.remainingInr <= 0;
+        %>
+        <div class="daily-cap-card">
+            <div class="daily-cap-header">
+                <div class="cap-title-area">
+                    <span class="cap-icon-badge"><i class="fas fa-hand-holding-heart"></i></span>
+                    <div>
+                        <h3 class="cap-card-title">24-Hour Sponsorship &amp; Donation Cap</h3>
+                        <span class="cap-rolling-note"><i class="fas fa-history"></i> Max ₹1,00,000 / day &bull; Resets rolling 24 hours</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="cap-status-pill <%= isCapExhausted ? 'cap-status-limit' : 'cap-status-ok' %>">
+                        <%= isCapExhausted ? 'Daily Limit Reached' : 'Allowance Available' %>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Progress Meter -->
+            <div class="cap-meter-container">
+                <div class="cap-meter-fill" style="width: <%= Math.max(2, 100 - spentPercent) %>%;"></div>
+            </div>
+
+            <div class="cap-stats-grid">
+                <div class="cap-stat-box">
+                    <span class="cap-stat-title">Remaining Today</span>
+                    <span class="cap-stat-number" id="sponsorCapRemainingDisplay">₹<%= Math.floor(capData.remainingInr).toLocaleString('en-IN') %></span>
+                </div>
+                <div class="cap-stat-box" style="text-align: right;">
+                    <span class="cap-stat-title">Daily Cap Limit</span>
+                    <span class="cap-stat-number cap-max-number">₹1,00,000 / day</span>
+                </div>
+            </div>
+
+            <% if (isCapExhausted) { %>
+                <div class="cap-exhausted-banner">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>Daily Cap Reached:</strong> Today's ₹1,00,000 community contribution allowance has been fully reached. Thank you for your incredible support! The cap will automatically replenish within 24 hours.
+                    </div>
+                </div>
+            <% } %>
+        </div>
+        <!-- ============================================================== -->
+
         <!-- ============================================== -->
         <!-- 1. BUY FOOD & COFFEE SECTION                   -->
         <!-- ============================================== -->
         <section id="coffee-section" class="coffee-section">
             <div style="text-align: center; max-width: 600px; margin: 0 auto 15px auto;">
                 <h2 style="color: var(--white); font-size: 2em; margin-bottom: 8px;">
-                    <i class="fa-duotone fa-solid fa-cup-togo" style="color: var(--gold); margin-right: 8px;"></i>Fuel Our <span style="color: var(--gold);">Developers</span>
+                    <i class="fas fa-coffee" style="color: var(--gold); margin-right: 8px;"></i>Fuel Our <span style="color: var(--gold);">Developers</span>
                 </h2>
                 <p style="color: var(--silver); font-size: 0.95em;">
                     Late-night reverse engineering, malware scanning, and bug fixing run on good caffeine and hot meals. Pick a treat below!
@@ -521,21 +734,36 @@
                 </div>
             </div>
 
-            <!-- Filter Pills -->
-            <div class="catalog-filter-bar" id="catalogFilters">
-                <button class="catalog-filter-btn active" data-cat="all">All Infrastructure</button>
-                <% (catalog || []).forEach(cat => { %>
-                    <button class="catalog-filter-btn" data-cat="<%= cat.category %>">
-                        <i class="<%= cat.icon %>" style="color: <%= cat.color %>;"></i> <%= cat.categoryTitle.split(' ')[0] %>
-                    </button>
-                <% }) %>
+            <!-- Filter & Sort Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 25px;">
+                <!-- Category Filter Pills -->
+                <div class="catalog-filter-bar" id="catalogFilters" style="margin-bottom: 0;">
+                    <button class="catalog-filter-btn active" data-cat="all">All Infrastructure</button>
+                    <% (catalog || []).forEach(cat => { %>
+                        <button class="catalog-filter-btn" data-cat="<%= cat.category %>">
+                            <i class="<%= cat.icon %>" style="color: <%= cat.color %>;"></i> <%= cat.categoryTitle.split(' ')[0] %>
+                        </button>
+                    <% }) %>
+                </div>
+
+                <!-- Price Sorting Control -->
+                <div class="price-sort-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-sort"></i> Price:
+                    </span>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button type="button" class="catalog-sort-btn active" data-sort="default">Default</button>
+                        <button type="button" class="catalog-sort-btn" data-sort="asc"><i class="fas fa-sort-amount-up-alt"></i> Low to High</button>
+                        <button type="button" class="catalog-sort-btn" data-sort="desc"><i class="fas fa-sort-amount-down"></i> High to Low</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Cards Grid -->
             <div class="catalog-grid" id="catalogGrid">
                 <% (catalog || []).forEach(cat => { %>
                     <% (cat.items || []).forEach(item => { %>
-                        <div class="catalog-item-card" data-cat="<%= cat.category %>">
+                        <div class="catalog-item-card" data-cat="<%= cat.category %>" data-inr-price="<%= item.priceINR %>">
                             <div class="item-header">
                                 <div class="item-icon-pill" style="background: <%= cat.color %>22; color: <%= cat.color %>;">
                                     <i class="<%= cat.icon %>"></i>
@@ -601,7 +829,7 @@
                 </div>
             <% } else { %>
                 <div style="text-align: center; padding: 40px 0; color: var(--silver);">
-                    <i class="fa-duotone fa-solid fa-cup-togo" style="font-size: 2.5em; opacity: 0.4; margin-bottom: 12px; display: block; color: var(--gold);"></i>
+                    <i class="fas fa-coffee" style="font-size: 2.5em; opacity: 0.4; margin-bottom: 12px; display: block; color: var(--gold);"></i>
                     <p>Be the very first community member to sponsor an infrastructure component or send a chai!</p>
                 </div>
             <% } %>
@@ -662,26 +890,77 @@
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
-    const cashfree = Cashfree({ mode: "sandbox" });
+    let cashfreeInstance = null;
+    function getSponsorCashfree() {
+        if (!cashfreeInstance && typeof Cashfree !== 'undefined') {
+            cashfreeInstance = Cashfree({ mode: "<%= (typeof cashfreeEnv !== 'undefined' ? cashfreeEnv : 'sandbox') %>" });
+        }
+        return cashfreeInstance;
+    }
 
-    // Category Filtering
+    // Category Filtering & Price Sorting Logic
+    let currentCategory = 'all';
+    let currentSort = 'default';
+
+    function applyCatalogFilterAndSort() {
+        const grid = document.getElementById('catalogGrid');
+        if (!grid) return;
+        const cards = Array.from(grid.querySelectorAll('.catalog-item-card'));
+
+        // Sort items
+        cards.sort((a, b) => {
+            const priceA = parseFloat(a.getAttribute('data-inr-price')) || 0;
+            const priceB = parseFloat(b.getAttribute('data-inr-price')) || 0;
+            const indexA = parseInt(a.getAttribute('data-original-index')) || 0;
+            const indexB = parseInt(b.getAttribute('data-original-index')) || 0;
+
+            if (currentSort === 'asc') {
+                return priceA - priceB;
+            } else if (currentSort === 'desc') {
+                return priceB - priceA;
+            }
+            return indexA - indexB;
+        });
+
+        // Filter and re-append in sorted order
+        cards.forEach(card => {
+            const cat = card.getAttribute('data-cat');
+            if (currentCategory === 'all' || cat === currentCategory) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+            grid.appendChild(card);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const filterBtns = document.querySelectorAll('.catalog-filter-btn');
+        const sortBtns = document.querySelectorAll('.catalog-sort-btn');
         const cards = document.querySelectorAll('.catalog-item-card');
 
+        // Save original indices
+        cards.forEach((card, idx) => {
+            card.setAttribute('data-original-index', idx);
+        });
+
+        // Category filter click
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                const cat = btn.getAttribute('data-cat');
+                currentCategory = btn.getAttribute('data-cat');
+                applyCatalogFilterAndSort();
+            });
+        });
 
-                cards.forEach(card => {
-                    if (cat === 'all' || card.getAttribute('data-cat') === cat) {
-                        card.style.display = 'flex';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
+        // Price sort click
+        sortBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sortBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSort = btn.getAttribute('data-sort');
+                applyCatalogFilterAndSort();
             });
         });
     });
@@ -743,10 +1022,46 @@
                 throw new Error(data.error || 'Failed to start payment.');
             }
 
-            cashfree.checkout({
-                paymentSessionId: data.payment_session_id,
-                redirectTarget: "_self"
-            });
+            const cf = getSponsorCashfree();
+            if (cf && data.payment_session_id) {
+                cf.checkout({
+                    paymentSessionId: data.payment_session_id,
+                    redirectTarget: "_modal"
+                }).then(result => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Proceed to Payment →';
+                    if (result && result.error) {
+                        errorEl.textContent = result.error.message || 'Payment cancelled by user.';
+                        errorEl.style.display = 'block';
+
+                        // Inform backend to mark cancelled_by_user
+                        fetch('/api/cashfree/cancel-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: data.order_id, reason: result.error.message || 'User closed modal' })
+                        }).catch(e => {});
+
+                        // Show Cancellation survey modal with questions
+                        if (typeof window.showCancellationSurvey === 'function') {
+                            window.showCancellationSurvey({ orderId: data.order_id, type: 'sponsor' });
+                        }
+                    }
+                }).catch(e => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Proceed to Payment →';
+                    fetch('/api/cashfree/cancel-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: data.order_id, reason: 'Modal closed' })
+                    }).catch(err => {});
+
+                    if (typeof window.showCancellationSurvey === 'function') {
+                        window.showCancellationSurvey({ orderId: data.order_id, type: 'sponsor' });
+                    }
+                });
+            } else {
+                throw new Error('Cashfree payment gateway is unavailable.');
+            }
         } catch (err) {
             console.error('Checkout error:', err);
             errorEl.textContent = err.message || 'Payment initiation failed.';

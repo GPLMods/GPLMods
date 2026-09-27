@@ -820,7 +820,16 @@
     </div>
 </main>
 
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 <script>
+    let cashfreePromo = null;
+    function getPromoCashfree() {
+        if (!cashfreePromo && typeof Cashfree !== 'undefined') {
+            cashfreePromo = Cashfree({ mode: "<%= (typeof cashfreeEnv !== 'undefined' ? cashfreeEnv : 'sandbox') %>" });
+        }
+        return cashfreePromo;
+    }
+
     // State management for wizard
     let selectedModId = '<%= preselectedModId || "" %>';
     let selectedModName = <%- JSON.stringify((userMods && userMods.length > 0) ? (userMods[0].name || userMods[0].title) : '') %>;
@@ -931,7 +940,7 @@
         calculateTotal();
     });
 
-    // Execute Promotion API Call
+    // Execute Promotion API Call with Cashfree Gateway
     async function executePromotion() {
         const alertBox = document.getElementById('promoAlertBox');
         alertBox.style.display = 'none';
@@ -947,10 +956,11 @@
 
         const btn = document.getElementById('btnLaunchPromo');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Activating Promotion...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing Checkout...';
 
         try {
-            const res = await fetch(`/api/mods/${selectedModId}/promote`, {
+            // 1. Create order
+            const orderRes = await fetch(`/api/mods/${selectedModId}/create-promotion-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -959,29 +969,78 @@
                 })
             });
 
-            const data = await res.json();
+            const orderData = await orderRes.json();
 
-            if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Failed to activate promotion.');
+            if (!orderRes.ok || !orderData.success) {
+                throw new Error(orderData.error || 'Failed to start payment checkout.');
             }
 
-            alertBox.style.display = 'block';
-            alertBox.style.background = 'rgba(46, 204, 113, 0.15)';
-            alertBox.style.color = '#2ecc71';
-            alertBox.style.border = '1px solid rgba(46, 204, 113, 0.3)';
-            alertBox.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message || 'Promotion successfully activated!'}`;
-            btn.innerHTML = '<i class="fas fa-check"></i> Promotion Activated!';
+            const cf = getPromoCashfree();
+            if (cf && orderData.payment_session_id) {
+                btn.innerHTML = '<i class="fas fa-shield-alt"></i> Complete Checkout...';
+                cf.checkout({
+                    paymentSessionId: orderData.payment_session_id,
+                    redirectTarget: "_modal"
+                }).then(async (result) => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Promotion Now';
+                    if (result && result.error) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(231, 76, 60, 0.15)';
+                        alertBox.style.color = '#e74c3c';
+                        alertBox.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+                        alertBox.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.error.message || 'Payment cancelled by user.'}`;
 
-            setTimeout(() => {
-                window.location.reload();
-            }, 1800);
+                        // Mark order cancelled in database
+                        fetch('/api/cashfree/cancel-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: orderData.order_id, reason: result.error.message || 'User closed modal' })
+                        }).catch(e => {});
+
+                        // Display cancellation questions modal
+                        if (typeof window.showCancellationSurvey === 'function') {
+                            window.showCancellationSurvey({ orderId: orderData.order_id, type: 'promote' });
+                        }
+                    } else {
+                        // Activate promotion after completed payment with verified orderId
+                        const activateRes = await fetch(`/api/mods/${selectedModId}/promote`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ days: selectedDays, tier: selectedTier, orderId: orderData.order_id })
+                        });
+                        const actData = await activateRes.json();
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(46, 204, 113, 0.15)';
+                        alertBox.style.color = '#2ecc71';
+                        alertBox.style.border = '1px solid rgba(46, 204, 113, 0.3)';
+                        alertBox.innerHTML = '<i class="fas fa-check-circle"></i> Payment confirmed! Promotion is now live.';
+                        btn.innerHTML = '<i class="fas fa-check"></i> Promotion Live!';
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                }).catch(e => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Promotion Now';
+                    fetch('/api/cashfree/cancel-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: orderData.order_id, reason: 'Modal closed by user' })
+                    }).catch(err => {});
+
+                    if (typeof window.showCancellationSurvey === 'function') {
+                        window.showCancellationSurvey({ orderId: orderData.order_id, type: 'promote' });
+                    }
+                });
+            } else {
+                throw new Error('Payment gateway unavailable. Please try again.');
+            }
         } catch (err) {
-            console.error('Promotion error:', err);
+            console.error('Promotion checkout error:', err);
             alertBox.style.display = 'block';
             alertBox.style.background = 'rgba(231, 76, 60, 0.15)';
             alertBox.style.color = '#e74c3c';
             alertBox.style.border = '1px solid rgba(231, 76, 60, 0.3)';
-            alertBox.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${err.message || 'An error occurred during activation.'}`;
+            alertBox.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${err.message || 'An error occurred during checkout.'}`;
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Promotion Now';
         }

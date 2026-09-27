@@ -65,7 +65,7 @@
         notifAudio.play().then(() => {
             console.log('[Notification SFX] Test playback successful.');
         }).catch(err => {
-            alert('Audio playback error: ' + err.message);
+            if (window.showGplToast) window.showGplToast({ title: 'Audio Alert', body: 'Audio playback test error: ' + err.message });
         });
     };
 
@@ -222,7 +222,7 @@
     window.enablePushNotifications = async function () {
         try {
             if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-                alert('Your browser does not support Web Push notifications.');
+                if (window.showGplToast) window.showGplToast({ title: 'Push Not Supported', body: 'Your browser or device does not support Web Push notifications.' });
                 return false;
             }
 
@@ -397,7 +397,7 @@
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
             if (!subscription) {
-                alert('Please enable notifications first by clicking the master switch.');
+                if (window.showGplToast) window.showGplToast({ title: 'Notifications Disabled', body: 'Please enable notifications first by clicking the master switch.' });
                 return;
             }
 
@@ -410,10 +410,10 @@
             if (data.success) {
                 playNotificationSound();
             } else {
-                alert('Test notification failed: ' + (data.error || 'Unknown error'));
+                if (window.showGplToast) window.showGplToast({ title: 'Test Failed', body: 'Test push failed: ' + (data.error || 'Unknown error') });
             }
         } catch (e) {
-            alert('Test error: ' + e.message);
+            if (window.showGplToast) window.showGplToast({ title: 'Test Error', body: e.message });
         }
     };
 
@@ -434,3 +434,15 @@
         initNotifications();
     }
 })();
+
+
+    // 10. Open Notification Settings Modal directly (Especially for PWA users)
+    window.openPwaNotificationSettings = function() {
+        const modal = document.getElementById('globalNotificationModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        } else {
+            window.location.href = '/settings#notifications';
+        }
+    };
+    

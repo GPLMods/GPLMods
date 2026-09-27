@@ -1554,7 +1554,16 @@ app.use((req, res, next) => {
 // 2. Passport Serialization
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
-    try { const user = await User.findById(id); done(null, user); } catch (e) { done(e); }
+    try {
+        const user = await User.findById(id);
+        if (user && ['admin', 'owner', 'support'].includes(String(user.role || '').toLowerCase())) {
+            user.membership = 'plus';
+            user.isPlus = true;
+        }
+        done(null, user);
+    } catch (e) {
+        done(e);
+    }
 });
 
 // 3. User Last Seen Updater
@@ -1623,6 +1632,10 @@ function shouldHideAdultContent(user) {
 app.use(async (req, res, next) => {
     try {
         // 1. ======== BASIC LOCALS & HELPERS ========
+        if (req.user && ['admin', 'owner', 'support'].includes(String(req.user.role || '').toLowerCase())) {
+            req.user.membership = 'plus';
+            req.user.isPlus = true;
+        }
         res.locals.user = req.user || null;
         res.locals.hideAdultContent = shouldHideAdultContent(req.user);
         res.locals.globalCouncil = req.user ? !!req.user.globalCouncil : false;
@@ -1670,15 +1683,18 @@ app.use(async (req, res, next) => {
         let shouldShowAds = true; 
         let shouldShowModals = true; 
 
-        // If it's a bot (Google, Discord, etc.), turn OFF ads and modals for perfect SEO
-        if (isCrawler) {
+        // If site is running locally or in test deployment, no ads are displayed!
+        if (isLocalHost || res.locals.isTestDeployment) {
+            shouldShowAds = false;
+        } else if (isCrawler) {
+            // If it's a bot (Google, Discord, etc.), turn OFF ads and modals for perfect SEO
             shouldShowAds = false;
             shouldShowModals = false;
         } else if (req.user) {
             // If real user, check privileges (case-insensitive)
             const role = String(req.user.role || '').toLowerCase();
             const membership = String(req.user.membership || '').toLowerCase();
-            if (role === 'admin' || role === 'owner' || role === 'distributor' || membership === 'premium') {
+            if (role === 'admin' || role === 'owner' || role === 'distributor' || role === 'support' || membership === 'premium' || membership === 'plus') {
                 shouldShowAds = false; 
             }
         }
@@ -1937,6 +1953,11 @@ function redirectIfAuthenticated(req, res, next) {
     next();
 }
 async function verifyRecaptcha(req, res, next) {
+    const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
+    const isLocalHost = requestHost === 'localhost' || requestHost === '127.0.0.1' || requestHost === '::1' || requestHost === '0.0.0.0' || requestHost.startsWith('192.168.') || requestHost.startsWith('10.') || (!process.env.RENDER && process.env.NODE_ENV !== 'production');
+    if (isLocalHost) {
+        return next();
+    }
     const token = req.body['g-recaptcha-response'];
     const returnUrl = req.path;
     if (!token) return res.redirect(`${returnUrl}?error=Please complete the "I'm not a robot" check.`);
@@ -1984,12 +2005,19 @@ passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true
             user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             if (user.failedLoginAttempts >= 5) {
                 if (user.failedLoginAlertEmailsEnabled || user.safetyEmailsEnabled) await sendFailedAttemptEmail(user, req);
-                user.failedLoginAttempts = 0;
             }
             await user.save();
             return done(null, false, { message: 'Incorrect password.' });
         }
         if (!user.isVerified) return done(null, false, { message: 'Please verify your email before logging in.' });
+
+        // SECURITY QUESTIONS CHALLENGE: If account experienced multiple failed login attempts (>= 3)
+        // and user configured 3 security questions, challenge them before allowing login!
+        if (user.failedLoginAttempts >= 3 && user.securityQuestions && user.securityQuestions.length === 3) {
+            req.session.pendingSecurityQuestionsUserId = user._id.toString();
+            return done(null, false, { message: 'SECURITY_CHALLENGE_REQUIRED' });
+        }
+
         user.failedLoginAttempts = 0;
         await user.save();
         return done(null, user);
@@ -4215,7 +4243,7 @@ async function getTopTrendingTags() {
             { $unwind: '$tags' },
             { $group: { _id: '$tags', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
-            { $limit: 10 }
+            { $limit: 5 }
         ]);
         cachedTopTags = { data: tagAggregation.map(t => t._id).filter(Boolean), timestamp: now };
         return cachedTopTags.data;
@@ -4839,22 +4867,35 @@ app.get('/promote', async (req, res, next) => {
         if (req.isAuthenticated && req.isAuthenticated()) {
             const isStaff = req.user && ['admin', 'owner', 'distributor'].includes(req.user.role);
             
-            // Fetch creator's mods
+            // Fetch creator's live mods only (never show drafts)
             userMods = await File.find({
-                uploader: req.user.username
+                uploader: req.user.username,
+                status: { $in: ['live', 'approved'] },
+                isDraft: { $ne: true }
             })
-            .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status')
+            .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status iconKey')
             .sort({ totalDownloads: -1 })
             .lean();
 
-            // If staff has no uploaded mods of their own, provide recent/popular mods for testing/management
+            // If staff has no uploaded mods of their own, provide recent/popular live mods for testing/management
             if (userMods.length === 0 && isStaff) {
-                userMods = await File.find({ isLatestVersion: true })
-                    .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status')
+                userMods = await File.find({
+                    status: { $in: ['live', 'approved'] },
+                    isDraft: { $ne: true },
+                    isLatestVersion: true
+                })
+                    .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status iconKey')
                     .sort({ totalDownloads: -1 })
                     .limit(20)
                     .lean();
             }
+
+            // Attach signed/smart icon URLs so mod icons show up
+            userMods = await Promise.all(userMods.map(async (m) => {
+                const key = m.iconUrl || m.iconKey || m.fileIconUrl;
+                const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-mod-icon.png';
+                return { ...m, iconUrl };
+            }));
 
             // Fetch promotions
             const promoQuery = isStaff ? {} : { user: req.user._id };
@@ -4876,9 +4917,12 @@ app.get('/promote', async (req, res, next) => {
 
         const preselectedModId = req.query.modId || (userMods.length > 0 ? String(userMods[0]._id) : null);
 
+        const cfPromoteEnv = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
         res.render('pages/promote', {
             pageTitle: 'Promote Your Mods - Play Store Style Ads System',
             pageDescription: 'Boost your mod visibility, gain targeted installs, and reach top ranks across GPL Mods with dedicated promotional placements.',
+            cashfreeEnv: cfPromoteEnv,
+            cashfreeAppId: process.env.CASHFREE_APP_ID || '',
             userMods,
             promotions,
             activeCampaigns,
@@ -4925,6 +4969,93 @@ app.get('/promote', async (req, res, next) => {
     }
 });
 
+// 2. Promote Mod Endpoint with Cashfree PG
+app.post('/api/mods/:id/create-promotion-order', async (req, res) => {
+    try {
+        if (!req.isAuthenticated()) {
+            return res.status(401).json({ success: false, error: 'Please log in to promote your mod.' });
+        }
+
+        const fileId = req.params.id;
+        const targetFile = await File.findById(fileId);
+        if (!targetFile) {
+            return res.status(404).json({ success: false, error: 'Mod not found.' });
+        }
+
+        const isUploader = targetFile.uploader === req.user.username;
+        const isStaff = ['admin', 'owner', 'distributor'].includes(req.user.role);
+        if (!isUploader && !isStaff) {
+            return res.status(403).json({ success: false, error: 'You can only promote your own mods.' });
+        }
+
+        const days = parseInt(req.body.days, 10) || 7;
+        const tier = req.body.tier || 'standard';
+        const pricing = { 1: 149, 3: 349, 7: 699, 14: 1299, 30: 2499 };
+        const baseAmount = pricing[days] || Math.round(days * 120);
+        const multipliers = { 'standard': 1.0, 'featured': 1.4, 'spotlight': 2.0 };
+        const multiplier = multipliers[tier] || 1.0;
+        const numAmount = Math.round(baseAmount * multiplier);
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const orderId = `prm_${Date.now().toString().slice(-8)}_${crypto.randomBytes(3).toString('hex')}`;
+        const customerId = String(req.user._id);
+        const customerName = req.user.username || 'Creator';
+        const customerEmail = req.user.email || 'creator@gplmods.com';
+        const customerPhone = '9999999999';
+
+        const orderRequest = {
+            order_id: orderId,
+            order_amount: numAmount,
+            order_currency: 'INR',
+            customer_details: {
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_email: customerEmail,
+                customer_phone: customerPhone
+            },
+            order_meta: {
+                return_url: `${baseUrl}/promote?order_id={order_id}&status=success`,
+                notify_url: `${baseUrl}/webhook/cashfree/pg`
+            },
+            order_note: `GPL Mods Promotion: ${targetFile.name} (${days} days - ${tier})`
+        };
+
+        const response = await cashfree.PGCreateOrder(orderRequest);
+
+        const currentExpiry = (targetFile.isPromoted && targetFile.promotedUntil && targetFile.promotedUntil > new Date())
+            ? targetFile.promotedUntil
+            : new Date();
+        const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
+
+        const promo = new ModPromotion({
+            file: targetFile._id,
+            user: req.user._id,
+            days,
+            amount: numAmount,
+            currency: 'INR',
+            tier,
+            startDate: currentExpiry,
+            endDate: newExpiry,
+            status: 'pending',
+            orderId: orderId,
+            paymentMethod: 'cashfree'
+        });
+        await promo.save();
+
+        return res.json({
+            success: true,
+            payment_session_id: response.data.payment_session_id,
+            order_id: orderId
+        });
+    } catch (err) {
+        console.error('[Cashfree Promote Order Error]:', err.response?.data || err.message);
+        return res.status(500).json({ 
+            success: false, 
+            error: err.response?.data?.message || 'Failed to initiate promotion checkout.' 
+        });
+    }
+});
+
 // 2. Promote Mod Endpoint (Play Store style ads system)
 app.post('/api/mods/:id/promote', async (req, res) => {
     try {
@@ -4940,9 +5071,22 @@ app.post('/api/mods/:id/promote', async (req, res) => {
 
         // Must be uploader or admin/owner/distributor
         const isUploader = targetFile.uploader === req.user.username;
-        const isStaff = ['admin', 'owner', 'distributor'].includes(req.user.role);
+        const isStaff = ['admin', 'owner'].includes(req.user.role);
         if (!isUploader && !isStaff) {
             return res.status(403).json({ success: false, error: 'You can only promote your own mods.' });
+        }
+
+        // Verify that a verified paid Cashfree order exists if user is not staff
+        const orderId = req.body.orderId;
+        let verifiedOrder = null;
+        if (orderId) {
+            verifiedOrder = await ModPromotion.findOne({ orderId: orderId, file: targetFile._id, status: 'paid' });
+        }
+        if (!isStaff && !verifiedOrder) {
+            return res.status(402).json({
+                success: false,
+                error: 'Promotion activation requires a verified, completed payment via Cashfree.'
+            });
         }
 
         const days = parseInt(req.body.days, 10) || 7;
@@ -5793,7 +5937,13 @@ app.get('/login', (req, res) => {
 app.post('/login', verifyRecaptcha, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) return next(err);
-        if (!user) return res.redirect('/login?error=' + encodeURIComponent('Incorrect Email Or Password'));
+        if (info && info.message === 'SECURITY_CHALLENGE_REQUIRED') {
+            return res.redirect('/login/security-questions');
+        }
+        if (!user) {
+            const errMsg = info && info.message ? info.message : 'Incorrect Email Or Password';
+            return res.redirect('/login?error=' + encodeURIComponent(errMsg));
+        }
         
         processSuccessfulLogin(req, res, next, user); 
     })(req, res, next);
@@ -6371,6 +6521,7 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
 
 app.post('/settings/notifications', ensureAuthenticated, async (req, res) => {
     try {
+        const isJson = req.is('json') || (req.headers.accept && req.headers.accept.includes('json'));
         const enabled = req.body.notificationsEnabled === 'on' || req.body.notificationsEnabled === 'true' || req.body.notificationsEnabled === true;
         const newUploads = req.body.newUploads === 'on' || req.body.newUploads === 'true' || req.body.newUploads === true;
         const clubUpdates = req.body.clubUpdates === 'on' || req.body.clubUpdates === 'true' || req.body.clubUpdates === true;
@@ -6386,13 +6537,182 @@ app.post('/settings/notifications', ensureAuthenticated, async (req, res) => {
         };
 
         await User.findByIdAndUpdate(req.user._id, { notificationSettings });
-        const pushNotification = require('./utils/pushNotification');
-        await pushNotification.updatePreferences(req.user._id, notificationSettings);
+        try {
+            const pushNotification = require('./utils/pushNotification');
+            await pushNotification.updatePreferences(req.user._id, notificationSettings);
+        } catch (pe) {}
 
+        if (isJson) {
+            return res.json({ success: true, message: 'Notification preferences updated.', notificationSettings });
+        }
         res.redirect('/settings?success=Notification preferences updated successfully.');
     } catch (error) {
         console.error('Notification settings error:', error);
+        if (req.is('json') || (req.headers.accept && req.headers.accept.includes('json'))) {
+            return res.status(500).json({ success: false, error: 'Unable to update notification settings.' });
+        }
         res.redirect('/settings?error=Unable to update notification settings.');
+    }
+});
+
+// ============================================================================
+// NEWSLETTER UNSUBSCRIBE ROUTES (UNREGISTERED & REGISTERED USERS)
+// ============================================================================
+app.get(['/unsubscribe', '/newsletter/unsubscribe'], (req, res) => {
+    res.render('pages/unsubscribe', {
+        email: (req.query.email || '').trim(),
+        message: req.query.message || null,
+        error: req.query.error || null,
+        pageTitle: 'Unsubscribe from Newsletter - GPL Mods'
+    });
+});
+
+app.post(['/api/unsubscribe', '/newsletter/unsubscribe'], async (req, res) => {
+    try {
+        const email = (req.body.email || '').trim().toLowerCase();
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+        }
+        let subscriber = await Subscriber.findOne({ email });
+        if (subscriber) {
+            subscriber.isSubscribed = false;
+            await subscriber.save();
+        } else {
+            await Subscriber.create({
+                email,
+                isSubscribed: false,
+                source: 'direct-unsubscribe'
+            });
+        }
+        await User.updateOne({ email }, { $set: { isSubscribedToNewsletter: false } });
+        return res.json({ success: true, message: 'You have been successfully unsubscribed from all GPL Mods newsletters.' });
+    } catch (err) {
+        console.error('[Unsubscribe Error]:', err);
+        return res.status(500).json({ success: false, error: 'Server error while processing unsubscribe.' });
+    }
+});
+
+// ============================================================================
+// SECURITY QUESTIONS VERIFICATION & SETTINGS ROUTES
+// ============================================================================
+app.post('/settings/security-questions', ensureAuthenticated, async (req, res) => {
+    try {
+        const { question1, answer1, question2, answer2, question3, answer3 } = req.body;
+        if (!question1 || !answer1 || !question2 || !answer2 || !question3 || !answer3) {
+            return res.status(400).json({ success: false, error: 'All 3 security questions and answers are required.' });
+        }
+        if (question1 === question2 || question1 === question3 || question2 === question3) {
+            return res.status(400).json({ success: false, error: 'Please choose 3 different questions.' });
+        }
+
+        const q1Hash = await bcrypt.hash(answer1.trim().toLowerCase(), 10);
+        const q2Hash = await bcrypt.hash(answer2.trim().toLowerCase(), 10);
+        const q3Hash = await bcrypt.hash(answer3.trim().toLowerCase(), 10);
+
+        const securityQuestions = [
+            { question: question1.trim(), answerHash: q1Hash },
+            { question: question2.trim(), answerHash: q2Hash },
+            { question: question3.trim(), answerHash: q3Hash }
+        ];
+
+        await User.findByIdAndUpdate(req.user._id, {
+            securityQuestions,
+            securityQuestionsEnabled: true
+        });
+
+        return res.json({ success: true, message: 'Security questions saved successfully!' });
+    } catch (err) {
+        console.error('[Security Questions Setup Error]:', err);
+        return res.status(500).json({ success: false, error: 'Failed to update security questions.' });
+    }
+});
+
+app.get('/login/security-questions', async (req, res) => {
+    if (!req.session.pendingSecurityQuestionsUserId) {
+        return res.redirect('/login');
+    }
+    try {
+        const user = await User.findById(req.session.pendingSecurityQuestionsUserId);
+        if (!user || !user.securityQuestions || user.securityQuestions.length !== 3) {
+            delete req.session.pendingSecurityQuestionsUserId;
+            return res.redirect('/login');
+        }
+        res.render('pages/security-questions', {
+            questions: user.securityQuestions.map(q => q.question),
+            error: req.query.error || null,
+            pageTitle: 'Security Verification - GPL Mods'
+        });
+    } catch (e) {
+        return res.redirect('/login');
+    }
+});
+
+app.post('/login/security-questions', async (req, res, next) => {
+    if (!req.session.pendingSecurityQuestionsUserId) {
+        return res.redirect('/login');
+    }
+    try {
+        const user = await User.findById(req.session.pendingSecurityQuestionsUserId);
+        if (!user || !user.securityQuestions || user.securityQuestions.length !== 3) {
+            delete req.session.pendingSecurityQuestionsUserId;
+            return res.redirect('/login');
+        }
+
+        const ans0 = (req.body.answer_0 || '').trim().toLowerCase();
+        const ans1 = (req.body.answer_1 || '').trim().toLowerCase();
+        const ans2 = (req.body.answer_2 || '').trim().toLowerCase();
+
+        const m0 = await bcrypt.compare(ans0, user.securityQuestions[0].answerHash);
+        const m1 = await bcrypt.compare(ans1, user.securityQuestions[1].answerHash);
+        const m2 = await bcrypt.compare(ans2, user.securityQuestions[2].answerHash);
+
+        if (!m0 || !m1 || !m2) {
+            return res.redirect('/login/security-questions?error=' + encodeURIComponent('One or more answers are incorrect. Please verify your answers and try again.'));
+        }
+
+        // All 3 correct! Reset failed attempts
+        user.failedLoginAttempts = 0;
+        await user.save();
+        delete req.session.pendingSecurityQuestionsUserId;
+
+        // If 2FA enabled, redirect to 2FA; otherwise log in directly
+        processSuccessfulLogin(req, res, next, user);
+    } catch (e) {
+        console.error('[Security Questions Challenge Error]:', e);
+        return res.redirect('/login?error=Verification error. Please try again.');
+    }
+});
+
+// ============================================================================
+// CASHFREE PAYMENT CANCELLATION DETECTOR
+// ============================================================================
+app.post(['/api/cashfree/cancel-order', '/api/payment/cancel-order'], async (req, res) => {
+    try {
+        const { orderId, reason } = req.body;
+        if (!orderId) {
+            return res.status(400).json({ success: false, error: 'Order ID is required.' });
+        }
+        const sanitizedReason = reason || 'User self-closed payment modal';
+
+        await ModPromotion.updateMany(
+            { orderId: orderId, status: 'pending' },
+            { $set: { status: 'cancelled_by_user', cancellationReason: sanitizedReason, cancelledAt: new Date() } }
+        );
+
+        await MembershipOrder.updateMany(
+            { $or: [{ orderId: orderId }, { subscriptionId: orderId }], status: 'pending' },
+            { $set: { status: 'cancelled_by_user', cancellationReason: sanitizedReason, cancelledAt: new Date() } }
+        );
+
+        await Donation.updateMany(
+            { orderId: orderId, status: 'pending' },
+            { $set: { status: 'cancelled_by_user', cancellationReason: sanitizedReason, cancelledAt: new Date() } }
+        );
+
+        return res.json({ success: true, message: 'Order marked as cancelled by user.' });
+    } catch (e) {
+        console.error('[Cancel Order Error]:', e);
+        return res.status(500).json({ success: false, error: 'Failed to cancel order.' });
     }
 });
 
@@ -11409,6 +11729,7 @@ Object.entries(staticPageTemplates).forEach(([slug, template]) => {
 // DAILY DONATION CAP & TRACKING HELPERS
 // ============================================================================
 const DAILY_DONATION_CAP_INR = 2000;
+const DAILY_SPONSOR_CAP_INR = 100000;
 
 const CURRENCY_TO_INR_RATES = {
     INR: 1,
@@ -11504,6 +11825,53 @@ async function getDailyDonationTotalInr(req, res) {
         totalSpentInr: totalInr,
         remainingInr: Math.max(0, DAILY_DONATION_CAP_INR - totalInr),
         totalCapInr: DAILY_DONATION_CAP_INR,
+        guestId: guestId
+    };
+}
+
+/**
+ * Calculate total INR sponsored in the last 24 hours against 100,000 INR cap
+ */
+async function getDailySponsorTotalInr(req, res) {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const guestId = getOrSetGuestDonorId(req, res);
+    const clientIp = getClientIp(req);
+    let matchQuery = null;
+
+    if (req.user && req.user._id) {
+        const orConditions = [{ user: req.user._id }];
+        if (guestId) {
+            orConditions.push({ guestId: guestId, user: null });
+        }
+        matchQuery = {
+            $or: orConditions,
+            status: 'successful',
+            createdAt: { $gte: since24h }
+        };
+    } else {
+        const orConditions = [];
+        if (guestId) orConditions.push({ guestId: guestId });
+        if (clientIp) orConditions.push({ donorIp: clientIp, user: null });
+
+        matchQuery = {
+            $or: orConditions.length > 0 ? orConditions : [{ guestId: 'none' }],
+            status: 'successful',
+            createdAt: { $gte: since24h }
+        };
+    }
+
+    const donations = await Donation.find(matchQuery).lean();
+    let totalInr = 0;
+    for (const d of donations) {
+        const cur = (d.currency || 'INR').toUpperCase();
+        const rate = CURRENCY_TO_INR_RATES[cur] || 1;
+        totalInr += (Number(d.amount) || 0) * rate;
+    }
+
+    return {
+        totalSpentInr: totalInr,
+        remainingInr: Math.max(0, DAILY_SPONSOR_CAP_INR - totalInr),
+        totalCapInr: DAILY_SPONSOR_CAP_INR,
         guestId: guestId
     };
 }
@@ -12765,13 +13133,23 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             .lean();
 
         const activeOrder = orders.find(o => o.status === 'paid');
-        const planKey = user.membershipPlan || (activeOrder ? activeOrder.duration : 'free');
-        const planConfig = MEMBERSHIP_PLANS[planKey] || { 
-            name: user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member'),
-            tier: user.membership || 'free'
-        };
+        const isPrivilegedStaff = ['admin', 'owner', 'support'].includes(user.role);
 
-        const isLifetime = Boolean(
+        if (isPrivilegedStaff) {
+            user.membership = 'plus';
+            user.isPlus = true;
+        }
+
+        let planKey = isPrivilegedStaff ? 'plus_lifetime' : (user.membershipPlan || (activeOrder ? activeOrder.duration : 'free'));
+        let planConfig = isPrivilegedStaff
+            ? { name: 'GPL Plus (' + (user.role ? user.role.toUpperCase() : 'STAFF') + ' VIP)', tier: 'plus' }
+            : (MEMBERSHIP_PLANS[planKey] || { 
+                name: user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member'),
+                tier: user.membership || 'free'
+            });
+
+        let isLifetime = Boolean(
+            isPrivilegedStaff ||
             (user.membershipPlan && user.membershipPlan.includes('lifetime')) ||
             (planKey && planKey.includes('lifetime'))
         );
@@ -12779,7 +13157,7 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
         let daysRemaining = 'N/A';
         let isExpired = false;
 
-        if (isLifetime) {
+        if (isLifetime || isPrivilegedStaff) {
             daysRemaining = 'Lifetime Access';
         } else if (user.membershipExpiresAt) {
             const diffMs = new Date(user.membershipExpiresAt).getTime() - Date.now();
@@ -13799,25 +14177,33 @@ const SPONSORSHIP_CATALOG = [
 
 const COFFEE_FOOD_OPTIONS = [
     { id: 'chai', title: 'A Cup of Chai', priceINR: 50, icon: 'fas fa-mug-hot', desc: 'Keep our open-source devs caffeinated and inspired' },
-    { id: 'coffee', title: 'Warm Brewed Coffee', priceINR: 100, icon: 'fa-duotone fa-solid fa-cup-togo', desc: 'A rich roast to power late-night reverse engineering' },
+    { id: 'coffee', title: 'Warm Brewed Coffee', priceINR: 100, icon: 'fas fa-coffee', desc: 'A rich roast to power late-night reverse engineering' },
     { id: 'meal', title: 'Nutritious Meal', priceINR: 250, icon: 'fas fa-utensils', desc: 'A wholesome lunch after pushing a big security patch' },
     { id: 'feast', title: 'Developer Feast', priceINR: 500, icon: 'fas fa-pizza-slice', desc: 'Pizza and refreshments for a platform release celebration' }
 ];
 
 app.get('/sponsor', async (req, res, next) => {
     try {
-        const recentSponsors = await Donation.find({
-            status: 'successful',
-            $or: [{ sponsorItem: { $ne: null } }, { amount: { $gte: 50 } }]
-        })
-        .sort({ createdAt: -1 })
-        .limit(15)
-        .lean();
+        const [recentSponsors, dailyCapStatus] = await Promise.all([
+            Donation.find({
+                status: 'successful',
+                $or: [{ sponsorItem: { $ne: null } }, { amount: { $gte: 50 } }]
+            })
+            .sort({ createdAt: -1 })
+            .limit(15)
+            .lean(),
+            getDailySponsorTotalInr(req, res)
+        ]);
+
+        const cfEnv = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
 
         res.render('pages/sponsor', {
             catalog: SPONSORSHIP_CATALOG,
             coffeeFoodOptions: COFFEE_FOOD_OPTIONS,
-            recentSponsors
+            recentSponsors,
+            dailyCapStatus,
+            cashfreeEnv: cfEnv,
+            cashfreeAppId: process.env.CASHFREE_APP_ID || ''
         });
     } catch (err) {
         console.error("Sponsor page error:", err);
@@ -13833,6 +14219,23 @@ app.post('/create-sponsor-order', async (req, res) => {
 
         if (isNaN(numAmount) || numAmount < 1) {
             return res.status(400).json({ error: 'Please specify a valid sponsorship amount.' });
+        }
+
+        // 100,000 INR Daily Donation Cap check
+        const capStatus = await getDailySponsorTotalInr(req, res);
+        const rate = CURRENCY_TO_INR_RATES[cur] || 1;
+        const numAmountInInr = numAmount * rate;
+
+        if (capStatus.remainingInr <= 0) {
+            return res.status(400).json({ 
+                error: `Daily sponsorship cap limit of ₹${capStatus.totalCapInr.toLocaleString('en-IN')} reached for today. Thank you for your support!` 
+            });
+        }
+
+        if (numAmountInInr > capStatus.remainingInr + 0.5) {
+            return res.status(400).json({ 
+                error: `Amount exceeds your remaining daily limit of ₹${Math.floor(capStatus.remainingInr).toLocaleString('en-IN')}. Please lower the amount or try again tomorrow.` 
+            });
         }
 
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;

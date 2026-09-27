@@ -81,6 +81,10 @@
         .form-group input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
 
         /* Password Strength Bar */
+        .password-input-wrapper { position: relative; width: 100%; }
+        .password-input-wrapper input { padding-right: 44px !important; box-sizing: border-box; }
+        .password-toggle-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--silver); cursor: pointer; font-size: 1.05em; padding: 6px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; z-index: 5; }
+        .password-toggle-btn:hover { color: var(--gold); }
         .strength-container {
             margin-top: 8px;
             height: 5px;
@@ -426,6 +430,18 @@
         .cal-close-btn { color: var(--gold); }
         .cal-close-btn:hover { color: var(--white); }
     </style>
+<script>
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -478,7 +494,12 @@
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="********" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="password" name="password" placeholder="********" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                         <div class="strength-container">
                             <div id="strength-bar"></div>
                         </div>
@@ -487,7 +508,12 @@
 
                     <div class="form-group">
                         <label for="confirmPassword">Confirm Password</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirmPassword', this)" aria-label="Toggle confirm password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <!-- ======== CUSTOM CALENDAR UI FOR DATE OF BIRTH ======== -->
                     <div class="form-group">
@@ -549,9 +575,11 @@
                     <!-- ========================================== -->
 
                     <!-- UPDATED: ReCAPTCHA and Terms -->
+                    <% if (typeof isTestDeployment === 'undefined' || !isTestDeployment) { %>
                     <div class="form-group">
                         <div class="g-recaptcha" data-sitekey="<%= recaptchaSiteKey %>"></div>
                     </div>
+                    <% } %>
                     <div style="margin-bottom: 20px; color: var(--silver); font-size: 0.85em; line-height: 1.4;">
                         By registering, you agree to our <a href="/privacy-policy" style="color: var(--gold);">Privacy Policy</a> and confirm that you are at least 13 years old.
                     </div>

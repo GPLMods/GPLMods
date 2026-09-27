@@ -1,0 +1,202 @@
+<%- include('../partials/header') %>
+
+<style>
+    .security-challenge-page {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 20px;
+    }
+    .security-challenge-card {
+        background: linear-gradient(145deg, #181922 0%, #101117 100%);
+        border: 1.5px solid rgba(255, 215, 0, 0.4);
+        border-radius: 20px;
+        max-width: 540px;
+        width: 100%;
+        padding: 38px 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(255, 215, 0, 0.12);
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+    }
+    .security-challenge-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f39c12, var(--gold, #FFD700), #2ecc71);
+    }
+    .sec-badge-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .sec-icon-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 215, 0, 0.14);
+        border: 2px solid var(--gold, #FFD700);
+        color: var(--gold, #FFD700);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 16px auto;
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.25);
+    }
+    .sec-badge-header h1 {
+        font-size: 1.85rem;
+        color: var(--white, #fff);
+        margin: 0 0 8px 0;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    .sec-badge-header p {
+        color: var(--silver, #bbb);
+        font-size: 0.92rem;
+        line-height: 1.55;
+        margin: 0;
+    }
+    .sec-alert-error {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.35);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .sec-q-block {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+        transition: border-color 0.25s;
+    }
+    .sec-q-block:focus-within {
+        border-color: var(--gold, #FFD700);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+    }
+    .sec-q-label {
+        font-size: 0.78rem;
+        color: var(--gold, #FFD700);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .sec-q-text {
+        color: var(--white, #fff);
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        line-height: 1.45;
+    }
+    .sec-answer-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: #0d0d12;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 12px 14px;
+        color: var(--white, #fff);
+        font-size: 0.95rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .sec-answer-input:focus {
+        border-color: var(--gold, #FFD700);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+    }
+    .btn-verify-sec {
+        width: 100%;
+        background: linear-gradient(135deg, var(--gold, #FFD700), #f39c12);
+        color: #000;
+        border: none;
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
+    }
+    .btn-verify-sec:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+    }
+    .sec-cancel-row {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.88rem;
+        color: var(--silver, #bbb);
+    }
+    .sec-cancel-row a {
+        color: var(--gold, #FFD700);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .sec-cancel-row a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<main class="security-challenge-page">
+    <div class="security-challenge-card">
+        <div class="sec-badge-header">
+            <div class="sec-icon-circle">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1>Security Verification</h1>
+            <p>Multiple failed login attempts were recorded on your account. Answer your 3 security questions to confirm ownership and proceed.</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="sec-alert-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span><%= error %></span>
+            </div>
+        <% } %>
+
+        <form action="/login/security-questions" method="POST">
+            <% (questions || []).forEach((q, index) => { %>
+                <div class="sec-q-block">
+                    <div class="sec-q-label">Question <%= index + 1 %> of 3</div>
+                    <div class="sec-q-text">
+                        <i class="fas fa-lock" style="color: var(--gold); margin-right: 6px; font-size: 0.85em;"></i>
+                        <%= q %>
+                    </div>
+                    <input type="text" name="answer_<%= index %>" class="sec-answer-input" placeholder="Enter your answer" required autocomplete="off">
+                </div>
+            <% }); %>
+
+            <button type="submit" class="btn-verify-sec">
+                <i class="fas fa-check-shield"></i> Verify Answers &amp; Continue
+            </button>
+        </form>
+
+        <div class="sec-cancel-row">
+            Need help or forgot your answers?
+            <a href="/login">Return to Login</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer') %>

@@ -1,429 +1,577 @@
-<%-include('../partials/header') %>
-<style>
-    .dashboard-header { text-align: center; padding: 50px 20px 30px; }
-    .dashboard-header h1 { font-size: 2.5em; color: var(--white); }
-    .dashboard-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    
-    .dashboard-user-card { display: flex; align-items: center; gap: 20px; background: var(--dark-gray); padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 900px; margin: 0 auto 40px auto; }
-    .dashboard-user-card img { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); }
-    .dashboard-user-info { min-width: 0; flex-grow: 1; }
-    .dashboard-user-info h2 { margin: 0; color: var(--white); font-size: 1.5em; word-wrap: break-word; }
-    .dashboard-user-info p { margin: 0; color: var(--silver); word-wrap: break-word; overflow-wrap: break-word; word-break: break-all; }
-    
-    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto 60px auto; }
-    .dash-card { 
-        background: var(--dark-gray); 
-        border: 1px solid #333; 
-        border-radius: 14px; 
-        padding: 24px 20px; 
-        text-align: center; 
-        text-decoration: none; 
-        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        justify-content: center; 
-        cursor: pointer; 
-        box-sizing: border-box;
-        width: 100%;
-    }
-    .dash-card:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 8px 25px var(--glow-gold); }
-    .dash-card i { 
-        font-size: 2.6em; 
-        line-height: 1;
-        width: 1.5em;
-        height: 1.5em;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 12px auto;
-        text-align: center;
-        color: var(--gold); 
-        flex-shrink: 0;
-    }
-    .dash-card h3 { 
-        color: var(--white); 
-        margin: 0 0 6px 0; 
-        font-size: 1.2em; 
-        width: 100%;
-        text-align: center;
-        line-height: 1.3;
-    }
-    .dash-card p { 
-        color: var(--silver); 
-        margin: 0; 
-        font-size: 0.88em; 
-        width: 100%;
-        text-align: center;
-        line-height: 1.4;
-    }
+<%-include('../partials/header')%>
+    <style>
+        .dashboard-header {
+            text-align: center;
+            padding: 50px 20px 30px;
+        }
 
-    /* Modal Specific Styles */
-    .community-search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid #444; background: var(--black); color: var(--white); font-family: 'Poppins', sans-serif; outline: none; margin-bottom: 20px; transition: border-color 0.3s; }
-    .community-search-input:focus { border-color: #9c27b0; box-shadow: 0 0 10px rgba(156, 39, 176, 0.3); }
-    .com-tab-btn { flex: 1; padding: 12px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--silver); cursor: pointer; font-size: 1.1em; transition: all 0.2s; }
-    .com-tab-btn.active { color: #9c27b0; border-bottom-color: #9c27b0; font-weight: bold; }
-    
-    /* Scrollbar for User List */
-    .user-list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; }
-    .user-list-container::-webkit-scrollbar { width: 6px; }
-    .user-list-container::-webkit-scrollbar-track { background: var(--black); border-radius: 10px; }
-    .user-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-    
-    .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--black); border-radius: 10px; margin-bottom: 10px; border: 1px solid #222; transition: border-color 0.2s; }
-    .user-list-item:hover { border-color: #444; }
+        .dashboard-header h1 {
+            font-size: 2.5em;
+            color: var(--white);
+        }
 
-    @media (max-width: 480px) { .dashboard-user-card { flex-direction: column; text-align: center; } }
-</style>
+        .dashboard-header h1 span {
+            color: var(--gold);
+            text-shadow: 0 0 4px var(--glow-gold);
+        }
 
-<main class="container">
-    <div class="dashboard-header">
-        <h1>Your <span>Dashboard</span></h1>
-    </div>
+        .dashboard-user-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: var(--dark-gray);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            max-width: 900px;
+            margin: 0 auto 40px auto;
+        }
 
-    <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 900px; margin: 0 auto 20px auto; display: flex; justify-content: flex-start;' }) %>
+        .dashboard-user-card img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+        }
 
-    <div class="dashboard-user-card">
-        <img src="<%= user.signedAvatarUrl %>" alt="Avatar">
-        <div class="dashboard-user-info">
-            <h2>Welcome back, <%= user.username %>!</h2>
-            <p><%= user.email %></p>
-        </div>
-    </div>
+        .dashboard-user-info {
+            min-width: 0;
+            flex-grow: 1;
+        }
 
-    <% if (user && (user.role === 'admin' || user.role === 'owner' || user.role === 'support')) { %>
-        <%
-            const isOwner = user.role === 'owner';
-            const isAdmin = user.role === 'admin';
-            const isSupport = user.role === 'support';
+        .dashboard-user-info h2 {
+            margin: 0;
+            color: var(--white);
+            font-size: 1.5em;
+            word-wrap: break-word;
+        }
 
-            let suiteTitle = 'Administrator Suite';
-            let accessBadge = 'Admin Access';
-            let suiteColor = 'var(--gold)';
-            let suiteBorderColor = 'rgba(255, 215, 0, 0.35)';
-            let suiteBadgeBg = 'rgba(255, 215, 0, 0.12)';
-            let suiteBadgeBorder = 'rgba(255, 215, 0, 0.4)';
-            let suiteIcon = 'fa-shield-alt';
+        .dashboard-user-info p {
+            margin: 0;
+            color: var(--silver);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-all;
+        }
 
-            if (isOwner) {
-                suiteTitle = 'Owner Command Suite';
-                accessBadge = 'Owner Access';
-                suiteColor = '#f44336';
-                suiteBorderColor = 'rgba(244, 67, 54, 0.35)';
-                suiteBadgeBg = 'rgba(244, 67, 54, 0.12)';
-                suiteBadgeBorder = 'rgba(244, 67, 54, 0.4)';
-                suiteIcon = 'fa-crown';
-            } else if (isAdmin) {
-                suiteTitle = 'Admin Command Suite';
-                accessBadge = 'Admin Access';
-                suiteColor = 'var(--gold)';
-                suiteBorderColor = 'rgba(255, 215, 0, 0.35)';
-                suiteBadgeBg = 'rgba(255, 215, 0, 0.12)';
-                suiteBadgeBorder = 'rgba(255, 215, 0, 0.4)';
-                suiteIcon = 'fa-shield-alt';
-            } else if (isSupport) {
-                suiteTitle = 'Support Command Suite';
-                accessBadge = 'Support Access';
-                suiteColor = '#2196f3';
-                suiteBorderColor = 'rgba(33, 150, 243, 0.35)';
-                suiteBadgeBg = 'rgba(33, 150, 243, 0.12)';
-                suiteBadgeBorder = 'rgba(33, 150, 243, 0.4)';
-                suiteIcon = 'fa-headset';
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto 60px auto;
+        }
+
+        .dash-card {
+            background: var(--dark-gray);
+            border: 1px solid #333;
+            border-radius: 14px;
+            padding: 24px 20px;
+            text-align: center;
+            text-decoration: none;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .dash-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 8px 25px var(--glow-gold);
+        }
+
+        .dash-card i {
+            font-size: 2.6em;
+            line-height: 1;
+            width: 1.5em;
+            height: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px auto;
+            text-align: center;
+            color: var(--gold);
+            flex-shrink: 0;
+        }
+
+        .dash-card h3 {
+            color: var(--white);
+            margin: 0 0 6px 0;
+            font-size: 1.2em;
+            width: 100%;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .dash-card p {
+            color: var(--silver);
+            margin: 0;
+            font-size: 0.88em;
+            width: 100%;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Modal Specific Styles */
+        .community-search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid #444;
+            background: var(--black);
+            color: var(--white);
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .community-search-input:focus {
+            border-color: #9c27b0;
+            box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+        }
+
+        .com-tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--silver);
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.2s;
+        }
+
+        .com-tab-btn.active {
+            color: #9c27b0;
+            border-bottom-color: #9c27b0;
+            font-weight: bold;
+        }
+
+        /* Scrollbar for User List */
+        .user-list-container {
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .user-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .user-list-container::-webkit-scrollbar-track {
+            background: var(--black);
+            border-radius: 10px;
+        }
+
+        .user-list-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 10px;
+        }
+
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--black);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #222;
+            transition: border-color 0.2s;
+        }
+
+        .user-list-item:hover {
+            border-color: #444;
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-user-card {
+                flex-direction: column;
+                text-align: center;
             }
-        %>
-        <!-- ═══ ROLE-BASED COMMAND SUITE ═══ -->
-        <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid <%= suiteBorderColor %>; padding-bottom: 12px; margin-bottom: 20px;">
-                <h2 style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 3px <%= suiteBorderColor %>;">
-                    <i class="fas <%= suiteIcon %>"></i> <%= suiteTitle %>
-                </h2>
-                <span style="background: <%= suiteBadgeBg %>; color: <%= suiteColor %>; border: 1px solid <%= suiteBadgeBorder %>; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><%= accessBadge %></span>
-            </div>
-            <div class="dashboard-grid" style="margin-bottom: 0;">
-                <% if (isOwner) { %>
-                    <a href="/owner" class="dash-card" style="border: 1px solid rgba(244, 67, 54, 0.6); background: linear-gradient(145deg, #231214, #141414); box-shadow: 0 4px 15px rgba(244,67,54,0.15);">
-                        <i class="fas fa-crown" style="color: #f44336;"></i>
-                        <h3 style="color: #f44336;">Owner Center</h3>
-                        <p>Render, DNS, ImprovMX & server controls.</p>
-                    </a>
-                <% } %>
-                <% if (isOwner || isAdmin) { %>
-                    <a href="/admin" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
-                        <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
-                        <h3 style="color: var(--gold);">AdminJS Panel</h3>
-                        <p>Full database & resource manager.</p>
-                    </a>
-                    <a href="/admin/editors-choice" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1e1b12, #141414);">
-                        <i class="fas fa-star" style="color: var(--gold);"></i>
-                        <h3 style="color: var(--gold);">Editor Choice For Platforms</h3>
-                        <p>Featured mods for Android, iOS, WP & Windows.</p>
-                    </a>
-                <% } %>
-                <a href="/admin/reports" class="dash-card" style="border: 1px solid rgba(229, 57, 53, 0.4); background: linear-gradient(145deg, #1f1314, #141414);">
-                    <i class="fas fa-flag" style="color: #e53935;"></i>
-                    <h3>Reports Dashboard</h3>
-                    <p>Review flagged mods and violations.</p>
-                </a>
-                <a href="/admin/support" class="dash-card" style="border: 1px solid rgba(33, 150, 243, 0.4); background: linear-gradient(145deg, #101925, #141414);">
-                    <i class="fas fa-headset" style="color: #2196f3;"></i>
-                    <h3>Support Console</h3>
-                    <p>Manage user inquiries and tickets.</p>
-                </a>
-                <a href="/status" class="dash-card" style="border: 1px solid rgba(67, 160, 71, 0.4); background: linear-gradient(145deg, #112015, #141414);">
-                    <i class="fas fa-server" style="color: #43a047;"></i>
-                    <h3>System Health</h3>
-                    <p>Live MongoDB, B2 & server diagnostics.</p>
-                </a>
-                <% if (isOwner || isAdmin) { %>
-                    <a href="/admin/music" class="dash-card" style="border: 1px solid rgba(186, 104, 200, 0.4); background: linear-gradient(145deg, #1c1322, #141414);">
-                        <i class="fas fa-music" style="color: #ba68c8;"></i>
-                        <h3 style="color: #ba68c8;">Music Manager</h3>
-                        <p>Audio library & playlist sequencer.</p>
-                    </a>
-                <% } %>
-            </div>
-        </div>
-    <% } %>
+        }
+    </style>
 
-    <div class="dashboard-grid">
-        <% if (user && (user.role === 'distributor' || user.role === 'support' || user.role === 'admin' || user.role === 'owner')) { %>
-            <% 
-                const isOwner = user.role === 'owner';
-                const isAdmin = user.role === 'admin';
-                const isSupport = user.role === 'support';
-                const cardTitle = isOwner ? 'Owner ID Card' : (isAdmin ? 'Admin ID Card' : (isSupport ? 'Support ID Card' : 'Distributor ID Card'));
-                const roleBadge = isOwner ? 'Owner Option' : (isAdmin ? 'Admin Option' : (isSupport ? 'Support Option' : 'Distributor Option'));
-                const themeColor = isOwner ? '#f44336' : (isAdmin ? 'var(--gold)' : (isSupport ? '#2196f3' : 'var(--blue)'));
-                const borderColor = isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin ? 'rgba(255, 215, 0, 0.4)' : (isSupport ? 'rgba(33, 150, 243, 0.5)' : 'rgba(33, 150, 243, 0.4)'));
-                const bgGradient = isOwner ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin ? 'linear-gradient(145deg, #1f1b11, #141414)' : 'linear-gradient(145deg, #101925, #141414)');
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Your <span>Dashboard</span></h1>
+        </div>
+
+        <%- include('../partials/go-back-button', { fallback: '/' ,
+            wrapperStyle: 'max-width: 900px; margin: 0 auto 20px auto; display: flex; justify-content: flex-start;' })
             %>
-            <a href="/id-card" class="dash-card" style="position: relative; padding-top: 32px; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-                <span style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;"><%= roleBadge %></span>
-                <i class="fas fa-id-card" style="color: <%= themeColor %>;"></i>
-                <h3 style="color: <%= themeColor %>;"><%= cardTitle %></h3>
-                <p>Customize card, Safe QR &amp; Quick-Login.</p>
-            </a>
-        <% } %>
-        <a href="/my-membership" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1d1912, #141414); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);">
-            <i class="fas fa-id-card" style="color: var(--gold);"></i>
-            <h3 style="color: var(--gold);">My Membership</h3>
-            <p>Plan tier, renewals, upgrades &amp; refunds.</p>
-        </a>
-        <a href="/profile" class="dash-card">
-            <i class="fas fa-user-edit"></i>
-            <h3>Edit My Profile</h3>
-            <p>Update avatar, bio, and details.</p>
-        </a>
-        <a href="/my-uploads" class="dash-card">
-            <i class="fas fa-cloud-upload-alt" style="color: var(--blue);"></i>
-            <h3>My Uploads</h3>
-            <p>Manage your submitted mods.</p>
-        </a>
-        <a href="/promote" class="dash-card" style="border: 1px solid rgba(255, 152, 0, 0.45); background: linear-gradient(145deg, #23180c, #141414); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);">
-            <i class="fas fa-bullhorn" style="color: #ff9800;"></i>
-            <h3 style="color: #ff9800;">Promote My Mods</h3>
-            <p>Play Store ads, top ranking &amp; surge downloads.</p>
-        </a>
-        <a href="/wishlist" class="dash-card">
-            <i class="fas fa-heart" style="color: var(--red);"></i>
-            <h3>My Wishlist</h3>
-            <p>View your saved mods.</p>
-        </a>
-        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
-            <i class="fas fa-id-badge" style="color: var(--silver);"></i>
-            <h3>Public Profile</h3>
-            <p>See how others view your page.</p>
-        </a>
-        
-        <!-- ✅ MODIFIED: Now triggers the modal -->
-        <div id="open-community-modal" class="dash-card">
-            <i class="fas fa-users" style="color: #9c27b0;"></i>
-            <h3>Community / Followers</h3>
-            <p>Manage your audience.</p>
-        </div>
-        
-        <a href="/notifications" class="dash-card">
-            <i class="fas fa-envelope" style="color: #4caf50;"></i>
-            <h3>Inbox & Alerts</h3>
-            <p>Admin messages and updates.</p>
-        </a>
-        <a href="/rewards" class="dash-card">
-            <i class="fas fa-star" style="color: #ff9800;"></i>
-            <h3>Points History</h3>
-            <p>View your forum rank progress.</p>
-        </a>
-        <a href="/my-stats" class="dash-card">
-            <i class="fas fa-chart-bar" style="color: #00bcd4;"></i>
-            <h3>Statistics</h3>
-            <p>Analytics for your uploads.</p>
-        </a>
-        <a href="/settings" class="dash-card" style="border-color: #555;">
-            <i class="fas fa-cog" style="color: var(--silver);"></i>
-            <h3>Additional Settings</h3>
-            <p>2FA, Newsletter, Logout & Security.</p>
-        </a>
-    </div>
-</main>
 
-<!-- ======== COMMUNITY MODAL ======== -->
-<div id="community-modal" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 25px; border-radius: 15px; max-width: 500px; width: 95%; border-top: 4px solid #9c27b0; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-        
-        <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="color: #9c27b0; margin: 0; font-size: 1.8em;">Community</h2>
-            <span class="close-community" style="color: var(--silver); font-size: 28px; cursor: pointer; transition: color 0.2s;">&times;</span>
-        </div>
-        
-        <!-- Live Search Bar -->
-        <input type="text" id="community-search" class="community-search-input" placeholder="Search by username...">
-        
-        <!-- Tabs -->
-        <div style="display: flex; border-bottom: 1px solid #333; margin-bottom: 15px;">
-            <button class="com-tab-btn active" data-target="followers-list">Followers (<%= followers.length %>)</button>
-            <button class="com-tab-btn" data-target="following-list">Following (<%= following.length %>)</button>
-        </div>
-        
-        <!-- Followers List -->
-        <div id="followers-list" class="com-tab-content user-list-container">
-            <ul style="list-style: none; padding: 0; margin: 0;">
-                <% if(followers.length > 0) { %>
-                    <% followers.forEach(f => { %>
-                        <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <img src="<%= f.signedAvatarUrl %>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
-                                <div style="text-align: left;">
-                                    <a href="/users/<%= slugify(f.username) %>" style="color: var(--white); font-weight: bold; text-decoration: none;"><%= f.username %></a>
-                                    <div style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;"><%= f.role %></div>
+            <div class="dashboard-user-card">
+                <img src="<%= user.signedAvatarUrl %>" alt="Avatar">
+                <div class="dashboard-user-info">
+                    <h2>Welcome back, <%= user.username %>!</h2>
+                    <p>
+                        <%= user.email %>
+                    </p>
+                </div>
+            </div>
+
+            <% if (user && (user.role==='admin' || user.role==='owner' || user.role==='support' )) { %>
+                <% const isOwner=user.role==='owner' ; const isAdmin=user.role==='admin' ; const
+                    isSupport=user.role==='support' ; let suiteTitle='Administrator Suite' ; let
+                    accessBadge='Admin Access' ; let suiteColor='var(--gold)' ; let
+                    suiteBorderColor='rgba(255, 215, 0, 0.35)' ; let suiteBadgeBg='rgba(255, 215, 0, 0.12)' ; let
+                    suiteBadgeBorder='rgba(255, 215, 0, 0.4)' ; let suiteIcon='fa-shield-alt' ; if (isOwner) {
+                    suiteTitle='Owner Command Suite' ; accessBadge='Owner Access' ; suiteColor='#f44336' ;
+                    suiteBorderColor='rgba(244, 67, 54, 0.35)' ; suiteBadgeBg='rgba(244, 67, 54, 0.12)' ;
+                    suiteBadgeBorder='rgba(244, 67, 54, 0.4)' ; suiteIcon='fa-crown' ; } else if (isAdmin) {
+                    suiteTitle='Admin Command Suite' ; accessBadge='Admin Access' ; suiteColor='var(--gold)' ;
+                    suiteBorderColor='rgba(255, 215, 0, 0.35)' ; suiteBadgeBg='rgba(255, 215, 0, 0.12)' ;
+                    suiteBadgeBorder='rgba(255, 215, 0, 0.4)' ; suiteIcon='fa-shield-alt' ; } else if (isSupport) {
+                    suiteTitle='Support Command Suite' ; accessBadge='Support Access' ; suiteColor='#2196f3' ;
+                    suiteBorderColor='rgba(33, 150, 243, 0.35)' ; suiteBadgeBg='rgba(33, 150, 243, 0.12)' ;
+                    suiteBadgeBorder='rgba(33, 150, 243, 0.4)' ; suiteIcon='fa-headset' ; } %>
+                    <!-- ═══ ROLE-BASED COMMAND SUITE ═══ -->
+                    <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid <%= suiteBorderColor %>; padding-bottom: 12px; margin-bottom: 20px;">
+                            <h2
+                                style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 3px <%= suiteBorderColor %>;">
+                                <i class="fas <%= suiteIcon %>"></i>
+                                <%= suiteTitle %>
+                            </h2>
+                            <span
+                                style="background: <%= suiteBadgeBg %>; color: <%= suiteColor %>; border: 1px solid <%= suiteBadgeBorder %>; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <%= accessBadge %>
+                            </span>
+                        </div>
+                        <div class="dashboard-grid" style="margin-bottom: 0;">
+                            <% if (isOwner) { %>
+                                <a href="/owner" class="dash-card"
+                                    style="border: 1px solid rgba(244, 67, 54, 0.6); background: linear-gradient(145deg, #231214, #141414); box-shadow: 0 4px 15px rgba(244,67,54,0.15);">
+                                    <i class="fas fa-crown" style="color: #f44336;"></i>
+                                    <h3 style="color: #f44336;">Owner Center</h3>
+                                    <p>Render, DNS, ImprovMX & server controls.</p>
+                                </a>
+                                <% } %>
+                                    <% if (isOwner || isAdmin) { %>
+                                        <a href="/admin" class="dash-card"
+                                            style="border: 1px solid rgba(255, 215, 0, 0.5); background: linear-gradient(145deg, #1b1812, #141414); box-shadow: 0 4px 15px rgba(255,215,0,0.08);">
+                                            <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
+                                            <h3 style="color: var(--gold);">AdminJS Panel</h3>
+                                            <p>Full database & resource manager.</p>
+                                        </a>
+                                        <a href="/admin/editors-choice" class="dash-card"
+                                            style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1e1b12, #141414);">
+                                            <i class="fas fa-star" style="color: var(--gold);"></i>
+                                            <h3 style="color: var(--gold);">Editor Choice For Platforms</h3>
+                                            <p>Featured mods for Android, iOS, WP & Windows.</p>
+                                        </a>
+                                        <% } %>
+                                            <a href="/admin/reports" class="dash-card"
+                                                style="border: 1px solid rgba(229, 57, 53, 0.4); background: linear-gradient(145deg, #1f1314, #141414);">
+                                                <i class="fas fa-flag" style="color: #e53935;"></i>
+                                                <h3>Reports Dashboard</h3>
+                                                <p>Review flagged mods and violations.</p>
+                                            </a>
+                                            <a href="/admin/support" class="dash-card"
+                                                style="border: 1px solid rgba(33, 150, 243, 0.4); background: linear-gradient(145deg, #101925, #141414);">
+                                                <i class="fas fa-headset" style="color: #2196f3;"></i>
+                                                <h3>Support Console</h3>
+                                                <p>Manage user inquiries and tickets.</p>
+                                            </a>
+                                            <a href="/status" class="dash-card"
+                                                style="border: 1px solid rgba(67, 160, 71, 0.4); background: linear-gradient(145deg, #112015, #141414);">
+                                                <i class="fas fa-server" style="color: #43a047;"></i>
+                                                <h3>System Health</h3>
+                                                <p>Live MongoDB, B2 & server diagnostics.</p>
+                                            </a>
+                                            <% if (isOwner || isAdmin) { %>
+                                                <a href="/admin/music" class="dash-card"
+                                                    style="border: 1px solid rgba(186, 104, 200, 0.4); background: linear-gradient(145deg, #1c1322, #141414);">
+                                                    <i class="fas fa-music" style="color: #ba68c8;"></i>
+                                                    <h3 style="color: #ba68c8;">Music Manager</h3>
+                                                    <p>Audio library & playlist sequencer.</p>
+                                                </a>
+                                                <% } %>
+                        </div>
+                    </div>
+                    <% } %>
+
+                        <div class="dashboard-grid">
+                            <% if (user && (user.role==='distributor' || user.role==='support' || user.role==='admin' ||
+                                user.role==='owner' )) { %>
+                                <% const isOwner=user.role==='owner' ; const isAdmin=user.role==='admin' ; const
+                                    isSupport=user.role==='support' ; const cardTitle=isOwner ? 'Owner ID Card' :
+                                    (isAdmin ? 'Admin ID Card' : (isSupport ? 'Support ID Card' : 'Distributor ID Card'
+                                    )); const roleBadge=isOwner ? 'Owner Option' : (isAdmin ? 'Admin Option' :
+                                    (isSupport ? 'Support Option' : 'Distributor Option' )); const themeColor=isOwner
+                                    ? '#f44336' : (isAdmin ? 'var(--gold)' : (isSupport ? '#2196f3' : 'var(--blue)' ));
+                                    const borderColor=isOwner ? 'rgba(244, 67, 54, 0.5)' : (isAdmin
+                                    ? 'rgba(255, 215, 0, 0.4)' : (isSupport ? 'rgba(33, 150, 243, 0.5)'
+                                    : 'rgba(33, 150, 243, 0.4)' )); const bgGradient=isOwner
+                                    ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin
+                                    ? 'linear-gradient(145deg, #1f1b11, #141414)'
+                                    : 'linear-gradient(145deg, #101925, #141414)' ); %>
+                                    <a href="/id-card" class="dash-card"
+                                        style="position: relative; padding-top: 32px; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                                        <span
+                                            style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;">
+                                            <%= roleBadge %>
+                                        </span>
+                                        <i class="fas fa-id-card" style="color: <%= themeColor %>;"></i>
+                                        <h3 style="color: <%= themeColor %>;">
+                                            <%= cardTitle %>
+                                        </h3>
+                                        <p>Customize card, Safe QR &amp; Quick-Login.</p>
+                                    </a>
+                                    <% } %>
+                                        <a href="/my-membership" class="dash-card"
+                                            style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1d1912, #141414); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);">
+                                            <i class="fa-duotone fa-solid fa-credit-card" style="color: var(--gold);"></i>
+                                            <h3 style="color: var(--gold);">My Membership</h3>
+                                            <p>Plan tier, renewals, upgrades &amp; refunds.</p>
+                                        </a>
+                                        <a href="/profile" class="dash-card">
+                                            <i class="fas fa-user-edit"></i>
+                                            <h3>Edit My Profile</h3>
+                                            <p>Update avatar, bio, and details.</p>
+                                        </a>
+                                        <a href="/my-uploads" class="dash-card">
+                                            <i class="fas fa-cloud-upload-alt" style="color: var(--blue);"></i>
+                                            <h3>My Uploads</h3>
+                                            <p>Manage your submitted mods.</p>
+                                        </a>
+                                        <a href="/promote" class="dash-card"
+                                            style="border: 1px solid rgba(255, 152, 0, 0.45); background: linear-gradient(145deg, #23180c, #141414); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);">
+                                            <i class="fas fa-bullhorn" style="color: #ff9800;"></i>
+                                            <h3 style="color: #ff9800;">Promote My Mods</h3>
+                                            <p>Play Store ads, top ranking &amp; surge downloads.</p>
+                                        </a>
+                                        <a href="/wishlist" class="dash-card">
+                                            <i class="fas fa-heart" style="color: var(--red);"></i>
+                                            <h3>My Wishlist</h3>
+                                            <p>View your saved mods.</p>
+                                        </a>
+                                        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
+                                            <i class="fas fa-id-badge" style="color: var(--silver);"></i>
+                                            <h3>Public Profile</h3>
+                                            <p>See how others view your page.</p>
+                                        </a>
+
+                                        <!-- ✅ MODIFIED: Now triggers the modal -->
+                                        <div id="open-community-modal" class="dash-card">
+                                            <i class="fas fa-users" style="color: #9c27b0;"></i>
+                                            <h3>Community / Followers</h3>
+                                            <p>Manage your audience.</p>
+                                        </div>
+
+                                        <a href="/notifications" class="dash-card">
+                                            <i class="fas fa-envelope" style="color: #4caf50;"></i>
+                                            <h3>Inbox & Alerts</h3>
+                                            <p>Admin messages and updates.</p>
+                                        </a>
+                                        <a href="/rewards" class="dash-card">
+                                            <i class="fas fa-star" style="color: #ff9800;"></i>
+                                            <h3>Points History</h3>
+                                            <p>View your forum rank progress.</p>
+                                        </a>
+                                        <a href="/my-stats" class="dash-card">
+                                            <i class="fas fa-chart-bar" style="color: #00bcd4;"></i>
+                                            <h3>Statistics</h3>
+                                            <p>Analytics for your uploads.</p>
+                                        </a>
+                                        <a href="/settings" class="dash-card" style="border-color: #555;">
+                                            <i class="fas fa-cog" style="color: var(--silver);"></i>
+                                            <h3>Additional Settings</h3>
+                                            <p>2FA, Newsletter, Logout & Security.</p>
+                                        </a>
+                        </div>
+    </main>
+
+    <!-- ======== COMMUNITY MODAL ======== -->
+    <div id="community-modal" class="policy-modal">
+        <div class="policy-modal-content"
+            style="background-color: var(--dark-gray); padding: 25px; border-radius: 15px; max-width: 500px; width: 95%; border-top: 4px solid #9c27b0; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #9c27b0; margin: 0; font-size: 1.8em;">Community</h2>
+                <span class="close-community"
+                    style="color: var(--silver); font-size: 28px; cursor: pointer; transition: color 0.2s;">&times;</span>
+            </div>
+
+            <!-- Live Search Bar -->
+            <input type="text" id="community-search" class="community-search-input" placeholder="Search by username...">
+
+            <!-- Tabs -->
+            <div style="display: flex; border-bottom: 1px solid #333; margin-bottom: 15px;">
+                <button class="com-tab-btn active" data-target="followers-list">Followers (<%= followers.length %>
+                        )</button>
+                <button class="com-tab-btn" data-target="following-list">Following (<%= following.length %>)</button>
+            </div>
+
+            <!-- Followers List -->
+            <div id="followers-list" class="com-tab-content user-list-container">
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <% if(followers.length> 0) { %>
+                        <% followers.forEach(f=> { %>
+                            <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="<%= f.signedAvatarUrl %>"
+                                        style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
+                                    <div style="text-align: left;">
+                                        <a href="/users/<%= slugify(f.username) %>"
+                                            style="color: var(--white); font-weight: bold; text-decoration: none;">
+                                            <%= f.username %>
+                                        </a>
+                                        <div
+                                            style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;">
+                                            <%= f.role %>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Check if we follow them back to determine button style -->
-                            <% const isFollowingBack = following.some(u => u._id.toString() === f._id.toString()); %>
-                            <button class="btn ajax-follow-btn <%= isFollowingBack ? 'btn-secondary' : 'btn-primary' %>" data-id="<%= f._id %>" style="padding: 6px 15px; font-size: 0.8em;">
-                                <%= isFollowingBack ? 'Unfollow' : 'Follow Back' %>
-                            </button>
-                        </li>
-                    <% }) %>
-                <% } else { %>
-                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You don't have any followers yet.</p>
-                <% } %>
-            </ul>
-        </div>
-        
-        <!-- Following List -->
-        <div id="following-list" class="com-tab-content user-list-container" style="display: none;">
-            <ul style="list-style: none; padding: 0; margin: 0;">
-                <% if(following.length > 0) { %>
-                    <% following.forEach(f => { %>
-                        <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <img src="<%= f.signedAvatarUrl %>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
-                                <div style="text-align: left;">
-                                    <a href="/users/<%= slugify(f.username) %>" style="color: var(--white); font-weight: bold; text-decoration: none;"><%= f.username %></a>
-                                    <div style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;"><%= f.role %></div>
+
+                                <!-- Check if we follow them back to determine button style -->
+                                <% const isFollowingBack=following.some(u=> u._id.toString() === f._id.toString()); %>
+                                    <button
+                                        class="btn ajax-follow-btn <%= isFollowingBack ? 'btn-secondary' : 'btn-primary' %>"
+                                        data-id="<%= f._id %>" style="padding: 6px 15px; font-size: 0.8em;">
+                                        <%= isFollowingBack ? 'Unfollow' : 'Follow Back' %>
+                                    </button>
+                            </li>
+                            <% }) %>
+                                <% } else { %>
+                                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You don't have
+                                        any followers yet.</p>
+                                    <% } %>
+                </ul>
+            </div>
+
+            <!-- Following List -->
+            <div id="following-list" class="com-tab-content user-list-container" style="display: none;">
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <% if(following.length> 0) { %>
+                        <% following.forEach(f=> { %>
+                            <li class="user-list-item" data-name="<%= f.username.toLowerCase() %>">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="<%= f.signedAvatarUrl %>"
+                                        style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
+                                    <div style="text-align: left;">
+                                        <a href="/users/<%= slugify(f.username) %>"
+                                            style="color: var(--white); font-weight: bold; text-decoration: none;">
+                                            <%= f.username %>
+                                        </a>
+                                        <div
+                                            style="color: var(--silver); font-size: 0.8em; text-transform: capitalize;">
+                                            <%= f.role %>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <button class="btn btn-secondary ajax-follow-btn" data-id="<%= f._id %>" style="padding: 6px 15px; font-size: 0.8em;">Unfollow</button>
-                        </li>
-                    <% }) %>
-                <% } else { %>
-                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You aren't following anyone.</p>
-                <% } %>
-            </ul>
+                                <button class="btn btn-secondary ajax-follow-btn" data-id="<%= f._id %>"
+                                    style="padding: 6px 15px; font-size: 0.8em;">Unfollow</button>
+                            </li>
+                            <% }) %>
+                                <% } else { %>
+                                    <p style="color: var(--silver); text-align: center; padding: 20px 0;">You aren't
+                                        following anyone.</p>
+                                    <% } %>
+                </ul>
+            </div>
+
         </div>
-
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Modal Open/Close Logic
-    const openBtn = document.getElementById('open-community-modal');
-    const modal = document.getElementById('community-modal');
-    const closeBtn = document.querySelector('.close-community');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Modal Open/Close Logic
+            const openBtn = document.getElementById('open-community-modal');
+            const modal = document.getElementById('community-modal');
+            const closeBtn = document.querySelector('.close-community');
 
-    openBtn.addEventListener('click', () => {
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('show'), 10);
-    });
+            openBtn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            });
 
-    closeBtn.addEventListener('click', () => {
-        modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 200); // Wait for CSS transition
-    });
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 200); // Wait for CSS transition
+            });
 
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) closeBtn.click();
-    });
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) closeBtn.click();
+            });
 
-    // 2. Tab Switching Logic
-    const comTabBtns = document.querySelectorAll('.com-tab-btn');
-    const comTabContents = document.querySelectorAll('.com-tab-content');
+            // 2. Tab Switching Logic
+            const comTabBtns = document.querySelectorAll('.com-tab-btn');
+            const comTabContents = document.querySelectorAll('.com-tab-content');
 
-    comTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Reset styles
-            comTabBtns.forEach(b => b.classList.remove('active'));
-            comTabContents.forEach(c => c.style.display = 'none');
-            
-            // Activate clicked
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.target).style.display = 'block';
+            comTabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Reset styles
+                    comTabBtns.forEach(b => b.classList.remove('active'));
+                    comTabContents.forEach(c => c.style.display = 'none');
+
+                    // Activate clicked
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.target).style.display = 'block';
+                });
+            });
+
+            // 3. Live Search Filtering Logic
+            const searchInput = document.getElementById('community-search');
+            const userItems = document.querySelectorAll('.user-list-item');
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+
+                userItems.forEach(item => {
+                    // We stored the lowercase username in the data-name attribute
+                    if (item.dataset.name.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            // 4. AJAX Live Follow/Unfollow Logic
+            const followBtns = document.querySelectorAll('.ajax-follow-btn');
+
+            followBtns.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const userId = btn.dataset.id;
+
+                    // Determine current state based on button text
+                    const isCurrentlyFollowing = btn.textContent.trim() === 'Unfollow';
+
+                    // Optimistic UI Update (Change it instantly so it feels blazing fast)
+                    if (isCurrentlyFollowing) {
+                        btn.textContent = 'Follow';
+                        btn.classList.remove('btn-secondary');
+                        btn.classList.add('btn-primary');
+                    } else {
+                        btn.textContent = 'Unfollow';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-secondary');
+                    }
+
+                    try {
+                        // Fire the fetch request in the background
+                        // We don't care about the redirect response because we are staying in the modal
+                        await fetch(`/users/${userId}/follow`, { method: 'POST' });
+                    } catch (err) {
+                        console.error("AJAX follow failed", err);
+                        alert("Network error updating follow status.");
+                        // If you wanted to be super safe, you could revert the button colors here if it failed
+                    }
+                });
+            });
         });
-    });
+    </script>
 
-    // 3. Live Search Filtering Logic
-    const searchInput = document.getElementById('community-search');
-    const userItems = document.querySelectorAll('.user-list-item');
-
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        
-        userItems.forEach(item => {
-            // We stored the lowercase username in the data-name attribute
-            if (item.dataset.name.includes(searchTerm)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-
-    // 4. AJAX Live Follow/Unfollow Logic
-    const followBtns = document.querySelectorAll('.ajax-follow-btn');
-    
-    followBtns.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const userId = btn.dataset.id;
-            
-            // Determine current state based on button text
-            const isCurrentlyFollowing = btn.textContent.trim() === 'Unfollow';
-
-            // Optimistic UI Update (Change it instantly so it feels blazing fast)
-            if (isCurrentlyFollowing) {
-                btn.textContent = 'Follow';
-                btn.classList.remove('btn-secondary');
-                btn.classList.add('btn-primary');
-            } else {
-                btn.textContent = 'Unfollow';
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-secondary');
-            }
-
-            try {
-                // Fire the fetch request in the background
-                // We don't care about the redirect response because we are staying in the modal
-                await fetch(`/users/${userId}/follow`, { method: 'POST' });
-            } catch (err) {
-                console.error("AJAX follow failed", err);
-                alert("Network error updating follow status.");
-                // If you wanted to be super safe, you could revert the button colors here if it failed
-            }
-        });
-    });
-});
-</script>
-
-<%- include('../partials/footer') %>
+    <%- include('../partials/footer') %>

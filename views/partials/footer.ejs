@@ -92,6 +92,7 @@
                 <a href="/donate">Donate Us!</a>
                 <a href="/sponsor">Sponsor Infrastructure</a>
                 <a href="/promote">Promote Your Mods</a>
+                <a href="/unsubscribe">Unsubscribe Newsletter</a>
                 <a href="/ai-directory">Site Map</a>
             </div>
             <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
@@ -100,6 +101,9 @@
 
     <!-- Global Purchase Cancellation Feedback Modal -->
     <%- include('./cancel-feedback-modal') %>
+
+    <!-- Global PWA / App Notification Management Modal -->
+    <%- include('./pwa-notification-modal') %>
 
     <!-- ========================================================================= -->
     <!-- BELOW THIS LINE: DYNAMIC SCRIPTS AND MODALS (HIDDEN FROM CRAWLERS)        -->

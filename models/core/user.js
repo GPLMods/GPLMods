@@ -219,6 +219,14 @@ const UserSchema = new Schema({
         type: Number,
         default: 0
     },
+    securityQuestions: [{
+        question: { type: String, required: true },
+        answerHash: { type: String, required: true }
+    }],
+    securityQuestionsEnabled: {
+        type: Boolean,
+        default: false
+    },
     sessionVersion: {
         type: Number,
         default: 0

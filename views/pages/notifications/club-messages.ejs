@@ -30,15 +30,98 @@
         font-size: 0.92rem;
     }
 
-    .notifs-dropdown-select {
-        background: #14151b;
-        border: 1px solid var(--gold);
-        color: #fff;
-        border-radius: 10px;
+    /* Custom Dropdown UI */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 220px;
+        text-align: left;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 10px 18px;
-        font-size: 0.95rem;
-        outline: none;
+        border-radius: 12px;
+        border: 1px solid var(--gold);
+        background-color: #14151b;
         cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .custom-select:hover {
+        border-color: #ffe066;
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    .custom-select-wrapper.open .custom-select {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+    .selected-text {
+        color: var(--white);
+        font-size: 0.92rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .custom-select-arrow {
+        color: var(--gold);
+        transition: transform 0.3s ease;
+        font-size: 0.8em;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+    }
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #1a1b24;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.25s ease;
+        z-index: 100;
+        overflow: hidden;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .custom-option {
+        padding: 11px 16px;
+        color: var(--silver);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+    .custom-option:hover {
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+    }
+    .custom-option.selected {
+        background: var(--gold);
+        color: var(--black);
+        font-weight: 700;
     }
 
     .notifs-list-container {
@@ -151,12 +234,35 @@
         </div>
 
         <div>
-            <select class="notifs-dropdown-select" id="notifTypeFilter" onchange="filterNotifications(this.value)">
-                <option value="all">All Alerts</option>
-                <option value="requests">Join Requests</option>
-                <option value="invites">Club Invites</option>
-                <option value="updates">Community Updates</option>
-            </select>
+            <!-- Custom Styled Dropdown UI -->
+            <div class="custom-select-wrapper" id="notifDropdownWrapper">
+                <div class="custom-select" id="notifCustomSelect">
+                    <span class="selected-text" id="notifSelectedText">
+                        <i class="fas fa-bell" style="color: var(--gold); width: 16px; text-align: center;"></i> All Alerts
+                    </span>
+                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                </div>
+                <div class="custom-options">
+                    <div class="custom-option selected" data-value="all">
+                        <i class="fas fa-bell" style="width: 16px; text-align: center;"></i> All Alerts
+                    </div>
+                    <div class="custom-option" data-value="requests">
+                        <i class="fas fa-user-plus" style="width: 16px; text-align: center;"></i> Join Requests
+                    </div>
+                    <div class="custom-option" data-value="invites">
+                        <i class="fas fa-envelope-open-text" style="width: 16px; text-align: center;"></i> Club Invites
+                    </div>
+                    <div class="custom-option" data-value="updates">
+                        <i class="fas fa-bullhorn" style="width: 16px; text-align: center;"></i> Community Updates
+                    </div>
+                </div>
+                <select class="notifs-dropdown-select" id="notifTypeFilter" style="display: none;" onchange="filterNotifications(this.value)">
+                    <option value="all" selected>All Alerts</option>
+                    <option value="requests">Join Requests</option>
+                    <option value="invites">Club Invites</option>
+                    <option value="updates">Community Updates</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -232,6 +338,8 @@
                 card.style.display = 'flex';
             } else if (filterValue === 'requests' && card.classList.contains('notif-item-requests')) {
                 card.style.display = 'flex';
+            } else if (filterValue === 'invites' && card.classList.contains('notif-item-invites')) {
+                card.style.display = 'flex';
             } else if (filterValue === 'updates' && card.classList.contains('notif-item-updates')) {
                 card.style.display = 'flex';
             } else {
@@ -260,6 +368,40 @@
             console.error('Request processing error:', e);
         }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const wrapper = document.getElementById('notifDropdownWrapper');
+        const customSelect = document.getElementById('notifCustomSelect');
+        const selectedText = document.getElementById('notifSelectedText');
+        const options = wrapper ? wrapper.querySelectorAll('.custom-option') : [];
+        const nativeSelect = document.getElementById('notifTypeFilter');
+
+        if (wrapper && customSelect) {
+            customSelect.addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrapper.classList.toggle('open');
+            });
+
+            options.forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    options.forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    selectedText.innerHTML = opt.innerHTML;
+                    const val = opt.getAttribute('data-value');
+                    if (nativeSelect) nativeSelect.value = val;
+                    wrapper.classList.remove('open');
+                    filterNotifications(val);
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) {
+                    wrapper.classList.remove('open');
+                }
+            });
+        }
+    });
 </script>
 
 <%- include('../../partials/footer') %>

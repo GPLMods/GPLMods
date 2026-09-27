@@ -1,0 +1,140 @@
+<!-- ======== GLOBAL PWA / APP NOTIFICATION MANAGEMENT MODAL ======== -->
+<div id="globalNotificationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 100002; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: linear-gradient(145deg, #181922 0%, #101117 100%); border: 1.5px solid rgba(255, 215, 0, 0.4); border-radius: 20px; max-width: 520px; width: 100%; padding: 26px; box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 25px rgba(255, 215, 0, 0.15); position: relative;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <h3 style="margin: 0; color: #fff; font-size: 1.25em; display: flex; align-items: center; gap: 10px; font-weight: 700;">
+                <i class="fas fa-bell" style="color: var(--gold);"></i> PWA &amp; App Notification Hub
+            </h3>
+            <button type="button" onclick="closeGlobalNotificationModal()" style="background: none; border: none; color: #888; font-size: 1.5em; cursor: pointer; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+            <!-- Master Control Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 12px;">
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Allow Web Push Alerts</div>
+                    <div style="font-size: 0.76em; color: var(--silver); margin-top: 2px;">Master device push authorization</div>
+                </div>
+                <button type="button" onclick="enablePushNotifications()" class="btn" style="background: var(--gold); color: #000; font-weight: 700; padding: 7px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-check-circle"></i> Enable Push
+                </button>
+            </div>
+
+            <!-- Basic Sub-Preferences Always Accessible -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px;">Alert Channels</div>
+
+                <!-- 1. New Uploads -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-cloud-upload-alt" style="color: #64b5f6; width: 18px;"></i>
+                        <span style="font-size: 0.88em; color: #fff; font-weight: 500;">New Mod Uploads</span>
+                    </div>
+                    <label class="switch" style="margin: 0;">
+                        <input type="checkbox" id="modal_newUploads" checked onchange="saveModalNotificationPrefs()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- 2. Club Announcements -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-users" style="color: #81c784; width: 18px;"></i>
+                        <span style="font-size: 0.88em; color: #fff; font-weight: 500;">Club Discussions</span>
+                    </div>
+                    <label class="switch" style="margin: 0;">
+                        <input type="checkbox" id="modal_clubUpdates" checked onchange="saveModalNotificationPrefs()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- 3. Admin Announcements -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
+                        <span style="font-size: 0.88em; color: #fff; font-weight: 500;">Admin Announcements</span>
+                    </div>
+                    <label class="switch" style="margin: 0;">
+                        <input type="checkbox" id="modal_adminMessages" checked onchange="saveModalNotificationPrefs()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- 4. Audio Chime -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
+                        <div>
+                            <span style="font-size: 0.88em; color: #fff; font-weight: 500;">Audio Chime</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button type="button" onclick="testNotificationSound()" style="background: rgba(255,255,255,0.06); border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.74em; cursor: pointer;">
+                            <i class="fas fa-play" style="color: var(--gold);"></i> Test
+                        </button>
+                        <label class="switch" style="margin: 0;">
+                            <input type="checkbox" id="modal_soundEnabled" checked onchange="saveModalNotificationPrefs()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnostics -->
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(33, 150, 243, 0.06); border: 1px solid rgba(33, 150, 243, 0.25); border-radius: 10px; margin-top: 4px;">
+                <div>
+                    <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Push Diagnostics</div>
+                    <div style="font-size: 0.74em; color: var(--silver);">Dispatch test ping to device service worker</div>
+                </div>
+                <button type="button" onclick="sendTestNotification()" style="background: rgba(33, 150, 243, 0.2); border: 1px solid #2196F3; color: #64b5f6; padding: 6px 14px; border-radius: 6px; font-size: 0.8em; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-paper-plane"></i> Ping
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+            <button type="button" onclick="closeGlobalNotificationModal()" style="padding: 9px 22px; background: rgba(255,255,255,0.08); border: 1px solid #444; color: #eee; border-radius: 8px; font-size: 0.88em; cursor: pointer; font-weight: 600;">
+                Close Hub
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openGlobalNotificationModal() {
+        const modal = document.getElementById('globalNotificationModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeGlobalNotificationModal() {
+        const modal = document.getElementById('globalNotificationModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function saveModalNotificationPrefs() {
+        const u = document.getElementById('modal_newUploads');
+        const c = document.getElementById('modal_clubUpdates');
+        const a = document.getElementById('modal_adminMessages');
+        const s = document.getElementById('modal_soundEnabled');
+
+        const payload = {
+            notificationsEnabled: true,
+            newUploads: u ? u.checked : true,
+            clubUpdates: c ? c.checked : true,
+            adminMessages: a ? a.checked : true,
+            soundEnabled: s ? s.checked : true
+        };
+
+        try {
+            await fetch('/settings/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (window.showGplToast) {
+                window.showGplToast({ title: 'Preferences Saved', body: 'Notification settings updated.' });
+            }
+        } catch(e) {}
+    }
+</script>

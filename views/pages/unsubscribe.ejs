@@ -1,0 +1,242 @@
+<%- include('../partials/header') %>
+
+<style>
+    .unsubscribe-page {
+        min-height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 20px;
+    }
+    .unsubscribe-card {
+        background: linear-gradient(145deg, #181922 0%, #101117 100%);
+        border: 1.5px solid rgba(255, 215, 0, 0.35);
+        border-radius: 20px;
+        max-width: 520px;
+        width: 100%;
+        padding: 38px 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 25px rgba(255, 215, 0, 0.1);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .unsubscribe-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #e74c3c, var(--gold, #FFD700));
+    }
+    .unsub-icon-wrap {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(231, 76, 60, 0.15);
+        border: 2px solid rgba(231, 76, 60, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        color: #e74c3c;
+        font-size: 2rem;
+        box-shadow: 0 0 25px rgba(231, 76, 60, 0.25);
+    }
+    .unsub-title {
+        font-size: 1.8rem;
+        color: var(--white, #fff);
+        font-weight: 800;
+        margin: 0 0 10px 0;
+        letter-spacing: -0.5px;
+    }
+    .unsub-subtitle {
+        color: var(--silver, #bbb);
+        font-size: 0.95rem;
+        line-height: 1.55;
+        margin: 0 0 26px 0;
+    }
+    .unsub-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        text-align: left;
+    }
+    .unsub-label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--silver, #bbb);
+        margin-bottom: -5px;
+    }
+    .unsub-input-wrap {
+        position: relative;
+        width: 100%;
+    }
+    .unsub-input-wrap i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #777;
+        font-size: 1rem;
+    }
+    .unsub-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 13px 15px 13px 44px;
+        background: #0d0d12;
+        border: 1px solid #333;
+        border-radius: 10px;
+        color: var(--white, #fff);
+        font-size: 0.98rem;
+        font-family: inherit;
+        transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .unsub-input:focus {
+        outline: none;
+        border-color: var(--gold, #FFD700);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    .unsub-btn-submit {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: #fff;
+        border: none;
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 6px;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.35);
+    }
+    .unsub-btn-submit:hover {
+        background: linear-gradient(135deg, #ff5252, #d32f2f);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+    }
+    .unsub-feedback-box {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        display: none;
+        text-align: center;
+        line-height: 1.5;
+    }
+    .unsub-feedback-box.success {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.35);
+    }
+    .unsub-feedback-box.error {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border: 1px solid rgba(231, 76, 60, 0.35);
+    }
+    .unsub-alt-action {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.88rem;
+        color: var(--silver, #bbb);
+    }
+    .unsub-alt-action a {
+        color: var(--gold, #FFD700);
+        text-decoration: none;
+        font-weight: 600;
+        margin-left: 5px;
+        transition: color 0.2s;
+    }
+    .unsub-alt-action a:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+</style>
+
+<main class="unsubscribe-page">
+    <div class="unsubscribe-card">
+        <div class="unsub-icon-wrap">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <h1 class="unsub-title">Unsubscribe Newsletter</h1>
+        <p class="unsub-subtitle">
+            Enter your email below to instantly unsubscribe from GPL Mods email newsletters, weekly digests, and promotional updates.
+        </p>
+
+        <form class="unsub-form" id="unsubscribeForm" onsubmit="handleUnsubscribe(event)">
+            <label for="unsubEmail" class="unsub-label">Email Address</label>
+            <div class="unsub-input-wrap">
+                <i class="fas fa-at"></i>
+                <input type="email" id="unsubEmail" name="email" class="unsub-input" placeholder="e.g. name@example.com" value="<%= typeof email !== 'undefined' ? email : '' %>" required>
+            </div>
+
+            <button type="submit" class="unsub-btn-submit" id="btnUnsub">
+                <i class="fas fa-user-minus"></i> Unsubscribe Me
+            </button>
+        </form>
+
+        <div class="unsub-feedback-box" id="unsubMsg"></div>
+
+        <div class="unsub-alt-action">
+            Changed your mind?
+            <a href="/" id="btnReturnHome">Return to Home &rarr;</a>
+        </div>
+    </div>
+</main>
+
+<script>
+    async function handleUnsubscribe(e) {
+        e.preventDefault();
+        const emailInput = document.getElementById('unsubEmail');
+        const btn = document.getElementById('btnUnsub');
+        const msgBox = document.getElementById('unsubMsg');
+        const email = emailInput.value.trim();
+
+        if (!email || !email.includes('@')) {
+            msgBox.className = 'unsub-feedback-box error';
+            msgBox.style.display = 'block';
+            msgBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a valid email address.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        msgBox.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                msgBox.className = 'unsub-feedback-box success';
+                msgBox.style.display = 'block';
+                msgBox.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message || 'You have been successfully unsubscribed from the newsletter.'}`;
+                document.getElementById('unsubscribeForm').style.display = 'none';
+            } else {
+                msgBox.className = 'unsub-feedback-box error';
+                msgBox.style.display = 'block';
+                msgBox.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Failed to unsubscribe. Please check your email and try again.'}`;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-minus"></i> Unsubscribe Me';
+            }
+        } catch (err) {
+            msgBox.className = 'unsub-feedback-box error';
+            msgBox.style.display = 'block';
+            msgBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again later.';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-user-minus"></i> Unsubscribe Me';
+        }
+    }
+</script>
+
+<%- include('../partials/footer') %>
