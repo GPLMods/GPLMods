@@ -30,6 +30,46 @@
     .file-table tr:hover { background: #1a1a1a; }
     .file-table .file-name { color: var(--white); font-weight: bold; text-decoration: none; }
     .file-table .file-name:hover { color: var(--gold); }
+
+    /* Platform Filter Chips */
+    .platform-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+    .platform-chip {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.82em;
+        font-weight: 600;
+        background: #181818;
+        border: 1px solid #333;
+        color: var(--silver);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    .platform-chip:hover {
+        border-color: var(--gold);
+        color: var(--white);
+        transform: translateY(-1px);
+    }
+    .platform-chip.active {
+        background: var(--gold);
+        color: var(--black);
+        border-color: var(--gold);
+        box-shadow: 0 0 10px var(--glow-gold);
+    }
+    .mod-icon-img {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #222;
+        border: 1px solid #3a3a3a;
+        flex-shrink: 0;
+    }
 </style>
 
 <main class="stats-container">
@@ -82,9 +122,27 @@
     </div>
 
     <!-- 3. Individual File Breakdown Table -->
-    <h2 style="color: var(--white); margin-bottom: 20px;">Individual Mod Stats</h2>
+    <% 
+        const categories = Array.from(new Set((files || []).map(f => f.category).filter(Boolean)));
+    %>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 18px;">
+        <h2 style="color: var(--white); margin: 0;">Individual Mod Stats</h2>
+        <% if (files && files.length > 0 && categories.length > 1) { %>
+            <div class="platform-filter-bar" id="platformFilterBar">
+                <button type="button" class="platform-chip active" data-platform="all">All Platforms (<%= files.length %>)</button>
+                <% categories.forEach(cat => { 
+                    const count = files.filter(f => f.category === cat).length;
+                %>
+                    <button type="button" class="platform-chip" data-platform="<%= cat.toLowerCase() %>">
+                        <%= cat.toUpperCase().replace('-', ' ') %> (<%= count %>)
+                    </button>
+                <% }) %>
+            </div>
+        <% } %>
+    </div>
+
     <div class="table-container">
-        <table class="file-table">
+        <table class="file-table" id="creatorModsTable">
             <thead>
                 <tr>
                     <th>Mod Name</th>
@@ -97,14 +155,23 @@
             <tbody>
                 <% if(files.length > 0) { %>
                     <% files.forEach(file => { %>
-                        <tr>
-                            <td><a href="/mods/<%= file._id %>" class="file-name"><%= file.name %> (<%= file.version %>)</a></td>
+                        <tr class="mod-row" data-platform="<%= file.category ? file.category.toLowerCase() : '' %>">
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="<%= file.resolvedIconUrl || '/images/default-app-icon.png' %>" alt="<%= file.name %>" class="mod-icon-img" onerror="this.src='/images/default-app-icon.png'">
+                                    <div>
+                                        <a href="/mods/<%= file.category %>/<%= file.slug || file._id %>" class="file-name"><%= file.name %></a>
+                                        <div style="font-size: 0.8em; color: var(--silver); margin-top: 2px;">v<%= file.version %></div>
+                                    </div>
+                                </div>
+                            </td>
                             <td><span style="background: #333; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; color: var(--silver);"><%= file.category.toUpperCase().replace('-', ' ') %></span></td>
                             <td style="color: var(--silver);"><%= new Date(file.createdAt).toLocaleDateString() %></td>
                             <td style="font-weight: bold; color: var(--gold);"><i class="fas fa-eye" style="font-size: 0.8em; margin-right: 5px;"></i> <%= formatCompactNumber(file.views) %></td>
                             <td style="font-weight: bold; color: var(--blue);"><i class="fas fa-download" style="font-size: 0.8em; margin-right: 5px;"></i> <%= formatCompactNumber(file.downloads) %></td>
                         </tr>
                     <% }) %>
+                    <tr id="platform-empty-row" style="display: none;"><td colspan="5" style="text-align: center; color: var(--silver); padding: 30px;">No mods found in this category.</td></tr>
                 <% } else { %>
                     <tr><td colspan="5" style="text-align: center; color: var(--silver); padding: 30px;">You haven't uploaded any mods yet.</td></tr>
                 <% } %>
@@ -203,6 +270,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update chart when dropdown changes
     document.getElementById('timeRangeSelector').addEventListener('change', function() {
         renderChart(this.value);
+    });
+
+    // 5. Interactive Platform Filter Chips
+    const platformChips = document.querySelectorAll('.platform-chip');
+    const modRows = document.querySelectorAll('.mod-row');
+    const emptyRow = document.getElementById('platform-empty-row');
+
+    platformChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            platformChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+
+            const selectedPlatform = chip.getAttribute('data-platform');
+            let visibleCount = 0;
+
+            modRows.forEach(row => {
+                const rowPlatform = row.getAttribute('data-platform');
+                if (selectedPlatform === 'all' || rowPlatform === selectedPlatform) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (emptyRow) {
+                emptyRow.style.display = (visibleCount === 0) ? '' : 'none';
+            }
+        });
     });
 });
 </script>

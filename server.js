@@ -1793,8 +1793,9 @@ app.use(async (req, res, next) => {
             });
         }
 
-        // By default Gemini shows on all pages, unless disabled globally or hidden for current page
-        res.locals.showChatbot = chatbotMasterEnabled && !isChatbotHiddenOnPage;
+        // By default Gemini shows on all pages, unless disabled globally, hidden for current page, or on clubs/community pages
+        const isDefaultHiddenCommunity = currentReqPath === '/clubs' || currentReqPath.startsWith('/clubs/') || currentReqPath === '/community' || currentReqPath.startsWith('/community/');
+        res.locals.showChatbot = chatbotMasterEnabled && !isChatbotHiddenOnPage && !isDefaultHiddenCommunity;
         
         next(); 
         
@@ -1810,7 +1811,8 @@ app.use(async (req, res, next) => {
         res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         res.locals.showAds = false;
         res.locals.showModals = false;
-        res.locals.showChatbot = true; // Default to showing chatbot
+        const fallbackPath = req.path ? req.path.toLowerCase() : '';
+        res.locals.showChatbot = !fallbackPath.startsWith('/clubs') && !fallbackPath.startsWith('/community');
         res.locals.generateAdLink = (url) => url; // Return normal url if Ad Generator fails
         
         next(); 
@@ -1961,10 +1963,10 @@ async function verifyRecaptcha(req, res, next) {
 // allowing the XMLHttpRequest upload progress bar to be accurate!
 const memoryStorage = multer.memoryStorage();
 
-// Main Upload Config (For Mods - 20GB hard limit to prevent multer crash, actual limits enforced in route)
+// Main Upload Config (For Mods - 105GB hard limit to support Admin 100GB uploads, actual limits enforced per tier in route)
 const upload = multer({ 
     storage: memoryStorage, 
-    limits: { fileSize: 20 * 1024 * 1024 * 1024 } 
+    limits: { fileSize: 105 * 1024 * 1024 * 1024 } 
 });
 
 // Avatar Upload Config (Strict 5MB limit to protect RAM)
@@ -4201,6 +4203,27 @@ app.get('/mods/:id', async (req, res, next) => {
 // ==========================================
 // ADVANCED: SEO-Friendly "Umbrella" Mod Page Core Renderer & Routes
 // ==========================================
+let cachedTopTags = { data: [], timestamp: 0 };
+async function getTopTrendingTags() {
+    const now = Date.now();
+    if (cachedTopTags.data.length > 0 && (now - cachedTopTags.timestamp < 5 * 60 * 1000)) {
+        return cachedTopTags.data;
+    }
+    try {
+        const tagAggregation = await File.aggregate([
+            { $match: { status: 'live', tags: { $exists: true, $not: { $size: 0 } } } },
+            { $unwind: '$tags' },
+            { $group: { _id: '$tags', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+        cachedTopTags = { data: tagAggregation.map(t => t._id).filter(Boolean), timestamp: now };
+        return cachedTopTags.data;
+    } catch (e) {
+        return cachedTopTags.data || [];
+    }
+}
+
 async function renderModDownloadPage(req, res, next, { category, slug, variantId }) {
     try {
         category = (category || '').toLowerCase();
@@ -4637,6 +4660,13 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             attachIcons(rawOtherPlatformMods)
         ]);
 
+        let topModsTags = [];
+        try {
+            topModsTags = await getTopTrendingTags();
+        } catch (e) {
+            topModsTags = [];
+        }
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -4655,6 +4685,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             moreByUploader,
             moreByDeveloper,
             otherPlatformMods,
+            topModsTags,
             themeMusic: displayFile.themeMusic,
             musicSettings: req.user ? req.user.musicSettings : { allowThemeMusic: true, autoPlayTheme: true },
             pageTitle: seoTitle,
@@ -5441,7 +5472,7 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         }
 
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        const modUrl = `${baseUrl}/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
+        const modUrl = `${baseUrl}/mods/${encodeURIComponent(newVersion.category)}/${encodeURIComponent(newVersion.slug || newVersion._id.toString())}`;
         notifyIndexNow([modUrl]);
         notifyGoogle(modUrl, 'URL_UPDATED');
 
@@ -5958,6 +5989,20 @@ app.post('/verify-otp', async (req, res, next) => {
         user.isVerified = true;
         user.verificationOtp = undefined; 
         user.otpExpires = undefined;
+
+        try {
+            const existingSub = await Subscriber.findOne({ email: user.email.toLowerCase() });
+            if (existingSub) {
+                existingSub.user = user._id;
+                await existingSub.save();
+                if (existingSub.isSubscribed) {
+                    user.isSubscribedToNewsletter = true;
+                }
+            }
+        } catch (subErr) {
+            console.warn('[Subscriber] Sync on verify error:', subErr.message);
+        }
+
         await user.save();
 
         // REWARD THE REFERRER
@@ -6534,8 +6579,23 @@ app.post('/account/newsletter', ensureAuthenticated, async (req, res) => {
         const { subscribe } = req.body;
         const user = await User.findById(req.user._id);
         
-        user.isSubscribedToNewsletter = (subscribe === 'true');
+        const isSub = (subscribe === 'true');
+        user.isSubscribedToNewsletter = isSub;
         await user.save();
+
+        if (user.email) {
+            await Subscriber.updateOne(
+                { email: user.email.toLowerCase().trim() },
+                { 
+                    $set: { 
+                        isSubscribed: isSub, 
+                        user: user._id,
+                        ...(isSub ? { subscribedAt: Date.now() } : {})
+                    } 
+                },
+                { upsert: isSub }
+            );
+        }
         
         res.redirect('/settings?success=Newsletter preferences updated.');
     } catch (e) {
@@ -6627,12 +6687,12 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 app.get('/my-stats', ensureAuthenticated, async (req, res) => {
     try {
         // 1. Get all files by this user
-        const myFiles = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 });
+        const myFiles = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 }).lean();
         
         // 2. Get the daily time-series data for this user
         const myDailyStats = await DailyStat.find({ uploader: req.user.username }).sort({ dateString: 1 });
 
-        // 3. Calculate Totals
+        // 3. Calculate Totals and resolve icons
         let totalViews = 0;
         let totalDownloads = 0;
         myFiles.forEach(f => {
@@ -6640,8 +6700,20 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
             totalDownloads += f.downloads || 0;
         });
 
+        const filesWithIcons = await Promise.all(myFiles.map(async (file) => {
+            let iconUrl = '/images/default-app-icon.png';
+            const key = file.iconUrl || file.iconKey;
+            if (key) {
+                try { iconUrl = await getSmartImageUrl(key); } catch (e) {}
+            }
+            return {
+                ...file,
+                resolvedIconUrl: iconUrl
+            };
+        }));
+
         res.render('pages/my-stats', {
-            files: myFiles,
+            files: filesWithIcons,
             dailyStatsJson: JSON.stringify(myDailyStats), // Stringify for Chart.js
             totalViews,
             totalDownloads
@@ -8457,7 +8529,7 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         }
 
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        const deadUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
+        const deadUrl = `${baseUrl}/mods/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
         notifyIndexNow([deadUrl]);
         notifyGoogle(deadUrl, 'URL_DELETED');
 
@@ -8872,7 +8944,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // --- INDEXNOW PING ---
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        const modUrl = `${baseUrl}/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
+        const modUrl = `${baseUrl}/mods/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
         notifyIndexNow([modUrl]);
         notifyGoogle(modUrl, 'URL_UPDATED');
         
@@ -9779,7 +9851,7 @@ app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
         liveMods.forEach(mod => {
             const safeCategory = encodeURIComponent(mod.category);
             const safeSlug = encodeURIComponent(mod.slug || mod._id.toString());
-            urlsToPing.push(`${baseUrl}/${safeCategory}/${safeSlug}`);
+            urlsToPing.push(`${baseUrl}/mods/${safeCategory}/${safeSlug}`);
         });
 
         // 4. Developer Pages
@@ -10078,32 +10150,52 @@ app.post('/api/subscribe', async (req, res) => {
             return res.status(400).json({ error: 'Please provide a valid email address.' });
         }
 
+        const normalizedEmail = email.toLowerCase().trim();
+        const matchedUser = req.user ? req.user : await User.findOne({ email: normalizedEmail });
+
         // Check if they are already subscribed
-        let subscriber = await Subscriber.findOne({ email: email.toLowerCase() });
+        let subscriber = await Subscriber.findOne({ email: normalizedEmail });
 
         if (subscriber) {
             if (subscriber.isSubscribed) {
+                // If user account exists, ensure user.isSubscribedToNewsletter is kept in sync
+                if (matchedUser) {
+                    await User.updateOne({ _id: matchedUser._id }, { $set: { isSubscribedToNewsletter: true } });
+                    if (!subscriber.user) {
+                        subscriber.user = matchedUser._id;
+                        await subscriber.save();
+                    }
+                }
                 return res.status(400).json({ error: 'You are already subscribed to our newsletter!' });
             } else {
                 // If they previously unsubscribed, resubscribe them
                 subscriber.isSubscribed = true;
                 subscriber.subscribedAt = Date.now();
+                if (matchedUser && !subscriber.user) {
+                    subscriber.user = matchedUser._id;
+                }
                 await subscriber.save();
-                return res.json({ message: 'Welcome back! You have been successfully re subscribed.' });
+
+                if (matchedUser) {
+                    await User.updateOne({ _id: matchedUser._id }, { $set: { isSubscribedToNewsletter: true } });
+                }
+
+                return res.json({ message: 'Welcome back! You have been successfully resubscribed.' });
             }
         }
 
         // Create a new subscriber
         const newSubscriber = new Subscriber({
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             source: source || 'popup',
-            user: req.user ? req.user._id : null // Link account if logged in
+            user: matchedUser ? matchedUser._id : null
         });
 
         await newSubscriber.save();
-        
-        // Optional: Send a "Welcome to the Newsletter" confirmation email here using your mailer utility
-        // await sendNewsletterWelcomeEmail(newSubscriber.email);
+
+        if (matchedUser) {
+            await User.updateOne({ _id: matchedUser._id }, { $set: { isSubscribedToNewsletter: true } });
+        }
 
         res.json({ message: 'Thank you for subscribing! Check your inbox for the latest updates.' });
 
@@ -12752,9 +12844,21 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             refundEligibility.reason = 'Refund requests are currently on 3-day cooldown from your last refund.';
         }
 
+        let userAvatar = '/images/default-avatar.png';
+        if (user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png') {
+            userAvatar = user.signedAvatarUrl;
+        } else if (user.cardAvatarUrl && user.cardAvatarUrl !== '/images/default-avatar.png') {
+            userAvatar = user.cardAvatarUrl;
+        } else if (user.profileImageKey) {
+            try {
+                userAvatar = await getSmartImageUrl(user.profileImageKey);
+            } catch (e) {}
+        }
+
         res.render('pages/my-membership', {
             pageTitle: 'My Membership Management',
             user: user,
+            userAvatar: userAvatar,
             activeOrder: activeOrder,
             orders: orders,
             currentPlan: planConfig,
@@ -13825,6 +13929,8 @@ Allow: /users/
 Allow: /leaderboard
 Allow: /licenses
 Allow: /request-mod
+Allow: /clubs
+Allow: /community
 
 Disallow: /admin/
 Disallow: /owner/
@@ -13854,7 +13960,15 @@ Disallow: /download-file/
 Disallow: /repos/
 Disallow: /jailbreak-repos/
 
-Sitemap: ${baseUrl}/sitemap_index.xml`);
+Sitemap: ${baseUrl}/sitemap_index.xml
+Sitemap: ${baseUrl}/sitemap-pages.xml
+Sitemap: ${baseUrl}/sitemap-mods.xml
+Sitemap: ${baseUrl}/sitemap-users.xml
+Sitemap: ${baseUrl}/sitemap-developers.xml
+Sitemap: ${baseUrl}/sitemap-docs.xml
+Sitemap: ${baseUrl}/sitemap-clubs.xml
+Sitemap: ${baseUrl}/sitemap-forum.xml
+Sitemap: ${baseUrl}/sitemap-licenses.xml`);
 });
 
 // 2. Master Sitemap Index (Points to all other sitemaps)
@@ -13865,7 +13979,7 @@ app.get('/sitemap_index.xml', (req, res) => {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
     
-    const sitemaps = ['pages', 'mods', 'users', 'developers', 'docs'];
+    const sitemaps = ['pages', 'mods', 'users', 'developers', 'docs', 'clubs', 'forum', 'licenses'];
     
     sitemaps.forEach(map => {
         xml += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${map}.xml</loc>\n    <lastmod>${new Date().toISOString()}</lastmod>\n  </sitemap>\n`;
@@ -13934,7 +14048,7 @@ app.get('/sitemap-mods.xml', async (req, res) => {
             
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
-            const modUrl = `${baseUrl}/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`;
+            const modUrl = `${baseUrl}/mods/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`;
             
             xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
             
@@ -14012,6 +14126,65 @@ app.get('/sitemap-docs.xml', async (req, res) => {
             allDocPages.forEach(doc => {
                 let lastDocDate = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
                 xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/docs/' + encodeURIComponent(doc.slug))}</loc>\n    <lastmod>${lastDocDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            });
+        }
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// 3f. Clubs Sitemap
+app.get('/sitemap-clubs.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/clubs')}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+
+        const ClubModel = require('./models/community/club');
+        const publicClubs = await ClubModel.find({ isPrivate: { $ne: true } }).select('_id slug updatedAt').lean();
+        publicClubs.forEach(club => {
+            let lastModDate = club.updatedAt ? new Date(club.updatedAt).toISOString() : new Date().toISOString();
+            xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/clubs/' + encodeURIComponent(club.slug || club._id.toString()))}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        });
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// 3g. Forum Sitemap
+app.get('/sitemap-forum.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/community')}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+
+        if (typeof Issue !== 'undefined') {
+            const forumIssues = await Issue.find().select('slug updatedAt').lean();
+            forumIssues.forEach(issue => {
+                let lastModDate = issue.updatedAt ? new Date(issue.updatedAt).toISOString() : new Date().toISOString();
+                xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/community/' + encodeURIComponent(issue.slug))}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            });
+        }
+        xml += '</urlset>';
+        res.send(xml);
+    } catch (error) { res.status(500).send('Error'); }
+});
+
+// 3h. Licenses Sitemap
+app.get('/sitemap-licenses.xml', async (req, res) => {
+    try {
+        res.set('Content-Type', 'text/xml');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/licenses')}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+
+        if (typeof License !== 'undefined') {
+            const allLicenses = await License.find().select('slug updatedAt').lean();
+            allLicenses.forEach(lic => {
+                let lastModDate = lic.updatedAt ? new Date(lic.updatedAt).toISOString() : new Date().toISOString();
+                xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/licenses/' + encodeURIComponent(lic.slug))}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
             });
         }
         xml += '</urlset>';
@@ -16250,10 +16423,26 @@ const startServer = async () => {
             if (u.signedAvatarUrl && u.signedAvatarUrl !== '/images/default-avatar.png') {
                 return u.signedAvatarUrl;
             }
+            if (u.cardAvatarUrl && u.cardAvatarUrl !== '/images/default-avatar.png') {
+                return u.cardAvatarUrl;
+            }
             if (u.profileImageKey) {
                 try {
                     const resolved = await getSmartImageUrl(u.profileImageKey);
                     if (resolved && resolved !== '/images/default-avatar.png') return resolved;
+                } catch (e) {}
+            }
+            if (u._id || u.id) {
+                try {
+                    const dbUser = await User.findById(u._id || u.id).select('signedAvatarUrl cardAvatarUrl profileImageKey').lean();
+                    if (dbUser) {
+                        if (dbUser.signedAvatarUrl && dbUser.signedAvatarUrl !== '/images/default-avatar.png') return dbUser.signedAvatarUrl;
+                        if (dbUser.cardAvatarUrl && dbUser.cardAvatarUrl !== '/images/default-avatar.png') return dbUser.cardAvatarUrl;
+                        if (dbUser.profileImageKey) {
+                            const resolved = await getSmartImageUrl(dbUser.profileImageKey);
+                            if (resolved && resolved !== '/images/default-avatar.png') return resolved;
+                        }
+                    }
                 } catch (e) {}
             }
             return '/images/default-avatar.png';

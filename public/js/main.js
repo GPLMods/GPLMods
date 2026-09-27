@@ -419,9 +419,16 @@ async function initializeSearchBar() {
 
     // --- 1. Focus & Blur Handling ---
     let blurTimeout;
+    const searchClearBtn = document.getElementById('searchClearBtn');
+
+    function updateClearBtnVisibility() {
+        if (!searchClearBtn) return;
+        searchClearBtn.style.display = searchInput.value.trim().length > 0 ? 'flex' : 'none';
+    }
 
     searchInput.addEventListener('focus', () => {
         if(searchBar) searchBar.classList.add('active');
+        updateClearBtnVisibility();
         // Only show history if the input is empty
         if (searchInput.value.trim() === '') {
             displaySearchHistory();
@@ -437,8 +444,20 @@ async function initializeSearchBar() {
         }, 200); 
     });
 
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            searchInput.value = '';
+            updateClearBtnVisibility();
+            if (suggestionsBox) suggestionsBox.style.display = 'none';
+            displaySearchHistory();
+            searchInput.focus();
+        });
+    }
+
     // --- 2. Live Typing (Input Handling) ---
     searchInput.addEventListener('input', () => {
+        updateClearBtnVisibility();
         const query = searchInput.value.trim();
         if (query.length > 1) {
             fetchAndDisplaySuggestions(query);
@@ -475,15 +494,38 @@ async function initializeSearchBar() {
     // --- 5. IMPORTANT FIX: Handle Clicks INSIDE the Dropdown ---
     // Mousedown fires before blur, ensuring the click is registered
     const handleDropdownClick = (e) => {
+        const deleteBtn = e.target.closest('.delete-history-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearTimeout(blurTimeout);
+            const termToDelete = deleteBtn.getAttribute('data-delete-history');
+            if (termToDelete) {
+                let history = getSearchHistory();
+                history = history.filter(item => item.toLowerCase() !== termToDelete.toLowerCase());
+                localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+                displaySearchHistory();
+                searchInput.focus();
+            }
+            return;
+        }
+
+        const clearAllBtn = e.target.closest('#clearAllSearchHistory');
+        if (clearAllBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearTimeout(blurTimeout);
+            localStorage.removeItem(SEARCH_HISTORY_KEY);
+            if (searchHistoryBox) searchHistoryBox.style.display = 'none';
+            searchInput.focus();
+            return;
+        }
+
         const link = e.target.closest('a');
         if (link) {
             // Cancel the blur timeout so the box doesn't disappear
             clearTimeout(blurTimeout);
             
-            // Get the text they clicked on
-            // (Using innerText/textContent might grab HTML if you bolded things, 
-            // so we grab it from the href or a data attribute if available. 
-            // Here, we'll try to extract the clean query from the href)
             try {
                 const url = new URL(link.href);
                 const queryParam = url.searchParams.get('q');
@@ -491,11 +533,8 @@ async function initializeSearchBar() {
                     saveSearchTerm(queryParam);
                 }
             } catch (err) {
-                 // Fallback if URL parsing fails
                  saveSearchTerm(link.textContent);
             }
-            
-            // Let the browser follow the link naturally
         }
     };
 
@@ -607,13 +646,25 @@ function displaySearchHistory() {
 
     historyBox.innerHTML = '';
     if (history.length > 0) {
-        const title = document.createElement('h4');
-        title.textContent = 'Recent Searches';
-        historyBox.appendChild(title);
+        const header = document.createElement('div');
+        header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 14px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);';
+        header.innerHTML = `
+            <h4 style="margin: 0; font-size: 0.85em; color: var(--silver); text-transform: uppercase; letter-spacing: 0.5px;">Recent Searches</h4>
+            <button type="button" id="clearAllSearchHistory" style="background: none; border: none; color: var(--gold); font-size: 0.76em; cursor: pointer; padding: 2px 6px; font-weight: 600; transition: opacity 0.2s;">Clear All</button>
+        `;
+        historyBox.appendChild(header);
+
         const list = document.createElement('ul');
+        list.style.cssText = 'margin: 0; padding: 4px 0; list-style: none;';
         history.forEach(term => {
             const listItem = document.createElement('li');
-            listItem.innerHTML = `<a href="/search?q=${encodeURIComponent(term)}">${term}</a>`;
+            listItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; transition: background 0.15s;';
+            listItem.innerHTML = `
+                <a href="/search?q=${encodeURIComponent(term)}" style="flex: 1; text-decoration: none; color: var(--white); font-size: 0.9em; padding: 4px 0; display: block;">
+                    <i class="fas fa-history" style="color: var(--silver); margin-right: 8px; font-size: 0.8em;"></i>${safeEscapeHtml(term)}
+                </a>
+                <button type="button" class="delete-history-btn" data-delete-history="${safeEscapeHtml(term)}" title="Remove from history" style="background: none; border: none; color: var(--silver); font-size: 1.1em; cursor: pointer; padding: 2px 6px; line-height: 1; opacity: 0.65; transition: opacity 0.2s;">&times;</button>
+            `;
             list.appendChild(listItem);
         });
         historyBox.appendChild(list);
@@ -930,6 +981,7 @@ function initializePolicyBanner() {
 
         acceptBtn.addEventListener('click', () => {
             localStorage.setItem('gplmods_policy_accepted', 'true');
+            localStorage.setItem('gplmods_policy_accepted_at', Date.now().toString());
             window.dispatchEvent(new CustomEvent('gplmods:policy-accepted'));
             document.body.style.overflow = '';
             const contentBox = policyModal.querySelector('.policy-modal-content');
@@ -1038,6 +1090,7 @@ function startEngagementSequence() {
         window.addEventListener('appinstalled', () => {
             if (pwaBanner) pwaBanner.classList.remove('show');
             localStorage.setItem('pwaDismissed', 'true');
+            localStorage.setItem('gpl_pwa_installed', 'true');
             deferredPrompt = null;
         });
     }

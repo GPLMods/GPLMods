@@ -1266,6 +1266,43 @@
                                     </div>
                                 </div>
 
+                                <!-- Mod Tags & Trending Tags Section -->
+                                <% const hasModTags = file.tags && Array.isArray(file.tags) && file.tags.length > 0; %>
+                                <% const hasTrendingTags = typeof topModsTags !== 'undefined' && Array.isArray(topModsTags) && topModsTags.length > 0; %>
+                                <% if (hasModTags || hasTrendingTags) { %>
+                                    <div class="mod-tags-container" style="margin: 18px 0; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                        <% if (hasModTags) { %>
+                                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                <div style="font-size: 0.82rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                                                    <i class="fas fa-tags"></i> Mod Tags
+                                                </div>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                                    <% file.tags.forEach(tag => { %>
+                                                        <a href="/search?q=<%= encodeURIComponent(tag) %>" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 20px; color: #fff; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.25)'; this.style.borderColor='var(--gold)';" onmouseout="this.style.background='rgba(212,175,55,0.12)'; this.style.borderColor='rgba(212,175,55,0.3)';">
+                                                            <i class="fas fa-tag" style="font-size: 0.75rem; color: var(--gold);"></i> #<%= tag %>
+                                                        </a>
+                                                    <% }); %>
+                                                </div>
+                                            </div>
+                                        <% } %>
+
+                                        <% if (hasTrendingTags) { %>
+                                            <div style="display: flex; flex-direction: column; gap: 6px; <%= hasModTags ? 'border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;' : '' %>">
+                                                <div style="font-size: 0.82rem; font-weight: 700; color: #ff9800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                                                    <i class="fas fa-fire"></i> Trending Mod Tags
+                                                </div>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                                    <% topModsTags.forEach(tTag => { %>
+                                                        <a href="/search?q=<%= encodeURIComponent(tTag) %>" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 20px; color: #f0f0f0; font-size: 0.82rem; font-weight: 500; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,152,0,0.25)'; this.style.borderColor='#ff9800';" onmouseout="this.style.background='rgba(255,152,0,0.1)'; this.style.borderColor='rgba(255,152,0,0.25)';">
+                                                            <i class="fas fa-hashtag" style="font-size: 0.75rem; color: #ff9800;"></i> <%= tTag %>
+                                                        </a>
+                                                    <% }); %>
+                                                </div>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+
                                 <!-- ======== DYNAMIC MAIN DOWNLOAD BUTTON & AGE GATE ======== -->
 
                                 <% // Calculate User Age from DOB

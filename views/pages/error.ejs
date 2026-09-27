@@ -456,9 +456,18 @@
         }
 
         @media (max-width: 640px) {
-            .error-log-card { max-height: 92vh; border-radius: 12px; }
-            .error-log-header, .error-log-body, .error-log-footer { padding: 14px 16px; }
-            .diag-grid { grid-template-columns: 1fr; }
+            .error-log-modal { padding: 12px; }
+            .error-log-card { max-height: 94vh; border-radius: 12px; width: 100%; }
+            .error-log-header { padding: 12px 14px; }
+            .error-log-badge { font-size: 0.82em; gap: 6px; }
+            .error-log-body { padding: 12px 14px; gap: 12px; -webkit-overflow-scrolling: touch; }
+            .error-log-footer { padding: 12px 14px; flex-direction: column-reverse; gap: 8px; }
+            .diag-btn-copy, .diag-btn-secondary { width: 100%; justify-content: center; padding: 11px 16px; }
+            .diag-grid { grid-template-columns: 1fr; gap: 8px; }
+            .diag-item { padding: 10px 12px; }
+            .diag-val { font-size: 0.85em; }
+            .diag-console { padding: 10px 12px; font-size: 0.8em; max-height: 180px; }
+            .diag-stack { font-size: 0.75em; padding: 8px; }
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />

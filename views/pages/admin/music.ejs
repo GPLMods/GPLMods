@@ -551,6 +551,181 @@
             font-size: 1.35em;
         }
     }
+
+    /* Floating Audio Player Timeline Bar */
+    .music-floating-player {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 900px;
+        background: rgba(18, 18, 18, 0.95);
+        border: 1px solid var(--music-gold);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.15);
+        z-index: 9999;
+        animation: slideUpPlayer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUpPlayer {
+        from { transform: translate(-50%, 40px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .player-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 180px;
+        max-width: 250px;
+    }
+    .player-icon-pulse {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--music-gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1em;
+        flex-shrink: 0;
+    }
+    .player-track-meta {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .player-track-title {
+        font-size: 0.9em;
+        font-weight: 700;
+        color: var(--white);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .player-track-src {
+        font-size: 0.75em;
+        color: var(--silver);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .player-center {
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+    .player-controls {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .player-ctrl-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: var(--music-gold);
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+    .player-ctrl-btn:hover {
+        transform: scale(1.08);
+    }
+    .player-time {
+        font-size: 0.78em;
+        font-family: monospace;
+        color: var(--silver);
+        min-width: 35px;
+    }
+    .player-timeline-wrapper {
+        position: relative;
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+    .player-timeline {
+        width: 100%;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: #333;
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+        position: relative;
+        z-index: 2;
+    }
+    .player-timeline::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--music-gold);
+        cursor: pointer;
+        box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+        transition: transform 0.15s;
+    }
+    .player-timeline::-webkit-slider-thumb:hover {
+        transform: scale(1.25);
+    }
+    .player-timeline::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--music-gold);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    }
+    .player-close-btn {
+        background: transparent;
+        border: none;
+        color: var(--silver);
+        font-size: 1.1em;
+        cursor: pointer;
+        padding: 6px;
+        transition: color 0.2s;
+    }
+    .player-close-btn:hover {
+        color: var(--white);
+    }
+    @media (max-width: 768px) {
+        .music-floating-player {
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            bottom: 10px;
+            width: calc(100% - 20px);
+        }
+        .player-left {
+            width: 100%;
+            max-width: 100%;
+            justify-content: space-between;
+        }
+        .player-center {
+            width: 100%;
+        }
+        .player-right {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+        }
+    }
 </style>
 
 <main class="container">
@@ -685,6 +860,30 @@
 <!-- Hidden Global Preview Audio Element -->
 <audio id="admin-preview-player"></audio>
 
+<!-- Floating Interactive Audio Player Bar -->
+<div id="music-floating-player" class="music-floating-player" style="display: none;">
+    <div class="player-left">
+        <div class="player-icon-pulse"><i class="fas fa-compact-disc fa-spin"></i></div>
+        <div class="player-track-meta">
+            <span class="player-track-title" id="player-track-title">Track Title</span>
+            <span class="player-track-src" id="player-track-src">filename.mp3</span>
+        </div>
+    </div>
+    <div class="player-center">
+        <div class="player-controls">
+            <button type="button" class="player-ctrl-btn" id="player-play-btn" title="Play/Pause"><i class="fas fa-pause"></i></button>
+            <span class="player-time" id="player-current-time">0:00</span>
+            <div class="player-timeline-wrapper">
+                <input type="range" id="player-timeline" class="player-timeline" min="0" max="100" value="0" step="0.1">
+            </div>
+            <span class="player-time" id="player-duration">0:00</span>
+        </div>
+    </div>
+    <div class="player-right">
+        <button type="button" class="player-close-btn" id="player-close-btn" title="Stop & Close"><i class="fas fa-times"></i></button>
+    </div>
+</div>
+
 <!-- Toast alert element -->
 <div id="music-toast" class="music-toast">
     <i class="fas fa-check-circle" id="toast-icon"></i>
@@ -748,10 +947,96 @@
         btn.classList.add('active');
     }
 
+    function formatAudioTime(seconds) {
+        if (!seconds || isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    const floatingPlayer = document.getElementById('music-floating-player');
+    const playerTrackTitle = document.getElementById('player-track-title');
+    const playerTrackSrc = document.getElementById('player-track-src');
+    const playerPlayBtn = document.getElementById('player-play-btn');
+    const playerCurrentTime = document.getElementById('player-current-time');
+    const playerDuration = document.getElementById('player-duration');
+    const playerTimeline = document.getElementById('player-timeline');
+    const playerCloseBtn = document.getElementById('player-close-btn');
+    let isUserSeeking = false;
+
+    if (playerTimeline) {
+        playerTimeline.addEventListener('mousedown', () => { isUserSeeking = true; });
+        playerTimeline.addEventListener('touchstart', () => { isUserSeeking = true; }, { passive: true });
+        playerTimeline.addEventListener('input', () => {
+            if (previewAudio.duration) {
+                const seekTo = (playerTimeline.value / 100) * previewAudio.duration;
+                if (playerCurrentTime) playerCurrentTime.textContent = formatAudioTime(seekTo);
+            }
+        });
+        playerTimeline.addEventListener('change', () => {
+            if (previewAudio.duration) {
+                previewAudio.currentTime = (playerTimeline.value / 100) * previewAudio.duration;
+            }
+            isUserSeeking = false;
+        });
+        playerTimeline.addEventListener('mouseup', () => { isUserSeeking = false; });
+        playerTimeline.addEventListener('touchend', () => { isUserSeeking = false; });
+    }
+
+    if (playerPlayBtn) {
+        playerPlayBtn.addEventListener('click', () => {
+            if (!currentlyPlayingSrc) return;
+            if (previewAudio.paused) {
+                previewAudio.play().then(() => {
+                    playerPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    document.querySelectorAll('.track-preview-btn').forEach(b => {
+                        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(currentlyPlayingSrc)) {
+                            b.classList.add('playing');
+                            b.innerHTML = '<i class="fas fa-pause"></i>';
+                        }
+                    });
+                });
+            } else {
+                previewAudio.pause();
+                playerPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+                document.querySelectorAll('.track-preview-btn').forEach(b => {
+                    b.classList.remove('playing');
+                    b.innerHTML = '<i class="fas fa-play"></i>';
+                });
+            }
+        });
+    }
+
+    if (playerCloseBtn) {
+        playerCloseBtn.addEventListener('click', () => {
+            previewAudio.pause();
+            previewAudio.currentTime = 0;
+            currentlyPlayingSrc = null;
+            if (floatingPlayer) floatingPlayer.style.display = 'none';
+            document.querySelectorAll('.track-preview-btn').forEach(b => {
+                b.classList.remove('playing');
+                b.innerHTML = '<i class="fas fa-play"></i>';
+            });
+        });
+    }
+
+    previewAudio.addEventListener('timeupdate', () => {
+        if (!isUserSeeking && previewAudio.duration) {
+            const progress = (previewAudio.currentTime / previewAudio.duration) * 100;
+            if (playerTimeline) playerTimeline.value = progress;
+            if (playerCurrentTime) playerCurrentTime.textContent = formatAudioTime(previewAudio.currentTime);
+        }
+    });
+
+    previewAudio.addEventListener('loadedmetadata', () => {
+        if (playerDuration) playerDuration.textContent = formatAudioTime(previewAudio.duration);
+    });
+
     function togglePreview(src, btn) {
         if (currentlyPlayingSrc === src && !previewAudio.paused) {
             previewAudio.pause();
             currentlyPlayingSrc = null;
+            if (playerPlayBtn) playerPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
             document.querySelectorAll('.track-preview-btn').forEach(b => {
                 b.classList.remove('playing');
                 b.innerHTML = '<i class="fas fa-play"></i>';
@@ -766,6 +1051,20 @@
                 currentlyPlayingSrc = src;
                 btn.classList.add('playing');
                 btn.innerHTML = '<i class="fas fa-pause"></i>';
+
+                if (floatingPlayer) {
+                    floatingPlayer.style.display = 'flex';
+                    const filename = src.split('/').pop();
+                    const item = currentPlaylist.find(p => p.src === src) || localTracks.find(t => t.src === src);
+                    if (playerTrackTitle) playerTrackTitle.textContent = (item && item.title) ? item.title : filename;
+                    if (playerTrackSrc) playerTrackSrc.textContent = filename;
+                    if (playerPlayBtn) playerPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    if (playerTimeline) playerTimeline.value = 0;
+                    if (playerCurrentTime) playerCurrentTime.textContent = '0:00';
+                    if (previewAudio.duration) {
+                        if (playerDuration) playerDuration.textContent = formatAudioTime(previewAudio.duration);
+                    }
+                }
             }).catch(e => {
                 showToast("Could not play audio track: " + e.message, "error");
             });
@@ -774,6 +1073,9 @@
 
     previewAudio.addEventListener('ended', () => {
         currentlyPlayingSrc = null;
+        if (playerPlayBtn) playerPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+        if (playerTimeline) playerTimeline.value = 0;
+        if (playerCurrentTime) playerCurrentTime.textContent = '0:00';
         document.querySelectorAll('.track-preview-btn').forEach(b => {
             b.classList.remove('playing');
             b.innerHTML = '<i class="fas fa-play"></i>';

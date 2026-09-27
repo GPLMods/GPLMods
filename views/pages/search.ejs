@@ -698,12 +698,13 @@
         const subCategorySelect = document.getElementById('subCategory');
         const subCategoryWrapper = document.getElementById('wrapper-subCategory');
         const subCategoryOptionsContainer = document.getElementById('options-subCategory');
-        const subCategorySelectedText = subCategoryWrapper.querySelector('.selected-text');
-        const subCategoryCustomSelectBox = subCategoryWrapper.querySelector('.custom-select');
+        const subCategorySelectedText = subCategoryWrapper ? subCategoryWrapper.querySelector('.selected-text') : null;
+        const subCategoryCustomSelectBox = subCategoryWrapper ? subCategoryWrapper.querySelector('.custom-select') : null;
 
         const currentSubCategoryVal = '<%= currentSubCategory %>';
 
         function updateSubCategories() {
+            if (!platformSelect || !subCategorySelect || !subCategoryWrapper || !subCategoryOptionsContainer || !subCategorySelectedText || !subCategoryCustomSelectBox) return;
             const selectedPlatform = platformSelect.value;
             
             subCategorySelect.innerHTML = '<option value="all">All Categories</option>';
@@ -746,20 +747,26 @@
             }
         }
 
-        updateSubCategories();
-
-        platformSelect.addEventListener('change', () => {
-            subCategorySelect.value = 'all';
-            subCategorySelectedText.textContent = 'All Categories';
+        if (platformSelect && subCategoryWrapper) {
             updateSubCategories();
-        });
+
+            platformSelect.addEventListener('change', () => {
+                if (subCategorySelect) subCategorySelect.value = 'all';
+                if (subCategorySelectedText) subCategorySelectedText.textContent = 'All Categories';
+                updateSubCategories();
+            });
+        }
         
         const filterForm = document.getElementById('searchFilterForm');
-        const filterBtn = filterForm.querySelector('.filter-button');
-        filterForm.addEventListener('submit', () => {
-            filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-            filterBtn.style.opacity = '0.8';
-        });
+        if (filterForm) {
+            const filterBtn = filterForm.querySelector('.filter-button');
+            filterForm.addEventListener('submit', () => {
+                if (filterBtn) {
+                    filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    filterBtn.style.opacity = '0.8';
+                }
+            });
+        }
 
         // Make it responsive for mobile (Matches the category page media queries)
         const style = document.createElement('style');

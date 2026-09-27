@@ -89,6 +89,21 @@
             return false;
         }
 
+        // STRICT POLICY GUARD: Never show notification popup before user accepted policy
+        const hasAcceptedPolicy = localStorage.getItem('gplmods_policy_accepted') === 'true';
+        if (!hasAcceptedPolicy) {
+            return false;
+        }
+
+        // STRICT PWA GUARD: Notification popup and prompt UI only appear if user installed app as PWA
+        const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            localStorage.getItem('gpl_pwa_installed') === 'true' ||
+            document.referrer.includes('android-app://');
+        if (!isPwaInstalled) {
+            return false;
+        }
+
         // If permission already granted or user enabled, never show prompt
         if (Notification.permission === 'granted' || localStorage.getItem(STORAGE_KEY_ENABLED) === 'true') {
             return false;
@@ -161,6 +176,48 @@
         }
     };
 
+    // Render Notification Enabled Confirmation Modal
+    window.showNotificationSuccessModal = function() {
+        let modal = document.getElementById('gpl-notif-success-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gpl-notif-success-modal';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.25s ease; opacity: 0;';
+            modal.innerHTML = `
+                <div style="background: linear-gradient(145deg, #181922 0%, #101117 100%); border: 1.5px solid rgba(255, 215, 0, 0.45); border-radius: 18px; max-width: 440px; width: 100%; padding: 28px 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(255, 215, 0, 0.15); text-align: center; position: relative;">
+                    <div style="width: 62px; height: 62px; border-radius: 50%; background: rgba(255, 215, 0, 0.15); border: 2px solid var(--gold, #FFD700); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; font-size: 1.8em; color: var(--gold, #FFD700); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 1.35em; font-weight: 700;">Notifications Enabled!</h3>
+                    <p style="color: #c0c0c0; font-size: 0.92em; line-height: 1.55; margin: 0 0 24px 0;">
+                        Allow site to send notifications is now active! You will receive instant push notifications and audio alerts for new mod releases, club updates, and official announcements.
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button type="button" onclick="testNotificationSound(); if(window.sendTestNotification) window.sendTestNotification();" style="padding: 10px 18px; background: rgba(255, 215, 0, 0.15); border: 1.5px solid #FFD700; color: #FFD700; border-radius: 10px; font-weight: 600; font-size: 0.9em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-play"></i> Test Notification
+                        </button>
+                        <button type="button" onclick="closeNotificationSuccessModal()" style="padding: 10px 24px; background: #FFD700; border: none; color: #000; font-weight: 700; border-radius: 10px; font-size: 0.9em; cursor: pointer; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);">
+                            Got It
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            modal.style.opacity = '1';
+        });
+    };
+
+    window.closeNotificationSuccessModal = function() {
+        const modal = document.getElementById('gpl-notif-success-modal');
+        if (modal) {
+            modal.style.opacity = '0';
+            setTimeout(() => { modal.style.display = 'none'; }, 250);
+        }
+    };
+
     // 5. Subscribe to Web Push
     window.enablePushNotifications = async function () {
         try {
@@ -188,6 +245,7 @@
             const keyData = await keyRes.json();
             if (!keyData.publicKey) {
                 console.error('[WebPush] No VAPID public key received');
+                showNotificationSuccessModal();
                 return true;
             }
 
@@ -218,6 +276,9 @@
                     }
                 })
             });
+
+            // Show confirmation modal
+            showNotificationSuccessModal();
 
             // Show confirmation toast
             showInAppToast({

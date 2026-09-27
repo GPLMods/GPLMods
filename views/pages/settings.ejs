@@ -135,8 +135,11 @@
                     <h3><i class="fas fa-bell" style="color: var(--gold);"></i> Dynamic &amp; PWA Notifications</h3>
                     <p>Receive real-time push and in-app alerts on your device for new mod uploads, club releases, and official administrator messages.</p>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <button type="button" class="btn btn-secondary" onclick="enablePushNotifications()" id="btn-request-push" style="border-color: var(--gold); color: var(--gold); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="openGlobalNotificationModal()" id="btn-open-global-notif" style="border-color: var(--gold); color: var(--gold); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-sliders-h"></i> Global Notifications UI
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="enablePushNotifications()" id="btn-request-push" style="border-color: #555; color: var(--silver); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <i class="fas fa-mobile-alt"></i> Sync PWA Push
                     </button>
                 </div>
@@ -150,12 +153,12 @@
                             <i class="fas fa-toggle-on" style="font-size: 1.1em;"></i>
                         </div>
                         <div>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Enable Notifications</div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Allow Site to Send Notifications</div>
                             <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Master switch for Web Push, PWA alerts, and live in-app notifications</div>
                         </div>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="notificationsEnabled" onchange="this.form.submit()" <%= notifSettings.enabled ? 'checked' : '' %>>
+                        <input type="checkbox" id="masterNotifSwitch" name="notificationsEnabled" onchange="handleMasterNotifChange(this)" <%= notifSettings.enabled ? 'checked' : '' %>>
                         <span class="slider round"></span>
                     </label>
                 </div>
@@ -225,6 +228,94 @@
                 </div>
             </form>
         </div>
+
+        <!-- ======== GLOBAL NOTIFICATION MANAGEMENT POPUP MODAL ======== -->
+        <div id="globalNotificationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+            <div style="background: linear-gradient(145deg, #181922 0%, #12131a 100%); border: 1.5px solid rgba(255, 215, 0, 0.35); border-radius: 18px; max-width: 520px; width: 100%; padding: 26px; box-shadow: 0 20px 60px rgba(0,0,0,0.85); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+                    <h3 style="margin: 0; color: #fff; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-bell" style="color: var(--gold);"></i> Global Notifications Hub
+                    </h3>
+                    <button type="button" onclick="closeGlobalNotificationModal()" style="background: none; border: none; color: #888; font-size: 1.5em; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <!-- Master Control Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 10px;">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Allow Site Notifications</div>
+                            <div style="font-size: 0.76em; color: var(--silver); margin-top: 2px;">Master browser push &amp; audio alerts authorization</div>
+                        </div>
+                        <button type="button" onclick="enablePushNotifications()" class="btn" style="background: var(--gold); color: #000; font-weight: 700; padding: 7px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer;">
+                            <i class="fas fa-check-circle"></i> Enable / Resync
+                        </button>
+                    </div>
+
+                    <!-- Audio Effect Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-volume-up" style="color: var(--gold); width: 20px;"></i>
+                            <div>
+                                <div style="font-size: 0.9em; color: #fff; font-weight: 600;">Audio Chime</div>
+                                <div style="font-size: 0.74em; color: var(--silver);">Plays chime on incoming alerts</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="testNotificationSound()" style="background: rgba(255,255,255,0.06); border: 1px solid #555; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.8em; cursor: pointer;">
+                            <i class="fas fa-play" style="color: var(--gold);"></i> Test Audio
+                        </button>
+                    </div>
+
+                    <!-- Push Test Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-paper-plane" style="color: #64b5f6; width: 20px;"></i>
+                            <div>
+                                <div style="font-size: 0.9em; color: #fff; font-weight: 600;">Diagnostic Push Ping</div>
+                                <div style="font-size: 0.74em; color: var(--silver);">Send a test alert through the service worker</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="sendTestNotification()" style="background: rgba(33, 150, 243, 0.15); border: 1px solid #2196F3; color: #64b5f6; padding: 6px 14px; border-radius: 6px; font-size: 0.8em; cursor: pointer;">
+                            Ping Device
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 22px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+                    <button type="button" onclick="closeGlobalNotificationModal()" style="padding: 9px 20px; background: rgba(255,255,255,0.08); border: 1px solid #444; color: #ccc; border-radius: 8px; font-size: 0.88em; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function openGlobalNotificationModal() {
+                const modal = document.getElementById('globalNotificationModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                }
+            }
+
+            function closeGlobalNotificationModal() {
+                const modal = document.getElementById('globalNotificationModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+
+            async function handleMasterNotifChange(checkbox) {
+                if (checkbox.checked) {
+                    const enabled = await enablePushNotifications();
+                    if (!enabled) {
+                        // User denied or failed
+                        checkbox.checked = false;
+                        return;
+                    }
+                }
+                const form = document.getElementById('notif-settings-form');
+                if (form) form.submit();
+            }
+        </script>
 
         <div class="settings-section">
             <div class="settings-info">

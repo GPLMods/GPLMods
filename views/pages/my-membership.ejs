@@ -386,6 +386,63 @@
         color: var(--gold);
         text-align: left;
     }
+
+    @media (max-width: 768px) {
+        .my-membership-container {
+            margin: 20px auto 60px auto;
+            padding: 0 12px;
+        }
+        .membership-hero-card {
+            padding: 24px 18px;
+            border-radius: 16px;
+        }
+        .membership-header-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .plan-badge-group {
+            width: 100%;
+        }
+        .plan-icon-avatar {
+            width: 58px;
+            height: 58px;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+        .plan-title-box h1 {
+            font-size: 1.6rem;
+        }
+        .plan-title-box p {
+            font-size: 0.88rem;
+        }
+        .hero-stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 14px;
+        }
+        .hero-stat-val {
+            font-size: 1.1rem;
+        }
+        .hero-actions-row {
+            flex-direction: column;
+            width: 100%;
+        }
+        .hero-actions-row .btn-membership {
+            width: 100%;
+            justify-content: center;
+        }
+        .perks-section {
+            padding: 20px 16px;
+        }
+        .perks-grid {
+            grid-template-columns: 1fr;
+        }
+        .orders-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
 </style>
 
 <main class="my-membership-container">
@@ -403,7 +460,11 @@
         <div class="membership-header-row">
             <div class="plan-badge-group">
                 <div class="plan-icon-avatar">
-                    <i class="fas <%= user.membership === 'plus' ? 'fa-crown' : (user.membership === 'lite' ? 'fa-bolt' : 'fa-user') %>"></i>
+                    <% if (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') { %>
+                        <img src="<%= userAvatar %>" alt="<%= user.username %>" style="width: 100%; height: 100%; border-radius: 16px; object-fit: cover;">
+                    <% } else { %>
+                        <i class="fas <%= user.membership === 'plus' ? 'fa-crown' : (user.membership === 'lite' ? 'fa-bolt' : 'fa-user') %>"></i>
+                    <% } %>
                 </div>
                 <div class="plan-title-box">
                     <h1><%= currentPlan.name %></h1>

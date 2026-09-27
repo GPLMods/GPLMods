@@ -39,8 +39,16 @@ const TIER_CONFIGS = {
         tier: 'distributor',
         label: 'Distributor Partner',
         totalSlots: 50,
-        maxFileSizeMb: 2048,
-        maxFileSizeBytes: 2048 * 1024 * 1024,
+        maxFileSizeMb: 5120, // 5GB
+        maxFileSizeBytes: 5120 * 1024 * 1024,
+        supportAdDownloads: false
+    },
+    admin: {
+        tier: 'admin',
+        label: 'Administrator / Owner',
+        totalSlots: 9999,
+        maxFileSizeMb: 102400, // 100GB
+        maxFileSizeBytes: 102400 * 1024 * 1024,
         supportAdDownloads: false
     }
 };
@@ -51,7 +59,11 @@ const TIER_CONFIGS = {
 function getTierQuotaConfig(user) {
     if (!user) return TIER_CONFIGS.free;
 
-    if (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner') {
+    if (user.role === 'admin' || user.role === 'owner') {
+        return TIER_CONFIGS.admin;
+    }
+
+    if (user.role === 'distributor') {
         return TIER_CONFIGS.distributor;
     }
 
@@ -140,14 +152,16 @@ async function getUserUploadQuota(user) {
  */
 function validateUploadFileSize(user, fileSizeBytes) {
     const config = getTierQuotaConfig(user);
-    const isAdminOrDist = user && (user.role === 'admin' || user.role === 'owner' || user.role === 'distributor');
 
-    if (!isAdminOrDist && fileSizeBytes > config.maxFileSizeBytes) {
+    if (fileSizeBytes > config.maxFileSizeBytes) {
+        const readableLimit = config.maxFileSizeMb >= 1024 
+            ? `${Math.round(config.maxFileSizeMb / 1024)}GB` 
+            : `${config.maxFileSizeMb}MB`;
         return {
             valid: false,
             maxFileSizeMb: config.maxFileSizeMb,
             tier: config.tier,
-            error: `File size exceeds your ${config.maxFileSizeMb}MB limit for the ${config.label} tier.`
+            error: `File size exceeds your ${readableLimit} limit for the ${config.label} tier.`
         };
     }
 

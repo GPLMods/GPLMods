@@ -14,6 +14,8 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
             return;
         <% } %>
 
+        const POLICY_GRACE_PERIOD_MS = 30000; // 30 seconds delay after accepting policy
+
         // --- 1. CONSENT CHECK ---
         // Check if the user has accepted the policies via the banner
         function initPopunderAds() {
@@ -21,48 +23,69 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
 
             // ONLY run the ad scripts if they have accepted the terms
             if (hasAcceptedTOS) {
-                console.log("TOS Accepted: Initializing Pop-under Ads.");
+                const acceptedAt = parseInt(localStorage.getItem('gplmods_policy_accepted_at') || '0', 10);
+                const elapsed = Date.now() - acceptedAt;
 
-                // --- 2. INJECT HILLTOPADS POP-UNDER SCRIPT ---
-                (function(wiwacw){
-                    var d = document,
-                        s = d.createElement('script'),
-                        l = d.scripts[d.scripts.length - 1];
-                    s.settings = wiwacw || {};
-                    s.src = "\/\/fluffy-management.com\/c.D\/9F6ubS2y5ilGS_WzQn9ANojnkY2FObD-kUycM\/Ss0m2GO-TjYh4kOTT\/Ik1G";
-                    s.async = true;
-                    s.referrerPolicy = 'no-referrer-when-downgrade';
-                    l.parentNode.insertBefore(s, l);
-                })({});
+                if (acceptedAt > 0 && elapsed < POLICY_GRACE_PERIOD_MS) {
+                    const remainingDelay = POLICY_GRACE_PERIOD_MS - elapsed;
+                    console.log(`TOS Accepted recently: Delaying Pop-under Ads for ${Math.round(remainingDelay / 1000)}s.`);
+                    setTimeout(() => {
+                        injectPopunderScriptAndTriggers();
+                    }, remainingDelay);
+                    return;
+                }
 
-                // --- 3. BACKGROUND MUSIC PAUSE LOGIC ---
-                // Define the elements that should trigger the pop-under when clicked
-                const triggerElements = document.querySelectorAll('.mod-card-link, .download-button, .part-btn');
-                const backgroundAudio = document.getElementById('background-audio');
-
-                triggerElements.forEach(el => {
-                    el.addEventListener('click', (e) => {
-                        console.log("Popunder potential trigger clicked.");
-                        
-                        // Pause background music if it is playing to prevent audio clashing
-                        if (backgroundAudio && !backgroundAudio.paused) {
-                            backgroundAudio.pause();
-                            
-                            // Update the play/pause icon in the header
-                            const playPauseIcon = document.getElementById('play-pause-icon');
-                            if (playPauseIcon) {
-                                playPauseIcon.className = 'fas fa-play';
-                            }
-                            localStorage.setItem('musicState', 'paused');
-                        }
-                    });
-                });
+                injectPopunderScriptAndTriggers();
             } else {
                 console.log("TOS Not Accepted: Blocking Pop-under Ads.");
                 window.addEventListener('gplmods:policy-accepted', () => {
-                    initPopunderAds();
+                    console.log("TOS just accepted. Delaying Pop-under Ads by 30 seconds...");
+                    setTimeout(() => {
+                        injectPopunderScriptAndTriggers();
+                    }, POLICY_GRACE_PERIOD_MS);
                 }, { once: true });
             }
+        }
+
+        function injectPopunderScriptAndTriggers() {
+            if (window._popunderInjected) return;
+            window._popunderInjected = true;
+            console.log("Initializing Pop-under Ads after policy acceptance grace period.");
+
+            // --- 2. INJECT HILLTOPADS POP-UNDER SCRIPT ---
+            (function(wiwacw){
+                var d = document,
+                    s = d.createElement('script'),
+                    l = d.scripts[d.scripts.length - 1];
+                s.settings = wiwacw || {};
+                s.src = "\/\/fluffy-management.com\/c.D\/9F6ubS2y5ilGS_WzQn9ANojnkY2FObD-kUycM\/Ss0m2GO-TjYh4kOTT\/Ik1G";
+                s.async = true;
+                s.referrerPolicy = 'no-referrer-when-downgrade';
+                l.parentNode.insertBefore(s, l);
+            })({});
+
+            // --- 3. BACKGROUND MUSIC PAUSE LOGIC ---
+            // Define the elements that should trigger the pop-under when clicked
+            const triggerElements = document.querySelectorAll('.mod-card-link, .download-button, .part-btn');
+            const backgroundAudio = document.getElementById('background-audio');
+
+            triggerElements.forEach(el => {
+                el.addEventListener('click', (e) => {
+                    console.log("Popunder potential trigger clicked.");
+                    
+                    // Pause background music if it is playing to prevent audio clashing
+                    if (backgroundAudio && !backgroundAudio.paused) {
+                        backgroundAudio.pause();
+                        
+                        // Update the play/pause icon in the header
+                        const playPauseIcon = document.getElementById('play-pause-icon');
+                        if (playPauseIcon) {
+                            playPauseIcon.className = 'fas fa-play';
+                        }
+                        localStorage.setItem('musicState', 'paused');
+                    }
+                });
+            });
         }
 
         initPopunderAds();

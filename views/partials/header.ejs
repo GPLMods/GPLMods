@@ -847,7 +847,7 @@
                         <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
                             <!-- Grid Area: Search Bar -->
                             <div class="search-bar" id="animatedSearchBar">
-                                <form action="/search" method="GET" class="search-form">
+                                <form action="/search" method="GET" class="search-form" style="position: relative; display: flex; align-items: center; width: 100%;">
                                     <!-- Custom SVG Icon -->
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                                         style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; fill: var(--silver); pointer-events: none; z-index: 10;">
@@ -855,7 +855,10 @@
                                             d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                                     </svg>
 
-                                    <input type="search" id="searchInput" name="q" placeholder="" autocomplete="off">
+                                    <input type="search" id="searchInput" name="q" placeholder="" autocomplete="off" style="padding-right: 36px;">
+                                    <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Clear search" title="Clear search" style="display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--silver); cursor: pointer; font-size: 1.1em; padding: 4px; line-height: 1; z-index: 10; opacity: 0.7; transition: opacity 0.2s;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </form>
 
                                 <!-- Dropdown Containers -->
@@ -1494,6 +1497,7 @@
                                     text-align: center;
                                     box-shadow: 0 10px 40px rgba(255, 51, 102, 0.35);
                                     animation: gplModalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                                    position: relative;
                                 }
 
                                 @keyframes gplModalPop {
@@ -1631,6 +1635,9 @@
 
                             <div id="debuggerAccessModal" class="gpl-debugger-modal" role="dialog" aria-modal="true">
                                 <div class="gpl-debugger-card">
+                                    <button type="button" id="btnCopyDebuggerLog" class="btn-debugger-copy" onclick="copyDebuggerTelemetryLog()" title="Copy Debug Incident Telemetry" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--silver); border-radius: 8px; padding: 6px 10px; font-size: 0.8em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                        <i class="fas fa-copy"></i> <span>Copy Log</span>
+                                    </button>
                                     <div class="gpl-debugger-icon">
                                         <i class="fas fa-shield-alt"></i>
                                     </div>
@@ -1668,6 +1675,39 @@
 
                                     var currentLogId = null;
                                     var isModalOpen = false;
+
+                                    window.copyDebuggerTelemetryLog = function() {
+                                        var btn = document.getElementById('btnCopyDebuggerLog');
+                                        var telemetry = [
+                                            "=== GPLMODS GLOBAL DEBUGGER TELEMETRY ===",
+                                            "Incident ID: " + (currentLogId || "DBG-" + Date.now()),
+                                            "Timestamp: " + new Date().toISOString(),
+                                            "Page URL: " + window.location.href,
+                                            "User Agent: " + navigator.userAgent,
+                                            "Screen Resolution: " + window.screen.width + "x" + window.screen.height + " (Viewport: " + window.innerWidth + "x" + window.innerHeight + ")",
+                                            "Platform: " + navigator.platform,
+                                            "Connection: " + (navigator.connection ? (navigator.connection.effectiveType || navigator.connection.type || "online") : "online"),
+                                            "Event Trigger: DevTools inspection detected"
+                                        ].join("\n");
+
+                                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                                            navigator.clipboard.writeText(telemetry).then(function() {
+                                                if (btn) {
+                                                    var orig = btn.innerHTML;
+                                                    btn.innerHTML = '<i class="fas fa-check" style="color: #4CAF50;"></i> <span>Copied!</span>';
+                                                    btn.style.borderColor = '#4CAF50';
+                                                    setTimeout(function() {
+                                                        btn.innerHTML = orig;
+                                                        btn.style.borderColor = 'rgba(255,255,255,0.15)';
+                                                    }, 2000);
+                                                }
+                                            }).catch(function() {
+                                                prompt("Copy Debugger Telemetry Log:", telemetry);
+                                            });
+                                        } else {
+                                            prompt("Copy Debugger Telemetry Log:", telemetry);
+                                        }
+                                    };
 
                                     function clearBrowserConsole() {
                                         try {
