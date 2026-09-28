@@ -547,15 +547,36 @@ router.get('/:slugOrId', async (req, res) => {
 
         // Fetch recent messages for active channel
         let messages = [];
+        const getSmartImg = req.app.get('getSmartImageUrl');
         if (activeChannel) {
             messages = await ClubMessage.find({ channel: activeChannel._id })
                 .sort({ createdAt: -1 })
                 .limit(75)
                 .populate({
                     path: 'sender',
-                    select: 'username profileImageKey role signedAvatarUrl membership isPremium badges'
+                    select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges'
                 })
                 .lean();
+
+            for (const msg of messages) {
+                if (msg.sender) {
+                    if (msg.sender.signedAvatarUrl && msg.sender.signedAvatarUrl !== '/images/default-avatar.png') {
+                        // Keep signed avatar
+                    } else if (msg.sender.cardAvatarUrl && msg.sender.cardAvatarUrl !== '/images/default-avatar.png') {
+                        msg.sender.signedAvatarUrl = msg.sender.cardAvatarUrl;
+                    } else if (msg.sender.profileImageKey && getSmartImg) {
+                        try {
+                            const url = await getSmartImg(msg.sender.profileImageKey);
+                            if (url && url !== '/images/default-avatar.png') {
+                                msg.sender.signedAvatarUrl = url;
+                            }
+                        } catch(e) {}
+                    }
+                    if (!msg.sender.signedAvatarUrl) {
+                        msg.sender.signedAvatarUrl = '/images/default-avatar.png';
+                    }
+                }
+            }
             messages.reverse(); // Chronological order
         }
 
@@ -566,10 +587,30 @@ router.get('/:slugOrId', async (req, res) => {
         const members = await ClubMember.find({ club: club._id, status: 'active' })
             .populate({
                 path: 'user',
-                select: 'username profileImageKey role signedAvatarUrl membership isPremium badges'
+                select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges'
             })
             .populate('roles')
             .lean();
+
+        for (const m of members) {
+            if (m.user) {
+                if (m.user.signedAvatarUrl && m.user.signedAvatarUrl !== '/images/default-avatar.png') {
+                    // Keep signed avatar
+                } else if (m.user.cardAvatarUrl && m.user.cardAvatarUrl !== '/images/default-avatar.png') {
+                    m.user.signedAvatarUrl = m.user.cardAvatarUrl;
+                } else if (m.user.profileImageKey && getSmartImg) {
+                    try {
+                        const url = await getSmartImg(m.user.profileImageKey);
+                        if (url && url !== '/images/default-avatar.png') {
+                            m.user.signedAvatarUrl = url;
+                        }
+                    } catch(e) {}
+                }
+                if (!m.user.signedAvatarUrl) {
+                    m.user.signedAvatarUrl = '/images/default-avatar.png';
+                }
+            }
+        }
 
         // Fetch user's joined clubs for the leftmost vertical rail
         const userMemberships = await ClubMember.find({ user: req.user._id, status: 'active' })
@@ -577,8 +618,8 @@ router.get('/:slugOrId', async (req, res) => {
             .lean();
         const joinedClubs = userMemberships.map(m => m.club).filter(Boolean);
 
-        // Check if user has management permissions in this club
-        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id);
+        // Check if user has management permissions in this club (Site Owner has full authority)
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (req.user && (req.user.role === 'owner' || (club.isDefault && req.user.role === 'admin')));
         const userClubRoles = membership ? (membership.roles || []) : [];
         const hasManageClubPerm = isStaff || isClubCreator || userClubRoles.some(r => r && r.permissions && r.permissions.canManageClub);
 
@@ -928,16 +969,155 @@ router.post('/:slugOrId/tracked-creators', ensureAuth, async (req, res) => {
 // ============================================================================
 router.get('/:slugOrId/channels/:channelId/messages', ensureAuth, async (req, res) => {
     try {
+        const getSmartImg = req.app.get('getSmartImageUrl');
         const messages = await ClubMessage.find({ channel: req.params.channelId })
             .sort({ createdAt: -1 })
             .limit(50)
-            .populate('sender', 'username profileImageKey role signedAvatarUrl membership isPremium badges')
+            .populate('sender', 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges')
             .lean();
+
+        for (const msg of messages) {
+            if (msg.sender) {
+                if (msg.sender.signedAvatarUrl && msg.sender.signedAvatarUrl !== '/images/default-avatar.png') {
+                    // Keep existing signed url
+                } else if (msg.sender.cardAvatarUrl && msg.sender.cardAvatarUrl !== '/images/default-avatar.png') {
+                    msg.sender.signedAvatarUrl = msg.sender.cardAvatarUrl;
+                } else if (msg.sender.profileImageKey && getSmartImg) {
+                    try {
+                        const url = await getSmartImg(msg.sender.profileImageKey);
+                        if (url && url !== '/images/default-avatar.png') {
+                            msg.sender.signedAvatarUrl = url;
+                        }
+                    } catch(e) {}
+                }
+                if (!msg.sender.signedAvatarUrl) {
+                    msg.sender.signedAvatarUrl = '/images/default-avatar.png';
+                }
+            }
+        }
+
         messages.reverse();
         return res.json({ success: true, messages });
     } catch (err) {
         console.error('[Clubs] Fetch messages error:', err);
         return res.status(500).json({ error: 'Failed to load messages.' });
+    }
+});
+
+// Edit Message REST Endpoint
+router.put('/:slugOrId/messages/:messageId', ensureAuth, async (req, res) => {
+    try {
+        const { content } = req.body;
+        if (!content || !content.trim()) return res.status(400).json({ error: 'Message content cannot be empty.' });
+
+        const message = await ClubMessage.findById(req.params.messageId);
+        if (!message || message.isDeleted) return res.status(404).json({ error: 'Message not found.' });
+
+        const club = await resolveClub(req.params.slugOrId);
+        const isSender = String(message.sender) === String(req.user._id);
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        const isCreator = club && (String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin'));
+
+        if (!isSender && !isStaff && !isCreator) {
+            return res.status(403).json({ error: 'Unauthorized to edit this message.' });
+        }
+
+        let safeText = content.trim();
+        try { safeText = global.profanityFilter.clean(safeText); } catch(e) {}
+
+        message.content = safeText;
+        message.isEdited = true;
+        message.editedAt = new Date();
+        await message.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${message.club}_chan_${message.channel}`).emit('club_message_edited', {
+                messageId: message._id,
+                content: safeText,
+                isEdited: true,
+                editedAt: message.editedAt
+            });
+        }
+
+        return res.json({ success: true, message });
+    } catch (err) {
+        console.error('[Clubs] Edit message REST error:', err);
+        return res.status(500).json({ error: 'Failed to edit message.' });
+    }
+});
+
+// Delete Message REST Endpoint
+router.delete('/:slugOrId/messages/:messageId', ensureAuth, async (req, res) => {
+    try {
+        const message = await ClubMessage.findById(req.params.messageId);
+        if (!message) return res.status(404).json({ error: 'Message not found.' });
+
+        const club = await resolveClub(req.params.slugOrId);
+        const isSender = String(message.sender) === String(req.user._id);
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        const isCreator = club && (String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin'));
+
+        if (!isSender && !isStaff && !isCreator) {
+            return res.status(403).json({ error: 'Unauthorized to delete this message.' });
+        }
+
+        message.content = '[This message was deleted]';
+        message.isDeleted = true;
+        message.deletedAt = new Date();
+        await message.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${message.club}_chan_${message.channel}`).emit('club_message_deleted', {
+                messageId: message._id
+            });
+        }
+
+        return res.json({ success: true });
+    } catch (err) {
+        console.error('[Clubs] Delete message REST error:', err);
+        return res.status(500).json({ error: 'Failed to delete message.' });
+    }
+});
+
+// Edit Poll / Announcement Poll REST Endpoint (Site Owner / Creator can edit question or close poll)
+router.post('/:slugOrId/polls/:messageId/edit', ensureAuth, async (req, res) => {
+    try {
+        const { question, closed } = req.body;
+        const message = await ClubMessage.findById(req.params.messageId);
+        if (!message || !message.poll) return res.status(404).json({ error: 'Poll not found.' });
+
+        const club = await resolveClub(req.params.slugOrId);
+        const isSender = String(message.sender) === String(req.user._id);
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        const isCreator = club && (String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin'));
+
+        if (!isSender && !isStaff && !isCreator) {
+            return res.status(403).json({ error: 'Unauthorized to edit this poll.' });
+        }
+
+        if (question && question.trim()) {
+            message.poll.question = question.trim();
+        }
+        if (typeof closed !== 'undefined') {
+            message.poll.closed = Boolean(closed);
+        }
+
+        await message.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${message.club}_chan_${message.channel}`).emit('club_poll_updated', {
+                messageId: message._id,
+                poll: message.poll
+            });
+        }
+
+        return res.json({ success: true, poll: message.poll });
+    } catch (err) {
+        console.error('[Clubs] Edit poll error:', err);
+        return res.status(500).json({ error: 'Failed to update poll.' });
     }
 });
 

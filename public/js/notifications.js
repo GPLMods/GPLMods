@@ -294,6 +294,31 @@
         }
     };
 
+    // 5b. Unsubscribe / Disable Web Push
+    window.disablePushNotifications = async function () {
+        try {
+            localStorage.setItem(STORAGE_KEY_ENABLED, 'false');
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    if (subscription) {
+                        await subscription.unsubscribe();
+                        await fetch('/api/notifications/unsubscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ endpoint: subscription.endpoint })
+                        }).catch(() => {});
+                    }
+                } catch (se) {}
+            }
+            return true;
+        } catch (err) {
+            console.error('[WebPush] Disable notifications error:', err);
+            return false;
+        }
+    };
+
     // 6. In-App Floating Toast Notification
     function getToastContainer() {
         let container = document.getElementById('gpl-toast-container');

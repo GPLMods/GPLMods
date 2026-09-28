@@ -947,13 +947,14 @@
                 </button>
                 <input type="file" id="fsMediaFileInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" style="display: none;">
 
-                <!-- Floating Emoji Popover -->
-                <div class="fs-emoji-popover" id="fsEmojiPopover" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 0.75em; color: var(--gold); font-weight: 700; text-transform: uppercase;">Quick Emojis</span>
-                        <span id="closeFsEmojiBtn" style="font-size: 0.7em; color: var(--silver); cursor: pointer;">&times; Close</span>
+                <!-- Universal Emoji Picker Web Component Popover -->
+                <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+                <div class="fs-emoji-popover" id="fsEmojiPopover" style="display: none; position: absolute; bottom: calc(100% + 12px); left: 15px; z-index: 99999; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.85); border: 1px solid #333; background: #161616;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: #111; border-bottom: 1px solid #282828;">
+                        <span style="font-size: 0.75em; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Universal Emojis</span>
+                        <span id="closeFsEmojiBtn" style="font-size: 0.8em; color: var(--silver); cursor: pointer; padding: 2px 6px;">&times; Close</span>
                     </div>
-                    <div class="fs-emoji-grid" id="fsEmojiGrid"></div>
+                    <emoji-picker class="dark" id="fsEmojiPicker" style="--num-columns: 8; --emoji-size: 1.4rem; --background: #161616; --border-color: #282828; width: 330px; height: 350px; display: block;"></emoji-picker>
                 </div>
 
                 <input type="text" id="fullscreenChatInput" placeholder="Type your message, or type 'human' to speak with staff..." autocomplete="off">
@@ -1162,23 +1163,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeFsEmojiBtn = document.getElementById('closeFsEmojiBtn');
     const btnChatNewSession = document.getElementById('btnChatNewSession');
 
-    const EMOJIS = [
-        "👍", "👎", "❤️", "😊", "😂", "🎉", "🔥", "🚀", 
-        "💡", "⚠️", "❌", "✔️", "💻", "📱", "📦", "⚡", 
-        "🙌", "👋", "🙏", "😎", "🥳", "🤔", "👀", "✨", 
-        "💯", "🔒", "🔑", "🛠️", "⚙️", "📎", "📩", "⭐"
-    ];
-
-    if (fsEmojiGrid) {
-        EMOJIS.forEach(emoji => {
-            const span = document.createElement('span');
-            span.className = 'fs-emoji-item';
-            span.textContent = emoji;
-            span.onclick = () => {
-                insertFsEmoji(emoji);
-                if (fsEmojiPopover) fsEmojiPopover.style.display = 'none';
-            };
-            fsEmojiGrid.appendChild(span);
+    const fsEmojiPicker = document.getElementById('fsEmojiPicker');
+    if (fsEmojiPicker) {
+        fsEmojiPicker.addEventListener('emoji-click', event => {
+            if (event.detail && event.detail.unicode) {
+                insertFsEmoji(event.detail.unicode);
+            }
         });
     }
 

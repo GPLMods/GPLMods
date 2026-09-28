@@ -1,6 +1,21 @@
 <%- include('../../partials/header') %>
 
 <style>
+    #floating-music-player {
+        display: none !important;
+    }
+    .filter-input-group select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: #0d0e12 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 14px center !important;
+        cursor: pointer;
+        padding-right: 36px !important;
+    }
+    .filter-input-group select option {
+        background: #14151b;
+        color: #fff;
+        padding: 10px;
+    }
     .clubs-page-hero {
         background: radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.12) 0%, rgba(20, 20, 25, 0.95) 75%), #0c0d12;
         border-bottom: 1px solid rgba(255, 215, 0, 0.15);

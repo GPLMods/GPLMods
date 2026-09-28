@@ -89,6 +89,21 @@ const ClubMessageSchema = new Schema({
     reactions: [ReactionSchema],
     poll: PollSchema,
     modUpdate: ModUpdateEmbedSchema,
+    attachments: [String],
+    isEdited: {
+        type: Boolean,
+        default: false
+    },
+    editedAt: Date,
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    deletedAt: Date,
+    forwardedFrom: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
     isSystemMessage: {
         type: Boolean,
         default: false

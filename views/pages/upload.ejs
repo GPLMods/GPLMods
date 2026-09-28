@@ -82,11 +82,11 @@
                     <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">
                         <span>Pending Upload Slots</span>
                         <strong style="color: <%= quota.canUpload ? 'var(--white)' : 'var(--red)' %>;">
-                            <%= quota.usedSlots %> / <%= quota.totalSlots %> Used (<%= quota.remainingSlots %> Available)
+                            <%= quota.totalSlots >= 9000 ? 'Unlimited Slots (Privileged Access)' : (quota.usedSlots + ' / ' + quota.totalSlots + ' Used (' + quota.remainingSlots + ' Available)') %>
                         </strong>
                     </div>
                     <div style="background: #111; border-radius: 10px; height: 10px; overflow: hidden; border: 1px solid #333;">
-                        <% const usedPercent = Math.min(100, Math.round((quota.usedSlots / quota.totalSlots) * 100)); %>
+                        <% const usedPercent = quota.totalSlots >= 9000 ? 5 : Math.min(100, Math.round((quota.usedSlots / quota.totalSlots) * 100)); %>
                         <div style="width: <%= usedPercent %>%; height: 100%; background: <%= quota.canUpload ? 'linear-gradient(90deg, #ffb300, #ffd700)' : '#e53935' %>; transition: width 0.3s ease;"></div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@
         <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) { %>
             <!-- DISTRIBUTOR / ADMIN / OWNER FORM -->
             <p style="color: var(--silver); margin-bottom: 1.5rem;">
-                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'owner' ? 'Owner' : (user.role === 'admin' ? 'Admin' : 'Distributor') %> Account Active ★</span><br>
+                <span style="color: var(--gold); font-weight: bold;">★ <%= user.role === 'owner' ? 'Owner Privileges' : (user.role === 'admin' ? 'Admin Privileges' : 'Distributor Partner Privileges') %> Active ★</span><br>
                 Step 1 of 2: Choose your upload method below.
             </p>
 

@@ -717,15 +717,14 @@
             </button>
             <input type="file" id="deskMediaInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" style="display: none;">
 
-            <!-- Emoji Picker Popover -->
-            <div class="emoji-picker-popover" id="deskEmojiPopover">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 0.75em; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Emojis</span>
-                    <span style="font-size: 0.7em; color: var(--silver); cursor: pointer;" id="closeDeskEmojiBtn">&times; Close</span>
+            <!-- Universal Emoji Picker Web Component Popover -->
+            <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+            <div class="emoji-picker-popover" id="deskEmojiPopover" style="position: absolute; bottom: calc(100% + 12px); left: 20px; z-index: 99999; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.85); border: 1px solid #333; background: #161616; padding: 0; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: #111; border-bottom: 1px solid #282828;">
+                    <span style="font-size: 0.75em; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Universal Emojis</span>
+                    <span style="font-size: 0.8em; color: var(--silver); cursor: pointer; padding: 2px 6px;" id="closeDeskEmojiBtn">&times; Close</span>
                 </div>
-                <div class="emoji-grid" id="deskEmojiGrid">
-                    <!-- Emojis populated by JS -->
-                </div>
+                <emoji-picker class="dark" id="deskEmojiPicker" style="--num-columns: 8; --emoji-size: 1.4rem; --background: #161616; --border-color: #282828; width: 330px; height: 350px; display: block;"></emoji-picker>
             </div>
 
             <input type="text" id="agentInput" placeholder="Type a reply..." autocomplete="off" disabled>
@@ -1179,24 +1178,13 @@
             chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
         }
 
-        // --- EMOJI PICKER POPULATION & CONTROLS ---
-        const EMOJI_LIST = [
-            "👍", "👎", "❤️", "😊", "😂", "🎉", "🔥", "🚀", 
-            "💡", "⚠️", "❌", "✔️", "💻", "📱", "📦", "⚡", 
-            "🙌", "👋", "🙏", "😎", "🥳", "🤔", "👀", "✨", 
-            "💯", "🔒", "🔑", "🛠️", "⚙️", "📎", "📩", "⭐"
-        ];
-
-        if (deskEmojiGrid) {
-            EMOJI_LIST.forEach(emoji => {
-                const span = document.createElement('span');
-                span.className = 'emoji-item';
-                span.textContent = emoji;
-                span.onclick = () => {
-                    insertEmojiAtCursor(emoji);
-                    if (deskEmojiPopover) deskEmojiPopover.style.display = 'none';
-                };
-                deskEmojiGrid.appendChild(span);
+        // --- UNIVERSAL EMOJI PICKER CONTROLS ---
+        const deskEmojiPicker = document.getElementById('deskEmojiPicker');
+        if (deskEmojiPicker) {
+            deskEmojiPicker.addEventListener('emoji-click', event => {
+                if (event.detail && event.detail.unicode) {
+                    insertEmojiAtCursor(event.detail.unicode);
+                }
             });
         }
 

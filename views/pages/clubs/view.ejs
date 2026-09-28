@@ -24,6 +24,12 @@
         margin: 0 !important;
         max-width: 100% !important;
     }
+    header, .main-header, #main-header, nav.main-nav {
+        display: none !important;
+    }
+    #floating-music-player {
+        display: none !important;
+    }
     footer.main-footer {
         display: none !important;
     }
@@ -1252,7 +1258,7 @@
                             </div>
 
                             <!-- Body Text -->
-                            <div class="message-body-text" id="msg-text-<%= msg._id %>"><%= msg.content %></div>
+                            <div class="message-body-text" id="msg-text-<%= msg._id %>"><% if (msg.isDeleted) { %><em style="color: #777;">[This message was deleted]</em><% } else { %><%= msg.content %><% if (msg.isEdited) { %> <span style="font-size: 0.72rem; color: #888; font-style: italic; margin-left: 6px;">(edited)</span><% } %><% } %></div>
 
                             <!-- Mod Update Embed (for #new-uploads and #new-updates) -->
                             <% if (msg.modUpdate && msg.modUpdate.name) { %>
@@ -1312,10 +1318,25 @@
                                 </div>
                             </div>
 
-                            <!-- Live Translate Button -->
-                            <button type="button" class="btn-translate-msg" onclick="translateMessage('<%= msg._id %>')">
-                                <i class="fas fa-language"></i> Translate
-                            </button>
+                            <!-- Message Action Toolbar -->
+                            <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                                <button type="button" class="btn-msg-action" onclick="openForwardModal('<%= msg._id %>')" title="Share / Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                    <i class="fas fa-share"></i> Share
+                                </button>
+                                <% if (user && (String(user._id) === String(msg.sender ? msg.sender._id : '') || hasManageClubPerm)) { %>
+                                    <% if (!msg.isDeleted) { %>
+                                        <button type="button" class="btn-msg-action btn-msg-edit" onclick="openEditMessageModal('<%= msg._id %>')" title="Edit Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn-msg-action btn-msg-delete" onclick="deleteClubMessage('<%= msg._id %>')" title="Delete Message" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(244,67,54,0.3); color: #ff6b6b; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    <% } %>
+                                <% } %>
+                                <button type="button" class="btn-translate-msg" onclick="translateMessage('<%= msg._id %>')" style="margin: 0; padding: 3px 8px; font-size: 0.75rem;">
+                                    <i class="fas fa-language"></i> Translate
+                                </button>
+                            </div>
                         </div>
                     </div>
                 <% }) %>
@@ -1555,6 +1576,41 @@
     </div>
 </div>
 
+<!-- Forward Message Modal -->
+<div class="gpl-modal-backdrop" id="clubForwardModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 440px; box-shadow: 0 15px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin: 0 0 14px 0; color: #fff; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-share" style="color: var(--gold);"></i> Forward Message
+        </h3>
+        <p style="color: var(--silver); font-size: 0.85rem; margin-bottom: 14px;">Select the channel where you want to forward this message:</p>
+        <input type="hidden" id="forwardMessageId">
+        <select id="forwardChannelSelect" style="width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 18px;">
+            <% channels.forEach(c => { %>
+                <option value="<%= c._id %>">#<%= c.name %></option>
+            <% }) %>
+        </select>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" onclick="closeForwardModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+            <button type="button" onclick="submitForwardMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Forward Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Message Modal -->
+<div class="gpl-modal-backdrop" id="clubEditModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; box-shadow: 0 15px 40px rgba(0,0,0,0.8);">
+        <h3 style="margin: 0 0 14px 0; color: #fff; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-edit" style="color: var(--gold);"></i> Edit Message
+        </h3>
+        <input type="hidden" id="editMessageId">
+        <textarea id="editMessageTextarea" rows="4" style="width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 12px; border-radius: 8px; font-size: 0.92rem; margin-bottom: 18px; resize: vertical; box-sizing: border-box;"></textarea>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" onclick="closeEditMessageModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+            <button type="button" onclick="submitEditMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts -->
 <script src="/socket.io/socket.io.js"></script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -1565,6 +1621,7 @@
     const isChannelReadOnly = <%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'true' : 'false' %>;
     const currentUserId = '<%= user ? user._id : "" %>';
     const currentUsername = '<%= user ? user.username : "" %>';
+    const hasManageClubPermClient = <%= hasManageClubPerm ? 'true' : 'false' %>;
     let isVanished = <%= vanishedModeDefault ? 'true' : 'false' %>;
 
     const socket = io();
@@ -1673,14 +1730,48 @@
                         <i class="far fa-smile-plus"></i>
                     </div>
                 </div>
-                <button type="button" class="btn-translate-msg" onclick="translateMessage('${msg._id}')">
-                    <i class="fas fa-language"></i> Translate
-                </button>
+                <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" class="btn-msg-action" onclick="openForwardModal('${msg._id}')" title="Share / Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                    ${(String(msg.sender?._id) === currentUserId || hasManageClubPermClient) ? `
+                        <button type="button" class="btn-msg-action btn-msg-edit" onclick="openEditMessageModal('${msg._id}')" title="Edit Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button type="button" class="btn-msg-action btn-msg-delete" onclick="deleteClubMessage('${msg._id}')" title="Delete Message" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(244,67,54,0.3); color: #ff6b6b; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    ` : ''}
+                    <button type="button" class="btn-translate-msg" onclick="translateMessage('${msg._id}')" style="margin: 0; padding: 3px 8px; font-size: 0.75rem;">
+                        <i class="fas fa-language"></i> Translate
+                    </button>
+                </div>
             </div>
         `;
 
         messagesFeed.appendChild(msgDiv);
         scrollChatToBottom();
+    });
+
+    socket.on('club_message_edited', (data) => {
+        const textEl = document.getElementById(`msg-text-${data.messageId}`);
+        if (textEl) {
+            textEl.innerHTML = `${data.content} <span style="font-size: 0.72rem; color: #888; font-style: italic; margin-left: 6px;">(edited)</span>`;
+        }
+    });
+
+    socket.on('club_message_deleted', (data) => {
+        const textEl = document.getElementById(`msg-text-${data.messageId}`);
+        if (textEl) {
+            textEl.innerHTML = `<em style="color: #777;">[This message was deleted]</em>`;
+        }
+        const msgDiv = document.getElementById(`msg-${data.messageId}`);
+        if (msgDiv) {
+            const editBtn = msgDiv.querySelector('.btn-msg-edit');
+            const delBtn = msgDiv.querySelector('.btn-msg-delete');
+            if (editBtn) editBtn.remove();
+            if (delBtn) delBtn.remove();
+        }
     });
 
     socket.on('club_message_error', (data) => {
@@ -1943,6 +2034,71 @@
                 prompt('Copy this club link:', fullShareUrl);
             }
         }
+    }
+
+    function openForwardModal(messageId) {
+        const modal = document.getElementById('clubForwardModal');
+        const input = document.getElementById('forwardMessageId');
+        if (modal && input) {
+            input.value = messageId;
+            modal.style.display = 'flex';
+        }
+    }
+    function closeForwardModal() {
+        const modal = document.getElementById('clubForwardModal');
+        if (modal) modal.style.display = 'none';
+    }
+    function submitForwardMessage() {
+        const messageId = document.getElementById('forwardMessageId')?.value;
+        const targetChan = document.getElementById('forwardChannelSelect')?.value;
+        if (!messageId || !targetChan) return;
+
+        socket.emit('club_forward_message', {
+            targetClubId: clubId,
+            targetChannelId: targetChan,
+            messageId
+        });
+        closeForwardModal();
+        alert('Message forwarded successfully!');
+    }
+
+    function openEditMessageModal(messageId) {
+        const modal = document.getElementById('clubEditModal');
+        const input = document.getElementById('editMessageId');
+        const textarea = document.getElementById('editMessageTextarea');
+        const textEl = document.getElementById(`msg-text-${messageId}`);
+        if (modal && input && textarea) {
+            input.value = messageId;
+            let currentText = textEl ? textEl.innerText.replace(/\(edited\)$/, '').trim() : '';
+            textarea.value = currentText;
+            modal.style.display = 'flex';
+        }
+    }
+    function closeEditMessageModal() {
+        const modal = document.getElementById('clubEditModal');
+        if (modal) modal.style.display = 'none';
+    }
+    function submitEditMessage() {
+        const messageId = document.getElementById('editMessageId')?.value;
+        const newText = document.getElementById('editMessageTextarea')?.value;
+        if (!messageId || !newText || !newText.trim()) return;
+
+        socket.emit('club_edit_message', {
+            clubId,
+            channelId,
+            messageId,
+            content: newText.trim()
+        });
+        closeEditMessageModal();
+    }
+
+    function deleteClubMessage(messageId) {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+        socket.emit('club_delete_message', {
+            clubId,
+            channelId,
+            messageId
+        });
     }
 </script>
 

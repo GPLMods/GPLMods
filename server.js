@@ -4444,28 +4444,44 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         }
 
         // ==========================================
-        // VIEW TRACKING
+        // VIEW TRACKING (Direct link & share resilient)
         // ==========================================
         let shouldIncrementView = false;
         const trackingId = masterFile._id.toString(); 
 
-        if (req.isAuthenticated()) {
-            if (!masterFile.viewedBy.includes(req.user._id)) {
-                shouldIncrementView = true;
-                masterFile.viewedBy.push(req.user._id);
-            }
-        } else {
-            const cookieName = `viewed_mod_${trackingId}`;
-            if (!req.cookies[cookieName]) {
-                shouldIncrementView = true;
-                res.cookie(cookieName, 'true', { maxAge: 30 * 60 * 1000, httpOnly: true });
-            }
+        if (!req.session) req.session = {};
+        if (!req.session.viewedMods) req.session.viewedMods = {};
+
+        const lastViewedAt = req.session.viewedMods[trackingId] || 0;
+        const now = Date.now();
+        const cookieName = `viewed_mod_${trackingId}`;
+        const hasCookie = req.cookies && req.cookies[cookieName];
+
+        // Direct shared link visits (or external referrers) and visits outside a 5-minute window increment views accurately
+        const isDirectShare = Boolean(req.query.ref || req.query.share || req.query.source || req.query.v || (req.headers.referer && !req.headers.referer.includes(req.headers.host || '')));
+        if (isDirectShare || !hasCookie || (now - lastViewedAt > 5 * 60 * 1000)) {
+            shouldIncrementView = true;
+            req.session.viewedMods[trackingId] = now;
+            try {
+                res.cookie(cookieName, 'true', { maxAge: 5 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+            } catch (ce) {}
         }
 
         if (shouldIncrementView) {
-            masterFile.views += 1;
-            await masterFile.save();
-            if (isViewingVariant) {
+            masterFile.views = (masterFile.views || 0) + 1;
+            try {
+                const updateOp = { $inc: { views: 1 } };
+                if (req.user) {
+                    updateOp.$addToSet = { viewedBy: req.user._id };
+                }
+                await File.findByIdAndUpdate(masterFile._id, updateOp);
+                if (isViewingVariant && displayFile && displayFile._id && displayFile._id.toString() !== masterFile._id.toString()) {
+                    await File.findByIdAndUpdate(displayFile._id, { $inc: { views: 1 } }).catch(() => {});
+                }
+            } catch (ve) {
+                console.error('[View Counter Error]:', ve);
+            }
+            if (isViewingVariant && displayFile) {
                 displayFile.views = masterFile.views;
             }
         }
@@ -6519,7 +6535,7 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/settings/notifications', ensureAuthenticated, async (req, res) => {
+app.post('/settings/notifications', async (req, res) => {
     try {
         const isJson = req.is('json') || (req.headers.accept && req.headers.accept.includes('json'));
         const enabled = req.body.notificationsEnabled === 'on' || req.body.notificationsEnabled === 'true' || req.body.notificationsEnabled === true;
@@ -6536,14 +6552,39 @@ app.post('/settings/notifications', ensureAuthenticated, async (req, res) => {
             soundEnabled
         };
 
-        await User.findByIdAndUpdate(req.user._id, { notificationSettings });
-        try {
-            const pushNotification = require('./utils/pushNotification');
-            await pushNotification.updatePreferences(req.user._id, notificationSettings);
-        } catch (pe) {}
+        if (req.user) {
+            await User.findByIdAndUpdate(req.user._id, { notificationSettings });
+            try {
+                const pushNotification = require('./utils/pushNotification');
+                await pushNotification.updatePreferences(req.user._id, notificationSettings);
+            } catch (pe) {}
+        }
+
+        // Guest newsletter integration if email provided in payload
+        const guestEmail = (req.body.email || req.body.newsletterEmail || '').trim().toLowerCase();
+        if (guestEmail && guestEmail.includes('@')) {
+            const shouldSubscribe = req.body.subscribeNewsletter !== false && req.body.subscribeNewsletter !== 'false';
+            try {
+                await Subscriber.findOneAndUpdate(
+                    { email: guestEmail },
+                    { 
+                        isSubscribed: shouldSubscribe,
+                        source: 'guest-notification-settings'
+                    },
+                    { upsert: true, new: true }
+                );
+            } catch (subErr) {
+                console.error('[Guest Newsletter Error]:', subErr);
+            }
+        }
 
         if (isJson) {
-            return res.json({ success: true, message: 'Notification preferences updated.', notificationSettings });
+            return res.json({ 
+                success: true, 
+                message: req.user ? 'Notification preferences updated.' : 'Guest notification preferences saved.', 
+                notificationSettings,
+                isGuest: !req.user
+            });
         }
         res.redirect('/settings?success=Notification preferences updated successfully.');
     } catch (error) {
@@ -13134,22 +13175,36 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
 
         const activeOrder = orders.find(o => o.status === 'paid');
         const isPrivilegedStaff = ['admin', 'owner', 'support'].includes(user.role);
+        const isDistributor = user.role === 'distributor';
+        const hasPurchasedTier = Boolean(activeOrder && activeOrder.status === 'paid');
 
         if (isPrivilegedStaff) {
             user.membership = 'plus';
             user.isPlus = true;
+        } else if (isDistributor) {
+            user.membership = user.membership && user.membership !== 'free' ? user.membership : 'distributor';
         }
 
-        let planKey = isPrivilegedStaff ? 'plus_lifetime' : (user.membershipPlan || (activeOrder ? activeOrder.duration : 'free'));
-        let planConfig = isPrivilegedStaff
-            ? { name: 'GPL Plus (' + (user.role ? user.role.toUpperCase() : 'STAFF') + ' VIP)', tier: 'plus' }
-            : (MEMBERSHIP_PLANS[planKey] || { 
+        let planKey = isPrivilegedStaff ? 'plus_lifetime' : (isDistributor ? 'distributor_partner' : (user.membershipPlan || (activeOrder ? activeOrder.duration : 'free')));
+        let planConfig;
+        if (user.role === 'owner') {
+            planConfig = { name: 'GPL Plus (OWNER VIP)', tier: 'plus', privileges: 'Owner Privileges' };
+        } else if (user.role === 'admin') {
+            planConfig = { name: 'GPL Plus (ADMIN VIP)', tier: 'plus', privileges: 'Admin Privileges' };
+        } else if (user.role === 'support') {
+            planConfig = { name: 'GPL Plus (SUPPORT VIP)', tier: 'plus', privileges: 'Support Team Privileges' };
+        } else if (isDistributor) {
+            planConfig = { name: 'Distributor Partner', tier: 'distributor', privileges: 'Distributor Partner Privileges' };
+        } else {
+            planConfig = MEMBERSHIP_PLANS[planKey] || { 
                 name: user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member'),
                 tier: user.membership || 'free'
-            });
+            };
+        }
 
         let isLifetime = Boolean(
             isPrivilegedStaff ||
+            isDistributor ||
             (user.membershipPlan && user.membershipPlan.includes('lifetime')) ||
             (planKey && planKey.includes('lifetime'))
         );
@@ -13157,7 +13212,7 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
         let daysRemaining = 'N/A';
         let isExpired = false;
 
-        if (isLifetime || isPrivilegedStaff) {
+        if (isLifetime || isPrivilegedStaff || isDistributor) {
             daysRemaining = 'Lifetime Access';
         } else if (user.membershipExpiresAt) {
             const diffMs = new Date(user.membershipExpiresAt).getTime() - Date.now();
@@ -13229,9 +13284,16 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             userAvatar = user.cardAvatarUrl;
         } else if (user.profileImageKey) {
             try {
-                userAvatar = await getSmartImageUrl(user.profileImageKey);
+                const resolved = await getSmartImageUrl(user.profileImageKey);
+                if (resolved && resolved !== '/images/default-avatar.png') userAvatar = resolved;
             } catch (e) {}
+        } else if (user.avatarUrl && user.avatarUrl !== '/images/default-avatar.png') {
+            userAvatar = user.avatarUrl;
+        } else if (user.avatar && user.avatar !== '/images/default-avatar.png') {
+            userAvatar = user.avatar;
         }
+
+        const tierQuotaConfig = getTierQuotaConfig(user);
 
         res.render('pages/my-membership', {
             pageTitle: 'My Membership Management',
@@ -13248,7 +13310,10 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             scheduledChange: user.scheduledPlanChange || null,
             refundEligibility: refundEligibility,
             onCooldown: onCooldown,
-            membershipPlans: MEMBERSHIP_PLANS
+            membershipPlans: MEMBERSHIP_PLANS,
+            tierQuotaConfig: tierQuotaConfig,
+            hasPurchasedTier: hasPurchasedTier,
+            isVolunteer: user.role === 'volunteer'
         });
     } catch (err) {
         console.error('[My Membership Page Error]:', err);
@@ -13265,6 +13330,13 @@ app.post('/membership/cancel-subscription', async (req, res) => {
     }
 
     try {
+        if (['owner', 'admin', 'support', 'distributor'].includes(req.user.role)) {
+            const paidOrder = await MembershipOrder.findOne({ user: req.user._id, status: 'paid' });
+            if (!paidOrder) {
+                return res.status(403).json({ error: 'Role-inherited permanent and partner privileges cannot be cancelled.' });
+            }
+        }
+
         const updatedUser = await User.findByIdAndUpdate(req.user._id, {
             autoRenew: false,
             membershipCancelledAt: new Date()
@@ -16820,6 +16892,7 @@ const startServer = async () => {
         app.set('connectedSupportSockets', connectedSupportSockets);
         app.set('connectedAgentSockets', connectedAgentSockets);
         app.set('broadcastOnlineStats', broadcastOnlineStats);
+        app.set('getSmartImageUrl', getSmartImageUrl);
 
         async function resolveUserAvatar(u) {
             if (!u) return '/images/default-avatar.png';
@@ -16829,6 +16902,12 @@ const startServer = async () => {
             if (u.cardAvatarUrl && u.cardAvatarUrl !== '/images/default-avatar.png') {
                 return u.cardAvatarUrl;
             }
+            if (u.avatarUrl && u.avatarUrl !== '/images/default-avatar.png') {
+                return u.avatarUrl;
+            }
+            if (u.avatar && u.avatar !== '/images/default-avatar.png') {
+                return u.avatar;
+            }
             if (u.profileImageKey) {
                 try {
                     const resolved = await getSmartImageUrl(u.profileImageKey);
@@ -16837,10 +16916,12 @@ const startServer = async () => {
             }
             if (u._id || u.id) {
                 try {
-                    const dbUser = await User.findById(u._id || u.id).select('signedAvatarUrl cardAvatarUrl profileImageKey').lean();
+                    const dbUser = await User.findById(u._id || u.id).select('signedAvatarUrl cardAvatarUrl profileImageKey avatarUrl avatar').lean();
                     if (dbUser) {
                         if (dbUser.signedAvatarUrl && dbUser.signedAvatarUrl !== '/images/default-avatar.png') return dbUser.signedAvatarUrl;
                         if (dbUser.cardAvatarUrl && dbUser.cardAvatarUrl !== '/images/default-avatar.png') return dbUser.cardAvatarUrl;
+                        if (dbUser.avatarUrl && dbUser.avatarUrl !== '/images/default-avatar.png') return dbUser.avatarUrl;
+                        if (dbUser.avatar && dbUser.avatar !== '/images/default-avatar.png') return dbUser.avatar;
                         if (dbUser.profileImageKey) {
                             const resolved = await getSmartImageUrl(dbUser.profileImageKey);
                             if (resolved && resolved !== '/images/default-avatar.png') return resolved;
@@ -17134,6 +17215,125 @@ const startServer = async () => {
                         poll: message.poll
                     });
                 } catch (e) {}
+            });
+
+            socket.on('club_edit_message', async (data) => {
+                try {
+                    const { clubId, channelId, messageId, content } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !messageId || !content) return;
+
+                    const message = await ClubMessage.findById(messageId);
+                    if (!message || message.isDeleted) return;
+
+                    const club = await Club.findById(clubId);
+                    const isSender = String(message.sender) === String(user._id);
+                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isCreator = club && String(club.creator) === String(user._id);
+
+                    if (!isSender && !isStaff && !isCreator) {
+                        return socket.emit('club_message_error', { message: 'Unauthorized to edit this message.' });
+                    }
+
+                    let safeText = content.trim();
+                    try { safeText = global.profanityFilter.clean(safeText); } catch(e) {}
+
+                    message.content = safeText;
+                    message.isEdited = true;
+                    message.editedAt = new Date();
+                    await message.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_edited', {
+                        messageId: message._id,
+                        content: safeText,
+                        isEdited: true,
+                        editedAt: message.editedAt
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Edit message error:', err);
+                }
+            });
+
+            socket.on('club_delete_message', async (data) => {
+                try {
+                    const { clubId, channelId, messageId } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !messageId) return;
+
+                    const message = await ClubMessage.findById(messageId);
+                    if (!message) return;
+
+                    const club = await Club.findById(clubId);
+                    const isSender = String(message.sender) === String(user._id);
+                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isCreator = club && String(club.creator) === String(user._id);
+
+                    if (!isSender && !isStaff && !isCreator) {
+                        return socket.emit('club_message_error', { message: 'Unauthorized to delete this message.' });
+                    }
+
+                    message.content = '[This message was deleted]';
+                    message.isDeleted = true;
+                    message.deletedAt = new Date();
+                    await message.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_deleted', {
+                        messageId: message._id
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Delete message error:', err);
+                }
+            });
+
+            socket.on('club_forward_message', async (data) => {
+                try {
+                    const { targetClubId, targetChannelId, messageId } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !targetClubId || !targetChannelId || !messageId) return;
+
+                    const origMsg = await ClubMessage.findById(messageId).populate('sender', 'username');
+                    if (!origMsg || origMsg.isDeleted) return;
+
+                    const targetClub = await Club.findById(targetClubId);
+                    const targetChan = await ClubChannel.findById(targetChannelId);
+                    if (!targetClub || !targetChan) return;
+
+                    const senderName = origMsg.sender ? origMsg.sender.username : 'Member';
+                    const forwardedContent = `↪ Forwarded from ${senderName}:\n${origMsg.content}`;
+                    const newMsg = await ClubMessage.create({
+                        club: targetClubId,
+                        channel: targetChannelId,
+                        sender: user._id,
+                        content: forwardedContent,
+                        forwardedFrom: origMsg.sender ? origMsg.sender._id : null
+                    });
+
+                    const membership = await ClubMember.findOne({ club: targetClubId, user: user._id }).populate('roles');
+                    const avatar = await resolveUserAvatar(user);
+
+                    const payload = {
+                        _id: newMsg._id,
+                        channel: targetChannelId,
+                        club: targetClubId,
+                        content: forwardedContent,
+                        reactions: [],
+                        createdAt: newMsg.createdAt,
+                        sender: {
+                            _id: user._id,
+                            username: user.username,
+                            signedAvatarUrl: avatar,
+                            role: user.role,
+                            membership: user.membership,
+                            isPremium: user.isPremium,
+                            badges: user.badges,
+                            clubRoles: membership ? (membership.roles || []) : []
+                        }
+                    };
+
+                    io.to(`club_${targetClubId}_chan_${targetChannelId}`).emit('club_new_message', payload);
+                } catch (err) {
+                    console.error('[Clubs] Forward message error:', err);
+                }
             });
 
             socket.on('club_vanish_toggle', async (data) => {

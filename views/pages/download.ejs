@@ -3111,18 +3111,21 @@
             </script>
             <script>
                 function shareMod() {
-                    const currentPath = window.location.pathname; // gets "/mods/12345"
-                    const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${currentPath}`;
+                    const directModUrl = window.location.href.split('?')[0]; // direct url of the mod
 
                     if (navigator.share) {
                         navigator.share({
                             title: '<%= file.name %> on GPL Mods',
                             text: 'Download <%= file.name %> safely on GPL Mods!',
-                            url: gatewayShareUrl
-                        });
+                            url: directModUrl
+                        }).catch(e => console.log('Share dismissed', e));
                     } else {
-                        navigator.clipboard.writeText(gatewayShareUrl);
-                        alert("Mod link copied!");
+                        navigator.clipboard.writeText(directModUrl);
+                        if (window.showGplToast) {
+                            window.showGplToast({ title: 'Link Copied', body: 'Direct mod link copied to clipboard!' });
+                        } else {
+                            alert("Mod link copied!");
+                        }
                     }
                 }
             </script>

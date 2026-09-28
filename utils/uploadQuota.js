@@ -37,7 +37,7 @@ const TIER_CONFIGS = {
     },
     distributor: {
         tier: 'distributor',
-        label: 'Distributor Partner',
+        label: 'Distributor Partner Privileges',
         totalSlots: 50,
         maxFileSizeMb: 5120, // 5GB
         maxFileSizeBytes: 5120 * 1024 * 1024,
@@ -45,7 +45,15 @@ const TIER_CONFIGS = {
     },
     admin: {
         tier: 'admin',
-        label: 'Administrator / Owner',
+        label: 'Admin Privileges',
+        totalSlots: 9999,
+        maxFileSizeMb: 102400, // 100GB
+        maxFileSizeBytes: 102400 * 1024 * 1024,
+        supportAdDownloads: false
+    },
+    owner: {
+        tier: 'owner',
+        label: 'Owner Privileges',
         totalSlots: 9999,
         maxFileSizeMb: 102400, // 100GB
         maxFileSizeBytes: 102400 * 1024 * 1024,
@@ -59,7 +67,11 @@ const TIER_CONFIGS = {
 function getTierQuotaConfig(user) {
     if (!user) return TIER_CONFIGS.free;
 
-    if (user.role === 'admin' || user.role === 'owner') {
+    if (user.role === 'owner') {
+        return TIER_CONFIGS.owner;
+    }
+
+    if (user.role === 'admin' || user.role === 'support') {
         return TIER_CONFIGS.admin;
     }
 

@@ -454,23 +454,34 @@
     </div>
 
     <!-- Active Membership Hero Card -->
-    <div class="membership-hero-card <%= user.membership === 'plus' ? 'tier-plus' : (user.membership === 'lite' ? 'tier-lite' : 'tier-free') %>">
+    <%
+        const isStaffOrDistributor = ['owner', 'admin', 'support', 'distributor'].includes(user.role);
+        const canCancelSub = !isStaffOrDistributor || (typeof hasPurchasedTier !== 'undefined' && hasPurchasedTier);
+    %>
+    <div class="membership-hero-card <%= (user.membership === 'plus' || ['owner', 'admin', 'support'].includes(user.role)) ? 'tier-plus' : (user.membership === 'lite' ? 'tier-lite' : (user.role === 'distributor' ? 'tier-plus' : 'tier-free')) %>">
         <div class="hero-top-strip"></div>
 
         <div class="membership-header-row">
             <div class="plan-badge-group">
-                <div class="plan-icon-avatar">
-                    <% if (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') { %>
-                        <img src="<%= userAvatar %>" alt="<%= user.username %>" style="width: 100%; height: 100%; border-radius: 16px; object-fit: cover;">
-                    <% } else { %>
-                        <i class="fas <%= user.membership === 'plus' ? 'fa-crown' : (user.membership === 'lite' ? 'fa-bolt' : 'fa-user') %>"></i>
-                    <% } %>
+                <div style="position: relative; width: 72px; height: 72px; flex-shrink: 0;">
+                    <img src="<%= userAvatar %>" alt="<%= user.username %>" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); background: #111;">
+                    <div style="position: absolute; bottom: -3px; right: -3px; width: 30px; height: 30px; border-radius: 50%; background: #141414; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.8);">
+                        <% if (user.role === 'owner' || user.role === 'admin' || user.role === 'support' || user.membership === 'plus') { %>
+                            <img src="/images/gpl-plus.png" alt="GPL Plus" style="width: 100%; height: 100%; object-fit: contain;">
+                        <% } else if (user.membership === 'lite') { %>
+                            <img src="/images/gpl-lite.png" alt="GPL Lite" style="width: 100%; height: 100%; object-fit: contain;">
+                        <% } else if (user.role === 'distributor') { %>
+                            <i class="fas fa-handshake" style="color: var(--gold); font-size: 0.8rem;"></i>
+                        <% } else { %>
+                            <i class="fas fa-user" style="color: var(--silver); font-size: 0.8rem;"></i>
+                        <% } %>
+                    </div>
                 </div>
                 <div class="plan-title-box">
                     <h1><%= currentPlan.name %></h1>
                     <p>
                         <% if (isLifetime) { %>
-                            Permanent Lifetime Access &bull; No Recurring Charges
+                            Permanent Lifetime Access &bull; No Recurring Charges &bull; <%= currentPlan.privileges || 'VIP Privileges' %>
                         <% } else if (user.membershipExpiresAt) { %>
                             Current billing cycle ends on <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
                         <% } else { %>
@@ -501,8 +512,8 @@
         <div class="hero-stats-grid">
             <div class="hero-stat-card">
                 <span class="hero-stat-label">Membership Tier</span>
-                <span class="hero-stat-val <%= user.membership === 'plus' ? 'gold' : (user.membership === 'lite' ? 'cyan' : '') %>">
-                    <%= user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member') %>
+                <span class="hero-stat-val <%= (user.membership === 'plus' || ['owner', 'admin', 'support'].includes(user.role)) ? 'gold' : (user.membership === 'lite' ? 'cyan' : '') %>">
+                    <%= currentPlan.name %>
                 </span>
             </div>
             <div class="hero-stat-card">
@@ -514,13 +525,33 @@
             <div class="hero-stat-card">
                 <span class="hero-stat-label">Upload Cap Slot</span>
                 <span class="hero-stat-val">
-                    <%= user.membership === 'plus' ? '10 Slots' : (user.membership === 'lite' ? '5 Slots' : '3 Slots') %>
+                    <% if (['owner', 'admin', 'support'].includes(user.role)) { %>
+                        Unlimited Slots
+                    <% } else if (user.role === 'distributor') { %>
+                        50 Slots
+                    <% } else if (user.membership === 'plus') { %>
+                        10 Slots
+                    <% } else if (user.membership === 'lite') { %>
+                        5 Slots
+                    <% } else { %>
+                        3 Slots
+                    <% } %>
                 </span>
             </div>
             <div class="hero-stat-card">
                 <span class="hero-stat-label">Max File Size</span>
                 <span class="hero-stat-val">
-                    <%= user.membership === 'plus' ? '2.0 GB' : (user.membership === 'lite' ? '600 MB' : '300 MB') %>
+                    <% if (['owner', 'admin', 'support'].includes(user.role)) { %>
+                        100.0 GB
+                    <% } else if (user.role === 'distributor') { %>
+                        5.0 GB
+                    <% } else if (user.membership === 'plus') { %>
+                        2.0 GB
+                    <% } else if (user.membership === 'lite') { %>
+                        600 MB
+                    <% } else { %>
+                        300 MB
+                    <% } %>
                 </span>
             </div>
         </div>
@@ -547,13 +578,17 @@
                     <i class="fas fa-exchange-alt"></i> Switch / Upgrade Plan
                 </button>
 
-                <% if (!isLifetime && autoRenew) { %>
+                <% if (!isLifetime && autoRenew && canCancelSub) { %>
                     <button type="button" class="btn-membership btn-cancel-sub" onclick="openCancelModal();">
                         <i class="fas fa-ban"></i> Cancel Subscription
                     </button>
+                <% } else if (isStaffOrDistributor && !canCancelSub) { %>
+                    <span style="font-size: 0.85rem; color: var(--gold); background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); padding: 9px 15px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-shield-alt"></i> Inherited Privilege (Permanent &bull; Non-Cancellable)
+                    </span>
                 <% } %>
 
-                <% if (activeOrder && activeOrder.refundStatus === 'none' && refundEligibility.eligible) { %>
+                <% if (activeOrder && activeOrder.refundStatus === 'none' && refundEligibility.eligible && canCancelSub) { %>
                     <button type="button" class="btn-membership btn-refund-req" onclick="openRefundModal();">
                         <i class="fas fa-undo-alt"></i> Request Refund
                     </button>
