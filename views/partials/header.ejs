@@ -781,7 +781,9 @@
 <body>
     <% if (typeof isOfficialDeployment !=='undefined' && !isOfficialDeployment && !isCrawler) { %>
         <% const isTestEnv=(typeof isTestDeployment !=='undefined' && isTestDeployment); %>
-            <div class="deployment-notice <%= isTestEnv ? 'test-deployment' : 'unofficial-deployment' %>" role="status">
+            <div id="deploymentNoticeBanner"
+                class="deployment-notice <%= isTestEnv ? 'test-deployment' : 'unofficial-deployment' %>" role="status"
+                style="<%= isTestEnv ? 'display: none;' : '' %>">
                 <strong>
                     <%= isTestEnv ? 'Test or Local Deployment' : 'Unofficial deployment' %>
                 </strong>
@@ -791,7 +793,32 @@
                 </span>
                 <% if (!isTestEnv) { %>
                     <a href="<%= officialSiteUrl %>">Visit the official site</a>
-                    <% } %>
+                    <% } else { %>
+                        <button type="button" onclick="dismissLocalDevBanner()" title="Dismiss Local Banner"
+                            style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); color: #fff; width: 22px; height: 22px; border-radius: 50%; font-size: 1.1rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-left: 10px; transition: all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.35)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.18)'">&times;</button>
+                        <script>
+                            (function () {
+                                try {
+                                    if (sessionStorage.getItem('gpl_dismiss_local_dev_banner') !== 'true') {
+                                        var b = document.getElementById('deploymentNoticeBanner');
+                                        if (b) b.style.display = 'flex';
+                                    }
+                                } catch (e) {
+                                    var b = document.getElementById('deploymentNoticeBanner');
+                                    if (b) b.style.display = 'flex';
+                                }
+                            })();
+                            function dismissLocalDevBanner() {
+                                try {
+                                    sessionStorage.setItem('gpl_dismiss_local_dev_banner', 'true');
+                                } catch (e) { }
+                                var b = document.getElementById('deploymentNoticeBanner');
+                                if (b) b.style.display = 'none';
+                            }
+                        </script>
+                        <% } %>
             </div>
             <style>
                 .deployment-notice {
@@ -831,6 +858,27 @@
                 .deployment-notice.unofficial-deployment a {
                     color: #ffe066;
                     text-decoration: underline;
+                }
+
+                .notif-popup-item:hover {
+                    background: rgba(255, 255, 255, 0.06) !important;
+                }
+
+                .header-notif-dropdown {
+                    transform-origin: top right;
+                    animation: notifDropdownPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                @keyframes notifDropdownPop {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-8px) scale(0.96);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
                 }
             </style>
             <% } %>
@@ -917,17 +965,112 @@
                                     </div>
 
                                     <% if (typeof is2FAVerification==='undefined' || !is2FAVerification) { %>
-                                        <!-- Notification Bell -->
-                                        <a href="/notifications" class="nav-bell" title="Site Updates"
-                                            id="nav-bell-link" data-user-id="<%= user ? user._id : '' %>"
-                                            data-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>"
-                                            data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
-                                            data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
-                                            data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>">
-                                            <i class="fas fa-bell"></i>
-                                            <span id="notification-badge" class="update-badge"
-                                                style="display: none;"></span>
-                                        </a>
+                                        <!-- Notification Bell Container with Interactive Dropdown Popup -->
+                                        <div class="header-notif-wrapper"
+                                            style="position: relative; display: inline-flex; align-items: center;">
+                                            <a href="/notifications" class="nav-bell" title="Notifications & Updates"
+                                                id="nav-bell-link" data-user-id="<%= user ? user._id : '' %>"
+                                                data-updates="<%= typeof recentAnnouncementsCount !== 'undefined' ? recentAnnouncementsCount : 0 %>"
+                                                data-uploads="<%= typeof newUploadsCount !== 'undefined' ? newUploadsCount : 0 %>"
+                                                data-modsupdates="<%= typeof newUpdatesCount !== 'undefined' ? newUpdatesCount : 0 %>"
+                                                data-personal="<%= typeof unreadPersonalCount !== 'undefined' ? unreadPersonalCount : 0 %>"
+                                                onclick="toggleHeaderNotifDropdown(event)">
+                                                <i class="fas fa-bell"></i>
+                                                <span id="notification-badge" class="update-badge"
+                                                    style="display: none;"></span>
+                                            </a>
+
+                                            <!-- Dropdown Popup UI -->
+                                            <div id="headerNotifDropdown" class="header-notif-dropdown"
+                                                style="display: none; position: absolute; top: calc(100% + 14px); right: 0; width: 340px; background: #14151c; border: 1.5px solid var(--gold); border-radius: 14px; box-shadow: 0 16px 45px rgba(0,0,0,0.85); z-index: 99999; overflow: hidden;">
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #242634; background: rgba(255,215,0,0.05);">
+                                                    <div
+                                                        style="font-weight: 700; color: #fff; font-size: 0.92rem; display: flex; align-items: center; gap: 8px;">
+                                                        <i class="fas fa-bell" style="color: var(--gold);"></i>
+                                                        Notifications
+                                                    </div>
+                                                    <a href="/settings#notifications" title="Notification Settings"
+                                                        style="color: var(--silver); font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                                                        <i class="fas fa-cog"></i> Settings
+                                                    </a>
+                                                </div>
+                                                <div class="notif-popup-body" id="notifPopupBody"
+                                                    style="max-height: 300px; overflow-y: auto; padding: 6px 0;">
+                                                    <a href="/notifications/site-updates" class="notif-popup-item"
+                                                        style="display: flex; gap: 12px; padding: 11px 16px; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                                        <div
+                                                            style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,215,0,0.12); color: var(--gold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem;">
+                                                            <i class="fas fa-bullhorn"></i>
+                                                        </div>
+                                                        <div style="flex: 1; min-width: 0;">
+                                                            <div
+                                                                style="color: #fff; font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                                Official Announcements</div>
+                                                            <div
+                                                                style="color: var(--silver); font-size: 0.75rem; margin-top: 2px;">
+                                                                Platform updates &amp; news</div>
+                                                        </div>
+                                                    </a>
+                                                    <a href="/notifications/clubs" class="notif-popup-item"
+                                                        style="display: flex; gap: 12px; padding: 11px 16px; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                                        <div
+                                                            style="width: 36px; height: 36px; border-radius: 10px; background: rgba(100,181,246,0.12); color: #64b5f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem;">
+                                                            <i class="fas fa-users"></i>
+                                                        </div>
+                                                        <div style="flex: 1; min-width: 0;">
+                                                            <div
+                                                                style="color: #fff; font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                                Clubs &amp; Community</div>
+                                                            <div
+                                                                style="color: var(--silver); font-size: 0.75rem; margin-top: 2px;">
+                                                                Join requests &amp; club updates</div>
+                                                        </div>
+                                                    </a>
+                                                    <a href="/notifications/admin-messages" class="notif-popup-item"
+                                                        style="display: flex; gap: 12px; padding: 11px 16px; text-decoration: none;">
+                                                        <div
+                                                            style="width: 36px; height: 36px; border-radius: 10px; background: rgba(186,104,200,0.12); color: #ba68c8; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1rem;">
+                                                            <i class="fas fa-envelope-open-text"></i>
+                                                        </div>
+                                                        <div style="flex: 1; min-width: 0;">
+                                                            <div
+                                                                style="color: #fff; font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                                Direct Admin Messages</div>
+                                                            <div
+                                                                style="color: var(--silver); font-size: 0.75rem; margin-top: 2px;">
+                                                                Support &amp; direct alerts</div>
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                                <div
+                                                    style="padding: 9px 16px; border-top: 1px solid #242634; text-align: center; background: rgba(0,0,0,0.25);">
+                                                    <a href="/notifications"
+                                                        style="color: var(--gold); font-size: 0.82rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                                        View All Notifications <i class="fas fa-arrow-right"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <script>
+                                            function toggleHeaderNotifDropdown(e) {
+                                                if (e) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                }
+                                                var drop = document.getElementById('headerNotifDropdown');
+                                                if (!drop) return;
+                                                drop.style.display = (drop.style.display === 'block') ? 'none' : 'block';
+                                            }
+                                            document.addEventListener('click', function (e) {
+                                                var drop = document.getElementById('headerNotifDropdown');
+                                                if (drop && drop.style.display === 'block') {
+                                                    if (!e.target.closest('.header-notif-wrapper')) {
+                                                        drop.style.display = 'none';
+                                                    }
+                                                }
+                                            });
+                                        </script>
                                         <% } %>
 
                                             <!-- Mobile Only Items -->
@@ -964,11 +1107,6 @@
                                                 <div class="desktop-text-buttons">
                                                     <% if (user) { %>
                                                         <% if (user.role==='owner' ) { %>
-                                                            <a href="/admin" class="btn btn-login"
-                                                                style="border-color: var(--gold); color: var(--gold); font-weight: 600;"
-                                                                title="Open Admin Panel">
-                                                                <i class="fas fa-shield-alt"></i> Admin Panel
-                                                            </a>
                                                             <a href="/owner" class="btn btn-login"
                                                                 style="border-color: #f44336; color: #f44336; font-weight: 600;"
                                                                 title="Owner Command Center">
@@ -983,8 +1121,8 @@
                                                                 <% } else if (user.role==='support' ) { %>
                                                                     <a href="/admin/support" class="btn btn-login"
                                                                         style="border-color: #2196f3; color: #2196f3; font-weight: 600;"
-                                                                        title="Support Console">
-                                                                        <i class="fas fa-headset"></i> Support Console
+                                                                        title="Support Dashboard">
+                                                                        <i class="fas fa-headset"></i> Support Dashboard
                                                                     </a>
                                                                     <% } %>
                                                                         <a href="/my-membership" class="btn btn-login"
@@ -1191,7 +1329,7 @@
                                                         <li><a href="/donate"><i class="fas fa-hand-holding-heart"
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                 Donate Us!</a></li>
-                                                        <li><a href="/sponsor"><i class="fa-duotone fa-solid fa-hearts"
+                                                        <li><a href="/sponsor"><i class="fas fa-hand-holding-dollar"
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                 Sponsors!</a></li>
                                                         <li><a href="/promote"><i class="fas fa-bullhorn"
@@ -1236,12 +1374,16 @@
                                                             <li><a href="/donate"><i class="fas fa-hand-holding-heart"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                     Donate Us!</a></li>
-                                                            <li><a href="/sponsor"><i class="fa-solid fa-hearts"
+                                                            <li><a href="/sponsor"><i class="fas fa-hand-holding-dollar"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                     Sponsors!</a></li>
                                                             <li><a href="/promote"><i class="fas fa-bullhorn"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #ff9800;"></i>
                                                                     Promote Mods</a></li>
+                                                            <li><a href="/guest/notifications"
+                                                                    style="color: var(--gold);"><i class="fas fa-bell"
+                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
+                                                                    Notification Settings</a></li>
                                                             <li><a href="/login"><i class="fas fa-sign-in-alt"
                                                                         style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                                     Login</a></li>

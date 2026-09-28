@@ -12,16 +12,18 @@
 
     /* Custom GUI Dropdown for Security Questions */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
-    .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; background: #0d0d12; border: 1px solid #444; border-radius: 8px; cursor: pointer; padding: 10px 14px; color: #fff; font-size: 0.9em; transition: border-color 0.25s; min-height: 42px; }
-    .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
-    .custom-select-arrow { transition: transform 0.25s ease; color: var(--gold); font-size: 0.85em; }
+    .custom-select-wrapper.open { z-index: 99999 !important; }
+    .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; background: #0d0d12; border: 1.5px solid #444; border-radius: 8px; cursor: pointer; padding: 11px 14px; color: #fff; font-size: 0.9em; transition: all 0.2s ease; min-height: 44px; }
+    .custom-select:hover { border-color: rgba(255, 215, 0, 0.6); }
+    .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 14px rgba(255, 215, 0, 0.25); background: #12131a; }
+    .custom-select-arrow { transition: transform 0.25s ease; color: var(--gold); font-size: 0.85em; pointer-events: none; }
     .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); }
-    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: #12131a; border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 1000; max-height: 240px; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
+    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: #12131a; border: 1.5px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 999999 !important; max-height: 250px; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,0.9); }
     .custom-select-wrapper.open .custom-options { display: block; }
-    .custom-option { padding: 10px 14px; color: var(--silver); cursor: pointer; transition: all 0.2s; font-size: 0.88em; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .custom-option { padding: 11px 14px; color: var(--silver); cursor: pointer; transition: all 0.18s ease; font-size: 0.88em; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
     .custom-option:last-child { border-bottom: none; }
-    .custom-option:hover { background-color: rgba(255, 215, 0, 0.15); color: #fff; }
-    .custom-option.selected { color: var(--gold); font-weight: bold; background: rgba(255, 215, 0, 0.08); }
+    .custom-option:hover { background-color: rgba(255, 215, 0, 0.18); color: #fff; }
+    .custom-option.selected { color: var(--gold); font-weight: bold; background: rgba(255, 215, 0, 0.1); }
     .custom-write-in-option { border-top: 1px dashed rgba(255, 215, 0, 0.4); color: var(--gold) !important; font-weight: 600; }
 </style>
 
@@ -552,16 +554,16 @@
                         </label>
                         <div class="custom-select-wrapper" id="sqWrap1" style="width: 100%; margin-bottom: 10px;">
                             <input type="hidden" name="question1" id="sqVal1" value="What was the name of your first elementary school?">
-                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap1')">
+                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap1', event)">
                                 <span class="selected-text" id="sqDisp1">What was the name of your first elementary school?</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-options">
-                                <div class="custom-option selected" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was the name of your first elementary school?', this, 'sqCustom1')">What was the name of your first elementary school?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was your childhood nickname?', this, 'sqCustom1')">What was your childhood nickname?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'In what city or town did your parents meet?', this, 'sqCustom1')">In what city or town did your parents meet?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was the make and model of your first phone or car?', this, 'sqCustom1')">What was the make and model of your first phone or car?</div>
-                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', '__CUSTOM__', this, 'sqCustom1')"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
+                                <div class="custom-option selected" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was the name of your first elementary school?', this, 'sqCustom1', event)">What was the name of your first elementary school?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was your childhood nickname?', this, 'sqCustom1', event)">What was your childhood nickname?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'In what city or town did your parents meet?', this, 'sqCustom1', event)">In what city or town did your parents meet?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', 'What was the make and model of your first phone or car?', this, 'sqCustom1', event)">What was the make and model of your first phone or car?</div>
+                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap1', 'sqVal1', 'sqDisp1', '__CUSTOM__', this, 'sqCustom1', event)"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
                             </div>
                         </div>
                         <input type="text" id="sqCustom1" placeholder="Type your custom security question 1..." oninput="handleCustomSqInput('sqVal1', 'sqDisp1', this.value)" style="display: none; width: 100%; box-sizing: border-box; background: #0d0d12; border: 1.5px solid var(--gold); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.9em; outline: none; margin-bottom: 10px;">
@@ -575,16 +577,16 @@
                         </label>
                         <div class="custom-select-wrapper" id="sqWrap2" style="width: 100%; margin-bottom: 10px;">
                             <input type="hidden" name="question2" id="sqVal2" value="What is your favorite video game of all time?">
-                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap2')">
+                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap2', event)">
                                 <span class="selected-text" id="sqDisp2">What is your favorite video game of all time?</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-options">
-                                <div class="custom-option selected" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What is your favorite video game of all time?', this, 'sqCustom2')">What is your favorite video game of all time?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was the name of your first pet?', this, 'sqCustom2')">What was the name of your first pet?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was your dream job when you were a kid?', this, 'sqCustom2')">What was your dream job when you were a kid?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was the first movie or concert you attended?', this, 'sqCustom2')">What was the first movie or concert you attended?</div>
-                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', '__CUSTOM__', this, 'sqCustom2')"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
+                                <div class="custom-option selected" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What is your favorite video game of all time?', this, 'sqCustom2', event)">What is your favorite video game of all time?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was the name of your first pet?', this, 'sqCustom2', event)">What was the name of your first pet?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was your dream job when you were a kid?', this, 'sqCustom2', event)">What was your dream job when you were a kid?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', 'What was the first movie or concert you attended?', this, 'sqCustom2', event)">What was the first movie or concert you attended?</div>
+                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap2', 'sqVal2', 'sqDisp2', '__CUSTOM__', this, 'sqCustom2', event)"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
                             </div>
                         </div>
                         <input type="text" id="sqCustom2" placeholder="Type your custom security question 2..." oninput="handleCustomSqInput('sqVal2', 'sqDisp2', this.value)" style="display: none; width: 100%; box-sizing: border-box; background: #0d0d12; border: 1.5px solid var(--gold); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.9em; outline: none; margin-bottom: 10px;">
@@ -598,16 +600,16 @@
                         </label>
                         <div class="custom-select-wrapper" id="sqWrap3" style="width: 100%; margin-bottom: 10px;">
                             <input type="hidden" name="question3" id="sqVal3" value="In what city were you born or grew up?">
-                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap3')">
+                            <div class="custom-select" onclick="toggleSqDropdown('sqWrap3', event)">
                                 <span class="selected-text" id="sqDisp3">In what city were you born or grew up?</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-options">
-                                <div class="custom-option selected" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'In what city were you born or grew up?', this, 'sqCustom3')">In what city were you born or grew up?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What is your favorite dish or comfort food?', this, 'sqCustom3')">What is your favorite dish or comfort food?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What was the street you lived on in high school?', this, 'sqCustom3')">What was the street you lived on in high school?</div>
-                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What was the name of your favorite teacher?', this, 'sqCustom3')">What was the name of your favorite teacher?</div>
-                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', '__CUSTOM__', this, 'sqCustom3')"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
+                                <div class="custom-option selected" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'In what city were you born or grew up?', this, 'sqCustom3', event)">In what city were you born or grew up?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What is your favorite dish or comfort food?', this, 'sqCustom3', event)">What is your favorite dish or comfort food?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What was the street you lived on in high school?', this, 'sqCustom3', event)">What was the street you lived on in high school?</div>
+                                <div class="custom-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', 'What was the name of your favorite teacher?', this, 'sqCustom3', event)">What was the name of your favorite teacher?</div>
+                                <div class="custom-option custom-write-in-option" onclick="selectSqOption('sqWrap3', 'sqVal3', 'sqDisp3', '__CUSTOM__', this, 'sqCustom3', event)"><i class="fas fa-pencil-alt" style="margin-right: 6px;"></i> ✍️ Write my own custom question...</div>
                             </div>
                         </div>
                         <input type="text" id="sqCustom3" placeholder="Type your custom security question 3..." oninput="handleCustomSqInput('sqVal3', 'sqDisp3', this.value)" style="display: none; width: 100%; box-sizing: border-box; background: #0d0d12; border: 1.5px solid var(--gold); border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 0.9em; outline: none; margin-bottom: 10px;">
@@ -624,18 +626,31 @@
         </div>
 
         <script>
-            function toggleSqDropdown(wrapId) {
+            function toggleSqDropdown(wrapId, e) {
+                if (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
                 const wrap = document.getElementById(wrapId);
+                if (!wrap) return;
                 const isOpen = wrap.classList.contains('open');
                 document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
-                if (!isOpen) wrap.classList.add('open');
+                if (!isOpen) {
+                    wrap.classList.add('open');
+                }
             }
 
-            function selectSqOption(wrapId, valId, dispId, text, element, customInputId) {
+            function selectSqOption(wrapId, valId, dispId, text, element, customInputId, e) {
+                if (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
                 const wrap = document.getElementById(wrapId);
                 const customInput = document.getElementById(customInputId);
 
-                wrap.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                if (wrap) {
+                    wrap.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                }
                 if (element) element.classList.add('selected');
 
                 if (text === '__CUSTOM__') {
@@ -650,7 +665,7 @@
                     document.getElementById(valId).value = text;
                     document.getElementById(dispId).textContent = text;
                 }
-                wrap.classList.remove('open');
+                if (wrap) wrap.classList.remove('open');
             }
 
             function handleCustomSqInput(valId, dispId, customVal) {

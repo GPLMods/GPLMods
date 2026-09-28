@@ -464,7 +464,7 @@
         <div class="membership-header-row">
             <div class="plan-badge-group">
                 <div style="position: relative; width: 72px; height: 72px; flex-shrink: 0;">
-                    <img src="<%= userAvatar %>" alt="<%= user.username %>" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); background: #111;">
+                    <img src="<%= userAvatar %>" alt="<%= user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods'||'<%= user.username %>'==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); background: #111;">
                     <div style="position: absolute; bottom: -3px; right: -3px; width: 30px; height: 30px; border-radius: 50%; background: #141414; border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.8);">
                         <% if (user.role === 'owner' || user.role === 'admin' || user.role === 'support' || user.membership === 'plus') { %>
                             <img src="/images/gpl-plus.png" alt="GPL Plus" style="width: 100%; height: 100%; object-fit: contain;">

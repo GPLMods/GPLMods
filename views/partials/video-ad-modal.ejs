@@ -101,6 +101,8 @@
                     if (getCookie(adCookieName) === 'true') return;
 
                     videoModal.style.display = 'flex';
+                    window._gplmodsVideoAdActive = true;
+                    try { window.dispatchEvent(new CustomEvent('gplmods:video-ad-active')); } catch(e) {}
                     setTimeout(() => videoModal.classList.add('show'), 10);
                     document.body.style.overflow = 'hidden'; 
                     
@@ -114,7 +116,13 @@
             startVideoAdTimer();
 
             // --- 3. CLOSE MODAL LOGIC ---
-            function closeAdModal() {
+            function closeAdModal(e) {
+                if (e) {
+                    e.stopPropagation();
+                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                }
+                window._gplmodsVideoAdActive = false;
+                try { window.dispatchEvent(new CustomEvent('gplmods:video-ad-closed')); } catch(e) {}
                 if (myFP) {
                     try { myFP.destroy(); } catch(e) {}
                 }
@@ -143,7 +151,9 @@
             manualCloseBtn.addEventListener('click', closeAdModal);
 
             // --- 4. HANDLE "PLAY VIDEO" CLICK & SMART TIMERS ---
-            watchBtn.addEventListener('click', () => {
+            watchBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
                 
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
@@ -270,6 +280,11 @@
                         }
                     });
                 }
+
+                playerContainer.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                });
             });
         });
     </script>

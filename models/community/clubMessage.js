@@ -104,6 +104,15 @@ const ClubMessageSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
+    isPinned: {
+        type: Boolean,
+        default: false
+    },
+    pinnedAt: Date,
+    pinnedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
     isSystemMessage: {
         type: Boolean,
         default: false

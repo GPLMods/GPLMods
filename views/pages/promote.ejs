@@ -216,14 +216,82 @@
         position: absolute;
         top: 8px;
         right: 8px;
-        background: rgba(46, 204, 113, 0.2);
+        background: rgba(46, 204, 113, 0.18);
         color: #2ecc71;
-        border: 1px solid rgba(46, 204, 113, 0.4);
-        border-radius: 10px;
-        font-size: 0.68em;
-        padding: 2px 6px;
+        border: 1px solid rgba(46, 204, 113, 0.5);
+        border-radius: 12px;
+        font-size: 0.72em;
+        padding: 3px 8px;
         font-weight: 700;
         text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+    }
+    .pulse-indicator-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        box-shadow: 0 0 8px #2ecc71;
+        animation: statusPulse 1.8s infinite ease-in-out;
+        display: inline-block;
+    }
+    @keyframes statusPulse {
+        0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px #2ecc71; }
+        50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #2ecc71; }
+        100% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px #2ecc71; }
+    }
+
+    /* Campaign Mod Actual Icons & Badges */
+    .campaign-icon-wrap {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+    }
+    .campaign-mod-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1.5px solid rgba(255, 215, 0, 0.45);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        background: #1e2029;
+    }
+    .campaign-live-indicator {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: #2ecc71;
+        border: 2px solid #14151b;
+        box-shadow: 0 0 8px #2ecc71;
+        animation: statusPulse 1.8s infinite ease-in-out;
+    }
+    .campaign-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.8em;
+        letter-spacing: 0.3px;
+    }
+    .campaign-status-pill.live {
+        background: rgba(46, 204, 113, 0.16);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.45);
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.2);
+    }
+    .campaign-status-pill.ended {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--silver);
+        border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     /* Tier Selection Cards */
@@ -501,7 +569,7 @@
             <%- include('../partials/go-back-button', { fallback: '/dashboard' }) %>
             <!-- ======================================== -->
             <div class="promote-badge-top">
-                <i class="fas fa-bullhorn"></i> Play Store Style Ads Engine
+                <i class="fas fa-bolt" style="color: var(--gold);"></i> GPLMods Promote Engine
             </div>
             <h1>Skyrocket Your Mod <span>Visibility &amp; Downloads</span></h1>
             <p>
@@ -603,7 +671,9 @@
                                         </div>
                                     </div>
                                     <% if (mod.isPromoted && mod.promotedUntil && new Date(mod.promotedUntil) > new Date()) { %>
-                                        <span class="mod-promoted-pill">Active</span>
+                                        <span class="mod-promoted-pill">
+                                            <span class="pulse-indicator-dot"></span> Active Boost
+                                        </span>
                                     <% } %>
                                 </div>
                             <% }) %>
@@ -771,19 +841,32 @@
                     <div style="margin-top: 15px;">
                         <% promotions.forEach(promo => { %>
                             <% const isLive = promo.status === 'active' && promo.endDate && new Date(promo.endDate) > new Date(); %>
+                            <% const promoModIcon = (promo.file && (promo.file.iconUrl || promo.file.fileIconUrl)) ? (promo.file.iconUrl || promo.file.fileIconUrl) : '/images/default-mod-icon.png'; %>
+                            <% const promoModTitle = (promo.file && (promo.file.name || promo.file.title)) ? (promo.file.name || promo.file.title) : 'Mod Campaign'; %>
+                            <% const promoModCategory = (promo.file && promo.file.category) ? promo.file.category : 'all'; %>
+                            <% const promoModSlug = (promo.file && (promo.file.slug || promo.file._id)) ? (promo.file.slug || promo.file._id) : ''; %>
                             <div class="campaign-item">
-                                <div style="display: flex; align-items: center; gap: 14px; min-width: 200px;">
-                                    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(255, 215, 0, 0.15); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.4em;">
-                                        <i class="fas fa-bullhorn"></i>
+                                <div style="display: flex; align-items: center; gap: 14px; min-width: 240px;">
+                                    <div class="campaign-icon-wrap">
+                                        <img src="<%= promoModIcon %>" alt="<%= promoModTitle %>" class="campaign-mod-img" onerror="this.src='/images/default-mod-icon.png';">
+                                        <% if (isLive) { %>
+                                            <span class="campaign-live-indicator" title="Live Active Campaign"></span>
+                                        <% } %>
                                     </div>
                                     <div>
-                                        <strong style="color: var(--white); font-size: 1.05em; display: block;">
-                                            <%= (promo.file && (promo.file.name || promo.file.title)) ? (promo.file.name || promo.file.title) : 'Mod Campaign' %>
+                                        <strong style="color: var(--white); font-size: 1.05em; display: flex; align-items: center; gap: 6px;">
+                                            <% if (promoModSlug) { %>
+                                                <a href="/mods/<%= promoModCategory %>/<%= promoModSlug %>" style="color: inherit; text-decoration: none;" class="hover-gold" title="View Mod">
+                                                    <%= promoModTitle %>
+                                                </a>
+                                            <% } else { %>
+                                                <%= promoModTitle %>
+                                            <% } %>
                                         </strong>
-                                        <span style="font-size: 0.8em; color: var(--silver);">
+                                        <div style="font-size: 0.8em; color: var(--silver); margin-top: 3px;">
                                             Tier: <strong style="color: var(--gold); text-transform: uppercase;"><%= promo.tier || 'standard' %></strong>
                                             &bull; Started <%= new Date(promo.startDate).toLocaleDateString() %>
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -801,9 +884,16 @@
                                         <div style="font-size: 1.1em; color: var(--white); font-weight: 700;"><%= promo.days %> Days</div>
                                     </div>
                                     <div>
-                                        <span style="background: <%= isLive ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)' %>; color: <%= isLive ? '#2ecc71' : '#e74c3c' %>; border: 1px solid <%= isLive ? 'rgba(46, 204, 113, 0.3)' : 'rgba(231, 76, 60, 0.3)' %>; padding: 4px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8em;">
-                                            <%= isLive ? 'Active' : 'Ended' %>
-                                        </span>
+                                        <% if (isLive) { %>
+                                            <% const daysLeft = Math.max(1, Math.ceil((new Date(promo.endDate) - new Date()) / (1000 * 60 * 60 * 24))); %>
+                                            <span class="campaign-status-pill live">
+                                                <span class="pulse-indicator-dot"></span> Active (<%= daysLeft %>d left)
+                                            </span>
+                                        <% } else { %>
+                                            <span class="campaign-status-pill ended">
+                                                <i class="fas fa-history"></i> Ended
+                                            </span>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>

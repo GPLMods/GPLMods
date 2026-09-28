@@ -235,7 +235,7 @@ const FileSchema = new Schema({
         default: null
     },
 
-    // Paid / Sponsored Promotion (Play Store style ads system)
+    // Paid / Promoted Promotion (GPLMods Promote Engine)
     isPromoted: {
         type: Boolean,
         default: false,

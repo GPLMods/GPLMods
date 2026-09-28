@@ -1,0 +1,993 @@
+<%- include('../partials/header') %>
+
+<style>
+    .similar-page-container {
+        max-width: 1300px;
+        margin: 30px auto 70px;
+        padding: 0 20px;
+    }
+
+    /* Hero Spotlight of Source Mod */
+    .source-mod-hero {
+        background: radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, rgba(20, 22, 30, 0.95) 70%), #111218;
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin-bottom: 35px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+        position: relative;
+        overflow: hidden;
+    }
+    .source-mod-hero::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        background: radial-gradient(circle at right, rgba(0, 188, 212, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .source-mod-layout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
+    }
+    .source-mod-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex: 1;
+        min-width: 280px;
+    }
+    .source-mod-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 18px;
+        object-fit: cover;
+        border: 2px solid var(--gold);
+        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+        background: #191b24;
+        flex-shrink: 0;
+    }
+    .source-mod-details h1 {
+        font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+        color: #fff;
+        margin: 0 0 6px 0;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .source-mod-details p {
+        color: var(--silver);
+        margin: 0 0 10px 0;
+        font-size: 0.92rem;
+    }
+    .source-tags-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .source-tag-pill {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--silver);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+    }
+    .source-tag-pill.active-cat {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: rgba(255, 215, 0, 0.4);
+        color: var(--gold);
+        font-weight: 700;
+    }
+    .source-mod-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .btn-return-mod {
+        background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+        color: #000;
+        font-weight: 700;
+        padding: 10px 22px;
+        border-radius: 12px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.92rem;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        transition: all 0.25s ease;
+    }
+    .btn-return-mod:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+    }
+
+    /* Engine Status Banner */
+    .engine-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .engine-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .engine-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(255, 215, 0, 0.15);
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    .engine-title-wrap h2 {
+        color: #fff;
+        font-size: 1.35rem;
+        margin: 0;
+        font-weight: 700;
+    }
+    .engine-title-wrap span {
+        color: var(--silver);
+        font-size: 0.85rem;
+        display: block;
+        margin-top: 2px;
+    }
+    .results-count-badge {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--silver);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .results-count-badge strong {
+        color: var(--gold);
+    }
+
+    /* Control Bar with Custom Dropdowns */
+    .similar-filter-bar {
+        background: #14151e;
+        border: 1px solid #282a36;
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 30px;
+        display: grid;
+        grid-template-columns: 1.2fr repeat(3, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+    }
+    @media (max-width: 1024px) {
+        .similar-filter-bar {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @media (max-width: 600px) {
+        .similar-filter-bar {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Custom Select Wrapper for Similar Mods */
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select-wrapper.open {
+        z-index: 1000;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #333645;
+        background-color: #0c0d12;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        min-height: 42px;
+        box-sizing: border-box;
+    }
+    .custom-select:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-text {
+        color: #fff;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .custom-select-arrow {
+        color: var(--silver);
+        font-size: 0.78rem;
+        transition: transform 0.3s ease;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #14151e;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-6px);
+        transition: all 0.25s ease;
+        z-index: 1001;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .custom-option {
+        padding: 9px 14px;
+        color: var(--silver);
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s, color 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+    .custom-option:hover {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .custom-option.selected {
+        background-color: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Live Search Input */
+    .similar-search-box {
+        position: relative;
+    }
+    .similar-search-input {
+        width: 100%;
+        background: #0c0d12;
+        border: 1px solid #333645;
+        border-radius: 8px;
+        color: #fff;
+        padding: 10px 14px 10px 36px;
+        font-size: 0.88rem;
+        outline: none;
+        transition: border-color 0.25s;
+        box-sizing: border-box;
+    }
+    .similar-search-input:focus {
+        border-color: var(--gold);
+    }
+    .similar-search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--silver);
+        font-size: 0.85rem;
+    }
+
+    /* Reset Filters Button */
+    .btn-reset-filters {
+        background: transparent;
+        border: 1px solid #333645;
+        color: var(--silver);
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        height: 42px;
+    }
+    .btn-reset-filters:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    /* Similar Mods Grid */
+    .similar-mods-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        gap: 22px;
+    }
+
+    /* Enhanced Similar Mod Card */
+    .similar-mod-card {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        position: relative;
+    }
+    .similar-mod-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 215, 0, 0.45);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 215, 0, 0.15);
+    }
+
+    /* Card Top Bar with Match Percentage */
+    .card-match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px 8px;
+    }
+    .match-score-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+    }
+    .match-score-pill.super {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 152, 0, 0.2));
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.5);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    .match-score-pill.high {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+    .match-score-pill.good {
+        background: rgba(0, 188, 212, 0.15);
+        color: #00bcd4;
+        border: 1px solid rgba(0, 188, 212, 0.4);
+    }
+
+    .platform-mini-tag {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+    .platform-mini-tag.android { background: rgba(61, 220, 132, 0.15); color: #3ddc84; }
+    .platform-mini-tag.ios-jailed,
+    .platform-mini-tag.ios-ipa { background: rgba(0, 122, 255, 0.15); color: #007aff; }
+    .platform-mini-tag.ios-jailbroken,
+    .platform-mini-tag.ios-deb { background: rgba(186, 104, 200, 0.15); color: #ba68c8; }
+    .platform-mini-tag.windows { background: rgba(0, 164, 239, 0.15); color: #00a4ef; }
+    .platform-mini-tag.wordpress { background: rgba(33, 117, 155, 0.15); color: #21759b; }
+
+    /* Card Main Body */
+    .card-body-content {
+        padding: 10px 16px 14px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+    }
+    .similar-item-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 1px solid #333;
+        background: #0d0e12;
+        flex-shrink: 0;
+    }
+    .similar-item-text {
+        flex: 1;
+        min-width: 0;
+    }
+    .similar-item-title {
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        text-decoration: none;
+    }
+    .similar-item-title:hover {
+        color: var(--gold);
+    }
+    .similar-item-dev {
+        color: var(--silver);
+        font-size: 0.8rem;
+        margin: 0 0 6px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .similar-item-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.78rem;
+        color: var(--silver);
+    }
+    .similar-item-meta i {
+        color: var(--gold);
+    }
+
+    /* Match Reasons Pills */
+    .match-reasons-wrap {
+        padding: 0 16px 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .match-reason-pill {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 0.74rem;
+        color: #cfd3dc;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .match-reason-pill i {
+        color: var(--gold);
+        font-size: 0.7rem;
+    }
+
+    /* Card Footer Actions */
+    .similar-card-footer {
+        margin-top: auto;
+        padding: 12px 16px;
+        border-top: 1px solid #22242f;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .btn-view-similar {
+        flex: 1;
+        background: var(--gold);
+        color: #000;
+        text-align: center;
+        padding: 9px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-view-similar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 14px rgba(255, 215, 0, 0.4);
+    }
+    .btn-icon-wishlist {
+        background: #0d0e12;
+        border: 1px solid #333645;
+        color: var(--silver);
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    .btn-icon-wishlist:hover {
+        border-color: var(--red);
+        color: var(--red);
+    }
+
+    /* Empty State */
+    .similar-empty-box {
+        text-align: center;
+        padding: 70px 20px;
+        background: #14151b;
+        border: 1px dashed #333645;
+        border-radius: 20px;
+        margin: 40px auto;
+        max-width: 600px;
+    }
+    .similar-empty-box i {
+        font-size: 3.5rem;
+        color: var(--gold);
+        opacity: 0.4;
+        margin-bottom: 18px;
+    }
+    .similar-empty-box h3 {
+        color: #fff;
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+    }
+    .similar-empty-box p {
+        color: var(--silver);
+        font-size: 0.95rem;
+        margin-bottom: 22px;
+    }
+</style>
+
+<div class="similar-page-container">
+    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
+    <%- include('../partials/go-back-button', { fallback: '/mods/' + sourceMod.category + '/' + (sourceMod.slug || sourceMod._id) }) %>
+    <!-- ======================================== -->
+
+    <!-- Source Mod Spotlight Hero -->
+    <div class="source-mod-hero" style="margin-top: 1rem;">
+        <div class="source-mod-layout">
+            <div class="source-mod-info">
+                <img src="<%= sourceMod.iconUrl %>" alt="<%= sourceMod.name %>" class="source-mod-icon" onerror="this.src='/images/default-app-icon.png';">
+                <div class="source-mod-details">
+                    <h1>
+                        <%= sourceMod.name %>
+                        <span style="font-size: 0.65em; font-weight: 600; color: var(--gold); background: rgba(255, 215, 0, 0.12); border: 1px solid rgba(255, 215, 0, 0.3); padding: 2px 10px; border-radius: 12px;">
+                            v<%= sourceMod.version || '1.0' %>
+                        </span>
+                    </h1>
+                    <p>
+                        Developed by <strong style="color: #fff;"><%= sourceMod.developer || 'Unknown' %></strong>
+                        &bull; Uploaded by <strong style="color: #fff;"><%= sourceMod.uploader || 'Creator' %></strong>
+                        &bull; <%= sourceMod.subCategory || sourceMod.category.toUpperCase() %>
+                    </p>
+                    <div class="source-tags-list">
+                        <span class="source-tag-pill active-cat"><i class="fas fa-layer-group"></i> <%= sourceMod.category.toUpperCase() %></span>
+                        <% if (Array.isArray(sourceMod.tags)) { %>
+                            <% sourceMod.tags.slice(0, 5).forEach(t => { %>
+                                <span class="source-tag-pill"><i class="fas fa-tag"></i> <%= t %></span>
+                            <% }); %>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="source-mod-actions">
+                <a href="/mods/<%= sourceMod.category %>/<%= sourceMod.slug || sourceMod._id %>" class="btn-return-mod">
+                    <i class="fas fa-download"></i> Back to Mod Download Page
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engine Header & Metrics -->
+    <div class="engine-status-bar">
+        <div class="engine-title-wrap">
+            <div class="engine-icon-badge">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <div>
+                <h2>GPLMods Dynamic Similarity Engine</h2>
+                <span>Delicate multi-factor matching based on shared tags, franchise names, category, and developer compatibility.</span>
+            </div>
+        </div>
+        <div class="results-count-badge">
+            <span id="resultsCountLabel">Found <strong><%= similarItems.length %></strong> Dynamic Recommendations</span>
+        </div>
+    </div>
+
+    <!-- Interactive Control Bar with Custom Dropdowns -->
+    <div class="similar-filter-bar">
+        <!-- Live Title / Keyword Filter -->
+        <div class="similar-search-box">
+            <i class="fas fa-search similar-search-icon"></i>
+            <input type="text" id="liveSearchInput" class="similar-search-input" placeholder="Search matches by keyword, tag, dev...">
+        </div>
+
+        <!-- Sort By Dropdown -->
+        <div class="custom-select-wrapper" id="wrapper-simSort">
+            <div class="custom-select">
+                <span class="custom-select-text">
+                    <i class="fas fa-sort-amount-down" style="color: var(--gold);"></i>
+                    <span class="text-label">Highest Similarity</span>
+                </span>
+                <i class="fas fa-chevron-down custom-select-arrow"></i>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option selected" data-value="similarity">
+                    <i class="fas fa-bolt" style="color: var(--gold);"></i> Highest Similarity
+                </div>
+                <div class="custom-option" data-value="downloads">
+                    <i class="fas fa-download" style="color: #2ecc71;"></i> Most Downloaded
+                </div>
+                <div class="custom-option" data-value="rating">
+                    <i class="fas fa-star" style="color: #f1c40f;"></i> Highest Rated
+                </div>
+                <div class="custom-option" data-value="views">
+                    <i class="fas fa-eye" style="color: #00bcd4;"></i> Most Viewed
+                </div>
+                <div class="custom-option" data-value="newest">
+                    <i class="fas fa-clock" style="color: #ba68c8;"></i> Recently Added
+                </div>
+            </div>
+            <input type="hidden" id="simSortInput" value="similarity">
+        </div>
+
+        <!-- Platform Filter Dropdown -->
+        <div class="custom-select-wrapper" id="wrapper-simPlatform">
+            <div class="custom-select">
+                <span class="custom-select-text">
+                    <i class="fas fa-filter" style="color: var(--gold);"></i>
+                    <span class="text-label">All Platforms</span>
+                </span>
+                <i class="fas fa-chevron-down custom-select-arrow"></i>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option selected" data-value="all">
+                    <i class="fas fa-globe"></i> All Platforms
+                </div>
+                <div class="custom-option" data-value="android">
+                    <i class="fab fa-android" style="color: #3ddc84;"></i> Android
+                </div>
+                <div class="custom-option" data-value="ios-jailed">
+                    <i class="fab fa-apple" style="color: #007aff;"></i> iOS (Jailed / IPA)
+                </div>
+                <div class="custom-option" data-value="ios-jailbroken">
+                    <i class="fas fa-terminal" style="color: #ba68c8;"></i> iOS (Jailbroken / DEB)
+                </div>
+                <div class="custom-option" data-value="windows">
+                    <i class="fab fa-windows" style="color: #00a4ef;"></i> Windows
+                </div>
+                <div class="custom-option" data-value="wordpress">
+                    <i class="fab fa-wordpress" style="color: #21759b;"></i> WordPress
+                </div>
+            </div>
+            <input type="hidden" id="simPlatformInput" value="all">
+        </div>
+
+        <!-- Match Strength Filter Dropdown -->
+        <div class="custom-select-wrapper" id="wrapper-simMatch">
+            <div class="custom-select">
+                <span class="custom-select-text">
+                    <i class="fas fa-bullseye" style="color: var(--gold);"></i>
+                    <span class="text-label">All Matches (40%+)</span>
+                </span>
+                <i class="fas fa-chevron-down custom-select-arrow"></i>
+            </div>
+            <div class="custom-options">
+                <div class="custom-option selected" data-value="0">
+                    <i class="fas fa-sliders-h"></i> All Matches (40%+)
+                </div>
+                <div class="custom-option" data-value="70">
+                    <i class="fas fa-check-circle" style="color: #2ecc71;"></i> High Match (70%+)
+                </div>
+                <div class="custom-option" data-value="85">
+                    <i class="fas fa-crown" style="color: var(--gold);"></i> Super Match (85%+)
+                </div>
+            </div>
+            <input type="hidden" id="simMatchInput" value="0">
+        </div>
+
+        <!-- Reset Button -->
+        <button type="button" class="btn-reset-filters" id="btnResetFilters" title="Reset all dropdowns and search">
+            <i class="fas fa-undo"></i> Reset
+        </button>
+    </div>
+
+    <!-- Recommendations Grid -->
+    <% if (similarItems && similarItems.length > 0) { %>
+        <div class="similar-mods-grid" id="similarModsGrid">
+            <% similarItems.forEach(item => { %>
+                <% 
+                    const matchScore = item.similarityPercentage || 50;
+                    let matchTier = 'good';
+                    if (matchScore >= 85) matchTier = 'super';
+                    else if (matchScore >= 70) matchTier = 'high';
+
+                    const itemSlug = item.slug || (typeof slugify === 'function' ? slugify(item.name) : item._id);
+                    const itemUrl = `/mods/${item.category}/${itemSlug}`;
+                %>
+                <div class="similar-mod-card"
+                     data-id="<%= item._id %>"
+                     data-title="<%= (item.name || '').toLowerCase() %>"
+                     data-dev="<%= (item.developer || '').toLowerCase() %>"
+                     data-tags="<%= (Array.isArray(item.tags) ? item.tags.join(' ') : '').toLowerCase() %>"
+                     data-platform="<%= item.category %>"
+                     data-score="<%= matchScore %>"
+                     data-downloads="<%= item.downloads || 0 %>"
+                     data-rating="<%= item.averageRating || 0 %>"
+                     data-views="<%= item.views || 0 %>"
+                     data-date="<%= new Date(item.createdAt).getTime() %>">
+                    
+                    <div class="card-match-header">
+                        <span class="match-score-pill <%= matchTier %>">
+                            <i class="fas fa-bolt"></i> <%= matchScore %>% Match
+                        </span>
+                        <span class="platform-mini-tag <%= item.category %>">
+                            <%= item.category.replace('-jailed', ' IPA').replace('-jailbroken', ' DEB') %>
+                        </span>
+                    </div>
+
+                    <div class="card-body-content">
+                        <img src="<%= item.iconUrl %>" alt="<%= item.name %>" class="similar-item-icon" onerror="this.src='/images/default-app-icon.png';">
+                        <div class="similar-item-text">
+                            <a href="<%= itemUrl %>" class="similar-item-title" title="<%= item.name %>">
+                                <%= item.name %>
+                            </a>
+                            <div class="similar-item-dev">
+                                <i class="fas fa-code-branch" style="color: #888;"></i> <%= item.developer || 'Indie Developer' %>
+                            </div>
+                            <div class="similar-item-meta">
+                                <span><i class="fas fa-star"></i> <%= (item.averageRating || 0).toFixed(1) %></span>
+                                <span><i class="fas fa-download"></i> <%= (item.downloads || 0).toLocaleString() %></span>
+                                <span>v<%= item.version || '1.0' %></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Match Reasons -->
+                    <% if (Array.isArray(item.matchReasons) && item.matchReasons.length > 0) { %>
+                        <div class="match-reasons-wrap">
+                            <% item.matchReasons.slice(0, 3).forEach(r => { %>
+                                <span class="match-reason-pill">
+                                    <i class="<%= r.icon || 'fas fa-check' %>"></i> <%= r.label %>
+                                </span>
+                            <% }); %>
+                        </div>
+                    <% } %>
+
+                    <!-- Footer Actions -->
+                    <div class="similar-card-footer">
+                        <a href="<%= itemUrl %>" class="btn-view-similar">
+                            <i class="fas fa-arrow-right"></i> View Mod
+                        </a>
+                        <% if (typeof user !== 'undefined' && user) { %>
+                            <form action="/files/<%= item._id %>/whitelist" method="POST" style="margin: 0;">
+                                <input type="hidden" name="redirectUrl" value="back">
+                                <button type="submit" class="btn-icon-wishlist" title="Add to Wishlist">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </form>
+                        <% } else { %>
+                            <a href="/login" class="btn-icon-wishlist" title="Login to save">
+                                <i class="fas fa-heart"></i>
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+
+        <div id="noClientMatches" class="similar-empty-box" style="display: none;">
+            <i class="fas fa-search-minus"></i>
+            <h3>No Matching Recommendations Found</h3>
+            <p>None of the similar mods match your selected platform or similarity filters. Try resetting the filters to view all recommendations.</p>
+            <button type="button" class="btn-return-mod" onclick="resetAllFilters()">Reset All Filters</button>
+        </div>
+    <% } else { %>
+        <div class="similar-empty-box">
+            <i class="fas fa-search-location"></i>
+            <h3>No Similar Creations Found Yet</h3>
+            <p>Our dynamic similarity engine could not find any other live creations in this category or with related tags yet.</p>
+            <a href="/category?cat=<%= encodeURIComponent(sourceMod.category) %>" class="btn-return-mod">
+                <i class="fas fa-th-large"></i> Explore <%= sourceMod.category.toUpperCase() %> Category
+            </a>
+        </div>
+    <% } %>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Universal Custom Select Setup
+        function setupCustomSelect(wrapperId, hiddenInputId, onSelectCallback) {
+            const wrapper = document.getElementById(wrapperId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            if (!wrapper || !hiddenInput) return;
+
+            const selectBtn = wrapper.querySelector('.custom-select');
+            const selectText = wrapper.querySelector('.custom-select-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+                wrapper.classList.toggle('open');
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const opt = e.target.closest('.custom-option');
+                if (!opt) return;
+
+                const val = opt.getAttribute('data-value');
+                wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                const labelSpan = selectText.querySelector('.text-label');
+                if (labelSpan) {
+                    labelSpan.textContent = opt.textContent.trim();
+                } else {
+                    selectText.innerHTML = opt.innerHTML;
+                }
+
+                hiddenInput.value = val;
+                wrapper.classList.remove('open');
+
+                if (typeof onSelectCallback === 'function') {
+                    onSelectCallback(val);
+                }
+            });
+        }
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
+
+        // Initialize Dropdowns
+        setupCustomSelect('wrapper-simSort', 'simSortInput', applyFiltersAndSort);
+        setupCustomSelect('wrapper-simPlatform', 'simPlatformInput', applyFiltersAndSort);
+        setupCustomSelect('wrapper-simMatch', 'simMatchInput', applyFiltersAndSort);
+
+        // Search input
+        const liveSearchInput = document.getElementById('liveSearchInput');
+        if (liveSearchInput) {
+            liveSearchInput.addEventListener('input', applyFiltersAndSort);
+        }
+
+        // Reset Button
+        const btnResetFilters = document.getElementById('btnResetFilters');
+        if (btnResetFilters) {
+            btnResetFilters.addEventListener('click', resetAllFilters);
+        }
+
+        function applyFiltersAndSort() {
+            const cards = Array.from(document.querySelectorAll('.similar-mod-card'));
+            if (cards.length === 0) return;
+
+            const query = (liveSearchInput ? liveSearchInput.value : '').toLowerCase().trim();
+            const platform = (document.getElementById('simPlatformInput')?.value || 'all').toLowerCase();
+            const minScore = parseInt(document.getElementById('simMatchInput')?.value || '0', 10);
+            const sortBy = document.getElementById('simSortInput')?.value || 'similarity';
+
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title') || '';
+                const dev = card.getAttribute('data-dev') || '';
+                const tags = card.getAttribute('data-tags') || '';
+                const cardPlatform = (card.getAttribute('data-platform') || '').toLowerCase();
+                const score = parseInt(card.getAttribute('data-score') || '0', 10);
+
+                const matchesQuery = !query || title.includes(query) || dev.includes(query) || tags.includes(query);
+                const matchesPlatform = (platform === 'all') || (cardPlatform === platform);
+                const matchesScore = score >= minScore;
+
+                if (matchesQuery && matchesPlatform && matchesScore) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Sort visible cards
+            const grid = document.getElementById('similarModsGrid');
+            if (grid) {
+                cards.sort((a, b) => {
+                    if (sortBy === 'similarity') {
+                        return parseInt(b.getAttribute('data-score') || '0', 10) - parseInt(a.getAttribute('data-score') || '0', 10);
+                    } else if (sortBy === 'downloads') {
+                        return parseInt(b.getAttribute('data-downloads') || '0', 10) - parseInt(a.getAttribute('data-downloads') || '0', 10);
+                    } else if (sortBy === 'rating') {
+                        return parseFloat(b.getAttribute('data-rating') || '0') - parseFloat(a.getAttribute('data-rating') || '0');
+                    } else if (sortBy === 'views') {
+                        return parseInt(b.getAttribute('data-views') || '0', 10) - parseInt(a.getAttribute('data-views') || '0', 10);
+                    } else if (sortBy === 'newest') {
+                        return parseInt(b.getAttribute('data-date') || '0', 10) - parseInt(a.getAttribute('data-date') || '0', 10);
+                    }
+                    return 0;
+                });
+                cards.forEach(c => grid.appendChild(c));
+            }
+
+            // Results count label
+            const label = document.getElementById('resultsCountLabel');
+            if (label) {
+                label.innerHTML = `Showing <strong>${visibleCount}</strong> Recommendations`;
+            }
+
+            // Empty state toggle
+            const noMatches = document.getElementById('noClientMatches');
+            if (noMatches) {
+                noMatches.style.display = (visibleCount === 0) ? 'block' : 'none';
+            }
+        }
+
+        window.resetAllFilters = function() {
+            if (liveSearchInput) liveSearchInput.value = '';
+
+            // Reset sort
+            const sortInput = document.getElementById('simSortInput');
+            if (sortInput) sortInput.value = 'similarity';
+            const sortWrapper = document.getElementById('wrapper-simSort');
+            if (sortWrapper) {
+                sortWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                sortWrapper.querySelector('.custom-option[data-value="similarity"]')?.classList.add('selected');
+                const label = sortWrapper.querySelector('.text-label');
+                if (label) label.textContent = 'Highest Similarity';
+            }
+
+            // Reset platform
+            const platInput = document.getElementById('simPlatformInput');
+            if (platInput) platInput.value = 'all';
+            const platWrapper = document.getElementById('wrapper-simPlatform');
+            if (platWrapper) {
+                platWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                platWrapper.querySelector('.custom-option[data-value="all"]')?.classList.add('selected');
+                const label = platWrapper.querySelector('.text-label');
+                if (label) label.textContent = 'All Platforms';
+            }
+
+            // Reset match strength
+            const matchInput = document.getElementById('simMatchInput');
+            if (matchInput) matchInput.value = '0';
+            const matchWrapper = document.getElementById('wrapper-simMatch');
+            if (matchWrapper) {
+                matchWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                matchWrapper.querySelector('.custom-option[data-value="0"]')?.classList.add('selected');
+                const label = matchWrapper.querySelector('.text-label');
+                if (label) label.textContent = 'All Matches (40%+)';
+            }
+
+            applyFiltersAndSort();
+        };
+
+        // Initial check for URL query params (e.g. ?type=apps)
+        const urlParams = new URLSearchParams(window.location.search);
+        const typeParam = urlParams.get('type');
+        if (typeParam === 'apps' && liveSearchInput) {
+            liveSearchInput.value = 'app';
+            applyFiltersAndSort();
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>

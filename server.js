@@ -77,7 +77,7 @@ const {
     sendDmcaReportConfirmationEmail,
     sendSubscriptionStatusEmail
 } = require('./utils/mailer');
-const { getUserUploadQuota, validateUploadFileSize, TIER_CONFIGS } = require('./utils/uploadQuota');
+const { getUserUploadQuota, validateUploadFileSize, TIER_CONFIGS, getTierQuotaConfig } = require('./utils/uploadQuota');
 
 // AWS SDK v3 Imports (Backblaze B2)
 // Add DeleteObjectCommand to this list
@@ -483,6 +483,7 @@ async function getSmartImageUrl(key) {
         return '/images/default-avatar.png';
     }
 }
+app.set('getSmartImageUrl', getSmartImageUrl);
 
 // --- NEW HELPER: CONVERT IMAGE TO BASE64 DATA URL FOR CORS-FREE HTML2CANVAS ---
 async function getImageAsDataUrl(urlOrKey) {
@@ -1577,16 +1578,20 @@ app.use(async (req, res, next) => {
 // 4 Signed Avatar URL Generator
 app.use(async (req, res, next) => {
     if (req.isAuthenticated() && req.user) {
+        const isGPLMods = req.user.username === 'GPLMods';
+        const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
         if (req.user.profileImageKey) {
             try {
                 const avatarUrl = await getSmartImageUrl(req.user.profileImageKey);
-                req.user.signedAvatarUrl = avatarUrl;
+                req.user.signedAvatarUrl = (avatarUrl && avatarUrl !== '/images/default-avatar.png')
+                    ? avatarUrl
+                    : (req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo);
             } catch (error) {
                 console.error(`Error getting signed URL for key: ${req.user.profileImageKey}`, error);
-                req.user.signedAvatarUrl = '/images/default-avatar.png';
+                req.user.signedAvatarUrl = req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo;
             }
         } else {
-            req.user.signedAvatarUrl = '/images/default-avatar.png';
+            req.user.signedAvatarUrl = req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo;
         }
     }
     next();
@@ -4745,6 +4750,247 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
     }
 }
 
+// ============================================================================
+// DEDICATED SIMILAR MODS PAGE & DELICATE DYNAMIC SIMILARITY ENGINE
+// ============================================================================
+async function renderSimilarModsPage(req, res, next, { category, slug, modId }) {
+    try {
+        let sourceMod = null;
+
+        if (modId && Types.ObjectId.isValid(modId)) {
+            sourceMod = await File.findById(modId).lean();
+        } else if (slug) {
+            if (category) {
+                sourceMod = await File.findOne({
+                    category: category,
+                    $or: [
+                        { slug: slug },
+                        { name: new RegExp(`^${slug.replace(/-/g, ' ')}$`, 'i') }
+                    ]
+                }).lean();
+            }
+            if (!sourceMod) {
+                sourceMod = await File.findOne({
+                    $or: [
+                        { slug: slug },
+                        { name: new RegExp(`^${slug.replace(/-/g, ' ')}$`, 'i') }
+                    ]
+                }).lean();
+            }
+            if (!sourceMod && Types.ObjectId.isValid(slug)) {
+                sourceMod = await File.findById(slug).lean();
+            }
+        }
+
+        if (!sourceMod) {
+            return res.status(404).render('pages/error', {
+                errorCode: '404',
+                errorTitle: 'Mod Not Found',
+                errorMessage: 'We could not locate the requested mod to find similar recommendations.'
+            });
+        }
+
+        // Security check for draft/pending
+        if (sourceMod.status !== 'live') {
+            const isUploader = req.user && req.user.username === sourceMod.uploader;
+            const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
+            if (!isUploader && !isAdmin) {
+                return res.status(404).render('pages/error', {
+                    errorCode: '404',
+                    errorTitle: 'Page Not Found',
+                    errorMessage: 'This mod is not currently published.'
+                });
+            }
+        }
+
+        // Adult content preference check
+        if (sourceMod.ageRating === '18+' && shouldHideAdultContent(req.user)) {
+            return res.status(404).render('pages/404');
+        }
+
+        // Attach signed icon for sourceMod
+        const srcIconKey = sourceMod.iconUrl || sourceMod.iconKey;
+        sourceMod.iconUrl = srcIconKey ? await getSmartImageUrl(srcIconKey) : '/images/default-app-icon.png';
+
+        // Dynamic Similarity Engine
+        const excludedIds = [
+            sourceMod._id,
+            ...(sourceMod.variants || []),
+            ...(sourceMod.olderVersions || []),
+            sourceMod.parentFile
+        ].filter(Boolean);
+
+        const stopwords = new Set([
+            'mod', 'apk', 'ipa', 'deb', 'zip', 'rar', 'v1', 'v2', 'v3', 'v4', 'v5',
+            'unlimited', 'money', 'hack', 'full', 'pro', 'premium', 'latest', 'version',
+            'free', 'online', 'offline', 'game', 'app', 'software', 'edition', 'unlocked',
+            'gold', 'vip', 'crack', 'cheat', 'patch', 'patcher', 'build', 'android', 'windows', 'ios'
+        ]);
+
+        const sourceTokens = (sourceMod.name || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter(t => t.length >= 3 && !stopwords.has(t));
+
+        const sourceTags = (Array.isArray(sourceMod.tags) ? sourceMod.tags : [])
+            .map(t => t.toLowerCase().trim())
+            .filter(Boolean);
+
+        const sourceDev = (sourceMod.developer && sourceMod.developer !== 'N/A' && sourceMod.developer !== 'Unknown')
+            ? sourceMod.developer.trim().toLowerCase()
+            : null;
+
+        const sourceSubCat = (sourceMod.subCategory || '').trim().toLowerCase();
+        const sourceCategory = sourceMod.category;
+
+        // Build candidate matching query
+        const candidateOrConditions = [
+            { category: sourceCategory }
+        ];
+
+        if (sourceTags.length > 0) {
+            candidateOrConditions.push({ tags: { $in: sourceTags } });
+        }
+        if (sourceSubCat) {
+            candidateOrConditions.push({ subCategory: sourceMod.subCategory });
+        }
+        if (sourceDev) {
+            candidateOrConditions.push({ developer: new RegExp(`^${sourceDev.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+        }
+        if (sourceTokens.length > 0) {
+            const regexTokens = sourceTokens.slice(0, 3).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+            candidateOrConditions.push({ name: { $regex: regexTokens, $options: 'i' } });
+        }
+
+        let candidates = await File.find({
+            status: 'live',
+            _id: { $nin: excludedIds },
+            $or: candidateOrConditions
+        }).limit(120).lean();
+
+        if (candidates.length === 0) {
+            candidates = await File.find({
+                status: 'live',
+                _id: { $nin: excludedIds }
+            }).sort({ downloads: -1 }).limit(30).lean();
+        }
+
+        // Multi-factor scoring
+        candidates.forEach(c => {
+            let score = 0;
+            const matchReasons = [];
+
+            // 1. Tag overlap
+            const cTags = (Array.isArray(c.tags) ? c.tags : []).map(t => t.toLowerCase().trim());
+            const sharedTags = cTags.filter(t => sourceTags.includes(t));
+            if (sharedTags.length > 0) {
+                score += Math.min(45, sharedTags.length * 15 + (sharedTags.length >= 3 ? 15 : 0));
+                matchReasons.push({
+                    icon: 'fas fa-tags',
+                    label: `${sharedTags.length} Shared Tag${sharedTags.length > 1 ? 's' : ''} (${sharedTags.slice(0, 2).join(', ')})`
+                });
+            }
+
+            // 2. Name & franchise matching
+            const cTokens = (c.name || '')
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(t => t.length >= 3 && !stopwords.has(t));
+            const sharedTokens = cTokens.filter(t => sourceTokens.includes(t));
+            if (sharedTokens.length > 0) {
+                score += Math.min(45, sharedTokens.length * 20);
+                matchReasons.push({
+                    icon: 'fas fa-clone',
+                    label: `Franchise Match (${sharedTokens.slice(0, 2).join(', ')})`
+                });
+            } else if (
+                sourceTokens.length > 0 &&
+                (c.name.toLowerCase().includes(sourceTokens[0]) || (sourceMod.name && c.name.toLowerCase().includes(sourceMod.name.toLowerCase())))
+            ) {
+                score += 30;
+                matchReasons.push({ icon: 'fas fa-clone', label: 'Series / Title Match' });
+            }
+
+            // 3. Subcategory matching
+            const cSubCat = (c.subCategory || '').trim().toLowerCase();
+            if (sourceSubCat && cSubCat && sourceSubCat === cSubCat) {
+                score += 25;
+                matchReasons.push({ icon: 'fas fa-layer-group', label: c.subCategory });
+            } else if (
+                (sourceSubCat.includes('game') && cSubCat.includes('game')) ||
+                (sourceSubCat.includes('app') && cSubCat.includes('app')) ||
+                (sourceSubCat.includes('software') && cSubCat.includes('software'))
+            ) {
+                score += 10;
+            }
+
+            // 4. Developer matching
+            const cDev = (c.developer || '').trim().toLowerCase();
+            if (sourceDev && cDev && sourceDev === cDev) {
+                score += 25;
+                matchReasons.push({ icon: 'fas fa-code-branch', label: `By ${c.developer}` });
+            }
+
+            // 5. Platform matching
+            if (c.category === sourceCategory) {
+                score += 10;
+            }
+            if (c.architecture && sourceMod.architecture && c.architecture === sourceMod.architecture) {
+                score += 5;
+            }
+
+            // 6. Community popularity bonus
+            if ((c.averageRating || 0) >= 4.0) score += 5;
+            if ((c.downloads || 0) >= 500) score += 5;
+
+            // Normalized percentage
+            c.similarityScore = score;
+            c.similarityPercentage = Math.min(99, Math.max(45, Math.round((score / 120) * 100)));
+            c.matchReasons = matchReasons;
+        });
+
+        // Attach signed icon URLs
+        const attachIcons = async (list) => {
+            if (!Array.isArray(list) || list.length === 0) return [];
+            return Promise.all(list.map(async (m) => {
+                const key = m.iconUrl || m.iconKey;
+                const iUrl = key ? await getSmartImageUrl(key) : '/images/default-app-icon.png';
+                return { ...m, iconUrl: iUrl };
+            }));
+        };
+
+        const scoredCandidates = await attachIcons(candidates);
+        scoredCandidates.sort((a, b) => (b.similarityPercentage || 0) - (a.similarityPercentage || 0) || (b.downloads || 0) - (a.downloads || 0));
+
+        res.render('pages/similar-mods', {
+            sourceMod,
+            similarItems: scoredCandidates,
+            pageTitle: `Similar Mods to ${sourceMod.name} - GPLMods Similarity Engine`,
+            pageDescription: `Discover delicate dynamic similarity recommendations, related apps, and alternative mods for ${sourceMod.name} on GPLMods.`,
+            user: req.user
+        });
+
+    } catch (err) {
+        console.error('[renderSimilarModsPage Error]:', err);
+        return next(err);
+    }
+}
+
+// 0. Dedicated Similar Mods Route (Placed before variant route to prevent collision)
+app.get('/mods/:platform/:slug/similar', async (req, res, next) => {
+    const platform = (req.params.platform || '').toLowerCase();
+    const slug = (req.params.slug || '').toLowerCase();
+    return renderSimilarModsPage(req, res, next, { category: platform, slug });
+});
+
+// Shortcut Similar Mods Route
+app.get('/similar-mods/:id', async (req, res, next) => {
+    const id = req.params.id;
+    return renderSimilarModsPage(req, res, next, { modId: id });
+});
+
 // 1. Main mod route: /mods/:platform/:slug
 app.get('/mods/:platform/:slug', async (req, res, next) => {
     const platform = (req.params.platform || '').toLowerCase();
@@ -4935,7 +5181,7 @@ app.get('/promote', async (req, res, next) => {
 
         const cfPromoteEnv = (process.env.CASHFREE_ENVIRONMENT || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
         res.render('pages/promote', {
-            pageTitle: 'Promote Your Mods - Play Store Style Ads System',
+            pageTitle: 'Promote Your Mods - GPLMods Promote Engine',
             pageDescription: 'Boost your mod visibility, gain targeted installs, and reach top ranks across GPL Mods with dedicated promotional placements.',
             cashfreeEnv: cfPromoteEnv,
             cashfreeAppId: process.env.CASHFREE_APP_ID || '',
@@ -5072,7 +5318,7 @@ app.post('/api/mods/:id/create-promotion-order', async (req, res) => {
     }
 });
 
-// 2. Promote Mod Endpoint (Play Store style ads system)
+// 2. Promote Mod Endpoint (GPLMods Promote Engine)
 app.post('/api/mods/:id/promote', async (req, res) => {
     try {
         if (!req.isAuthenticated()) {
@@ -6535,6 +6781,14 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// Dedicated guest notification & newsletter settings page
+app.get(['/guest/notifications', '/notifications/guest'], (req, res) => {
+    res.render('pages/guest-notifications', {
+        pageTitle: 'Guest Notification & Newsletter Settings | GPLMods',
+        pageDescription: 'Manage device alerts, browser push notifications, and newsletter subscriptions on GPLMods.'
+    });
+});
+
 app.post('/settings/notifications', async (req, res) => {
     try {
         const isJson = req.is('json') || (req.headers.accept && req.headers.accept.includes('json'));
@@ -7053,7 +7307,21 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
         // 2. Get the daily time-series data for this user
         const myDailyStats = await DailyStat.find({ uploader: req.user.username }).sort({ dateString: 1 });
 
-        // 3. Calculate Totals and resolve icons
+        // 3. Separate files by status: Live, Draft, Pending, DMCA Takedown, Rejected
+        const liveMods = myFiles.filter(f => f.status === 'live' && !f.isDmcaHidden);
+        const draftMods = myFiles.filter(f => f.status === 'draft');
+        const pendingMods = myFiles.filter(f => f.status === 'pending');
+        const dmcaMods = myFiles.filter(f => f.isDmcaHidden);
+        const rejectedMods = myFiles.filter(f => f.status === 'rejected');
+
+        // 4. Calculate metrics (Live mods default vs Lifetime totals)
+        let liveViews = 0;
+        let liveDownloads = 0;
+        liveMods.forEach(f => {
+            liveViews += f.views || 0;
+            liveDownloads += f.downloads || 0;
+        });
+
         let totalViews = 0;
         let totalDownloads = 0;
         myFiles.forEach(f => {
@@ -7076,6 +7344,14 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
         res.render('pages/my-stats', {
             files: filesWithIcons,
             dailyStatsJson: JSON.stringify(myDailyStats), // Stringify for Chart.js
+            liveModsCount: liveMods.length,
+            draftModsCount: draftMods.length,
+            pendingModsCount: pendingMods.length,
+            dmcaModsCount: dmcaMods.length,
+            rejectedModsCount: rejectedMods.length,
+            totalModsCount: myFiles.length,
+            liveViews,
+            liveDownloads,
             totalViews,
             totalDownloads
         });
@@ -13277,20 +13553,20 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             refundEligibility.reason = 'Refund requests are currently on 3-day cooldown from your last refund.';
         }
 
-        let userAvatar = '/images/default-avatar.png';
+        let userAvatar = (user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png';
         if (user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png') {
             userAvatar = user.signedAvatarUrl;
         } else if (user.cardAvatarUrl && user.cardAvatarUrl !== '/images/default-avatar.png') {
             userAvatar = user.cardAvatarUrl;
+        } else if (user.avatarUrl && user.avatarUrl !== '/images/default-avatar.png') {
+            userAvatar = user.avatarUrl;
+        } else if (user.avatar && user.avatar !== '/images/default-avatar.png') {
+            userAvatar = user.avatar;
         } else if (user.profileImageKey) {
             try {
                 const resolved = await getSmartImageUrl(user.profileImageKey);
                 if (resolved && resolved !== '/images/default-avatar.png') userAvatar = resolved;
             } catch (e) {}
-        } else if (user.avatarUrl && user.avatarUrl !== '/images/default-avatar.png') {
-            userAvatar = user.avatarUrl;
-        } else if (user.avatar && user.avatar !== '/images/default-avatar.png') {
-            userAvatar = user.avatar;
         }
 
         const tierQuotaConfig = getTierQuotaConfig(user);
@@ -17278,10 +17554,75 @@ const startServer = async () => {
                     await message.save();
 
                     io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_deleted', {
-                        messageId: message._id
+                        messageId: message._id,
+                        senderId: message.sender
                     });
                 } catch (err) {
                     console.error('[Clubs] Delete message error:', err);
+                }
+            });
+
+            socket.on('club_pin_message', async (data) => {
+                try {
+                    const { clubId, channelId, messageId, pin } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !messageId) return;
+
+                    const club = await Club.findById(clubId);
+                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isCreator = club && String(club.creator) === String(user._id);
+
+                    if (!isStaff && !isCreator) {
+                        return socket.emit('club_message_error', { message: 'Only club managers can pin messages.' });
+                    }
+
+                    const message = await ClubMessage.findById(messageId).populate('sender', 'username');
+                    if (!message) return;
+
+                    const shouldPin = pin !== false;
+                    message.isPinned = shouldPin;
+                    message.pinnedAt = shouldPin ? new Date() : null;
+                    message.pinnedBy = shouldPin ? user._id : null;
+                    await message.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_pinned', {
+                        messageId: message._id,
+                        channelId,
+                        isPinned: shouldPin,
+                        content: message.content,
+                        senderName: message.sender ? message.sender.username : 'GPLMods'
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Pin message error:', err);
+                }
+            });
+
+            socket.on('club_toggle_channel_restriction', async (data) => {
+                try {
+                    const { clubId, channelId, isReadOnly } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !channelId) return;
+
+                    const club = await Club.findById(clubId);
+                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isCreator = club && String(club.creator) === String(user._id);
+
+                    if (!isStaff && !isCreator) {
+                        return socket.emit('club_message_error', { message: 'Only club managers can restrict channels.' });
+                    }
+
+                    const channel = await ClubChannel.findById(channelId);
+                    if (!channel) return;
+
+                    channel.isReadOnly = typeof isReadOnly === 'boolean' ? isReadOnly : !channel.isReadOnly;
+                    await channel.save();
+
+                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_channel_restriction_updated', {
+                        channelId: channel._id,
+                        isReadOnly: channel.isReadOnly
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Toggle restriction error:', err);
                 }
             });
 

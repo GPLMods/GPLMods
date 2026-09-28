@@ -263,6 +263,26 @@
         border-right: 1px solid #20222c;
         flex-shrink: 0;
     }
+    .club-banner-wrap {
+        width: 100%;
+        height: 105px;
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: #0f1015;
+    }
+    .club-banner-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .club-banner-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(20,21,28,0.65) 70%, #14151c 100%);
+        pointer-events: none;
+    }
     .club-header-box {
         padding: 14px 16px;
         border-bottom: 1px solid #20222c;
@@ -729,12 +749,15 @@
         position: relative;
         width: 32px;
         height: 32px;
+        flex-shrink: 0;
     }
     .member-avatar-img {
-        width: 100%;
-        height: 100%;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         object-fit: cover;
+        display: block;
+        background: #1e2029;
     }
     .online-dot {
         position: absolute;
@@ -1040,10 +1063,10 @@
     <!-- 1. LEFT RAIL: JOINED CLUBS & DISCOVER      -->
     <!-- ========================================== -->
     <div class="discord-rail">
-        <!-- GPL Mods Home -->
-        <a href="/home" class="rail-item" title="GPL Mods Home">
+        <!-- Go Back Arrow to Clubs Directory -->
+        <a href="/clubs" class="rail-item back-rail-btn" title="Back to All Clubs & Communities" style="display: flex; align-items: center; justify-content: center; background: rgba(255, 215, 0, 0.12); border: 1.5px solid var(--gold); color: var(--gold); text-decoration: none; font-size: 1.25rem;">
             <div class="rail-item-pill"></div>
-            <img src="/images/team-logo.png" alt="GPL Mods">
+            <i class="fas fa-arrow-left" style="color: var(--gold);"></i>
         </a>
 
         <div class="rail-divider"></div>
@@ -1075,6 +1098,12 @@
     <!-- 2. CHANNELS SIDEBAR                        -->
     <!-- ========================================== -->
     <div class="discord-channels-col">
+        <!-- Club Banner Header -->
+        <div class="club-banner-wrap">
+            <img src="<%= club.bannerUrl || '/images/default-banner.jpg' %>" alt="<%= club.name %> Banner" class="club-banner-img" onerror="this.onerror=null; this.src='/images/default-banner.jpg';">
+            <div class="club-banner-overlay"></div>
+        </div>
+
         <!-- Club Header with Server Actions Dropdown -->
         <div class="club-header-box" onclick="toggleClubMenu(event)">
             <div class="club-header-title">
@@ -1174,7 +1203,8 @@
         <!-- User Profile Footer with Vanished Mode for Staff -->
         <div class="discord-user-footer">
             <div class="footer-user-info" onclick="window.location.href='/users/<%= user ? user.username : '' %>'">
-                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>" alt="User Avatar" class="footer-avatar">
+                <% const myFooterAvatar = (user && user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png') ? user.signedAvatarUrl : ((user && (user.cardAvatarUrl || user.avatarUrl || user.avatar)) ? (user.cardAvatarUrl || user.avatarUrl || user.avatar) : ((user && user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
+                <img src="<%= myFooterAvatar %>" alt="<%= user ? user.username : 'User Avatar' %>" class="footer-avatar" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                 <div class="footer-name-box">
                     <span class="footer-username"><%= user ? user.username : 'Guest' %></span>
                     <span class="footer-status-tag"><%= isStaff ? 'Site Staff' : 'Member' %></span>
@@ -1203,8 +1233,35 @@
                 <button type="button" class="mobile-channels-toggle-btn" id="mobileChannelsToggleBtn" onclick="toggleLeftDrawer()" title="Channels &amp; Clubs">
                     <i class="fas fa-bars"></i>
                 </button>
+
+                <!-- Go Back to Clubs Button -->
+                <a href="/clubs" class="topbar-btn back-btn-topbar" title="Back to All Clubs" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 600; margin-right: 6px; background: rgba(255,215,0,0.06);">
+                    <i class="fas fa-arrow-left"></i> <span class="hide-mobile">Clubs</span>
+                </a>
+
                 <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
-                <span><%= activeChannel ? activeChannel.name : 'general' %></span>
+                <span style="font-weight: 700;"><%= activeChannel ? activeChannel.name : 'general' %></span>
+
+                <!-- Verified Badge for Club in Topbar -->
+                <% 
+                    const clubCreatorRole = club.creator ? club.creator.role : '';
+                    const isClubOwner = clubCreatorRole === 'owner' || club.isDefault;
+                    const isClubStaff = ['admin', 'support'].includes(clubCreatorRole);
+                    const isClubDistributor = clubCreatorRole === 'distributor';
+                    const isClubVerified = club.isVerified || isClubOwner || isClubStaff || isClubDistributor;
+                %>
+                <% if (isClubVerified) { %>
+                    <% if (isClubOwner) { %>
+                        <i class="fas fa-check-circle" style="color: #ffd700; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(255,215,0,0.4));" title="Official GPLMods Community (Gold Verified)"></i>
+                    <% } else if (isClubStaff) { %>
+                        <i class="fas fa-check-circle" style="color: #e0e0e0; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));" title="Staff Verified Community (Silver)"></i>
+                    <% } else if (isClubDistributor) { %>
+                        <i class="fas fa-check-circle" style="color: #0099ff; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(0,153,255,0.4));" title="Distributor Partner Verified (Blue)"></i>
+                    <% } else { %>
+                        <i class="fas fa-check-circle" style="color: #ffd700; margin-left: 5px; font-size: 0.9em;" title="Verified Community"></i>
+                    <% } %>
+                <% } %>
+
                 <% if (activeChannel && activeChannel.topic) { %>
                     <span class="topbar-topic"><%= activeChannel.topic %></span>
                 <% } %>
@@ -1216,7 +1273,11 @@
                     <i class="fas fa-share-alt"></i>
                 </button>
 
+                <!-- Restrict Channel Toggle (Staff/Creator) -->
                 <% if (hasManageClubPerm) { %>
+                    <button type="button" class="topbar-btn" id="btnToggleChannelRestrict" onclick="toggleChannelRestriction()" title="<%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Restrict Channel Chat' %>" style="color: <%= (activeChannel && activeChannel.isReadOnly) ? '#e74c3c' : 'var(--silver)' %>;">
+                        <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock' : 'fa-lock-open' %>"></i>
+                    </button>
                     <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Track Creator Mod Updates">
                         <i class="fas fa-user-plus"></i>
                     </button>
@@ -1229,16 +1290,43 @@
             </div>
         </div>
 
+        <!-- Channel Restricted Warning Banner -->
+        <div id="channelRestrictedNotice" style="display: <%= (activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none' %>; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600;">
+            <i class="fas fa-lock"></i> Chat in this channel is restricted to staff announcements.
+        </div>
+
         <!-- Chat Messages Container -->
         <div class="chat-messages-container" id="messagesFeed">
+            <!-- Pinned Message Banner -->
+            <% const pinnedMsg = (messages && messages.length > 0) ? messages.find(m => m.isPinned && !m.isDeleted) : null; %>
+            <div id="pinnedMessageBanner" style="display: <%= pinnedMsg ? 'flex' : 'none' %>; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(255,215,0,0.14) 0%, rgba(20,21,27,0.96) 100%); border-bottom: 1.5px solid var(--gold); padding: 8px 16px; font-size: 0.85rem; color: #fff; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);">
+                <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                    <i class="fas fa-thumbtack" style="color: var(--gold); transform: rotate(45deg); font-size: 0.9rem;"></i>
+                    <span style="font-weight: 700; color: var(--gold); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Pinned:</span>
+                    <span id="pinnedBannerText" style="color: #eee; overflow: hidden; text-overflow: ellipsis;"><%= pinnedMsg ? pinnedMsg.content : '' %></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                    <button type="button" id="pinnedBannerJumpBtn" onclick="jumpToPinnedMessage('<%= pinnedMsg ? pinnedMsg._id : '' %>')" style="background: rgba(255,215,0,0.2); border: 1px solid var(--gold); color: #fff; border-radius: 6px; padding: 2px 10px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">Jump</button>
+                    <% if (hasManageClubPerm) { %>
+                        <button type="button" id="pinnedBannerUnpinBtn" onclick="togglePinClubMessage('<%= pinnedMsg ? pinnedMsg._id : '' %>', false)" title="Unpin Message" style="background: none; border: none; color: var(--silver); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 4px;">&times;</button>
+                    <% } %>
+                </div>
+            </div>
+
             <% if (messages && messages.length > 0) { %>
                 <% messages.forEach(msg => { %>
-                    <div class="message-item" id="msg-<%= msg._id %>">
-                        <img src="<%= (msg.sender && msg.sender.signedAvatarUrl) ? msg.sender.signedAvatarUrl : '/images/default-avatar.png' %>" alt="Sender Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.png';">
+                    <% const isMyMessage = user && String(user._id) === String(msg.sender ? msg.sender._id : ''); %>
+                    <% if (msg.isDeleted && isMyMessage) { return; } %>
+                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" style="<%= msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : '' %>">
+                        <% 
+                            const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
+                            const senderAvatar = (msg.sender && msg.sender.signedAvatarUrl) ? msg.sender.signedAvatarUrl : (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
+                        %>
+                        <img src="<%= senderAvatar %>" alt="Sender Avatar" class="message-avatar" onerror="this.src='<%= isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png' %>';">
                         <div class="message-content-col">
                             <div class="message-header-row">
                                 <a href="/users/<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" class="message-username" target="_blank">
-                                    <%= (msg.sender && msg.sender.username) ? msg.sender.username : 'System' %>
+                                    <%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>
                                 </a>
 
                                 <!-- Badges -->
@@ -1253,78 +1341,89 @@
                                 <% if (String(club.creator._id || club.creator) === String(msg.sender ? msg.sender._id : '')) { %>
                                     <span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>
                                 <% } %>
+                                <% if (msg.isPinned) { %>
+                                    <span class="badge-icon-tag badge-pinned" style="background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold);"><i class="fas fa-thumbtack"></i> Pinned</span>
+                                <% } %>
 
                                 <span class="message-time"><%= new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
                             </div>
 
                             <!-- Body Text -->
-                            <div class="message-body-text" id="msg-text-<%= msg._id %>"><% if (msg.isDeleted) { %><em style="color: #777;">[This message was deleted]</em><% } else { %><%= msg.content %><% if (msg.isEdited) { %> <span style="font-size: 0.72rem; color: #888; font-style: italic; margin-left: 6px;">(edited)</span><% } %><% } %></div>
+                            <div class="message-body-text" id="msg-text-<%= msg._id %>"><% if (msg.isDeleted) { %><em style="color: #777; font-size: 0.85rem;"><i class="fas fa-trash-alt" style="margin-right: 4px; font-size: 0.75rem;"></i> This message was deleted</em><% } else { %><%= msg.content %><% if (msg.isEdited) { %> <span style="font-size: 0.72rem; color: #888; font-style: italic; margin-left: 6px;">(edited)</span><% } %><% } %></div>
 
-                            <!-- Mod Update Embed (for #new-uploads and #new-updates) -->
-                            <% if (msg.modUpdate && msg.modUpdate.name) { %>
-                                <div class="mod-update-embed-box">
-                                    <img src="<%= msg.modUpdate.iconUrl || '/images/default-avatar.png' %>" class="mod-embed-icon" alt="Mod Icon">
-                                    <div class="mod-embed-info">
-                                        <h4><%= msg.modUpdate.name %> <span style="font-size: 0.8rem; color: var(--gold); font-weight: normal;">v<%= msg.modUpdate.version %></span></h4>
-                                        <p><%= msg.modUpdate.changelog || 'Download this release safely on GPLMods.' %></p>
-                                        <a href="<%= msg.modUpdate.downloadUrl %>" class="btn-send-chat" style="display: inline-flex; text-decoration: none; padding: 4px 14px; font-size: 0.85rem;">
-                                            <i class="fas fa-download"></i> View Mod Page
-                                        </a>
+                            <% if (!msg.isDeleted) { %>
+                                <!-- Mod Update Embed (for #new-uploads and #new-updates) -->
+                                <% if (msg.modUpdate && msg.modUpdate.name) { %>
+                                    <div class="mod-update-embed-box">
+                                        <img src="<%= msg.modUpdate.iconUrl || '/images/default-avatar.png' %>" class="mod-embed-icon" alt="Mod Icon">
+                                        <div class="mod-embed-info">
+                                            <h4><%= msg.modUpdate.name %> <span style="font-size: 0.8rem; color: var(--gold); font-weight: normal;">v<%= msg.modUpdate.version %></span></h4>
+                                            <p><%= msg.modUpdate.changelog || 'Download this release safely on GPLMods.' %></p>
+                                            <a href="<%= msg.modUpdate.downloadUrl %>" class="btn-send-chat" style="display: inline-flex; text-decoration: none; padding: 4px 14px; font-size: 0.85rem;">
+                                                <i class="fas fa-download"></i> View Mod Page
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                            <% } %>
+                                <% } %>
 
-                            <!-- Poll Embed -->
-                            <% if (msg.poll && msg.poll.question) { %>
-                                <div class="poll-embed-card" id="poll-<%= msg._id %>">
-                                    <div class="poll-question"><i class="fas fa-poll" style="color: var(--gold);"></i> <%= msg.poll.question %></div>
-                                    <div class="poll-options-list">
-                                        <% 
-                                            const totalVotes = msg.poll.options.reduce((sum, opt) => sum + (opt.votes ? opt.votes.length : 0), 0);
-                                        %>
-                                        <% msg.poll.options.forEach((opt, idx) => { %>
+                                <!-- Poll Embed -->
+                                <% if (msg.poll && msg.poll.question) { %>
+                                    <div class="poll-embed-card" id="poll-<%= msg._id %>">
+                                        <div class="poll-question"><i class="fas fa-poll" style="color: var(--gold);"></i> <%= msg.poll.question %></div>
+                                        <div class="poll-options-list">
                                             <% 
-                                                const voteCount = opt.votes ? opt.votes.length : 0;
-                                                const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-                                                const hasVoted = user && opt.votes && opt.votes.some(v => String(v) === String(user._id));
+                                                const totalVotes = msg.poll.options.reduce((sum, opt) => sum + (opt.votes ? opt.votes.length : 0), 0);
                                             %>
-                                            <div class="poll-option-row" onclick="votePoll('<%= msg._id %>', <%= idx %>)">
-                                                <div class="poll-progress-fill" style="width: <%= pct %>%;"></div>
-                                                <span style="position: relative; z-index: 2; font-weight: <%= hasVoted ? '700' : 'normal' %>;">
-                                                    <%= hasVoted ? '✓ ' : '' %><%= opt.text %>
-                                                </span>
-                                                <span style="position: relative; z-index: 2; font-size: 0.85rem; color: var(--gold);">
-                                                    <%= pct %>% (<%= voteCount %>)
-                                                </span>
+                                            <% msg.poll.options.forEach((opt, idx) => { %>
+                                                <% 
+                                                    const voteCount = opt.votes ? opt.votes.length : 0;
+                                                    const pct = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                                                    const hasVoted = user && opt.votes && opt.votes.some(v => String(v) === String(user._id));
+                                                %>
+                                                <div class="poll-option-row" onclick="votePoll('<%= msg._id %>', <%= idx %>)">
+                                                    <div class="poll-progress-fill" style="width: <%= pct %>%;"></div>
+                                                    <span style="position: relative; z-index: 2; font-weight: <%= hasVoted ? '700' : 'normal' %>;">
+                                                        <%= hasVoted ? '✓ ' : '' %><%= opt.text %>
+                                                    </span>
+                                                    <span style="position: relative; z-index: 2; font-size: 0.85rem; color: var(--gold);">
+                                                        <%= pct %>% (<%= voteCount %>)
+                                                    </span>
+                                                </div>
+                                            <% }) %>
+                                        </div>
+                                    </div>
+                                <% } %>
+
+                                <!-- Reactions Bar -->
+                                <div class="reactions-row" id="reactions-<%= msg._id %>">
+                                    <% if (msg.reactions && msg.reactions.length > 0) { %>
+                                        <% msg.reactions.forEach(r => { %>
+                                            <% const userReacted = user && r.users && r.users.some(u => String(u) === String(user._id)); %>
+                                            <div class="reaction-pill <%= userReacted ? 'user-reacted' : '' %>" onclick="toggleReaction('<%= msg._id %>', '<%= r.emoji %>')">
+                                                <span><%= r.emoji %></span>
+                                                <span><%= r.users.length %></span>
                                             </div>
                                         <% }) %>
+                                    <% } %>
+                                    <div class="reaction-pill" onclick="quickReactPicker('<%= msg._id %>', event)" title="Add Reaction">
+                                        <i class="far fa-smile-plus"></i>
                                     </div>
                                 </div>
-                            <% } %>
 
-                            <!-- Reactions Bar -->
-                            <div class="reactions-row" id="reactions-<%= msg._id %>">
-                                <% if (msg.reactions && msg.reactions.length > 0) { %>
-                                    <% msg.reactions.forEach(r => { %>
-                                        <% const userReacted = user && r.users && r.users.some(u => String(u) === String(user._id)); %>
-                                        <div class="reaction-pill <%= userReacted ? 'user-reacted' : '' %>" onclick="toggleReaction('<%= msg._id %>', '<%= r.emoji %>')">
-                                            <span><%= r.emoji %></span>
-                                            <span><%= r.users.length %></span>
-                                        </div>
-                                    <% }) %>
-                                <% } %>
-                                <div class="reaction-pill" onclick="quickReactPicker('<%= msg._id %>')" title="Add Reaction">
-                                    <i class="far fa-smile-plus"></i>
-                                </div>
-                            </div>
-
-                            <!-- Message Action Toolbar -->
-                            <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
-                                <button type="button" class="btn-msg-action" onclick="openForwardModal('<%= msg._id %>')" title="Share / Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
-                                    <i class="fas fa-share"></i> Share
-                                </button>
-                                <% if (user && (String(user._id) === String(msg.sender ? msg.sender._id : '') || hasManageClubPerm)) { %>
-                                    <% if (!msg.isDeleted) { %>
+                                <!-- Message Action Toolbar -->
+                                <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                                    <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-<%= msg._id %>')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                        <i class="fas fa-share-alt"></i> Share
+                                    </button>
+                                    <button type="button" class="btn-msg-action" onclick="openForwardModal('<%= msg._id %>')" title="Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                        <i class="fas fa-reply"></i> Forward
+                                    </button>
+                                    <% if (hasManageClubPerm) { %>
+                                        <button type="button" class="btn-msg-action btn-msg-pin" onclick="togglePinClubMessage('<%= msg._id %>', <%= msg.isPinned ? 'false' : 'true' %>)" title="<%= msg.isPinned ? 'Unpin' : 'Pin' %> Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: <%= msg.isPinned ? 'var(--gold)' : 'var(--silver)' %>; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                            <i class="fas fa-thumbtack"></i> <%= msg.isPinned ? 'Unpin' : 'Pin' %>
+                                        </button>
+                                    <% } %>
+                                    <% if (user && (String(user._id) === String(msg.sender ? msg.sender._id : '') || hasManageClubPerm)) { %>
                                         <button type="button" class="btn-msg-action btn-msg-edit" onclick="openEditMessageModal('<%= msg._id %>')" title="Edit Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
@@ -1332,11 +1431,11 @@
                                             <i class="fas fa-trash-alt"></i> Delete
                                         </button>
                                     <% } %>
-                                <% } %>
-                                <button type="button" class="btn-translate-msg" onclick="translateMessage('<%= msg._id %>')" style="margin: 0; padding: 3px 8px; font-size: 0.75rem;">
-                                    <i class="fas fa-language"></i> Translate
-                                </button>
-                            </div>
+                                    <button type="button" class="btn-translate-msg" onclick="translateMessage('<%= msg._id %>')" style="margin: 0; padding: 3px 8px; font-size: 0.75rem;">
+                                        <i class="fas fa-language"></i> Translate
+                                    </button>
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 <% }) %>
@@ -1442,11 +1541,12 @@
             <!-- SITE STAFF SECTION -->
             <% const staffMembers = members.filter(m => m.user && ['owner', 'admin'].includes(m.user.role)); %>
             <% if (staffMembers.length > 0) { %>
-                <div class="member-group-header">👑 SITE STAFF — <%= staffMembers.length %></div>
+                <div class="member-group-header"><i class="fas fa-crown" style="color: var(--gold); margin-right: 6px;"></i> SITE STAFF — <%= staffMembers.length %></div>
                 <% staffMembers.forEach(sm => { %>
                     <div class="member-card-row" onclick="window.location.href='/users/<%= sm.user.username %>'">
                         <div class="member-avatar-wrap">
-                            <img src="<%= sm.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Staff">
+                            <% const smAvatar = (sm.user.signedAvatarUrl && sm.user.signedAvatarUrl !== '/images/default-avatar.png') ? sm.user.signedAvatarUrl : (sm.user.cardAvatarUrl || sm.user.avatarUrl || sm.user.avatar || (sm.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
+                            <img src="<%= smAvatar %>" class="member-avatar-img" alt="<%= sm.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                             <div class="online-dot"></div>
                         </div>
                         <div class="member-meta-box">
@@ -1462,10 +1562,11 @@
             <!-- CLUB CREATOR -->
             <% const creatorMember = members.find(m => m.user && String(m.user._id) === String(club.creator._id || club.creator)); %>
             <% if (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) { %>
-                <div class="member-group-header" style="margin-top: 14px;">🎨 CLUB CREATOR — 1</div>
+                <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-palette" style="color: #ffab91; margin-right: 6px;"></i> CLUB CREATOR — 1</div>
                 <div class="member-card-row" onclick="window.location.href='/users/<%= creatorMember.user.username %>'">
                     <div class="member-avatar-wrap">
-                        <img src="<%= creatorMember.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Creator">
+                        <% const crAvatar = (creatorMember.user.signedAvatarUrl && creatorMember.user.signedAvatarUrl !== '/images/default-avatar.png') ? creatorMember.user.signedAvatarUrl : (creatorMember.user.cardAvatarUrl || creatorMember.user.avatarUrl || creatorMember.user.avatar || (creatorMember.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
+                        <img src="<%= crAvatar %>" class="member-avatar-img" alt="<%= creatorMember.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                         <div class="online-dot"></div>
                     </div>
                     <div class="member-meta-box">
@@ -1476,13 +1577,14 @@
             <% } %>
 
             <!-- ONLINE MEMBERS -->
-            <div class="member-group-header" style="margin-top: 14px;">ONLINE MEMBERS — <span id="onlineCountNum"><%= members.length %></span></div>
+            <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-circle" style="color: #43b581; font-size: 0.65rem; margin-right: 6px;"></i> ONLINE MEMBERS — <span id="onlineCountNum"><%= members.length %></span></div>
             <div id="onlineMembersList">
                 <% members.forEach(mem => { %>
                     <% if (mem.user) { %>
                         <div class="member-card-row" onclick="window.location.href='/users/<%= mem.user.username %>'">
                             <div class="member-avatar-wrap">
-                                <img src="<%= mem.user.signedAvatarUrl || '/images/default-avatar.png' %>" class="member-avatar-img" alt="Member">
+                                <% const memAvatar = (mem.user.signedAvatarUrl && mem.user.signedAvatarUrl !== '/images/default-avatar.png') ? mem.user.signedAvatarUrl : (mem.user.cardAvatarUrl || mem.user.avatarUrl || mem.user.avatar || (mem.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
+                                <img src="<%= memAvatar %>" class="member-avatar-img" alt="<%= mem.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                                 <div class="online-dot"></div>
                             </div>
                             <div class="member-meta-box">
@@ -1608,6 +1710,61 @@
             <button type="button" onclick="closeEditMessageModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
             <button type="button" onclick="submitEditMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
         </div>
+<!-- Delete Message Confirmation Modal -->
+<div class="gpl-modal-backdrop" id="clubDeleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid #e74c3c; border-radius: 16px; padding: 26px; width: 90%; max-width: 400px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); text-align: center;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(231,76,60,0.15); border: 1.5px solid #e74c3c; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #e74c3c; font-size: 1.5rem;">
+            <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3 style="color: #fff; margin: 0 0 8px; font-size: 1.2rem;">Delete Message?</h3>
+        <p style="color: var(--silver); font-size: 0.88rem; line-height: 1.5; margin: 0 0 20px;">Are you sure you want to permanently delete this message? This cannot be undone.</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="closeClubDeleteModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+            <button type="button" id="confirmDeleteMessageBtn" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 8px 22px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(231,76,60,0.4);">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Quick Reaction Bar -->
+<div id="reactionFloatingBar" style="display: none; position: absolute; z-index: 99999; background: #161822; border: 1.5px solid var(--gold); border-radius: 30px; padding: 4px 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.85); gap: 6px; align-items: center;">
+    <span class="react-quick-emoji" onclick="submitQuickReaction('👍')">👍</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('❤️')">❤️</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🔥')">🔥</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🚀')">🚀</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🎉')">🎉</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('😂')">😂</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('💯')">💯</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('⚡')">⚡</span>
+</div>
+
+<!-- Rich Share GUI Modal -->
+<div class="gpl-modal-backdrop" id="clubShareGUIModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 460px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-share-alt" style="color: var(--gold);"></i> Share Community
+            </h3>
+            <button type="button" onclick="closeClubShareModal()" style="background: none; border: none; color: var(--silver); font-size: 1.3rem; cursor: pointer;">&times;</button>
+        </div>
+        <p id="shareModalSubtitle" style="color: var(--silver); font-size: 0.88rem; margin: 0 0 16px; line-height: 1.5;"></p>
+        <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+            <input type="text" id="shareDirectLinkInput" readonly style="flex-grow: 1; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;">
+            <button type="button" onclick="copyShareDirectLink()" id="copyShareLinkBtn" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+            <a href="#" id="shareWhatsAppBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 10px; color: #25d366; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
+                <i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> WhatsApp
+            </a>
+            <a href="#" id="shareTelegramBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); border-radius: 10px; color: #0088cc; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
+                <i class="fab fa-telegram-plane" style="font-size: 1.4rem;"></i> Telegram
+            </a>
+            <a href="#" id="shareTwitterBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); border-radius: 10px; color: #1da1f2; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
+                <i class="fab fa-x-twitter" style="font-size: 1.4rem;"></i> Twitter
+            </a>
+            <a href="#" id="shareRedditBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 10px; color: #ff4500; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
+                <i class="fab fa-reddit-alien" style="font-size: 1.4rem;"></i> Reddit
+            </a>
+        </div>
     </div>
 </div>
 
@@ -1707,8 +1864,9 @@
         msgDiv.className = 'message-item';
         msgDiv.id = `msg-${msg._id}`;
 
-        const senderAvatar = msg.sender?.signedAvatarUrl || '/images/default-avatar.png';
-        const senderName = msg.sender?.username || 'Member';
+        const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
+        const senderAvatar = msg.sender?.signedAvatarUrl || (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
+        const senderName = msg.sender?.username || 'GPLMods';
         const roleBadges = [];
 
         if (msg.sender?.role === 'owner') roleBadges.push('<span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>');
@@ -1717,7 +1875,7 @@
         if (msg.sender?.isCreator) roleBadges.push('<span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>');
 
         msgDiv.innerHTML = `
-            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.png';">
+            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.src='${isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png'}';">
             <div class="message-content-col">
                 <div class="message-header-row">
                     <a href="/users/${senderName}" class="message-username" target="_blank">${senderName}</a>
@@ -1726,14 +1884,22 @@
                 </div>
                 <div class="message-body-text" id="msg-text-${msg._id}">${msg.content}</div>
                 <div class="reactions-row" id="reactions-${msg._id}">
-                    <div class="reaction-pill" onclick="quickReactPicker('${msg._id}')" title="Add Reaction">
+                    <div class="reaction-pill" onclick="quickReactPicker('${msg._id}', event)" title="Add Reaction">
                         <i class="far fa-smile-plus"></i>
                     </div>
                 </div>
                 <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
-                    <button type="button" class="btn-msg-action" onclick="openForwardModal('${msg._id}')" title="Share / Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
-                        <i class="fas fa-share"></i> Share
+                    <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-${msg._id}')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-share-alt"></i> Share
                     </button>
+                    <button type="button" class="btn-msg-action" onclick="openForwardModal('${msg._id}')" title="Forward Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-reply"></i> Forward
+                    </button>
+                    ${hasManageClubPermClient ? `
+                        <button type="button" class="btn-msg-action btn-msg-pin" onclick="togglePinClubMessage('${msg._id}', true)" title="Pin Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                            <i class="fas fa-thumbtack"></i> Pin
+                        </button>
+                    ` : ''}
                     ${(String(msg.sender?._id) === currentUserId || hasManageClubPermClient) ? `
                         <button type="button" class="btn-msg-action btn-msg-edit" onclick="openEditMessageModal('${msg._id}')" title="Edit Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                             <i class="fas fa-edit"></i> Edit
@@ -1761,16 +1927,44 @@
     });
 
     socket.on('club_message_deleted', (data) => {
-        const textEl = document.getElementById(`msg-text-${data.messageId}`);
-        if (textEl) {
-            textEl.innerHTML = `<em style="color: #777;">[This message was deleted]</em>`;
-        }
         const msgDiv = document.getElementById(`msg-${data.messageId}`);
-        if (msgDiv) {
-            const editBtn = msgDiv.querySelector('.btn-msg-edit');
-            const delBtn = msgDiv.querySelector('.btn-msg-delete');
-            if (editBtn) editBtn.remove();
-            if (delBtn) delBtn.remove();
+        if (!msgDiv) return;
+
+        const isSender = data.senderId && String(data.senderId) === String(currentUserId);
+        if (isSender) {
+            msgDiv.remove();
+        } else {
+            const textEl = document.getElementById(`msg-text-${data.messageId}`);
+            if (textEl) {
+                textEl.innerHTML = `<em style="color: #777; font-size: 0.85rem;"><i class="fas fa-trash-alt" style="margin-right: 4px; font-size: 0.75rem;"></i> This message was deleted</em>`;
+            }
+            const toolbar = msgDiv.querySelector('.message-actions-toolbar');
+            if (toolbar) toolbar.remove();
+            const reactions = msgDiv.querySelector('.reactions-row');
+            if (reactions) reactions.remove();
+        }
+    });
+
+    socket.on('club_message_pinned', (data) => {
+        const banner = document.getElementById('pinnedMessageBanner');
+        const text = document.getElementById('pinnedBannerText');
+        const jumpBtn = document.getElementById('pinnedBannerJumpBtn');
+        const unpinBtn = document.getElementById('pinnedBannerUnpinBtn');
+        if (!banner) return;
+
+        if (data.isPinned) {
+            banner.style.display = 'flex';
+            if (text) text.textContent = data.content || '';
+            if (jumpBtn) jumpBtn.setAttribute('onclick', `jumpToPinnedMessage('${data.messageId}')`);
+            if (unpinBtn) unpinBtn.setAttribute('onclick', `togglePinClubMessage('${data.messageId}', false)`);
+        } else {
+            banner.style.display = 'none';
+        }
+    });
+
+    socket.on('club_channel_restriction_updated', (data) => {
+        if (String(data.channelId) === channelId) {
+            window.location.reload();
         }
     });
 
@@ -1834,7 +2028,7 @@
                 html += `
                     <div class="member-card-row" onclick="window.location.href='/users/${u.username}'">
                         <div class="member-avatar-wrap">
-                            <img src="${u.avatarUrl || '/images/default-avatar.png'}" class="member-avatar-img" alt="${u.username}">
+                            <img src="${u.avatarUrl || (u.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')}" class="member-avatar-img" alt="${u.username}" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                             <div class="online-dot"></div>
                         </div>
                         <div class="member-meta-box">
@@ -1862,13 +2056,39 @@
         socket.emit('club_message_reaction', { clubId, channelId, messageId, emoji });
     }
 
-    function quickReactPicker(messageId) {
-        const emojis = ['👍', '❤️', '🔥', '🚀', '🎉', '😂'];
-        const chosen = prompt('Choose reaction emoji:\n' + emojis.join('  '), '🔥');
-        if (chosen) {
-            toggleReaction(messageId, chosen.trim());
+    let currentReactMsgId = null;
+    function quickReactPicker(messageId, event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        currentReactMsgId = messageId;
+        const bar = document.getElementById('reactionFloatingBar');
+        if (!bar) return;
+
+        const targetEl = event ? (event.currentTarget || event.target) : document.getElementById(`reactions-${messageId}`);
+        if (targetEl) {
+            const rect = targetEl.getBoundingClientRect();
+            bar.style.top = (window.scrollY + rect.top - 46) + 'px';
+            bar.style.left = (window.scrollX + rect.left) + 'px';
+            bar.style.display = 'flex';
         }
     }
+
+    function submitQuickReaction(emoji) {
+        if (currentReactMsgId && emoji) {
+            toggleReaction(currentReactMsgId, emoji);
+        }
+        const bar = document.getElementById('reactionFloatingBar');
+        if (bar) bar.style.display = 'none';
+        currentReactMsgId = null;
+    }
+
+    document.addEventListener('click', (e) => {
+        const bar = document.getElementById('reactionFloatingBar');
+        if (bar && !bar.contains(e.target) && !e.target.closest('.reaction-pill')) {
+            bar.style.display = 'none';
+        }
+    });
 
     function votePoll(messageId, optionIndex) {
         socket.emit('club_poll_vote', { clubId, channelId, messageId, optionIndex });
@@ -2092,12 +2312,116 @@
         closeEditMessageModal();
     }
 
+    // Custom Delete Confirmation Modal Logic
+    let pendingDeleteMsgId = null;
     function deleteClubMessage(messageId) {
-        if (!confirm('Are you sure you want to delete this message?')) return;
-        socket.emit('club_delete_message', {
+        pendingDeleteMsgId = messageId;
+        const modal = document.getElementById('clubDeleteConfirmModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeClubDeleteModal() {
+        const modal = document.getElementById('clubDeleteConfirmModal');
+        if (modal) modal.style.display = 'none';
+        pendingDeleteMsgId = null;
+    }
+
+    const confirmDeleteBtn = document.getElementById('confirmDeleteMessageBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (pendingDeleteMsgId) {
+                socket.emit('club_delete_message', {
+                    clubId,
+                    channelId,
+                    messageId: pendingDeleteMsgId
+                });
+                closeClubDeleteModal();
+            }
+        });
+    }
+
+    // Pinned Messages Control
+    function jumpToPinnedMessage(msgId) {
+        if (!msgId) return;
+        const el = document.getElementById(`msg-${msgId}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.style.transition = 'background-color 0.4s ease';
+            el.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
+            setTimeout(() => { el.style.backgroundColor = ''; }, 2200);
+        }
+    }
+
+    function togglePinClubMessage(messageId, shouldPin) {
+        socket.emit('club_pin_message', {
             clubId,
             channelId,
-            messageId
+            messageId,
+            pin: shouldPin
+        });
+    }
+
+    // Channel Restriction Toggle
+    function toggleChannelRestriction() {
+        socket.emit('club_toggle_channel_restriction', {
+            clubId,
+            channelId
+        });
+    }
+
+    // Club Share System
+    let currentShareUrl = '';
+    function handleClubShare(btn) {
+        const cName = btn.dataset.clubName || '<%= club.name %>';
+        const cUrl = btn.dataset.clubUrl || `/clubs/<%= club.slug %>`;
+        openClubShareModal(cName, cUrl);
+    }
+
+    function openClubShareModal(title, relativeUrl) {
+        const fullUrl = window.location.origin + relativeUrl;
+        currentShareUrl = fullUrl;
+
+        const modal = document.getElementById('clubShareGUIModal');
+        const input = document.getElementById('shareDirectLinkInput');
+        const sub = document.getElementById('shareModalSubtitle');
+        const copyBtn = document.getElementById('copyShareLinkBtn');
+
+        if (sub) sub.textContent = `Invite friends and creators to ${title} on GPLMods:`;
+        if (input) input.value = fullUrl;
+        if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+
+        const encUrl = encodeURIComponent(fullUrl);
+        const encText = encodeURIComponent(`Join ${title} on GPLMods! Safe & working mods:`);
+
+        const wa = document.getElementById('shareWhatsAppBtn');
+        const tg = document.getElementById('shareTelegramBtn');
+        const tw = document.getElementById('shareTwitterBtn');
+        const rd = document.getElementById('shareRedditBtn');
+
+        if (wa) wa.href = `https://api.whatsapp.com/send?text=${encText}%20${encUrl}`;
+        if (tg) tg.href = `https://t.me/share/url?url=${encUrl}&text=${encText}`;
+        if (tw) tw.href = `https://twitter.com/intent/tweet?text=${encText}&url=${encUrl}`;
+        if (rd) rd.href = `https://reddit.com/submit?url=${encUrl}&title=${encodeURIComponent(title)}`;
+
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeClubShareModal() {
+        const modal = document.getElementById('clubShareGUIModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function copyShareDirectLink() {
+        const input = document.getElementById('shareDirectLinkInput');
+        const copyBtn = document.getElementById('copyShareLinkBtn');
+        if (!input) return;
+        navigator.clipboard.writeText(input.value).then(() => {
+            if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => { if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 3000);
+        }).catch(() => {
+            input.select();
+            document.execCommand('copy');
+            if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
         });
     }
 </script>

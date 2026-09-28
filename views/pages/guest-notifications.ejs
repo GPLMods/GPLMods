@@ -1,0 +1,662 @@
+<%- include('../partials/header') %>
+
+<style>
+    .guest-notif-page {
+        min-height: 80vh;
+        padding: 50px 20px 80px;
+        background: radial-gradient(circle at top, rgba(255, 215, 0, 0.04) 0%, transparent 60%);
+    }
+
+    .guest-notif-container {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .guest-notif-hero {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .guest-notif-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        color: var(--gold);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 14px;
+    }
+
+    .guest-notif-hero h1 {
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        color: #fff;
+        font-weight: 800;
+        margin: 0 0 10px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .guest-notif-hero p {
+        color: var(--silver);
+        font-size: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.5;
+    }
+
+    .guest-card {
+        background: linear-gradient(145deg, #15161e 0%, #0d0e14 100%);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-radius: 16px;
+        padding: 28px 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .guest-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-head h2 {
+        font-size: 1.25rem;
+        color: #fff;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-head h2 i {
+        color: var(--gold);
+    }
+
+    /* Master Switch Box */
+    .master-switch-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 215, 0, 0.06);
+        border: 1.5px solid rgba(255, 215, 0, 0.35);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 22px;
+    }
+
+    .master-switch-info h3 {
+        margin: 0 0 4px 0;
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .master-switch-info p {
+        margin: 0;
+        color: var(--silver);
+        font-size: 0.85rem;
+    }
+
+    /* Toggle Switch */
+    .switch-ui {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+
+    .switch-ui input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider-ui {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #2a2c38;
+        transition: 0.3s;
+        border-radius: 26px;
+        border: 1px solid #444;
+    }
+
+    .slider-ui:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #fff;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider-ui {
+        background-color: var(--gold);
+        border-color: var(--gold);
+    }
+
+    input:checked + .slider-ui:before {
+        transform: translateX(24px);
+        background-color: #000;
+    }
+
+    input:disabled + .slider-ui {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Sub Settings List */
+    .sub-settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sub-setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 12px 16px;
+        transition: all 0.2s ease;
+    }
+
+    .sub-setting-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 215, 0, 0.2);
+    }
+
+    .sub-setting-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sub-setting-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(255, 215, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gold);
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .sub-setting-text h4 {
+        margin: 0 0 2px 0;
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .sub-setting-text p {
+        margin: 0;
+        color: var(--silver);
+        font-size: 0.8rem;
+    }
+
+    /* Newsletter Box */
+    .newsletter-action-box {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .newsletter-input-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .newsletter-input-group input {
+        flex-grow: 1;
+        background: #0d0e12;
+        border: 1px solid #333645;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 0.95rem;
+        outline: none;
+    }
+
+    .newsletter-input-group input:focus {
+        border-color: var(--gold);
+    }
+
+    .btn-gold {
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 22px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: transform 0.2s;
+    }
+
+    .btn-gold:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-danger-outline {
+        background: transparent;
+        border: 1.5px solid #e74c3c;
+        color: #e74c3c;
+        border-radius: 8px;
+        padding: 11px 20px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-danger-outline:hover {
+        background: rgba(231, 76, 60, 0.15);
+    }
+
+    .status-msg-banner {
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        margin-top: 14px;
+        display: none;
+    }
+</style>
+
+<main class="guest-notif-page">
+    <div class="guest-notif-container">
+        <!-- Hero Header -->
+        <div class="guest-notif-hero">
+            <span class="guest-notif-badge"><i class="fas fa-bell"></i> Guest Control Center</span>
+            <h1>Notification &amp; Newsletter Settings</h1>
+            <p>Configure which alerts you receive while visiting GPLMods, manage browser push permissions, or update your newsletter subscription preferences.</p>
+        </div>
+
+        <!-- 1. Site Notifications Card -->
+        <div class="guest-card">
+            <div class="card-head">
+                <h2><i class="fas fa-satellite-dish"></i> Site Notifications</h2>
+                <span id="pushPermBadge" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.06); color: var(--silver); border: 1px solid #444;">
+                    Status: Checking...
+                </span>
+            </div>
+
+            <!-- Master Toggle -->
+            <div class="master-switch-box">
+                <div class="master-switch-info">
+                    <h3>Allow Site to Send Notifications</h3>
+                    <p>Master switch for Web Push, PWA alerts, and live in-app notifications.</p>
+                </div>
+                <label class="switch-ui">
+                    <input type="checkbox" id="guestMasterSwitch" onchange="handleGuestMasterToggle(this.checked)">
+                    <span class="slider-ui"></span>
+                </label>
+            </div>
+
+            <!-- Sub Preferences -->
+            <div class="sub-settings-list" id="guestSubSettingsList">
+                <div class="sub-setting-row">
+                    <div class="sub-setting-left">
+                        <div class="sub-setting-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="sub-setting-text">
+                            <h4>New Mod Uploads &amp; Releases</h4>
+                            <p>Get notified when verified creators upload new mods and tweaks.</p>
+                        </div>
+                    </div>
+                    <label class="switch-ui">
+                        <input type="checkbox" id="gSubNewUploads" onchange="handleGuestSubToggle()">
+                        <span class="slider-ui"></span>
+                    </label>
+                </div>
+
+                <div class="sub-setting-row">
+                    <div class="sub-setting-left">
+                        <div class="sub-setting-icon"><i class="fas fa-comments"></i></div>
+                        <div class="sub-setting-text">
+                            <h4>Clubs &amp; Community Highlights</h4>
+                            <p>Receive alerts for trending community discussions and club announcements.</p>
+                        </div>
+                    </div>
+                    <label class="switch-ui">
+                        <input type="checkbox" id="gSubClubUpdates" onchange="handleGuestSubToggle()">
+                        <span class="slider-ui"></span>
+                    </label>
+                </div>
+
+                <div class="sub-setting-row">
+                    <div class="sub-setting-left">
+                        <div class="sub-setting-icon"><i class="fas fa-bullhorn"></i></div>
+                        <div class="sub-setting-text">
+                            <h4>Staff Announcements &amp; Security Alerts</h4>
+                            <p>Critical platform maintenance, policy updates, and safety bulletins.</p>
+                        </div>
+                    </div>
+                    <label class="switch-ui">
+                        <input type="checkbox" id="gSubAdminMessages" onchange="handleGuestSubToggle()">
+                        <span class="slider-ui"></span>
+                    </label>
+                </div>
+
+                <div class="sub-setting-row">
+                    <div class="sub-setting-left">
+                        <div class="sub-setting-icon"><i class="fas fa-volume-up"></i></div>
+                        <div class="sub-setting-text">
+                            <h4>Notification Audio Chimes</h4>
+                            <p>Play a soft sound chime when high-priority notifications arrive.</p>
+                        </div>
+                    </div>
+                    <label class="switch-ui">
+                        <input type="checkbox" id="gSubSoundEnabled" onchange="handleGuestSubToggle()">
+                        <span class="slider-ui"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="guestNotifSaveStatus" class="status-msg-banner" style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #2ecc71; margin-top: 18px;">
+                <i class="fas fa-check-circle"></i> Notification preferences saved to your device.
+            </div>
+        </div>
+
+        <!-- 2. Newsletter & Email Unsubscribe Card -->
+        <div class="guest-card">
+            <div class="card-head">
+                <h2><i class="fas fa-envelope-open-text"></i> Newsletter &amp; Email Updates</h2>
+            </div>
+
+            <div class="newsletter-action-box">
+                <p style="color: var(--silver); font-size: 0.92rem; margin: 0; line-height: 1.55;">
+                    Stay informed with our weekly mod digests, developer highlights, and safe release bulletins. If you wish to subscribe or manage your email, enter your address below.
+                </p>
+
+                <!-- Subscribe/Update Form -->
+                <form id="guestNewsletterForm" onsubmit="handleGuestNewsletterSubmit(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="newsletter-input-group">
+                        <input type="email" id="guestEmailInput" placeholder="Enter your email address..." required autocomplete="email">
+                        <button type="submit" class="btn-gold">
+                            <i class="fas fa-paper-plane"></i> Subscribe
+                        </button>
+                    </div>
+                </form>
+
+                <div id="newsletterResultBanner" class="status-msg-banner"></div>
+
+                <!-- Unsubscribe Direct Action -->
+                <div style="margin-top: 15px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; flex-wrap: gap; gap: 14px;">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 0.95rem;">Looking to stop receiving emails?</h4>
+                        <p style="margin: 0; color: var(--silver); font-size: 0.82rem;">You can instantly unsubscribe from all marketing and update emails.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button type="button" class="btn-danger-outline" onclick="handleInstantUnsubscribe()">
+                            <i class="fas fa-user-minus"></i> Unsubscribe Email
+                        </button>
+                        <a href="/unsubscribe" class="btn-secondary" style="border: 1px solid #444; color: var(--silver); padding: 11px 16px; border-radius: 8px; text-decoration: none; font-size: 0.88rem;">
+                            Unsubscribe Page
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const STORAGE_KEY = 'gpl_notif_prefs';
+
+    function loadGuestPrefs() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        let prefs = {
+            master: true,
+            newUploads: true,
+            clubUpdates: true,
+            adminMessages: true,
+            soundEnabled: true
+        };
+
+        if (raw) {
+            try {
+                prefs = { ...prefs, ...JSON.parse(raw) };
+            } catch(e) {}
+        }
+
+        const masterSwitch = document.getElementById('guestMasterSwitch');
+        const swUploads = document.getElementById('gSubNewUploads');
+        const swClubs = document.getElementById('gSubClubUpdates');
+        const swAdmin = document.getElementById('gSubAdminMessages');
+        const swSound = document.getElementById('gSubSoundEnabled');
+
+        if (masterSwitch) masterSwitch.checked = prefs.master !== false;
+        if (swUploads) swUploads.checked = prefs.newUploads !== false;
+        if (swClubs) swClubs.checked = prefs.clubUpdates !== false;
+        if (swAdmin) swAdmin.checked = prefs.adminMessages !== false;
+        if (swSound) swSound.checked = prefs.soundEnabled !== false;
+
+        applyDisabledStates(prefs.master !== false);
+        updatePushPermBadge();
+    }
+
+    function applyDisabledStates(masterEnabled) {
+        const swUploads = document.getElementById('gSubNewUploads');
+        const swClubs = document.getElementById('gSubClubUpdates');
+        const swAdmin = document.getElementById('gSubAdminMessages');
+        const swSound = document.getElementById('gSubSoundEnabled');
+
+        [swUploads, swClubs, swAdmin, swSound].forEach(sw => {
+            if (sw) {
+                sw.disabled = !masterEnabled;
+                if (!masterEnabled) sw.checked = false;
+            }
+        });
+    }
+
+    function saveGuestPrefs() {
+        const master = document.getElementById('guestMasterSwitch')?.checked ?? true;
+        const newUploads = document.getElementById('gSubNewUploads')?.checked ?? false;
+        const clubUpdates = document.getElementById('gSubClubUpdates')?.checked ?? false;
+        const adminMessages = document.getElementById('gSubAdminMessages')?.checked ?? false;
+        const soundEnabled = document.getElementById('gSubSoundEnabled')?.checked ?? false;
+
+        const prefs = { master, newUploads, clubUpdates, adminMessages, soundEnabled };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+
+        // Show brief save indicator
+        const banner = document.getElementById('guestNotifSaveStatus');
+        if (banner) {
+            banner.style.display = 'block';
+            setTimeout(() => { banner.style.display = 'none'; }, 3000);
+        }
+
+        // Also post to server if guest wants to sync preferences
+        fetch('/settings/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(prefs)
+        }).catch(() => {});
+    }
+
+    function handleGuestMasterToggle(isChecked) {
+        const swUploads = document.getElementById('gSubNewUploads');
+        const swClubs = document.getElementById('gSubClubUpdates');
+        const swAdmin = document.getElementById('gSubAdminMessages');
+        const swSound = document.getElementById('gSubSoundEnabled');
+
+        if (isChecked) {
+            [swUploads, swClubs, swAdmin, swSound].forEach(sw => {
+                if (sw) {
+                    sw.disabled = false;
+                    sw.checked = true;
+                }
+            });
+            // Try requesting push if supported
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(perm => {
+                    updatePushPermBadge();
+                });
+            }
+        } else {
+            applyDisabledStates(false);
+        }
+        saveGuestPrefs();
+    }
+
+    function handleGuestSubToggle() {
+        const swUploads = document.getElementById('gSubNewUploads');
+        const swClubs = document.getElementById('gSubClubUpdates');
+        const swAdmin = document.getElementById('gSubAdminMessages');
+        const swSound = document.getElementById('gSubSoundEnabled');
+        const masterSwitch = document.getElementById('guestMasterSwitch');
+
+        const anyChecked = (swUploads?.checked || swClubs?.checked || swAdmin?.checked || swSound?.checked);
+        if (anyChecked && masterSwitch && !masterSwitch.checked) {
+            masterSwitch.checked = true;
+            applyDisabledStates(true);
+        }
+        saveGuestPrefs();
+    }
+
+    function updatePushPermBadge() {
+        const badge = document.getElementById('pushPermBadge');
+        if (!badge) return;
+        if (!('Notification' in window)) {
+            badge.textContent = 'Push: Unsupported';
+            badge.style.color = '#888';
+            return;
+        }
+        if (Notification.permission === 'granted') {
+            badge.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71;"></i> Push: Granted';
+            badge.style.color = '#2ecc71';
+            badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
+        } else if (Notification.permission === 'denied') {
+            badge.innerHTML = '<i class="fas fa-ban" style="color: #e74c3c;"></i> Push: Blocked';
+            badge.style.color = '#e74c3c';
+            badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+        } else {
+            badge.innerHTML = '<i class="fas fa-question-circle" style="color: var(--gold);"></i> Push: Prompt Ready';
+            badge.style.color = 'var(--gold)';
+            badge.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+        }
+    }
+
+    async function handleGuestNewsletterSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('guestEmailInput')?.value.trim();
+        const banner = document.getElementById('newsletterResultBanner');
+        if (!email) return;
+
+        try {
+            const resp = await fetch('/api/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await resp.json();
+            if (banner) {
+                banner.style.display = 'block';
+                if (data.success) {
+                    banner.style.background = 'rgba(46, 204, 113, 0.15)';
+                    banner.style.borderColor = '#2ecc71';
+                    banner.style.color = '#2ecc71';
+                    banner.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'Subscribed successfully!');
+                } else {
+                    banner.style.background = 'rgba(231, 76, 60, 0.15)';
+                    banner.style.borderColor = '#e74c3c';
+                    banner.style.color = '#e74c3c';
+                    banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || 'Failed to subscribe.');
+                }
+            }
+        } catch(err) {
+            if (banner) {
+                banner.style.display = 'block';
+                banner.style.background = 'rgba(231, 76, 60, 0.15)';
+                banner.style.borderColor = '#e74c3c';
+                banner.style.color = '#e74c3c';
+                banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Network error. Please try again.';
+            }
+        }
+    }
+
+    async function handleInstantUnsubscribe() {
+        const email = document.getElementById('guestEmailInput')?.value.trim();
+        const banner = document.getElementById('newsletterResultBanner');
+        if (!email) {
+            alert('Please enter your email address in the field above to unsubscribe.');
+            document.getElementById('guestEmailInput')?.focus();
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to unsubscribe "${email}" from all GPLMods newsletters?`)) {
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await resp.json();
+            if (banner) {
+                banner.style.display = 'block';
+                if (data.success) {
+                    banner.style.background = 'rgba(46, 204, 113, 0.15)';
+                    banner.style.borderColor = '#2ecc71';
+                    banner.style.color = '#2ecc71';
+                    banner.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'You have been successfully unsubscribed.');
+                } else {
+                    banner.style.background = 'rgba(231, 76, 60, 0.15)';
+                    banner.style.borderColor = '#e74c3c';
+                    banner.style.color = '#e74c3c';
+                    banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.error || 'Failed to unsubscribe.');
+                }
+            }
+        } catch(err) {
+            if (banner) {
+                banner.style.display = 'block';
+                banner.style.background = 'rgba(231, 76, 60, 0.15)';
+                banner.style.borderColor = '#e74c3c';
+                banner.style.color = '#e74c3c';
+                banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Network error. Please try again.';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadGuestPrefs);
+</script>
+
+<%- include('../partials/footer') %>

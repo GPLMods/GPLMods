@@ -19,6 +19,18 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
         // --- 1. CONSENT CHECK ---
         // Check if the user has accepted the policies via the banner
         function initPopunderAds() {
+            // Block popunders completely on video ad modal interactions during capturing phase
+            document.addEventListener('click', (e) => {
+                const videoModal = document.getElementById('video-ad-modal');
+                const isVideoActive = window._gplmodsVideoAdActive || (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')));
+                if (isVideoActive && (e.target.closest('#video-ad-modal') || e.target.closest('#watch-video-btn') || e.target.closest('#ad-player-container'))) {
+                    e.stopPropagation();
+                    if (typeof e.stopImmediatePropagation === 'function') {
+                        e.stopImmediatePropagation();
+                    }
+                }
+            }, true); // Capture phase ensures popunder script never receives this click
+
             const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
             // ONLY run the ad scripts if they have accepted the terms
@@ -49,6 +61,18 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
 
         function injectPopunderScriptAndTriggers() {
             if (window._popunderInjected) return;
+
+            // If a video ad is currently visible, defer popunder injection until video ad closes
+            const videoModal = document.getElementById('video-ad-modal');
+            const isVideoActive = window._gplmodsVideoAdActive || (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')));
+            if (isVideoActive) {
+                console.log("Video ad is currently active: Suppressing popunder ads.");
+                window.addEventListener('gplmods:video-ad-closed', () => {
+                    setTimeout(injectPopunderScriptAndTriggers, 2000);
+                }, { once: true });
+                return;
+            }
+
             window._popunderInjected = true;
             console.log("Initializing Pop-under Ads after policy acceptance grace period.");
 

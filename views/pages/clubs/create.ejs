@@ -73,6 +73,110 @@
         grid-template-columns: 1fr 1fr;
         gap: 18px;
     }
+    /* Custom Select Dropdowns */
+    .form-group-block.dropdown-block {
+        position: relative;
+    }
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select-wrapper.open {
+        z-index: 1000;
+    }
+    .custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid #333645;
+        background-color: #0d0e12;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        min-height: 48px;
+        box-sizing: border-box;
+    }
+    .custom-select:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-text {
+        color: #fff;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .custom-select-arrow {
+        color: var(--silver);
+        font-size: 0.82rem;
+        transition: transform 0.3s ease;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #14151e;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.7);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.25s ease;
+        z-index: 1001;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .custom-option {
+        padding: 11px 16px;
+        color: var(--silver);
+        font-size: 0.92rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s, color 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+    .custom-option:hover {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .custom-option.selected {
+        background-color: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        font-weight: 700;
+    }
+    .custom-option i {
+        width: 18px;
+        text-align: center;
+    }
     .privacy-toggle-box {
         background: #0d0e12;
         border: 1px solid #333645;
@@ -191,7 +295,7 @@
             </div>
         <% } %>
 
-        <form action="/clubs/create" method="POST" enctype="multipart/form-data">
+        <form action="/clubs/create" method="POST" enctype="multipart/form-data" id="clubCreateForm">
             <!-- Club Name -->
             <div class="form-group-block">
                 <label for="clubName">Club Name <span class="req">*</span> <span class="hint">(Unique, 3–60 characters. Reserved names like GPLMods/GPL Community are protected)</span></label>
@@ -204,33 +308,165 @@
                 <textarea id="clubDesc" name="description" class="form-control-textarea" rows="3" placeholder="Tell members what mods, tweaks, or topics you discuss here..." maxlength="1000"><%= formData.description || '' %></textarea>
             </div>
 
+            <!-- Primary Topic / Category Dropdown -->
+            <div class="form-group-block dropdown-block">
+                <label>Club Category / Niche <span class="hint">(Helps players discover your club in searches)</span></label>
+                <div class="custom-select-wrapper" id="wrapper-clubCategory">
+                    <div class="custom-select">
+                        <span class="custom-select-text"><i class="fas fa-gamepad" style="color: var(--gold);"></i> Gaming &amp; Game Modding</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option selected" data-value="Gaming &amp; Game Modding" data-tag="Gaming">
+                            <i class="fas fa-gamepad" style="color: var(--gold);"></i> Gaming &amp; Game Modding
+                        </div>
+                        <div class="custom-option" data-value="Android Tweaks &amp; Apps" data-tag="Android">
+                            <i class="fab fa-android" style="color: #3ddc84;"></i> Android Tweaks &amp; Apps
+                        </div>
+                        <div class="custom-option" data-value="iOS Jailbreak &amp; IPAs" data-tag="iOS">
+                            <i class="fab fa-apple" style="color: #007aff;"></i> iOS Jailbreak &amp; IPAs
+                        </div>
+                        <div class="custom-option" data-value="Windows Software &amp; Utilities" data-tag="Windows">
+                            <i class="fab fa-windows" style="color: #00a4ef;"></i> Windows Software &amp; Utilities
+                        </div>
+                        <div class="custom-option" data-value="WordPress &amp; Web Development" data-tag="WordPress">
+                            <i class="fab fa-wordpress" style="color: #21759b;"></i> WordPress &amp; Web Development
+                        </div>
+                        <div class="custom-option" data-value="Emulation &amp; Retro Gaming" data-tag="Emulation">
+                            <i class="fas fa-ghost" style="color: #ff9800;"></i> Emulation &amp; Retro Gaming
+                        </div>
+                        <div class="custom-option" data-value="General Modding &amp; Tech Hub" data-tag="General">
+                            <i class="fas fa-users" style="color: #ba68c8;"></i> General Modding &amp; Tech Hub
+                        </div>
+                    </div>
+                    <input type="hidden" name="clubCategory" id="clubCategoryInput" value="Gaming &amp; Game Modding">
+                </div>
+            </div>
+
             <!-- Tags -->
             <div class="form-group-block">
                 <label for="clubTags">Tags <span class="hint">(Up to 10 comma-separated keywords)</span></label>
-                <input type="text" id="clubTags" name="tags" class="form-control-input" placeholder="e.g. Android, IPA, Gaming, Tools, Tweaks, Windows" value="<%= formData.tags || '' %>">
+                <input type="text" id="clubTags" name="tags" class="form-control-input" placeholder="e.g. Android, IPA, Gaming, Tools, Tweaks, Windows" value="<%= formData.tags || 'Gaming, Modding, Community' %>">
             </div>
 
-            <!-- Language & Country/Region -->
+            <!-- Language & Country/Region Dropdowns -->
             <div class="form-row-2col">
-                <div class="form-group-block">
-                    <label for="primaryLanguage">Primary Language</label>
-                    <select id="primaryLanguage" name="primaryLanguage" class="form-control-select">
-                        <option value="English" <%= (formData.primaryLanguage === 'English') ? 'selected' : '' %>>English</option>
-                        <option value="Spanish" <%= (formData.primaryLanguage === 'Spanish') ? 'selected' : '' %>>Español (Spanish)</option>
-                        <option value="Hindi" <%= (formData.primaryLanguage === 'Hindi') ? 'selected' : '' %>>हिन्दी (Hindi)</option>
-                        <option value="French" <%= (formData.primaryLanguage === 'French') ? 'selected' : '' %>>Français (French)</option>
-                        <option value="Russian" <%= (formData.primaryLanguage === 'Russian') ? 'selected' : '' %>>Русский (Russian)</option>
-                        <option value="German" <%= (formData.primaryLanguage === 'German') ? 'selected' : '' %>>Deutsch (German)</option>
-                        <option value="Portuguese" <%= (formData.primaryLanguage === 'Portuguese') ? 'selected' : '' %>>Português (Portuguese)</option>
-                        <option value="Arabic" <%= (formData.primaryLanguage === 'Arabic') ? 'selected' : '' %>>العربية (Arabic)</option>
-                        <option value="Chinese" <%= (formData.primaryLanguage === 'Chinese') ? 'selected' : '' %>>中文 (Chinese)</option>
-                        <option value="Indonesian" <%= (formData.primaryLanguage === 'Indonesian') ? 'selected' : '' %>>Bahasa Indonesia</option>
-                    </select>
+                <!-- Custom Primary Language Dropdown -->
+                <div class="form-group-block dropdown-block" style="z-index: 50;">
+                    <label>Primary Language</label>
+                    <div class="custom-select-wrapper" id="wrapper-primaryLanguage">
+                        <div class="custom-select">
+                            <span class="custom-select-text">
+                                <i class="fas fa-globe" style="color: var(--gold);"></i>
+                                <span class="text-label"><%= formData.primaryLanguage || 'English' %></span>
+                            </span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <% 
+                                const languagesList = [
+                                    { code: 'English', label: 'English', flag: '🇬🇧' },
+                                    { code: 'Spanish', label: 'Español (Spanish)', flag: '🇪🇸' },
+                                    { code: 'Hindi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
+                                    { code: 'French', label: 'Français (French)', flag: '🇫🇷' },
+                                    { code: 'Russian', label: 'Русский (Russian)', flag: '🇷🇺' },
+                                    { code: 'German', label: 'Deutsch (German)', flag: '🇩🇪' },
+                                    { code: 'Portuguese', label: 'Português (Portuguese)', flag: '🇧🇷' },
+                                    { code: 'Arabic', label: 'العربية (Arabic)', flag: '🇦🇪' },
+                                    { code: 'Chinese', label: '中文 (Chinese)', flag: '🇨🇳' },
+                                    { code: 'Indonesian', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+                                    { code: 'Japanese', label: '日本語 (Japanese)', flag: '🇯🇵' },
+                                    { code: 'Korean', label: '한국어 (Korean)', flag: '🇰🇷' },
+                                    { code: 'Turkish', label: 'Türkçe (Turkish)', flag: '🇹🇷' }
+                                ];
+                                const curLang = formData.primaryLanguage || 'English';
+                            %>
+                            <% languagesList.forEach(lang => { %>
+                                <div class="custom-option <%= (curLang === lang.code) ? 'selected' : '' %>" data-value="<%= lang.code %>">
+                                    <span><%= lang.flag %></span>
+                                    <span><%= lang.label %></span>
+                                </div>
+                            <% }); %>
+                        </div>
+                        <input type="hidden" id="primaryLanguage" name="primaryLanguage" value="<%= curLang %>">
+                    </div>
                 </div>
 
-                <div class="form-group-block">
-                    <label for="country">Country / Region</label>
-                    <input type="text" id="country" name="country" class="form-control-input" placeholder="e.g. GLOBAL, United States, India, Germany" value="<%= formData.country || 'GLOBAL' %>">
+                <!-- Custom Country / Region Dropdown -->
+                <div class="form-group-block dropdown-block" style="z-index: 50;">
+                    <label>Country / Region</label>
+                    <div class="custom-select-wrapper" id="wrapper-country">
+                        <div class="custom-select">
+                            <span class="custom-select-text">
+                                <i class="fas fa-map-marker-alt" style="color: var(--gold);"></i>
+                                <span class="text-label"><%= formData.country || 'GLOBAL' %></span>
+                            </span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-options">
+                            <% 
+                                const regionsList = [
+                                    { code: 'GLOBAL', label: 'Worldwide / Global', flag: '🌐' },
+                                    { code: 'United States', label: 'United States', flag: '🇺🇸' },
+                                    { code: 'India', label: 'India', flag: '🇮🇳' },
+                                    { code: 'United Kingdom', label: 'United Kingdom', flag: '🇬🇧' },
+                                    { code: 'Canada', label: 'Canada', flag: '🇨🇦' },
+                                    { code: 'Germany', label: 'Germany', flag: '🇩🇪' },
+                                    { code: 'France', label: 'France', flag: '🇫🇷' },
+                                    { code: 'Brazil', label: 'Brazil', flag: '🇧🇷' },
+                                    { code: 'Russia', label: 'Russia', flag: '🇷🇺' },
+                                    { code: 'Indonesia', label: 'Indonesia', flag: '🇮🇩' },
+                                    { code: 'Japan', label: 'Japan', flag: '🇯🇵' },
+                                    { code: 'South Korea', label: 'South Korea', flag: '🇰🇷' },
+                                    { code: 'Australia', label: 'Australia', flag: '🇦🇺' },
+                                    { code: 'Spain', label: 'Spain', flag: '🇪🇸' },
+                                    { code: 'Mexico', label: 'Mexico', flag: '🇲🇽' },
+                                    { code: 'Italy', label: 'Italy', flag: '🇮🇹' },
+                                    { code: 'Turkey', label: 'Turkey', flag: '🇹🇷' }
+                                ];
+                                const curCountry = formData.country || 'GLOBAL';
+                            %>
+                            <% regionsList.forEach(reg => { %>
+                                <div class="custom-option <%= (curCountry === reg.code) ? 'selected' : '' %>" data-value="<%= reg.code %>">
+                                    <span><%= reg.flag %></span>
+                                    <span><%= reg.label %></span>
+                                </div>
+                            <% }); %>
+                        </div>
+                        <input type="hidden" id="country" name="country" value="<%= curCountry %>">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Club Privacy / Access Dropdown -->
+            <div class="form-group-block dropdown-block" style="z-index: 40;">
+                <label>Club Access &amp; Privacy</label>
+                <div class="custom-select-wrapper" id="wrapper-clubPrivacy">
+                    <% const isPriv = (formData.isPrivate === 'true' || formData.isPrivate === 'on'); %>
+                    <div class="custom-select">
+                        <span class="custom-select-text">
+                            <i class="fas <%= isPriv ? 'fa-lock' : 'fa-globe' %>" style="color: <%= isPriv ? '#ff8a80' : '#69f0ae' %>;"></i>
+                            <span class="text-label"><%= isPriv ? 'Private Club (Join Approval Required)' : 'Public Club (Instant Join for All Members)' %></span>
+                        </span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option <%= !isPriv ? 'selected' : '' %>" data-value="public">
+                            <i class="fas fa-globe" style="color: #69f0ae;"></i>
+                            <div>
+                                <strong style="color: #fff; display: block;">Public Club</strong>
+                                <span style="font-size: 0.8rem; color: var(--silver);">Anyone can search, discover, and instantly join the channels.</span>
+                            </div>
+                        </div>
+                        <div class="custom-option <%= isPriv ? 'selected' : '' %>" data-value="private">
+                            <i class="fas fa-lock" style="color: #ff8a80;"></i>
+                            <div>
+                                <strong style="color: #fff; display: block;">Private Club</strong>
+                                <span style="font-size: 0.8rem; color: var(--silver);">Users must request to join and get approved by creator/admin.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="isPrivate" id="isPrivateInput" value="<%= isPriv ? 'true' : 'false' %>">
                 </div>
             </div>
 
@@ -259,23 +495,98 @@
                 </div>
             </div>
 
-            <!-- Privacy Setting -->
-            <div class="privacy-toggle-box">
-                <div class="privacy-toggle-info">
-                    <h4><i class="fas fa-lock" style="color: #ff8a80;"></i> Private Club</h4>
-                    <p>When enabled, users must request to join or be invited, and must be approved by group admin/owner.</p>
-                </div>
-                <label class="switch-ui">
-                    <input type="checkbox" name="isPrivate" id="isPrivateToggle" <%= (formData.isPrivate === 'true' || formData.isPrivate === 'on') ? 'checked' : '' %>>
-                    <span class="slider-ui"></span>
-                </label>
-            </div>
-
             <button type="submit" class="btn-submit-club">
                 <i class="fas fa-rocket"></i> Launch Community Club
             </button>
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Universal Custom Select Setup
+        function initCustomSelect(wrapperId, hiddenInputId, onSelectCallback) {
+            const wrapper = document.getElementById(wrapperId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            if (!wrapper || !hiddenInput) return;
+
+            const selectBtn = wrapper.querySelector('.custom-select');
+            const selectText = wrapper.querySelector('.custom-select-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Close other open wrappers
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+                wrapper.classList.toggle('open');
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const opt = e.target.closest('.custom-option');
+                if (!opt) return;
+
+                const val = opt.getAttribute('data-value');
+                wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                // Update text content with icon/flag if present
+                const labelSpan = selectText.querySelector('.text-label');
+                if (labelSpan) {
+                    labelSpan.textContent = val;
+                } else {
+                    selectText.innerHTML = opt.innerHTML;
+                }
+
+                hiddenInput.value = val;
+                hiddenInput.dispatchEvent(new Event('change'));
+                wrapper.classList.remove('open');
+
+                if (typeof onSelectCallback === 'function') {
+                    onSelectCallback(val, opt);
+                }
+            });
+        }
+
+        // 1. Club Category Dropdown
+        initCustomSelect('wrapper-clubCategory', 'clubCategoryInput', (val, opt) => {
+            const tagVal = opt.getAttribute('data-tag');
+            const tagsInput = document.getElementById('clubTags');
+            if (tagsInput && tagVal) {
+                let currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
+                if (!currentTags.includes(tagVal)) {
+                    currentTags.unshift(tagVal);
+                    tagsInput.value = currentTags.slice(0, 10).join(', ');
+                }
+            }
+        });
+
+        // 2. Primary Language Dropdown
+        initCustomSelect('wrapper-primaryLanguage', 'primaryLanguage');
+
+        // 3. Country / Region Dropdown
+        initCustomSelect('wrapper-country', 'country');
+
+        // 4. Club Privacy Dropdown
+        initCustomSelect('wrapper-clubPrivacy', 'isPrivateInput', (val) => {
+            const isPriv = (val === 'private');
+            const hidden = document.getElementById('isPrivateInput');
+            if (hidden) hidden.value = isPriv ? 'true' : 'false';
+            
+            const selectText = document.querySelector('#wrapper-clubPrivacy .custom-select-text');
+            if (selectText) {
+                selectText.innerHTML = isPriv
+                    ? '<i class="fas fa-lock" style="color: #ff8a80;"></i> <span class="text-label">Private Club (Join Approval Required)</span>'
+                    : '<i class="fas fa-globe" style="color: #69f0ae;"></i> <span class="text-label">Public Club (Instant Join for All Members)</span>';
+            }
+        });
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
+    });
+</script>
 
 <%- include('../../partials/footer') %>

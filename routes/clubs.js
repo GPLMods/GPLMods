@@ -201,6 +201,19 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
 
         const formData = { name, description, tags, primaryLanguage, country, aboutAdmin, rules, isPrivate };
 
+        // Check user's created club count (3 max for free, 5 max for Lite/Plus/Staff)
+        const userCreatedCount = await Club.countDocuments({ creator: req.user._id });
+        const isPlusOrLite = req.user.membership === 'plus' || req.user.membership === 'lite' || req.user.membership === 'premium' || ['owner', 'admin', 'distributor', 'support'].includes(req.user.role);
+        const maxClubsAllowed = isPlusOrLite ? 5 : 3;
+
+        if (userCreatedCount >= maxClubsAllowed) {
+            return res.render('pages/clubs/create', {
+                pageTitle: 'Create a Club',
+                error: `You have reached your limit of ${maxClubsAllowed} clubs (${isPlusOrLite ? 'GPL Lite/Plus limit is 5' : 'Free user limit is 3, upgrade to Lite or Plus to create up to 5'}).`,
+                formData
+            });
+        }
+
         // 1. Validate Club Name
         if (!name || name.trim().length < 3) {
             return res.render('pages/clubs/create', {
@@ -307,7 +320,8 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
             storagePath: storagePath,
             trackedCreators: [req.user._id], // Creator is tracked by default for updates
             memberCount: 1,
-            channelCount: 6
+            channelCount: 6,
+            isVerified: ['owner', 'admin', 'distributor', 'support'].includes(req.user.role)
         });
 
         // 8. Create Default Roles for this Club
@@ -498,6 +512,9 @@ router.get('/:slugOrId', async (req, res) => {
         if (!club) {
             return res.status(404).render('pages/404');
         }
+        if (!club.bannerUrl || club.isDefault || club.slug === 'gpl-community') {
+            club.bannerUrl = club.bannerUrl || '/images/default-banner.jpg';
+        }
 
         // If user is guest
         if (!req.user) {
@@ -554,16 +571,22 @@ router.get('/:slugOrId', async (req, res) => {
                 .limit(75)
                 .populate({
                     path: 'sender',
-                    select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges'
+                    select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar avatarUrl membership isPremium badges'
                 })
                 .lean();
 
             for (const msg of messages) {
                 if (msg.sender) {
+                    const isGPLMods = msg.sender.username === 'GPLMods';
+                    const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
                     if (msg.sender.signedAvatarUrl && msg.sender.signedAvatarUrl !== '/images/default-avatar.png') {
                         // Keep signed avatar
                     } else if (msg.sender.cardAvatarUrl && msg.sender.cardAvatarUrl !== '/images/default-avatar.png') {
                         msg.sender.signedAvatarUrl = msg.sender.cardAvatarUrl;
+                    } else if (msg.sender.avatarUrl && msg.sender.avatarUrl !== '/images/default-avatar.png') {
+                        msg.sender.signedAvatarUrl = msg.sender.avatarUrl;
+                    } else if (msg.sender.avatar && msg.sender.avatar !== '/images/default-avatar.png') {
+                        msg.sender.signedAvatarUrl = msg.sender.avatar;
                     } else if (msg.sender.profileImageKey && getSmartImg) {
                         try {
                             const url = await getSmartImg(msg.sender.profileImageKey);
@@ -573,7 +596,7 @@ router.get('/:slugOrId', async (req, res) => {
                         } catch(e) {}
                     }
                     if (!msg.sender.signedAvatarUrl) {
-                        msg.sender.signedAvatarUrl = '/images/default-avatar.png';
+                        msg.sender.signedAvatarUrl = defaultLogo;
                     }
                 }
             }
@@ -587,17 +610,23 @@ router.get('/:slugOrId', async (req, res) => {
         const members = await ClubMember.find({ club: club._id, status: 'active' })
             .populate({
                 path: 'user',
-                select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges'
+                select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar avatarUrl membership isPremium badges'
             })
             .populate('roles')
             .lean();
 
         for (const m of members) {
             if (m.user) {
+                const isGPLMods = m.user.username === 'GPLMods';
+                const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
                 if (m.user.signedAvatarUrl && m.user.signedAvatarUrl !== '/images/default-avatar.png') {
                     // Keep signed avatar
                 } else if (m.user.cardAvatarUrl && m.user.cardAvatarUrl !== '/images/default-avatar.png') {
                     m.user.signedAvatarUrl = m.user.cardAvatarUrl;
+                } else if (m.user.avatarUrl && m.user.avatarUrl !== '/images/default-avatar.png') {
+                    m.user.signedAvatarUrl = m.user.avatarUrl;
+                } else if (m.user.avatar && m.user.avatar !== '/images/default-avatar.png') {
+                    m.user.signedAvatarUrl = m.user.avatar;
                 } else if (m.user.profileImageKey && getSmartImg) {
                     try {
                         const url = await getSmartImg(m.user.profileImageKey);
@@ -607,7 +636,7 @@ router.get('/:slugOrId', async (req, res) => {
                     } catch(e) {}
                 }
                 if (!m.user.signedAvatarUrl) {
-                    m.user.signedAvatarUrl = '/images/default-avatar.png';
+                    m.user.signedAvatarUrl = defaultLogo;
                 }
             }
         }
@@ -973,15 +1002,21 @@ router.get('/:slugOrId/channels/:channelId/messages', ensureAuth, async (req, re
         const messages = await ClubMessage.find({ channel: req.params.channelId })
             .sort({ createdAt: -1 })
             .limit(50)
-            .populate('sender', 'username profileImageKey role signedAvatarUrl cardAvatarUrl membership isPremium badges')
+            .populate('sender', 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar avatarUrl membership isPremium badges')
             .lean();
 
         for (const msg of messages) {
             if (msg.sender) {
+                const isGPLMods = msg.sender.username === 'GPLMods';
+                const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
                 if (msg.sender.signedAvatarUrl && msg.sender.signedAvatarUrl !== '/images/default-avatar.png') {
                     // Keep existing signed url
                 } else if (msg.sender.cardAvatarUrl && msg.sender.cardAvatarUrl !== '/images/default-avatar.png') {
                     msg.sender.signedAvatarUrl = msg.sender.cardAvatarUrl;
+                } else if (msg.sender.avatarUrl && msg.sender.avatarUrl !== '/images/default-avatar.png') {
+                    msg.sender.signedAvatarUrl = msg.sender.avatarUrl;
+                } else if (msg.sender.avatar && msg.sender.avatar !== '/images/default-avatar.png') {
+                    msg.sender.signedAvatarUrl = msg.sender.avatar;
                 } else if (msg.sender.profileImageKey && getSmartImg) {
                     try {
                         const url = await getSmartImg(msg.sender.profileImageKey);
@@ -991,7 +1026,7 @@ router.get('/:slugOrId/channels/:channelId/messages', ensureAuth, async (req, re
                     } catch(e) {}
                 }
                 if (!msg.sender.signedAvatarUrl) {
-                    msg.sender.signedAvatarUrl = '/images/default-avatar.png';
+                    msg.sender.signedAvatarUrl = defaultLogo;
                 }
             }
         }

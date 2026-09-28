@@ -374,12 +374,19 @@
                 font-size: 0.9em !important;
             }
             .emoji-picker-popover {
-                width: calc(100% - 24px) !important;
-                left: 12px !important;
-                right: 12px !important;
-                max-width: 360px;
-                bottom: calc(100% + 10px) !important;
-                z-index: 99999 !important;
+                position: fixed !important;
+                width: calc(100% - 20px) !important;
+                left: 10px !important;
+                right: 10px !important;
+                max-width: 360px !important;
+                bottom: 72px !important;
+                z-index: 999999 !important;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.95) !important;
+            }
+            .emoji-picker-popover emoji-picker {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 320px !important;
             }
             .stats-bar {
                 padding: 8px 14px;
@@ -1199,25 +1206,40 @@
         }
 
         if (deskEmojiToggleBtn) {
-            deskEmojiToggleBtn.addEventListener('click', (e) => {
+            const toggleDeskEmoji = (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 if (deskEmojiToggleBtn.disabled) return;
                 const isVisible = deskEmojiPopover.style.display === 'block';
                 deskEmojiPopover.style.display = isVisible ? 'none' : 'block';
-            });
+            };
+            deskEmojiToggleBtn.addEventListener('click', toggleDeskEmoji);
+            deskEmojiToggleBtn.addEventListener('touchend', toggleDeskEmoji);
+        }
+
+        if (deskEmojiPopover) {
+            deskEmojiPopover.addEventListener('click', (e) => e.stopPropagation());
+            deskEmojiPopover.addEventListener('touchend', (e) => e.stopPropagation());
         }
 
         if (closeDeskEmojiBtn) {
-            closeDeskEmojiBtn.addEventListener('click', () => {
+            const closeDeskEmoji = (e) => {
+                if (e) e.stopPropagation();
                 if (deskEmojiPopover) deskEmojiPopover.style.display = 'none';
-            });
+            };
+            closeDeskEmojiBtn.addEventListener('click', closeDeskEmoji);
+            closeDeskEmojiBtn.addEventListener('touchend', closeDeskEmoji);
         }
 
-        document.addEventListener('click', (e) => {
-            if (deskEmojiPopover && !deskEmojiPopover.contains(e.target) && e.target !== deskEmojiToggleBtn && (!deskEmojiToggleBtn || !deskEmojiToggleBtn.contains(e.target))) {
-                deskEmojiPopover.style.display = 'none';
+        const dismissDeskEmojiOutside = (e) => {
+            if (deskEmojiPopover && deskEmojiPopover.style.display === 'block') {
+                if (!deskEmojiPopover.contains(e.target) && e.target !== deskEmojiToggleBtn && (!deskEmojiToggleBtn || !deskEmojiToggleBtn.contains(e.target))) {
+                    deskEmojiPopover.style.display = 'none';
+                }
             }
-        });
+        };
+        document.addEventListener('click', dismissDeskEmojiOutside);
+        document.addEventListener('touchend', dismissDeskEmojiOutside);
 
         // --- MEDIA UPLOAD HANDLERS ---
         if (deskMediaUploadBtn && deskMediaInput) {

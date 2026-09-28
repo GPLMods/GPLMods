@@ -47,7 +47,7 @@ const getBrandedEmailHtml = (content) => `
                     </tr>
                     <tr>
                         <td align="center" style="padding: 25px 30px; background-color: #111111; border-top: 1px solid #2a2a2a; font-size: 12px; color: #888888; line-height: 1.6;">
-                            <!-- Professional Brand Icons (1. Gravatar, 2. Globe, 3. GitHub) -->
+                            <!-- Professional Brand Icons (1. Gravatar, 2. Discord, 3. GitHub) -->
                             <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin: 0 auto 16px auto;">
                                 <tr>
                                     <td align="center" style="padding: 0 10px;">
@@ -56,8 +56,8 @@ const getBrandedEmailHtml = (content) => `
                                         </a>
                                     </td>
                                     <td align="center" style="padding: 0 10px;">
-                                        <a href="https://gplmods.webredirect.org" target="_blank" title="GPL Mods Official Site" style="text-decoration: none; display: inline-block;">
-                                            <img src="https://gplmods.webredirect.org/images/mail-icons/globe.png" alt="Official Website" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; opacity: 0.85;" />
+                                        <a href="https://discord.gg/j82B8Y6J" target="_blank" title="GPL Mods Discord" style="text-decoration: none; display: inline-block;">
+                                            <img src="https://gplmods.webredirect.org/images/mail-icons/discord.png" alt="Discord" width="24" height="24" style="display: block; width: 24px; height: 24px; border: 0; opacity: 0.85;" />
                                         </a>
                                     </td>
                                     <td align="center" style="padding: 0 10px;">
