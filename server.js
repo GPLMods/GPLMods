@@ -183,14 +183,14 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // Initialize Gemini Flash AI
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 const aiModel = genAI ? genAI.getGenerativeModel({ 
-    model: "gemini-3.6-flash",
+    model: "gemini-1.5-flash",
     systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
 }) : null;
 
 // AI Diagnostics & Health State
 const aiDebuggerStatus = {
     status: process.env.GEMINI_API_KEY ? 'online' : 'offline',
-    model: 'gemini-3.6-flash',
+    model: 'gemini-1.5-flash',
     configured: Boolean(process.env.GEMINI_API_KEY),
     lastPing: null,
     latencyMs: null,
@@ -5162,10 +5162,20 @@ app.get('/promote', async (req, res, next) => {
             // Fetch promotions
             const promoQuery = isStaff ? {} : { user: req.user._id };
             promotions = await ModPromotion.find(promoQuery)
-                .populate('file', 'name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl')
+                .populate('file', 'name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl iconKey')
                 .sort({ createdAt: -1 })
                 .limit(50)
                 .lean();
+
+            // Attach signed/smart icon URLs so mod icons show up in My Promotion Campaigns
+            promotions = await Promise.all(promotions.map(async (p) => {
+                if (p.file) {
+                    const key = p.file.iconUrl || p.file.iconKey || p.file.fileIconUrl;
+                    const resolvedIcon = key ? await getSmartImageUrl(key) : '/images/default-mod-icon.png';
+                    p.file.iconUrl = resolvedIcon || '/images/default-mod-icon.png';
+                }
+                return p;
+            }));
 
             const now = new Date();
             promotions.forEach(p => {
@@ -17444,6 +17454,9 @@ const startServer = async () => {
                     const message = await ClubMessage.findById(messageId);
                     if (!message) return;
 
+                    const effectiveClubId = clubId || message.club;
+                    const effectiveChanId = channelId || message.channel;
+
                     let reactionObj = message.reactions.find(r => r.emoji === emoji);
                     if (!reactionObj) {
                         reactionObj = { emoji, users: [user._id] };
@@ -17461,11 +17474,15 @@ const startServer = async () => {
                     }
                     await message.save();
 
-                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_reaction_updated', {
+                    const reactionPayload = {
                         messageId: message._id,
                         reactions: message.reactions
-                    });
-                } catch (e) {}
+                    };
+                    io.to(`club_${effectiveClubId}_chan_${effectiveChanId}`).emit('club_reaction_updated', reactionPayload);
+                    io.to(`club_${effectiveClubId}`).emit('club_reaction_updated', reactionPayload);
+                } catch (e) {
+                    console.error('[Clubs] Reaction error:', e);
+                }
             });
 
             socket.on('club_poll_vote', async (data) => {
@@ -17486,7 +17503,9 @@ const startServer = async () => {
                     }
                     await message.save();
 
-                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_poll_updated', {
+                    const effectiveClubId = clubId || message.club;
+                    const effectiveChanId = channelId || message.channel;
+                    io.to(`club_${effectiveClubId}_chan_${effectiveChanId}`).emit('club_poll_updated', {
                         messageId: message._id,
                         poll: message.poll
                     });
@@ -17502,9 +17521,11 @@ const startServer = async () => {
                     const message = await ClubMessage.findById(messageId);
                     if (!message || message.isDeleted) return;
 
-                    const club = await Club.findById(clubId);
+                    const effectiveClubId = clubId || message.club;
+                    const effectiveChanId = channelId || message.channel;
+                    const club = await Club.findById(effectiveClubId);
                     const isSender = String(message.sender) === String(user._id);
-                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isStaff = ['owner', 'admin', 'support'].includes(user.role);
                     const isCreator = club && String(club.creator) === String(user._id);
 
                     if (!isSender && !isStaff && !isCreator) {
@@ -17519,7 +17540,7 @@ const startServer = async () => {
                     message.editedAt = new Date();
                     await message.save();
 
-                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_edited', {
+                    io.to(`club_${effectiveClubId}_chan_${effectiveChanId}`).emit('club_message_edited', {
                         messageId: message._id,
                         content: safeText,
                         isEdited: true,
@@ -17539,12 +17560,24 @@ const startServer = async () => {
                     const message = await ClubMessage.findById(messageId);
                     if (!message) return;
 
-                    const club = await Club.findById(clubId);
+                    const effectiveClubId = clubId || message.club;
+                    const effectiveChanId = channelId || message.channel;
+                    const club = await Club.findById(effectiveClubId);
                     const isSender = String(message.sender) === String(user._id);
-                    const isStaff = ['owner', 'admin'].includes(user.role);
+                    const isStaff = ['owner', 'admin', 'support'].includes(user.role);
                     const isCreator = club && String(club.creator) === String(user._id);
 
-                    if (!isSender && !isStaff && !isCreator) {
+                    let hasModPerm = false;
+                    if (!isSender && !isStaff && !isCreator && club) {
+                        try {
+                            const member = await ClubMember.findOne({ club: effectiveClubId, user: user._id }).populate('roles');
+                            if (member && member.roles) {
+                                hasModPerm = member.roles.some(r => r && r.permissions && (r.permissions.canManageClub || r.permissions.canKickMembers));
+                            }
+                        } catch (permErr) {}
+                    }
+
+                    if (!isSender && !isStaff && !isCreator && !hasModPerm) {
                         return socket.emit('club_message_error', { message: 'Unauthorized to delete this message.' });
                     }
 
@@ -17553,10 +17586,12 @@ const startServer = async () => {
                     message.deletedAt = new Date();
                     await message.save();
 
-                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_deleted', {
+                    const deletePayload = {
                         messageId: message._id,
                         senderId: message.sender
-                    });
+                    };
+                    io.to(`club_${effectiveClubId}_chan_${effectiveChanId}`).emit('club_message_deleted', deletePayload);
+                    io.to(`club_${effectiveClubId}`).emit('club_message_deleted', deletePayload);
                 } catch (err) {
                     console.error('[Clubs] Delete message error:', err);
                 }
