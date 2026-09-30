@@ -303,3 +303,29 @@
         text-align: center;
     }
 }
+
+/* Header Notification Dropdown Mobile Rules */
+@media (max-width: 768px) {
+    .header-notif-dropdown {
+        position: fixed !important;
+        top: 64px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: calc(100vw - 24px) !important;
+        max-width: 420px !important;
+        margin: 0 auto !important;
+        border-radius: 16px !important;
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 15px rgba(255, 215, 0, 0.2) !important;
+        z-index: 100005 !important;
+    }
+    .header-notif-wrapper {
+        position: static !important;
+    }
+    .nav-bell {
+        padding: 6px 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.15rem !important;
+    }
+}

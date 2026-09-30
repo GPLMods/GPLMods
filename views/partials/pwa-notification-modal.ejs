@@ -104,7 +104,20 @@
 <script>
     function openGlobalNotificationModal() {
         const modal = document.getElementById('globalNotificationModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            const isEnabled = localStorage.getItem('gpl_push_notification_enabled') !== 'false';
+            const u = document.getElementById('modal_newUploads');
+            const c = document.getElementById('modal_clubUpdates');
+            const a = document.getElementById('modal_adminMessages');
+            const s = document.getElementById('modal_soundEnabled');
+            [u, c, a, s].forEach(el => {
+                if (el) {
+                    el.disabled = !isEnabled;
+                    el.checked = isEnabled;
+                }
+            });
+            modal.style.display = 'flex';
+        }
     }
 
     function closeGlobalNotificationModal() {
@@ -118,13 +131,31 @@
         const a = document.getElementById('modal_adminMessages');
         const s = document.getElementById('modal_soundEnabled');
 
+        const anyChecked = (u && u.checked) || (c && c.checked) || (a && a.checked) || (s && s.checked);
+        const isMasterEnabled = anyChecked || (localStorage.getItem('gpl_push_notification_enabled') !== 'false');
+
+        // Sync on-page master switch if present
+        const masterOnPage = document.getElementById('masterNotifSwitch') || document.getElementById('guestMasterSwitch');
+        if (masterOnPage) masterOnPage.checked = isMasterEnabled;
+
+        localStorage.setItem('gpl_push_notification_enabled', isMasterEnabled ? 'true' : 'false');
+        if (s) localStorage.setItem('gpl_push_notification_sound', s.checked ? 'true' : 'false');
+
         const payload = {
-            notificationsEnabled: true,
-            newUploads: u ? u.checked : true,
-            clubUpdates: c ? c.checked : true,
-            adminMessages: a ? a.checked : true,
-            soundEnabled: s ? s.checked : true
+            notificationsEnabled: isMasterEnabled,
+            newUploads: u ? u.checked : isMasterEnabled,
+            clubUpdates: c ? c.checked : isMasterEnabled,
+            adminMessages: a ? a.checked : isMasterEnabled,
+            soundEnabled: s ? s.checked : isMasterEnabled
         };
+
+        localStorage.setItem('gpl_notif_prefs', JSON.stringify({
+            master: isMasterEnabled,
+            newUploads: payload.newUploads,
+            clubUpdates: payload.clubUpdates,
+            adminMessages: payload.adminMessages,
+            soundEnabled: payload.soundEnabled
+        }));
 
         try {
             await fetch('/settings/notifications', {

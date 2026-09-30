@@ -21,27 +21,10 @@
     function initAudio() {
         if (!notifAudio) {
             notifAudio = new Audio('/sfx/notification.mp3');
-            notifAudio.preload = 'auto';
+            notifAudio.preload = 'none';
             notifAudio.volume = 0.85;
         }
     }
-
-    // Unlock audio on initial mobile gesture (browser autoplay policies)
-    function unlockAudioOnGesture() {
-        if (audioUnlocked) return;
-        initAudio();
-        notifAudio.play().then(() => {
-            notifAudio.pause();
-            notifAudio.currentTime = 0;
-            audioUnlocked = true;
-        }).catch(() => {
-            // Autoplay blocked without user gesture yet
-        });
-        document.removeEventListener('click', unlockAudioOnGesture);
-        document.removeEventListener('touchstart', unlockAudioOnGesture);
-    }
-    document.addEventListener('click', unlockAudioOnGesture, { once: true });
-    document.addEventListener('touchstart', unlockAudioOnGesture, { once: true });
 
     function playNotificationSound() {
         const soundPref = localStorage.getItem(STORAGE_KEY_SOUND);

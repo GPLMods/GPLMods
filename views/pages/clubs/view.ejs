@@ -852,6 +852,115 @@
         transform: scale(1.04);
     }
 
+    /* Discord-Style Mentions and Role Pings */
+    .discord-mention {
+        background: rgba(88, 101, 242, 0.28);
+        color: #c9cdfb;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        display: inline-flex;
+        align-items: center;
+        margin: 0 1px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .discord-mention:hover {
+        background: rgba(88, 101, 242, 0.55);
+        color: #ffffff;
+    }
+    .discord-mention.discord-mention-everyone {
+        background: rgba(235, 69, 158, 0.22);
+        color: #ff8dfb;
+    }
+    .discord-mention.discord-mention-everyone:hover {
+        background: rgba(235, 69, 158, 0.45);
+        color: #ffffff;
+    }
+    .discord-mention.discord-mention-role {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .discord-mention.mention-me {
+        background: rgba(250, 166, 26, 0.22) !important;
+        color: #faa61a !important;
+        border: 1px solid rgba(250, 166, 26, 0.45) !important;
+    }
+    .discord-mention.mention-me:hover {
+        background: rgba(250, 166, 26, 0.38) !important;
+        color: #fff !important;
+    }
+    .message-item.message-highlighted-mention {
+        background: rgba(250, 166, 26, 0.08) !important;
+        border-left: 3px solid #faa61a !important;
+        padding-left: 12px !important;
+    }
+    .discord-role-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 6px;
+        line-height: 1;
+        margin-left: 4px;
+    }
+    .discord-sidebar-role-pill {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 2px;
+        display: inline-block;
+        max-width: fit-content;
+    }
+
+    /* Discord Mention Autocomplete Dropdown */
+    .mention-autocomplete-dropdown {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        width: 320px;
+        max-height: 260px;
+        overflow-y: auto;
+        background: #181922;
+        border: 1.5px solid var(--gold);
+        border-radius: 12px;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9);
+        z-index: 10002;
+    }
+    .mention-autocomplete-header {
+        padding: 8px 12px 4px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #8e9297;
+        letter-spacing: 0.5px;
+    }
+    .mention-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .mention-item:hover, .mention-item.active {
+        background: rgba(255, 215, 0, 0.15);
+    }
+    .mention-item-name {
+        font-weight: 600;
+        color: #fff;
+        font-size: 0.88rem;
+    }
+    .mention-item-tag {
+        font-size: 0.72rem;
+        color: #8e9297;
+        margin-left: auto;
+    }
+
     /* Modal Backdrop */
     .gpl-modal-backdrop {
         position: fixed;
@@ -1341,6 +1450,16 @@
                                 <% if (String(club.creator._id || club.creator) === String(msg.sender ? msg.sender._id : '')) { %>
                                     <span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>
                                 <% } %>
+                                <% 
+                                    const senderMember = members.find(m => m.user && String(m.user._id) === String(msg.sender ? msg.sender._id : ''));
+                                    const senderRole = senderMember && senderMember.roles && senderMember.roles.length > 0 ? senderMember.roles[0] : null;
+                                %>
+                                <% if (senderRole && senderRole.name !== 'everyone') { %>
+                                    <span class="discord-role-pill" style="border: 1px solid <%= senderRole.color %>50; color: <%= senderRole.color %>; background: <%= senderRole.color %>18;">
+                                        <span class="role-dot" style="background: <%= senderRole.color %>;"></span>
+                                        <%= senderRole.name %>
+                                    </span>
+                                <% } %>
                                 <% if (msg.isPinned) { %>
                                     <span class="badge-icon-tag badge-pinned" style="background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid var(--gold);"><i class="fas fa-thumbtack"></i> Pinned</span>
                                 <% } %>
@@ -1454,7 +1573,10 @@
                 <i class="fas fa-ban"></i> <strong>External links are forbidden!</strong> Only official GPLMods site links are allowed in this chat.
             </div>
 
-            <div class="chat-input-box">
+            <div class="chat-input-box" style="position: relative;">
+                <!-- Discord Mention Autocomplete Dropdown -->
+                <div id="mentionAutocompleteDropdown" class="mention-autocomplete-dropdown"></div>
+
                 <textarea id="chatInput" class="chat-textarea" rows="1" placeholder="<%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'This channel is read-only.' : `Message #${activeChannel ? activeChannel.name : 'general'}...` %>" <%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'disabled' : '' %>></textarea>
 
                 <div class="chat-input-actions">
@@ -1576,11 +1698,12 @@
                 </div>
             <% } %>
 
-            <!-- ONLINE MEMBERS -->
-            <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-circle" style="color: #43b581; font-size: 0.65rem; margin-right: 6px;"></i> ONLINE MEMBERS — <span id="onlineCountNum"><%= members.length %></span></div>
+            <!-- ALL MEMBERS / EVERYONE -->
+            <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-users" style="color: #99aab5; font-size: 0.75rem; margin-right: 6px;"></i> @everyone — <span id="onlineCountNum"><%= members.length %></span></div>
             <div id="onlineMembersList">
                 <% members.forEach(mem => { %>
                     <% if (mem.user) { %>
+                        <% const memRole = (mem.roles && mem.roles.length > 0) ? mem.roles[0] : { name: 'everyone', color: '#99AAB5', badgeIcon: '🌐' }; %>
                         <div class="member-card-row" onclick="window.location.href='/users/<%= mem.user.username %>'">
                             <div class="member-avatar-wrap">
                                 <% const memAvatar = (mem.user.signedAvatarUrl && mem.user.signedAvatarUrl !== '/images/default-avatar.png') ? mem.user.signedAvatarUrl : (mem.user.cardAvatarUrl || mem.user.avatarUrl || mem.user.avatar || (mem.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
@@ -1588,10 +1711,10 @@
                                 <div class="online-dot"></div>
                             </div>
                             <div class="member-meta-box">
-                                <span class="member-display-name"><%= mem.user.username %></span>
-                                <% if (mem.roles && mem.roles.length > 0) { %>
-                                    <span style="font-size: 0.72rem; color: <%= mem.roles[0].color || '#99aab5' %>;"><%= mem.roles[0].name %></span>
-                                <% } %>
+                                <span class="member-display-name" style="color: <%= (memRole && memRole.color && memRole.name !== 'everyone') ? memRole.color : '#fff' %>;"><%= mem.user.username %></span>
+                                <span class="discord-sidebar-role-pill" style="color: <%= memRole.color || '#99aab5' %>; background: <%= (memRole.color || '#99aab5') %>18; border: 1px solid <%= (memRole.color || '#99aab5') %>40;">
+                                    <%= memRole.badgeIcon || '🌐' %> <%= memRole.name %>
+                                </span>
                             </div>
                         </div>
                     <% } %>
@@ -1710,6 +1833,9 @@
             <button type="button" onclick="closeEditMessageModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
             <button type="button" onclick="submitEditMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
         </div>
+    </div>
+</div>
+
 <!-- Delete Message Confirmation Modal -->
 <div class="gpl-modal-backdrop" id="clubDeleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid #e74c3c; border-radius: 16px; padding: 26px; width: 90%; max-width: 400px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); text-align: center;">
@@ -1781,6 +1907,206 @@
     const hasManageClubPermClient = <%= hasManageClubPerm ? 'true' : 'false' %>;
     let isVanished = <%= vanishedModeDefault ? 'true' : 'false' %>;
 
+    const clubRoles = <%- JSON.stringify(roles.map(r => ({ _id: r._id, name: r.name, color: r.color, icon: r.badgeIcon, isDefault: r.isDefault }))) %>;
+    const clubMembers = <%- JSON.stringify(members.map(m => ({ _id: m.user?._id, username: m.user?.username, role: m.user?.role, roles: (m.roles || []).map(r => r.name || r) }))) %>;
+    const currentUserRoles = <%- JSON.stringify(membership && membership.roles ? membership.roles.map(r => r.name || r) : ['everyone']) %>;
+
+    // Discord Mention System & Role Pings
+    function formatDiscordMentions(text) {
+        if (!text) return '';
+        let res = text;
+        const isEveryoneMe = Boolean(currentUsername);
+        res = res.replace(/@everyone\b/gi, `<span class="discord-mention discord-mention-everyone ${isEveryoneMe ? 'mention-me' : ''}">@everyone</span>`);
+
+        clubRoles.forEach(r => {
+            if (!r.name) return;
+            const reg = new RegExp(`@${r.name}\\b`, 'gi');
+            const hasRole = currentUserRoles && (currentUserRoles.includes(r.name) || (r.isDefault && currentUserRoles.includes('everyone')));
+            const rColor = r.color || '#99AAB5';
+            res = res.replace(reg, `<span class="discord-mention discord-mention-role ${hasRole ? 'mention-me' : ''}" style="color: ${rColor}; border-color: ${rColor}50;">@${r.name}</span>`);
+        });
+
+        clubMembers.forEach(m => {
+            if (!m.username) return;
+            const reg = new RegExp(`@${m.username}\\b`, 'gi');
+            const isMe = currentUsername && (m.username.toLowerCase() === currentUsername.toLowerCase());
+            res = res.replace(reg, `<span class="discord-mention ${isMe ? 'mention-me' : ''}">@${m.username}</span>`);
+        });
+
+        return res;
+    }
+
+    function checkIsMentioned(text) {
+        if (!text || !currentUsername) return false;
+        if (/@everyone\b/i.test(text)) return true;
+        const userReg = new RegExp(`@${currentUsername}\\b`, 'i');
+        if (userReg.test(text)) return true;
+        if (currentUserRoles && currentUserRoles.length > 0) {
+            return currentUserRoles.some(rName => new RegExp(`@${rName}\\b`, 'i').test(text));
+        }
+        return false;
+    }
+
+    // Initialize formatting on existing loaded messages
+    document.querySelectorAll('.message-body-text').forEach(bodyEl => {
+        if (!bodyEl.querySelector('.fa-trash-alt')) {
+            const raw = bodyEl.innerHTML;
+            bodyEl.innerHTML = formatDiscordMentions(raw);
+            if (checkIsMentioned(raw)) {
+                const parentItem = bodyEl.closest('.message-item');
+                if (parentItem) parentItem.classList.add('message-highlighted-mention');
+            }
+        }
+    });
+
+    // Mention Autocomplete Popover Logic
+    const mentionDropdown = document.getElementById('mentionAutocompleteDropdown');
+    let mentionActiveIndex = 0;
+    let mentionItemsList = [];
+
+    function setupMentionAutocomplete() {
+        const inputEl = document.getElementById('chatInput');
+        if (!inputEl || !mentionDropdown) return;
+
+        inputEl.addEventListener('input', () => {
+            const cursor = inputEl.selectionStart;
+            const textBefore = inputEl.value.slice(0, cursor);
+            const match = textBefore.match(/@([a-zA-Z0-9_-]*)$/);
+
+            if (match) {
+                const query = match[1].toLowerCase();
+                renderMentionDropdown(query);
+            } else {
+                hideMentionDropdown();
+            }
+        });
+
+        inputEl.addEventListener('keydown', (e) => {
+            if (mentionDropdown.style.display === 'block') {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    mentionActiveIndex = (mentionActiveIndex + 1) % mentionItemsList.length;
+                    highlightMentionItem();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    mentionActiveIndex = (mentionActiveIndex - 1 + mentionItemsList.length) % mentionItemsList.length;
+                    highlightMentionItem();
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    if (mentionItemsList.length > 0) {
+                        e.preventDefault();
+                        selectMentionItem(mentionItemsList[mentionActiveIndex]);
+                    }
+                } else if (e.key === 'Escape') {
+                    hideMentionDropdown();
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!mentionDropdown.contains(e.target) && e.target !== inputEl) {
+                hideMentionDropdown();
+            }
+        });
+    }
+
+    function renderMentionDropdown(query) {
+        mentionItemsList = [];
+        let html = '';
+
+        // Roles Section
+        const roleMatches = [];
+        if ('everyone'.includes(query)) {
+            roleMatches.push({ type: 'role', name: 'everyone', color: '#ff8dfb', icon: '🌐' });
+        }
+        clubRoles.forEach(r => {
+            if (r.name && r.name !== 'everyone' && r.name.toLowerCase().includes(query)) {
+                roleMatches.push({ type: 'role', name: r.name, color: r.color || '#99AAB5', icon: r.badgeIcon || '🛡️' });
+            }
+        });
+
+        if (roleMatches.length > 0) {
+            html += `<div class="mention-autocomplete-header"><i class="fas fa-shield-alt"></i> Roles</div>`;
+            roleMatches.forEach(r => {
+                const idx = mentionItemsList.length;
+                mentionItemsList.push(r);
+                html += `
+                    <div class="mention-item" data-idx="${idx}" onclick="selectMentionItem(mentionItemsList[${idx}])">
+                        <span style="color: ${r.color}; font-size: 1rem;">${r.icon}</span>
+                        <span class="mention-item-name" style="color: ${r.color};">@${r.name}</span>
+                        <span class="mention-item-tag">Role</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Members Section
+        const memberMatches = [];
+        clubMembers.forEach(m => {
+            if (m.username && m.username.toLowerCase().includes(query)) {
+                memberMatches.push({ type: 'user', name: m.username });
+            }
+        });
+
+        if (memberMatches.length > 0) {
+            html += `<div class="mention-autocomplete-header" style="margin-top: 4px;"><i class="fas fa-users"></i> Members</div>`;
+            memberMatches.slice(0, 10).forEach(m => {
+                const idx = mentionItemsList.length;
+                mentionItemsList.push(m);
+                html += `
+                    <div class="mention-item" data-idx="${idx}" onclick="selectMentionItem(mentionItemsList[${idx}])">
+                        <i class="fas fa-user-circle" style="color: var(--gold); font-size: 1.1rem;"></i>
+                        <span class="mention-item-name">@${m.name}</span>
+                        <span class="mention-item-tag">Member</span>
+                    </div>
+                `;
+            });
+        }
+
+        if (mentionItemsList.length === 0) {
+            hideMentionDropdown();
+            return;
+        }
+
+        mentionDropdown.innerHTML = html;
+        mentionActiveIndex = 0;
+        mentionDropdown.style.display = 'block';
+        highlightMentionItem();
+    }
+
+    function highlightMentionItem() {
+        const items = mentionDropdown.querySelectorAll('.mention-item');
+        items.forEach((it, idx) => {
+            if (idx === mentionActiveIndex) {
+                it.classList.add('active');
+                it.scrollIntoView({ block: 'nearest' });
+            } else {
+                it.classList.remove('active');
+            }
+        });
+    }
+
+    function selectMentionItem(item) {
+        if (!item) return;
+        const inputEl = document.getElementById('chatInput');
+        const cursor = inputEl.selectionStart;
+        const textBefore = inputEl.value.slice(0, cursor);
+        const textAfter = inputEl.value.slice(cursor);
+        const newBefore = textBefore.replace(/@[a-zA-Z0-9_-]*$/, `@${item.name} `);
+        inputEl.value = newBefore + textAfter;
+        inputEl.focus();
+        inputEl.setSelectionRange(newBefore.length, newBefore.length);
+        hideMentionDropdown();
+    }
+
+    function hideMentionDropdown() {
+        if (mentionDropdown) {
+            mentionDropdown.style.display = 'none';
+            mentionItemsList = [];
+        }
+    }
+
+    setupMentionAutocomplete();
+
     const socket = io();
 
     // 1. Join Club & Channel on Socket Connection
@@ -1847,10 +2173,11 @@
         });
 
         chatInput.value = '';
+        hideMentionDropdown();
     }
 
     chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && mentionDropdown.style.display !== 'block') {
             e.preventDefault();
             sendClubMessage();
         }
@@ -1860,8 +2187,9 @@
     socket.on('club_new_message', (msg) => {
         if (String(msg.channel) !== channelId) return;
 
+        const isMentioned = checkIsMentioned(msg.content);
         const msgDiv = document.createElement('div');
-        msgDiv.className = 'message-item';
+        msgDiv.className = `message-item ${msg.isPinned ? 'pinned-msg-item' : ''} ${isMentioned ? 'message-highlighted-mention' : ''}`;
         msgDiv.id = `msg-${msg._id}`;
 
         const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
@@ -1874,6 +2202,18 @@
         if (msg.sender?.membership === 'premium' || msg.sender?.isPremium) roleBadges.push('<span class="badge-icon-tag badge-premium"><i class="fas fa-star"></i> Premium</span>');
         if (msg.sender?.isCreator) roleBadges.push('<span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>');
 
+        // Sender club role badge
+        const senderMem = clubMembers.find(m => m.username === senderName);
+        if (senderMem && senderMem.roles && senderMem.roles.length > 0) {
+            const roleName = senderMem.roles[0];
+            const matchingRole = clubRoles.find(r => r.name === roleName);
+            if (matchingRole && matchingRole.name !== 'everyone') {
+                roleBadges.push(`<span class="discord-role-pill" style="border: 1px solid ${matchingRole.color || '#99AAB5'}50; color: ${matchingRole.color || '#99AAB5'}; background: ${matchingRole.color || '#99AAB5'}18;"><span class="role-dot" style="background: ${matchingRole.color || '#99AAB5'};"></span>${matchingRole.name}</span>`);
+            }
+        }
+
+        const formattedBody = formatDiscordMentions(msg.content);
+
         msgDiv.innerHTML = `
             <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.src='${isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png'}';">
             <div class="message-content-col">
@@ -1882,7 +2222,7 @@
                     ${roleBadges.join(' ')}
                     <span class="message-time">${new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <div class="message-body-text" id="msg-text-${msg._id}">${msg.content}</div>
+                <div class="message-body-text" id="msg-text-${msg._id}">${formattedBody}</div>
                 <div class="reactions-row" id="reactions-${msg._id}">
                     <div class="reaction-pill" onclick="quickReactPicker('${msg._id}', event)" title="Add Reaction">
                         <i class="far fa-smile-plus"></i>
@@ -1986,7 +2326,7 @@
                 </div>
             `;
         });
-        html += `<div class="reaction-pill" onclick="quickReactPicker('${data.messageId}')" title="Add Reaction"><i class="far fa-smile-plus"></i></div>`;
+        html += `<div class="reaction-pill" onclick="quickReactPicker('${data.messageId}', event)" title="Add Reaction"><i class="far fa-smile-plus"></i></div>`;
         reactionsRow.innerHTML = html;
     });
 
@@ -2053,23 +2393,62 @@
 
     // 7. Interactive Reactions & Poll Actions
     function toggleReaction(messageId, emoji) {
+        if (!messageId || !emoji) return;
+
+        // Optimistic UI update
+        const reactionsRow = document.getElementById(`reactions-${messageId}`);
+        if (reactionsRow) {
+            const pills = Array.from(reactionsRow.querySelectorAll('.reaction-pill'));
+            let matchedPill = null;
+            pills.forEach(pill => {
+                const spanEmoji = pill.querySelector('span:first-child');
+                if (spanEmoji && spanEmoji.textContent.trim() === emoji) {
+                    matchedPill = pill;
+                }
+            });
+
+            if (matchedPill) {
+                const countSpan = matchedPill.querySelector('span:last-child');
+                let count = parseInt(countSpan ? countSpan.textContent.trim() : '0', 10) || 0;
+                if (matchedPill.classList.contains('user-reacted')) {
+                    matchedPill.classList.remove('user-reacted');
+                    count = Math.max(0, count - 1);
+                    if (count === 0) matchedPill.remove();
+                    else countSpan.textContent = count;
+                } else {
+                    matchedPill.classList.add('user-reacted');
+                    if (countSpan) countSpan.textContent = count + 1;
+                }
+            } else {
+                const newPill = document.createElement('div');
+                newPill.className = 'reaction-pill user-reacted';
+                newPill.onclick = () => toggleReaction(messageId, emoji);
+                newPill.innerHTML = `<span>${emoji}</span><span>1</span>`;
+                const addBtn = reactionsRow.querySelector('[title="Add Reaction"]');
+                if (addBtn) reactionsRow.insertBefore(newPill, addBtn);
+                else reactionsRow.appendChild(newPill);
+            }
+        }
+
         socket.emit('club_message_reaction', { clubId, channelId, messageId, emoji });
     }
 
     let currentReactMsgId = null;
     function quickReactPicker(messageId, event) {
-        if (event) {
+        if (event && typeof event.stopPropagation === 'function') {
             event.stopPropagation();
         }
         currentReactMsgId = messageId;
         const bar = document.getElementById('reactionFloatingBar');
         if (!bar) return;
 
-        const targetEl = event ? (event.currentTarget || event.target) : document.getElementById(`reactions-${messageId}`);
+        const targetEl = (event && (event.currentTarget || event.target)) || document.getElementById(`reactions-${messageId}`);
         if (targetEl) {
             const rect = targetEl.getBoundingClientRect();
-            bar.style.top = (window.scrollY + rect.top - 46) + 'px';
-            bar.style.left = (window.scrollX + rect.left) + 'px';
+            const barTop = Math.max(10, window.scrollY + rect.top - 46);
+            const barLeft = Math.max(10, Math.min(window.innerWidth - 290, window.scrollX + rect.left));
+            bar.style.top = barTop + 'px';
+            bar.style.left = barLeft + 'px';
             bar.style.display = 'flex';
         }
     }

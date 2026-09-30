@@ -183,14 +183,14 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // Initialize Gemini Flash AI
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 const aiModel = genAI ? genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-3.8-flash",
     systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
 }) : null;
 
 // AI Diagnostics & Health State
 const aiDebuggerStatus = {
     status: process.env.GEMINI_API_KEY ? 'online' : 'offline',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.8-flash',
     configured: Boolean(process.env.GEMINI_API_KEY),
     lastPing: null,
     latencyMs: null,
@@ -18136,8 +18136,15 @@ const startServer = async () => {
                                 ]
                             });
 
-                            const aiResult = await chat.sendMessage(text || "Sent an attachment.");
-                            const aiResponseText = aiResult.response.text();
+                            let aiResponseText = '';
+                            try {
+                                const aiResult = await chat.sendMessage(text || "Sent an attachment.");
+                                aiResponseText = aiResult.response.text();
+                            } catch (chatSendErr) {
+                                console.warn("Gemini chat.sendMessage failed, trying generateContent fallback:", chatSendErr.message);
+                                const fallbackResult = await aiModel.generateContent(`${systemKnowledgePrompt}\n\nUser Question: ${text || "Sent an attachment."}`);
+                                aiResponseText = fallbackResult.response.text();
+                            }
 
                             const botMsg = { sender: 'bot', text: aiResponseText };
                             session.messages.push(botMsg);
@@ -18155,14 +18162,19 @@ const startServer = async () => {
                         } catch (error) {
                             console.error("Gemini Error:", error.message || error);
                             
-                            aiDebuggerStatus.status = 'offline';
                             aiDebuggerStatus.totalErrors++;
                             aiDebuggerStatus.lastError = {
                                 message: error.message || String(error),
                                 time: new Date()
                             };
+                            // Only mark permanently offline if unconfigured or missing API key
+                            if (!process.env.GEMINI_API_KEY) {
+                                aiDebuggerStatus.status = 'offline';
+                            } else {
+                                aiDebuggerStatus.status = 'online';
+                            }
 
-                            const errMsg = { sender: 'system', text: "AI is currently resting. Type 'human' to speak with our support team." };
+                            const errMsg = { sender: 'system', text: "I'm experiencing a brief connection delay. Please try again or type 'human' to speak directly with our support team." };
                             session.messages.push(errMsg);
                             await session.save();
                             io.to(`support_${session._id}`).emit('new_support_message', errMsg);

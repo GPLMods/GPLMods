@@ -96,20 +96,35 @@
 
                 if (videoAdTimer) clearTimeout(videoAdTimer);
                 videoAdTimer = setTimeout(() => { 
-                    // Double check policy acceptance & cookie
-                    if (localStorage.getItem('gplmods_policy_accepted') !== 'true') return;
-                    if (getCookie(adCookieName) === 'true') return;
+                    function tryShowVideoAd() {
+                        if (localStorage.getItem('gplmods_policy_accepted') !== 'true') return;
+                        if (getCookie(adCookieName) === 'true') return;
 
-                    videoModal.style.display = 'flex';
-                    window._gplmodsVideoAdActive = true;
-                    try { window.dispatchEvent(new CustomEvent('gplmods:video-ad-active')); } catch(e) {}
-                    setTimeout(() => videoModal.classList.add('show'), 10);
-                    document.body.style.overflow = 'hidden'; 
-                    
-                    if (backgroundAudio && !backgroundAudio.paused) {
-                        backgroundAudio.dataset.adPaused = 'true';
-                        backgroundAudio.pause();
+                        if (window.GPLPopupCoordinator && !window.GPLPopupCoordinator.canShow('video-ad')) {
+                            const onPopupClosed = () => {
+                                if (window.GPLPopupCoordinator && window.GPLPopupCoordinator.canShow('video-ad')) {
+                                    window.removeEventListener('gplmods:popup-closed', onPopupClosed);
+                                    tryShowVideoAd();
+                                }
+                            };
+                            window.addEventListener('gplmods:popup-closed', onPopupClosed);
+                            return;
+                        }
+
+                        videoModal.style.display = 'flex';
+                        window._gplmodsVideoAdActive = true;
+                        if (window.GPLPopupCoordinator) window.GPLPopupCoordinator.register('video-ad');
+                        try { window.dispatchEvent(new CustomEvent('gplmods:video-ad-active')); } catch(e) {}
+                        setTimeout(() => videoModal.classList.add('show'), 10);
+                        document.body.style.overflow = 'hidden'; 
+                        
+                        if (backgroundAudio && !backgroundAudio.paused) {
+                            backgroundAudio.dataset.adPaused = 'true';
+                            backgroundAudio.pause();
+                        }
                     }
+
+                    tryShowVideoAd();
                 }, MODAL_DELAY_MS);
             }
 
@@ -122,6 +137,7 @@
                     if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
                 }
                 window._gplmodsVideoAdActive = false;
+                if (window.GPLPopupCoordinator) window.GPLPopupCoordinator.unregister('video-ad');
                 try { window.dispatchEvent(new CustomEvent('gplmods:video-ad-closed')); } catch(e) {}
                 if (myFP) {
                     try { myFP.destroy(); } catch(e) {}

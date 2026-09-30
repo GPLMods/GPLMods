@@ -813,6 +813,49 @@
 </div>
 
 <script>
+    function resetAllFilters() {
+        const liveSearchInput = document.getElementById('liveSearchInput');
+        if (liveSearchInput) liveSearchInput.value = '';
+
+        // Reset sort
+        const sortInput = document.getElementById('simSortInput');
+        if (sortInput) sortInput.value = 'similarity';
+        const sortWrapper = document.getElementById('wrapper-simSort');
+        if (sortWrapper) {
+            sortWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+            sortWrapper.querySelector('.custom-option[data-value="similarity"]')?.classList.add('selected');
+            const label = sortWrapper.querySelector('.text-label');
+            if (label) label.textContent = 'Highest Similarity';
+        }
+
+        // Reset platform
+        const platInput = document.getElementById('simPlatformInput');
+        if (platInput) platInput.value = 'all';
+        const platWrapper = document.getElementById('wrapper-simPlatform');
+        if (platWrapper) {
+            platWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+            platWrapper.querySelector('.custom-option[data-value="all"]')?.classList.add('selected');
+            const label = platWrapper.querySelector('.text-label');
+            if (label) label.textContent = 'All Platforms';
+        }
+
+        // Reset match strength
+        const matchInput = document.getElementById('simMatchInput');
+        if (matchInput) matchInput.value = '0';
+        const matchWrapper = document.getElementById('wrapper-simMatch');
+        if (matchWrapper) {
+            matchWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+            matchWrapper.querySelector('.custom-option[data-value="0"]')?.classList.add('selected');
+            const label = matchWrapper.querySelector('.text-label');
+            if (label) label.textContent = 'All Matches (40%+)';
+        }
+
+        if (typeof applyFiltersAndSort === 'function') {
+            applyFiltersAndSort();
+        }
+    }
+    window.resetAllFilters = resetAllFilters;
+
     document.addEventListener('DOMContentLoaded', () => {
         // Universal Custom Select Setup
         function setupCustomSelect(wrapperId, hiddenInputId, onSelectCallback) {
@@ -941,45 +984,7 @@
             }
         }
 
-        function resetAllFilters() {
-            if (liveSearchInput) liveSearchInput.value = '';
 
-            // Reset sort
-            const sortInput = document.getElementById('simSortInput');
-            if (sortInput) sortInput.value = 'similarity';
-            const sortWrapper = document.getElementById('wrapper-simSort');
-            if (sortWrapper) {
-                sortWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                sortWrapper.querySelector('.custom-option[data-value="similarity"]')?.classList.add('selected');
-                const label = sortWrapper.querySelector('.text-label');
-                if (label) label.textContent = 'Highest Similarity';
-            }
-
-            // Reset platform
-            const platInput = document.getElementById('simPlatformInput');
-            if (platInput) platInput.value = 'all';
-            const platWrapper = document.getElementById('wrapper-simPlatform');
-            if (platWrapper) {
-                platWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                platWrapper.querySelector('.custom-option[data-value="all"]')?.classList.add('selected');
-                const label = platWrapper.querySelector('.text-label');
-                if (label) label.textContent = 'All Platforms';
-            }
-
-            // Reset match strength
-            const matchInput = document.getElementById('simMatchInput');
-            if (matchInput) matchInput.value = '0';
-            const matchWrapper = document.getElementById('wrapper-simMatch');
-            if (matchWrapper) {
-                matchWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                matchWrapper.querySelector('.custom-option[data-value="0"]')?.classList.add('selected');
-                const label = matchWrapper.querySelector('.text-label');
-                if (label) label.textContent = 'All Matches (40%+)';
-            }
-
-            applyFiltersAndSort();
-        }
-        window.resetAllFilters = resetAllFilters;
 
         // Initial check for URL query params (e.g. ?type=apps)
         const urlParams = new URLSearchParams(window.location.search);

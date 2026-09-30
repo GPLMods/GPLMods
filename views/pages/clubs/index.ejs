@@ -215,16 +215,24 @@
     }
     .club-card-banner {
         height: 120px;
-        background-size: cover;
-        background-position: center;
         background-color: #1f2029;
         position: relative;
+        overflow: hidden;
+    }
+    .club-card-banner-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
     }
     .club-card-banner::after {
         content: '';
         position: absolute;
         inset: 0;
         background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(20,21,27,0.95) 100%);
+        z-index: 1;
     }
     .club-card-badges {
         position: absolute;
@@ -467,7 +475,8 @@
             <% clubs.forEach(club => { %>
                 <% const isJoined = joinedClubIds.includes(String(club._id)); %>
                 <div class="club-card">
-                    <div class="club-card-banner" style="background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>');">
+                    <div class="club-card-banner">
+                        <img src="<%= club.bannerUrl || '/images/default-banner.jpg' %>" alt="<%= club.name %> Banner" class="club-card-banner-img" onerror="this.onerror=null; this.src='/images/default-banner.jpg';">
                         <div class="club-card-badges">
                             <% if (club.isDefault) { %>
                                 <span class="badge-pill badge-default"><i class="fas fa-star"></i> Official Hub</span>

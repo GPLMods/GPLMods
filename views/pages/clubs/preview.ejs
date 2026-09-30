@@ -14,16 +14,24 @@
     }
     .preview-banner {
         height: 220px;
-        background-size: cover;
-        background-position: center;
         background-color: #1a1c24;
         position: relative;
+        overflow: hidden;
+    }
+    .preview-banner-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
     }
     .preview-banner::after {
         content: '';
         position: absolute;
         inset: 0;
         background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(20,21,27,0.95) 100%);
+        z-index: 1;
     }
     .preview-header-content {
         position: absolute;
@@ -254,7 +262,8 @@
     <!-- ======================================== -->
 
     <div class="club-preview-card" style="margin-top: 1rem;">
-        <div class="preview-banner" style="background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>');">
+        <div class="preview-banner">
+            <img src="<%= club.bannerUrl || '/images/default-banner.jpg' %>" alt="<%= club.name %> Banner" class="preview-banner-img" onerror="this.onerror=null; this.src='/images/default-banner.jpg';">
             <div class="preview-header-content">
                 <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" alt="<%= club.name %> Icon" class="preview-icon" onerror="this.src='/images/default-avatar.png';">
                 <div class="preview-title-box">

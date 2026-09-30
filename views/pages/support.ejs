@@ -1443,7 +1443,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.history.forEach(msg => appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls));
             } else {
                 appendFsMessage("Hello! 👋 I'm the GPL AI Assistant. How can I help you today? Type 'human' at any time to connect with our support agents.", "bot");
-                playFsGreetingSfx();
             }
 
             if (fsQuickReplies) {

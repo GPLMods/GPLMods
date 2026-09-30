@@ -59,15 +59,25 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
             }
         }
 
+        // Capture-phase listener: Block popunder triggers completely on ANY popup/modal interactions
+        document.addEventListener('click', (e) => {
+            const isPopupClick = e.target.closest('#video-ad-modal, #newsletter-popup, #pwa-install-banner, #policy-modal-container, #deployment-notice-modal, #globalNotificationModal, .modal, .gpl-modal-backdrop, .policy-modal, .gpl-chat-window, .gpl-chat-confirm-modal, .header-notif-dropdown, .club-header-dropdown');
+            const isAnyPopupActive = (window.GPLPopupCoordinator && window.GPLPopupCoordinator.isAnyActive()) || window._gplmodsVideoAdActive;
+            if (isPopupClick || isAnyPopupActive) {
+                if (typeof e.stopImmediatePropagation === 'function') {
+                    e.stopImmediatePropagation();
+                }
+            }
+        }, true);
+
         function injectPopunderScriptAndTriggers() {
             if (window._popunderInjected) return;
 
-            // If a video ad is currently visible, defer popunder injection until video ad closes
-            const videoModal = document.getElementById('video-ad-modal');
-            const isVideoActive = window._gplmodsVideoAdActive || (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')));
-            if (isVideoActive) {
-                console.log("Video ad is currently active: Suppressing popunder ads.");
-                window.addEventListener('gplmods:video-ad-closed', () => {
+            // If any modal/popup or video ad is currently visible, defer popunder injection
+            const isPopupActive = (window.GPLPopupCoordinator && window.GPLPopupCoordinator.isAnyActive()) || window._gplmodsVideoAdActive;
+            if (isPopupActive) {
+                console.log("A popup/modal is currently active: Suppressing popunder ads.");
+                window.addEventListener('gplmods:popup-closed', () => {
                     setTimeout(injectPopunderScriptAndTriggers, 2000);
                 }, { once: true });
                 return;

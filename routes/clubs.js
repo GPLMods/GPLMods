@@ -86,6 +86,9 @@ async function resolveClub(slugOrId) {
     if (!club) {
         club = await Club.findOne({ slug: slugOrId.toLowerCase() }).populate('creator', 'username profileImageKey role signedAvatarUrl');
     }
+    if (club) {
+        club.bannerUrl = club.bannerUrl || '/images/default-banner.jpg';
+    }
     return club;
 }
 
@@ -158,6 +161,10 @@ router.get('/', async (req, res) => {
 
         // Popular tags for filter bar
         const popularTags = ['Official', 'Mods', 'Android', 'iOS', 'Windows', 'WordPress', 'Gaming', 'Support', 'Tweaks', 'Dev'];
+
+        clubs.forEach(c => {
+            c.bannerUrl = c.bannerUrl || '/images/default-banner.jpg';
+        });
 
         res.render('pages/clubs/index', {
             pageTitle: 'Clubs & Communities',
@@ -361,10 +368,10 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
 
         const memberRole = await ClubRole.create({
             club: newClub._id,
-            name: 'Member',
+            name: 'everyone',
             color: '#99AAB5',
-            badgeIcon: '🔰',
-            position: 10,
+            badgeIcon: '🌐',
+            position: 1,
             isDefault: true,
             permissions: {
                 canManageClub: false,
@@ -550,8 +557,55 @@ router.get('/:slugOrId', async (req, res) => {
             }
         }
 
-        // Fetch all channels for this club sorted by position
-        const channels = await ClubChannel.find({ club: club._id }).sort({ position: 1 }).lean();
+        // Fetch all channels for this club sorted by position, deduplicate in DB if duplicates exist
+        const rawChannels = await ClubChannel.find({ club: club._id }).sort({ position: 1, createdAt: 1 });
+        const seenChanMap = new Map();
+        const channels = [];
+        const duplicateChanIdsToDelete = [];
+
+        for (const chan of rawChannels) {
+            const normName = String(chan.name || '').toLowerCase().trim();
+            if (!seenChanMap.has(normName)) {
+                seenChanMap.set(normName, chan);
+                channels.push(chan.toObject ? chan.toObject() : chan);
+            } else {
+                const keeperChan = seenChanMap.get(normName);
+                await ClubMessage.updateMany({ channel: chan._id }, { $set: { channel: keeperChan._id } });
+                duplicateChanIdsToDelete.push(chan._id);
+            }
+        }
+
+        if (duplicateChanIdsToDelete.length > 0) {
+            await ClubChannel.deleteMany({ _id: { $in: duplicateChanIdsToDelete } });
+            await Club.findByIdAndUpdate(club._id, { channelCount: channels.length });
+        }
+
+        // Ensure default role is 'everyone'
+        let defaultRole = await ClubRole.findOne({ club: club._id, isDefault: true });
+        if (defaultRole && defaultRole.name === 'Member') {
+            defaultRole.name = 'everyone';
+            defaultRole.badgeIcon = '🌐';
+            defaultRole.position = 1;
+            await defaultRole.save();
+        } else if (!defaultRole) {
+            defaultRole = await ClubRole.create({
+                club: club._id,
+                name: 'everyone',
+                color: '#99AAB5',
+                badgeIcon: '🌐',
+                position: 1,
+                isDefault: true,
+                permissions: {
+                    canManageClub: false,
+                    canManageChannels: false,
+                    canManageRoles: false,
+                    canKickMembers: false,
+                    canSendMessages: true,
+                    canPostPolls: true,
+                    canAuditPrivate: false
+                }
+            });
+        }
 
         // Determine active channel (from query `?channel=...` or defaults to `#general` or first available)
         let activeChannel = null;
@@ -895,6 +949,11 @@ router.post('/:slugOrId/channels', ensureAuth, async (req, res) => {
         }
 
         const cleanName = slugify(name.trim());
+        const existingChan = await ClubChannel.findOne({ club: club._id, name: cleanName });
+        if (existingChan) {
+            return res.redirect(`/clubs/${club.slug}?channel=${existingChan._id}`);
+        }
+
         const totalChannels = await ClubChannel.countDocuments({ club: club._id });
 
         const newChannel = await ClubChannel.create({

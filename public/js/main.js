@@ -920,7 +920,49 @@ function initializeMobileMenu() {
 
 /**
  * ==================================================================================
- * 7. POLICY BANNER & SEQUENCE ORCHESTRATOR
+ * 7. GLOBAL POPUP COORDINATOR & MUTUAL EXCLUSION MANAGER
+ * Guarantees no two popups appear simultaneously, queues lower priority prompts,
+ * and ensures zero popunder or intrusive ad collisions.
+ * ==================================================================================
+ */
+window.GPLPopupCoordinator = {
+    activePopups: new Set(),
+    isAnyActive() {
+        if (this.activePopups.size > 0) return true;
+        const newsletter = document.getElementById('newsletter-popup');
+        const pwa = document.getElementById('pwa-install-banner');
+        const videoAd = document.getElementById('video-ad-modal');
+        const policy = document.getElementById('policy-modal-container');
+        const deployment = document.getElementById('deployment-notice-modal');
+        const notifModal = document.getElementById('globalNotificationModal');
+        const chatWindow = document.getElementById('gplChatWindow');
+
+        if (newsletter && newsletter.classList.contains('show')) return true;
+        if (pwa && pwa.classList.contains('show')) return true;
+        if (videoAd && (videoAd.style.display === 'flex' || videoAd.classList.contains('show'))) return true;
+        if (policy && (policy.style.display === 'flex' || policy.classList.contains('show'))) return true;
+        if (deployment && (deployment.style.display === 'flex' || deployment.classList.contains('show'))) return true;
+        if (notifModal && (notifModal.style.display === 'flex' || notifModal.classList.contains('show'))) return true;
+        if (chatWindow && chatWindow.classList.contains('open')) return true;
+        return false;
+    },
+    canShow(popupName) {
+        if (this.activePopups.has(popupName)) return true;
+        return !this.isAnyActive();
+    },
+    register(popupName) {
+        this.activePopups.add(popupName);
+        window.dispatchEvent(new CustomEvent('gplmods:popup-opened', { detail: { name: popupName } }));
+    },
+    unregister(popupName) {
+        this.activePopups.delete(popupName);
+        window.dispatchEvent(new CustomEvent('gplmods:popup-closed', { detail: { name: popupName } }));
+    }
+};
+
+/**
+ * ==================================================================================
+ * POLICY BANNER & SEQUENCE ORCHESTRATOR
  * This controls the TOS, PWA, and Newsletter sequence.
  * ==================================================================================
  */
@@ -949,6 +991,7 @@ function initializePolicyBanner() {
             if (localStorage.getItem('gplmods_policy_accepted') === 'true') return;
             policyModal.style.display = 'flex';
             policyModal.classList.add('show');
+            window.GPLPopupCoordinator.register('policy');
             document.body.style.overflow = 'hidden';
 
             setTimeout(() => {
@@ -982,6 +1025,7 @@ function initializePolicyBanner() {
         acceptBtn.addEventListener('click', () => {
             localStorage.setItem('gplmods_policy_accepted', 'true');
             localStorage.setItem('gplmods_policy_accepted_at', Date.now().toString());
+            window.GPLPopupCoordinator.unregister('policy');
             window.dispatchEvent(new CustomEvent('gplmods:policy-accepted'));
             document.body.style.overflow = '';
             const contentBox = policyModal.querySelector('.policy-modal-content');
@@ -1021,15 +1065,6 @@ function initializePolicyBanner() {
  * ORCHESTRATOR: Handles the timing of PWA and Newsletter banners
  */
 function startEngagementSequence() {
-    // Timers in milliseconds (Adjusted for testing, change back to 3/2 mins for production)
-    // const pwaDelay = 3 * 60 * 1000; // 3 minutes
-    // const newsletterFallbackDelay = 5 * 60 * 1000; // 5 minutes
-    // const newsletterAfterPwaDelay = 2 * 60 * 1000; // 2 minutes
-    // For Testing
-    // const pwaDelay = 10000; //10 Seconds
-    // const newsletterFallbackDelay = 20000; // 20 Seconds
-    // const newsletterAfterPwaDelay = 10000; // 10 Seconds
-    // For testing right now, change the value to 10 seconds, 20 seconds, and 10 seconds
     const pwaDelay = 3 * 60 * 1000; 
     const newsletterFallbackDelay = 5 * 60 * 1000; 
     const newsletterAfterPwaDelay = 2 * 60 * 1000; 
@@ -1045,35 +1080,46 @@ function startEngagementSequence() {
     const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches;
 
     // We set a fallback timer for the newsletter in case the PWA prompt NEVER fires
-    // (e.g., they are on an unsupported browser or already installed it)
     let newsletterTimer = setTimeout(() => {
         if (!pwaShown) triggerNewsletter();
     }, newsletterFallbackDelay);
+
+    function tryShowPwa() {
+        if (!window.GPLPopupCoordinator.canShow('pwa')) {
+            const onPopupClosed = () => {
+                if (window.GPLPopupCoordinator.canShow('pwa')) {
+                    window.removeEventListener('gplmods:popup-closed', onPopupClosed);
+                    tryShowPwa();
+                }
+            };
+            window.addEventListener('gplmods:popup-closed', onPopupClosed);
+            return;
+        }
+
+        if (pwaBanner && !pwaBanner.classList.contains('show')) {
+            pwaBanner.classList.add('show');
+            pwaShown = true;
+            window.GPLPopupCoordinator.register('pwa');
+            clearTimeout(newsletterTimer);
+        }
+    }
 
     if (!isPwaDismissed && !isPwaInstalled) {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
-            // The browser is ready. Now wait for our programmed delay.
-            setTimeout(() => {
-                if (pwaBanner) {
-                    pwaBanner.classList.add('show');
-                    pwaShown = true;
-                    clearTimeout(newsletterTimer); // Cancel fallback timer
-                }
-            }, pwaDelay);
+            setTimeout(tryShowPwa, pwaDelay);
         });
 
         if (installBtn) {
             installBtn.addEventListener('click', async () => {
                 if (pwaBanner) pwaBanner.classList.remove('show');
+                window.GPLPopupCoordinator.unregister('pwa');
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     await deferredPrompt.userChoice;
                     deferredPrompt = null;
                 }
-                // They handled PWA, queue the Newsletter
                 setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
             });
         }
@@ -1081,14 +1127,15 @@ function startEngagementSequence() {
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => {
                 if (pwaBanner) pwaBanner.classList.remove('show');
+                window.GPLPopupCoordinator.unregister('pwa');
                 localStorage.setItem('pwaDismissed', 'true');
-                // They handled PWA, queue the Newsletter
                 setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
             });
         }
 
         window.addEventListener('appinstalled', () => {
             if (pwaBanner) pwaBanner.classList.remove('show');
+            window.GPLPopupCoordinator.unregister('pwa');
             localStorage.setItem('pwaDismissed', 'true');
             localStorage.setItem('gpl_pwa_installed', 'true');
             deferredPrompt = null;
@@ -1104,13 +1151,12 @@ function startEngagementSequence() {
         if (serverSubscribed === 'true') {
             localStorage.setItem('gplmods_subscribed', 'true');
         } else if (serverSubscribed === 'false') {
-            // If logged-in user is explicitly not subscribed on server, sync storage
             localStorage.removeItem('gplmods_subscribed');
         }
 
         const isSubscribed = localStorage.getItem('gplmods_subscribed') === 'true' || serverSubscribed === 'true';
         if (isSubscribed) {
-            return; // Never show if already subscribed
+            return;
         }
 
         const dismissedTime = localStorage.getItem('gplmods_newsletter_dismissed');
@@ -1118,11 +1164,23 @@ function startEngagementSequence() {
         
         let shouldShow = true;
         if (dismissedTime && (now - parseInt(dismissedTime)) < (3 * 24 * 60 * 60 * 1000)) {
-            shouldShow = false; // Dismissed less than 3 days ago
+            shouldShow = false;
         }
 
         if (shouldShow) {
+            if (!window.GPLPopupCoordinator.canShow('newsletter')) {
+                const onPopupClosed = () => {
+                    if (window.GPLPopupCoordinator.canShow('newsletter')) {
+                        window.removeEventListener('gplmods:popup-closed', onPopupClosed);
+                        triggerNewsletter();
+                    }
+                };
+                window.addEventListener('gplmods:popup-closed', onPopupClosed);
+                return;
+            }
+
             popup.classList.add('show');
+            window.GPLPopupCoordinator.register('newsletter');
         }
     }
 }
@@ -1593,6 +1651,7 @@ function initializeNewsletter() {
     if (closeBtn && popup) {
         closeBtn.addEventListener('click', () => {
             popup.classList.remove('show');
+            if (window.GPLPopupCoordinator) window.GPLPopupCoordinator.unregister('newsletter');
             localStorage.setItem('gplmods_newsletter_dismissed', new Date().getTime().toString());
         });
     }
@@ -1620,7 +1679,10 @@ function initializeNewsletter() {
                     msgDiv.textContent = data.message;
                     msgDiv.classList.add('success');
                     localStorage.setItem('gplmods_subscribed', 'true');
-                    setTimeout(() => { popup.classList.remove('show'); }, 3000);
+                    setTimeout(() => { 
+                        popup.classList.remove('show'); 
+                        if (window.GPLPopupCoordinator) window.GPLPopupCoordinator.unregister('newsletter');
+                    }, 3000);
                 } else {
                     msgDiv.textContent = data.error || 'Failed to subscribe.';
                     msgDiv.classList.add('error');

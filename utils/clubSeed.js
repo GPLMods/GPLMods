@@ -149,10 +149,10 @@ async function ensureDefaultClub() {
 
             const memberRole = await ClubRole.create({
                 club: defaultClub._id,
-                name: 'Member',
+                name: 'everyone',
                 color: '#99AAB5',
-                badgeIcon: '🔰',
-                position: 10,
+                badgeIcon: '🌐',
+                position: 1,
                 isDefault: true,
                 permissions: {
                     canManageClub: false,
